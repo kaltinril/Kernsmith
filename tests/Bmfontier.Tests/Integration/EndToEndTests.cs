@@ -1,0 +1,208 @@
+using Bmfontier.Output.Model;
+using FluentAssertions;
+
+namespace Bmfontier.Tests.Integration;
+
+public class EndToEndTests
+{
+    private static byte[] LoadTestFont() =>
+        File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Roboto-Regular.ttf"));
+
+    [Fact]
+    public void Generate_AsciiFont_ProducesValidResult()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.Ascii
+        });
+
+        // Assert — model should be populated
+        result.Model.Should().NotBeNull();
+        result.Model.Info.Face.Should().Be("Roboto");
+        result.Model.Info.Size.Should().Be(32);
+        result.Model.Info.Unicode.Should().BeTrue();
+
+        // Should have characters (ASCII printable = 95 codepoints max)
+        result.Model.Characters.Should().HaveCountGreaterThan(0);
+        result.Model.Characters.Count.Should().BeLessThanOrEqualTo(95);
+
+        // Should have at least 1 atlas page
+        result.Pages.Should().HaveCountGreaterThan(0);
+        result.Model.Common.Pages.Should().Be(result.Pages.Count);
+
+        // Atlas dimensions should be positive
+        result.Model.Common.ScaleW.Should().BeGreaterThan(0);
+        result.Model.Common.ScaleH.Should().BeGreaterThan(0);
+
+        // Each page should have pixel data matching atlas dimensions
+        foreach (var page in result.Pages)
+        {
+            page.PixelData.Should().NotBeEmpty();
+            page.Width.Should().Be(result.Model.Common.ScaleW);
+            page.Height.Should().Be(result.Model.Common.ScaleH);
+        }
+    }
+
+    [Fact]
+    public void Generate_ProducesValidTextFormat()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Generate(fontData, 32);
+        var text = result.ToString();
+
+        // Assert — text output follows BMFont text format
+        text.Should().StartWith("info ");
+        text.Should().Contain("face=\"Roboto\"");
+        text.Should().Contain("common ");
+        text.Should().Contain("page ");
+        text.Should().Contain("chars count=");
+        text.Should().Contain("char id=");
+    }
+
+    [Fact]
+    public void Generate_AtlasPagesContainNonZeroPixels()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Generate(fontData, 32);
+
+        // Assert — at least one page should have rendered glyph pixels
+        var hasNonZeroPixels = result.Pages.Any(p => p.PixelData.Any(b => b != 0));
+        hasNonZeroPixels.Should().BeTrue("atlas should contain rendered glyph pixels");
+    }
+
+    [Fact]
+    public void Generate_CharacterMetricsAreReasonable()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Generate(fontData, 32);
+
+        // Assert — space character should have positive advance
+        var space = result.Model.Characters.FirstOrDefault(c => c.Id == 32);
+        space.Should().NotBeNull("ASCII set should include space (U+0020)");
+        space!.XAdvance.Should().BeGreaterThan(0, "space should have positive advance");
+
+        // 'A' character should have positive dimensions and advance
+        var charA = result.Model.Characters.FirstOrDefault(c => c.Id == 65);
+        charA.Should().NotBeNull("ASCII set should include 'A' (U+0041)");
+        charA!.Width.Should().BeGreaterThan(0);
+        charA!.Height.Should().BeGreaterThan(0);
+        charA!.XAdvance.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public void Generate_WithSizeOverload_Works()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Generate(fontData, 16);
+
+        // Assert
+        result.Model.Info.Size.Should().Be(16);
+        result.Model.Characters.Should().HaveCountGreaterThan(0);
+    }
+
+    [Fact]
+    public void Generate_KerningPairsExist()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Kerning = true
+        });
+
+        // Assert — Roboto has kerning pairs
+        result.Model.KerningPairs.Should().HaveCountGreaterThan(0);
+    }
+
+    [Fact]
+    public void Generate_ToPng_ProducesValidPngBytes()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Generate(fontData, 32);
+        var pngBytes = result.Pages[0].ToPng();
+
+        // Assert — PNG magic bytes: 137 80 78 71 13 10 26 10
+        pngBytes.Should().NotBeEmpty();
+        pngBytes[0].Should().Be(137);
+        pngBytes[1].Should().Be(80);  // 'P'
+        pngBytes[2].Should().Be(78);  // 'N'
+        pngBytes[3].Should().Be(71);  // 'G'
+    }
+
+    [Fact]
+    public void Generate_DifferentSizes_ProduceDifferentLineHeights()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var smallResult = BmFont.Generate(fontData, 12);
+        var largeResult = BmFont.Generate(fontData, 48);
+
+        // Assert — larger size should produce larger line height
+        largeResult.Model.Common.LineHeight.Should()
+            .BeGreaterThan(smallResult.Model.Common.LineHeight,
+                "48pt font should have larger line height than 12pt font");
+    }
+
+    [Fact]
+    public void Generate_FromString_ProducesOnlyRequestedCharacters()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+        var chars = CharacterSet.FromChars("ABC");
+
+        // Act
+        var result = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = chars
+        });
+
+        // Assert — should have exactly 3 characters
+        result.Model.Characters.Should().HaveCount(3);
+        result.Model.Characters.Select(c => c.Id).Should().BeEquivalentTo(new[] { 65, 66, 67 });
+    }
+
+    [Fact]
+    public void Generate_ModelPagesMatchAtlasPages()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Generate(fontData, 32);
+
+        // Assert — model page entries should match atlas page count
+        result.Model.Pages.Should().HaveCount(result.Pages.Count);
+
+        // Page indices should be sequential starting from 0
+        for (int i = 0; i < result.Model.Pages.Count; i++)
+        {
+            result.Model.Pages[i].Id.Should().Be(i);
+        }
+    }
+}
