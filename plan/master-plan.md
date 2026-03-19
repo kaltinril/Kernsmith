@@ -1,7 +1,7 @@
 # bmfontier -- Master Plan
 
-> **Status**: Finalized technical plan. All implementation work references this document and its sub-documents.
-> **Date**: 2026-03-18
+> **Status**: Phases 1-4 complete. Remaining items tracked in [plan-phase-future.md](plan-phase-future.md).
+> **Date**: 2026-03-19
 
 ---
 
@@ -88,6 +88,7 @@ Output Layer
 | [Output Formats](plan-output-formats.md) | BMFont model classes, text/XML/binary serialization, file output |
 | [Testing](plan-testing.md) | xUnit test strategy, concrete test fonts, golden data, validation criteria, CI |
 | [Implementation Order](plan-implementation-order.md) | **Phased task breakdown with dependencies and parallel groups.** Start here for building. |
+| [Future Phase](plan-phase-future.md) | **Deferred items from Phases 3-4 plus planned Phases 5-7.** |
 | [CLI Tool](plan-cli.md) | Full-featured CLI plan — BMFont.exe replacement with config files, inspect/convert commands |
 | [BMFont Parity](plan-bmfont-parity.md) | 15 missing features from BMFont.exe — per-channel config, super sampling, TGA, etc. |
 | [Extended Metadata](plan-extended-metadata.md) | How bmfontier stores SDF spread, gradient, shadow, and other metadata in .fnt files |
@@ -110,28 +111,25 @@ Output Layer
 
 ## Phased Implementation
 
-### Phase 1 -- MVP
+### Phase 1 -- MVP (COMPLETE)
 
-Core pipeline end-to-end: load a TTF, parse required tables, rasterize glyphs, pack into atlas, output BMFont text format + PNG. 16 tasks covering FreeTypeSharp integration, all table parsers (including GPOS), MaxRects packer, atlas builder, PNG encoding, text format output, file output, entry point wiring, CharacterSet, and basic tests.
+Core pipeline end-to-end: load a TTF, parse required tables, rasterize glyphs, pack into atlas, output BMFont text format + PNG. 28 tasks covering FreeTypeSharp integration, all table parsers (including GPOS), MaxRects packer, atlas builder, PNG encoding, text format output, file output, entry point wiring, CharacterSet, and basic tests.
 
-### Phase 2 -- Complete
+### Phase 2 -- Complete (COMPLETE)
 
 Additional output formats (XML, binary), Skyline packer, system font enumeration, configurable padding/spacing/outline, SDF mode, font collection (.ttc) support, variable font support, and `GenerateFromSystem()` API.
 
-### Phase 3 -- Ecosystem
+### Phase 3 -- Ecosystem (COMPLETE)
 
-WOFF/WOFF2 decompression, channel packing, color font support, reference CLI tool, performance benchmarks, NuGet publishing, and font subsetting.
+WOFF/WOFF2 decompression, channel packing, reference CLI tool, performance benchmarks. Completed 6 of 10 tasks. Incomplete items (color font support, font subsetting, NuGet publishing CI, CLI tests) moved to [plan-phase-future.md](plan-phase-future.md).
 
-### Phase 4 -- Deferred / Future
+### Phase 4 -- Deferred / Future (COMPLETE)
 
-| Feature | Effort | Value | Notes |
-|---------|--------|-------|-------|
-| **Variable font axes (fvar)** | Medium | High | Parse fvar table, expose axes on FontInfo, set via FT_Set_Var_Design_Coordinates before rasterizing. Most modern fonts are variable. |
-| **BMFont reader (load .fnt + .png)** | Medium | High | Parse existing BMFont text/XML/binary .fnt files + load atlas .png into the in-memory `BmFontModel` + `AtlasPage[]`. Enables round-tripping, inspection, modification, and re-export. |
-| **Gradient post-processor** | Low | Medium | IGlyphPostProcessor that applies a vertical (or configurable) color gradient to glyph bitmaps, producing RGBA output. Bakes color into the atlas. |
-| **Font subsetting** | Medium | Medium | Strip unused glyphs before processing. Important for CJK fonts (50k+ glyphs). |
-| **WOFF2 decompression** | High | Medium | Brotli + content-aware inverse transforms for glyf/loca/hmtx tables. Users can convert externally for now. |
-| **Color font support** | High | Low | COLRv0/CPAL layer rendering, sbix bitmap extraction, CBDT/CBLC. Three separate implementations. |
+fvar table parser, BMFont reader (text/XML/binary), BmFont.Load() entry point, gradient post-processor. Completed 8 of 10 tasks. Incomplete items (variable font axis application, variable font tests) moved to [plan-phase-future.md](plan-phase-future.md). Variable font axis application is blocked on FreeTypeSharp lacking `FT_Set_Var_Design_Coordinates`.
+
+### Future Phases
+
+Incomplete items from Phases 3-4 plus planned future work are collected in **[plan-phase-future.md](plan-phase-future.md)**. This includes Phases 5 (Full CLI Tool), 6 (BMFont Parity Features), and 7 (Extended Metadata).
 
 ---
 
