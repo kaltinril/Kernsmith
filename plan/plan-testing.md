@@ -3,6 +3,10 @@
 > Part of the [Master Plan](master-plan.md).
 > Related: [Project Structure](plan-project-structure.md), [API Design](plan-api-design.md)
 
+All data types are defined in [plan-data-types.md](plan-data-types.md). Error types are defined in the "Error Handling Strategy" section of that document.
+
+**Framework: xUnit** with `FluentAssertions` for readable assertions. Test project: `Bmfontier.Tests` targeting `net8.0`.
+
 ---
 
 ## Unit Tests
@@ -45,18 +49,87 @@
 
 Maintain a `tests/fixtures/` directory with:
 
-| Font | Purpose | License |
-|------|---------|---------|
-| A well-known open-source TTF (e.g., Roboto) | General testing | Apache 2.0 |
-| A font with kern-table-only kerning | Verify kern parser | Open source |
-| A font with GPOS-only kerning | Verify GPOS parser | Open source |
-| A font with both kern + GPOS | Verify merging behavior | Open source |
-| A .ttc font collection | Verify collection support | Open source |
-| A minimal synthetic TTF | Edge case testing | Our own |
+| Font | Purpose | Source | License |
+|------|---------|--------|---------|
+| **Roboto-Regular.ttf** | General testing, well-known metrics | Google Fonts | Apache 2.0 |
+| **Liberation Sans** (older version) | kern-table-only kerning | Fedora repos / GitHub | SIL OFL |
+| **Inter-Regular.ttf** | GPOS-only kerning (modern font) | Google Fonts | SIL OFL |
+| **Noto Sans-Regular.ttf** | Both kern + GPOS, large Unicode coverage | Google Fonts | SIL OFL |
+| **NotoSansCJK-Regular.ttc** | Font collection (.ttc) testing | Google Fonts | SIL OFL |
+| **Minimal synthetic TTF** | Edge cases, minimal valid font | Our own (hand-crafted or generated via FontForge script) | MIT |
 
 ---
 
-## Cross-Platform CI
+## Golden Data Generation
+
+Reference values for parser unit tests are generated using `ttx` (from fonttools):
+
+```bash
+# Extract specific tables for reference
+ttx -t head -t OS/2 -t hhea -t name -t kern -t GPOS Roboto-Regular.ttf
+```
+
+Store expected values in `tests/fixtures/expected/roboto-metrics.json`:
+```json
+{
+  "unitsPerEm": 2048,
+  "ascender": 1900,
+  "descender": -500,
+  "lineGap": 0,
+  "isBold": false,
+  "weightClass": 400
+}
+```
+
+For BMFont output validation, generate a reference `.fnt` file using the original BMFont tool (Windows) and store in `tests/fixtures/expected/`.
+
+---
+
+## Additional Test Categories
+
+### Rasterizer Tests
+- Verify `FreeTypeRasterizer` produces non-empty bitmap data for ASCII codepoints
+- Verify glyph metrics (advance > 0 for printable chars, advance > 0 for space with empty bitmap)
+- Verify `null` return for codepoints not in the font
+- Verify `RasterizationException` when font not loaded
+
+### CharacterSet Tests
+- `CharacterSet.Ascii` produces codepoints 32-126
+- `CharacterSet.FromRanges` with custom ranges
+- `CharacterSet.FromChars("Hello")` deduplicates
+- `CharacterSet.Union` combines sets
+- `Resolve()` filters to available codepoints
+
+### Configuration Tests
+- `FontGeneratorOptions` defaults are valid (Size=32, MaxTextureSize=1024, etc.)
+- `Padding(1)` convenience constructor sets all four sides
+- `Spacing(1)` convenience constructor sets both dimensions
+
+### Error Handling Tests
+- Invalid font data → `FontParsingException`
+- Glyph exceeds max texture size → `AtlasPackingException`
+- Size <= 0 → `ArgumentException`
+
+---
+
+## Validation Criteria
+
+### BMFont Output Correctness
+A generated `.fnt` file is correct if:
+1. It parses without error in MonoGame.Extended's `BitmapFontReader` (integration test)
+2. Character metrics (xoffset, yoffset, xadvance) are within ±1 pixel of reference values from FontForge
+3. Atlas coordinates (x, y, width, height) point to non-empty pixel regions in the PNG
+4. Kerning pairs match the font's kern/GPOS table entries (scaled to the target size)
+5. `lineHeight`, `base`, `scaleW`, `scaleH` values are consistent with the atlas dimensions
+
+### Cross-Platform Tolerance
+- Parser and formatter tests: deterministic, must match exactly across platforms
+- Rasterizer tests: glyph bitmaps may differ by ±1 pixel across OS due to FreeType hinting differences. Use metric-based assertions (dimensions, advance) not pixel-exact comparison
+- Atlas layout tests: packing results are deterministic (same algorithm, same input order → same output)
+
+---
+
+## CI Workflow
 
 Run the full test suite on GitHub Actions with a matrix of:
 
@@ -64,3 +137,9 @@ Run the full test suite on GitHub Actions with a matrix of:
 - **Framework**: .NET 8 (LTS)
 
 This ensures FreeTypeSharp's native binaries work correctly on all supported platforms and our parser produces consistent results regardless of endianness or platform-specific behavior.
+
+GitHub Actions, `.github/workflows/ci.yml`:
+- **Matrix**: `{ os: [windows-latest, macos-latest, ubuntu-latest], dotnet: ['8.0.x'] }`
+- **Steps**: checkout → setup-dotnet → restore → build → test
+- **Artifacts**: upload generated `.fnt` + `.png` files on test failure for visual inspection
+- All tests run on all platforms. Platform-conditional assertions use `RuntimeInformation.IsOSPlatform()`.

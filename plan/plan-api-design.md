@@ -3,6 +3,8 @@
 > Part of the [Master Plan](master-plan.md).
 > Related: [Project Structure](plan-project-structure.md), [Font Parsing](plan-font-parsing.md), [Rasterization](plan-rasterization.md), [Texture Packing](plan-texture-packing.md), [Output Formats](plan-output-formats.md)
 
+> All intermediate data types, configuration types, and the error handling strategy are defined in [plan-data-types.md](plan-data-types.md).
+
 ---
 
 ## Design Principle: Modularity
@@ -11,62 +13,7 @@ Every major component is behind an interface so implementations can be swapped w
 
 ### Core Interfaces
 
-```csharp
-/// Reads font data from a source (TTF file, byte array, etc.)
-public interface IFontReader
-{
-    FontInfo ReadFont(ReadOnlySpan<byte> fontData, int faceIndex = 0);
-}
-
-/// Rasterizes individual glyphs to bitmaps
-public interface IRasterizer : IDisposable
-{
-    RasterizedGlyph RasterizeGlyph(int codepoint, RasterOptions options);
-    IReadOnlyList<RasterizedGlyph> RasterizeAll(IEnumerable<int> codepoints, RasterOptions options);
-}
-
-/// Packs rectangles into atlas pages
-public interface IAtlasPacker
-{
-    PackResult Pack(IReadOnlyList<GlyphRect> glyphs, int pageWidth, int pageHeight);
-}
-
-/// Encodes atlas bitmap data to a specific image format (e.g., PNG)
-public interface IAtlasEncoder
-{
-    byte[] Encode(byte[] pixelData, int width, int height, PixelFormat format);
-    string FileExtension { get; } // e.g., ".png"
-}
-
-/// Formats a BmFontModel into an output representation
-public interface IBmFontFormatter
-{
-    string Format { get; } // e.g., "text", "xml", "binary"
-}
-
-public interface IBmFontTextFormatter : IBmFontFormatter
-{
-    string FormatToString(BmFontModel model);
-}
-
-public interface IBmFontBinaryFormatter : IBmFontFormatter
-{
-    byte[] FormatToBytes(BmFontModel model);
-}
-
-/// Optional post-processing step applied after rasterization
-public interface IGlyphPostProcessor
-{
-    RasterizedGlyph Process(RasterizedGlyph glyph);
-}
-
-/// Discovers system-installed fonts
-public interface ISystemFontProvider
-{
-    IReadOnlyList<SystemFontInfo> GetInstalledFonts();
-    string? FindFontPath(string familyName, bool bold = false, bool italic = false);
-}
-```
+> All interface definitions (`IFontReader`, `IRasterizer`, `IGlyphPostProcessor`, `IAtlasPacker`, `IAtlasEncoder`, `IBmFontFormatter`, `ISystemFontProvider`) are defined in [plan-data-types.md](plan-data-types.md#interfaces).
 
 ---
 
@@ -86,15 +33,38 @@ public static class BmFont
 
     public static BmFontResult Generate(byte[] fontData, FontGeneratorOptions options)
     {
-        // Wire up defaults -- every component is swappable
+        // 1. Parse font
         var fontReader = options.FontReader ?? new TtfFontReader();
-        var rasterizer = options.Rasterizer ?? new FreeTypeRasterizer();
-        var packer = options.Packer ?? CreatePacker(options.PackingAlgorithm);
-        var encoder = options.AtlasEncoder ?? new StbPngEncoder();
-        var postProcessors = options.PostProcessors ?? Array.Empty<IGlyphPostProcessor>();
+        var fontInfo = fontReader.ReadFont(fontData, options.FaceIndex);
 
-        // Pipeline: read -> rasterize -> post-process -> pack -> model -> result
-        // ...
+        // 2. Resolve character set
+        var codepoints = options.Characters.Resolve(fontInfo.AvailableCodepoints);
+
+        // 3. Rasterize glyphs
+        using var rasterizer = options.Rasterizer ?? new FreeTypeRasterizer();
+        rasterizer.LoadFont(fontData, options.FaceIndex);
+        var rasterOptions = RasterOptions.FromGeneratorOptions(options);
+        var glyphs = rasterizer.RasterizeAll(codepoints, rasterOptions);
+
+        // 4. Apply post-processors
+        var postProcessors = options.PostProcessors ?? Array.Empty<IGlyphPostProcessor>();
+        foreach (var processor in postProcessors)
+            glyphs = glyphs.Select(g => processor.Process(g)).ToList();
+
+        // 5. Pack into atlas
+        var packer = options.Packer ?? CreatePacker(options.PackingAlgorithm);
+        var glyphRects = glyphs.Select(g => CreateRect(g, options.Padding, options.Spacing)).ToList();
+        int pageSize = EstimatePageSize(glyphRects, options.MaxTextureSize);
+        var packResult = packer.Pack(glyphRects, pageSize, pageSize);
+
+        // 6. Build atlas pages
+        var encoder = options.AtlasEncoder ?? new StbPngEncoder();
+        var pages = AtlasBuilder.Build(glyphs, packResult, options.Padding, encoder);
+
+        // 7. Assemble BMFont model
+        var model = BmFontModelBuilder.Build(fontInfo, glyphs, packResult, options);
+
+        return new BmFontResult(model, pages);
     }
 
     private static IAtlasPacker CreatePacker(PackingAlgorithm algorithm) => algorithm switch
@@ -124,7 +94,7 @@ var result = BmFont.Builder()
     .WithPostProcessor(new SdfPostProcessor())
     .WithMaxTextureSize(1024)
     .WithPadding(2, 2, 2, 2)
-    .WithKerning(true)
+    .WithKerning(true)           // Matches FontGeneratorOptions.Kerning
     .Build();
 ```
 
@@ -149,6 +119,8 @@ result.ToFile("output/myfont");
 // Creates: output/myfont.fnt + output/myfont_0.png
 ```
 
+> `AtlasPage.ToPng()` is a convenience method that uses the default `StbPngEncoder`. For custom encoding, use `AtlasPage.PixelData` directly with any `IAtlasEncoder` implementation.
+
 ---
 
 ## In-Memory Usage (Game Engine, No Disk)
@@ -161,8 +133,8 @@ var result = BmFont.Generate(fontBytes, new FontGeneratorOptions
     Size = 24,
     Characters = CharacterSet.Ascii,
     MaxTextureSize = 512,
-    Padding = 1,
-    Spacing = 1,
+    Padding = new Padding(1),    // Padding(int all) convenience constructor
+    Spacing = new Spacing(1),    // Spacing(int both) convenience constructor
 });
 
 // Use directly -- never touches disk
@@ -186,7 +158,7 @@ var result = BmFont.Generate("font.ttf", new FontGeneratorOptions
     Padding = new Padding(2, 2, 2, 2),
     Spacing = new Spacing(1, 1),
     PackingAlgorithm = PackingAlgorithm.MaxRects,
-    IncludeKerning = true,
+    Kerning = true,
     Outline = 0,
     Sdf = false,
 });
@@ -248,6 +220,12 @@ public class BmFontResult
 }
 ```
 
+> Custom formatters are NOT injected via `FontGeneratorOptions`. Instead, users access `BmFontResult.Model` and call their custom formatter directly:
+> ```csharp
+> var result = BmFont.Generate(fontData, options);
+> var customOutput = myFormatter.Format(result.Model);
+> ```
+
 ---
 
 ## Configuration Types
@@ -264,7 +242,7 @@ public class FontGeneratorOptions
     public Padding Padding { get; set; } = new Padding(0, 0, 0, 0);
     public Spacing Spacing { get; set; } = new Spacing(1, 1);
     public PackingAlgorithm PackingAlgorithm { get; set; } = PackingAlgorithm.MaxRects;
-    public bool IncludeKerning { get; set; } = true;
+    public bool Kerning { get; set; } = true;
     public int Outline { get; set; } = 0;
     public bool Sdf { get; set; } = false;
     public bool PowerOfTwo { get; set; } = true;
@@ -280,13 +258,9 @@ public class FontGeneratorOptions
     public IReadOnlyList<IGlyphPostProcessor>? PostProcessors { get; set; }
 }
 
-public enum AntiAliasMode { None, Grayscale, Light, Lcd }
-public enum PackingAlgorithm { MaxRects, Skyline }
-public enum OutputFormat { Text, Xml, Binary }
-
-public readonly record struct Padding(int Up, int Right, int Down, int Left);
-public readonly record struct Spacing(int Horizontal, int Vertical);
 ```
+
+> See [plan-data-types.md](plan-data-types.md#configuration-types) for `AntiAliasMode`, `PackingAlgorithm`, `OutputFormat` enum definitions and `Padding` and `Spacing` definitions (includes convenience constructors).
 
 ---
 
@@ -311,5 +285,8 @@ public class CharacterSet
     // Enumeration
     public IEnumerable<int> GetCodepoints();
     public int Count { get; }
+
+    // Resolution (filter to what the font actually supports)
+    public IEnumerable<int> Resolve(IReadOnlyList<int> availableCodepoints);
 }
 ```

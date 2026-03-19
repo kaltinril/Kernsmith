@@ -19,7 +19,7 @@
 | **TTF table parsing** | Our own pure C# parser | FreeTypeSharp cannot expose GPOS kerning pairs, OS/2 metadata, name table strings, or variable font axes. We parse the tables FreeTypeSharp cannot reach. No additional dependencies. |
 | **Texture packing** | MaxRects (BestShortSideFit) primary, Skyline as fast mode | MaxRects achieves 93-97% packing efficiency. Skyline is 2-5x faster with 2-5% less efficiency. Our own implementation based on public domain reference code. |
 | **API design** | In-memory model first, output methods on top | Core pipeline produces a format-agnostic model. `.ToString()`, `.ToXml()`, `.ToBinary()`, `.ToFile()` render it. Zero disk I/O by default. |
-| **Licensing** | Open source, no paid/restrictive dependencies | FreeTypeSharp: MIT. FreeType native: FreeType License (BSD-like). Our code: TBD (MIT or Apache 2.0). SixLabors: explicitly excluded (split license). |
+| **Licensing** | Open source, no paid/restrictive dependencies | FreeTypeSharp: MIT. FreeType native: FreeType License (BSD-like). Our code: MIT. SixLabors: explicitly excluded (split license). |
 | **Cross-platform** | Anywhere .NET + FreeType native binaries run | Windows, macOS, Linux, Android, iOS, tvOS via FreeTypeSharp's bundled natives. No Linux ARM64 or WASM (FreeTypeSharp gap). |
 
 ---
@@ -79,13 +79,15 @@ Output Layer
 
 | Document | Description |
 |----------|-------------|
+| [Data Types](plan-data-types.md) | **All shared types, interfaces, and error handling.** Single source of truth — other docs reference this. |
 | [Project Structure](plan-project-structure.md) | Solution layout, namespace mapping, dependencies, target framework, and licensing |
-| [API Design](plan-api-design.md) | Public API surface, interfaces for modularity, builder pattern, configuration types, and code examples |
-| [Font Parsing](plan-font-parsing.md) | FreeTypeSharp usage, our TTF parser scope, GPOS parsing, `IFontReader` interface |
-| [Rasterization](plan-rasterization.md) | Glyph rasterization pipeline, `IRasterizer` and `IGlyphPostProcessor` interfaces, memory management |
-| [Texture Packing](plan-texture-packing.md) | MaxRects/Skyline algorithms, `IAtlasPacker` and `IAtlasEncoder` interfaces, multi-page strategy |
-| [Output Formats](plan-output-formats.md) | BMFont model, text/XML/binary serialization, `IBmFontFormatter` interface, file output |
-| [Testing](plan-testing.md) | Unit/integration/validation test strategy, test fonts, cross-platform CI |
+| [API Design](plan-api-design.md) | Public API surface, builder pattern, configuration types (`FontGeneratorOptions`, `CharacterSet`), and code examples |
+| [Font Parsing](plan-font-parsing.md) | FreeTypeSharp usage, our TTF parser scope, GPOS parsing, implementation details |
+| [Rasterization](plan-rasterization.md) | Glyph rasterization pipeline, FreeTypeRasterizer implementation, memory management |
+| [Texture Packing](plan-texture-packing.md) | MaxRects/Skyline algorithms, multi-page strategy, atlas building |
+| [Output Formats](plan-output-formats.md) | BMFont model classes, text/XML/binary serialization, file output |
+| [Testing](plan-testing.md) | xUnit test strategy, concrete test fonts, golden data, validation criteria, CI |
+| [Implementation Order](plan-implementation-order.md) | **Phased task breakdown with dependencies and parallel groups.** Start here for building. |
 
 ---
 
@@ -119,17 +121,19 @@ WOFF/WOFF2 decompression, channel packing, color font support, reference CLI too
 
 ---
 
-## Open Questions
+## Resolved Decisions
 
-| # | Question | Options | Notes |
-|---|----------|---------|-------|
-| 1 | **PNG encoding library** | StbImageWriteSharp (public domain), BigGustave (MIT), our own minimal writer | Start with StbImageWriteSharp. Evaluate during Phase 1. |
-| 2 | **Target framework** | .NET 6+, .NET 8+, .NET Standard 2.1 | FreeTypeSharp targets .NET Standard 2.0 + .NET 9.0. We should target .NET 8+ (current LTS) with possible .NET Standard 2.1 for broader reach. |
-| 3 | **Project license** | MIT, Apache 2.0 | Both are permissive. MIT is simpler and matches FreeTypeSharp. |
-| 4 | **NuGet package name** | `Bmfontier`, `BmFontier` | NuGet package IDs are case-insensitive. Use `Bmfontier` (lowercase-ish) for the package, `BmFont` for the main API class. |
-| 5 | **FreeTypeSharp usage boundary** | Use for everything it can do vs. duplicate some work in our parser | Start by using everything FreeTypeSharp offers. Only write our own code for what it cannot do. Avoid duplicating metrics extraction unless needed for consistency. |
-| 6 | **Unsafe code policy** | Allow unsafe in FreeType interop layer, keep it out of everything else | Isolate `unsafe` to `FontLoader.cs` and `GlyphRasterizer.cs`. Rest of codebase is safe C#. |
-| 7 | **How to handle FreeType memory** | Wrap in IDisposable, ensure face/library cleanup | `FontLoader` implements `IDisposable`. Use `using` blocks in `BmFont.Generate()`. FreeTypeFaceFacade has a potential leak (noted in evaluation) -- we manage lifecycle ourselves. |
+| # | Question | Decision | Details |
+|---|----------|----------|---------|
+| 1 | **PNG encoding library** | **StbImageWriteSharp** (public domain) | Confirmed. See [plan-project-structure.md](plan-project-structure.md). |
+| 2 | **Target framework** | **net8.0** (current LTS) | .NET Standard 2.1 multi-targeting deferred to Phase 2. See [plan-project-structure.md](plan-project-structure.md). |
+| 3 | **Project license** | **Proprietary** | See LICENSE file. |
+| 4 | **NuGet package name** | **Bmfontier** | Package ID `Bmfontier`, main API class `BmFont`. |
+| 5 | **FreeTypeSharp usage boundary** | Use everything it can do | Our parser only covers what FreeTypeSharp cannot (GPOS, OS/2, name, cmap). No duplication. |
+| 6 | **Unsafe code policy** | `AllowUnsafeBlocks` in main project | Isolated to FreeType interop (`FreeTypeRasterizer.cs`, `TtfFontReader.cs`). Rest is safe C#. |
+| 7 | **FreeType memory** | Manual lifecycle via `IDisposable` | Pin font data with `GCHandle`. Do NOT use `FreeTypeFaceFacade`. See [plan-rasterization.md](plan-rasterization.md). |
+| 8 | **Test framework** | **xUnit** + FluentAssertions | See [plan-testing.md](plan-testing.md). |
+| 9 | **Error handling** | Custom exception hierarchy | `FontParsingException`, `RasterizationException`, `AtlasPackingException`. See [plan-data-types.md](plan-data-types.md). |
 
 ---
 

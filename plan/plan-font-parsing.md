@@ -5,16 +5,17 @@
 
 ---
 
+## Data Types
+
+All types used in this document (`FontInfo`, `KerningPair`, `HeadTable`, `HheaTable`, `Os2Metrics`, `NameInfo`) are defined in [plan-data-types.md](plan-data-types.md).
+
+---
+
 ## IFontReader Interface
 
 Font reading is abstracted behind `IFontReader` so the source format can be swapped:
 
-```csharp
-public interface IFontReader
-{
-    FontInfo ReadFont(ReadOnlySpan<byte> fontData, int faceIndex = 0);
-}
-```
+> `IFontReader` interface is defined in [plan-data-types.md](plan-data-types.md#interfaces).
 
 The default implementation, `TtfFontReader`, combines FreeTypeSharp (for metrics/rasterization setup) with our `TtfParser` (for tables FreeTypeSharp cannot access). Tomorrow, someone could add `WoffFontReader`, `OtfFontReader`, or any other implementation without changing the pipeline.
 
@@ -95,7 +96,9 @@ The GPOS table is the most complex parser we need. For BMFont kerning, we only n
 3. **PairPos format 2**: Class-based pair adjustments (glyph classes with shared kerning values).
 4. We need to resolve glyph IDs back to Unicode codepoints via the cmap table.
 
-We do NOT need: MarkBase, MarkLig, MarkMark, ContextPos, ChainContextPos, Extension, or GSUB lookups.
+We do NOT need: MarkBase, MarkLig, MarkMark, ContextPos, ChainContextPos, or GSUB lookups.
+
+> **Extension Lookups (Type 9)** must be supported. Extension is simply a wrapper that allows subtable offsets beyond 16 bits. Many real-world fonts wrap PairPos lookups in Extension lookups. The parser must unwrap Extension to reach the inner PairPos subtable. This is trivial: read the ExtensionSubstFormat1 header (format: uint16, extensionLookupType: uint16, extensionOffset: uint32), then parse the inner subtable at the given offset.
 
 ---
 
@@ -120,11 +123,13 @@ public class TtfParser
     public GposTable? Gpos { get; }
 
     // Convenience: merged kerning from kern + GPOS
-    public IReadOnlyDictionary<(int first, int second), int> GetKerningPairs(int unitsPerEm, int targetSize);
+    public IReadOnlyDictionary<(int first, int second), int> GetKerningPairs();
 }
 ```
 
 `TtfParser` implements the parsing logic used by `TtfFontReader` (the default `IFontReader` implementation). Each table parser is a separate class in `Bmfontier.Font.Tables`.
+
+> Merge strategy: Start with kern table pairs. Then apply GPOS pairs — if a pair exists in both kern and GPOS, GPOS takes precedence (per OpenType spec, GPOS supersedes kern). The `GetKerningPairs` method should NOT take `unitsPerEm` as a parameter — it already has access to the `head` table. Return values in font units; the caller scales to pixels.
 
 All table parsers are **lazy**: they parse on first access, not at construction time.
 
@@ -135,3 +140,39 @@ All table parsers are **lazy**: they parse on first access, not at construction 
 - TTF/OTF tables are **big-endian**. Use `BinaryPrimitives.ReadInt16BigEndian()` / `ReadUInt32BigEndian()` from `System.Buffers.Binary`.
 - Operate on `ReadOnlySpan<byte>` for zero-allocation parsing.
 - All table parsers are lazy: parse on first access, not at construction time.
+
+---
+
+## Error Handling
+
+- Missing tables: Return `null` for optional tables (`Os2Metrics?`, `NameInfo?`). `head` and `cmap` are required — throw `FontParsingException` if missing.
+- Malformed table data: Throw `FontParsingException` with the table tag and byte offset.
+- Invalid font file (bad magic number): Throw `FontParsingException("Not a valid TrueType/OpenType font")`.
+- TTC handling: `TtfParser` must handle the TTC header to locate the correct table directory offset for a given `faceIndex`. FreeTypeSharp handles this internally for its own loading.
+
+---
+
+## FreeType Memory Management
+
+- `FT_Library` and `FT_Face` are native resources requiring explicit cleanup via `IDisposable`.
+- Font data passed to `FT_New_Memory_Face` must remain pinned for the lifetime of the face. Use `GCHandle.Alloc(fontData, GCHandleType.Pinned)` and free in `Dispose()`.
+- Do NOT use `FreeTypeFaceFacade` — it has a known memory leak. Manage `FT_Library`/`FT_Face` lifecycle directly.
+- FreeType is thread-safe only with independent library+face instances per thread.
+
+---
+
+## Implementation References
+
+For byte-level table structures needed during implementation:
+
+- **Table directory / sfnt header**: See [ttf-font-reference.md](../reference/ttf-font-reference.md), "File Structure" section
+- **head table layout**: See ttf-font-reference.md, "head — Font Header" section
+- **hhea table layout**: See ttf-font-reference.md, "hhea — Horizontal Header" section
+- **hmtx table layout**: See ttf-font-reference.md, "hmtx — Horizontal Metrics" section
+- **maxp table layout**: See ttf-font-reference.md, "maxp — Maximum Profile" section
+- **OS/2 table layout**: See ttf-font-reference.md, "OS/2 — OS/2 and Windows Metrics" section
+- **name table layout**: See ttf-font-reference.md, "name — Naming Table" section
+- **cmap table (format 4, 12)**: See ttf-font-reference.md, "cmap — Character to Glyph Mapping" section
+- **kern table layout**: See ttf-font-reference.md, "kern — Kerning" section
+- **GPOS table navigation chain**: See ttf-font-reference.md, "GPOS — Glyph Positioning" section
+- **FreeTypeSharp API surface**: See [freetypesharp-evaluation.md](../reference/freetypesharp-evaluation.md)
