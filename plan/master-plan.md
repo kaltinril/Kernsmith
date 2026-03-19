@@ -94,12 +94,12 @@ Output Layer
 | Document | Description |
 |----------|-------------|
 | [Vision](bmfontier-vision.md) | Original project vision and goals |
-| [Library Comparison](font-library-comparison.md) | Evaluation of .NET font libraries |
-| [FreeTypeSharp Evaluation](freetypesharp-evaluation.md) | Detailed FreeTypeSharp capabilities and gaps |
-| [Texture Packing Reference](texture-packing-reference.md) | Rectangle packing algorithm research |
-| [BMFont Format Reference](bmfont-format-reference.md) | BMFont file format specification |
-| [TTF Font Reference](ttf-font-reference.md) | TrueType font format reference |
-| [Other Font Formats Reference](other-font-formats-reference.md) | WOFF, OTF, and other format details |
+| [Library Comparison](../reference/font-library-comparison.md) | Evaluation of .NET font libraries |
+| [FreeTypeSharp Evaluation](../reference/freetypesharp-evaluation.md) | Detailed FreeTypeSharp capabilities and gaps |
+| [Texture Packing Reference](../reference/texture-packing-reference.md) | Rectangle packing algorithm research |
+| [BMFont Format Reference](../reference/bmfont-format-reference.md) | BMFont file format specification |
+| [TTF Font Reference](../reference/ttf-font-reference.md) | TrueType font format reference |
+| [Other Font Formats Reference](../reference/other-font-formats-reference.md) | WOFF, OTF, and other format details |
 
 ---
 

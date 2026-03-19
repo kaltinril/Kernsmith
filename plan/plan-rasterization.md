@@ -166,4 +166,4 @@ In `BmFont.Generate()`, the rasterizer is wrapped in a `using` block:
 using var rasterizer = options.Rasterizer ?? new FreeTypeRasterizer();
 ```
 
-**Important**: FreeTypeSharp's `FreeTypeFaceFacade` has a potential memory leak (noted in the [FreeTypeSharp Evaluation](freetypesharp-evaluation.md)). We manage the FreeType library and face lifecycle ourselves rather than relying on the facade.
+**Important**: FreeTypeSharp's `FreeTypeFaceFacade` has a potential memory leak (noted in the [FreeTypeSharp Evaluation](../reference/freetypesharp-evaluation.md)). We manage the FreeType library and face lifecycle ourselves rather than relying on the facade.

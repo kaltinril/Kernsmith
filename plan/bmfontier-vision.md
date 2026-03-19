@@ -137,6 +137,6 @@ The NuGet package is the foundation. Others can build:
 
 ## Related References
 
-- [BMFont Format Reference](bmfont-format-reference.md)
-- [TTF Font Reference](ttf-font-reference.md)
-- [Other Font Formats Reference](other-font-formats-reference.md)
+- [BMFont Format Reference](../reference/bmfont-format-reference.md)
+- [TTF Font Reference](../reference/ttf-font-reference.md)
+- [Other Font Formats Reference](../reference/other-font-formats-reference.md)
