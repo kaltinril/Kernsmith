@@ -11,6 +11,8 @@ public sealed record RasterOptions
     public bool Bold { get; init; }
     public bool Italic { get; init; }
     public bool Sdf { get; init; }
+    public bool ColorFont { get; init; }
+    public int ColorPaletteIndex { get; init; }
     public Dictionary<string, float>? VariationAxes { get; init; }
 
     /// <summary>
@@ -26,6 +28,8 @@ public sealed record RasterOptions
             Bold = options.Bold,
             Italic = options.Italic,
             Sdf = options.Sdf,
+            ColorFont = options.ColorFont,
+            ColorPaletteIndex = options.ColorPaletteIndex,
             VariationAxes = options.VariationAxes
         };
     }

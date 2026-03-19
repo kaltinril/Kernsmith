@@ -4,9 +4,22 @@ namespace Bmfontier.Font;
 
 internal class TtfFontReader : IFontReader
 {
+    /// <summary>
+    /// Optional codepoint filter hint. When set, the parser will only include
+    /// cmap entries for these codepoints and skip irrelevant kerning pairs.
+    /// </summary>
+    internal HashSet<int>? RequestedCodepoints { get; set; }
+
+    /// <summary>
+    /// When set, the parser uses this shared byte array instead of copying from the span.
+    /// </summary>
+    internal byte[]? SharedFontBytes { get; set; }
+
     public FontInfo ReadFont(ReadOnlySpan<byte> fontData, int faceIndex = 0)
     {
-        var parser = new TtfParser(fontData, faceIndex);
+        var parser = SharedFontBytes != null
+            ? new TtfParser(SharedFontBytes, faceIndex, RequestedCodepoints)
+            : new TtfParser(fontData, faceIndex, RequestedCodepoints);
 
         // Build reverse cmap: glyphIndex -> lowest codepoint
         var glyphToCodepoint = new Dictionary<int, int>();
@@ -80,6 +93,7 @@ internal class TtfFontReader : IFontReader
             Names = parser.Names,
             VariationAxes = parser.VariationAxes,
             NamedInstances = parser.NamedInstances,
+            HasColorGlyphs = parser.HasColorGlyphs,
         };
     }
 }

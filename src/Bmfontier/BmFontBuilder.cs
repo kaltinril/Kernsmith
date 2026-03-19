@@ -59,6 +59,8 @@ public sealed class BmFontBuilder
     public BmFontBuilder WithDpi(int dpi) { _options.Dpi = dpi; return this; }
     public BmFontBuilder WithFaceIndex(int faceIndex) { _options.FaceIndex = faceIndex; return this; }
     public BmFontBuilder WithChannelPacking(bool channelPacking = true) { _options.ChannelPacking = channelPacking; return this; }
+    public BmFontBuilder WithColorFont(bool colorFont = true) { _options.ColorFont = colorFont; return this; }
+    public BmFontBuilder WithColorPaletteIndex(int index) { _options.ColorPaletteIndex = index; return this; }
     public BmFontBuilder WithVariationAxis(string tag, float value)
     {
         _options.VariationAxes ??= new Dictionary<string, float>();

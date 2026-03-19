@@ -26,6 +26,15 @@ public static class BmFont
 
         // 1. Parse font
         var fontReader = options.FontReader ?? new TtfFontReader();
+
+        // When using the built-in reader, pass codepoint hints for subsetting
+        // and share the font byte array to avoid a second copy for FreeType.
+        if (fontReader is TtfFontReader ttfReader)
+        {
+            ttfReader.RequestedCodepoints = options.Characters.GetCodepointsHashSet();
+            ttfReader.SharedFontBytes = fontData;
+        }
+
         var fontInfo = fontReader.ReadFont(fontData, options.FaceIndex);
 
         // 2. Resolve character set
@@ -35,14 +44,28 @@ public static class BmFont
         var rasterizer = options.Rasterizer ?? new FreeTypeRasterizer();
         try
         {
+            // Guard: channel packing is incompatible with color fonts.
+            if (options.ChannelPacking && options.ColorFont)
+                throw new InvalidOperationException(
+                    "Channel packing and color font rendering cannot be used together. " +
+                    "Color glyphs are RGBA and cannot be packed into individual channels.");
+
             rasterizer.LoadFont(fontData, options.FaceIndex);
 
             // Apply variable font axes if the user specified any and the font has fvar data.
-            if (rasterizer is FreeTypeRasterizer ftRasterizer
-                && options.VariationAxes is { Count: > 0 }
-                && fontInfo.VariationAxes is { Count: > 0 })
+            if (rasterizer is FreeTypeRasterizer ftRasterizer)
             {
-                ftRasterizer.SetVariationAxes(fontInfo.VariationAxes, options.VariationAxes);
+                if (options.VariationAxes is { Count: > 0 }
+                    && fontInfo.VariationAxes is { Count: > 0 })
+                {
+                    ftRasterizer.SetVariationAxes(fontInfo.VariationAxes, options.VariationAxes);
+                }
+
+                // Select a non-default color palette for CPAL-based color fonts.
+                if (options.ColorFont && options.ColorPaletteIndex != 0)
+                {
+                    ftRasterizer.SelectColorPalette(options.ColorPaletteIndex);
+                }
             }
 
             var rasterOptions = RasterOptions.FromGeneratorOptions(options);

@@ -13,6 +13,11 @@ internal static class AtlasBuilder
         var pageWidth = packResult.PageWidth;
         var pageHeight = packResult.PageHeight;
 
+        // Detect if any glyph is RGBA — if so, all pages use RGBA (4 bpp).
+        var hasRgba = glyphs.Any(g => g.Format == PixelFormat.Rgba32);
+        var bpp = hasRgba ? 4 : 1;
+        var pageFormat = hasRgba ? PixelFormat.Rgba32 : PixelFormat.Grayscale8;
+
         // Build a lookup from glyph Id (codepoint) to the rasterized glyph.
         var glyphById = new Dictionary<int, RasterizedGlyph>();
         foreach (var g in glyphs)
@@ -33,8 +38,7 @@ internal static class AtlasBuilder
         var pages = new List<AtlasPage>();
         for (var pageIndex = 0; pageIndex < packResult.PageCount; pageIndex++)
         {
-            // Allocate page buffer (Grayscale8 = 1 byte per pixel).
-            var pixelData = new byte[pageWidth * pageHeight];
+            var pixelData = new byte[pageWidth * pageHeight * bpp];
 
             if (placementsByPage.TryGetValue(pageIndex, out var pagePlacements))
             {
@@ -49,19 +53,61 @@ internal static class AtlasBuilder
                     var destX = placement.X + padding.Left;
                     var destY = placement.Y + padding.Up;
 
-                    // Copy glyph bitmap row-by-row into the page buffer.
-                    for (var row = 0; row < glyph.Height; row++)
+                    if (hasRgba && glyph.Format == PixelFormat.Rgba32)
                     {
-                        var srcOffset = row * glyph.Pitch;
-                        var dstOffset = (destY + row) * pageWidth + destX;
+                        // RGBA glyph onto RGBA page: copy 4 bytes per pixel.
+                        for (var row = 0; row < glyph.Height; row++)
+                        {
+                            var srcOffset = row * glyph.Pitch;
+                            var dstOffset = ((destY + row) * pageWidth + destX) * 4;
+                            var rowBytes = glyph.Width * 4;
 
-                        // Bounds check to avoid overflows.
-                        if (dstOffset < 0 || dstOffset + glyph.Width > pixelData.Length)
-                            continue;
-                        if (srcOffset + glyph.Width > glyph.BitmapData.Length)
-                            continue;
+                            if (dstOffset < 0 || dstOffset + rowBytes > pixelData.Length)
+                                continue;
+                            if (srcOffset + rowBytes > glyph.BitmapData.Length)
+                                continue;
 
-                        Array.Copy(glyph.BitmapData, srcOffset, pixelData, dstOffset, glyph.Width);
+                            Array.Copy(glyph.BitmapData, srcOffset, pixelData, dstOffset, rowBytes);
+                        }
+                    }
+                    else if (hasRgba)
+                    {
+                        // Grayscale glyph onto RGBA page: promote to (255, 255, 255, alpha).
+                        for (var row = 0; row < glyph.Height; row++)
+                        {
+                            for (var col = 0; col < glyph.Width; col++)
+                            {
+                                var srcIdx = row * glyph.Pitch + col;
+                                if (srcIdx >= glyph.BitmapData.Length)
+                                    continue;
+
+                                var dstIdx = ((destY + row) * pageWidth + destX + col) * 4;
+                                if (dstIdx < 0 || dstIdx + 3 >= pixelData.Length)
+                                    continue;
+
+                                var alpha = glyph.BitmapData[srcIdx];
+                                pixelData[dstIdx + 0] = 255;
+                                pixelData[dstIdx + 1] = 255;
+                                pixelData[dstIdx + 2] = 255;
+                                pixelData[dstIdx + 3] = alpha;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Grayscale glyph onto grayscale page: copy 1 byte per pixel.
+                        for (var row = 0; row < glyph.Height; row++)
+                        {
+                            var srcOffset = row * glyph.Pitch;
+                            var dstOffset = (destY + row) * pageWidth + destX;
+
+                            if (dstOffset < 0 || dstOffset + glyph.Width > pixelData.Length)
+                                continue;
+                            if (srcOffset + glyph.Width > glyph.BitmapData.Length)
+                                continue;
+
+                            Array.Copy(glyph.BitmapData, srcOffset, pixelData, dstOffset, glyph.Width);
+                        }
                     }
                 }
             }
@@ -72,7 +118,7 @@ internal static class AtlasBuilder
                 Width = pageWidth,
                 Height = pageHeight,
                 PixelData = pixelData,
-                Format = PixelFormat.Grayscale8
+                Format = pageFormat
             };
             page.SetEncoder(encoder);
             pages.Add(page);

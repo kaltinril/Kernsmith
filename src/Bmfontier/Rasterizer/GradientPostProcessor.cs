@@ -54,6 +54,10 @@ public sealed class GradientPostProcessor : IGlyphPostProcessor
 
     public RasterizedGlyph Process(RasterizedGlyph glyph)
     {
+        // Skip RGBA glyphs (e.g., color emoji) — they already have color data.
+        if (glyph.Format == PixelFormat.Rgba32)
+            return glyph;
+
         if (glyph.Width == 0 || glyph.Height == 0)
             return glyph;
 

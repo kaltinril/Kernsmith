@@ -23,4 +23,9 @@ public sealed class FontInfo
     public NameInfo? Names { get; init; }
     public IReadOnlyList<VariationAxis>? VariationAxes { get; init; }
     public IReadOnlyList<NamedInstance>? NamedInstances { get; init; }
+
+    /// <summary>
+    /// True if the font contains color glyph tables (COLR, sbix, or CBDT).
+    /// </summary>
+    public bool HasColorGlyphs { get; init; }
 }

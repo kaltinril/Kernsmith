@@ -16,6 +16,10 @@ public sealed class OutlinePostProcessor : IGlyphPostProcessor
 
     public RasterizedGlyph Process(RasterizedGlyph glyph)
     {
+        // Skip RGBA glyphs (e.g., color emoji) — outline operates on grayscale data only.
+        if (glyph.Format == PixelFormat.Rgba32)
+            return glyph;
+
         if (_outlineWidth <= 0 || glyph.BitmapData.Length == 0)
             return glyph;
 

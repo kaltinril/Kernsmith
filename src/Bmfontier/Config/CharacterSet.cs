@@ -114,6 +114,11 @@ public class CharacterSet
     public int Count => _codepoints.Count;
 
     /// <summary>
+    /// Returns the internal codepoint set for use as a filter hint during parsing.
+    /// </summary>
+    internal HashSet<int> GetCodepointsHashSet() => _codepoints;
+
+    /// <summary>
     /// Returns only the codepoints that exist in both this set and the available codepoints list (intersection).
     /// This filters the character set to only glyphs the font actually has.
     /// </summary>

@@ -35,6 +35,21 @@ internal sealed class FreeTypeRasterizer : IRasterizer
     }
 
     /// <summary>
+    /// Selects a color palette by index for CPAL-based color fonts.
+    /// Must be called after <see cref="LoadFont"/> and before rasterization.
+    /// </summary>
+    /// <param name="paletteIndex">Zero-based palette index.</param>
+    internal unsafe void SelectColorPalette(int paletteIndex)
+    {
+        if (_face == null)
+            throw new InvalidOperationException("Font not loaded. Call LoadFont first.");
+
+        var error = FreeTypeNative.FT_Palette_Select(_face, (ushort)paletteIndex, IntPtr.Zero);
+        if (error != FT_Error.FT_Err_Ok)
+            throw new FreeTypeException(error);
+    }
+
+    /// <summary>
     /// Applies variation axis coordinates to the loaded face for variable fonts.
     /// Must be called after <see cref="LoadFont"/> and before rasterization.
     /// </summary>
@@ -93,7 +108,9 @@ internal sealed class FreeTypeRasterizer : IRasterizer
             return null; // Missing glyph
 
         // Determine load flags based on anti-alias mode.
-        var loadFlags = FT_LOAD.FT_LOAD_DEFAULT;
+        var loadFlags = options.ColorFont
+            ? (FT_LOAD)FreeTypeNative.FT_LOAD_COLOR
+            : FT_LOAD.FT_LOAD_DEFAULT;
 
         // Load the glyph.
         error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
@@ -160,6 +177,13 @@ internal sealed class FreeTypeRasterizer : IRasterizer
             {
                 Marshal.Copy(src + row * pitch, bitmapData, row * absPitch, absPitch);
             }
+        }
+
+        // Swap BGRA to RGBA when FreeType returns a color bitmap.
+        if (bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_BGRA)
+        {
+            for (var i = 0; i < bitmapData.Length; i += 4)
+                (bitmapData[i], bitmapData[i + 2]) = (bitmapData[i + 2], bitmapData[i]);
         }
 
         // Determine pixel format based on the FreeType pixel mode.

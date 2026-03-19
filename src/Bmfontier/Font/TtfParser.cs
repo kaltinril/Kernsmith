@@ -14,7 +14,8 @@ internal class TtfParser
 
     private readonly ReadOnlyMemory<byte> _data;
     private readonly Dictionary<uint, (int offset, int length)> _tables = new();
-    private int[] _advanceWidths = Array.Empty<int>();
+    private readonly HashSet<int>? _requestedCodepoints;
+    private HashSet<int>? _relevantGlyphIndices;
 
     public HeadTable? Head { get; private set; }
     public HheaTable? Hhea { get; private set; }
@@ -26,9 +27,15 @@ internal class TtfParser
     public IReadOnlyList<VariationAxis>? VariationAxes { get; private set; }
     public IReadOnlyList<NamedInstance>? NamedInstances { get; private set; }
 
-    public TtfParser(ReadOnlySpan<byte> fontData, int faceIndex = 0)
+    /// <summary>
+    /// True if the font's table directory contains COLR, sbix, or CBDT tables.
+    /// </summary>
+    public bool HasColorGlyphs { get; private set; }
+
+    public TtfParser(ReadOnlySpan<byte> fontData, int faceIndex = 0, HashSet<int>? requestedCodepoints = null)
     {
         _data = fontData.ToArray();
+        _requestedCodepoints = requestedCodepoints;
 
         ParseTableDirectory(fontData, faceIndex);
         ParseHead();
@@ -42,8 +49,40 @@ internal class TtfParser
         ParseFvar();
     }
 
+    /// <summary>
+    /// Creates a parser that shares an existing byte array (avoids an extra copy).
+    /// </summary>
+    internal TtfParser(byte[] fontBytes, int faceIndex, HashSet<int>? requestedCodepoints)
+    {
+        _data = fontBytes;
+        _requestedCodepoints = requestedCodepoints;
+
+        ParseTableDirectory(fontBytes, faceIndex);
+        ParseHead();
+        ParseHhea();
+        ParseHmtx();
+        ParseOs2();
+        ParseName();
+        ParseCmap();
+        ParseKern();
+        ParseGpos();
+        ParseFvar();
+        DetectColorTables();
+    }
+
     private static uint Tag(char a, char b, char c, char d) =>
         (uint)(a << 24 | b << 16 | c << 8 | d);
+
+    /// <summary>
+    /// Checks whether the table directory contains any color glyph tables (COLR, sbix, CBDT).
+    /// </summary>
+    private void DetectColorTables()
+    {
+        HasColorGlyphs =
+            _tables.ContainsKey(Tag('C', 'O', 'L', 'R')) ||
+            _tables.ContainsKey(Tag('s', 'b', 'i', 'x')) ||
+            _tables.ContainsKey(Tag('C', 'B', 'D', 'T'));
+    }
 
     private ReadOnlySpan<byte> GetTable(uint tag)
     {
@@ -132,40 +171,13 @@ internal class TtfParser
     }
 
     // 2D: hmtx Table
+    // Note: advance widths are not stored — FreeType provides per-glyph metrics at rasterization time.
+    // This method is kept as a no-op placeholder; the hmtx table is validated implicitly by FreeType.
     private void ParseHmtx()
     {
-        if (Hhea is null)
-            return;
-
-        var table = GetTable(Tag('h', 'm', 't', 'x'));
-        if (table.IsEmpty)
-            return;
-
-        var numHMetrics = Hhea.NumberOfHMetrics;
-        // Total glyphs can be inferred from maxp, but we only need advanceWidths for numHMetrics
-        // plus any remaining glyphs that reuse the last width.
-        var totalRecordBytes = numHMetrics * 4;
-        if (table.Length < totalRecordBytes)
-            return;
-
-        // Determine total glyph count from remaining data
-        var remainingBytes = table.Length - totalRecordBytes;
-        var remainingGlyphs = remainingBytes / 2; // each remaining entry is just int16 lsb
-        var totalGlyphs = numHMetrics + remainingGlyphs;
-
-        _advanceWidths = new int[totalGlyphs];
-        int lastWidth = 0;
-
-        for (var i = 0; i < numHMetrics; i++)
-        {
-            lastWidth = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(i * 4));
-            _advanceWidths[i] = lastWidth;
-        }
-
-        for (var i = numHMetrics; i < totalGlyphs; i++)
-        {
-            _advanceWidths[i] = lastWidth;
-        }
+        // Intentionally empty: advance widths were previously parsed and stored in _advanceWidths
+        // but never consumed after parsing. FreeType provides accurate advance widths via
+        // FT_Load_Glyph, so we skip this work entirely.
     }
 
     // 2E: OS/2 Table
@@ -505,9 +517,13 @@ internal class TtfParser
             throw new FontParsingException("cmap", bestOffset, $"Unsupported cmap format {format}.");
 
         CmapTable = new ReadOnlyDictionary<int, int>(cmap);
+
+        // Build relevant glyph index set for kern/GPOS filtering when subsetting is active.
+        if (_requestedCodepoints != null)
+            _relevantGlyphIndices = new HashSet<int>(cmap.Values);
     }
 
-    private static void ParseCmapFormat12(ReadOnlySpan<byte> subtable, Dictionary<int, int> cmap)
+    private void ParseCmapFormat12(ReadOnlySpan<byte> subtable, Dictionary<int, int> cmap)
     {
         if (subtable.Length < 16)
             return;
@@ -526,12 +542,14 @@ internal class TtfParser
 
             for (var c = startCharCode; c <= endCharCode; c++)
             {
+                if (_requestedCodepoints != null && !_requestedCodepoints.Contains(c))
+                    continue;
                 cmap[c] = startGlyphID + (c - startCharCode);
             }
         }
     }
 
-    private static void ParseCmapFormat4(ReadOnlySpan<byte> subtable, Dictionary<int, int> cmap)
+    private void ParseCmapFormat4(ReadOnlySpan<byte> subtable, Dictionary<int, int> cmap)
     {
         if (subtable.Length < 14)
             return;
@@ -579,7 +597,11 @@ internal class TtfParser
                 }
 
                 if (glyphIndex != 0)
+                {
+                    if (_requestedCodepoints != null && !_requestedCodepoints.Contains(c))
+                        continue;
                     cmap[c] = glyphIndex;
+                }
             }
         }
     }
@@ -645,7 +667,12 @@ internal class TtfParser
                     var value = BinaryPrimitives.ReadInt16BigEndian(table.Slice(entryOffset + 4));
 
                     if (value != 0)
+                    {
+                        if (_relevantGlyphIndices != null &&
+                            (!_relevantGlyphIndices.Contains(left) || !_relevantGlyphIndices.Contains(right)))
+                            continue;
                         pairs.Add(new KerningPair(left, right, value));
+                    }
                 }
             }
 
@@ -763,7 +790,7 @@ internal class TtfParser
         return result;
     }
 
-    private static void ParsePairPos(ReadOnlySpan<byte> subtable, List<KerningPair> pairs)
+    private void ParsePairPos(ReadOnlySpan<byte> subtable, List<KerningPair> pairs)
     {
         if (subtable.Length < 10)
             return;
@@ -782,7 +809,7 @@ internal class TtfParser
             ParsePairPosFormat2(subtable, coverageOffset, valueFormat1, valueRecord1Size, valueRecord2Size, pairs);
     }
 
-    private static void ParsePairPosFormat1(
+    private void ParsePairPosFormat1(
         ReadOnlySpan<byte> subtable, int coverageOffset,
         int valueFormat1, int valueRecord1Size, int valueRecord2Size,
         List<KerningPair> pairs)
@@ -831,12 +858,17 @@ internal class TtfParser
                 var xAdvance = ReadXAdvanceFromValueRecord(pairSet.Slice(recOffset + 2), valueFormat1);
 
                 if (xAdvance != 0)
+                {
+                    if (_relevantGlyphIndices != null &&
+                        (!_relevantGlyphIndices.Contains(firstGlyph) || !_relevantGlyphIndices.Contains(secondGlyph)))
+                        continue;
                     pairs.Add(new KerningPair(firstGlyph, secondGlyph, xAdvance));
+                }
             }
         }
     }
 
-    private static void ParsePairPosFormat2(
+    private void ParsePairPosFormat2(
         ReadOnlySpan<byte> subtable, int coverageOffset,
         int valueFormat1, int valueRecord1Size, int valueRecord2Size,
         List<KerningPair> pairs)
@@ -906,8 +938,12 @@ internal class TtfParser
 
                 foreach (var left in leftGlyphs)
                 {
+                    if (_relevantGlyphIndices != null && !_relevantGlyphIndices.Contains(left))
+                        continue;
                     foreach (var right in rightGlyphs)
                     {
+                        if (_relevantGlyphIndices != null && !_relevantGlyphIndices.Contains(right))
+                            continue;
                         pairs.Add(new KerningPair(left, right, xAdvance));
                     }
                 }
