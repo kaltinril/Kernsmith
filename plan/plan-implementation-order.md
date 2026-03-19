@@ -250,7 +250,24 @@ Phase 2 complete
 | Phase 1 — MVP        | 28 tasks | 6 (Group A)        | 5 groups deep (A→B→D→F→G)            |
 | Phase 2 — Complete   | 14 tasks | 7 (Groups H+I+J)  | 3 groups deep (H/I/J→K→L)            |
 | Phase 3 — Ecosystem  | 10 tasks | 6 (Groups M+N+O)  | 2 groups deep (M/N/O→P)              |
-| **Total**            | **52 tasks** |                |                                       |
+| Phase 4 — Deferred   | 10 tasks | 5 (Group Q)    | 2 groups deep (Q→R)                  |
+| **Total**            | **62 tasks** |                |                                       |
+
+## Future Phases (planned, not yet broken into tasks)
+
+### Phase 5 — Full CLI Tool
+
+Production-ready CLI that replaces BMFont.exe. Config file support (.bmfc), inspect/convert/info commands, .NET global tool packaging.
+
+See **[plan-cli.md](plan-cli.md)** for full specification and task breakdown (Phases A-D).
+
+### Phase 6 — BMFont Parity Features
+
+15 features from BMFont.exe not yet implemented: separate texture W/H, per-channel configuration, TGA/DDS output, super sampling, fallback glyph, hinting toggle, force offsets to zero, equalize cell heights, height stretch, autofit texture size, custom glyph images, failed character reporting.
+
+See **[plan-bmfont-parity.md](plan-bmfont-parity.md)** for prioritized feature list with implementation details.
+
+---
 
 ## Critical Path (Phase 1)
 
