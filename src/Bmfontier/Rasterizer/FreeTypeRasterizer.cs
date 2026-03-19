@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Bmfontier.Font.Models;
+using Bmfontier.Font.Tables;
 using FreeTypeSharp;
 
 namespace Bmfontier.Rasterizer;
@@ -31,17 +32,48 @@ internal sealed class FreeTypeRasterizer : IRasterizer
             throw new FreeTypeException(error);
 
         _face = face;
+    }
 
-        // TODO: Set variation axes if specified.
-        // FreeTypeSharp does not currently expose FT_Set_Var_Design_Coordinates.
-        // When it does (or via custom P/Invoke), this is where we would call it:
-        //
-        //   if (variationAxes != null && variationAxes.Count > 0)
-        //   {
-        //       // FT_Set_Var_Design_Coordinates takes an array of FT_Fixed (int32, 16.16 format).
-        //       // Each coordinate = (int)(value * 65536.0f)
-        //       // The array must be ordered by axis index from the fvar table.
-        //   }
+    /// <summary>
+    /// Applies variation axis coordinates to the loaded face for variable fonts.
+    /// Must be called after <see cref="LoadFont"/> and before rasterization.
+    /// </summary>
+    /// <param name="fvarAxes">The axes defined in the font's fvar table, in order.</param>
+    /// <param name="userAxes">User-specified axis tag/value pairs (e.g., "wght" = 700).</param>
+    internal unsafe void SetVariationAxes(
+        IReadOnlyList<VariationAxis> fvarAxes,
+        Dictionary<string, float> userAxes)
+    {
+        if (_face == null)
+            throw new InvalidOperationException("Font not loaded. Call LoadFont first.");
+
+        if (fvarAxes.Count == 0)
+            return;
+
+        // Build the coordinate array in fvar axis order.
+        // Axes not specified by the user get their default value.
+        // FT_Fixed is a 16.16 fixed-point integer: value * 65536.
+        var numAxes = fvarAxes.Count;
+        var coords = stackalloc int[numAxes];
+
+        for (var i = 0; i < numAxes; i++)
+        {
+            var axis = fvarAxes[i];
+            var value = userAxes.TryGetValue(axis.Tag, out var userValue)
+                ? userValue
+                : axis.DefaultValue;
+
+            // Clamp to the axis range.
+            value = Math.Clamp(value, axis.MinValue, axis.MaxValue);
+
+            coords[i] = (int)(value * 65536.0f);
+        }
+
+        var error = FreeTypeNative.FT_Set_Var_Design_Coordinates(
+            _face, (uint)numAxes, coords);
+
+        if (error != FT_Error.FT_Err_Ok)
+            throw new FreeTypeException(error);
     }
 
     public unsafe RasterizedGlyph? RasterizeGlyph(int codepoint, RasterOptions options)

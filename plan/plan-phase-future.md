@@ -15,8 +15,8 @@ Items that were not completed during Phase 3 (Ecosystem).
 |-------------|------|-------------|-------|
 | 13B | **Color font support** | COLRv0/CPAL layer rendering, sbix bitmap extraction, CBDT/CBLC bitmap extraction | Three separate implementations. High effort, low priority. |
 | 13C | **Font subsetting** | Strip unused glyphs from font data before processing (reduces memory for large CJK fonts) | Medium effort. Important for CJK workflows. |
-| 15C | **NuGet publishing CI** | Configure CI for NuGet pack + push, README, package icon | A `publish.yml` workflow exists but may need verification and finalization. |
-| 16C | **Tests: CLI** | End-to-end CLI invocation tests | Depends on the reference CLI tool (15A, complete). |
+| ~~15C~~ | ~~**NuGet publishing CI**~~ | ~~Configure CI for NuGet pack + push, README, package icon~~ | **DONE** — publish.yml updated, .csproj metadata added, README created. |
+| ~~16C~~ | ~~**Tests: CLI**~~ | ~~End-to-end CLI invocation tests~~ | **DONE** — 20 tests in `tests/Bmfontier.Tests/Cli/CliTests.cs`. |
 
 ---
 
@@ -26,8 +26,8 @@ Items that were not completed during Phase 4 (Deferred / Future).
 
 | Original ID | Task | Description | Notes |
 |-------------|------|-------------|-------|
-| 17B | **Variable font axis API** | Expose axes on FontInfo, add `Dictionary<string, float> VariationAxes` to FontGeneratorOptions, call `FT_Set_Var_Design_Coordinates` in FreeTypeRasterizer before rendering | **Blocked**: FreeTypeSharp lacks `FT_Set_Var_Design_Coordinates` binding. fvar table parsing (17A) is complete. |
-| 18A | **Tests: variable fonts** | Load a variable font, set weight axis, verify different rasterization output | Depends on 17B. Blocked until axis application is unblocked. |
+| ~~17B~~ | ~~**Variable font axis API**~~ | ~~Call `FT_Set_Var_Design_Coordinates` in FreeTypeRasterizer before rendering~~ | **DONE** — Custom P/Invoke in `FreeTypeNative.cs`, axis application in `FreeTypeRasterizer.SetVariationAxes()`. |
+| ~~18A~~ | ~~**Tests: variable fonts**~~ | ~~Load a variable font, set weight axis, verify different rasterization output~~ | **DONE** — 7 passing + 10 ready for variable font fixture in `VariableFontTests.cs`. |
 
 ---
 

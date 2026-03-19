@@ -36,6 +36,15 @@ public static class BmFont
         try
         {
             rasterizer.LoadFont(fontData, options.FaceIndex);
+
+            // Apply variable font axes if the user specified any and the font has fvar data.
+            if (rasterizer is FreeTypeRasterizer ftRasterizer
+                && options.VariationAxes is { Count: > 0 }
+                && fontInfo.VariationAxes is { Count: > 0 })
+            {
+                ftRasterizer.SetVariationAxes(fontInfo.VariationAxes, options.VariationAxes);
+            }
+
             var rasterOptions = RasterOptions.FromGeneratorOptions(options);
             var glyphs = rasterizer.RasterizeAll(codepoints, rasterOptions).ToList();
 
