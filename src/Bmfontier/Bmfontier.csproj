@@ -11,6 +11,9 @@
     <Authors>bmfontier contributors</Authors>
     <Description>Generate BMFont bitmap font atlases from TTF/OTF files</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageTags>bmfont;bitmap-font;font;atlas;texture-packing;game-dev</PackageTags>
+    <RepositoryUrl>https://github.com/user/bmfontier</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>

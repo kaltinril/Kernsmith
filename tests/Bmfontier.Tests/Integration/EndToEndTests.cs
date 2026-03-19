@@ -280,6 +280,71 @@ public class EndToEndTests
     }
 
     [Fact]
+    public void Generate_WithChannelPacking_ProducesRgbaAtlas()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.Ascii,
+            ChannelPacking = true
+        });
+
+        // Assert — Atlas pages should be RGBA
+        result.Pages[0].Format.Should().Be(PixelFormat.Rgba32);
+
+        // Pixel data should be 4x the size of a grayscale atlas
+        result.Pages[0].PixelData.Length.Should().Be(
+            result.Pages[0].Width * result.Pages[0].Height * 4);
+
+        // Characters should have individual channel assignments (1, 2, 4, or 8), not 15
+        result.Model.Characters.Should().Contain(c => c.Channel == 1 || c.Channel == 2 || c.Channel == 4 || c.Channel == 8);
+        result.Model.Characters.Should().NotContain(c => c.Channel == 15);
+
+        // Common block should indicate packed
+        result.Model.Common.Packed.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Builder_WithChannelPacking_Works()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Builder()
+            .WithFont(fontData)
+            .WithSize(24)
+            .WithCharacters(CharacterSet.Ascii)
+            .WithChannelPacking()
+            .Build();
+
+        // Assert
+        result.Model.Common.Packed.Should().BeTrue();
+        result.Model.Characters.Should().HaveCountGreaterThan(0);
+    }
+
+    [Fact]
+    public void Builder_WithSkylinePacker_Works()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Builder()
+            .WithFont(fontData)
+            .WithSize(32)
+            .WithPackingAlgorithm(PackingAlgorithm.Skyline)
+            .Build();
+
+        // Assert
+        result.Model.Characters.Should().HaveCountGreaterThan(0);
+    }
+
+    [Fact]
     public void Generate_WithOutline_ProducesLargerGlyphs()
     {
         // Arrange

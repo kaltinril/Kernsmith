@@ -14,7 +14,8 @@ internal static class BmFontModelBuilder
         FontInfo fontInfo,
         IReadOnlyList<RasterizedGlyph> glyphs,
         PackResult packResult,
-        FontGeneratorOptions options)
+        FontGeneratorOptions options,
+        IReadOnlyDictionary<int, int>? glyphChannels = null)
     {
         var info = new InfoBlock(
             Face: fontInfo.FamilyName,
@@ -33,12 +34,20 @@ internal static class BmFontModelBuilder
         int lineHeight = (int)Math.Ceiling((double)fontInfo.LineHeight * options.Size / fontInfo.UnitsPerEm);
         int baseLine = (int)Math.Ceiling((double)fontInfo.Ascender * options.Size / fontInfo.UnitsPerEm);
 
+        // When channel packing is enabled, mark the font as packed and indicate
+        // that each channel holds glyph data (value 0 = glyph data per BMFont spec).
+        var packed = options.ChannelPacking;
         var common = new CommonBlock(
             LineHeight: lineHeight,
             Base: baseLine,
             ScaleW: packResult.PageWidth,
             ScaleH: packResult.PageHeight,
-            Pages: packResult.PageCount);
+            Pages: packResult.PageCount,
+            Packed: packed,
+            AlphaChnl: packed ? 0 : 0,
+            RedChnl: packed ? 0 : 0,
+            GreenChnl: packed ? 0 : 0,
+            BlueChnl: packed ? 0 : 0);
 
         var pages = new List<PageEntry>();
         for (int i = 0; i < packResult.PageCount; i++)
@@ -57,6 +66,8 @@ internal static class BmFontModelBuilder
             if (!placementById.TryGetValue(glyph.Codepoint, out var placement))
                 continue;
 
+            var channel = glyphChannels != null && glyphChannels.TryGetValue(glyph.Codepoint, out var ch) ? ch : 15;
+
             characters.Add(new CharEntry(
                 Id: glyph.Codepoint,
                 X: placement.X,
@@ -67,7 +78,7 @@ internal static class BmFontModelBuilder
                 YOffset: baseLine - glyph.Metrics.BearingY,
                 XAdvance: glyph.Metrics.Advance,
                 Page: placement.PageIndex,
-                Channel: 15));
+                Channel: channel));
         }
 
         // Build kerning pairs, filtering to glyphs in the generated set.

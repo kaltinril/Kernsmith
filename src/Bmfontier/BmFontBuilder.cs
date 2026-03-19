@@ -58,6 +58,7 @@ public sealed class BmFontBuilder
     public BmFontBuilder WithPowerOfTwo(bool powerOfTwo = true) { _options.PowerOfTwo = powerOfTwo; return this; }
     public BmFontBuilder WithDpi(int dpi) { _options.Dpi = dpi; return this; }
     public BmFontBuilder WithFaceIndex(int faceIndex) { _options.FaceIndex = faceIndex; return this; }
+    public BmFontBuilder WithChannelPacking(bool channelPacking = true) { _options.ChannelPacking = channelPacking; return this; }
 
     public BmFontBuilder WithRasterizer(IRasterizer rasterizer) { _options.Rasterizer = rasterizer; return this; }
     public BmFontBuilder WithPacker(IAtlasPacker packer) { _options.Packer = packer; return this; }

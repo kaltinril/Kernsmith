@@ -20,6 +20,10 @@ public static class BmFont
     {
         options ??= new FontGeneratorOptions();
 
+        // 0. Auto-detect and decompress WOFF/WOFF2 to standard sfnt
+        if (WoffDecompressor.IsWoff(fontData) || WoffDecompressor.IsWoff2(fontData))
+            fontData = WoffDecompressor.Decompress(fontData);
+
         // 1. Parse font
         var fontReader = options.FontReader ?? new TtfFontReader();
         var fontInfo = fontReader.ReadFont(fontData, options.FaceIndex);
@@ -43,7 +47,9 @@ public static class BmFont
             }
 
             // 5. Pack into atlas
-            var packer = options.Packer ?? new MaxRectsPacker();
+            var packer = options.Packer ?? (options.PackingAlgorithm == PackingAlgorithm.Skyline
+                ? new SkylinePacker()
+                : new MaxRectsPacker());
             var padding = options.Padding;
             var spacing = options.Spacing;
             var glyphRects = glyphs.Select(g => new GlyphRect(
@@ -60,10 +66,22 @@ public static class BmFont
 
             // 6. Build atlas pages
             var encoder = options.AtlasEncoder ?? new StbPngEncoder();
-            var pages = AtlasBuilder.Build(glyphs, packResult, padding, encoder);
+            IReadOnlyList<AtlasPage> pages;
+            IReadOnlyDictionary<int, int>? glyphChannels = null;
+
+            if (options.ChannelPacking)
+            {
+                var channelResult = ChannelPackedAtlasBuilder.Build(glyphs, packResult, padding, encoder);
+                pages = channelResult.Pages;
+                glyphChannels = channelResult.GlyphChannels;
+            }
+            else
+            {
+                pages = AtlasBuilder.Build(glyphs, packResult, padding, encoder);
+            }
 
             // 7. Assemble BMFont model
-            var model = BmFontModelBuilder.Build(fontInfo, glyphs, packResult, options);
+            var model = BmFontModelBuilder.Build(fontInfo, glyphs, packResult, options, glyphChannels);
 
             return new BmFontResult(model, pages);
         }

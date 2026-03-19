@@ -1,18 +1,19 @@
-# [Project Name]
+# bmfontier
 
 ## Project Purpose
 
-<!-- 1-2 sentence description of what this project does -->
+Cross-platform .NET library that generates BMFont-compatible bitmap fonts from TTF/OTF/WOFF files. Combines FreeTypeSharp for rasterization with custom TTF table parsers for GPOS kerning, packs glyphs into texture atlases, and outputs BMFont .fnt + .png pairs. In-memory by default.
 
 ## Project Organization
 
 | Folder | Purpose |
 |--------|---------|
-| `src/` | **Main application source code** |
-| `tests/` | **Test suites** |
-| `docs/` | **Documentation** |
-
-<!-- Add/remove rows as needed for your project structure -->
+| `src/Bmfontier/` | **Main library** — the NuGet package |
+| `tests/Bmfontier.Tests/` | **xUnit + FluentAssertions test suite** |
+| `samples/Bmfontier.Cli/` | **Reference CLI tool** |
+| `benchmarks/Bmfontier.Benchmarks/` | **BenchmarkDotNet performance benchmarks** |
+| `plan/` | **Technical plan docs** — architecture, data types, implementation order |
+| `reference/` | **Reference docs** — TTF spec, BMFont format, algorithm research |
 
 ## Context Management
 
@@ -25,34 +26,39 @@
 
 ### When Working on This Project
 
-1. **Read project docs first** before making changes
+1. **Read plan docs first** — `plan/plan-data-types.md` is the single source of truth for types and interfaces
 2. **Follow existing patterns** — check 2-3 nearby files before writing new code
 3. **Never hardcode credentials** — use environment variables or `.env` + appropriate library
-4. **Test with real data** when available
+4. **Test with real data** — test font is at `tests/Bmfontier.Tests/Fixtures/Roboto-Regular.ttf`
 
 ### Key Conventions
 
-- **Language**: <!-- e.g., Python 3.12, TypeScript 5.x, etc. -->
-- **Database**: <!-- e.g., PostgreSQL, MySQL, SQLite, etc. -->
-- **Config**: `.env` file, never commit `.env` to git
-- **Logging**: Use the language's standard logging library
-- **Testing**: <!-- e.g., pytest, jest, xUnit, etc. -->
+- **Language**: C# / .NET 8.0 (LTS)
+- **Nullable**: enabled
+- **Unsafe**: allowed only in FreeType interop (`FreeTypeRasterizer.cs`)
+- **Testing**: xUnit + FluentAssertions
+- **Dependencies**: FreeTypeSharp 3.1.0, StbImageWriteSharp 1.16.7
+- **License**: Proprietary (see LICENSE)
 
-### Keeping Skills & Agents Current
+### Namespace Rules
 
-When changes affect counts, file paths, or conventions referenced by skills or agents, update those files too:
-
-- **`.claude/skills/`**: Skills may embed test counts, file paths, and project patterns. When these change, scan skill SKILL.md files for stale values.
-- **`.claude/agents/`**: Agents are pattern-based and rarely drift, but review if conventions change significantly.
-- **Use `/update-docs`**: This skill audits both documentation AND skills for stale values.
+- `Bmfontier` (root): entry point, config types, exceptions, enums
+- `Bmfontier.Font`: font reading, TTF parsing
+- `Bmfontier.Font.Models`: FontInfo, KerningPair, GlyphMetrics
+- `Bmfontier.Font.Tables`: HeadTable, HheaTable, Os2Metrics, NameInfo
+- `Bmfontier.Rasterizer`: IRasterizer, FreeTypeRasterizer, post-processors
+- `Bmfontier.Atlas`: IAtlasPacker, packers, encoder, AtlasBuilder
+- `Bmfontier.Output`: formatters, FileWriter, BmFontResult
+- `Bmfontier.Output.Model`: BmFontModel, InfoBlock, CommonBlock, etc.
+- Files in `Config/` and `Exceptions/` use the ROOT `Bmfontier` namespace
 
 ### Project File References
 
 | What | Location |
 |------|----------|
-| Main application | `src/` |
-| Tests | `tests/` |
-| Documentation | `docs/` |
+| Entry point | `src/Bmfontier/BmFont.cs` |
+| Plan docs | `plan/` (start with `master-plan.md`) |
+| Data types (source of truth) | `plan/plan-data-types.md` |
+| Implementation order | `plan/plan-implementation-order.md` |
+| Tests | `tests/Bmfontier.Tests/` |
 | CI/CD | `.github/workflows/` |
-
-<!-- Add rows for key files and directories in your project -->

@@ -24,6 +24,7 @@ public class FontGeneratorOptions
     public bool PowerOfTwo { get; set; } = true;
     public int Dpi { get; set; } = 72;
     public int FaceIndex { get; set; }
+    public bool ChannelPacking { get; set; }
 
     // Swappable components (null = use defaults)
     public IFontReader? FontReader { get; set; }
