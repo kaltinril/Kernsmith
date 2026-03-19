@@ -13,8 +13,8 @@ Items that were not completed during Phase 3 (Ecosystem).
 
 | Original ID | Task | Description | Notes |
 |-------------|------|-------------|-------|
-| 13B | **Color font support** | COLRv0/CPAL layer rendering, sbix bitmap extraction, CBDT/CBLC bitmap extraction | Three separate implementations. High effort, low priority. |
-| 13C | **Font subsetting** | Strip unused glyphs from font data before processing (reduces memory for large CJK fonts) | Medium effort. Important for CJK workflows. |
+| 13B | **Color font support** | COLRv0/CPAL layer rendering, sbix bitmap extraction, CBDT/CBLC bitmap extraction | Plan: [plan-color-fonts.md](plan-color-fonts.md). FreeType handles all 3 formats with `FT_LOAD_COLOR`. |
+| 13C | **Font subsetting** | Logical subsetting — filter cmap/kern/GPOS during parsing for requested codepoints | Plan: [plan-font-subsetting.md](plan-font-subsetting.md). Binary subsetting not needed. |
 | ~~15C~~ | ~~**NuGet publishing CI**~~ | ~~Configure CI for NuGet pack + push, README, package icon~~ | **DONE** — publish.yml updated, .csproj metadata added, README created. |
 | ~~16C~~ | ~~**Tests: CLI**~~ | ~~End-to-end CLI invocation tests~~ | **DONE** — 20 tests in `tests/Bmfontier.Tests/Cli/CliTests.cs`. |
 
