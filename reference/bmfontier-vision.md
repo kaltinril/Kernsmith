@@ -124,14 +124,14 @@ The NuGet package is the foundation. Others can build:
 
 ---
 
-## Key Technical Decisions (To Be Made)
+## Key Technical Decisions
 
-- **Font parsing**: Custom minimal parser vs. SixLabors.Fonts vs. SkiaSharp vs. FreeType bindings?
-- **Rasterization**: Custom vs. SkiaSharp vs. System.Drawing vs. SixLabors.ImageSharp?
-- **Texture packing algorithm**: MaxRects, shelf packing, or other?
+- **Font parsing & rasterization**: Must use an open-source, cross-platform, performant dependency. No proprietary or split-license libraries allowed. The specific library is still to be selected, but the constraints are firm.
+- **Texture packing**: Support multiple algorithms where possible, but all output must respect the BMFont file format constraints: rectangular glyph regions, axis-aligned, integer coordinates, and power-of-2 texture sizes recommended.
+- **API design**: The internal pipeline produces an in-memory model that is format-agnostic. Different output methods render it: `.ToString()` for text format (default), `.ToFile()` for disk output, `.ToXml()`, `.ToBinary()`, etc. The core model does not know or care about the output format.
 - **Target framework**: .NET 6+? .NET Standard 2.1?
 - **Native dependencies**: Acceptable? (affects cross-platform story)
-- **Licensing**: What license for bmfontier itself?
+- **Licensing**: Open source — no paid or restrictively-licensed dependencies allowed.
 
 ---
 
