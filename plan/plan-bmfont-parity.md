@@ -187,6 +187,90 @@ BMFont's "Match char height" scales the font so the actual rendered character he
 
 ---
 
+## Beyond Parity — Features BMFont.exe Doesn't Have
+
+### 16. Shadow Post-Processor
+
+Bake drop shadows, long shadows, or directional shadows directly into the glyph atlas. Supports multiple shadow styles to simulate different light sources.
+
+**Shadow types:**
+
+#### A. Drop Shadow (classic)
+A simple offset copy of the glyph behind it, optionally blurred.
+- Parameters: `offsetX`, `offsetY` (pixels), `blurRadius` (0 = hard, >0 = soft), `color` (RGB), `opacity` (0.0-1.0)
+- Light source is implied by the offset direction (e.g., offset 2,2 = light from top-left)
+
+#### B. Directional Shadow (long shadow / flat design)
+Extends the glyph shape in a direction to create a "cast" shadow, popular in flat/material design.
+- Parameters: `angleDegrees` (direction), `length` (pixels), `color` (RGB), `opacity` (0.0-1.0), `fade` (bool — if true, opacity fades from 1.0 to 0.0 along the shadow length)
+
+#### C. Multi-Shadow
+Apply multiple shadow layers for complex lighting (e.g., a hard shadow close + a soft shadow far, simulating two light sources).
+- Accepts a list of shadow configurations, rendered bottom-to-top
+
+**Implementation — `ShadowPostProcessor : IGlyphPostProcessor`:**
+
+```csharp
+public sealed class ShadowPostProcessor : IGlyphPostProcessor
+{
+    public int OffsetX { get; }          // horizontal offset (positive = right)
+    public int OffsetY { get; }          // vertical offset (positive = down)
+    public int BlurRadius { get; }       // 0 = hard shadow, >0 = Gaussian blur radius
+    public byte ShadowR { get; }
+    public byte ShadowG { get; }
+    public byte ShadowB { get; }
+    public float Opacity { get; }        // 0.0 to 1.0
+    public ShadowMode Mode { get; }      // DropShadow or Directional
+    public int Length { get; }           // for directional: how far the shadow extends
+    public bool Fade { get; }            // for directional: fade opacity along length
+}
+
+public enum ShadowMode { DropShadow, Directional }
+```
+
+**Process method:**
+1. Calculate expanded bitmap size: original + abs(offsetX) + blurRadius*2, same for Y (or + length for directional)
+2. **Drop shadow**: copy the glyph's alpha channel at the offset position into a shadow layer, apply Gaussian blur if blurRadius > 0, tint with shadow color, multiply by opacity
+3. **Directional shadow**: for each pixel in the glyph, stamp it repeatedly along the angle vector for `length` pixels, optionally fading opacity. Then blur if needed.
+4. Composite: shadow layer on bottom, original glyph on top (alpha-over blending)
+5. Update metrics: BearingX/BearingY adjusted for the expanded bitmap, Width/Height increased
+6. Output is RGBA (`PixelFormat.Rgba32`)
+
+**Gaussian blur helper:**
+- Separable 2-pass blur (horizontal then vertical) using a 1D kernel
+- Kernel size = `blurRadius * 2 + 1`, weights from Gaussian function
+- Same blur can later be reused for a standalone `BlurPostProcessor` / glow effect
+
+**Builder API:**
+```csharp
+// Simple drop shadow
+.WithShadow(offsetX: 2, offsetY: 2)
+
+// Soft shadow with color
+.WithShadow(offsetX: 3, offsetY: 3, blur: 4, color: (0, 0, 0), opacity: 0.6f)
+
+// Directional long shadow (flat design style)
+.WithDirectionalShadow(angleDegrees: 135f, length: 10, color: (0, 0, 0), fade: true)
+
+// Multiple shadows (key light + fill light)
+.WithShadow(offsetX: 1, offsetY: 1, blur: 0, color: (0, 0, 0), opacity: 0.8f)
+.WithShadow(offsetX: 4, offsetY: 4, blur: 6, color: (0, 0, 0), opacity: 0.3f)
+```
+
+**CLI flags:**
+```
+--shadow <x>,<y>[,blur][,color][,opacity]     Drop shadow
+--long-shadow <angle>,<length>[,color][,fade] Directional shadow
+```
+
+**Examples of what this enables:**
+- Classic game UI: white text with black drop shadow (offset 1,1, no blur)
+- Modern mobile: colored text with soft distant shadow (offset 0,4, blur 8, opacity 0.3)
+- Flat design: long shadow at 135° fading out over 20px
+- Layered: tight hard shadow for readability + soft far shadow for depth
+
+---
+
 ## Implementation Notes
 
 - All features should be additive — they don't break existing behavior
