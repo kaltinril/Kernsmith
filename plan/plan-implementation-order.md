@@ -267,6 +267,12 @@ See **[plan-cli.md](plan-cli.md)** for full specification and task breakdown (Ph
 
 See **[plan-bmfont-parity.md](plan-bmfont-parity.md)** for prioritized feature list with implementation details.
 
+### Phase 7 — Extended Metadata
+
+Store bmfontier-specific metadata (SDF spread, gradient, shadow settings) inline in .fnt output using custom fields that existing BMFont readers safely ignore. Follows Hiero's precedent.
+
+See **[plan-extended-metadata.md](plan-extended-metadata.md)** for full specification, compatibility analysis, and implementation plan.
+
 ---
 
 ## Critical Path (Phase 1)

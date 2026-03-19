@@ -90,6 +90,7 @@ Output Layer
 | [Implementation Order](plan-implementation-order.md) | **Phased task breakdown with dependencies and parallel groups.** Start here for building. |
 | [CLI Tool](plan-cli.md) | Full-featured CLI plan — BMFont.exe replacement with config files, inspect/convert commands |
 | [BMFont Parity](plan-bmfont-parity.md) | 15 missing features from BMFont.exe — per-channel config, super sampling, TGA, etc. |
+| [Extended Metadata](plan-extended-metadata.md) | How bmfontier stores SDF spread, gradient, shadow, and other metadata in .fnt files |
 
 ---
 
