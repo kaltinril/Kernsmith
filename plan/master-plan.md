@@ -119,6 +119,17 @@ Additional output formats (XML, binary), Skyline packer, system font enumeration
 
 WOFF/WOFF2 decompression, channel packing, color font support, reference CLI tool, performance benchmarks, NuGet publishing, and font subsetting.
 
+### Phase 4 -- Deferred / Future
+
+| Feature | Effort | Value | Notes |
+|---------|--------|-------|-------|
+| **Variable font axes (fvar)** | Medium | High | Parse fvar table, expose axes on FontInfo, set via FT_Set_Var_Design_Coordinates before rasterizing. Most modern fonts are variable. |
+| **BMFont reader (load .fnt + .png)** | Medium | High | Parse existing BMFont text/XML/binary .fnt files + load atlas .png into the in-memory `BmFontModel` + `AtlasPage[]`. Enables round-tripping, inspection, modification, and re-export. |
+| **Gradient post-processor** | Low | Medium | IGlyphPostProcessor that applies a vertical (or configurable) color gradient to glyph bitmaps, producing RGBA output. Bakes color into the atlas. |
+| **Font subsetting** | Medium | Medium | Strip unused glyphs before processing. Important for CJK fonts (50k+ glyphs). |
+| **WOFF2 decompression** | High | Medium | Brotli + content-aware inverse transforms for glyf/loca/hmtx tables. Users can convert externally for now. |
+| **Color font support** | High | Low | COLRv0/CPAL layer rendering, sbix bitmap extraction, CBDT/CBLC. Three separate implementations. |
+
 ---
 
 ## Resolved Decisions

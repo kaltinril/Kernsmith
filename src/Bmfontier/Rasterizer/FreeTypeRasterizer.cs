@@ -31,6 +31,17 @@ internal sealed class FreeTypeRasterizer : IRasterizer
             throw new FreeTypeException(error);
 
         _face = face;
+
+        // TODO: Set variation axes if specified.
+        // FreeTypeSharp does not currently expose FT_Set_Var_Design_Coordinates.
+        // When it does (or via custom P/Invoke), this is where we would call it:
+        //
+        //   if (variationAxes != null && variationAxes.Count > 0)
+        //   {
+        //       // FT_Set_Var_Design_Coordinates takes an array of FT_Fixed (int32, 16.16 format).
+        //       // Each coordinate = (int)(value * 65536.0f)
+        //       // The array must be ordered by axis index from the fvar table.
+        //   }
     }
 
     public unsafe RasterizedGlyph? RasterizeGlyph(int codepoint, RasterOptions options)

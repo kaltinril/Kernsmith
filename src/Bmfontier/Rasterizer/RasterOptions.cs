@@ -11,6 +11,7 @@ public sealed record RasterOptions
     public bool Bold { get; init; }
     public bool Italic { get; init; }
     public bool Sdf { get; init; }
+    public Dictionary<string, float>? VariationAxes { get; init; }
 
     /// <summary>
     /// Creates a <see cref="RasterOptions"/> from a <see cref="FontGeneratorOptions"/> instance.
@@ -24,7 +25,8 @@ public sealed record RasterOptions
             AntiAlias = options.AntiAlias,
             Bold = options.Bold,
             Italic = options.Italic,
-            Sdf = options.Sdf
+            Sdf = options.Sdf,
+            VariationAxes = options.VariationAxes
         };
     }
 }

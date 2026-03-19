@@ -134,6 +134,52 @@ public static class BmFont
         => GenerateFromSystem(fontFamily, new FontGeneratorOptions { Size = size });
 
     /// <summary>
+    /// Loads a BMFont from a .fnt file path. Auto-detects format (text, XML, or binary).
+    /// Also loads atlas .png files from the same directory as raw PNG bytes.
+    /// </summary>
+    /// <param name="fntPath">Path to the .fnt descriptor file.</param>
+    /// <returns>A result containing the parsed BMFont model and atlas pages.</returns>
+    public static BmFontResult Load(string fntPath)
+    {
+        var fntData = File.ReadAllBytes(fntPath);
+        var model = BmFontReader.Read(fntData);
+
+        var dir = Path.GetDirectoryName(fntPath) ?? ".";
+        var pages = new List<Atlas.AtlasPage>();
+
+        foreach (var pageEntry in model.Pages)
+        {
+            var pagePath = Path.Combine(dir, pageEntry.File);
+            if (File.Exists(pagePath))
+            {
+                var pngBytes = File.ReadAllBytes(pagePath);
+                pages.Add(new Atlas.AtlasPage
+                {
+                    PageIndex = pageEntry.Id,
+                    Width = model.Common.ScaleW,
+                    Height = model.Common.ScaleH,
+                    PixelData = pngBytes,
+                    Format = PixelFormat.Rgba32,
+                });
+            }
+        }
+
+        return new BmFontResult(model, pages);
+    }
+
+    /// <summary>
+    /// Loads a BMFont model from raw .fnt data, auto-detecting the format.
+    /// Does not load atlas images.
+    /// </summary>
+    public static Output.Model.BmFontModel LoadModel(byte[] fntData) => BmFontReader.Read(fntData);
+
+    /// <summary>
+    /// Loads a BMFont model from a text-format .fnt string.
+    /// Does not load atlas images.
+    /// </summary>
+    public static Output.Model.BmFontModel LoadModel(string fntContent) => BmFontReader.ReadText(fntContent);
+
+    /// <summary>
     /// Creates a fluent builder for BMFont generation.
     /// </summary>
     public static BmFontBuilder Builder() => new();

@@ -59,11 +59,20 @@ public sealed class BmFontBuilder
     public BmFontBuilder WithDpi(int dpi) { _options.Dpi = dpi; return this; }
     public BmFontBuilder WithFaceIndex(int faceIndex) { _options.FaceIndex = faceIndex; return this; }
     public BmFontBuilder WithChannelPacking(bool channelPacking = true) { _options.ChannelPacking = channelPacking; return this; }
+    public BmFontBuilder WithVariationAxis(string tag, float value)
+    {
+        _options.VariationAxes ??= new Dictionary<string, float>();
+        _options.VariationAxes[tag] = value;
+        return this;
+    }
 
     public BmFontBuilder WithRasterizer(IRasterizer rasterizer) { _options.Rasterizer = rasterizer; return this; }
     public BmFontBuilder WithPacker(IAtlasPacker packer) { _options.Packer = packer; return this; }
     public BmFontBuilder WithEncoder(IAtlasEncoder encoder) { _options.AtlasEncoder = encoder; return this; }
     public BmFontBuilder WithFontReader(IFontReader reader) { _options.FontReader = reader; return this; }
+
+    public BmFontBuilder WithGradient((byte R, byte G, byte B) topColor, (byte R, byte G, byte B) bottomColor)
+        => WithPostProcessor(GradientPostProcessor.Create(topColor, bottomColor));
 
     public BmFontBuilder WithPostProcessor(IGlyphPostProcessor processor)
     {

@@ -219,6 +219,30 @@ Phase 2 complete
 
 ---
 
+## Phase 4 — Deferred / Future
+
+### Group Q — Variable Fonts + BMFont Reader (all parallel)
+
+| ID  | Task | Depends On | Description | Docs to Read |
+|-----|------|-----------|-------------|-------------|
+| 17A | **fvar table parser** | Phase 3 complete | Parse fvar table: axis count, axis records (tag, min, default, max, nameID), named instance records. Add to TtfParser. | reference/other-font-formats-reference.md (Variable Fonts section) |
+| 17B | **Variable font axis API** | 17A | Expose axes on FontInfo, add `Dictionary<string, float> VariationAxes` to FontGeneratorOptions, call `FT_Set_Var_Design_Coordinates` in FreeTypeRasterizer before rendering | plan-data-types.md, plan-rasterization.md |
+| 17C | **BMFont reader (text)** | Phase 3 complete | Parse BMFont text format .fnt file into BmFontModel. Line-by-line parser matching tag + key=value pairs. | plan-output-formats.md (Text Format section) |
+| 17D | **BMFont reader (XML)** | Phase 3 complete | Parse BMFont XML format .fnt file into BmFontModel using XmlReader. | plan-output-formats.md (XML Format section) |
+| 17E | **BMFont reader (binary)** | Phase 3 complete | Parse BMFont binary format .fnt file into BmFontModel. Block-by-block reader. | plan-output-formats.md (Binary Format section), reference/bmfont-format-reference.md |
+| 17F | **BmFont.Load() entry point** | 17C, 17D, 17E | `BmFont.Load(string path)` and `BmFont.Load(byte[] fntData, byte[][] atlasPages)` — auto-detect format, parse .fnt, load .png atlas pages, return BmFontResult | plan-api-design.md |
+| 17G | **Gradient post-processor** | Phase 3 complete | IGlyphPostProcessor that applies a configurable color gradient to glyph bitmaps, producing RGBA output | plan-rasterization.md |
+
+### Group R — Phase 4 Tests
+
+| ID  | Task | Depends On | Description |
+|-----|------|-----------|-------------|
+| 18A | **Tests: variable fonts** | 17A, 17B | Load a variable font, set weight axis, verify different rasterization output |
+| 18B | **Tests: BMFont reader** | 17F | Generate → save → load round-trip, verify model equality |
+| 18C | **Tests: gradient** | 17G | Verify output is RGBA, pixel values differ top-to-bottom |
+
+---
+
 ## Summary Statistics
 
 | Phase                | Tasks    | Max Parallel Width | Critical Path Length                  |

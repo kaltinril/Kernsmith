@@ -23,6 +23,8 @@ internal class TtfParser
     public IReadOnlyDictionary<int, int> CmapTable { get; private set; } = ReadOnlyDictionary<int, int>.Empty;
     public IReadOnlyList<KerningPair> KernPairs { get; private set; } = Array.Empty<KerningPair>();
     public IReadOnlyList<KerningPair> GposPairs { get; private set; } = Array.Empty<KerningPair>();
+    public IReadOnlyList<VariationAxis>? VariationAxes { get; private set; }
+    public IReadOnlyList<NamedInstance>? NamedInstances { get; private set; }
 
     public TtfParser(ReadOnlySpan<byte> fontData, int faceIndex = 0)
     {
@@ -37,6 +39,7 @@ internal class TtfParser
         ParseCmap();
         ParseKern();
         ParseGpos();
+        ParseFvar();
     }
 
     private static uint Tag(char a, char b, char c, char d) =>
@@ -278,6 +281,151 @@ internal class TtfParser
             PostScriptName: results.TryGetValue(6, out var psName) ? psName.value : null,
             Copyright: results.TryGetValue(0, out var copyright) ? copyright.value : null,
             Trademark: results.TryGetValue(7, out var trademark) ? trademark.value : null);
+    }
+
+    /// <summary>
+    /// Resolves a name ID from the name table, returning the best available string.
+    /// </summary>
+    private string? ResolveNameId(int nameId)
+    {
+        var table = GetTable(Tag('n', 'a', 'm', 'e'));
+        if (table.IsEmpty || table.Length < 6)
+            return null;
+
+        var count = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(2));
+        var stringOffset = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(4));
+
+        string? best = null;
+        int bestPriority = -1;
+
+        for (var i = 0; i < count; i++)
+        {
+            var recOffset = 6 + i * 12;
+            if (recOffset + 12 > table.Length)
+                break;
+
+            var platformID = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(recOffset));
+            var encodingID = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(recOffset + 2));
+            var languageID = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(recOffset + 4));
+            var nid = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(recOffset + 6));
+            var length = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(recOffset + 8));
+            var offset = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(recOffset + 10));
+
+            if (nid != nameId)
+                continue;
+
+            var strStart = stringOffset + offset;
+            if (strStart + length > table.Length)
+                continue;
+
+            var strData = table.Slice(strStart, length);
+            string value;
+            int priority;
+
+            if (platformID == 3 && encodingID == 1)
+            {
+                value = DecodeUtf16BigEndian(strData);
+                priority = languageID == 0x0409 ? 3 : 2;
+            }
+            else if (platformID == 1 && encodingID == 0)
+            {
+                value = DecodeLatin1(strData);
+                priority = 1;
+            }
+            else
+            {
+                continue;
+            }
+
+            if (priority > bestPriority)
+            {
+                best = value;
+                bestPriority = priority;
+            }
+        }
+
+        return best;
+    }
+
+    // 17A: fvar Table — Variable font axes and named instances
+    private void ParseFvar()
+    {
+        var table = GetTable(Tag('f', 'v', 'a', 'r'));
+        if (table.IsEmpty)
+            return;
+
+        // fvar header: majorVersion(2) + minorVersion(2) + axesArrayOffset(2) + reserved(2)
+        //              + axisCount(2) + axisSize(2) + instanceCount(2) + instanceSize(2) = 16 bytes
+        if (table.Length < 16)
+            return;
+
+        var axesArrayOffset = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(4));
+        var axisCount = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(8));
+        var axisSize = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(10));
+        var instanceCount = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(12));
+        var instanceSize = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(14));
+
+        // Parse axis records
+        var axes = new List<VariationAxis>(axisCount);
+        var axisTags = new List<string>(axisCount); // keep tags in order for instance parsing
+
+        for (var i = 0; i < axisCount; i++)
+        {
+            var axisOffset = axesArrayOffset + i * axisSize;
+            if (axisOffset + 20 > table.Length)
+                break;
+
+            var axisRecord = table.Slice(axisOffset);
+            var tagBytes = axisRecord.Slice(0, 4);
+            var tag = Encoding.ASCII.GetString(tagBytes);
+            var minValue = BinaryPrimitives.ReadInt32BigEndian(axisRecord.Slice(4)) / 65536.0f;
+            var defaultValue = BinaryPrimitives.ReadInt32BigEndian(axisRecord.Slice(8)) / 65536.0f;
+            var maxValue = BinaryPrimitives.ReadInt32BigEndian(axisRecord.Slice(12)) / 65536.0f;
+            // flags at offset 16 (uint16) — currently unused
+            var axisNameId = BinaryPrimitives.ReadUInt16BigEndian(axisRecord.Slice(18));
+            var name = ResolveNameId(axisNameId);
+
+            axes.Add(new VariationAxis(tag, minValue, defaultValue, maxValue, name));
+            axisTags.Add(tag);
+        }
+
+        VariationAxes = axes;
+
+        // Parse named instances
+        if (instanceCount == 0 || instanceSize == 0)
+        {
+            NamedInstances = Array.Empty<NamedInstance>();
+            return;
+        }
+
+        var instances = new List<NamedInstance>(instanceCount);
+        var instancesStart = axesArrayOffset + axisCount * axisSize;
+
+        for (var i = 0; i < instanceCount; i++)
+        {
+            var instOffset = instancesStart + i * instanceSize;
+            // Each instance: subfamilyNameID(2) + flags(2) + axisCount * coordinate(4)
+            var minRequired = 4 + axisCount * 4;
+            if (instOffset + minRequired > table.Length)
+                break;
+
+            var instRecord = table.Slice(instOffset);
+            var subfamilyNameId = BinaryPrimitives.ReadUInt16BigEndian(instRecord);
+            // flags at offset 2 (uint16) — currently unused
+            var name = ResolveNameId(subfamilyNameId);
+
+            var coordinates = new Dictionary<string, float>(axisCount);
+            for (var a = 0; a < axisCount; a++)
+            {
+                var coordOffset = 4 + a * 4;
+                var coordValue = BinaryPrimitives.ReadInt32BigEndian(instRecord.Slice(coordOffset)) / 65536.0f;
+                coordinates[axisTags[a]] = coordValue;
+            }
+
+            instances.Add(new NamedInstance(name, coordinates));
+        }
+
+        NamedInstances = instances;
     }
 
     private static string DecodeUtf16BigEndian(ReadOnlySpan<byte> data)

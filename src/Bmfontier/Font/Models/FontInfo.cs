@@ -21,4 +21,6 @@ public sealed class FontInfo
     public HeadTable? Head { get; init; }
     public HheaTable? Hhea { get; init; }
     public NameInfo? Names { get; init; }
+    public IReadOnlyList<VariationAxis>? VariationAxes { get; init; }
+    public IReadOnlyList<NamedInstance>? NamedInstances { get; init; }
 }

@@ -19,6 +19,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "benchmarks", "benchmarks", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bmfontier.Benchmarks", "benchmarks\Bmfontier.Benchmarks\Bmfontier.Benchmarks.csproj", "{761CF58F-BBF0-47A8-8C10-384CD0AF7AB1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bmfontier.Samples", "samples\Bmfontier.Samples\Bmfontier.Samples.csproj", "{4372AC64-6EEA-467A-8720-59CB52B29886}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -77,6 +79,18 @@ Global
 		{761CF58F-BBF0-47A8-8C10-384CD0AF7AB1}.Release|x64.Build.0 = Release|Any CPU
 		{761CF58F-BBF0-47A8-8C10-384CD0AF7AB1}.Release|x86.ActiveCfg = Release|Any CPU
 		{761CF58F-BBF0-47A8-8C10-384CD0AF7AB1}.Release|x86.Build.0 = Release|Any CPU
+		{4372AC64-6EEA-467A-8720-59CB52B29886}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4372AC64-6EEA-467A-8720-59CB52B29886}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4372AC64-6EEA-467A-8720-59CB52B29886}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4372AC64-6EEA-467A-8720-59CB52B29886}.Debug|x64.Build.0 = Debug|Any CPU
+		{4372AC64-6EEA-467A-8720-59CB52B29886}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4372AC64-6EEA-467A-8720-59CB52B29886}.Debug|x86.Build.0 = Debug|Any CPU
+		{4372AC64-6EEA-467A-8720-59CB52B29886}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4372AC64-6EEA-467A-8720-59CB52B29886}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4372AC64-6EEA-467A-8720-59CB52B29886}.Release|x64.ActiveCfg = Release|Any CPU
+		{4372AC64-6EEA-467A-8720-59CB52B29886}.Release|x64.Build.0 = Release|Any CPU
+		{4372AC64-6EEA-467A-8720-59CB52B29886}.Release|x86.ActiveCfg = Release|Any CPU
+		{4372AC64-6EEA-467A-8720-59CB52B29886}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -86,5 +100,6 @@ Global
 		{6E23CB56-FA43-4232-846B-3EA5496D0650} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{9C625F4E-871B-41E9-9813-5531B65642A7} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
 		{761CF58F-BBF0-47A8-8C10-384CD0AF7AB1} = {66320409-64EC-F7C5-3DEF-65E7510DAAD1}
+		{4372AC64-6EEA-467A-8720-59CB52B29886} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
 	EndGlobalSection
 EndGlobal

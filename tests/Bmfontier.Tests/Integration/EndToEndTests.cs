@@ -345,6 +345,34 @@ public class EndToEndTests
     }
 
     [Fact]
+    public void Generate_WithGradient_ProducesValidOutput()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Builder()
+            .WithFont(fontData)
+            .WithSize(32)
+            .WithCharacters(CharacterSet.Ascii)
+            .WithGradient((255, 0, 0), (0, 0, 255))  // red -> blue
+            .Build();
+
+        // Assert -- generation should succeed with gradient post-processor
+        result.Model.Characters.Should().HaveCountGreaterThan(0);
+        result.Pages.Should().HaveCountGreaterThan(0);
+
+        // Atlas should contain non-zero pixel data (rendered glyphs present)
+        result.Pages[0].PixelData.Any(b => b != 0).Should().BeTrue(
+            "gradient atlas should contain rendered pixels");
+
+        // Model should be well-formed
+        result.Model.Info.Face.Should().Be("Roboto");
+        result.Model.Info.Size.Should().Be(32);
+        result.Model.Common.LineHeight.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
     public void Generate_WithOutline_ProducesLargerGlyphs()
     {
         // Arrange

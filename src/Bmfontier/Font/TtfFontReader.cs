@@ -78,6 +78,8 @@ internal class TtfFontReader : IFontReader
             Head = parser.Head,
             Hhea = parser.Hhea,
             Names = parser.Names,
+            VariationAxes = parser.VariationAxes,
+            NamedInstances = parser.NamedInstances,
         };
     }
 }

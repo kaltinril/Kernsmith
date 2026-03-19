@@ -25,6 +25,7 @@ public class FontGeneratorOptions
     public int Dpi { get; set; } = 72;
     public int FaceIndex { get; set; }
     public bool ChannelPacking { get; set; }
+    public Dictionary<string, float>? VariationAxes { get; set; }
 
     // Swappable components (null = use defaults)
     public IFontReader? FontReader { get; set; }
