@@ -19,26 +19,38 @@ public sealed class GradientPostProcessor : IGlyphPostProcessor
     /// </summary>
     public float AngleDegrees { get; }
 
+    /// <summary>
+    /// Controls where the midpoint of the gradient falls (0.0 to 1.0).
+    /// Default 0.5 = even blend. Lower values push the start color further
+    /// (e.g., 0.1 = 90% start color, 10% transition to end color).
+    /// Higher values push the end color further
+    /// (e.g., 0.9 = 10% transition from start, 90% end color).
+    /// </summary>
+    public float Midpoint { get; }
+
     public GradientPostProcessor(
         byte startR, byte startG, byte startB,
         byte endR, byte endG, byte endB,
-        float angleDegrees = 90f)
+        float angleDegrees = 90f,
+        float midpoint = 0.5f)
     {
         StartR = startR; StartG = startG; StartB = startB;
         EndR = endR; EndG = endG; EndB = endB;
         AngleDegrees = angleDegrees;
+        Midpoint = Math.Clamp(midpoint, 0.01f, 0.99f);
     }
 
     /// <summary>
-    /// Creates a gradient with the default angle (90° = top-to-bottom).
+    /// Creates a gradient with configurable angle and midpoint.
     /// </summary>
     public static GradientPostProcessor Create(
         (byte R, byte G, byte B) startColor,
         (byte R, byte G, byte B) endColor,
-        float angleDegrees = 90f)
+        float angleDegrees = 90f,
+        float midpoint = 0.5f)
         => new(startColor.R, startColor.G, startColor.B,
                endColor.R, endColor.G, endColor.B,
-               angleDegrees);
+               angleDegrees, midpoint);
 
     public RasterizedGlyph Process(RasterizedGlyph glyph)
     {
@@ -77,6 +89,13 @@ public sealed class GradientPostProcessor : IGlyphPostProcessor
                 float dot = x * dirX + y * dirY;
                 float t = (dot - minD) / range;
                 t = MathF.Max(0f, MathF.Min(1f, t));
+
+                // Apply midpoint bias: remap so t=Midpoint becomes the 50% blend point
+                // This uses a simple piecewise linear remap
+                if (t < Midpoint)
+                    t = t / Midpoint * 0.5f;
+                else
+                    t = 0.5f + (t - Midpoint) / (1f - Midpoint) * 0.5f;
 
                 var r = (byte)(StartR + (EndR - StartR) * t);
                 var g = (byte)(StartG + (EndG - StartG) * t);
