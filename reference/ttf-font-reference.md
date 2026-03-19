@@ -10,6 +10,8 @@
 2. [TTF File Format Structure](#2-ttf-file-format-structure)
    - [Table Directory](#table-directory)
    - [Data Types](#data-types)
+   - [Byte Order Considerations for C#](#byte-order-considerations-for-c)
+   - [Recommended Parsing Order](#recommended-parsing-order)
    - [Checksum Calculation](#checksum-calculation)
    - [Font Collections (.TTC)](#font-collections-ttc)
 3. [Required Tables in Detail](#3-required-tables-in-detail)
@@ -60,7 +62,7 @@
     - [Comparison for BMFont Generation](#comparison-table-for-bmfont-generation-suitability)
 12. [Font Rendering to Bitmap](#12-font-rendering-to-bitmap)
     - [Atlas Generation Steps](#atlas-generation-steps)
-13. [Key Metric Mappings (TTF to BMFont)](#13-key-metric-mappings-ttf--bmfont)
+13. [Key Metric Mappings (TTF to BMFont)](#13-key-metric-mappings-ttf-to-bmfont)
 14. [Relevant Standards and References](#14-relevant-standards-and-references)
 
 ---
@@ -160,8 +162,63 @@ All multi-byte values in TrueType are stored in **big-endian** byte order.
 | `F2DOT14` | 2 | 2.14 fixed-point number | High 2 bits = signed integer, low 14 bits = fraction. Range: -2.0 to +1.99994 |
 | `LONGDATETIME` | 8 | Signed 64-bit integer | Seconds since 12:00 midnight, January 1, 1904 (Mac epoch) |
 | `Tag` | 4 | Four-byte ASCII identifier | Each byte is in the range 0x20-0x7E (printable ASCII) |
-| `Offset16` | 2 | Unsigned 16-bit offset | Relative to some base within the table |
-| `Offset32` | 4 | Unsigned 32-bit offset | Relative to some base within the table |
+| `Offset8` | 1 | Unsigned 8-bit offset | Relative to some base within the table. NULL = 0x00 |
+| `Offset16` | 2 | Unsigned 16-bit offset | Relative to some base within the table. NULL = 0x0000 |
+| `Offset24` | 3 | Unsigned 24-bit offset | Relative to some base within the table. NULL = 0x000000 |
+| `Offset32` | 4 | Unsigned 32-bit offset | Relative to some base within the table. NULL = 0x00000000 |
+| `Version16Dot16` | 4 | Packed 32-bit version | Upper 16 bits = major version, lower 16 bits = minor. Used only in `maxp`, `post`, and `vhea` tables. E.g., version 0.5 = `0x00005000`, version 1.1 = `0x00011000` |
+
+### Byte Order Considerations for C#
+
+All multi-byte fields in TrueType/OpenType are **big-endian**, but C# on Windows (and most modern platforms) is **little-endian**. Every `uint16`, `int16`, `uint32`, `int32`, `Fixed`, `FWORD`, `UFWORD`, `F2DOT14`, and `LONGDATETIME` value read from the font file must be byte-swapped.
+
+**Recommended approach using `BinaryPrimitives`** (.NET 6+):
+
+```csharp
+using System.Buffers.Binary;
+
+// Reading big-endian values from a byte[] or ReadOnlySpan<byte>:
+ushort u16 = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(offset));
+short  s16 = BinaryPrimitives.ReadInt16BigEndian(data.AsSpan(offset));
+uint   u32 = BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(offset));
+int    s32 = BinaryPrimitives.ReadInt32BigEndian(data.AsSpan(offset));
+
+// For F2DOT14 (2.14 fixed-point):
+short raw = BinaryPrimitives.ReadInt16BigEndian(data.AsSpan(offset));
+float f2dot14 = raw / 16384f;
+
+// For Fixed (16.16 fixed-point):
+int rawFixed = BinaryPrimitives.ReadInt32BigEndian(data.AsSpan(offset));
+float fixedValue = rawFixed / 65536f;
+
+// For Tag (4-byte ASCII identifier):
+string tag = Encoding.ASCII.GetString(data, offset, 4);
+```
+
+Do **not** use `BinaryReader` with its default `ReadUInt16()` / `ReadInt32()` methods, as these read little-endian. If using `BinaryReader`, wrap it in a helper that byte-swaps, or use `BinaryPrimitives` on the underlying stream bytes instead.
+
+### Recommended Parsing Order
+
+For a C# developer implementing a TTF parser for BMFont generation, read the tables in this order:
+
+1. **Table Directory** -- read the offset subtable and all table records to build a lookup of table tag to (offset, length)
+2. **`head`** -- needed for `unitsPerEm`, `indexToLocFormat`, and global bounding box
+3. **`maxp`** -- needed for `numGlyphs` (required to size the `loca` array and `hmtx` array)
+4. **`hhea`** -- needed for `numberOfHMetrics` (required to parse `hmtx`) and vertical metrics
+5. **`OS/2`** -- vertical metrics, weight/width class, `fsType` embedding permissions, `fsSelection` flags
+6. **`name`** -- font family name, style name (useful for metadata but not required for glyph rendering)
+7. **`cmap`** -- character-to-glyph mapping (required before you can look up any glyph)
+8. **`hmtx`** -- per-glyph advance widths and left side bearings
+9. **`loca`** -- glyph offset index (requires `head.indexToLocFormat` and `maxp.numGlyphs`)
+10. **`glyf`** -- glyph outlines (requires `loca` for offset lookup)
+11. **`kern`** and/or **`GPOS`** -- kerning data (read after `cmap` so you can map glyph indices back to character codes)
+12. **`post`** -- optional; useful for detecting monospaced fonts (`isFixedPitch`)
+
+**Error handling**: Real-world fonts may have missing optional tables, invalid checksums, or slightly malformed data. A robust parser should:
+- Validate that required tables exist before proceeding
+- Check table offsets and lengths against the file size to avoid reading past the end
+- Use `try`/`catch` around individual table parsing so that a corrupt optional table does not prevent reading the rest of the font
+- Log warnings for invalid data rather than throwing exceptions where possible
 
 ### Checksum Calculation
 
@@ -208,21 +265,22 @@ Version 2 TTC headers add an optional DSIG (Digital Signature) reference after t
 
 ## 3. Required Tables in Detail
 
-The OpenType specification defines nine tables as **required** for a valid TrueType-outline font:
+The OpenType specification (1.9.1) defines eight tables as **required** for all OpenType fonts, plus `glyf` and `loca` are additionally required for TrueType-outline fonts (ten required tables total):
 
 | Table | Name | Purpose |
 |-------|------|---------|
 | `cmap` | Character to Glyph Mapping | Maps character codes to glyph indices |
-| `glyf` | Glyph Data | Contains glyph outlines |
+| `glyf` | Glyph Data | Contains glyph outlines (TrueType outlines only) |
 | `head` | Font Header | Global font metrics and flags |
 | `hhea` | Horizontal Header | Horizontal layout metrics |
 | `hmtx` | Horizontal Metrics | Per-glyph horizontal metrics |
-| `loca` | Index to Location | Maps glyph indices to `glyf` table offsets |
+| `loca` | Index to Location | Maps glyph indices to `glyf` table offsets (TrueType outlines only) |
 | `maxp` | Maximum Profile | Memory allocation hints and glyph count |
 | `name` | Naming | Human-readable font names and metadata |
+| `OS/2` | OS/2 and Windows Metrics | Metrics, classification, and embedding data |
 | `post` | PostScript | PostScript compatibility data |
 
-The `OS/2` table is technically optional in the spec but is **required in practice** for Windows compatibility and is present in virtually all modern fonts.
+**Note**: The `OS/2` table was technically optional in older versions of the spec but is listed as required in OpenType 1.9.1 and is present in virtually all modern fonts. The `cvt `, `fpgm`, `prep`, and `gasp` tables are optional but commonly present in TrueType-outline fonts.
 
 ### head (Font Header)
 
@@ -247,7 +305,7 @@ The `head` table contains global information about the font. It is 54 bytes long
 | 42 | `int16` | `yMax` | Maximum y for all glyph bounding boxes |
 | 44 | `uint16` | `macStyle` | Bit 0: Bold, Bit 1: Italic, Bit 2: Underline, Bit 3: Outline, Bit 4: Shadow, Bit 5: Condensed, Bit 6: Extended |
 | 46 | `uint16` | `lowestRecPPEM` | Smallest readable size in pixels per em |
-| 48 | `int16` | `fontDirectionHint` | Deprecated. Set to 2. |
+| 48 | `int16` | `fontDirectionHint` | Deprecated. Typically set to 2 (strong L-to-R + neutrals). Values: 0=mixed, 1=strong L-to-R, 2=L-to-R + neutrals, -1=strong R-to-L, -2=R-to-L + neutrals. |
 | 50 | `int16` | `indexToLocFormat` | `0` = short offsets (`Offset16` in `loca`), `1` = long offsets (`Offset32` in `loca`) |
 | 52 | `int16` | `glyphDataFormat` | 0 (current format) |
 
@@ -256,12 +314,17 @@ The `head` table contains global information about the font. It is 54 bytes long
 | Bit | Meaning |
 |-----|---------|
 | 0 | Baseline at y=0 |
-| 1 | Left sidebearing point at x=0 |
+| 1 | Left sidebearing point at x=0 (in variable fonts with TrueType outlines, this bit must be set) |
 | 2 | Instructions may depend on point size |
-| 3 | Force ppem to integer values (no fractional scaling) |
+| 3 | Force ppem to integer values (no fractional scaling). Strongly recommended for hinted fonts. |
 | 4 | Instructions may alter advance width |
-| 11 | Font data is "lossless" (compressed with Agfa MicroType Express) |
-| 13 | Font optimized for ClearType |
+| 5 | Not used in OpenType; should not be set (Apple-specific vertical layout behavior) |
+| 6--10 | Not used in OpenType; should always be cleared |
+| 11 | Font data is "lossless" (subjected to optimizing transformation/compression such as MicroType Express, WOFF 2.0, or similar) |
+| 12 | Font converted (produce compatible metrics) |
+| 13 | Font optimized for ClearType. Fonts relying on embedded bitmaps (EBDT) should not set this. |
+| 14 | Last Resort font. Glyphs in cmap are generic symbolic representations of code point ranges, not true support. |
+| 15 | Reserved, set to 0 |
 
 ### hhea (Horizontal Header)
 
@@ -304,16 +367,18 @@ The table has two parts:
 
 | Type | Field | Description |
 |------|-------|-------------|
-| `uint16` | `advanceWidth` | Advance width in FUnits |
-| `int16` | `lsb` | Left side bearing in FUnits |
+| `UFWORD` | `advanceWidth` | Advance width in FUnits |
+| `FWORD` | `lsb` | Left side bearing in FUnits |
 
 2. **Left side bearing array** -- the remaining `(numGlyphs - numberOfHMetrics)` glyphs:
 
 | Type | Field | Description |
 |------|-------|-------------|
-| `int16` | `leftSideBearing` | Left side bearing in FUnits |
+| `FWORD` | `leftSideBearing` | Left side bearing in FUnits |
 
 Glyphs beyond `numberOfHMetrics` share the **last** `advanceWidth` value from the LongHorMetric records. This optimization is commonly used for monospaced fonts (where all glyphs have the same advance width), setting `numberOfHMetrics` to 1.
+
+**Note**: If a glyph has no contours (e.g., the space character), xMax/xMin are not defined. The left side bearing in the `hmtx` table for such glyphs should be zero.
 
 **Calculating Right Side Bearing (RSB):**
 
@@ -322,6 +387,13 @@ RSB = advanceWidth - (lsb + xMax - xMin)
 ```
 
 Where `xMin` and `xMax` come from the glyph's bounding box in the `glyf` table.
+
+**Phantom points** (used by TrueType rasterizer): The rasterizer computes two horizontal phantom points for each glyph:
+```
+pp1 = xMin - lsb            (left phantom point)
+pp2 = pp1 + advanceWidth     (right phantom point)
+```
+These phantom points can be referenced and moved by hinting instructions to adjust metrics at specific sizes.
 
 **Example**: Glyph with `advanceWidth` = 600, `lsb` = 50, `xMin` = 50, `xMax` = 550:
 ```
@@ -363,7 +435,7 @@ The `loca` table maps glyph indices to byte offsets within the `glyf` table. The
 
 **Specification**: [https://learn.microsoft.com/en-us/typography/opentype/spec/loca](https://learn.microsoft.com/en-us/typography/opentype/spec/loca)
 
-The table contains **`numGlyphs + 1`** entries. The extra entry allows calculating the length of the last glyph's data.
+The table contains **`numGlyphs + 1`** entries. The extra entry allows calculating the length of the last glyph's data. Offsets must be in ascending order: `loca[n] <= loca[n+1]`.
 
 #### Short Format (`indexToLocFormat` = 0)
 
@@ -395,6 +467,29 @@ The `name` table contains human-readable strings for the font: family name, styl
 
 **Specification**: [https://learn.microsoft.com/en-us/typography/opentype/spec/name](https://learn.microsoft.com/en-us/typography/opentype/spec/name)
 
+#### Table Structure
+
+**Naming Table Header (version 0):**
+
+| Type | Field | Description |
+|------|-------|-------------|
+| `uint16` | `version` | 0 (or 1 for version 1 with language-tag support) |
+| `uint16` | `count` | Number of name records |
+| `Offset16` | `storageOffset` | Offset from start of table to string storage area |
+
+Followed by `count` **NameRecord** entries (12 bytes each):
+
+| Type | Field | Description |
+|------|-------|-------------|
+| `uint16` | `platformID` | Platform identifier (0=Unicode, 1=Macintosh, 3=Windows) |
+| `uint16` | `encodingID` | Platform-specific encoding (e.g., 1=Unicode BMP for platform 3) |
+| `uint16` | `languageID` | Platform-specific language (e.g., 0x0409 = English US for platform 3) |
+| `uint16` | `nameID` | Name identifier (see table below) |
+| `uint16` | `length` | String length in bytes |
+| `Offset16` | `stringOffset` | Offset from start of storage area to the string |
+
+**String encoding**: Platform 3 (Windows) and Platform 0 (Unicode) strings are encoded in **UTF-16BE**. Platform 1 (Macintosh) strings use platform-specific single- or double-byte encodings. For C# parsing, prefer platform 3 encoding 1 (Windows Unicode BMP) records, which can be decoded with `Encoding.BigEndianUnicode`.
+
 #### Key Name IDs
 
 | Name ID | Description | Example |
@@ -416,6 +511,16 @@ The `name` table contains human-readable strings for the font: family name, styl
 | 14 | License info URL | (license URL) |
 | 16 | Typographic Family name | Used when name ID 1 has been altered for legacy 4-style grouping |
 | 17 | Typographic Subfamily name | Used alongside name ID 16 |
+| 18 | Compatible Full (Mac only) | Macintosh-specific full name override |
+| 19 | Sample text | Display text chosen by the font designer |
+| 20 | PostScript CID findfont name | PostScript name for CID-keyed fonts |
+| 21 | WWS Family Name | Family name conforming to Weight/Width/Slope model (used when IDs 16/17 include non-WWS attributes like "Caption" or "Display") |
+| 22 | WWS Subfamily Name | Subfamily name reflecting only weight, width, and slope attributes |
+| 23 | Light Background Palette | Name for a CPAL color palette suited to light backgrounds |
+| 24 | Dark Background Palette | Name for a CPAL color palette suited to dark backgrounds |
+| 25 | Variations PostScript Name Prefix | PostScript name prefix for variable font instances |
+
+Name IDs 26--255 are reserved for future standard names. Name IDs 256--32767 are reserved for font-specific names (e.g., referenced by layout features).
 
 **Important distinction -- Name IDs 1/2 vs 16/17**: Traditional systems (especially older Windows) only support four styles per family: Regular, Bold, Italic, Bold Italic. For a font like "Roboto Thin", name ID 1 might be "Roboto Thin" and name ID 2 "Regular", while name ID 16 is "Roboto" and name ID 17 is "Thin". Modern software uses IDs 16/17 when present, falling back to 1/2.
 
@@ -429,11 +534,11 @@ The `OS/2` table contains metrics and classification data critical for Windows t
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `version` | `uint16` | Table version (0--5). Version 4+ is most common in modern fonts. |
+| `version` | `uint16` | Table version (0--5). Version 4+ is most common in modern fonts. Version 5 adds `usLowerOpticalPointSize` and `usUpperOpticalPointSize` fields. |
 | `xAvgCharWidth` | `int16` | Weighted average width of lowercase Latin glyphs |
 | `usWeightClass` | `uint16` | Visual weight: 100=Thin, 200=ExtraLight, 300=Light, **400=Regular**, 500=Medium, 600=SemiBold, **700=Bold**, 800=ExtraBold, 900=Black |
 | `usWidthClass` | `uint16` | Visual width: 1=UltraCondensed, 2=ExtraCondensed, 3=Condensed, 4=SemiCondensed, **5=Medium (Normal)**, 6=SemiExpanded, 7=Expanded, 8=ExtraExpanded, 9=UltraExpanded |
-| `fsType` | `uint16` | Embedding permissions. Bit 1: Restricted, Bit 2: Preview & Print, Bit 3: Editable, Bit 8: No subsetting, Bit 9: Bitmap embedding only |
+| `fsType` | `uint16` | Embedding permissions. Bits 0--3 form a usage permissions sub-field (mutually exclusive in v3+): value 0 = Installable, bit 1 (value 2) = Restricted License, bit 2 (value 4) = Preview & Print, bit 3 (value 8) = Editable. Bit 0 is reserved and must be 0. Bits 4--7: Reserved. Bit 8: No subsetting. Bit 9: Bitmap embedding only. Bits 10--15: Reserved. |
 | `ySubscriptXSize` | `int16` | Recommended subscript horizontal size |
 | `ySuperscriptXSize` | `int16` | Recommended superscript horizontal size |
 | `yStrikeoutSize` | `int16` | Strikeout stroke thickness |
@@ -442,7 +547,7 @@ The `OS/2` table contains metrics and classification data critical for Windows t
 | `panose` | `byte[10]` | PANOSE classification (10 digits describing the typeface: family kind, serif style, weight, proportion, contrast, stroke variation, arm style, letterform, midline, x-height) |
 | `ulUnicodeRange1-4` | `uint32` x4 | 128-bit field indicating supported Unicode ranges |
 | `achVendID` | `Tag` | 4-character vendor identifier (registered with Microsoft) |
-| `fsSelection` | `uint16` | Bit 0: Italic, Bit 5: Bold, Bit 6: Regular, Bit 7: USE_TYPO_METRICS, Bit 8: WWS, Bit 9: Oblique |
+| `fsSelection` | `uint16` | Bit 0: Italic, Bit 1: Underscore, Bit 2: Negative, Bit 3: Outlined, Bit 4: Strikeout, Bit 5: Bold, Bit 6: Regular, Bit 7: USE_TYPO_METRICS, Bit 8: WWS, Bit 9: Oblique. Bits 10--15: Reserved. |
 | `usFirstCharIndex` | `uint16` | Minimum Unicode code point (BMP only) |
 | `usLastCharIndex` | `uint16` | Maximum Unicode code point (BMP only) |
 | `sTypoAscender` | `int16` | Typographic ascender (see metrics discussion below) |
@@ -488,6 +593,8 @@ lineHeight = ascender - descender + lineGap
 ```
 
 **Recommendation for cross-platform consistency**: Set `OS/2.fsSelection` bit 7 (`USE_TYPO_METRICS`), and ensure all three metric sets produce the same intended line height. Many modern fonts set `hhea` values equal to the Typo values.
+
+**Variable fonts**: In variable fonts, default line metrics should always use the sTypo* values, and the `USE_TYPO_METRICS` flag must be set. The `hhea` ascender/descender/lineGap fields should be set to the same values as the corresponding sTypo* fields. The usWin* fields should be used only for specifying the clipping rectangle. Line metrics can vary across instances via the MVAR table (`hasc`, `hdsc`, `hlgp` value tags).
 
 ### post (PostScript)
 
@@ -741,9 +848,11 @@ The most widely used format. Maps the entire Basic Multilingual Plane (U+0000 --
 | `uint16` | `length` | Total subtable length |
 | `uint16` | `language` | Language code |
 | `uint16` | `segCountX2` | 2 x number of segments |
-| `uint16` | `searchRange` | Binary search hint |
-| `uint16` | `entrySelector` | Binary search hint |
-| `uint16` | `rangeShift` | Binary search hint |
+| `uint16` | `searchRange` | `2 * (2**floor(log2(segCount)))` -- largest power-of-2 <= segCount, times 2 |
+| `uint16` | `entrySelector` | `floor(log2(searchRange/2))` = `floor(log2(segCount))` |
+| `uint16` | `rangeShift` | `segCount * 2 - searchRange` |
+
+**Note**: As with the table directory, these binary search hint values can be derived from `segCountX2` and parsers are strongly recommended not to rely on the values in the font.
 
 **Segment Arrays** (each has `segCount` entries):
 
@@ -760,17 +869,26 @@ The most widely used format. Maps the entire Basic Multilingual Plane (U+0000 --
 1. Find the segment `i` where `startCode[i] <= c <= endCode[i]`.
 2. If `idRangeOffset[i] == 0`:
    ```
-   glyphIndex = (c + idDelta[i]) mod 65536
+   glyphIndex = (c + idDelta[i]) % 65536
    ```
+   Note: `idDelta[i]` is a signed `int16`, but the addition and modulus are performed as unsigned 16-bit arithmetic. In C#, cast to `ushort`: `glyphIndex = (ushort)(c + idDelta[i]);`
 3. If `idRangeOffset[i] != 0`:
+   The spec defines the lookup using pointer arithmetic relative to the position of `idRangeOffset[i]` itself in the file. The C expression from the spec is:
    ```
-   glyphIndex = glyphIdArray[idRangeOffset[i]/2 + (c - startCode[i]) + (i - segCount)]
-   // More precisely, the address is:
-   // &idRangeOffset[i] + idRangeOffset[i] + 2*(c - startCode[i])
+   glyphIndex = *(idRangeOffset[i]/2 + (c - startCode[i]) + &idRangeOffset[i])
    ```
-   If the resulting glyph index is 0, the character is not mapped. Otherwise, add `idDelta[i]` (mod 65536).
+   In practice (byte-offset arithmetic), the address of the glyph ID is:
+   ```
+   address = &idRangeOffset[i] + idRangeOffset[i] + 2 * (c - startCode[i])
+   ```
+   Or equivalently, using array indices into a flat uint16 buffer starting at the `idRangeOffset` array:
+   ```
+   index_into_glyphIdArray = idRangeOffset[i]/2 + (c - startCode[i]) - (segCount - i)
+   glyphIndex = glyphIdArray[index_into_glyphIdArray]
+   ```
+   If the resulting glyph index is 0, the character is not mapped (missing glyph). If non-zero, add `idDelta[i]` (mod 65536) to get the final glyph index.
 
-The `idRangeOffset` trick uses the offset relative to the current position in the `idRangeOffset` array itself, which is why the formula references `&idRangeOffset[i]`.
+The `idRangeOffset` trick works because the `glyphIdArray` immediately follows the `idRangeOffset` array in the file. The offset is relative to the current position within `idRangeOffset[i]` itself, which is why the formula references `&idRangeOffset[i]`. This is an "obscure indexing trick" (the spec's own words) that avoids storing a separate base pointer.
 
 #### Format 6 -- Trimmed Table Mapping
 
@@ -847,7 +965,7 @@ Every non-empty glyph begins with a 10-byte header:
 
 ### Simple Glyphs
 
-A simple glyph (`numberOfContours >= 0`) contains one or more closed contours, each made of a sequence of points (on-curve and off-curve).
+A simple glyph (`numberOfContours >= 0`) contains zero or more closed contours, each made of a sequence of points (on-curve and off-curve). If a glyph has zero contours, no additional glyph data beyond the header is required, though it may still contain instructions that operate on phantom points.
 
 **Data after header:**
 
@@ -870,7 +988,7 @@ A simple glyph (`numberOfContours >= 0`) contains one or more closed contours, e
 | 3 | `REPEAT_FLAG` | If set, the next byte specifies how many additional times this flag byte is repeated |
 | 4 | `X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR` | If `X_SHORT_VECTOR` set: 0=negative, 1=positive. If `X_SHORT_VECTOR` clear: 1=x is same as previous (delta=0), 0=x is a signed int16 delta. |
 | 5 | `Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR` | Same logic as bit 4 but for y-coordinate |
-| 6 | `OVERLAP_SIMPLE` | Contour may overlap (hint for rasterizer) |
+| 6 | `OVERLAP_SIMPLE` | Contour may overlap. Not required (contours may overlap without this flag). When used, must be set on the first flag byte for the glyph. Some rasterizers use this to activate additional overlap-handling logic. |
 | 7 | Reserved | Set to 0 |
 
 #### Coordinate Encoding
@@ -923,22 +1041,36 @@ After the glyph header, the data consists of one or more **component records**, 
 
 #### Component Flags
 
-| Bit | Name | Description |
-|-----|------|-------------|
-| 0 | `ARG_1_AND_2_ARE_WORDS` | If set, arguments are `int16`; otherwise `int8` |
-| 1 | `ARGS_ARE_XY_VALUES` | If set, arguments are signed xy offsets; otherwise, they are point numbers for point-matching |
-| 2 | `ROUND_XY_TO_GRID` | Round xy offsets to nearest grid line after scaling |
-| 3 | `WE_HAVE_A_SCALE` | A single `F2DOT14` scale value follows arguments (applied to both x and y) |
-| 5 | `MORE_COMPONENTS` | Another component record follows this one |
-| 6 | `WE_HAVE_AN_X_AND_Y_SCALE` | Two `F2DOT14` values follow: x-scale and y-scale |
-| 7 | `WE_HAVE_A_TWO_BY_TWO` | Four `F2DOT14` values follow: a full 2x2 transformation matrix (xscale, scale01, scale10, yscale) |
-| 8 | `WE_HAVE_INSTRUCTIONS` | Hinting instructions follow all components |
-| 9 | `USE_MY_METRICS` | Use this component's advance width and lsb for the composite glyph (typically set on the base glyph) |
-| 10 | `OVERLAP_COMPOUND` | Components may overlap |
+| Bit | Mask | Name | Description |
+|-----|------|------|-------------|
+| 0 | 0x0001 | `ARG_1_AND_2_ARE_WORDS` | If set, arguments are 16-bit (`int16` or `uint16`); otherwise 8-bit (`int8` or `uint8`) |
+| 1 | 0x0002 | `ARGS_ARE_XY_VALUES` | If set, arguments are signed xy offsets; otherwise, they are unsigned point numbers for point-matching. Must be set for the first component. |
+| 2 | 0x0004 | `ROUND_XY_TO_GRID` | Round xy offsets to nearest grid line after scaling. Ignored if `ARGS_ARE_XY_VALUES` is not set. |
+| 3 | 0x0008 | `WE_HAVE_A_SCALE` | A single `F2DOT14` scale value follows arguments (applied to both x and y). Mutually exclusive with bits 6 and 7. |
+| 4 | 0x0010 | (reserved) | Reserved, set to 0 |
+| 5 | 0x0020 | `MORE_COMPONENTS` | Another component record follows this one |
+| 6 | 0x0040 | `WE_HAVE_AN_X_AND_Y_SCALE` | Two `F2DOT14` values follow: x-scale and y-scale. Mutually exclusive with bits 3 and 7. |
+| 7 | 0x0080 | `WE_HAVE_A_TWO_BY_TWO` | Four `F2DOT14` values follow: a full 2x2 transformation matrix (xscale, scale01, scale10, yscale). Mutually exclusive with bits 3 and 6. |
+| 8 | 0x0100 | `WE_HAVE_INSTRUCTIONS` | Hinting instructions follow all components |
+| 9 | 0x0200 | `USE_MY_METRICS` | Use this component's advance width and lsb for the composite glyph (typically set on the base glyph). Behavior undefined for rotated components. |
+| 10 | 0x0400 | `OVERLAP_COMPOUND` | Components may overlap. When used, must be set on the flag word for the first component. |
+| 11 | 0x0800 | `SCALED_COMPONENT_OFFSET` | The xy offset values are in the component's coordinate system and should be scaled by the component's transform. Ignored if `ARGS_ARE_XY_VALUES` is not set. |
+| 12 | 0x1000 | `UNSCALED_COMPONENT_OFFSET` | The xy offset values are in the parent's coordinate system and should NOT be scaled. Ignored if `ARGS_ARE_XY_VALUES` is not set. Default behavior on Microsoft/Apple platforms when neither bit 11 nor 12 is set. |
+| 13--15 | 0xE010 | (reserved) | Reserved (bits 4, 13, 14, 15), set to 0 |
 
 The `MORE_COMPONENTS` flag (bit 5) is set on all component records except the last one. After the last component (where bit 5 is clear), optional hinting instructions may follow if `WE_HAVE_INSTRUCTIONS` was set on any component.
 
 When `ARGS_ARE_XY_VALUES` is set (the common case), `argument1` and `argument2` are x and y translation offsets for positioning the component. When clear, they are point indices used to align specific points of the parent and child glyphs.
+
+**2x2 Transform** (`WE_HAVE_A_TWO_BY_TWO`): The four `F2DOT14` values are read in order: `xscale`, `scale01`, `scale10`, `yscale`. For a pre-transformation position (x, y), the post-transformation position (x', y') is:
+```
+[x']   [xscale  scale01] [x]
+[y'] = [scale10 yscale ] [y]
+
+x' = xscale * x + scale01 * y
+y' = scale10 * x + yscale * y
+```
+When `WE_HAVE_AN_X_AND_Y_SCALE` is used, only two values are read (xscale and yscale); scale01 and scale10 are implicitly zero. When `WE_HAVE_A_SCALE` is used, a single value is read and applied as both xscale and yscale (scale01 and scale10 are zero).
 
 ---
 
@@ -989,7 +1121,7 @@ The scan converter determines which pixels to turn on based on the outline:
 
 **Rule 1**: If a pixel's center point falls **inside** the outline contour, the pixel is turned on (filled).
 
-**Rule 2**: If a contour passes **exactly through** a pixel center, that pixel is turned on.
+**Rule 2 (on-boundary)**: If a contour passes **exactly through** a pixel center, that pixel is turned on if the outline is "entering" a filled area at that point. The precise formulation: if the scan line intersects a contour exactly at a pixel center, the pixel is turned on if the fill region is to the right of the contour direction at that point. In practice, this rule primarily matters for horizontal and vertical glyph edges that align exactly on the pixel grid.
 
 **Interior determination** uses the **non-zero winding number rule**: Cast a ray from the test point to infinity. For each contour crossing, add +1 if the contour crosses left-to-right, -1 if right-to-left. If the final sum is non-zero, the point is inside.
 
@@ -1051,11 +1183,39 @@ At standard Windows resolution (96 dpi), **12pt text = 16 ppem**, which is a com
 
 ### Legacy kern Table
 
-The `kern` table provides simple pair-based kerning adjustments. Although superseded by `GPOS`, it remains widely supported as a fallback.
+The `kern` table provides simple pair-based kerning adjustments. Although superseded by `GPOS`, it remains widely supported as a fallback. **CFF-outline fonts cannot use the `kern` table** -- they must use `GPOS` for kerning.
 
 **Specification**: [https://learn.microsoft.com/en-us/typography/opentype/spec/kern](https://learn.microsoft.com/en-us/typography/opentype/spec/kern)
 
-**Format 0 subtable** (the most common format):
+> **Note**: Apple defines an extended version of the `kern` table with additional functionality (different header format, more subtable formats). Those Apple extensions are not supported in OpenType. The structures below describe the OpenType/Windows version.
+
+**Table Header (KernHeader):**
+
+| Type | Field | Description |
+|------|-------|-------------|
+| `uint16` | `version` | Table version number -- set to 0 |
+| `uint16` | `nTables` | Number of subtables in the kerning table |
+
+**Subtable Header** (each subtable begins with):
+
+| Type | Field | Description |
+|------|-------|-------------|
+| `uint16` | `version` | Subtable version -- set to 0 |
+| `uint16` | `length` | Length of the subtable in bytes (including this header) |
+| `uint16` | `coverage` | Bit field describing the subtable contents |
+
+**Coverage field bits:**
+
+| Bit(s) | Name | Description |
+|--------|------|-------------|
+| 0 | horizontal | 1 = horizontal kerning data, 0 = vertical |
+| 1 | minimum | 1 = minimum values, 0 = kerning values |
+| 2 | cross-stream | 1 = kerning perpendicular to text flow |
+| 3 | override | 1 = replace accumulated value rather than add |
+| 4--7 | reserved | Set to 0 |
+| 8--15 | format | Subtable format (0 or 2; only format 0 is supported by Windows) |
+
+**Format 0 subtable** (the most common and the only format supported by Windows):
 
 | Type | Field | Description |
 |------|-------|-------------|
@@ -1064,15 +1224,15 @@ The `kern` table provides simple pair-based kerning adjustments. Although supers
 | `uint16` | `entrySelector` | Binary search hint |
 | `uint16` | `rangeShift` | Binary search hint |
 
-Each pair record (6 bytes):
+Each pair record (KernPair, 6 bytes):
 
 | Type | Field | Description |
 |------|-------|-------------|
 | `uint16` | `left` | Glyph index for left glyph |
 | `uint16` | `right` | Glyph index for right glyph |
-| `FWORD` | `value` | Kerning value in FUnits (negative = tighten, positive = loosen) |
+| `FWORD` | `value` | Kerning value in FUnits (negative = tighten spacing, positive = loosen spacing) |
 
-Pairs are sorted by the combined key `(left << 16) | right` for binary search.
+Pairs must be sorted by combining `left` and `right` into an unsigned 32-bit key `(left << 16) | right` for binary search.
 
 **Example pairs** (conceptual):
 
@@ -1112,12 +1272,25 @@ The **Glyph Positioning** table is the OpenType replacement for `kern`, providin
 - ClassDef1: groups left-side glyphs into classes
 - ClassDef2: groups right-side glyphs into classes
 - A 2D array indexed by [class1, class2] holds ValueRecords
+- Class 0 is the default class for glyphs not explicitly assigned
+
+**ValueRecord structure**: Each ValueRecord can contain up to 8 fields, but which fields are present is controlled by a `ValueFormat` flags word:
+
+| Mask | Name | Description |
+|------|------|-------------|
+| 0x0001 | `X_PLACEMENT` | Horizontal adjustment for placement |
+| 0x0002 | `Y_PLACEMENT` | Vertical adjustment for placement |
+| 0x0004 | `X_ADVANCE` | Horizontal adjustment for advance width |
+| 0x0008 | `Y_ADVANCE` | Vertical adjustment for advance (vertical layout) |
+| 0x0010--0x0080 | Device offsets | Offsets to Device/VariationIndex tables for pixel-level adjustments |
+
+**For BMFont kerning extraction**: Only the `X_ADVANCE` field (`xAdvance`) from `ValueRecord1` (the first glyph's record) is relevant. `xPlacement`, `yPlacement`, and `yAdvance` are typically zero for simple horizontal kerning. When both `kern` and GPOS kerning exist, **GPOS takes precedence** -- use only GPOS data in that case.
 
 **Advantages of GPOS over kern:**
 
 | Feature | kern | GPOS |
 |---------|------|------|
-| Adjustments per pair | One value (horizontal only) | Both glyphs, X and Y positions and advances |
+| Adjustments per pair | One value per pair (horizontal or cross-stream, but not both) | Both glyphs, X and Y positions and advances simultaneously |
 | Class-based kerning | No | Yes (Format 2) |
 | Contextual positioning | No | Yes (Types 7, 8) |
 | Mark positioning | No | Yes (Types 4, 5, 6) |
@@ -1395,7 +1568,7 @@ A managed wrapper around the native FreeType library.
 - Wraps FreeType 2.x via P/Invoke
 - Requires shipping native FreeType binaries for each target platform
 - Targets .NET Framework; may work on .NET Core/.NET 5+ with effort
-- **Not actively maintained** -- last release in 2018
+- **Not actively maintained** -- last release in 2018, repository archived
 
 **Usage example:**
 
@@ -1434,7 +1607,7 @@ FTBitmap bitmap = face.Glyph.Bitmap;
 
 **Typography.OpenFont**
 - Pure managed C# OpenType parser
-- GitHub: [https://github.com/AmbientOS/Typography](https://github.com/AmbientOS/Typography)
+- GitHub: [https://github.com/AmbientOS/Typography](https://github.com/AmbientOS/Typography) (also known as `Typography.OpenFont` on NuGet)
 - Reads TrueType and CFF outlines, provides access to most OpenType tables
 - Less actively maintained; API can be rough
 
@@ -1571,7 +1744,7 @@ When generating a BMFont from a TTF, font-level and glyph-level metrics must be 
 
 | Resource | URL |
 |----------|-----|
-| **OpenType Specification (1.9.1)** -- Primary reference for all tables | [https://learn.microsoft.com/en-us/typography/opentype/spec/](https://learn.microsoft.com/en-us/typography/opentype/spec/) |
+| **OpenType Specification (1.9.1)** -- Primary reference for all tables. This document's claims were verified against this version. | [https://learn.microsoft.com/en-us/typography/opentype/spec/](https://learn.microsoft.com/en-us/typography/opentype/spec/) |
 | **Apple TrueType Reference Manual** -- Apple's original TrueType documentation | [https://developer.apple.com/fonts/TrueType-Reference-Manual/](https://developer.apple.com/fonts/TrueType-Reference-Manual/) |
 | **ISO/IEC 14496-22** -- International standard for Open Font Format | [https://standards.iso.org/](https://standards.iso.org/) |
 | **TrueType Fundamentals** -- Overview of TrueType digitization and rendering | [https://learn.microsoft.com/en-us/typography/opentype/spec/ttch01](https://learn.microsoft.com/en-us/typography/opentype/spec/ttch01) |
@@ -1594,6 +1767,10 @@ When generating a BMFont from a TTF, font-level and glyph-level metrics must be 
 | `GPOS` | [https://learn.microsoft.com/en-us/typography/opentype/spec/gpos](https://learn.microsoft.com/en-us/typography/opentype/spec/gpos) |
 | `GSUB` | [https://learn.microsoft.com/en-us/typography/opentype/spec/gsub](https://learn.microsoft.com/en-us/typography/opentype/spec/gsub) |
 | `GDEF` | [https://learn.microsoft.com/en-us/typography/opentype/spec/gdef](https://learn.microsoft.com/en-us/typography/opentype/spec/gdef) |
+| `cvt` | [https://learn.microsoft.com/en-us/typography/opentype/spec/cvt](https://learn.microsoft.com/en-us/typography/opentype/spec/cvt) |
+| `fpgm` | [https://learn.microsoft.com/en-us/typography/opentype/spec/fpgm](https://learn.microsoft.com/en-us/typography/opentype/spec/fpgm) |
+| `prep` | [https://learn.microsoft.com/en-us/typography/opentype/spec/prep](https://learn.microsoft.com/en-us/typography/opentype/spec/prep) |
+| `gasp` | [https://learn.microsoft.com/en-us/typography/opentype/spec/gasp](https://learn.microsoft.com/en-us/typography/opentype/spec/gasp) |
 
 ### Libraries and Tools
 

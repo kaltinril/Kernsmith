@@ -55,6 +55,33 @@ OpenType fonts contain one of two outline flavors, distinguished by the `sfntVer
 
 Both outline types share the same OpenType table infrastructure for metrics (`hmtx`, `hhea`), character mapping (`cmap`), naming (`name`), and layout features (`GSUB`, `GPOS`).
 
+### Table Directory Structure
+
+Every OpenType font begins with a **Table Directory** (also called the Offset Table):
+
+```
+Type      Name              Description
+uint32    sfntVersion       0x00010000 (TrueType) or 0x4F54544F ('OTTO', CFF)
+uint16    numTables         Number of tables
+uint16    searchRange       (2**floor(log2(numTables))) * 16
+uint16    entrySelector     floor(log2(numTables))
+uint16    rangeShift        numTables * 16 - searchRange
+```
+
+Followed by `numTables` **Table Records**, sorted by tag:
+
+```
+Type      Name         Description
+Tag       tableTag     4-byte table identifier
+uint32    checksum     Checksum for this table
+Offset32  offset       Offset from beginning of font file
+uint32    length       Length of this table (unpadded)
+```
+
+All tables must begin on 4-byte boundaries, padded with zeros. The `searchRange`/`entrySelector`/`rangeShift` fields assist binary search but should be derived from `numTables` rather than trusted from the file (to avoid attack vectors).
+
+> **Note**: Apple's TrueType Reference Manual defines `0x74727565` ('true') and `0x74797031` ('typ1') as additional sfntVersion values, but these should **not** be used for OpenType fonts.
+
 ### GSUB and GPOS
 
 The **GSUB** (Glyph Substitution) and **GPOS** (Glyph Positioning) tables power OpenType's advanced typographic features. They use a shared architecture of Scripts, Languages, Features, and Lookups.
@@ -134,8 +161,8 @@ WOFF is a compressed wrapper around OpenType/TrueType fonts, designed for effici
 - **Optional blocks**:
   - Extended metadata (XML, zlib-compressed)
   - Private data block (arbitrary vendor data)
-- **Round-trip**: Lossless conversion to/from sfnt. Decompressing a WOFF file produces a byte-identical sfnt (with possible table reordering).
-- **MIME type**: `font/woff`
+- **Round-trip**: Lossless conversion to/from sfnt. The font data is semantically identical; individual table data is byte-identical after decompression, though table ordering and padding in the reconstructed sfnt may differ from the original.
+- **MIME type**: `application/font-woff` (per W3C spec Appendix B; `font/woff` is also widely used via IANA registration)
 
 **Detection example**:
 ```
@@ -160,16 +187,27 @@ Offset  Size  Field
 40      4     privLength
 ```
 
+**WOFF 1.0 Table Directory Entry** (20 bytes each, following the header):
+```
+Offset  Size  Field
+0       4     tag              (table identifier)
+4       4     offset           (offset to table data within WOFF file)
+8       4     compLength       (compressed table data length)
+12      4     origLength       (uncompressed table data length)
+16      4     origChecksum     (checksum of uncompressed table data)
+```
+
 **Reference**: <https://www.w3.org/TR/WOFF/>
 
 ### WOFF 2.0
 
-- **W3C Recommendation**: March 2018
+- **W3C Recommendation**: March 2018 (first); latest revision August 2024
 - **Magic number**: `0x774F4632` (ASCII `wOF2`)
-- **Compression**: **Brotli** (achieves 5-10% better compression than WOFF 1.0 on average; up to 30% for larger fonts)
+- **Compression**: **Brotli** (achieves 5-10% better compression than WOFF 1.0 on average; up to 30% for larger fonts). Unlike WOFF 1.0 where each table is compressed individually, WOFF 2.0 uses a **single compressed data block** for all table data.
 - **Content-aware preprocessing**: Before Brotli compression, specific tables undergo preprocessing transforms:
-  - `glyf` and `loca`: Triplet encoding of point coordinates, split into separate streams
-  - `hmtx`: Reconstructed from `glyf` data where possible, eliminating redundancy
+  - `glyf`: Restructured into separate substreams (nContour, nPoints, flags, glyph data, composite data, bounding boxes, instructions) for better entropy coding
+  - `loca`: Reconstructed entirely from `glyf` decode; `transformLength` is always zero
+  - `hmtx`: Eliminates redundant left-side-bearing values when they match `xMin` values from the `glyf` table
   - Other tables may use null transform or custom transforms identified by transform flags
 - **Header size**: 48 bytes
 - **Supports font collections** (`flavor` = `ttcf`)
@@ -187,6 +225,7 @@ Offset  Size  Field
 4       4     flavor           (sfntVersion of the input font)
 8       4     length           (total WOFF2 file size)
 12      2     numTables
+14      2     reserved         (must be 0)
 16      4     totalSfntSize    (uncompressed size, informational only)
 20      4     totalCompressedSize
 24      2     majorVersion
@@ -225,6 +264,21 @@ Offset  Size  Field
 4. Reconstruct the sfnt as with WOFF 1.0.
 
 > **Note**: WOFF2 decompression is significantly more complex than WOFF1 due to the preprocessing transforms. Using a library (e.g., Google's `woff2` reference implementation) is strongly recommended over hand-rolling.
+
+#### C# Implementation Guidance
+
+- **WOFF 1.0 (zlib)**: The compressed data uses the zlib format (RFC 1950), which wraps DEFLATE with a 2-byte header and 4-byte checksum. .NET's `DeflateStream` expects raw DEFLATE, so you must **skip the first 2 bytes** of each compressed table before passing to `DeflateStream` (and ignore the trailing 4-byte Adler-32 checksum). Alternatively, use `System.IO.Compression.ZLibStream` (.NET 6+) which handles the zlib framing natively, or the `SharpZipLib` NuGet package for older .NET targets.
+- **WOFF 2.0 (Brotli)**: Use `System.IO.Compression.BrotliStream` (built into .NET Core 2.1+ / .NET 5+). This handles the Brotli decompression of the single compressed data block. However, the content-aware **inverse transforms** for `glyf`, `loca`, and `hmtx` tables must be implemented separately -- `BrotliStream` only handles the compression layer, not the OpenType-specific preprocessing. For a complete solution, consider wrapping Google's native `woff2` library via P/Invoke, or using a managed port if available.
+
+### Key Differences Between WOFF 1.0 and WOFF 2.0
+
+| Property | WOFF 1.0 | WOFF 2.0 |
+|----------|----------|----------|
+| **Compression** | zlib (per-table) | Brotli (single block) |
+| **Preprocessing** | None | Content-aware transforms for `glyf`, `loca`, `hmtx` |
+| **Table directory** | Fixed-size entries (20 bytes each) | Variable-size entries with flag-based tag encoding |
+| **Collections** | Not supported | Supported (CollectionHeader + CollectionFontEntry records) |
+| **Typical savings** | ~40% vs raw sfnt | ~5-10% better than WOFF 1.0 on average (up to ~30% for larger fonts) |
 
 ### Relevance to bmfontier
 
@@ -309,13 +363,13 @@ These are existing bitmap font formats -- formats that store pre-rendered pixel 
 - **Format**: Plain text, human-readable
 - **Structure**: Header with global properties, followed by per-glyph bitmap data in hexadecimal
 
-**Example** (glyph 'A' in a simple 8x16 font):
+**Example** (glyph 'A' in a simple 8x8 font):
 ```
 STARTCHAR A
 ENCODING 65
 SWIDTH 500 0
 DWIDTH 8 0
-BBX 8 16 0 -2
+BBX 8 8 0 0
 BITMAP
 18
 24
@@ -328,7 +382,7 @@ BITMAP
 ENDCHAR
 ```
 
-Each hex line represents one row of pixels. `18` = `00011000` in binary, meaning pixels 4 and 5 are set. `7E` = `01111110`, drawing the crossbar of the 'A'.
+Each hex line represents one row of pixels; the number of hex lines must match the height in the `BBX` field. `18` = `00011000` in binary, meaning pixels 4 and 5 are set. `7E` = `01111110`, drawing the crossbar of the 'A'.
 
 BDF files begin with the line `STARTFONT 2.1` and are straightforward to parse.
 
@@ -383,12 +437,12 @@ The OpenType specification defines five registered (standard) axes:
 | Tag | Name | Description | Typical Range | CSS Property |
 |-----|------|-------------|---------------|-------------|
 | `wght` | Weight | Stroke thickness (Thin to Black) | 1--1000 (400 = Regular, 700 = Bold) | `font-weight` |
-| `wdth` | Width | Overall character width (Condensed to Expanded) | 50--200 (100 = Normal) | `font-stretch` |
-| `slnt` | Slant | Oblique angle in degrees | -90 to 90 (0 = upright, negative = clockwise) | `font-style: oblique Xdeg` |
+| `wdth` | Width | Overall character width (Condensed to Expanded) | >0 (percentage of normal; 100 = Normal). No upper bound per spec, though values typically range 50--200. | `font-stretch` |
+| `slnt` | Slant | Oblique angle in counter-clockwise degrees | >-90 to <+90 (exclusive; 0 = upright). Typical right-leaning oblique has **negative** values (matches `post.italicAngle`). | `font-style: oblique Xdeg` |
 | `ital` | Italic | Italic vs upright (binary toggle, not continuous) | 0 or 1 | `font-style: italic` |
-| `opsz` | Optical Size | Adjusts design for different point sizes | Font-specific (e.g., 8--144) | `font-optical-sizing` |
+| `opsz` | Optical Size | Adjusts design for different point sizes | Font-specific (e.g., 8--144). Scale corresponds to text size in points. | `font-optical-sizing` |
 
-**Custom axes** use tags that start with an uppercase letter (e.g., `GRAD` for Grade, `CASL` for Casual, `CRSV` for Cursive). Any 4-character tag with at least one uppercase letter is valid as a custom axis.
+**Custom axes** (also called "foundry-defined" tags) must begin with an uppercase letter (0x41--0x5A) and use **only uppercase letters or digits** (e.g., `GRAD` for Grade, `CASL` for Casual, `CRSV` for Cursive). Registered tags are guaranteed to never use this pattern (they use lowercase), ensuring no conflicts between custom and registered tags.
 
 ### Named Instances
 
@@ -413,6 +467,22 @@ Named instances allow variable fonts to behave like traditional font families in
 | `HVAR` | Horizontal Metrics Variations -- deltas for `hmtx` values across the design space |
 | `VVAR` | Vertical Metrics Variations -- deltas for `vmtx` values (vertical text) |
 | `MVAR` | Metrics Variations -- deltas for global metrics (ascender, descender, etc.) |
+
+### fvar VariationAxisRecord Structure
+
+Each axis in the `fvar` table is described by a 20-byte record:
+
+```
+Type      Name          Description
+Tag       axisTag       4-byte axis identifier (e.g., 'wght')
+Fixed     minValue      Minimum coordinate value (user scale)
+Fixed     defaultValue  Default coordinate value (user scale)
+Fixed     maxValue      Maximum coordinate value (user scale)
+uint16    flags         Bit 0: HIDDEN_AXIS (axis not exposed in UI); bits 1-15 reserved
+uint16    axisNameID    name table ID for display name (must be >255 and <32768)
+```
+
+The `Fixed` type is a 16.16 fixed-point number (e.g., `0x02BC0000` = 700.0).
 
 ### Handling for BMFont Generation
 
@@ -463,11 +533,11 @@ Color fonts extend OpenType with mechanisms for multi-color glyph rendering. The
 
 #### CPAL (Color Palette)
 
-The `CPAL` table stores one or more **color palettes**, each containing an array of color entries in **BGRA** format (Blue, Green, Red, Alpha -- each one byte, little-endian).
+The `CPAL` table stores one or more **color palettes**, each containing an array of color entries in **BGRA** byte order (Blue, Green, Red, Alpha -- each one unsigned byte, in sRGB color space). Colors are not pre-multiplied; alpha of 0 = fully transparent, 255 = fully opaque.
 
 - Multiple palettes allow theme variants (e.g., light mode vs dark mode colors).
 - Each palette has the same number of entries.
-- **Special palette index `0xFFFF`** means "use the current foreground/text color." This allows color glyphs to adapt to the surrounding text color.
+- **Special palette entry index `0xFFFF`** (used in COLR table references) means "use the current foreground/text color." This allows color glyphs to adapt to the surrounding text color. The maximum usable palette entry index is therefore 65534.
 
 #### COLRv0 (Simple Layered Color)
 
@@ -482,16 +552,18 @@ Example: A flag emoji might be composed of 5 layers -- a background rectangle, t
 
 #### COLRv1 (Advanced Color)
 
-COLRv1 (introduced in OpenType 1.9) dramatically expands the color model:
+COLRv1 (COLR table version 1, with Paint-based structures added in OpenType 1.8 and refined through 1.9/1.9.1) dramatically expands the color model:
 
 - **Paint tables**: A directed acyclic graph (DAG) of Paint operations.
 - **Gradients**: Linear, radial, and sweep gradients with multiple color stops.
 - **Transforms**: 2D affine transforms (translate, rotate, scale, skew).
-- **Compositing**: 30+ Porter-Duff blending/compositing modes.
+- **Compositing**: 13 Porter-Duff compositing modes + 16 blending modes (per W3C Compositing and Blending Level 1).
 - **Reusable sub-graphs**: Paint tables can be shared via PaintColrGlyph.
 - **Variable**: All coordinates, colors, and transforms can be variable (respond to font variation axes).
 
 COLRv1 is essentially a vector graphics format embedded in the font, comparable to SVG but more constrained and more efficient.
+
+> **Color interpolation note**: For COLRv1 gradients, the OpenType spec requires color interpolation to be computed using **linear-light** (linearized sRGB) values with **pre-multiplied alpha**. This differs from SVG's default sRGB interpolation.
 
 ### SVG Table
 
@@ -505,7 +577,7 @@ The `SVG ` table stores **SVG 1.1 documents** for color glyph rendering.
 - Each SVG document may define multiple glyphs using `<svg>` elements with `id="glyphXX"` attributes.
 - CSS styling within the SVG is permitted.
 
-SVG color fonts are used by Mozilla (Firefox emoji) and are well-supported across browsers. They offer the most design flexibility but are the largest and most complex to render.
+SVG color fonts are used by Mozilla (Firefox emoji) and are well-supported across browsers. They offer the most design flexibility but are the largest and most complex to render. SVG documents in the font may also reference colors from the CPAL palette via CSS custom properties, and use `currentColor` for the foreground text color.
 
 ### CBDT/CBLC (Color Bitmap Data/Location)
 
@@ -519,10 +591,11 @@ SVG color fonts are used by Mozilla (Firefox emoji) and are well-supported acros
 
 - **Developer**: Apple
 - **Usage**: **Apple Color Emoji** uses this format.
-- **Approach**: Bitmap images (PNG, JPEG, or TIFF) organized by **strikes** (ppem size or device resolution).
-- Each strike contains one image per glyph.
-- The `sbix` table includes a header with strike count, followed by strike headers (ppem, ppi), followed by per-glyph data (graphicType tag + image data).
-- Falls back to monochrome outlines at sizes where no strike is available.
+- **Approach**: Bitmap images (PNG, JPEG, or TIFF) organized by **strikes**. Each strike targets a specific **ppem size** and **device pixel density (ppi)**, allowing the same ppem at different resolutions (e.g., 96 ppi vs 192 ppi for Retina).
+- Each strike contains one glyph data record per glyph ID (from `maxp`). Empty records (zero length) indicate no bitmap for that glyph in that strike.
+- **Glyph data record**: `originOffsetX` (int16), `originOffsetY` (int16), `graphicType` (Tag: `png `, `jpg `, `tiff`, or `dupe`), followed by embedded image data. The `dupe` type contains a uint16 glyph ID reference instead of image data.
+- **Fallback**: If no bitmap exists for a glyph in any strike, the outline from `glyf`/`CFF` is rendered. A flags field (bit 1) in the header can also request outlines be drawn on top of bitmaps.
+- **Size selection**: When the exact ppem is unavailable, implementations choose the closest available larger strike or closest integer-multiple larger strike.
 
 ### Challenges for BMFont Generation
 
@@ -662,6 +735,8 @@ macOS uses **Core Text** for font management. The `CTFontManager` API can enumer
 | Bytes (hex) | ASCII | Format | Notes |
 |-------------|-------|--------|-------|
 | `00 01 00 00` | (none) | TrueType / OpenType (TrueType outlines) | sfntVersion 1.0 |
+| `74 72 75 65` | `true` | TrueType (legacy Mac) | Apple-specific sfntVersion; not valid OpenType but may be encountered |
+| `74 79 70 31` | `typ1` | Type 1 in sfnt wrapper (legacy Mac) | Apple-specific; wraps Type 1 outlines in an sfnt container. Very rare. |
 | `4F 54 54 4F` | `OTTO` | OpenType (CFF outlines) | sfntVersion 'OTTO' |
 | `74 74 63 66` | `ttcf` | Font Collection (TTC/OTC) | Contains multiple fonts |
 | `77 4F 46 46` | `wOFF` | WOFF 1.0 | Compressed sfnt (zlib) |
@@ -683,6 +758,10 @@ function DetectFontFormat(byte[] data):
     switch magic:
         case 0x00010000:
             return TrueType_OpenType    // TrueType outlines
+        case 0x74727565:               // 'true' (legacy Mac TrueType)
+            return TrueType_OpenType    // Treat same as 0x00010000
+        case 0x74797031:               // 'typ1' (legacy Mac Type 1 in sfnt wrapper)
+            return Type1_sfnt           // Rare; old Mac-style wrapped Type 1
         case 0x4F54544F:               // 'OTTO'
             return OpenType_CFF         // CFF outlines
         case 0x74746366:               // 'ttcf'
@@ -707,6 +786,8 @@ function DetectFontFormat(byte[] data):
 ```
 
 For WOFF1 and WOFF2, after decompression, re-run detection on the decompressed data to determine the underlying font type (TrueType or CFF).
+
+> **Note on macOS `.dfont` files**: macOS data-fork suitcase fonts (`.dfont`) wrap one or more sfnt resources in an Apple resource-fork format. They do not start with a standard sfnt magic number. The first bytes are a resource fork header (resource data offset, resource map offset, etc.). These are uncommon outside macOS system fonts and can be treated as out of scope for most applications. If needed, FreeType can load `.dfont` files transparently.
 
 ---
 
@@ -741,7 +822,9 @@ Converting scalable outlines to fixed-size bitmap glyphs involves several consid
 | `hhea.ascender - hhea.descender + hhea.lineGap` or `OS/2.sTypoAscender - OS/2.sTypoDescender + OS/2.sTypoLineGap` | `lineHeight` | Total line height |
 | `kern` table or GPOS Lookup Type 2 | `kerning` pairs | Horizontal adjustment between specific glyph pairs |
 
-Note: All OpenType metrics are in **font design units** (typically 1000 or 2048 units per em). They must be scaled to pixel values: `pixelValue = designUnits * fontSize / unitsPerEm`.
+Note: All OpenType metrics are in **font design units** (typically 1000 units per em for CFF fonts, 2048 for TrueType). They must be scaled to pixel values: `pixelValue = designUnits * fontSize / unitsPerEm`.
+
+> **CFF vs TrueType unitsPerEm**: While the `head` table always contains `unitsPerEm`, the conventional value differs: TrueType fonts typically use 2048 (a power of two, beneficial for the TrueType hinting VM), while CFF fonts typically use 1000 (inherited from PostScript convention). Any value between 16 and 16384 is valid per the spec.
 
 ### Kerning Extraction
 
@@ -765,23 +848,27 @@ Kerning data may exist in two places in an OpenType font:
 
 ### OS/2 fsType Field
 
-The `fsType` field in the `OS/2` table specifies font embedding and usage permissions. It is a bitfield, but **bits 0-3 are mutually exclusive** (only one should be set).
+The `fsType` field in the `OS/2` table specifies font embedding and usage permissions. It is a 16-bit bitfield. Bits 0--3 form an "embedding permissions" sub-field: **bit 0 is permanently reserved and must be zero**; at most one of bits 1, 2, or 3 should be set (they are mutually exclusive per OpenType 1.4+/OS/2 version 3+). The valid values for the sub-field (bits 0--3, mask `0x000F`) are 0, 2, 4, or 8.
+
+> **Note**: In OS/2 versions 0--2, bits 0--3 were not explicitly required to be mutually exclusive. Some older fonts set both bit 2 and bit 3 (value 12) to indicate both preview/print and edit permissions. For those versions, applications should use the *least-restrictive* permission indicated.
 
 #### Embedding Permission Levels (bits 0-3)
 
-| Value | Name | Description |
-|-------|------|-------------|
-| 0 | **Installable Embedding** | No restrictions. Font may be embedded, permanently installed, and used for editing. |
-| 2 | **Restricted License Embedding** | Font must not be modified, embedded, or exchanged. Viewing of pre-embedded fonts is allowed (e.g., in a PDF). |
-| 4 | **Preview & Print Embedding** | Font may be embedded in documents for viewing and printing only. No editing of embedded text. |
-| 8 | **Editable Embedding** | Font may be embedded and temporarily installed for editing documents. Not for permanent installation. |
+| Sub-field Value | Bit Set | Name | Description |
+|-----------------|---------|------|-------------|
+| 0x0000 | (none) | **Installable Embedding** | No restrictions. Font may be embedded, permanently installed, and used for editing. |
+| 0x0002 | bit 1 | **Restricted License Embedding** | Font must not be modified, embedded, or exchanged without explicit permission. Viewing of pre-embedded fonts is allowed (e.g., in a PDF). |
+| 0x0004 | bit 2 | **Preview & Print Embedding** | Font may be embedded in documents for viewing and printing only. No editing of embedded text. Documents must be opened read-only. |
+| 0x0008 | bit 3 | **Editable Embedding** | Font may be embedded and temporarily loaded for editing documents. Not for permanent installation. |
 
 #### Additional Flags
 
-| Bit | Mask | Name | Description |
-|-----|------|------|-------------|
+| Bit(s) | Mask | Name | Description |
+|--------|------|------|-------------|
+| 4--7 | `0x00F0` | Reserved | Must be zero. |
 | 8 | `0x0100` | **No Subsetting** | Font must not be subsetted prior to embedding. The complete font must be embedded. |
 | 9 | `0x0200` | **Bitmap Embedding Only** | Only bitmap data (not outlines) may be embedded. Outline embedding is prohibited. |
+| 10--15 | `0xFC00` | Reserved | Must be zero. |
 
 ### Implications for bmfontier
 
@@ -836,4 +923,11 @@ Implementation priority, based on format prevalence and user impact:
 - **Apple Developer -- Fonts**: <https://developer.apple.com/fonts/>
 - **ISO/IEC 14496-22 (Open Font Format)**: <https://www.iso.org/standard/74461.html>
 - **Google Fonts Variable Fonts Guide**: <https://fonts.google.com/knowledge/introducing_type/introducing_variable_fonts>
-- **Microsoft Typography -- Color Fonts**: <https://learn.microsoft.com/en-us/typography/opentype/spec/colr>
+- **Microsoft Typography -- Color Fonts (COLR)**: <https://learn.microsoft.com/en-us/typography/opentype/spec/colr>
+- **Microsoft Typography -- Standard Bitmap Graphics (sbix)**: <https://learn.microsoft.com/en-us/typography/opentype/spec/sbix>
+- **Microsoft Typography -- Color Palette (CPAL)**: <https://learn.microsoft.com/en-us/typography/opentype/spec/cpal>
+- **Microsoft Typography -- Font Variations (fvar)**: <https://learn.microsoft.com/en-us/typography/opentype/spec/fvar>
+- **Microsoft Typography -- OS/2 table (fsType)**: <https://learn.microsoft.com/en-us/typography/opentype/spec/os2>
+- **OpenType Design-Variation Axis Tag Registry**: <https://learn.microsoft.com/en-us/typography/opentype/spec/dvaraxisreg>
+- **Google WOFF2 Reference Implementation**: <https://github.com/nicehash/woff2> (community mirror; the original Google repo was at `google/woff2`)
+- **W3C Compositing and Blending Level 1** (COLRv1 compositing modes): <https://www.w3.org/TR/compositing-1/>

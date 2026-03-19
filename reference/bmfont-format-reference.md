@@ -11,7 +11,7 @@
    - [Text Format](#text-format)
    - [XML Format](#xml-format)
    - [Binary Format](#binary-format)
-3. [PNG Texture Atlas](#3-png-texture-atlas)
+3. [Texture Atlas](#3-texture-atlas)
 4. [Text Rendering Algorithm](#4-text-rendering-algorithm)
 5. [MonoGame.Extended Implementation](#5-monogameextended-implementation)
 6. [Gum UI Implementation](#6-gum-ui-implementation)
@@ -33,10 +33,13 @@
 | **License** | zlib license |
 | **Main page** | https://www.angelcode.com/products/bmfont/ |
 | **Documentation** | https://www.angelcode.com/products/bmfont/documentation.html |
-| **Source code** | SVN at http://svn.code.sf.net/p/bmfont/code/trunk/ |
+| **Source code** | SVN at https://svn.code.sf.net/p/bmfont/code/trunk/ |
 | **Platform** | Windows native (can run on Linux via [PlayOnLinux](https://www.playonlinux.com/)) |
 | **Current version** | 1.14b beta (2025/08/16) |
 | **First release** | 1.0 (2004/02/14) |
+| **Pixel shader ref** | https://www.angelcode.com/products/bmfont/doc/pixel_shader.html |
+| **Known issues** | https://www.angelcode.com/products/bmfont/doc/known_issues.html |
+| **Command line ref** | https://www.angelcode.com/products/bmfont/doc/command_line.html |
 
 ### Key Features
 
@@ -49,27 +52,32 @@
 - **Multiple output formats** -- text, XML, and binary descriptor formats
 - **Command-line generation** -- batch processing via `bmfont.exe -c config.bmfc -o output.fnt`
 - **Texture pages** -- automatic multi-page atlas generation when glyphs exceed a single texture
+- **Icon image import** -- colored images (BMP, TGA, PNG, JPG, DDS) can be imported and assigned to character slots, enabling mixed text and icon rendering (v1.9+)
+- **Autofit** -- automatically calculates the maximum font size that fits within a defined texture size (v1.14+)
 
-### Version History
+### Version History (Key Releases)
 
 | Version | Date | Notable Changes |
 |---------|------|-----------------|
-| **1.0** | 2004/02/14 | Initial release. Basic TrueType-to-bitmap conversion with text format output. |
-| **1.1** | 2004/03/02 | Added XML output format. Kerning pair export. |
-| **1.2** | 2004/05/12 | Binary format support. Improved texture packing. |
-| **1.3** | 2004/08/07 | Outline rendering. Configurable padding and spacing. |
-| **1.4** | 2004/11/27 | Unicode character selection improvements. |
-| **1.5** | 2005/01/27 | Channel packing support for RGBA channels. |
-| **1.6** | 2005/03/15 | 8-bit texture support. Improved packing efficiency. |
-| **1.7** | 2005/06/10 | Multi-page texture support. |
-| **1.8** | 2005/09/21 | ClearType rendering option. |
-| **1.9** | 2006/02/06 | Supersampling support. Improved anti-aliasing. |
-| **1.10** | 2006/09/12 | Icon image support. Improved texture packing algorithm. |
-| **1.11** | 2007/07/08 | Configurable bit depth. Font smoothing options. |
-| **1.12** | 2009/07/12 | TGA output support. Improved command-line interface. |
-| **1.13** | 2012/08/12 | 64-bit build. Unicode improvements. |
-| **1.14a** | 2019/09/06 | Unicode 13.0 support. DPI-aware rendering. Bug fixes. |
-| **1.14b** | 2025/08/16 | Bug fixes and stability improvements. |
+| **1.0** | 2004/02/14 | First public version. Basic TrueType-to-bitmap conversion with text format output. |
+| **1.1** | 2005/03/05 | 32-bit and 8-bit TGA save options. Manual character spacing option. |
+| **1.2** | 2005/03/09 | Font smoothing options (smoothing without ClearType). |
+| **1.3** | 2005/05/08 | Italic font support. |
+| **1.4** | 2005/07/17 | Kerning pairs now saved. Chooseable charset support (Arabic, Hebrew). |
+| **1.5** | 2005/10/01 | Non-uniform font scaling (Win2K or later). |
+| **1.6** | 2006/02/18 | XML and text format options for font descriptor. |
+| **1.7** | 2006/09/08 | Unicode charset support. 4-channel 32-bit texture monochrome packing. Texture file names tag in font descriptor. |
+| **1.8** | 2006/11/11 | Binary font descriptor format. PNG texture support. Command-line font generation. DDS texture support. Font configuration save/reload. |
+| **1.9** | 2007/08/19 | Colored icon import. Black outline support. Outline encoding in 1 channel. Binary file version incremented. |
+| **1.10** | 2008/05/11 | Unicode characters above U+FFFF. DXT1/3/5 compression. Customizable texture channel content. File format updated. |
+| **1.11** | 2008/10/11 | "Output invalid char glyph" option. Character height vs. line height selection. |
+| **1.12** | 2009/08/02 | Export option presets. Individual texture channel inversion. Command-line tool with completion wait. |
+| **1.13** | 2012/08/12 | Fixed cell height export option. Improved kerning via GPOS table. Alternative glyph rasterization from TrueType outline. Re-added ClearType rendering. Run-length encoding for TGA. Option to force offsets to zero. |
+| **1.14** | 2021/01/05 | Unicode 13.0 support. 64-bit build. Source code under zlib license. Unicode Windows compilation. Autofit feature. Support for Unicode character file paths. |
+| **1.14a** | 2021/04/08 | Fixed crash with auto-fitting. Included both 64-bit and 32-bit builds. |
+| **1.14b** | 2025/08/16 | Fixed UI performance in ANSI mode. Fixed horizontal clipping and xadvance in ANSI mode. Fixed auto-fitter adaptive padding bug. Fixed Unicode command-line string reading. |
+
+> **Note**: Only key releases are shown. See the [official changelog](https://www.angelcode.com/products/bmfont/) for the full list including patch releases (1.0a, 1.4a, 1.8a-c, 1.9a-c, 1.10a-b, 1.11a-b).
 
 ### How It Works
 
@@ -99,13 +107,15 @@ All three formats encode the same logical data: font metadata (info), common ren
 
 ### Text Format
 
-The text format uses a simple tag-value scheme. Each line starts with a tag name followed by space-separated `key=value` pairs. String values are enclosed in double quotes.
+The text format uses a simple tag-value scheme. Each line starts with a tag name followed by space-separated `key=value` pairs. String values are enclosed in double quotes. Fields on a line may appear in any order. Parsers should match by key name, not position.
+
+> **Parsing note**: The `chars count=N` and `kernings count=N` lines are informational and may be absent in files generated by third-party tools. A robust parser should not require them; instead, parse `char` and `kerning` lines until the end of file or a different tag is encountered.
 
 #### Complete Example
 
 ```
 info face="Arial" size=32 bold=0 italic=0 charset="" unicode=1 stretchH=100 smooth=1 aa=1 padding=0,0,0,0 spacing=1,1 outline=0
-common lineHeight=32 base=26 scaleW=256 scaleH=256 pages=1 packed=0 alphaChnl=1 redChnl=0 greenChnl=0 blueChnl=0
+common lineHeight=32 base=26 scaleW=256 scaleH=256 pages=1 packed=0 alphaChnl=0 redChnl=4 greenChnl=4 blueChnl=4
 page id=0 file="arial_0.png"
 chars count=3
 char id=65 x=10 y=20 width=18 height=22 xoffset=1 yoffset=4 xadvance=20 page=0 chnl=15
@@ -115,6 +125,8 @@ kernings count=1
 kerning first=65 second=86 amount=-2
 ```
 
+> This example uses the most common configuration: glyph data in the alpha channel (`alphaChnl=0`), RGB channels set to white/one (`redChnl=4, greenChnl=4, blueChnl=4`). The renderer multiplies by text color to produce colored text.
+
 #### Info Tag Fields
 
 The `info` tag describes how the font was generated. This is metadata; most fields are not needed at runtime.
@@ -122,7 +134,7 @@ The `info` tag describes how the font was generated. This is metadata; most fiel
 | Field | Type | Description |
 |-------|------|-------------|
 | `face` | string | The name of the TrueType font face (e.g., `"Arial"`). |
-| `size` | int | The size of the TrueType font in pixels. A negative value indicates the size is the absolute height in pixels rather than the point size. |
+| `size` | int | The size of the TrueType font. A positive value is the point size used during generation. A negative value indicates the size was specified as an absolute pixel height (the absolute value is the height in pixels). |
 | `bold` | int (0/1) | Whether the font is bold. |
 | `italic` | int (0/1) | Whether the font is italic. |
 | `charset` | string | The name of the OEM charset used (empty string for Unicode). |
@@ -142,10 +154,10 @@ The `common` tag holds rendering parameters shared across all glyphs.
 |-------|------|-------------|
 | `lineHeight` | int | Distance in pixels between each line of text (typically the font height). |
 | `base` | int | Number of pixels from the absolute top of the line to the base of the characters. Used for baseline alignment. |
-| `scaleW` | int | Width of the texture atlas in pixels. |
-| `scaleH` | int | Height of the texture atlas in pixels. |
+| `scaleW` | int | Width of the texture atlas in pixels. Also used to compute normalized UV coordinates: `u = x / scaleW`. |
+| `scaleH` | int | Height of the texture atlas in pixels. Also used to compute normalized UV coordinates: `v = y / scaleH`. |
 | `pages` | int | Number of texture pages. |
-| `packed` | int (0/1) | Set to 1 if the monochrome characters have been packed into each of the texture channels. See channel packing in [Section 3](#3-png-texture-atlas). |
+| `packed` | int (0/1) | Set to 1 if the monochrome characters have been packed into each of the texture channels. See channel packing in [Section 3](#3-texture-atlas). |
 | `alphaChnl` | int | How the alpha channel is encoded. See channel values below. |
 | `redChnl` | int | How the red channel is encoded. |
 | `greenChnl` | int | How the green channel is encoded. |
@@ -155,11 +167,13 @@ The `common` tag holds rendering parameters shared across all glyphs.
 
 | Value | Meaning |
 |-------|---------|
-| 0 | Glyph data (the font glyph itself) |
-| 1 | Outline data |
-| 2 | Glyph + outline combined |
+| 0 | Glyph data (binary: 1 inside glyph, 0 outside) |
+| 1 | Outline data (binary: 1 in outline or glyph area, 0 outside) |
+| 2 | Glyph + outline combined (encoded: 0 = outside, ~0.5 = outline only, 1 = glyph; threshold at 0.5 separates outline from glyph) |
 | 3 | Zero (channel is always 0) |
 | 4 | One (channel is always 255) |
+
+> **Shader decoding for value 2 (glyph+outline):** When a channel uses the combined encoding, the pixel shader should use `val > 0.5` to test for glyph presence and `2*val - 1` for glyph alpha; for the outline region, use `2*val` for outline alpha. See the [official pixel shader example](https://www.angelcode.com/products/bmfont/doc/pixel_shader.html) for the reference HLSL implementation.
 
 #### Page Tag Fields
 
@@ -172,11 +186,11 @@ One `page` tag per texture page.
 
 #### Char Tag Fields
 
-One `char` tag per glyph. Preceded by a `chars count=N` line.
+One `char` tag per glyph. Preceded by a `chars count=N` line (though this count line may be absent in files from third-party generators).
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | int | The Unicode codepoint (e.g., 65 = 'A', 32 = space). For supplementary plane characters this value exceeds 65535. |
+| `id` | int | The Unicode codepoint (e.g., 65 = 'A', 32 = space). For supplementary plane characters this value exceeds 65535. A value of -1 (or 0xFFFFFFFF in binary format) represents the **invalid/fallback character glyph** -- used when a requested character is not found in the font (enabled by the "output invalid char glyph" option in BMFont v1.11+). |
 | `x` | int | The left position of the glyph in the texture page, in pixels. |
 | `y` | int | The top position of the glyph in the texture page, in pixels. |
 | `width` | int | The width of the glyph in the texture page, in pixels. |
@@ -185,7 +199,9 @@ One `char` tag per glyph. Preceded by a `chars count=N` line.
 | `yoffset` | int | How much the current cursor position should be offset when copying the glyph image from the texture to the screen (vertical, measured from the top of `lineHeight`). |
 | `xadvance` | int | How much the current cursor position should be advanced after drawing the character. |
 | `page` | int | The texture page index where the glyph is found. |
-| `chnl` | int | The texture channel where the glyph is found. Bitfield: 1=blue, 2=green, 4=red, 8=alpha. Value 15 means all channels. |
+| `chnl` | int | The texture channel where the glyph is found. Bitfield: 1=blue, 2=green, 4=red, 8=alpha. Value 15 means all channels (typical when `packed=0`). When channel packing is enabled (`packed=1`), each glyph uses a single channel (1, 2, 4, or 8). |
+
+> **Whitespace characters**: Characters like space (id=32) and tab typically have `width=0` and `height=0` -- there is no texture region to draw. The renderer should skip the draw call but still advance the cursor by `xadvance`. Implementations should guard against zero-width/zero-height draw calls.
 
 #### Kerning Tag Fields
 
@@ -212,7 +228,7 @@ The XML format encodes identical data as the text format but in a structured XML
         stretchH="100" smooth="1" aa="1" padding="0,0,0,0" spacing="1,1"
         outline="0"/>
   <common lineHeight="32" base="26" scaleW="256" scaleH="256" pages="1"
-          packed="0" alphaChnl="1" redChnl="0" greenChnl="0" blueChnl="0"/>
+          packed="0" alphaChnl="0" redChnl="4" greenChnl="4" blueChnl="4"/>
   <pages>
     <page id="0" file="arial_0.png"/>
   </pages>
@@ -236,7 +252,7 @@ Field names and semantics are identical to the text format. The root element is 
 
 ### Binary Format
 
-The binary format is the most compact and fastest to parse. It begins with a 4-byte header, followed by tagged blocks.
+The binary format is the most compact and fastest to parse. It begins with a 4-byte header, followed by tagged blocks. All multi-byte integer values are **little-endian** (unlike OpenType/TrueType fonts which are big-endian). In C#, `BinaryReader` on a `MemoryStream` reads little-endian by default, making the binary format straightforward to parse without byte-swapping.
 
 #### Header
 
@@ -245,6 +261,14 @@ The binary format is the most compact and fastest to parse. It begins with a 4-b
 | 0 | 3 bytes | Magic bytes: `BMF` (0x42 0x4D 0x46) |
 | 3 | 1 byte | Version: `3` (current format version) |
 
+**Binary format version history:**
+
+| Version | App Version | Changes |
+|---------|-------------|---------|
+| 1 | 1.8 | Initial binary format. |
+| 2 | 1.9 | Added `outline` field to info block. Added `encoded` field. |
+| 3 | 1.10 | Removed `encoded` field. Added `alphaChnl`/`redChnl`/`greenChnl`/`blueChnl` to common block. Block size field now reports the size of the block data only (excluding the 1-byte type and 4-byte size fields themselves). Increased character ID from 2 bytes to 4 bytes (supporting codepoints above U+FFFF). Kerning pair first/second also increased from 2 bytes to 4 bytes. |
+
 #### Block Structure
 
 Each block starts with:
@@ -252,15 +276,17 @@ Each block starts with:
 | Offset | Size | Description |
 |--------|------|-------------|
 | 0 | 1 byte | Block type ID (1-5) |
-| 1 | 4 bytes | Block size in bytes (uint32, little-endian) |
+| 1 | 4 bytes | Block size in bytes (uint32, little-endian), excluding the type and size fields |
 | 5 | N bytes | Block data |
+
+Blocks appear in order (1, 2, 3, 4, 5), but a robust parser should handle them by type ID rather than assuming order. Block 5 (kerning) is optional. A parser should read blocks in a loop until EOF, dispatching on the type ID.
 
 #### Block 1: Info (type = 1)
 
 | Offset | Size | Type | Field |
 |--------|------|------|-------|
-| 0 | 2 | int16 | fontSize |
-| 2 | 1 | uint8 | bitField (bit 0: smooth, bit 1: unicode, bit 2: italic, bit 3: bold, bit 4: fixedHeight, bits 5-7: reserved) |
+| 0 | 2 | int16 | fontSize (negative value = absolute pixel height, positive = point size) |
+| 2 | 1 | uint8 | bitField (bit 0: smooth, bit 1: unicode, bit 2: italic, bit 3: bold, bit 4: fixedHeight -- set when cell height equalization is enabled, bits 5-7: reserved). Extract as: `smooth = bits & 1`, `unicode = (bits >> 1) & 1`, `italic = (bits >> 2) & 1`, `bold = (bits >> 3) & 1`, `fixedHeight = (bits >> 4) & 1` |
 | 3 | 1 | uint8 | charSet |
 | 4 | 2 | uint16 | stretchH |
 | 6 | 1 | uint8 | aa |
@@ -282,7 +308,7 @@ Each block starts with:
 | 4 | 2 | uint16 | scaleW |
 | 6 | 2 | uint16 | scaleH |
 | 8 | 2 | uint16 | pages |
-| 10 | 1 | uint8 | bitField (bit 0-6: reserved, bit 7: packed) |
+| 10 | 1 | uint8 | bitField (bits 0-6: reserved, bit 7: packed). To extract: `packed = (bitField >> 7) & 1` |
 | 11 | 1 | uint8 | alphaChnl |
 | 12 | 1 | uint8 | redChnl |
 | 13 | 1 | uint8 | greenChnl |
@@ -295,6 +321,8 @@ Contains `pages` number of null-terminated strings, packed consecutively. Each s
 The length of each string (including the null terminator) is: `blockSize / pages`.
 
 Example for 2 pages: `"font_0.png\0font_1.png\0"`
+
+> **C# parsing tip**: To extract page names, read the entire block as a byte array, then split on null bytes (0x00). In C#: `Encoding.UTF8.GetString(blockData).Split('\0', StringSplitOptions.RemoveEmptyEntries)`. Alternatively, compute the stride as `blockSize / pages` and read each fixed-length slot.
 
 #### Block 4: Chars (type = 4, 20 bytes per char)
 
@@ -325,11 +353,11 @@ The number of kerning pairs is `blockSize / 10`. This block is optional and may 
 
 ---
 
-## 3. PNG Texture Atlas
+## 3. Texture Atlas
 
 **Reference**: https://www.angelcode.com/products/bmfont/doc/export_options.html
 
-The texture atlas is one or more PNG images containing all rasterized glyphs arranged in a packed layout.
+The texture atlas is one or more images (typically PNG, but also TGA or DDS) containing all rasterized glyphs arranged in a packed layout.
 
 ### Glyph Packing
 
@@ -341,12 +369,20 @@ BMFont uses a bin-packing algorithm to arrange glyphs efficiently into rectangul
 - `scaleW` and `scaleH` in the `.fnt` file specify the texture dimensions.
 - BMFont allows non-power-of-2 dimensions, but some renderers may not support them efficiently.
 
+### Supported Texture File Formats
+
+| Format | Notes |
+|--------|-------|
+| **PNG** | Most common. Lossless compression. Supports 8-bit and 32-bit. |
+| **TGA** | Targa format. Supports 8-bit and 32-bit. Run-length encoding available (v1.13+). |
+| **DDS** | DirectDraw Surface. Supports uncompressed and DXT1/DXT3/DXT5 compression (v1.10+). |
+
 ### Bit Depth: 8-bit vs 32-bit Textures
 
 | Bit Depth | Format | Use Case |
 |-----------|--------|----------|
 | **8-bit** | Single-channel alpha map | Smallest file size. Glyph data stored as grayscale intensity. Requires the renderer to apply color at draw time. |
-| **32-bit** | RGBA | Supports colored outlines, pre-colored glyphs, and channel packing. Larger file size. |
+| **32-bit** | RGBA | Supports colored outlines, pre-colored glyphs, channel packing, and colored icon images. Larger file size. |
 
 ### Channel Packing
 
@@ -364,14 +400,19 @@ Each character's `chnl` field indicates which channel(s) hold its data:
 
 The `alphaChnl`, `redChnl`, `greenChnl`, and `blueChnl` fields in the `common` tag describe what type of data is stored in each channel:
 
-### Common Channel Configurations
+### Common Channel Configurations (Export Presets)
+
+These correspond to the preset configurations available in BMFont's export options dialog:
 
 | Configuration | Bit Depth | alphaChnl | redChnl | greenChnl | blueChnl | Description |
 |---------------|-----------|-----------|---------|-----------|----------|-------------|
-| **White glyphs on transparent** | 32-bit | 0 | 4 | 4 | 4 | Glyph in alpha, RGB = white (255). Most common setup. Renderer multiplies by text color. |
-| **Glyph with outline** | 32-bit | 0 | 1 | 1 | 1 | Glyph in alpha, outline in RGB. Render outline first (using RGB), then glyph over it. |
-| **Packed 8-bit (single channel)** | 8-bit | 0 | 3 | 3 | 3 | Glyph data in alpha only. RGB channels are zero (unused). |
-| **4-char packed** | 32-bit | 0 | 0 | 0 | 0 | Each RGBA channel holds a different glyph. Each `char` entry has a `chnl` value of 1, 2, 4, or 8. |
+| **White glyphs, no outline** | 32-bit | 0 | 4 | 4 | 4 | Glyph in alpha, RGB = white (255). Most common setup. Renderer multiplies by text color. |
+| **White glyphs with outline** | 32-bit | 1 | 0 | 0 | 0 | Outline in alpha, glyph in RGB. Two-pass render: first draw outline using alpha for transparency, then draw glyph using RGB for transparency. |
+| **Packed 8-bit, no outline** | 8-bit | 0 | 3 | 3 | 3 | Glyph data in alpha only. RGB channels are zero (unused). |
+| **Packed 8-bit with outline** | 8-bit | 2 | 3 | 3 | 3 | Glyph+outline combined in alpha (using 0.5 threshold encoding). RGB channels are zero. |
+| **4-char packed** | 32-bit | 0 | 0 | 0 | 0 | `packed=1`. Each RGBA channel holds a different glyph. Each `char` entry has a `chnl` value of 1, 2, 4, or 8. Requires custom pixel shader. Reduces texture memory by 75%. |
+
+> **Note on "force offsets to zero" export option**: BMFont has an option to force `xoffset` and `yoffset` to 0 and `xadvance` to equal `width`, for renderers that lack offset support. This also enables cell height equalization. May alter spacing if the font uses negative offsets.
 
 ### Multi-Page Support
 
@@ -387,6 +428,14 @@ These are separate concepts that are commonly confused:
 | **Spacing** | `info` tag: `spacing=horiz,vert` | Adds empty space *between glyphs in the texture atlas*. Prevents texture bleeding artifacts when bilinear/trilinear filtering samples neighboring glyph pixels. | Does not affect glyph metrics or rendering -- only the atlas packing layout. |
 
 **Rule of thumb**: Use padding >= outline thickness. Use spacing >= 1 when bilinear filtering is enabled.
+
+### Autofit and Adaptive Padding
+
+BMFont (v1.14+) supports an **autofit** feature that calculates the maximum font size that fits within a defined texture size. When autofit is active, **adaptive padding** scales padding proportionally to font size, calculated as: `average character width * padding factor + standard padding`. This ensures padding remains appropriate as font size changes.
+
+### Cell Height Equalization
+
+When the "equalize cell heights" option is enabled, all characters are drawn in uniform-height cells. This simplifies gradient or height-based post-processing but reduces the number of characters that fit per texture and increases the size of drawn rectangles at runtime.
 
 ---
 
@@ -412,16 +461,15 @@ for each character in text:
     if glyph is not found:
         continue  // or substitute a fallback glyph
 
-    // Calculate screen-space draw position
-    draw_x = cursor_x + glyph.xoffset
-    draw_y = cursor_y + glyph.yoffset
-
-    // Draw textured quad from atlas
-    draw_texture_region(
-        texture = pages[glyph.page],
-        source  = rectangle(glyph.x, glyph.y, glyph.width, glyph.height),
-        dest    = point(draw_x, draw_y)
-    )
+    // Draw textured quad from atlas (skip for whitespace/zero-size glyphs)
+    if glyph.width > 0 and glyph.height > 0:
+        draw_x = cursor_x + glyph.xoffset
+        draw_y = cursor_y + glyph.yoffset
+        draw_texture_region(
+            texture = pages[glyph.page],
+            source  = rectangle(glyph.x, glyph.y, glyph.width, glyph.height),
+            dest    = point(draw_x, draw_y)
+        )
 
     // Apply kerning with the NEXT character (if any)
     if next_character exists:
@@ -437,27 +485,26 @@ for each character in text:
 Understanding these fields is essential for correct rendering:
 
 ```
-                           lineHeight
-    |<-------------------------------------------------->|
-    +----------------------------------------------------+
-    |                                                    |  <- cursor_y (top of line)
-    |   yoffset                                          |
-    |   |                                                |
-    |   v                                                |
-    |   +--------+                                       |
-    |   | glyph  |                                       |  <- glyph drawn at
-    |   | image  |                                       |     (cursor_x + xoffset,
-    |   |        |                                       |      cursor_y + yoffset)
-    |   +--------+                                       |
-    |            |                                       |
-    |   |<------>|<--- remaining xadvance after glyph -->|
-    |   xoffset   width                                  |
-    |                                                    |
-    |   base  -------------------------------------------|  <- baseline (cursor_y + base)
-    |                                                    |
-    +----------------------------------------------------+
+    cursor_x
+    |
+    |   xoffset
+    |   |<->|
+    |       +--------+  ---                              ---
+    |       | glyph  |   |                                |
+    |       | image  |   | height                         |
+    |       |        |   |                                |
+    |       +--------+  ---                               | lineHeight
+    |       |<------>|                                    | (vertical distance
+    |         width                                      |  between lines)
+    |                                                     |
+    |   base  ----------------------------------------    |
+    |                                                     |
+    +----------------------------------------------------+---
     |<--xadvance--->|
-                    ^ next character starts here
+                    ^ next character starts here (cursor_x += xadvance + kerning)
+
+    yoffset = distance from cursor_y (top of line) to top of glyph image
+    base    = distance from cursor_y (top of line) to baseline
 ```
 
 - **`lineHeight`**: The vertical distance from one line's top to the next line's top. This is the total line advance, not just the glyph height.
@@ -468,25 +515,64 @@ Understanding these fields is essential for correct rendering:
 
 ### Kerning
 
-Kerning adjusts the spacing between specific character pairs for better visual appearance. For example, the pair "AV" typically has a negative kerning value, pulling the "V" closer to the "A".
+Kerning adjusts the spacing between specific character pairs for better visual appearance. For example, the pair "AV" typically has a negative kerning value (e.g., -2), pulling the "V" closer to the "A".
 
-Kerning is looked up as a pair `(first, second)` and the `amount` is added to `cursor_x` *before* applying the second character's `xadvance`. Typical implementation stores kerning as `Dictionary<(int first, int second), int>` or a nested dictionary `Dictionary<int, Dictionary<int, int>>`.
+**How kerning interacts with xadvance**: After drawing a character, the cursor advances by `xadvance + kerning_amount`. The kerning amount is looked up using the *current* character as `first` and the *next* character as `second`. Both values are combined into a single cursor advance:
+
+```
+// Effective cursor advance for character at position i:
+advance = glyph[i].xadvance + kerning(glyph[i].id, glyph[i+1].id)
+cursor_x += advance
+```
+
+The kerning `amount` is typically negative (tightening the space between characters) but can be positive (loosening). It modifies the `xadvance` of the first character in the pair -- it does **not** affect the `xoffset` of the second character.
+
+**Example**: Given "AV" where A has `xadvance=20` and kerning(A,V)=-2, the cursor advances by `20 + (-2) = 18` pixels after drawing A, placing V 2 pixels closer than it would be without kerning.
+
+Typical implementation stores kerning as `Dictionary<(int first, int second), int>` or a nested dictionary `Dictionary<int, Dictionary<int, int>>`. The nested form is faster for the common access pattern: given a character, look up all kerning adjustments for possible next characters.
 
 ### Outline Rendering (Two-Pass Approach)
 
 When a font includes outlines (stored in separate channels), text is rendered in two passes:
 
 ```
-// Pass 1: Draw outlines
+// Pass 1: Draw outlines (border)
 for each character in text:
-    draw glyph using the outline channel data with outline color
+    // Use the alpha channel as transparency, apply outline color
+    draw glyph using the alpha channel data with outline color
 
-// Pass 2: Draw glyphs over outlines
+// Pass 2: Draw glyphs (interior) over outlines
 for each character in text:
-    draw glyph using the glyph channel data with text color
+    // Use the RGB color channels as transparency, apply text color
+    draw glyph using the RGB channel data with text color
 ```
 
-The outline is typically stored in the RGB channels while the glyph is in the alpha channel (or vice versa depending on configuration). The two-pass approach ensures outlines appear behind glyphs even where adjacent characters overlap.
+Per the official documentation: the **first pass** uses "only the alpha channel of the font texture as the transparency value when rendering the border." The **second pass** uses "only the color channels of the font texture as the transparency value to render the characters over the border." This allows "different colors to the border and the internal characters dynamically" by multiplying the transparency value with the desired colors before blending.
+
+The two-pass approach ensures outlines appear behind glyphs even where adjacent characters overlap.
+
+> **Important**: The `xoffset` and `yoffset` values should NOT be used to move the cursor position -- they only offset where the glyph image is drawn relative to the cursor. The cursor advances solely by `xadvance` (plus any kerning adjustment).
+
+**Alternative: Single-Pass Pixel Shader Approach**
+
+When outlines are encoded in a single channel using the combined glyph+outline encoding (channel value 2), a pixel shader can decode both in one pass:
+
+```hlsl
+// From the official BMFont pixel shader reference
+float4 PixScene(float4 color : COLOR0, int4 chnl : TEXCOORD1, float2 tex0 : TEXCOORD0) : COLOR0
+{
+    float4 pixel = tex2D(g_samScene, tex0);
+    if (dot(vector(1,1,1,1), chnl))
+    {
+        float val = dot(pixel, chnl);
+        pixel.rgb = val > 0.5 ? 2*val-1 : 0;     // glyph alpha
+        pixel.a   = val > 0.5 ? 1 : 2*val;        // outline alpha
+    }
+    return pixel * color;
+}
+```
+
+The `chnl` vector selects which texture channel to read (e.g., `(0,0,0,1)` for alpha). When `chnl` is `(0,0,0,0)`, the character is a full 32-bit colored image (e.g., an imported icon) and is drawn as-is.
 
 ### Text Measurement
 
@@ -515,7 +601,9 @@ height calculation:
     // (lines - 1) * lineHeight + max(yoffset + height) for chars on last line
 ```
 
-**Note**: For the last line, the actual rendered height extends from `yoffset` to `yoffset + height` of the tallest glyph, which may be less than `lineHeight`. Some implementations use the full `lineHeight` for simplicity; others calculate a tighter bounding box.
+**Notes on measurement accuracy**:
+- **Width, last character**: For the last character on a line, the visual extent may differ from the advance. The actual pixel width is `max(xadvance, xoffset + width)`. Advance-based measurement (shown above) is simpler and standard; tight bounding box measurement requires special handling of the last character: `line_width - last_glyph.xadvance + max(last_glyph.xadvance, last_glyph.xoffset + last_glyph.width)`.
+- **Height, last line**: The actual rendered height extends from `yoffset` to `yoffset + height` of the tallest glyph, which may be less than `lineHeight`. Some implementations use the full `lineHeight` for simplicity; others calculate a tighter bounding box.
 
 ---
 
@@ -528,17 +616,22 @@ height calculation:
 
 ```
 BitmapFont
-  +-- Name: string
+  +-- Name: string (Face)
+  +-- Size: int
   +-- LineHeight: int
+  +-- LetterSpacing: int          (additional spacing added to xadvance)
+  +-- UseKernings: bool           (default: true; set to false to disable kerning)
   +-- Characters: Dictionary<int, BitmapFontCharacter>
   +-- Textures: Texture2D[]
   +-- GetCharacter(int id): BitmapFontCharacter
+  +-- TryGetCharacter(int id, out BitmapFontCharacter): bool
   +-- MeasureString(string text): Size2
   +-- MeasureString(StringBuilder text): Size2
+  +-- GetGlyphs(string text, ...): IEnumerable<BitmapFontGlyph>
 
 BitmapFontCharacter
   +-- Character: int (Unicode codepoint)
-  +-- TextureRegion: TextureRegion2D (reference to atlas sub-rectangle)
+  +-- TextureRegion: Texture2DRegion (reference to atlas sub-rectangle)
   +-- XOffset: int
   +-- YOffset: int
   +-- XAdvance: int
@@ -551,7 +644,7 @@ BitmapFontCharacter
 |--------|----------|
 | **Character lookup** | `Dictionary<int, BitmapFontCharacter>` -- supports full Unicode range including supplementary plane characters |
 | **Kerning lookup** | Stored per-character: each `BitmapFontCharacter` has its own `Dictionary<int, int>` mapping the *next* character ID to the kerning amount |
-| **Texture regions** | Uses `TextureRegion2D` abstraction (shared with sprite atlas system) |
+| **Texture regions** | Uses `Texture2DRegion` abstraction (shared with sprite atlas system) |
 | **Rendering** | Extension methods on `SpriteBatch`: `spriteBatch.DrawString(font, text, position, color)` |
 | **GC pressure** | Struct-based glyph enumerator avoids heap allocations during text iteration |
 | **Surrogate pairs** | Full support -- the enumerator correctly handles UTF-16 surrogate pairs, yielding a single codepoint (int) for supplementary plane characters |
@@ -587,8 +680,10 @@ Gum does not just *consume* BMFont files -- it wraps the BMFont executable itsel
 
 ### Parser Details
 
-- `ParsedFontFile` supports both **text** and **XML** formats.
-- **Binary format is explicitly noted as unsupported**.
+- `ParsedFontFile` supports **text**, **XML**, and detects **binary** format.
+- **Binary format is detected but unsupported** -- the parser recognizes the `BMF` magic bytes but throws an exception: `"Unable to load Binary Font files, please convert to XML or TEXT."`
+- Format detection: `<` = XML, `B` (0x42) = binary, `i` = text (starts with `info`).
+- XML parsing uses .NET `XmlSerializer` for deserialization. Text parsing uses line-by-line tokenization via `ParsedFontLine.Parse()`.
 - Parsing extracts data into flat arrays/dictionaries; does not directly mirror the tag structure.
 
 ### Data Model
@@ -607,6 +702,7 @@ BitmapCharacterInfo
   +-- Spacing: float           (xadvance)
   +-- XOffset, YOffset: float
   +-- PageNumber: int
+  +-- SecondLetterKearning: Dictionary<int, int>  (kerning pairs for this character)
 ```
 
 ### Notable Features
@@ -618,6 +714,8 @@ BitmapCharacterInfo
 | **Tab handling** | Tab characters are rendered as multiple spaces (configurable tab width). |
 | **Monospace digits** | Option to render all digits (0-9) with the same advance width, regardless of the font's native glyph widths. |
 | **Static buffer reuse** | Uses static `StringBuilder` and array buffers for text measurement and rendering to minimize GC allocations. |
+| **Measurement styles** | `HorizontalMeasurementStyle` controls whether final character width uses actual texture bounds or advance value, enabling both tight bounding box and advance-based measurement. |
+| **Outline compensation** | Rendering adjusts glyph positioning by `mOutlineThickness` to compensate for outline padding in the texture atlas. |
 
 ---
 
@@ -692,6 +790,28 @@ libGDX offers an `integer` flag that snaps glyph positions to integer pixel coor
 font.setUseIntegerPositions(true);  // default
 ```
 
+### Fixed-Width Glyphs
+
+libGDX provides a `setFixedWidthGlyphs()` method that forces specified characters to use the same advance width. This is useful for rendering monospaced digits in score displays or tables where alignment matters. All glyphs in the specified string are set to the width of the widest glyph.
+
+### Runtime Font Generation (FreeTypeFontGenerator)
+
+In addition to loading pre-generated BMFont files, libGDX provides `FreeTypeFontGenerator` which generates bitmap fonts from TrueType files at runtime. This is particularly useful for:
+
+- Supporting international character sets (e.g., Korean, Cyrillic) where pre-generating all glyphs would create enormous textures
+- Dynamically adjusting font size to screen resolution
+- User-selectable fonts
+
+The generated fonts use the same `BitmapFont` class and rendering path as pre-generated BMFont files.
+
+### Distance Field Fonts
+
+libGDX recommends distance field fonts for "scaling/rotating fonts without ugly artifacts." This requires a different shader but provides resolution-independent rendering, making the same font atlas usable at multiple sizes without regeneration.
+
+### Y-Axis Flipping
+
+A notable detail: libGDX supports both flipped and unflipped Y-axis coordinate systems. The `BitmapFontData.load()` method handles this during parsing, adjusting `yoffset` values accordingly. This is relevant because libGDX's default coordinate system has Y pointing up (OpenGL convention), while BMFont generates data with Y pointing down (screen convention).
+
 ---
 
 ## 8. Other Implementations and Tools
@@ -722,32 +842,47 @@ font.setUseIntegerPositions(true);  // default
 | **[Littera](http://kvazars.com/littera/)** | Web (browser) | Free | Web-based bitmap font generator. Drag-and-drop TTF upload, visual character selection, export to BMFont text format + PNG. |
 | **[Glyph Designer](https://www.71squared.com/glyphdesigner)** | macOS | Paid | Professional bitmap font tool for Mac. Rich effects (gradients, shadows, outlines). Exports BMFont format among others. |
 | **[ShoeBox](https://renderhjs.net/shoebox/)** | Cross-platform | Free | Adobe AIR-based tool with bitmap font generation as one of many sprite/atlas features. |
-| **[Hiero](https://libgdx.com/wiki/tools/hiero)** | Cross-platform (Java) | Open source | Part of the libGDX toolset. Java-based GUI for generating bitmap fonts. Exports BMFont text format. Supports effects like shadows and outlines. |
+| **[Hiero](https://github.com/libgdx/libgdx/wiki/Hiero)** | Cross-platform (Java) | Open source | Part of the libGDX toolset. Java-based GUI for generating bitmap fonts. Exports BMFont text format. Supports effects like shadows, outlines, and distance field generation. |
 | **[GlyphCombiner](http://www.binaryblobs.com/)** | macOS | Free | Mac OS X tool by Binary Blobs for combining and editing bitmap font atlases. |
 
 ---
 
 ## 9. Tutorials & Community Resources
 
-The following resources are listed on or referenced from the official BMFont documentation page:
+### Official Documentation Pages
+
+| Resource | Description |
+|----------|-------------|
+| [BMFont Homepage](https://www.angelcode.com/products/bmfont/) | Official homepage with download, documentation, and changelog. |
+| [Font Settings](https://www.angelcode.com/products/bmfont/doc/font_settings.html) | Configuring font parameters. |
+| [Export Options](https://www.angelcode.com/products/bmfont/doc/export_options.html) | Texture format, channel encoding, and export settings. |
+| [File Format](https://www.angelcode.com/products/bmfont/doc/file_format.html) | Complete .fnt file format specification (text, XML, binary). |
+| [Render Text](https://www.angelcode.com/products/bmfont/doc/render_text.html) | Official rendering algorithm description. |
+| [Pixel Shader](https://www.angelcode.com/products/bmfont/doc/pixel_shader.html) | HLSL pixel shader for channel-packed and outline fonts. |
+| [Command Line](https://www.angelcode.com/products/bmfont/doc/command_line.html) | Command-line usage reference. |
+| [Known Issues](https://www.angelcode.com/products/bmfont/doc/known_issues.html) | Recognized limitations and bugs. |
+
+### Tutorials & Community Resources
+
+The following resources are listed on or referenced from the official BMFont page:
 
 | Resource | Author | Description |
 |----------|--------|-------------|
-| [Bitmap Fonts](https://www.angelcode.com/products/bmfont/) | Andreas Jonsson | The official BMFont homepage with download, documentation, and changelog. |
-| [Bitmap Fonts in OpenGL](http://www.intransitione.com/blog/bitmap-fonts/) | Chad Vernon | Tutorial on loading and rendering BMFont files in OpenGL with C++. Covers texture loading, glyph rendering, and text alignment. |
-| [Quick tutorial: Variable width bitmap fonts](https://web.archive.org/web/*/http://www.gamedev.net/community/forums/topic.asp?topic_id=330742) | Promit | GameDev.net forum post explaining the principles behind variable-width bitmap fonts and how to implement a basic renderer. |
-| [BMFont OpenGL Implementation](https://web.archive.org/web/*/http://www.gamedev.net/reference/articles/article2421.asp) | legolas558 | Detailed article on implementing a BMFont renderer in OpenGL, including texture management and text layout. |
-| [bmfont BlitzMax module](http://www.mikewiering.com/) | Mike Wiering | BlitzMax language module for loading and rendering BMFont files. |
-| [C# XML serializer for font loading](https://web.archive.org/web/*/http://www.gamedev.net/community/forums/topic.asp?topic_id=541491) | DeadlyDan | GameDev.net post showing how to use C# XML serialization attributes to deserialize BMFont XML format directly into C# objects. |
-| [C# XML BMFont reader](https://web.archive.org/web/*/http://www.youreallydontneedthis.com/?p=458) | Antoine Guilbaud | Blog post implementing a complete C# BMFont XML reader with rendering support. |
-| [BMFont to C source code converter](http://larsee.dk/) | Lars Ole Pontoppidan | Tool that converts BMFont output into C source code for embedded systems where file I/O is unavailable. |
-| [Discussion on legality of bitmap fonts](https://web.archive.org/web/*/http://www.gamedev.net/community/forums/topic.asp?topic_id=578804) | (community) | GameDev.net thread discussing the legal aspects of distributing bitmap fonts generated from commercial TrueType fonts. |
-| [Converting bitmap fonts into distance fields](https://github.com/libgdx/libgdx/wiki/Distance-field-fonts) | libGDX | Guide on converting BMFont output into signed distance field (SDF) textures for resolution-independent rendering. |
-| [Another tool for converting bitmap fonts into distance fields](https://github.com/Chlumsky/msdf-atlas-gen) | Chlumsky | Multi-channel signed distance field atlas generator. Can process BMFont-style atlases into MSDF format for sharp rendering at any scale. |
-| [PlayOnLinux](https://www.playonlinux.com/) | (community) | Wine-based tool that can be used to run the Windows-only BMFont application on Linux systems. |
-| [GlyphCombiner](http://www.binaryblobs.com/) | Binary Blobs | Mac OS X tool for combining, editing, and managing bitmap font atlases. |
-| [Rust bmfont descriptor parser](https://crates.io/crates/bmfont) | shampoofactory | Rust library for parsing BMFont descriptor files. Supports text, XML, and binary formats. Available on crates.io. |
-| [Adding colored outline and drop shadow in GIMP](https://web.archive.org/web/*/http://www.gamedev.net/community/forums/topic.asp?topic_id=542822) | rukh | Tutorial on post-processing BMFont texture atlases in GIMP to add colored outlines and drop shadows. |
+| [Bitmap Fonts](https://www.angelcode.com/dev/bmfonts) | Andreas Jonsson | The author's article on bitmap font concepts. |
+| [Bitmap Fonts tutorial](http://www.chadvernon.com/blog/tutorials/managed-directx-2/bitmap-fonts/) | Chad Vernon | Tutorial on loading and rendering BMFont files in Managed DirectX. |
+| [Quick tutorial: Variable width bitmap fonts](http://www.gamedev.net/community/forums/topic.asp?topic_id=330742) | Promit | GameDev.net forum post explaining variable-width bitmap fonts and basic renderer implementation. |
+| [BMFont OpenGL Implementation](http://sourceforge.net/projects/oglbmfont) | legolas558 | SourceForge project implementing a BMFont renderer in OpenGL. |
+| [bmfont BlitzMax module](http://www.wieringsoftware.nl/blitz/) | Mike Wiering | BlitzMax language module for loading and rendering BMFont files. |
+| [C# XML serializer for font loading](http://pastebin.com/x3Z2mDC6) | DeadlyDan | Pastebin showing C# XML serialization attributes to deserialize BMFont XML format directly into C# objects. |
+| [C# XML BMFont reader](https://github.com/ironpowertga/BMFont-Reader-Csharp) | Antoine Guilbaud | GitHub repo implementing a C# BMFont XML reader with rendering support. |
+| [BMFont to C source code converter](http://larsee.dk/converting-fonts-to-c-source-using-bmfont2c/) | Lars Ole Pontoppidan | Tool that converts BMFont output into C source code for embedded systems. |
+| [Discussion on legality of bitmap fonts](http://gamedev.stackexchange.com/questions/35455/legality-of-angelcodes-bmfont) | (community) | GameDev StackExchange discussion on legal aspects of distributing bitmap fonts from commercial TrueType fonts. |
+| [Converting bitmap fonts into distance fields](http://bitsquid.blogspot.com/2010/04/distance-field-based-rendering-of.html) | Bitsquid | Blog post on distance-field-based rendering of vector textures/fonts. |
+| [Another tool for converting bitmap fonts into distance fields](https://www.gamedev.net/topic/491938-signed-distance-bitmap-font-tool/) | (community) | GameDev.net thread about a signed distance bitmap font tool. |
+| [PlayOnLinux](https://www.playonlinux.com/en/) | (community) | Wine-based tool for running the Windows-only BMFont application on Linux. |
+| [GlyphCombiner](http://www.binaryblobs.com/GlyphCombiner/) | Binary Blobs | Mac OS X tool for combining, editing, and managing bitmap font atlases. |
+| [Rust bmfont descriptor parser](https://github.com/shampoofactory/bmfont_rs) | shampoofactory | Rust library for parsing BMFont descriptor files. Supports text, XML, and binary formats. |
+| [Adding colored outline and drop shadow in GIMP](https://www.gamedev.net/forums/topic/714335-heres-how-to-create-a-25px-outline-drop-shadow-moved-x25-y25/) | rukh | Tutorial on post-processing BMFont texture atlases in GIMP to add outlines and drop shadows. |
 
 ---
 
@@ -774,7 +909,7 @@ The following resources are listed on or referenced from the official BMFont doc
 | **Negative offsets** | `xoffset` and `yoffset` can be negative (e.g., italic fonts, characters with outlines). Renderers that assume non-negative offsets will clip these characters. |
 | **Baseline alignment** | When mixing fonts of different sizes or families, the `base` value must be used to align baselines. Many implementations ignore `base` and align to the top of `lineHeight`, causing misaligned text. |
 | **Channel packing complexity** | Channel-packed fonts require the renderer to sample specific channels and apply the correct shader logic. Simple sprite-based renderers that draw RGBA as-is will show garbled text. |
-| **Missing character handling** | The format does not mandate a fallback glyph. Implementations vary: some skip missing characters, some substitute a box or question mark, some crash. A robust implementation should define fallback behavior. |
+| **Missing character handling** | The format does not mandate a fallback glyph. BMFont has an "output invalid char glyph" option (v1.11+) that includes a glyph for character ID `-1` (0xFFFFFFFF in binary) as the fallback. Implementations vary: some skip missing characters, some substitute a box or question mark, some crash. A robust implementation should check for the `-1` glyph first, then fall back to a configurable substitute. |
 | **Cross-platform path separators** | The `file` field in `page` tags uses the path separator of the generating platform (typically backslash on Windows). Parsers on Linux/macOS must normalize to forward slashes. |
 | **Surrogate pair handling** | The format uses integer codepoints, but many implementations use `char`-based iteration which breaks for codepoints above U+FFFF (supplementary plane characters encoded as UTF-16 surrogate pairs). |
 
@@ -871,11 +1006,11 @@ public ref struct GlyphEnumerator
 |--------|-------------------|--------|-----|
 | **Language** | C# | Java | C# |
 | **Glyph lookup** | `Dictionary<int, BitmapFontCharacter>` | Paged array (`Glyph[256][512]`) | Array indexed by char ID |
-| **Kerning storage** | Per-character `Dictionary<int, int>` | Per-glyph paged byte array | Not stored (limited support) |
-| **Texture coords** | Integer pixel coordinates + `TextureRegion2D` | Pre-computed normalized UVs on `Glyph` | Pre-computed normalized UVs on `BitmapCharacterInfo` |
+| **Kerning storage** | Per-character `Dictionary<int, int>` | Per-glyph paged byte array | Per-character `Dictionary<int, int>` (`SecondLetterKearning`) |
+| **Texture coords** | Integer pixel coordinates + `Texture2DRegion` | Pre-computed normalized UVs on `Glyph` | Pre-computed normalized UVs on `BitmapCharacterInfo` |
 | **Caching** | No built-in cache (relies on SpriteBatch batching) | `BitmapFontCache` for static text vertex buffers | Static buffer reuse for measurement/rendering |
 | **GC mitigation** | Struct enumerator, StringBuilder overloads | Primitive arrays, GlyphRun reuse | Static buffers, array pooling |
-| **Format support** | Text (primary), XML | Text only | Text and XML (binary unsupported) |
+| **Format support** | Text (primary), XML | Text only | Text and XML (binary detected but throws exception) |
 | **Surrogate pairs** | Full support | Full support (Java `char` + `Character.toCodePoint`) | Limited (depends on usage) |
 | **Generation** | External (user runs BMFont) | External (Hiero tool) | Integrated (wraps bmfont.exe) |
 | **Text measurement** | `MeasureString()` returns `Size2` | `GlyphLayout` computes full layout with wrapping | `MeasureString()` returns width/height |
