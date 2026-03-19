@@ -71,8 +71,8 @@ public sealed class BmFontBuilder
     public BmFontBuilder WithEncoder(IAtlasEncoder encoder) { _options.AtlasEncoder = encoder; return this; }
     public BmFontBuilder WithFontReader(IFontReader reader) { _options.FontReader = reader; return this; }
 
-    public BmFontBuilder WithGradient((byte R, byte G, byte B) topColor, (byte R, byte G, byte B) bottomColor)
-        => WithPostProcessor(GradientPostProcessor.Create(topColor, bottomColor));
+    public BmFontBuilder WithGradient((byte R, byte G, byte B) startColor, (byte R, byte G, byte B) endColor, float angleDegrees = 90f)
+        => WithPostProcessor(GradientPostProcessor.Create(startColor, endColor, angleDegrees));
 
     public BmFontBuilder WithPostProcessor(IGlyphPostProcessor processor)
     {
