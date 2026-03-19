@@ -28,12 +28,12 @@ public sealed class BmFontResult
     /// <summary>
     /// Returns the BMFont descriptor in XML format.
     /// </summary>
-    public string ToXml() => throw new NotSupportedException("XML format not yet implemented");
+    public string ToXml() => new XmlFormatter().FormatText(Model);
 
     /// <summary>
     /// Returns the BMFont descriptor in binary format.
     /// </summary>
-    public byte[] ToBinary() => throw new NotSupportedException("Binary format not yet implemented");
+    public byte[] ToBinary() => new BmFontBinaryFormatter().FormatBinary(Model);
 
     /// <summary>
     /// Writes the BMFont descriptor and atlas page images to disk.

@@ -93,6 +93,33 @@ public static class BmFont
     public static BmFontResult Generate(string fontPath, int size)
         => Generate(File.ReadAllBytes(fontPath), new FontGeneratorOptions { Size = size });
 
+    /// <summary>
+    /// Generates a BMFont atlas from a system-installed font, looked up by family name.
+    /// </summary>
+    /// <param name="fontFamily">The font family name to search for (e.g., "Arial").</param>
+    /// <param name="options">Generation options, or null for defaults.</param>
+    /// <returns>A result containing the BMFont model and atlas pages.</returns>
+    /// <exception cref="FontParsingException">Thrown when the specified font family is not found on the system.</exception>
+    public static BmFontResult GenerateFromSystem(string fontFamily, FontGeneratorOptions? options = null)
+    {
+        options ??= new FontGeneratorOptions();
+        var provider = new DefaultSystemFontProvider();
+        var fontData = provider.LoadFont(fontFamily)
+            ?? throw new FontParsingException($"System font '{fontFamily}' not found");
+        return Generate(fontData, options);
+    }
+
+    /// <summary>
+    /// Generates a BMFont atlas from a system-installed font with the specified size.
+    /// </summary>
+    public static BmFontResult GenerateFromSystem(string fontFamily, int size)
+        => GenerateFromSystem(fontFamily, new FontGeneratorOptions { Size = size });
+
+    /// <summary>
+    /// Creates a fluent builder for BMFont generation.
+    /// </summary>
+    public static BmFontBuilder Builder() => new();
+
     private static int NextPowerOfTwo(int v)
     {
         v--;

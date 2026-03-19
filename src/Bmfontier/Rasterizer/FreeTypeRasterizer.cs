@@ -68,13 +68,19 @@ internal sealed class FreeTypeRasterizer : IRasterizer
             FT.FT_GlyphSlot_Oblique(slot);
 
         // Determine render mode.
-        var renderMode = options.AntiAlias switch
-        {
-            AntiAliasMode.None => FT_Render_Mode_.FT_RENDER_MODE_MONO,
-            AntiAliasMode.Light => FT_Render_Mode_.FT_RENDER_MODE_LIGHT,
-            AntiAliasMode.Lcd => FT_Render_Mode_.FT_RENDER_MODE_LCD,
-            _ => options.Sdf ? FT_Render_Mode_.FT_RENDER_MODE_SDF : FT_Render_Mode_.FT_RENDER_MODE_NORMAL
-        };
+        // When SDF is enabled, FT_RENDER_MODE_SDF (value 6) produces an 8-bit bitmap where
+        // 128 = on the glyph edge, >128 = inside, <128 = outside. The bitmap dimensions
+        // may be larger than normal rendering to include the signed-distance field padding.
+        // SDF takes priority over the anti-alias setting since SDF output is inherently smooth.
+        var renderMode = options.Sdf
+            ? FT_Render_Mode_.FT_RENDER_MODE_SDF
+            : options.AntiAlias switch
+            {
+                AntiAliasMode.None => FT_Render_Mode_.FT_RENDER_MODE_MONO,
+                AntiAliasMode.Light => FT_Render_Mode_.FT_RENDER_MODE_LIGHT,
+                AntiAliasMode.Lcd => FT_Render_Mode_.FT_RENDER_MODE_LCD,
+                _ => FT_Render_Mode_.FT_RENDER_MODE_NORMAL
+            };
 
         // Render the glyph to bitmap.
         error = FT.FT_Render_Glyph(slot, renderMode);

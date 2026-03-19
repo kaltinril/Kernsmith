@@ -50,9 +50,14 @@ internal static class FileWriter
                 break;
 
             case OutputFormat.Xml:
+                var xml = new XmlFormatter().FormatText(model);
+                File.WriteAllText(fntPath, xml, Encoding.UTF8);
+                break;
+
             case OutputFormat.Binary:
-                throw new NotSupportedException(
-                    $"Output format '{format}' is not yet supported. Only Text format is available.");
+                var binary = new BmFontBinaryFormatter().FormatBinary(model);
+                File.WriteAllBytes(fntPath, binary);
+                break;
         }
     }
 

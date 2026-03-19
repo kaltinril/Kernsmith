@@ -1,4 +1,6 @@
+using Bmfontier.Atlas;
 using Bmfontier.Output.Model;
+using Bmfontier.Rasterizer;
 using FluentAssertions;
 
 namespace Bmfontier.Tests.Integration;
@@ -204,5 +206,107 @@ public class EndToEndTests
         {
             result.Model.Pages[i].Id.Should().Be(i);
         }
+    }
+
+    [Fact]
+    public void Generate_ToXml_ProducesValidXml()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Generate(fontData, 32);
+        var xml = result.ToXml();
+
+        // Assert
+        xml.Should().Contain("<font>", "XML output should contain the font root element");
+        xml.Should().Contain("face=\"Roboto\"", "XML output should contain the font face name");
+    }
+
+    [Fact]
+    public void Generate_ToBinary_ProducesValidBinary()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Generate(fontData, 32);
+        var binary = result.ToBinary();
+
+        // Assert — BMF header + version 3
+        binary[0].Should().Be(66, "first byte should be 'B'");
+        binary[1].Should().Be(77, "second byte should be 'M'");
+        binary[2].Should().Be(70, "third byte should be 'F'");
+        binary[3].Should().Be(3, "fourth byte should be version 3");
+    }
+
+    [Fact]
+    public void Generate_WithSkylinePacker_Works()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Packer = new SkylinePacker()
+        });
+
+        // Assert
+        result.Model.Characters.Should().HaveCountGreaterThan(0,
+            "generation with Skyline packer should produce characters");
+        result.Pages.Should().HaveCountGreaterThan(0,
+            "generation with Skyline packer should produce atlas pages");
+    }
+
+    [Fact]
+    public void Generate_WithBuilder_Works()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Builder()
+            .WithFont(fontData)
+            .WithSize(32)
+            .Build();
+
+        // Assert
+        result.Model.Should().NotBeNull();
+        result.Model.Info.Size.Should().Be(32);
+        result.Model.Characters.Should().HaveCountGreaterThan(0);
+        result.Pages.Should().HaveCountGreaterThan(0);
+    }
+
+    [Fact]
+    public void Generate_WithOutline_ProducesLargerGlyphs()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+        var chars = CharacterSet.FromChars("A");
+
+        // Act
+        var resultWithout = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = chars
+        });
+
+        var resultWith = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = chars,
+            PostProcessors = new[] { new OutlinePostProcessor(3) }
+        });
+
+        // Assert — outlined glyph should be larger (expanded by 2*outline in each dimension)
+        var charWithout = resultWithout.Model.Characters.First(c => c.Id == 65);
+        var charWith = resultWith.Model.Characters.First(c => c.Id == 65);
+
+        charWith.Width.Should().BeGreaterThan(charWithout.Width,
+            "outlined glyph should be wider than non-outlined glyph");
+        charWith.Height.Should().BeGreaterThan(charWithout.Height,
+            "outlined glyph should be taller than non-outlined glyph");
     }
 }
