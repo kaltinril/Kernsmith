@@ -1,3 +1,3 @@
 using BenchmarkDotNet.Running;
 
-BenchmarkRunner.Run<FontGenerationBenchmarks>();
+BenchmarkSwitcher.FromAssembly(typeof(FontGenerationBenchmarks).Assembly).Run(args);
