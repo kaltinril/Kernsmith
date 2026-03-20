@@ -181,7 +181,7 @@ public static class BmFont
             {
                 PackingEfficiency = options.PackingEfficiencyHint,
                 PowerOfTwo = options.AutofitTexture ? true : options.PowerOfTwo,
-                AllowNonSquare = options.AutofitTexture || !options.PowerOfTwo,
+                AllowNonSquare = options.MaxTextureWidth != options.MaxTextureHeight,
                 MaxWidth = options.MaxTextureWidth,
                 MaxHeight = options.MaxTextureHeight,
                 ChannelPacking = options.ChannelPacking,

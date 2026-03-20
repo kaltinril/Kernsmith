@@ -14,7 +14,10 @@ internal sealed record AtlasSizingOptions
     public bool PowerOfTwo { get; init; }
 
     /// <summary>Whether non-square atlas dimensions are allowed.</summary>
-    public bool AllowNonSquare { get; init; } = true;
+    public bool AllowNonSquare { get; init; }
+
+    /// <summary>Maximum aspect ratio (wider/narrower) for non-square atlases. Default 2.0 (e.g., 512x256 is ok, 512x128 is not).</summary>
+    public float MaxAspectRatio { get; init; } = 2.0f;
 
     /// <summary>Maximum atlas width in pixels.</summary>
     public int MaxWidth { get; init; } = 1024;
@@ -260,6 +263,10 @@ internal static class AtlasSizeEstimator
 
             if (h > options.MaxHeight) continue;
 
+            // Enforce max aspect ratio.
+            var ratio = w >= h ? (float)w / h : (float)h / w;
+            if (ratio > options.MaxAspectRatio) continue;
+
             long area = (long)w * h;
             if (area < bestArea)
             {
@@ -325,6 +332,10 @@ internal static class AtlasSizeEstimator
             h = Math.Max(h, minSize);
 
             if (h > options.MaxHeight) continue;
+
+            // Enforce max aspect ratio.
+            var ratio = w >= h ? (float)w / h : (float)h / w;
+            if (ratio > options.MaxAspectRatio) continue;
 
             long area = (long)w * h;
             if (area < bestArea)
