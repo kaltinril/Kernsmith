@@ -141,7 +141,7 @@ public static class BmFont
             // 4. Apply post-processors.
             // When FT_Stroker is available (FreeTypeRasterizer + outline), skip the
             // OutlinePostProcessor and use vector-based stroking for better quality.
-            var useFtStroker = options.Outline > 0 && rasterizer is FreeTypeRasterizer;
+            var useFtStroker = false; // TODO: Re-enable after FT_Stroker compositing is fixed
 
             if (options.PostProcessors != null)
             {
