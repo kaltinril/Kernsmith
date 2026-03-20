@@ -79,7 +79,7 @@ internal static class BmfcWriter
         else
             sb.AppendLine($"spacing = {spc.Horizontal},{spc.Vertical}");
 
-        sb.AppendLine($"power-of-two = {options.PowerOfTwo.ToString().ToLowerInvariant()}");
+        sb.AppendLine($"power-of-two = {(options.PowerOfTwo ?? true).ToString().ToLowerInvariant()}");
         sb.AppendLine($"packer = {(options.PackingAlgorithm == PackingAlgorithm.MaxRects ? "maxrects" : "skyline")}");
         WriteValue(sb, "channel-pack", options.ChannelPacking.ToString().ToLowerInvariant(), options.ChannelPacking);
         sb.AppendLine();
@@ -93,7 +93,7 @@ internal static class BmfcWriter
 
         // [kerning]
         sb.AppendLine("[kerning]");
-        sb.AppendLine($"enabled = {options.Kerning.ToString().ToLowerInvariant()}");
+        sb.AppendLine($"enabled = {(options.Kerning ?? true).ToString().ToLowerInvariant()}");
         sb.AppendLine();
 
         // [variable]

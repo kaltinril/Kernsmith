@@ -72,14 +72,42 @@ internal sealed class GenerateCommand
                 Padding = options.Padding,
                 Spacing = options.Spacing,
                 PackingAlgorithm = options.PackingAlgorithm,
-                Kerning = options.Kerning,
+                Kerning = options.Kerning ?? true,
                 Outline = options.Outline,
                 Sdf = options.Sdf,
-                PowerOfTwo = options.PowerOfTwo,
+                PowerOfTwo = options.PowerOfTwo ?? true,
                 Dpi = options.Dpi,
                 FaceIndex = options.FaceIndex,
                 ChannelPacking = options.ChannelPacking,
+                SuperSampleLevel = options.SuperSampleLevel,
+                FallbackCharacter = options.FallbackCharacter,
+                EnableHinting = options.EnableHinting ?? true,
+                AutofitTexture = options.AutofitTexture,
+                EqualizeCellHeights = options.EqualizeCellHeights,
+                ForceOffsetsToZero = options.ForceOffsetsToZero,
+                HeightPercent = options.HeightPercent,
+                MatchCharHeight = options.MatchCharHeight,
+                ColorFont = options.ColorFont,
+                ColorPaletteIndex = options.ColorPaletteIndex,
             };
+
+            // Apply texture format if specified
+            if (options.TextureFormat != null)
+            {
+                genOptions.TextureFormat = options.TextureFormat.ToLowerInvariant() switch
+                {
+                    "png" => Bmfontier.TextureFormat.Png,
+                    "tga" => Bmfontier.TextureFormat.Tga,
+                    "dds" => Bmfontier.TextureFormat.Dds,
+                    var f => throw new ArgumentException($"Unknown texture format: {f}. Use png, tga, or dds.")
+                };
+            }
+
+            // Apply independent max texture width/height if specified
+            if (options.MaxTextureWidth.HasValue)
+                genOptions.MaxTextureWidth = options.MaxTextureWidth.Value;
+            if (options.MaxTextureHeight.HasValue)
+                genOptions.MaxTextureHeight = options.MaxTextureHeight.Value;
 
             if (options.VariationAxes.Count > 0)
                 genOptions.VariationAxes = new Dictionary<string, float>(options.VariationAxes);
@@ -98,15 +126,21 @@ internal sealed class GenerateCommand
                 genOptions.PostProcessors = postProcessors;
 
             // Determine output path
+            string baseName;
+            if (options.FontPath != null)
+                baseName = Path.GetFileNameWithoutExtension(options.FontPath);
+            else
+                baseName = options.SystemFontName!.Replace(" ", "");
+
             var outputPath = options.OutputPath;
             if (outputPath == null)
             {
-                string baseName;
-                if (options.FontPath != null)
-                    baseName = Path.GetFileNameWithoutExtension(options.FontPath);
-                else
-                    baseName = options.SystemFontName!.Replace(" ", "");
                 outputPath = Path.Combine(Directory.GetCurrentDirectory(), baseName);
+            }
+            else if (Directory.Exists(outputPath) || outputPath.EndsWith(Path.DirectorySeparatorChar) || outputPath.EndsWith(Path.AltDirectorySeparatorChar))
+            {
+                Directory.CreateDirectory(outputPath);
+                outputPath = Path.Combine(outputPath, baseName);
             }
 
             // Generate
@@ -278,8 +312,18 @@ internal sealed class GenerateCommand
                     options.Outline = int.Parse(NextArg(args, ref i, args[i]));
                     break;
                 case "--gradient":
-                    options.GradientTop = NextArg(args, ref i, args[i]);
-                    options.GradientBottom = NextArg(args, ref i, args[i]);
+                    var gradientArg = NextArg(args, ref i, "--gradient");
+                    if (gradientArg.Contains(','))
+                    {
+                        var gradientParts = gradientArg.Split(',', 2);
+                        options.GradientTop = gradientParts[0];
+                        options.GradientBottom = gradientParts[1];
+                    }
+                    else
+                    {
+                        options.GradientTop = gradientArg;
+                        options.GradientBottom = NextArg(args, ref i, "--gradient");
+                    }
                     break;
                 case "--kerning":
                     options.Kerning = true;
@@ -301,6 +345,49 @@ internal sealed class GenerateCommand
                     break;
                 case "--face":
                     options.FaceIndex = int.Parse(NextArg(args, ref i, args[i]));
+                    break;
+                case "--super-sample":
+                    options.SuperSampleLevel = int.Parse(NextArg(args, ref i, args[i]));
+                    break;
+                case "--fallback-char":
+                    var fbArg = NextArg(args, ref i, args[i]);
+                    options.FallbackCharacter = fbArg.Length == 1 ? fbArg[0] : (char)int.Parse(fbArg);
+                    break;
+                case "--texture-format":
+                    options.TextureFormat = NextArg(args, ref i, args[i]).ToLowerInvariant();
+                    break;
+                case "--hinting":
+                    options.EnableHinting = true;
+                    break;
+                case "--no-hinting":
+                    options.EnableHinting = false;
+                    break;
+                case "--autofit":
+                    options.AutofitTexture = true;
+                    break;
+                case "--equalize-heights":
+                    options.EqualizeCellHeights = true;
+                    break;
+                case "--force-offsets-zero":
+                    options.ForceOffsetsToZero = true;
+                    break;
+                case "--height-percent":
+                    options.HeightPercent = int.Parse(NextArg(args, ref i, args[i]));
+                    break;
+                case "--match-char-height":
+                    options.MatchCharHeight = true;
+                    break;
+                case "--color-font":
+                    options.ColorFont = true;
+                    break;
+                case "--color-palette":
+                    options.ColorPaletteIndex = int.Parse(NextArg(args, ref i, args[i]));
+                    break;
+                case "--max-texture-width":
+                    options.MaxTextureWidth = int.Parse(NextArg(args, ref i, args[i]));
+                    break;
+                case "--max-texture-height":
+                    options.MaxTextureHeight = int.Parse(NextArg(args, ref i, args[i]));
                     break;
                 case "--config":
                     options.ConfigPath = NextArg(args, ref i, args[i]);
@@ -359,8 +446,21 @@ internal sealed class GenerateCommand
         if (cli.Verbose) config.Verbose = true;
         if (cli.Quiet) config.Quiet = true;
         if (cli.ChannelPacking) config.ChannelPacking = true;
-        if (!cli.Kerning) config.Kerning = false;
-        if (!cli.PowerOfTwo) config.PowerOfTwo = false;
+        if (cli.Kerning.HasValue) config.Kerning = cli.Kerning;
+        if (cli.PowerOfTwo.HasValue) config.PowerOfTwo = cli.PowerOfTwo;
+        if (cli.EnableHinting.HasValue) config.EnableHinting = cli.EnableHinting;
+        if (cli.AutofitTexture) config.AutofitTexture = true;
+        if (cli.EqualizeCellHeights) config.EqualizeCellHeights = true;
+        if (cli.ForceOffsetsToZero) config.ForceOffsetsToZero = true;
+        if (cli.MatchCharHeight) config.MatchCharHeight = true;
+        if (cli.ColorFont) config.ColorFont = true;
+        if (cli.ColorPaletteIndex != 0) config.ColorPaletteIndex = cli.ColorPaletteIndex;
+        if (cli.SuperSampleLevel != 1) config.SuperSampleLevel = cli.SuperSampleLevel;
+        if (cli.FallbackCharacter.HasValue) config.FallbackCharacter = cli.FallbackCharacter;
+        if (cli.TextureFormat != null) config.TextureFormat = cli.TextureFormat;
+        if (cli.HeightPercent != 100) config.HeightPercent = cli.HeightPercent;
+        if (cli.MaxTextureWidth.HasValue) config.MaxTextureWidth = cli.MaxTextureWidth;
+        if (cli.MaxTextureHeight.HasValue) config.MaxTextureHeight = cli.MaxTextureHeight;
     }
 
     private static CharacterSet BuildCharacterSet(CliOptions options)
@@ -463,6 +563,7 @@ internal sealed class GenerateCommand
             Output:
               -o, --output <path>         Output file path (default: ./<fontname>)
               --format <text|xml|binary>  Output format (default: text)
+              --texture-format <fmt>      Texture format: png (default), tga, dds
 
             Size & Rendering:
               -s, --size <n>              Font size in pixels (required)
@@ -470,10 +571,17 @@ internal sealed class GenerateCommand
               --aa <none|grayscale|light|lcd>  Anti-aliasing mode (default: grayscale)
               --sdf                       Enable Signed Distance Field rendering
               --mono                      Disable anti-aliasing (alias for --aa none)
+              --super-sample <n>          Super sampling level 1-4 (default: 1)
+              --hinting / --no-hinting    Enable/disable FreeType hinting (default: on)
+              --height-percent <n>        Vertical height scaling percentage (default: 100)
+              --match-char-height         Match rendered height to requested pixel height
+              --fallback-char <char>      Fallback character for missing glyphs (char or codepoint)
 
             Style:
               -b, --bold                  Enable synthetic bold
               -i, --italic                Enable synthetic italic
+              --color-font                Enable color font rendering (COLR/CPAL)
+              --color-palette <n>         Color palette index (default: 0)
 
             Character Set:
               -c, --charset <preset>      Character set preset: ascii, extended, latin (default: ascii)
@@ -483,6 +591,9 @@ internal sealed class GenerateCommand
 
             Texture Atlas:
               --max-texture <n>           Maximum texture size in pixels (default: 1024)
+              --max-texture-width <n>     Maximum texture width (independent of height)
+              --max-texture-height <n>    Maximum texture height (independent of width)
+              --autofit                   Auto-fit smallest texture size for all glyphs
               --padding <n>               Padding around each glyph in pixels (default: 0)
               --padding <u,r,d,l>         Per-side padding (up,right,down,left)
               --spacing <n>               Spacing between glyphs in pixels (default: 1)
@@ -491,10 +602,13 @@ internal sealed class GenerateCommand
               --no-pot                    Allow non-power-of-two textures
               --packer <maxrects|skyline> Packing algorithm (default: maxrects)
               --channel-pack              Pack glyphs into individual RGBA channels
+              --equalize-heights          Equalize all glyph cell heights
+              --force-offsets-zero        Set all xoffset/yoffset to zero
 
             Effects:
               --outline <n>               Outline width in pixels
-              --gradient <top> <bottom>   Vertical gradient, colors as hex
+              --gradient <top>,<bottom>   Vertical gradient, colors as hex
+              --gradient <top> <bottom>   Vertical gradient (two-argument form)
 
             Kerning:
               --no-kerning                Disable kerning pair extraction
@@ -518,6 +632,7 @@ internal sealed class GenerateCommand
             Examples:
               bmfontier generate -f arial.ttf -s 32
               bmfontier generate -f roboto.ttf -s 48 -b -i --outline 2
+              bmfontier generate -f font.ttf -s 24 --super-sample 2 --no-hinting
               bmfontier generate --config mygame.bmfc --save-config updated.bmfc
             """);
     }

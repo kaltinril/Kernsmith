@@ -26,11 +26,15 @@ internal sealed class CliOptions
 
     // Atlas
     public int MaxTextureSize { get; set; } = 1024;
+    public int? MaxTextureWidth { get; set; }
+    public int? MaxTextureHeight { get; set; }
     public Padding Padding { get; set; } = new(0);
     public Spacing Spacing { get; set; } = new(1);
-    public bool PowerOfTwo { get; set; } = true;
+    public bool? PowerOfTwo { get; set; } = true;
     public PackingAlgorithm PackingAlgorithm { get; set; } = PackingAlgorithm.MaxRects;
     public bool ChannelPacking { get; set; }
+    public bool AutofitTexture { get; set; }
+    public string? TextureFormat { get; set; }
 
     // Effects
     public int Outline { get; set; }
@@ -38,7 +42,19 @@ internal sealed class CliOptions
     public string? GradientBottom { get; set; }
 
     // Kerning
-    public bool Kerning { get; set; } = true;
+    public bool? Kerning { get; set; } = true;
+
+    // Rendering extras
+    public int SuperSampleLevel { get; set; } = 1;
+    public char? FallbackCharacter { get; set; }
+    public bool? EnableHinting { get; set; }
+    public bool EqualizeCellHeights { get; set; }
+    public bool ForceOffsetsToZero { get; set; }
+    public int HeightPercent { get; set; } = 100;
+    public bool MatchCharHeight { get; set; }
+    public bool ColorFont { get; set; }
+    public int ColorPaletteIndex { get; set; }
+
 
     // Variable fonts
     public Dictionary<string, float> VariationAxes { get; set; } = new();
