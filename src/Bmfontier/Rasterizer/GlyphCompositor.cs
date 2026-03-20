@@ -27,16 +27,73 @@ internal static class GlyphCompositor
         var alphaData = ExtractAlpha(sourceGlyph);
         var alphaPitch = srcW; // one byte per pixel in the extracted alpha
 
-        // 2. Generate each layer by calling effect.Generate().
+        // 2. Generate layers with dependency awareness.
+        // Shadow (Z=0) should use the outlined shape when outline (Z=1) is present,
+        // so the shadow matches the full silhouette including the border.
         var layers = new List<GlyphLayer>(effects.Count);
         bool hasBodyEffect = false;
 
+        // Separate effects by type.
+        IGlyphEffect? outlineEffect = null;
+        IGlyphEffect? shadowEffect = null;
+        var otherEffects = new List<IGlyphEffect>();
+
         foreach (var effect in effects)
         {
-            var layer = effect.Generate(alphaData, srcW, srcH, alphaPitch, sourceGlyph.Metrics);
-            layers.Add(layer);
-            if (effect.ZOrder == 2) // body layer
-                hasBodyEffect = true;
+            if (effect.ZOrder == 0) shadowEffect = effect;
+            else if (effect.ZOrder == 1) outlineEffect = effect;
+            else otherEffects.Add(effect);
+            if (effect.ZOrder == 2) hasBodyEffect = true;
+        }
+
+        // Generate outline layer first (if present).
+        GlyphLayer? outlineLayer = null;
+        if (outlineEffect != null)
+        {
+            outlineLayer = outlineEffect.Generate(alphaData, srcW, srcH, alphaPitch, sourceGlyph.Metrics);
+            layers.Add(outlineLayer);
+        }
+
+        // Generate shadow from the outline silhouette (if outline exists),
+        // otherwise from the raw glyph alpha.
+        if (shadowEffect != null)
+        {
+            if (outlineLayer != null)
+            {
+                // Extract alpha from the outline layer to use as the shadow source.
+                var outlineAlpha = new byte[outlineLayer.Width * outlineLayer.Height];
+                for (var i = 0; i < outlineAlpha.Length; i++)
+                    outlineAlpha[i] = outlineLayer.RgbaData[i * 4 + 3];
+
+                // Generate shadow from the outlined shape, adjusting metrics for the outline offset.
+                var outlineMetrics = new Font.Models.GlyphMetrics(
+                    BearingX: sourceGlyph.Metrics.BearingX + outlineLayer.OffsetX,
+                    BearingY: sourceGlyph.Metrics.BearingY - outlineLayer.OffsetY,
+                    Advance: sourceGlyph.Metrics.Advance,
+                    Width: outlineLayer.Width,
+                    Height: outlineLayer.Height);
+
+                var shadowLayer = shadowEffect.Generate(
+                    outlineAlpha, outlineLayer.Width, outlineLayer.Height,
+                    outlineLayer.Width, outlineMetrics);
+
+                // Adjust shadow offset to account for the outline's own offset.
+                layers.Add(shadowLayer with
+                {
+                    OffsetX = shadowLayer.OffsetX + outlineLayer.OffsetX,
+                    OffsetY = shadowLayer.OffsetY + outlineLayer.OffsetY
+                });
+            }
+            else
+            {
+                layers.Add(shadowEffect.Generate(alphaData, srcW, srcH, alphaPitch, sourceGlyph.Metrics));
+            }
+        }
+
+        // Generate remaining effects (body/gradient).
+        foreach (var effect in otherEffects)
+        {
+            layers.Add(effect.Generate(alphaData, srcW, srcH, alphaPitch, sourceGlyph.Metrics));
         }
 
         // If no body effect was provided, create a default white body layer
