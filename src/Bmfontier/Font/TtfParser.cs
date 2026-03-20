@@ -47,6 +47,7 @@ internal class TtfParser
         ParseKern();
         ParseGpos();
         ParseFvar();
+        DetectColorTables();
     }
 
     /// <summary>

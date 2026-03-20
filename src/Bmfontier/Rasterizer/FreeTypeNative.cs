@@ -11,10 +11,9 @@ internal static unsafe class FreeTypeNative
     private const string LibName = "freetype";
 
     /// <summary>
-    /// FT_LOAD_COLOR flag (1 &lt;&lt; 5 = 32). Requests color glyph layers when available.
-    /// Defined here because FreeTypeSharp may not expose it.
+    /// FT_LOAD_COLOR flag (1 &lt;&lt; 20). Requests color glyph layers when available.
     /// </summary>
-    public const int FT_LOAD_COLOR = 1 << 5;
+    public const int FT_LOAD_COLOR = 1 << 20;
 
     /// <summary>
     /// FT_LOAD_NO_HINTING flag (1 &lt;&lt; 1 = 2). Disables TrueType hinting.
@@ -29,6 +28,12 @@ internal static unsafe class FreeTypeNative
     // FT_Stroker line cap and line join constants.
     public const int FT_STROKER_LINECAP_ROUND = 1;
     public const int FT_STROKER_LINEJOIN_ROUND = 1;
+
+    /// <summary>
+    /// Selects a bitmap strike by index for bitmap-only fonts.
+    /// </summary>
+    [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern FT_Error FT_Select_Size(FT_FaceRec_* face, int strike_index);
 
     /// <summary>
     /// Sets the design coordinates for a variable font's variation axes.

@@ -12,6 +12,12 @@ internal sealed class FreeTypeRasterizer : IRasterizer
     private unsafe FT_FaceRec_* _face;
     private bool _disposed;
 
+    /// <summary>
+    /// Stored variation axis coordinates (FT_Fixed 16.16 values) to re-apply after FT_Set_Char_Size,
+    /// which can reset variation state in some FreeType builds.
+    /// </summary>
+    private int[]? _variationCoords;
+
     public unsafe void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0)
     {
         _library = new FreeTypeLibrary();
@@ -69,7 +75,7 @@ internal sealed class FreeTypeRasterizer : IRasterizer
         // Axes not specified by the user get their default value.
         // FT_Fixed is a 16.16 fixed-point integer: value * 65536.
         var numAxes = fvarAxes.Count;
-        var coords = stackalloc int[numAxes];
+        var coordsArray = new int[numAxes];
 
         for (var i = 0; i < numAxes; i++)
         {
@@ -81,14 +87,21 @@ internal sealed class FreeTypeRasterizer : IRasterizer
             // Clamp to the axis range.
             value = Math.Clamp(value, axis.MinValue, axis.MaxValue);
 
-            coords[i] = (int)(value * 65536.0f);
+            coordsArray[i] = (int)(value * 65536.0f);
         }
 
-        var error = FreeTypeNative.FT_Set_Var_Design_Coordinates(
-            _face, (uint)numAxes, coords);
+        // Store the coordinates so they can be re-applied after FT_Set_Char_Size,
+        // which resets variation state in some FreeType builds.
+        _variationCoords = coordsArray;
 
-        if (error != FT_Error.FT_Err_Ok)
-            throw new FreeTypeException(error);
+        fixed (int* coords = coordsArray)
+        {
+            var error = FreeTypeNative.FT_Set_Var_Design_Coordinates(
+                _face, (uint)numAxes, coords);
+
+            if (error != FT_Error.FT_Err_Ok)
+                throw new FreeTypeException(error);
+        }
     }
 
     public unsafe RasterizedGlyph? RasterizeGlyph(int codepoint, RasterOptions options)
@@ -100,7 +113,47 @@ internal sealed class FreeTypeRasterizer : IRasterizer
         var sizeF26D6 = (IntPtr)(options.Size * 64);
         var error = FT.FT_Set_Char_Size(_face, sizeF26D6, sizeF26D6, (uint)options.Dpi, (uint)options.Dpi);
         if (error != FT_Error.FT_Err_Ok)
-            throw new FreeTypeException(error);
+        {
+            // Bitmap-only fonts (e.g., CBDT/CBLC emoji) do not have scalable outlines,
+            // so FT_Set_Char_Size fails with "invalid pixel size". Fall back to selecting
+            // the best available bitmap strike.
+            if (_face->num_fixed_sizes > 0)
+            {
+                var bestIndex = 0;
+                var bestDiff = int.MaxValue;
+                for (var s = 0; s < _face->num_fixed_sizes; s++)
+                {
+                    var strikeHeight = _face->available_sizes[s].height;
+                    var diff = Math.Abs(strikeHeight - options.Size);
+                    if (diff < bestDiff)
+                    {
+                        bestDiff = diff;
+                        bestIndex = s;
+                    }
+                }
+
+                error = FreeTypeNative.FT_Select_Size(_face, bestIndex);
+                if (error != FT_Error.FT_Err_Ok)
+                    throw new FreeTypeException(error);
+            }
+            else
+            {
+                throw new FreeTypeException(error);
+            }
+        }
+
+        // Re-apply variation coordinates after FT_Set_Char_Size, which can reset
+        // variation state in some FreeType builds.
+        if (_variationCoords != null)
+        {
+            fixed (int* coords = _variationCoords)
+            {
+                error = FreeTypeNative.FT_Set_Var_Design_Coordinates(
+                    _face, (uint)_variationCoords.Length, coords);
+                if (error != FT_Error.FT_Err_Ok)
+                    throw new FreeTypeException(error);
+            }
+        }
 
         // Get glyph index for the codepoint.
         var glyphIndex = FT.FT_Get_Char_Index(_face, (UIntPtr)codepoint);
@@ -145,10 +198,14 @@ internal sealed class FreeTypeRasterizer : IRasterizer
                 _ => FT_Render_Mode_.FT_RENDER_MODE_NORMAL
             };
 
-        // Render the glyph to bitmap.
-        error = FT.FT_Render_Glyph(slot, renderMode);
-        if (error != FT_Error.FT_Err_Ok)
-            throw new FreeTypeException(error);
+        // Render the glyph to bitmap. Skip rendering for bitmap-only glyphs
+        // (e.g., CBDT/CBLC color emoji) that are already rasterized after FT_Load_Glyph.
+        if (slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_BITMAP)
+        {
+            error = FT.FT_Render_Glyph(slot, renderMode);
+            if (error != FT_Error.FT_Err_Ok)
+                throw new FreeTypeException(error);
+        }
 
         ref var bitmap = ref slot->bitmap;
         var bitmapWidth = (int)bitmap.width;

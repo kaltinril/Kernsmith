@@ -460,7 +460,7 @@ public class ColorFontTests : IDisposable
     // Color font tests (skipped if no color font fixture exists)
     // ---------------------------------------------------------------
 
-    [Fact(Skip = "Requires a color font fixture (TTF/OTF with COLR/sbix/CBDT table) in tests/Fixtures/")]
+    [Fact]
     public void FontInfo_ColorFont_HasColorGlyphsIsTrue()
     {
         // Arrange
@@ -475,15 +475,16 @@ public class ColorFontTests : IDisposable
             "a color font should have COLR, sbix, or CBDT tables detected");
     }
 
-    [Fact(Skip = "Requires a color font fixture (TTF/OTF with COLR/sbix/CBDT table) in tests/Fixtures/")]
+    [Fact]
     public void Generate_ColorFont_WithColorFontTrue_ProducesRgbaAtlas()
     {
-        // Arrange
+        // Arrange -- use emoji codepoints since NotoColorEmoji does not contain ASCII glyphs.
+        // U+1F600 = grinning face, U+2764 = red heart, U+2B50 = star
         var fontData = _colorFontData!;
         var options = new FontGeneratorOptions
         {
             Size = 32,
-            Characters = CharacterSet.Ascii,
+            Characters = CharacterSet.FromChars(new[] { 0x1F600, 0x2764, 0x2B50 }),
             ColorFont = true
         };
 
@@ -499,15 +500,15 @@ public class ColorFontTests : IDisposable
             "RGBA pages should have 4 bytes per pixel");
     }
 
-    [Fact(Skip = "Requires a color font fixture (TTF/OTF with COLR/sbix/CBDT table) in tests/Fixtures/")]
+    [Fact]
     public void Generate_ColorFont_WithColorFontTrue_AtlasContainsColorData()
     {
-        // Arrange
+        // Arrange -- use emoji codepoints since NotoColorEmoji does not contain ASCII glyphs
         var fontData = _colorFontData!;
         var options = new FontGeneratorOptions
         {
             Size = 32,
-            Characters = CharacterSet.Ascii,
+            Characters = CharacterSet.FromChars(new[] { 0x1F600, 0x2764, 0x2B50 }),
             ColorFont = true
         };
 
@@ -534,15 +535,15 @@ public class ColorFontTests : IDisposable
             "color font atlas should contain pixels with varying RGB channels");
     }
 
-    [Fact(Skip = "Requires a color font fixture (TTF/OTF with COLR/sbix/CBDT table) in tests/Fixtures/")]
+    [Fact]
     public void Generate_ColorFont_WithColorPaletteIndex_DoesNotThrow()
     {
-        // Arrange
+        // Arrange -- use emoji codepoints since NotoColorEmoji does not contain ASCII glyphs
         var fontData = _colorFontData!;
         var options = new FontGeneratorOptions
         {
             Size = 32,
-            Characters = CharacterSet.FromChars("A"),
+            Characters = CharacterSet.FromChars(new[] { 0x1F600 }),
             ColorFont = true,
             ColorPaletteIndex = 0
         };
