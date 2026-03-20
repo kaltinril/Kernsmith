@@ -112,8 +112,17 @@ internal sealed class GenerateCommand
             if (options.VariationAxes.Count > 0)
                 genOptions.VariationAxes = new Dictionary<string, float>(options.VariationAxes);
 
-            // Post-processors
+            // Post-processors — order matters:
+            // 1. Gradient (grayscale → RGBA with colors)
+            // 2. Outline (accepts RGBA, composites colored glyph on outline)
+            // 3. Shadow
             var postProcessors = new List<IGlyphPostProcessor>();
+            if (options.GradientTop != null && options.GradientBottom != null)
+            {
+                var top = ColorParser.Parse(options.GradientTop);
+                var bottom = ColorParser.Parse(options.GradientBottom);
+                postProcessors.Add(GradientPostProcessor.Create(top, bottom));
+            }
             if (options.Outline > 0)
             {
                 byte oR = 0, oG = 0, oB = 0;
@@ -123,12 +132,6 @@ internal sealed class GenerateCommand
                     oR = oc.R; oG = oc.G; oB = oc.B;
                 }
                 postProcessors.Add(new OutlinePostProcessor(options.Outline, oR, oG, oB));
-            }
-            if (options.GradientTop != null && options.GradientBottom != null)
-            {
-                var top = ColorParser.Parse(options.GradientTop);
-                var bottom = ColorParser.Parse(options.GradientBottom);
-                postProcessors.Add(GradientPostProcessor.Create(top, bottom));
             }
             if (options.ShadowOffsetX != 0 || options.ShadowOffsetY != 0 || options.ShadowColor != null)
             {
