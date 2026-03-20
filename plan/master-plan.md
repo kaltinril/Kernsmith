@@ -84,7 +84,7 @@ Plans with remaining work, numbered by priority:
 | 01 | [Optimal Atlas Sizing](01-optimal-atlas-sizing.md) | Mathematical atlas size prediction to replace brute-force trial-and-error | Implemented, potential refinements remain |
 | 02 | [Outline Overhaul](02-outline-overhaul.md) | EDT-based anti-aliased outlines, outline color, pipeline fix | Tier 1 (EDT) done; Tier 2 (FT_Stroker) disabled/broken |
 | 03 | [FT_Stroker Fix](03-ft-stroker-fix.md) | Fix compositing issues in the FT_Stroker vector outline path | Not started, blocked on investigation |
-| 04 | [Layered Rendering](04-layered-rendering.md) | Replace order-dependent post-processor chain with layered compositing | Not started |
+| 04 | [Layered Rendering](04-layered-rendering.md) | Replace order-dependent post-processor chain with layered compositing | Implemented (IGlyphEffect, GlyphCompositor, OutlineEffect, GradientEffect, ShadowEffect) |
 
 ---
 
@@ -172,7 +172,7 @@ See **Active Plans** table above for remaining work items.
 | 3 | **Project license** | **Proprietary** | See LICENSE file. |
 | 4 | **NuGet package name** | **Bmfontier** | Package ID `Bmfontier`, main API class `BmFont`. |
 | 5 | **FreeTypeSharp usage boundary** | Use everything it can do | Our parser only covers what FreeTypeSharp cannot (GPOS, OS/2, name, cmap). No duplication. |
-| 6 | **Unsafe code policy** | `AllowUnsafeBlocks` in main project | Isolated to FreeType interop (`FreeTypeRasterizer.cs`, `TtfFontReader.cs`). Rest is safe C#. |
+| 6 | **Unsafe code policy** | `AllowUnsafeBlocks` in main project | Isolated to FreeType interop (`FreeTypeRasterizer.cs`, `FreeTypeNative.cs`). Rest is safe C#. |
 | 7 | **FreeType memory** | Manual lifecycle via `IDisposable` | Pin font data with `GCHandle`. Do NOT use `FreeTypeFaceFacade`. See [done/plan-rasterization.md](done/plan-rasterization.md). |
 | 8 | **Test framework** | **xUnit** + FluentAssertions | See [done/plan-testing.md](done/plan-testing.md). |
 | 9 | **Error handling** | Custom exception hierarchy | `FontParsingException`, `RasterizationException`, `AtlasPackingException`. See [done/plan-data-types.md](done/plan-data-types.md). |

@@ -2,7 +2,7 @@
 
 ## Project Purpose
 
-Cross-platform .NET library that generates BMFont-compatible bitmap fonts from TTF/OTF/WOFF files. Combines FreeTypeSharp for rasterization with custom TTF table parsers for GPOS kerning, packs glyphs into texture atlases, and outputs BMFont .fnt + .png pairs. In-memory by default.
+Cross-platform .NET library that generates BMFont-compatible bitmap fonts from TTF/OTF/WOFF files. Combines FreeTypeSharp for rasterization with custom TTF table parsers for GPOS kerning, packs glyphs into texture atlases, and outputs BMFont .fnt + .png/.tga/.dds pairs. Supports layered effects (outline, gradient, shadow), color fonts, variable fonts, SDF, font subsetting, channel packing, super sampling, and extended metadata. In-memory by default.
 
 ## Project Organization
 
@@ -12,7 +12,7 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 | `tests/Bmfontier.Tests/` | **xUnit + FluentAssertions test suite** |
 | `samples/Bmfontier.Cli/` | **Reference CLI tool** |
 | `benchmarks/Bmfontier.Benchmarks/` | **BenchmarkDotNet performance benchmarks** |
-| `plan/` | **Technical plan docs** — architecture, data types, implementation order |
+| `plan/` | **Technical plan docs** — active plans; completed plans archived in `plan/done/` |
 | `reference/` | **Reference docs** — TTF spec, BMFont format, algorithm research |
 
 ## Context Management
@@ -35,7 +35,7 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 
 - **Language**: C# / .NET 8.0 (LTS)
 - **Nullable**: enabled
-- **Unsafe**: allowed only in FreeType interop (`FreeTypeRasterizer.cs`)
+- **Unsafe**: allowed only in FreeType interop (`FreeTypeRasterizer.cs`, `FreeTypeNative.cs`)
 - **Testing**: xUnit + FluentAssertions
 - **Dependencies**: FreeTypeSharp 3.1.0, StbImageWriteSharp 1.16.7
 - **License**: Proprietary (see LICENSE)
@@ -46,10 +46,10 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 - `Bmfontier.Font`: font reading, TTF parsing
 - `Bmfontier.Font.Models`: FontInfo, KerningPair, GlyphMetrics
 - `Bmfontier.Font.Tables`: HeadTable, HheaTable, Os2Metrics, NameInfo
-- `Bmfontier.Rasterizer`: IRasterizer, FreeTypeRasterizer, post-processors
-- `Bmfontier.Atlas`: IAtlasPacker, packers, encoder, AtlasBuilder
-- `Bmfontier.Output`: formatters, FileWriter, BmFontResult
-- `Bmfontier.Output.Model`: BmFontModel, InfoBlock, CommonBlock, etc.
+- `Bmfontier.Rasterizer`: IRasterizer, FreeTypeRasterizer, post-processors, effects (IGlyphEffect), GlyphCompositor
+- `Bmfontier.Atlas`: IAtlasPacker, packers, encoders (PNG/TGA/DDS), AtlasBuilder, AtlasSizeEstimator, ChannelCompositor
+- `Bmfontier.Output`: formatters, FileWriter, BmFontResult, BmFontReader, BmFontModelBuilder
+- `Bmfontier.Output.Model`: BmFontModel, InfoBlock, CommonBlock, ExtendedMetadata, etc.
 - Files in `Config/` and `Exceptions/` use the ROOT `Bmfontier` namespace
 
 ### Project File References
@@ -58,7 +58,7 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 |------|----------|
 | Entry point | `src/Bmfontier/BmFont.cs` |
 | Plan docs | `plan/` (start with `master-plan.md`) |
-| Data types (source of truth) | `plan/plan-data-types.md` |
-| Implementation order | `plan/plan-implementation-order.md` |
+| Data types (source of truth) | `plan/done/plan-data-types.md` |
+| Implementation order | `plan/done/plan-implementation-order.md` |
 | Tests | `tests/Bmfontier.Tests/` |
 | CI/CD | `.github/workflows/` |
