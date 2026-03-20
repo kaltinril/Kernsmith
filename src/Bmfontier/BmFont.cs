@@ -24,6 +24,28 @@ public static class BmFont
         if (WoffDecompressor.IsWoff(fontData) || WoffDecompressor.IsWoff2(fontData))
             fontData = WoffDecompressor.Decompress(fontData);
 
+        // 0b. Guard: SDF + super sampling is invalid — box filter corrupts distance values.
+        if (options.Sdf && options.SuperSampleLevel > 1)
+            throw new InvalidOperationException(
+                "SDF rendering cannot be combined with super sampling (SuperSampleLevel > 1). " +
+                "The box-filter downscale corrupts signed distance field values.");
+
+        // 0c. Auto-add OutlinePostProcessor when Outline > 0 and no ChannelConfig.
+        // Without a ChannelConfig, the outline post-processor is not applied by the
+        // channel compositing path, so we add it to the regular post-processor list.
+        if (options.Outline > 0 && (options.Channels is null || options.Channels.IsDefault))
+        {
+            var ppList = options.PostProcessors != null
+                ? new List<IGlyphPostProcessor>(options.PostProcessors)
+                : new List<IGlyphPostProcessor>();
+
+            // Only add if not already present.
+            if (!ppList.Any(pp => pp is OutlinePostProcessor))
+                ppList.Add(new OutlinePostProcessor(options.Outline));
+
+            options.PostProcessors = ppList;
+        }
+
         // 1. Parse font
         var fontReader = options.FontReader ?? new TtfFontReader();
 
@@ -39,6 +61,14 @@ public static class BmFont
 
         // 2. Resolve character set
         var codepoints = options.Characters.Resolve(fontInfo.AvailableCodepoints).ToList();
+
+        // Ensure fallback character is included in the codepoint list.
+        if (options.FallbackCharacter.HasValue)
+        {
+            var fbCodepoint = (int)options.FallbackCharacter.Value;
+            if (!codepoints.Contains(fbCodepoint))
+                codepoints.Add(fbCodepoint);
+        }
 
         // 3. Rasterize glyphs
         var rasterizer = options.Rasterizer ?? new FreeTypeRasterizer();
@@ -80,7 +110,7 @@ public static class BmFont
                     var maxRenderedHeight = probeGlyphs.Max(g => g.Height);
                     if (maxRenderedHeight > 0 && maxRenderedHeight != rasterOptions.Size)
                     {
-                        var adjustedSize = rasterOptions.Size * rasterOptions.Size / maxRenderedHeight;
+                        var adjustedSize = (int)Math.Round((double)rasterOptions.Size * rasterOptions.Size / maxRenderedHeight);
                         if (adjustedSize < 1) adjustedSize = 1;
                         rasterOptions = rasterOptions with { Size = adjustedSize };
                     }
@@ -179,7 +209,16 @@ public static class BmFont
             else
             {
                 int totalArea = glyphRects.Sum(r => r.Width * r.Height);
-                int estSize = NextPowerOfTwo((int)Math.Sqrt(totalArea * 1.2));
+                int estSize;
+                if (options.PowerOfTwo)
+                {
+                    estSize = NextPowerOfTwo((int)Math.Sqrt(totalArea * 1.2));
+                }
+                else
+                {
+                    estSize = (int)Math.Ceiling(Math.Sqrt(totalArea * 1.2));
+                    estSize = Math.Max(estSize, 64);
+                }
                 pageWidth = Math.Clamp(estSize, 64, options.MaxTextureWidth);
                 pageHeight = Math.Clamp(estSize, 64, options.MaxTextureHeight);
             }

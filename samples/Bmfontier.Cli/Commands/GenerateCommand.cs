@@ -122,6 +122,20 @@ internal sealed class GenerateCommand
                 var bottom = ColorParser.Parse(options.GradientBottom);
                 postProcessors.Add(GradientPostProcessor.Create(top, bottom));
             }
+            if (options.ShadowOffsetX != 0 || options.ShadowOffsetY != 0 || options.ShadowColor != null)
+            {
+                byte sR = 0, sG = 0, sB = 0;
+                if (options.ShadowColor != null)
+                {
+                    var sc = ColorParser.Parse(options.ShadowColor);
+                    sR = sc.R; sG = sc.G; sB = sc.B;
+                }
+                postProcessors.Add(new ShadowPostProcessor(
+                    offsetX: options.ShadowOffsetX,
+                    offsetY: options.ShadowOffsetY,
+                    blurRadius: options.ShadowBlur,
+                    shadowR: sR, shadowG: sG, shadowB: sB));
+            }
             if (postProcessors.Count > 0)
                 genOptions.PostProcessors = postProcessors;
 
@@ -322,7 +336,12 @@ internal sealed class GenerateCommand
                     else
                     {
                         options.GradientTop = gradientArg;
-                        options.GradientBottom = NextArg(args, ref i, "--gradient");
+                        var bottomArg = NextArg(args, ref i, "--gradient");
+                        if (bottomArg.StartsWith('-') && !bottomArg.StartsWith('#'))
+                            throw new ArgumentException(
+                                $"Invalid gradient bottom color '{bottomArg}'. " +
+                                "Use --gradient <top>,<bottom> or --gradient <top> <bottom> with valid hex colors.");
+                        options.GradientBottom = bottomArg;
                     }
                     break;
                 case "--kerning":
@@ -339,6 +358,10 @@ internal sealed class GenerateCommand
                     var tag = axisStr[..eqIdx];
                     var val = float.Parse(axisStr[(eqIdx + 1)..]);
                     options.VariationAxes[tag] = val;
+                    break;
+                case "--shadow":
+                    var shadowArg = NextArg(args, ref i, "--shadow");
+                    ParseShadowArg(options, shadowArg);
                     break;
                 case "--instance":
                     options.InstanceName = NextArg(args, ref i, args[i]);
@@ -436,6 +459,16 @@ internal sealed class GenerateCommand
         if (cli.GradientBottom != null) config.GradientBottom = cli.GradientBottom;
         if (cli.VariationAxes.Count > 0) config.VariationAxes = cli.VariationAxes;
 
+        // GC-1: Previously missing fields — these CLI values were silently dropped.
+        if (cli.OutputFormat != OutputFormat.Text) config.OutputFormat = cli.OutputFormat;
+        if (cli.AntiAlias != AntiAliasMode.Grayscale) config.AntiAlias = cli.AntiAlias;
+        if (cli.MaxTextureSize != 1024) config.MaxTextureSize = cli.MaxTextureSize;
+        if (cli.Outline > 0) config.Outline = cli.Outline;
+        if (cli.Dpi != 72) config.Dpi = cli.Dpi;
+        if (cli.FaceIndex != 0) config.FaceIndex = cli.FaceIndex;
+        if (cli.PackingAlgorithm != PackingAlgorithm.MaxRects) config.PackingAlgorithm = cli.PackingAlgorithm;
+        if (cli.CharsetPreset != null && cli.CharsetPreset != "ascii") config.CharsetPreset = cli.CharsetPreset;
+
         // Bool/value flags: these are trickier because defaults look like "not set".
         // For the CLI overlay, we simply copy all values that differ from defaults.
         // This is imperfect but practical: the CLI user must use the flag to override.
@@ -461,6 +494,10 @@ internal sealed class GenerateCommand
         if (cli.HeightPercent != 100) config.HeightPercent = cli.HeightPercent;
         if (cli.MaxTextureWidth.HasValue) config.MaxTextureWidth = cli.MaxTextureWidth;
         if (cli.MaxTextureHeight.HasValue) config.MaxTextureHeight = cli.MaxTextureHeight;
+        if (cli.InstanceName != null) config.InstanceName = cli.InstanceName;
+        if (cli.ShadowOffsetX != 0 || cli.ShadowOffsetY != 0) { config.ShadowOffsetX = cli.ShadowOffsetX; config.ShadowOffsetY = cli.ShadowOffsetY; }
+        if (cli.ShadowColor != null) config.ShadowColor = cli.ShadowColor;
+        if (cli.ShadowBlur != 0) config.ShadowBlur = cli.ShadowBlur;
     }
 
     private static CharacterSet BuildCharacterSet(CliOptions options)
@@ -541,6 +578,25 @@ internal sealed class GenerateCommand
         return new Spacing(int.Parse(parts[0]));
     }
 
+    /// <summary>
+    /// Parses a shadow argument string in the form "offsetX,offsetY[,color[,blur]]".
+    /// </summary>
+    private static void ParseShadowArg(CliOptions options, string arg)
+    {
+        var parts = arg.Split(',', StringSplitOptions.TrimEntries);
+        if (parts.Length < 2)
+            throw new ArgumentException(
+                $"Invalid shadow format '{arg}'. Expected: offsetX,offsetY[,color[,blur]]");
+
+        options.ShadowOffsetX = int.Parse(parts[0]);
+        options.ShadowOffsetY = int.Parse(parts[1]);
+
+        if (parts.Length >= 3)
+            options.ShadowColor = parts[2];
+        if (parts.Length >= 4)
+            options.ShadowBlur = int.Parse(parts[3]);
+    }
+
     private static string NextArg(string[] allArgs, ref int i, string flag)
     {
         i++;
@@ -609,6 +665,7 @@ internal sealed class GenerateCommand
               --outline <n>               Outline width in pixels
               --gradient <top>,<bottom>   Vertical gradient, colors as hex
               --gradient <top> <bottom>   Vertical gradient (two-argument form)
+              --shadow <x>,<y>[,color[,blur]]  Drop shadow (e.g., --shadow 2,2,000000,1)
 
             Kerning:
               --no-kerning                Disable kerning pair extraction

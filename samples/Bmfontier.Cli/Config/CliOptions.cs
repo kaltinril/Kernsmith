@@ -40,6 +40,10 @@ internal sealed class CliOptions
     public int Outline { get; set; }
     public string? GradientTop { get; set; }
     public string? GradientBottom { get; set; }
+    public int ShadowOffsetX { get; set; }
+    public int ShadowOffsetY { get; set; }
+    public string? ShadowColor { get; set; }
+    public int ShadowBlur { get; set; }
 
     // Kerning
     public bool? Kerning { get; set; } = true;

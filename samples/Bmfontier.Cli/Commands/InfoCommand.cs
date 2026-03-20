@@ -86,17 +86,27 @@ internal sealed class InfoCommand
 
             return ExitCodes.Success;
         }
+        catch (FileNotFoundException ex)
+        {
+            ConsoleOutput.WriteError($"File not found: {ex.FileName ?? ex.Message}");
+            return ExitCodes.FileNotFound;
+        }
         catch (FontParsingException ex)
         {
             ConsoleOutput.WriteError($"Font error: {ex.Message}");
             return ExitCodes.FontParseError;
+        }
+        catch (IOException ex)
+        {
+            ConsoleOutput.WriteError($"I/O error: {ex.Message}");
+            return ExitCodes.OutputWriteError;
         }
         catch (ArgumentException ex)
         {
             ConsoleOutput.WriteError(ex.Message);
             return ExitCodes.InvalidArguments;
         }
-        catch (Exception ex) when (ex is not FileNotFoundException)
+        catch (Exception ex)
         {
             ConsoleOutput.WriteError($"Error reading font: {ex.Message}");
             return ExitCodes.FontParseError;

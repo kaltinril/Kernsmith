@@ -21,6 +21,17 @@ internal static class ConsoleOutput
     public static bool IsQuiet => _quiet;
     public static bool IsVerbose => _verbose;
 
+    /// <summary>
+    /// Resets all flags to their defaults. Useful between commands or tests.
+    /// </summary>
+    public static void Reset()
+    {
+        _verbose = false;
+        _quiet = false;
+        _noColor = Environment.GetEnvironmentVariable("NO_COLOR") != null
+                   || Console.IsOutputRedirected;
+    }
+
     public static void WriteError(string message)
     {
         if (_noColor)

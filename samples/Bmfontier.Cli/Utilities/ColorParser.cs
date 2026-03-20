@@ -18,6 +18,12 @@ internal static class ColorParser
             s = new string(new[] { s[0], s[0], s[1], s[1], s[2], s[2] });
         }
 
+        if (s.Length == 4)
+        {
+            // Expand 4-char shorthand RGBA: F00A -> FF0000 (strip alpha)
+            s = new string(new[] { s[0], s[0], s[1], s[1], s[2], s[2] });
+        }
+
         if (s.Length == 8)
         {
             // Strip alpha channel

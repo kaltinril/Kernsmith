@@ -44,6 +44,13 @@ internal static class BmfcWriter
         WriteValue(sb, "sdf", options.Sdf.ToString().ToLowerInvariant(), options.Sdf);
         WriteValue(sb, "bold", options.Bold.ToString().ToLowerInvariant(), options.Bold);
         WriteValue(sb, "italic", options.Italic.ToString().ToLowerInvariant(), options.Italic);
+        WriteValue(sb, "super-sample", options.SuperSampleLevel.ToString(), options.SuperSampleLevel != 1);
+        WriteValue(sb, "fallback-char", options.FallbackCharacter.HasValue ? ((int)options.FallbackCharacter.Value).ToString() : null, options.FallbackCharacter.HasValue);
+        WriteValue(sb, "hinting", (options.EnableHinting ?? true).ToString().ToLowerInvariant(), options.EnableHinting.HasValue && !options.EnableHinting.Value);
+        WriteValue(sb, "height-percent", options.HeightPercent.ToString(), options.HeightPercent != 100);
+        WriteValue(sb, "match-char-height", options.MatchCharHeight.ToString().ToLowerInvariant(), options.MatchCharHeight);
+        WriteValue(sb, "color-font", options.ColorFont.ToString().ToLowerInvariant(), options.ColorFont);
+        WriteValue(sb, "color-palette", options.ColorPaletteIndex.ToString(), options.ColorPaletteIndex != 0);
         sb.AppendLine();
 
         // [characters]
@@ -82,6 +89,12 @@ internal static class BmfcWriter
         sb.AppendLine($"power-of-two = {(options.PowerOfTwo ?? true).ToString().ToLowerInvariant()}");
         sb.AppendLine($"packer = {(options.PackingAlgorithm == PackingAlgorithm.MaxRects ? "maxrects" : "skyline")}");
         WriteValue(sb, "channel-pack", options.ChannelPacking.ToString().ToLowerInvariant(), options.ChannelPacking);
+        WriteValue(sb, "max-texture-width", options.MaxTextureWidth?.ToString(), options.MaxTextureWidth.HasValue);
+        WriteValue(sb, "max-texture-height", options.MaxTextureHeight?.ToString(), options.MaxTextureHeight.HasValue);
+        WriteValue(sb, "autofit", options.AutofitTexture.ToString().ToLowerInvariant(), options.AutofitTexture);
+        WriteValue(sb, "texture-format", options.TextureFormat, options.TextureFormat != null);
+        WriteValue(sb, "equalize-heights", options.EqualizeCellHeights.ToString().ToLowerInvariant(), options.EqualizeCellHeights);
+        WriteValue(sb, "force-offsets-zero", options.ForceOffsetsToZero.ToString().ToLowerInvariant(), options.ForceOffsetsToZero);
         sb.AppendLine();
 
         // [effects]
@@ -89,6 +102,10 @@ internal static class BmfcWriter
         WriteValue(sb, "outline", options.Outline.ToString(), options.Outline > 0);
         WriteValue(sb, "gradient-top", options.GradientTop, options.GradientTop != null);
         WriteValue(sb, "gradient-bottom", options.GradientBottom, options.GradientBottom != null);
+        WriteValue(sb, "shadow-offset-x", options.ShadowOffsetX.ToString(), options.ShadowOffsetX != 0);
+        WriteValue(sb, "shadow-offset-y", options.ShadowOffsetY.ToString(), options.ShadowOffsetY != 0);
+        WriteValue(sb, "shadow-color", options.ShadowColor, options.ShadowColor != null);
+        WriteValue(sb, "shadow-blur", options.ShadowBlur.ToString(), options.ShadowBlur != 0);
         sb.AppendLine();
 
         // [kerning]
@@ -98,6 +115,7 @@ internal static class BmfcWriter
 
         // [variable]
         sb.AppendLine("[variable]");
+        WriteValue(sb, "instance", options.InstanceName, options.InstanceName != null);
         if (options.VariationAxes.Count > 0)
         {
             foreach (var (tag, val) in options.VariationAxes)

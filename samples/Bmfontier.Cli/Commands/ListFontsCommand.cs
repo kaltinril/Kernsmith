@@ -46,6 +46,8 @@ internal sealed class ListFontsCommand
                     default:
                         if (args[i].StartsWith('-'))
                             throw new ArgumentException($"Unknown option: {args[i]}");
+                        // Treat positional argument as a filter pattern.
+                        filter = args[i];
                         break;
                 }
             }
@@ -109,6 +111,21 @@ internal sealed class ListFontsCommand
         {
             ConsoleOutput.WriteError(ex.Message);
             return ExitCodes.InvalidArguments;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            ConsoleOutput.WriteError($"Access denied while scanning fonts: {ex.Message}");
+            return ExitCodes.OutputWriteError;
+        }
+        catch (DirectoryNotFoundException ex)
+        {
+            ConsoleOutput.WriteError($"Font directory not found: {ex.Message}");
+            return ExitCodes.FileNotFound;
+        }
+        catch (IOException ex)
+        {
+            ConsoleOutput.WriteError($"I/O error while scanning fonts: {ex.Message}");
+            return ExitCodes.OutputWriteError;
         }
     }
 

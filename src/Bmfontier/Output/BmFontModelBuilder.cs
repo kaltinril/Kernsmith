@@ -175,6 +175,10 @@ internal static class BmFontModelBuilder
             ? new Dictionary<string, float>(options.VariationAxes)
             : null;
 
+        int? fallbackCharacter = options.FallbackCharacter.HasValue
+            ? (int)options.FallbackCharacter.Value
+            : null;
+
         var meta = new ExtendedMetadata
         {
             GeneratorVersion = version,
@@ -183,7 +187,8 @@ internal static class BmFontModelBuilder
             GradientTopColor = gradientTop,
             GradientBottomColor = gradientBottom,
             ColorFont = colorFont,
-            VariationAxes = variationAxes
+            VariationAxes = variationAxes,
+            FallbackCharacter = fallbackCharacter
         };
 
         // Only include metadata when there are extended fields worth storing.

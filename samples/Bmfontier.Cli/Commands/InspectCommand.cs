@@ -74,6 +74,11 @@ internal sealed class InspectCommand
             ConsoleOutput.WriteError($"Format error: {ex.Message}");
             return ExitCodes.FontParseError;
         }
+        catch (IOException ex)
+        {
+            ConsoleOutput.WriteError($"I/O error: {ex.Message}");
+            return ExitCodes.OutputWriteError;
+        }
         catch (ArgumentException ex)
         {
             ConsoleOutput.WriteError(ex.Message);
@@ -86,10 +91,17 @@ internal sealed class InspectCommand
         if (data.Length >= 3 && data[0] == 66 && data[1] == 77 && data[2] == 70)
             return "Binary";
 
-        var text = System.Text.Encoding.UTF8.GetString(data).TrimStart();
+        // Only decode the first few bytes to detect XML vs text format.
+        var peekLength = Math.Min(data.Length, 64);
+        var text = System.Text.Encoding.UTF8.GetString(data, 0, peekLength).TrimStart();
         if (text.StartsWith("<?xml", StringComparison.OrdinalIgnoreCase) ||
             text.StartsWith("<font", StringComparison.OrdinalIgnoreCase))
             return "XML";
+
+        // Validate that it looks like a BMFont text format before returning "Text".
+        if (text.StartsWith("info ", StringComparison.OrdinalIgnoreCase) ||
+            text.StartsWith("common ", StringComparison.OrdinalIgnoreCase))
+            return "Text";
 
         return "Text";
     }

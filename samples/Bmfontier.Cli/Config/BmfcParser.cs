@@ -105,6 +105,27 @@ internal static class BmfcParser
                     case "italic":
                         options.Italic = ParseBool(value);
                         break;
+                    case "super-sample":
+                        options.SuperSampleLevel = int.Parse(value);
+                        break;
+                    case "fallback-char":
+                        options.FallbackCharacter = value.Length == 1 ? value[0] : (char)int.Parse(value);
+                        break;
+                    case "hinting":
+                        options.EnableHinting = ParseBool(value);
+                        break;
+                    case "height-percent":
+                        options.HeightPercent = int.Parse(value);
+                        break;
+                    case "match-char-height":
+                        options.MatchCharHeight = ParseBool(value);
+                        break;
+                    case "color-font":
+                        options.ColorFont = ParseBool(value);
+                        break;
+                    case "color-palette":
+                        options.ColorPaletteIndex = int.Parse(value);
+                        break;
                     default:
                         ConsoleOutput.WriteWarning($"Unknown config key: [{section}] {key}");
                         break;
@@ -164,6 +185,24 @@ internal static class BmfcParser
                     case "channel-pack":
                         options.ChannelPacking = ParseBool(value);
                         break;
+                    case "max-texture-width":
+                        options.MaxTextureWidth = int.Parse(value);
+                        break;
+                    case "max-texture-height":
+                        options.MaxTextureHeight = int.Parse(value);
+                        break;
+                    case "autofit":
+                        options.AutofitTexture = ParseBool(value);
+                        break;
+                    case "texture-format":
+                        options.TextureFormat = value.ToLowerInvariant();
+                        break;
+                    case "equalize-heights":
+                        options.EqualizeCellHeights = ParseBool(value);
+                        break;
+                    case "force-offsets-zero":
+                        options.ForceOffsetsToZero = ParseBool(value);
+                        break;
                     default:
                         ConsoleOutput.WriteWarning($"Unknown config key: [{section}] {key}");
                         break;
@@ -181,6 +220,18 @@ internal static class BmfcParser
                         break;
                     case "gradient-bottom":
                         options.GradientBottom = value;
+                        break;
+                    case "shadow-offset-x":
+                        options.ShadowOffsetX = int.Parse(value);
+                        break;
+                    case "shadow-offset-y":
+                        options.ShadowOffsetY = int.Parse(value);
+                        break;
+                    case "shadow-color":
+                        options.ShadowColor = value;
+                        break;
+                    case "shadow-blur":
+                        options.ShadowBlur = int.Parse(value);
                         break;
                     default:
                         ConsoleOutput.WriteWarning($"Unknown config key: [{section}] {key}");
@@ -201,11 +252,19 @@ internal static class BmfcParser
                 break;
 
             case "variable":
-                // Any key in [variable] is an axis tag
-                if (float.TryParse(value, out var axisValue))
+                if (key == "instance")
+                {
+                    options.InstanceName = value;
+                }
+                else if (float.TryParse(value, out var axisValue))
+                {
+                    // Any other key in [variable] is an axis tag
                     options.VariationAxes[key] = axisValue;
+                }
                 else
+                {
                     ConsoleOutput.WriteWarning($"Invalid axis value: {key} = {value}");
+                }
                 break;
 
             case "output":

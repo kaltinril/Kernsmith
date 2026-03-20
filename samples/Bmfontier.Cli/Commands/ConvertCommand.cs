@@ -132,12 +132,23 @@ internal sealed class ConvertCommand
             {
                 foreach (var page in model.Pages)
                 {
-                    var srcPng = Path.Combine(inputDir, page.File);
+                    // Sanitize page file path: strip absolute/rooted paths to just the filename.
+                    var pageFileName = Path.IsPathRooted(page.File)
+                        ? Path.GetFileName(page.File)
+                        : page.File;
+
+                    var srcPng = Path.Combine(inputDir, pageFileName);
                     if (File.Exists(srcPng))
                     {
-                        var dstPng = Path.Combine(outDir, page.File);
+                        var dstPng = Path.Combine(outDir, pageFileName);
+
+                        // Ensure subdirectories exist for nested page paths.
+                        var dstPngDir = Path.GetDirectoryName(dstPng);
+                        if (!string.IsNullOrEmpty(dstPngDir))
+                            Directory.CreateDirectory(dstPngDir);
+
                         File.Copy(srcPng, dstPng, overwrite: true);
-                        ConsoleOutput.WriteVerbose($"Copied atlas page: {page.File}");
+                        ConsoleOutput.WriteVerbose($"Copied atlas page: {pageFileName}");
                     }
                     else
                     {

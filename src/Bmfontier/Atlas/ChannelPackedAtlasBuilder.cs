@@ -70,6 +70,11 @@ internal static class ChannelPackedAtlasBuilder
                     if (glyph.BitmapData.Length == 0 || glyph.Width == 0 || glyph.Height == 0)
                         continue;
 
+                    // Channel packing requires grayscale glyphs (1 byte per pixel).
+                    // RGBA glyphs (e.g., color emoji) cannot be packed into individual channels.
+                    if (glyph.Format == PixelFormat.Rgba32)
+                        continue;
+
                     var destX = placement.X + padding.Left;
                     var destY = placement.Y + padding.Up;
                     var channelOffset = ChannelOffsets[globalIndex % 4];

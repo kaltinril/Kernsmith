@@ -59,16 +59,28 @@ internal static class ChannelCompositor
 
                     outlineById.TryGetValue(placement.Id, out var outlineGlyph);
 
+                    // Use the larger of base/outline dimensions for iteration
+                    // so outline fringe is not clipped.
+                    var iterW = outlineGlyph != null ? Math.Max(glyph.Width, outlineGlyph.Width) : glyph.Width;
+                    var iterH = outlineGlyph != null ? Math.Max(glyph.Height, outlineGlyph.Height) : glyph.Height;
+                    var offsetX = outlineGlyph != null ? (outlineGlyph.Width - glyph.Width) / 2 : 0;
+                    var offsetY = outlineGlyph != null ? (outlineGlyph.Height - glyph.Height) / 2 : 0;
+
                     var destX = placement.X + padding.Left;
                     var destY = placement.Y + padding.Up;
 
-                    for (var row = 0; row < glyph.Height; row++)
+                    for (var row = 0; row < iterH; row++)
                     {
-                        for (var col = 0; col < glyph.Width; col++)
+                        for (var col = 0; col < iterW; col++)
                         {
-                            var glyphValue = GetGlyphAlpha(glyph, row, col);
+                            // Map from outline-expanded coords back to base glyph coords.
+                            var baseRow = row - offsetY;
+                            var baseCol = col - offsetX;
+                            var glyphValue = (baseRow >= 0 && baseRow < glyph.Height && baseCol >= 0 && baseCol < glyph.Width)
+                                ? GetGlyphAlpha(glyph, baseRow, baseCol)
+                                : (byte)0;
                             var outlineValue = outlineGlyph != null
-                                ? GetOutlineAlpha(outlineGlyph, glyph, row, col)
+                                ? GetOutlineAlphaDirect(outlineGlyph, row, col)
                                 : (byte)0;
 
                             var dstIdx = ((destY + row) * pageWidth + destX + col) * 4;
@@ -110,6 +122,26 @@ internal static class ChannelCompositor
         {
             var idx = row * glyph.Pitch + col;
             return idx < glyph.BitmapData.Length ? glyph.BitmapData[idx] : (byte)0;
+        }
+    }
+
+    /// <summary>
+    /// Gets the outline alpha value directly using outline glyph coordinates.
+    /// </summary>
+    private static byte GetOutlineAlphaDirect(RasterizedGlyph outlineGlyph, int row, int col)
+    {
+        if (row < 0 || row >= outlineGlyph.Height || col < 0 || col >= outlineGlyph.Width)
+            return 0;
+
+        if (outlineGlyph.Format == PixelFormat.Rgba32)
+        {
+            var idx = row * outlineGlyph.Pitch + col * 4 + 3;
+            return idx < outlineGlyph.BitmapData.Length ? outlineGlyph.BitmapData[idx] : (byte)0;
+        }
+        else
+        {
+            var idx = row * outlineGlyph.Pitch + col;
+            return idx < outlineGlyph.BitmapData.Length ? outlineGlyph.BitmapData[idx] : (byte)0;
         }
     }
 
