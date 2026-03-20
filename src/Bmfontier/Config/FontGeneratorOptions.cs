@@ -120,6 +120,61 @@ public class FontGeneratorOptions
     /// </summary>
     public bool MatchCharHeight { get; set; }
 
+    // --- Gradient effect properties ---
+
+    /// <summary>Gradient start (top) color red channel.</summary>
+    public byte? GradientStartR { get; set; }
+
+    /// <summary>Gradient start (top) color green channel.</summary>
+    public byte? GradientStartG { get; set; }
+
+    /// <summary>Gradient start (top) color blue channel.</summary>
+    public byte? GradientStartB { get; set; }
+
+    /// <summary>Gradient end (bottom) color red channel.</summary>
+    public byte? GradientEndR { get; set; }
+
+    /// <summary>Gradient end (bottom) color green channel.</summary>
+    public byte? GradientEndG { get; set; }
+
+    /// <summary>Gradient end (bottom) color blue channel.</summary>
+    public byte? GradientEndB { get; set; }
+
+    /// <summary>Gradient angle in degrees (default 90 = top-to-bottom).</summary>
+    public float GradientAngle { get; set; } = 90f;
+
+    /// <summary>Gradient midpoint bias (0.0 to 1.0, default 0.5).</summary>
+    public float GradientMidpoint { get; set; } = 0.5f;
+
+    /// <summary>Whether a gradient has been configured.</summary>
+    internal bool HasGradient => GradientStartR.HasValue && GradientEndR.HasValue;
+
+    // --- Shadow effect properties ---
+
+    /// <summary>Shadow horizontal offset in pixels (positive = right).</summary>
+    public int ShadowOffsetX { get; set; }
+
+    /// <summary>Shadow vertical offset in pixels (positive = down).</summary>
+    public int ShadowOffsetY { get; set; }
+
+    /// <summary>Shadow color red channel.</summary>
+    public byte ShadowR { get; set; }
+
+    /// <summary>Shadow color green channel.</summary>
+    public byte ShadowG { get; set; }
+
+    /// <summary>Shadow color blue channel.</summary>
+    public byte ShadowB { get; set; }
+
+    /// <summary>Shadow opacity (0.0 to 1.0, default 1.0).</summary>
+    public float ShadowOpacity { get; set; } = 1.0f;
+
+    /// <summary>Shadow blur radius. 0 = hard shadow.</summary>
+    public int ShadowBlur { get; set; }
+
+    /// <summary>Whether a shadow has been configured.</summary>
+    internal bool HasShadow => ShadowOffsetX != 0 || ShadowOffsetY != 0 || ShadowBlur > 0;
+
     /// <summary>
     /// Hint for the atlas size estimator's expected packing efficiency (0.50 to 0.99).
     /// Default 0.90 is tuned for MaxRects BSSF with font glyphs.

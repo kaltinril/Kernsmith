@@ -1,7 +1,6 @@
 using Bmfontier.Cli.Config;
 using Bmfontier.Cli.Utilities;
 using Bmfontier.Output;
-using Bmfontier.Rasterizer;
 
 namespace Bmfontier.Cli.Commands;
 
@@ -112,43 +111,39 @@ internal sealed class GenerateCommand
             if (options.VariationAxes.Count > 0)
                 genOptions.VariationAxes = new Dictionary<string, float>(options.VariationAxes);
 
-            // Post-processors — order matters:
-            // 1. Gradient (grayscale → RGBA with colors)
-            // 2. Outline (accepts RGBA, composites colored glyph on outline)
-            // 3. Shadow
-            var postProcessors = new List<IGlyphPostProcessor>();
+            // Effects are now driven by FontGeneratorOptions properties.
+            // The pipeline builds the correct layered effects automatically.
             if (options.GradientTop != null && options.GradientBottom != null)
             {
                 var top = ColorParser.Parse(options.GradientTop);
                 var bottom = ColorParser.Parse(options.GradientBottom);
-                postProcessors.Add(GradientPostProcessor.Create(top, bottom));
+                genOptions.GradientStartR = top.R;
+                genOptions.GradientStartG = top.G;
+                genOptions.GradientStartB = top.B;
+                genOptions.GradientEndR = bottom.R;
+                genOptions.GradientEndG = bottom.G;
+                genOptions.GradientEndB = bottom.B;
             }
-            if (options.Outline > 0)
+            if (options.Outline > 0 && options.OutlineColor != null)
             {
-                byte oR = 0, oG = 0, oB = 0;
-                if (options.OutlineColor != null)
-                {
-                    var oc = ColorParser.Parse(options.OutlineColor);
-                    oR = oc.R; oG = oc.G; oB = oc.B;
-                }
-                postProcessors.Add(new OutlinePostProcessor(options.Outline, oR, oG, oB));
+                var oc = ColorParser.Parse(options.OutlineColor);
+                genOptions.OutlineR = oc.R;
+                genOptions.OutlineG = oc.G;
+                genOptions.OutlineB = oc.B;
             }
             if (options.ShadowOffsetX != 0 || options.ShadowOffsetY != 0 || options.ShadowColor != null)
             {
-                byte sR = 0, sG = 0, sB = 0;
+                genOptions.ShadowOffsetX = options.ShadowOffsetX;
+                genOptions.ShadowOffsetY = options.ShadowOffsetY;
+                genOptions.ShadowBlur = options.ShadowBlur;
                 if (options.ShadowColor != null)
                 {
                     var sc = ColorParser.Parse(options.ShadowColor);
-                    sR = sc.R; sG = sc.G; sB = sc.B;
+                    genOptions.ShadowR = sc.R;
+                    genOptions.ShadowG = sc.G;
+                    genOptions.ShadowB = sc.B;
                 }
-                postProcessors.Add(new ShadowPostProcessor(
-                    offsetX: options.ShadowOffsetX,
-                    offsetY: options.ShadowOffsetY,
-                    blurRadius: options.ShadowBlur,
-                    shadowR: sR, shadowG: sG, shadowB: sB));
             }
-            if (postProcessors.Count > 0)
-                genOptions.PostProcessors = postProcessors;
 
             // Determine output path
             string baseName;

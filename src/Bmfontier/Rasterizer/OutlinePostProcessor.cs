@@ -15,6 +15,11 @@ public sealed class OutlinePostProcessor : IGlyphPostProcessor
     private readonly byte _outlineG;
     private readonly byte _outlineB;
 
+    internal int OutlineWidth => _outlineWidth;
+    internal byte OutlineR => _outlineR;
+    internal byte OutlineG => _outlineG;
+    internal byte OutlineB => _outlineB;
+
     public OutlinePostProcessor(int outlineWidth, byte outlineR = 0, byte outlineG = 0, byte outlineB = 0)
     {
         _outlineWidth = outlineWidth;

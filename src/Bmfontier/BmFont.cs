@@ -30,21 +30,9 @@ public static class BmFont
                 "SDF rendering cannot be combined with super sampling (SuperSampleLevel > 1). " +
                 "The box-filter downscale corrupts signed distance field values.");
 
-        // 0c. Auto-add OutlinePostProcessor when Outline > 0 and no ChannelConfig.
-        // Without a ChannelConfig, the outline post-processor is not applied by the
-        // channel compositing path, so we add it to the regular post-processor list.
-        if (options.Outline > 0 && (options.Channels is null || options.Channels.IsDefault))
-        {
-            var ppList = options.PostProcessors != null
-                ? new List<IGlyphPostProcessor>(options.PostProcessors)
-                : new List<IGlyphPostProcessor>();
-
-            // Only add if not already present.
-            if (!ppList.Any(pp => pp is OutlinePostProcessor))
-                ppList.Add(new OutlinePostProcessor(options.Outline, options.OutlineR, options.OutlineG, options.OutlineB));
-
-            options.PostProcessors = ppList;
-        }
+        // 0c. Build layered effects from options (replaces old auto-add logic).
+        // Built-in effects (outline, gradient, shadow) are handled by the compositor.
+        // The old auto-add OutlinePostProcessor path is no longer needed.
 
         // 1. Parse font
         var fontReader = options.FontReader ?? new TtfFontReader();
@@ -138,30 +126,26 @@ public static class BmFont
                 glyphs = ApplyCustomGlyphs(glyphs, options.CustomGlyphs, codepoints);
             }
 
-            // 4. Apply post-processors.
-            // When FT_Stroker is available (FreeTypeRasterizer + outline), skip the
-            // OutlinePostProcessor and use vector-based stroking for better quality.
-            var useFtStroker = false; // TODO: Re-enable after FT_Stroker compositing is fixed
+            // 4. Apply layered effects via compositor.
+            // Built-in effects (gradient, outline, shadow) are generated independently
+            // from the grayscale source and composited in fixed back-to-front order.
+            var effects = BuildEffects(options);
 
+            if (effects.Count > 0)
+                glyphs = glyphs.Select(g => GlyphCompositor.Composite(g, effects)).ToList();
+
+            // 4a. Apply custom post-processors (non-built-in) after compositor.
+            // Built-in post-processors (Gradient/Outline/Shadow) are skipped here
+            // because the compositor handles them via the effects system.
             if (options.PostProcessors != null)
             {
                 foreach (var processor in options.PostProcessors)
                 {
-                    // Skip OutlinePostProcessor when FT_Stroker will handle it.
-                    if (useFtStroker && processor is OutlinePostProcessor)
+                    if (processor is OutlinePostProcessor or GradientPostProcessor or ShadowPostProcessor)
                         continue;
 
                     glyphs = glyphs.Select(g => processor.Process(g)).ToList();
                 }
-            }
-
-            // 4a-stroker. FT_Stroker outline compositing: rasterize outline per glyph,
-            // then composite original glyph on top.
-            if (useFtStroker && rasterizer is FreeTypeRasterizer ftRast)
-            {
-                glyphs = glyphs.Select(g => CompositeWithFtStroker(
-                    ftRast, g, effectiveRasterOptions,
-                    options.Outline, options.OutlineR, options.OutlineG, options.OutlineB)).ToList();
             }
 
             // 4b. Super sampling downscale (after post-processors, before packing)
@@ -372,6 +356,78 @@ public static class BmFont
     /// Creates a fluent builder for BMFont generation.
     /// </summary>
     public static BmFontBuilder Builder() => new();
+
+    /// <summary>
+    /// Builds the list of layered effects from FontGeneratorOptions and any
+    /// built-in post-processors in the PostProcessors list.
+    /// </summary>
+    private static List<IGlyphEffect> BuildEffects(FontGeneratorOptions options)
+    {
+        var effects = new List<IGlyphEffect>();
+
+        // Detect shadow: from options properties or from a ShadowPostProcessor in the list.
+        if (options.HasShadow)
+        {
+            effects.Add(new ShadowEffect(
+                options.ShadowOffsetX, options.ShadowOffsetY, options.ShadowBlur,
+                options.ShadowR, options.ShadowG, options.ShadowB, options.ShadowOpacity));
+        }
+        else if (options.PostProcessors != null)
+        {
+            foreach (var pp in options.PostProcessors)
+            {
+                if (pp is ShadowPostProcessor sp)
+                {
+                    effects.Add(new ShadowEffect(
+                        sp.OffsetX, sp.OffsetY, sp.BlurRadius,
+                        sp.ShadowR, sp.ShadowG, sp.ShadowB, sp.Opacity));
+                    break;
+                }
+            }
+        }
+
+        // Detect outline: from options properties or from an OutlinePostProcessor in the list.
+        if (options.Outline > 0 && (options.Channels is null || options.Channels.IsDefault))
+        {
+            effects.Add(new OutlineEffect(options.Outline, options.OutlineR, options.OutlineG, options.OutlineB));
+        }
+        else if (options.PostProcessors != null)
+        {
+            foreach (var pp in options.PostProcessors)
+            {
+                if (pp is OutlinePostProcessor op && op.OutlineWidth > 0)
+                {
+                    effects.Add(new OutlineEffect(op.OutlineWidth, op.OutlineR, op.OutlineG, op.OutlineB));
+                    break;
+                }
+            }
+        }
+
+        // Detect gradient: from options properties or from a GradientPostProcessor in the list.
+        if (options.HasGradient)
+        {
+            effects.Add(new GradientEffect(
+                options.GradientStartR!.Value, options.GradientStartG ?? 0, options.GradientStartB ?? 0,
+                options.GradientEndR!.Value, options.GradientEndG ?? 0, options.GradientEndB ?? 0,
+                options.GradientAngle, options.GradientMidpoint));
+        }
+        else if (options.PostProcessors != null)
+        {
+            foreach (var pp in options.PostProcessors)
+            {
+                if (pp is GradientPostProcessor gp)
+                {
+                    effects.Add(new GradientEffect(
+                        gp.StartR, gp.StartG, gp.StartB,
+                        gp.EndR, gp.EndG, gp.EndB,
+                        gp.AngleDegrees, gp.Midpoint));
+                    break;
+                }
+            }
+        }
+
+        return effects;
+    }
 
     /// <summary>
     /// Downscales a rasterized glyph by the given factor using a box filter.

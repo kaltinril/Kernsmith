@@ -126,11 +126,28 @@ public sealed class BmFontBuilder
         (byte R, byte G, byte B)? color = null, float opacity = 1.0f)
     {
         var c = color ?? (0, 0, 0);
-        return WithPostProcessor(new ShadowPostProcessor(offsetX, offsetY, blur, c.R, c.G, c.B, opacity));
+        _options.ShadowOffsetX = offsetX;
+        _options.ShadowOffsetY = offsetY;
+        _options.ShadowBlur = blur;
+        _options.ShadowR = c.R;
+        _options.ShadowG = c.G;
+        _options.ShadowB = c.B;
+        _options.ShadowOpacity = opacity;
+        return this;
     }
 
     public BmFontBuilder WithGradient((byte R, byte G, byte B) startColor, (byte R, byte G, byte B) endColor, float angleDegrees = 90f, float midpoint = 0.5f)
-        => WithPostProcessor(GradientPostProcessor.Create(startColor, endColor, angleDegrees, midpoint));
+    {
+        _options.GradientStartR = startColor.R;
+        _options.GradientStartG = startColor.G;
+        _options.GradientStartB = startColor.B;
+        _options.GradientEndR = endColor.R;
+        _options.GradientEndG = endColor.G;
+        _options.GradientEndB = endColor.B;
+        _options.GradientAngle = angleDegrees;
+        _options.GradientMidpoint = midpoint;
+        return this;
+    }
 
     public BmFontBuilder WithPostProcessor(IGlyphPostProcessor processor)
     {
