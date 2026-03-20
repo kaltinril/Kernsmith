@@ -39,6 +39,9 @@ public sealed class ExtendedMetadata
     /// <summary>Whether color font rendering was used.</summary>
     public bool? ColorFont { get; init; }
 
+    /// <summary>Fallback character codepoint for missing glyphs, if configured.</summary>
+    public int? FallbackCharacter { get; init; }
+
     /// <summary>
     /// Returns true if any extended field (beyond GeneratorVersion) is set.
     /// </summary>
@@ -52,5 +55,6 @@ public sealed class ExtendedMetadata
         ShadowColor != null ||
         SuperSampleLevel.HasValue ||
         VariationAxes is { Count: > 0 } ||
-        ColorFont is true;
+        ColorFont is true ||
+        FallbackCharacter.HasValue;
 }

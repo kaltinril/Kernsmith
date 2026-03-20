@@ -36,6 +36,15 @@ public class FontGeneratorOptions
     public PackingAlgorithm PackingAlgorithm { get; set; } = PackingAlgorithm.MaxRects;
     public bool Kerning { get; set; } = true;
     public int Outline { get; set; }
+
+    /// <summary>Outline color red channel (default 0 = black).</summary>
+    public byte OutlineR { get; set; }
+
+    /// <summary>Outline color green channel (default 0 = black).</summary>
+    public byte OutlineG { get; set; }
+
+    /// <summary>Outline color blue channel (default 0 = black).</summary>
+    public byte OutlineB { get; set; }
     public bool Sdf { get; set; }
     public bool PowerOfTwo { get; set; } = true;
     public int Dpi { get; set; } = 72;

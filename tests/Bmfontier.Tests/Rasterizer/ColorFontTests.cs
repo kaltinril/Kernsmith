@@ -361,11 +361,11 @@ public class ColorFontTests : IDisposable
     }
 
     // ---------------------------------------------------------------
-    // OutlinePostProcessor skips RGBA glyphs
+    // OutlinePostProcessor handles both RGBA and grayscale glyphs
     // ---------------------------------------------------------------
 
     [Fact]
-    public void OutlinePostProcessor_SkipsRgbaGlyph()
+    public void OutlinePostProcessor_ProcessesRgbaGlyph()
     {
         // Arrange -- create a synthetic RGBA glyph
         var rgbaGlyph = CreateSyntheticRgbaGlyph();
@@ -374,11 +374,14 @@ public class ColorFontTests : IDisposable
         // Act
         var result = processor.Process(rgbaGlyph);
 
-        // Assert -- should return the same glyph unmodified
-        result.Should().BeSameAs(rgbaGlyph,
-            "OutlinePostProcessor should return the same RGBA glyph instance without modification");
+        // Assert -- should expand the glyph with an outline (RGBA output)
+        result.Should().NotBeSameAs(rgbaGlyph,
+            "OutlinePostProcessor should create a new expanded glyph from an RGBA input");
         result.Format.Should().Be(PixelFormat.Rgba32);
-        result.BitmapData.Should().BeSameAs(rgbaGlyph.BitmapData);
+        result.Width.Should().Be(rgbaGlyph.Width + 2 * 2,
+            "outlined glyph should be wider by 2 * outlineWidth");
+        result.Height.Should().Be(rgbaGlyph.Height + 2 * 2,
+            "outlined glyph should be taller by 2 * outlineWidth");
     }
 
     [Fact]
@@ -391,10 +394,11 @@ public class ColorFontTests : IDisposable
         // Act
         var result = processor.Process(grayscaleGlyph);
 
-        // Assert -- should expand the glyph with an outline
+        // Assert -- should expand the glyph with an outline (now outputs RGBA)
         result.Should().NotBeSameAs(grayscaleGlyph,
             "OutlinePostProcessor should create a new expanded glyph from a grayscale input");
-        result.Format.Should().Be(PixelFormat.Grayscale8);
+        result.Format.Should().Be(PixelFormat.Rgba32,
+            "OutlinePostProcessor now always outputs RGBA with baked outline color");
         result.Width.Should().Be(grayscaleGlyph.Width + 2 * 2,
             "outlined glyph should be wider by 2 * outlineWidth");
         result.Height.Should().Be(grayscaleGlyph.Height + 2 * 2,

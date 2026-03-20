@@ -180,12 +180,24 @@ internal static class ChannelCompositor
         {
             ChannelContent.Glyph => glyphValue,
             ChannelContent.Outline => outlineValue,
-            ChannelContent.GlyphAndOutline => (byte)Math.Min(255, glyphValue + outlineValue),
+            ChannelContent.GlyphAndOutline => ThresholdEncode(glyphValue, outlineValue),
             ChannelContent.Zero => (byte)0,
             ChannelContent.One => (byte)255,
             _ => glyphValue
         };
 
         return invert ? (byte)(255 - value) : value;
+    }
+
+    /// <summary>
+    /// Encodes glyph and outline into a single byte using threshold encoding.
+    /// Outline maps to 0-127, glyph maps to 128-255. Glyph takes precedence when both present.
+    /// Shader decodes: glyph = val > 0.5 ? 2*val-1 : 0; outline = val > 0.5 ? 1 : 2*val.
+    /// </summary>
+    private static byte ThresholdEncode(byte glyphValue, byte outlineValue)
+    {
+        var outlineEncoded = (int)(outlineValue / 255.0 * 127);
+        var glyphEncoded = 128 + (int)(glyphValue / 255.0 * 127);
+        return (byte)Math.Max(outlineEncoded, glyphValue > 0 ? glyphEncoded : outlineEncoded);
     }
 }

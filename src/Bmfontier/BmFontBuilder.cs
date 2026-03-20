@@ -55,6 +55,14 @@ public sealed class BmFontBuilder
     public BmFontBuilder WithPackingAlgorithm(PackingAlgorithm algorithm) { _options.PackingAlgorithm = algorithm; return this; }
     public BmFontBuilder WithKerning(bool kerning = true) { _options.Kerning = kerning; return this; }
     public BmFontBuilder WithOutline(int outline) { _options.Outline = outline; return this; }
+    public BmFontBuilder WithOutline(int width, byte r, byte g = 0, byte b = 0)
+    {
+        _options.Outline = width;
+        _options.OutlineR = r;
+        _options.OutlineG = g;
+        _options.OutlineB = b;
+        return this;
+    }
     public BmFontBuilder WithSdf(bool sdf = true) { _options.Sdf = sdf; return this; }
     public BmFontBuilder WithPowerOfTwo(bool powerOfTwo = true) { _options.PowerOfTwo = powerOfTwo; return this; }
     public BmFontBuilder WithDpi(int dpi) { _options.Dpi = dpi; return this; }

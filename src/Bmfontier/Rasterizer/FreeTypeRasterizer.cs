@@ -207,6 +207,139 @@ internal sealed class FreeTypeRasterizer : IRasterizer
         };
     }
 
+    /// <summary>
+    /// Rasterizes just the outline border of a glyph using FT_Stroker.
+    /// Returns an RGBA glyph with the specified outline color, or null if the glyph is missing.
+    /// </summary>
+    internal unsafe RasterizedGlyph? RasterizeOutline(int codepoint, RasterOptions options, int outlineWidth, byte r, byte g, byte b)
+    {
+        if (_face == null || _library == null)
+            throw new InvalidOperationException("Font not loaded. Call LoadFont first.");
+
+        var sizeF26D6 = (IntPtr)(options.Size * 64);
+        var error = FT.FT_Set_Char_Size(_face, sizeF26D6, sizeF26D6, (uint)options.Dpi, (uint)options.Dpi);
+        if (error != FT_Error.FT_Err_Ok)
+            throw new FreeTypeException(error);
+
+        var glyphIndex = FT.FT_Get_Char_Index(_face, (UIntPtr)codepoint);
+        if (glyphIndex == 0)
+            return null;
+
+        // Load glyph outline (no bitmap, no hinting for cleaner strokes).
+        var loadFlags = (FT_LOAD)FreeTypeNative.FT_LOAD_NO_BITMAP;
+        if (!options.EnableHinting)
+            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
+
+        error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
+        if (error != FT_Error.FT_Err_Ok)
+            throw new FreeTypeException(error);
+
+        var slot = _face->glyph;
+
+        if (options.Bold)
+            FT.FT_GlyphSlot_Embolden(slot);
+        if (options.Italic)
+            FT.FT_GlyphSlot_Oblique(slot);
+
+        // Get a copy of the glyph.
+        error = FreeTypeNative.FT_Get_Glyph(slot, out var ftGlyph);
+        if (error != FT_Error.FT_Err_Ok)
+            throw new FreeTypeException(error);
+
+        // Create and configure the stroker.
+        error = FreeTypeNative.FT_Stroker_New((IntPtr)_library.Native, out var stroker);
+        if (error != FT_Error.FT_Err_Ok)
+        {
+            FreeTypeNative.FT_Done_Glyph(ftGlyph);
+            throw new FreeTypeException(error);
+        }
+
+        try
+        {
+            // Radius in 26.6 fixed-point.
+            var radius = outlineWidth * 64;
+            FreeTypeNative.FT_Stroker_Set(stroker, radius,
+                FreeTypeNative.FT_STROKER_LINECAP_ROUND,
+                FreeTypeNative.FT_STROKER_LINEJOIN_ROUND, 0);
+
+            // Stroke the outer border.
+            error = FreeTypeNative.FT_Glyph_StrokeBorder(ref ftGlyph, stroker, false, true);
+            if (error != FT_Error.FT_Err_Ok)
+                throw new FreeTypeException(error);
+
+            // Rasterize to bitmap (FT_RENDER_MODE_NORMAL = 0).
+            error = FreeTypeNative.FT_Glyph_To_Bitmap(ref ftGlyph, 0, IntPtr.Zero, true);
+            if (error != FT_Error.FT_Err_Ok)
+                throw new FreeTypeException(error);
+
+            // Read bitmap data from the FT_BitmapGlyphRec_.
+            FreeTypeNative.ReadBitmapGlyph(ftGlyph,
+                out var bmpLeft, out var bmpTop,
+                out var bmpRows, out var bmpWidth, out var bmpPitch, out var bmpBuffer);
+
+            if (bmpWidth == 0 || bmpRows == 0)
+            {
+                return new RasterizedGlyph
+                {
+                    Codepoint = codepoint,
+                    GlyphIndex = (int)glyphIndex,
+                    BitmapData = Array.Empty<byte>(),
+                    Width = 0,
+                    Height = 0,
+                    Pitch = 0,
+                    Metrics = new Font.Models.GlyphMetrics(
+                        BearingX: bmpLeft,
+                        BearingY: bmpTop,
+                        Advance: F26Dot6ToRounded(slot->metrics.horiAdvance),
+                        Width: 0,
+                        Height: 0),
+                    Format = PixelFormat.Rgba32
+                };
+            }
+
+            // Convert grayscale outline bitmap to RGBA with the specified color.
+            var absPitch = Math.Abs(bmpPitch);
+            var rgbaData = new byte[bmpWidth * bmpRows * 4];
+
+            for (var row = 0; row < bmpRows; row++)
+            {
+                for (var col = 0; col < bmpWidth; col++)
+                {
+                    var srcAlpha = Marshal.ReadByte(bmpBuffer, row * absPitch + col);
+                    if (srcAlpha == 0) continue;
+
+                    var dstIdx = (row * bmpWidth + col) * 4;
+                    rgbaData[dstIdx + 0] = r;
+                    rgbaData[dstIdx + 1] = g;
+                    rgbaData[dstIdx + 2] = b;
+                    rgbaData[dstIdx + 3] = srcAlpha;
+                }
+            }
+
+            return new RasterizedGlyph
+            {
+                Codepoint = codepoint,
+                GlyphIndex = (int)glyphIndex,
+                BitmapData = rgbaData,
+                Width = bmpWidth,
+                Height = bmpRows,
+                Pitch = bmpWidth * 4,
+                Metrics = new Font.Models.GlyphMetrics(
+                    BearingX: bmpLeft,
+                    BearingY: bmpTop,
+                    Advance: F26Dot6ToRounded(slot->metrics.horiAdvance),
+                    Width: bmpWidth,
+                    Height: bmpRows),
+                Format = PixelFormat.Rgba32
+            };
+        }
+        finally
+        {
+            FreeTypeNative.FT_Stroker_Done(stroker);
+            FreeTypeNative.FT_Done_Glyph(ftGlyph);
+        }
+    }
+
     public IReadOnlyList<RasterizedGlyph> RasterizeAll(IEnumerable<int> codepoints, RasterOptions options)
     {
         var results = new List<RasterizedGlyph>();

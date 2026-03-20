@@ -115,7 +115,15 @@ internal sealed class GenerateCommand
             // Post-processors
             var postProcessors = new List<IGlyphPostProcessor>();
             if (options.Outline > 0)
-                postProcessors.Add(new OutlinePostProcessor(options.Outline));
+            {
+                byte oR = 0, oG = 0, oB = 0;
+                if (options.OutlineColor != null)
+                {
+                    var oc = ColorParser.Parse(options.OutlineColor);
+                    oR = oc.R; oG = oc.G; oB = oc.B;
+                }
+                postProcessors.Add(new OutlinePostProcessor(options.Outline, oR, oG, oB));
+            }
             if (options.GradientTop != null && options.GradientBottom != null)
             {
                 var top = ColorParser.Parse(options.GradientTop);
@@ -323,7 +331,17 @@ internal sealed class GenerateCommand
                     options.Italic = true;
                     break;
                 case "--outline":
-                    options.Outline = int.Parse(NextArg(args, ref i, args[i]));
+                    var outlineArg = NextArg(args, ref i, args[i]);
+                    if (outlineArg.Contains(','))
+                    {
+                        var outlineParts = outlineArg.Split(',', 2);
+                        options.Outline = int.Parse(outlineParts[0]);
+                        options.OutlineColor = outlineParts[1];
+                    }
+                    else
+                    {
+                        options.Outline = int.Parse(outlineArg);
+                    }
                     break;
                 case "--gradient":
                     var gradientArg = NextArg(args, ref i, "--gradient");
@@ -463,7 +481,7 @@ internal sealed class GenerateCommand
         if (cli.OutputFormat != OutputFormat.Text) config.OutputFormat = cli.OutputFormat;
         if (cli.AntiAlias != AntiAliasMode.Grayscale) config.AntiAlias = cli.AntiAlias;
         if (cli.MaxTextureSize != 1024) config.MaxTextureSize = cli.MaxTextureSize;
-        if (cli.Outline > 0) config.Outline = cli.Outline;
+        if (cli.Outline > 0) { config.Outline = cli.Outline; config.OutlineColor = cli.OutlineColor ?? config.OutlineColor; }
         if (cli.Dpi != 72) config.Dpi = cli.Dpi;
         if (cli.FaceIndex != 0) config.FaceIndex = cli.FaceIndex;
         if (cli.PackingAlgorithm != PackingAlgorithm.MaxRects) config.PackingAlgorithm = cli.PackingAlgorithm;
@@ -662,7 +680,7 @@ internal sealed class GenerateCommand
               --force-offsets-zero        Set all xoffset/yoffset to zero
 
             Effects:
-              --outline <n>               Outline width in pixels
+              --outline <n>[,color]        Outline width in pixels, optional hex color (e.g., --outline 2,FF0000)
               --gradient <top>,<bottom>   Vertical gradient, colors as hex
               --gradient <top> <bottom>   Vertical gradient (two-argument form)
               --shadow <x>,<y>[,color[,blur]]  Drop shadow (e.g., --shadow 2,2,000000,1)

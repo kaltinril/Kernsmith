@@ -41,7 +41,7 @@ public static class BmFont
 
             // Only add if not already present.
             if (!ppList.Any(pp => pp is OutlinePostProcessor))
-                ppList.Add(new OutlinePostProcessor(options.Outline));
+                ppList.Add(new OutlinePostProcessor(options.Outline, options.OutlineR, options.OutlineG, options.OutlineB));
 
             options.PostProcessors = ppList;
         }
@@ -138,11 +138,30 @@ public static class BmFont
                 glyphs = ApplyCustomGlyphs(glyphs, options.CustomGlyphs, codepoints);
             }
 
-            // 4. Apply post-processors
+            // 4. Apply post-processors.
+            // When FT_Stroker is available (FreeTypeRasterizer + outline), skip the
+            // OutlinePostProcessor and use vector-based stroking for better quality.
+            var useFtStroker = options.Outline > 0 && rasterizer is FreeTypeRasterizer;
+
             if (options.PostProcessors != null)
             {
                 foreach (var processor in options.PostProcessors)
+                {
+                    // Skip OutlinePostProcessor when FT_Stroker will handle it.
+                    if (useFtStroker && processor is OutlinePostProcessor)
+                        continue;
+
                     glyphs = glyphs.Select(g => processor.Process(g)).ToList();
+                }
+            }
+
+            // 4a-stroker. FT_Stroker outline compositing: rasterize outline per glyph,
+            // then composite original glyph on top.
+            if (useFtStroker && rasterizer is FreeTypeRasterizer ftRast)
+            {
+                glyphs = glyphs.Select(g => CompositeWithFtStroker(
+                    ftRast, g, effectiveRasterOptions,
+                    options.Outline, options.OutlineR, options.OutlineG, options.OutlineB)).ToList();
             }
 
             // 4b. Super sampling downscale (after post-processors, before packing)
@@ -233,7 +252,7 @@ public static class BmFont
                 if (needsOutline)
                 {
                     var outlineWidth = options.Outline > 0 ? options.Outline : 1;
-                    var outlineProcessor = new OutlinePostProcessor(outlineWidth);
+                    var outlineProcessor = new OutlinePostProcessor(outlineWidth, options.OutlineR, options.OutlineG, options.OutlineB);
                     outlineGlyphs = glyphs.Select(g => outlineProcessor.Process(g)).ToList();
                 }
 
@@ -538,6 +557,110 @@ public static class BmFont
                 Width: custom.Width,
                 Height: custom.Height),
             Format = custom.Format
+        };
+    }
+
+    /// <summary>
+    /// Composites a glyph with its FT_Stroker outline: draws outline first, then glyph on top.
+    /// Falls back to the original glyph if stroking fails.
+    /// </summary>
+    private static RasterizedGlyph CompositeWithFtStroker(
+        FreeTypeRasterizer rasterizer, RasterizedGlyph glyph,
+        RasterOptions rasterOptions, int outlineWidth,
+        byte outlineR, byte outlineG, byte outlineB)
+    {
+        if (glyph.Width == 0 || glyph.Height == 0 || glyph.BitmapData.Length == 0)
+            return glyph;
+
+        RasterizedGlyph? outlineGlyph;
+        try
+        {
+            outlineGlyph = rasterizer.RasterizeOutline(
+                glyph.Codepoint, rasterOptions, outlineWidth, outlineR, outlineG, outlineB);
+        }
+        catch
+        {
+            // FT_Stroker can fail for certain glyph types; fall back gracefully.
+            return glyph;
+        }
+
+        if (outlineGlyph == null || outlineGlyph.Width == 0 || outlineGlyph.Height == 0)
+            return glyph;
+
+        // The outline bitmap is larger than the glyph bitmap.
+        // Use the outline as the base canvas, then composite the glyph on top.
+        var dstW = outlineGlyph.Width;
+        var dstH = outlineGlyph.Height;
+        var dst = new byte[dstW * dstH * 4];
+
+        // Copy outline layer.
+        Array.Copy(outlineGlyph.BitmapData, dst, Math.Min(outlineGlyph.BitmapData.Length, dst.Length));
+
+        // Compute offset to center the glyph within the outline.
+        var offsetX = outlineGlyph.Metrics.BearingX - glyph.Metrics.BearingX;
+        var offsetY = glyph.Metrics.BearingY - outlineGlyph.Metrics.BearingY;
+
+        // Composite original glyph on top using alpha-over.
+        var srcW = glyph.Width;
+        var srcH = glyph.Height;
+
+        for (var y = 0; y < srcH; y++)
+        {
+            for (var x = 0; x < srcW; x++)
+            {
+                byte srcR, srcG, srcB, srcA;
+
+                if (glyph.Format == PixelFormat.Rgba32)
+                {
+                    var si = y * glyph.Pitch + x * 4;
+                    if (si + 3 >= glyph.BitmapData.Length) continue;
+                    srcR = glyph.BitmapData[si];
+                    srcG = glyph.BitmapData[si + 1];
+                    srcB = glyph.BitmapData[si + 2];
+                    srcA = glyph.BitmapData[si + 3];
+                }
+                else
+                {
+                    var si = y * glyph.Pitch + x;
+                    if (si >= glyph.BitmapData.Length) continue;
+                    srcR = 255;
+                    srcG = 255;
+                    srcB = 255;
+                    srcA = glyph.BitmapData[si];
+                }
+
+                if (srcA == 0) continue;
+
+                var dx = x + offsetX;
+                var dy = y + offsetY;
+                if (dx < 0 || dx >= dstW || dy < 0 || dy >= dstH) continue;
+
+                var di = (dy * dstW + dx) * 4;
+                var dstA = dst[di + 3];
+                var sA = srcA / 255f;
+                var dA = dstA / 255f;
+                var outA = sA + dA * (1f - sA);
+
+                if (outA > 0)
+                {
+                    dst[di + 0] = (byte)((srcR * sA + dst[di + 0] * dA * (1f - sA)) / outA);
+                    dst[di + 1] = (byte)((srcG * sA + dst[di + 1] * dA * (1f - sA)) / outA);
+                    dst[di + 2] = (byte)((srcB * sA + dst[di + 2] * dA * (1f - sA)) / outA);
+                    dst[di + 3] = (byte)Math.Min(255, (int)(outA * 255));
+                }
+            }
+        }
+
+        return new RasterizedGlyph
+        {
+            Codepoint = glyph.Codepoint,
+            GlyphIndex = glyph.GlyphIndex,
+            BitmapData = dst,
+            Width = dstW,
+            Height = dstH,
+            Pitch = dstW * 4,
+            Metrics = outlineGlyph.Metrics,
+            Format = PixelFormat.Rgba32
         };
     }
 
