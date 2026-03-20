@@ -395,7 +395,10 @@ public static class BmFont
                 }
                 else
                 {
-                    int sumR = 0, sumG = 0, sumB = 0, sumA = 0;
+                    // Use premultiplied alpha for correct edge blending.
+                    // Without this, transparent pixels with gradient colors
+                    // bleed dark halos into the edges during downscale.
+                    float sumR = 0, sumG = 0, sumB = 0, sumA = 0;
                     for (var sy = 0; sy < level; sy++)
                     {
                         for (var sx = 0; sx < level; sx++)
@@ -403,18 +406,22 @@ public static class BmFont
                             var srcIdx = (dy * level + sy) * srcPitch + (dx * level + sx) * 4;
                             if (srcIdx + 3 < glyph.BitmapData.Length)
                             {
-                                sumR += glyph.BitmapData[srcIdx];
-                                sumG += glyph.BitmapData[srcIdx + 1];
-                                sumB += glyph.BitmapData[srcIdx + 2];
-                                sumA += glyph.BitmapData[srcIdx + 3];
+                                var a = glyph.BitmapData[srcIdx + 3] / 255f;
+                                sumR += glyph.BitmapData[srcIdx] * a;
+                                sumG += glyph.BitmapData[srcIdx + 1] * a;
+                                sumB += glyph.BitmapData[srcIdx + 2] * a;
+                                sumA += a;
                             }
                         }
                     }
                     var dstIdx = (dy * dstW + dx) * 4;
-                    dst[dstIdx] = (byte)(sumR / area);
-                    dst[dstIdx + 1] = (byte)(sumG / area);
-                    dst[dstIdx + 2] = (byte)(sumB / area);
-                    dst[dstIdx + 3] = (byte)(sumA / area);
+                    if (sumA > 0)
+                    {
+                        dst[dstIdx] = (byte)Math.Min(255, sumR / sumA);
+                        dst[dstIdx + 1] = (byte)Math.Min(255, sumG / sumA);
+                        dst[dstIdx + 2] = (byte)Math.Min(255, sumB / sumA);
+                    }
+                    dst[dstIdx + 3] = (byte)Math.Min(255, sumA * 255 / area);
                 }
             }
         }
