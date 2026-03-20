@@ -1,10 +1,13 @@
-# bmfontier -- Layered Rendering Architecture
+# Phase 10 — Layered Rendering Architecture
+
+> **Status**: Complete
+> **Date**: 2026-03-19
+
+---
 
 > Replace the fragile order-dependent post-processor chain with a layered
 > compositing system where effects are generated independently and composited
 > in a fixed back-to-front order.
->
-> **Date**: 2026-03-19
 
 ## Problem
 

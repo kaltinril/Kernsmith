@@ -1,19 +1,22 @@
-# bmfontier -- Outline Rendering Overhaul
+# Phase 09 — Outline Rendering Overhaul
+
+> **Status**: Complete (Tier 1 EDT done; Tier 2 FT_Stroker tracked in Phase 12)
+> **Date**: 2026-03-19
+
+---
 
 > Replace the binary brute-force outline with anti-aliased distance-based rendering,
 > add outline color support, and optionally use FreeType's native FT_Stroker for best quality.
->
-> **Date**: 2026-03-19
 
 ---
 
 ## Problem
 
 The current `OutlinePostProcessor` produces jagged, ugly outlines:
-1. Binary 0/255 output — no anti-aliasing on the outer edge
-2. No outline color — gradient colors outline identically to glyph body, making it invisible
-3. Pipeline ordering broken — outline after gradient skips RGBA; outline before gradient gets overwritten
-4. Source alpha treated as binary (`> 0` threshold) — ignores glyph anti-aliasing
+1. Binary 0/255 output -- no anti-aliasing on the outer edge
+2. No outline color -- gradient colors outline identically to glyph body, making it invisible
+3. Pipeline ordering broken -- outline after gradient skips RGBA; outline before gradient gets overwritten
+4. Source alpha treated as binary (`> 0` threshold) -- ignores glyph anti-aliasing
 5. O(W×H×outlineWidth²) brute-force performance
 6. Pass 2 compositing uses simple overwrite instead of alpha-over blending
 
@@ -51,24 +54,24 @@ Since it now outputs RGBA with baked colors, subsequent processors (gradient) ne
 
 **1e. Gradient interaction**
 Two options:
-- **Option A**: Gradient only colors the glyph body region, not the outline. Requires tracking which pixels are "body" vs "outline" — could use a mask or the distance field itself.
+- **Option A**: Gradient only colors the glyph body region, not the outline. Requires tracking which pixels are "body" vs "outline" -- could use a mask or the distance field itself.
 - **Option B**: Outline runs AFTER gradient. Outline processor accepts RGBA input, extracts alpha for distance computation, then composites outline (with its own color) underneath the colored glyph. This is simpler and matches Hiero's approach.
 
-**Recommended: Option B** — outline extracts alpha from the input (grayscale or RGBA), computes the distance-based outline, renders it with the outline color, then composites the original glyph on top. Works regardless of pipeline ordering.
+**Recommended: Option B** -- outline extracts alpha from the input (grayscale or RGBA), computes the distance-based outline, renders it with the outline color, then composites the original glyph on top. Works regardless of pipeline ordering.
 
 ### Tier 2: FT_Stroker integration (medium-term, best quality)
 
-FreeType's `FT_Stroker` operates on vector outlines before rasterization — geometrically precise with perfect anti-aliasing.
+FreeType's `FT_Stroker` operates on vector outlines before rasterization -- geometrically precise with perfect anti-aliasing.
 
 **API workflow:**
 1. `FT_Stroker_New(library, &stroker)`
 2. `FT_Stroker_Set(stroker, radius_in_26_6, FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_ROUND, 0)`
-3. `FT_Load_Glyph(face, index, FT_LOAD_NO_BITMAP)` — load vector outline
-4. `FT_Get_Glyph(face->glyph, &glyph)` — copy
-5. `FT_Glyph_StrokeBorder(&glyph, stroker, false, true)` — get outer border
-6. `FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_NORMAL, null, true)` — rasterize
+3. `FT_Load_Glyph(face, index, FT_LOAD_NO_BITMAP)` -- load vector outline
+4. `FT_Get_Glyph(face->glyph, &glyph)` -- copy
+5. `FT_Glyph_StrokeBorder(&glyph, stroker, false, true)` -- get outer border
+6. `FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_NORMAL, null, true)` -- rasterize
 
-FreeTypeSharp exposes the full Stroker API (confirmed in `reference/freetypesharp-evaluation.md`).
+FreeTypeSharp exposes the full Stroker API (confirmed in `reference/REF-02-freetypesharp-evaluation.md`).
 
 **Integration**: Add `RasterizeOutline(int codepoint, int outlineWidth)` to `FreeTypeRasterizer` that returns a separate outline bitmap per glyph. `BmFont.Generate()` uses this when FreeTypeRasterizer is detected, falling back to the EDT post-processor for custom rasterizers.
 
@@ -152,9 +155,9 @@ Run on columns first, then rows. Total: O(W×H).
 
 ## Estimated Effort
 
-- **Tier 1**: 2-3 days — EDT + rewritten post-processor + color + pipeline fix
-- **Tier 2**: 1-2 days — FT_Stroker P/Invoke + integration
-- **Tier 3**: 0.5 days — channel encoding fix
+- **Tier 1**: 2-3 days -- EDT + rewritten post-processor + color + pipeline fix
+- **Tier 2**: 1-2 days -- FT_Stroker P/Invoke + integration
+- **Tier 3**: 0.5 days -- channel encoding fix
 - **Risk**: Low for Tier 1 (well-understood algorithms), Medium for Tier 2 (unsafe interop)
 
 ---
@@ -162,7 +165,7 @@ Run on columns first, then rows. Total: O(W×H).
 ## References
 
 - Felzenszwalb & Huttenlocher (2012). "Distance Transforms of Sampled Functions"
-- Mapbox tiny-sdf — reference EDT implementation (github.com/mapbox/tiny-sdf)
-- FreeType Stroker API — freetype.org/freetype2/docs/reference/ft2-glyph_stroker.html
-- BMFont pixel shader reference — angelcode.com/products/bmfont/doc/pixel_shader.html
-- libGDX FreeTypeFontGenerator — Hiero's FT_Stroker implementation
+- Mapbox tiny-sdf -- reference EDT implementation (github.com/mapbox/tiny-sdf)
+- FreeType Stroker API -- freetype.org/freetype2/docs/reference/ft2-glyph_stroker.html
+- BMFont pixel shader reference -- angelcode.com/products/bmfont/doc/pixel_shader.html
+- libGDX FreeTypeFontGenerator -- Hiero's FT_Stroker implementation

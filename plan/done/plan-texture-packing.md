@@ -39,14 +39,14 @@ Two implementations are provided: `MaxRectsPacker` (primary) and `SkylinePacker`
 The plan describes WHAT algorithms to use. For HOW to implement them:
 
 ### MaxRects
-See [texture-packing-reference.md](../reference/texture-packing-reference.md), "MaxRects" section for:
+See [REF-06-texture-packing-reference.md](../reference/REF-06-texture-packing-reference.md), "MaxRects" section for:
 - Free rectangle splitting mechanism (4-way split when placed rect overlaps a free rect)
 - Containment pruning (remove free rects fully contained within another)
 - BestShortSideFit scoring formula: `min(freeRect.width - rect.width, freeRect.height - rect.height)`
 - Batch mode: evaluate ALL remaining glyphs against ALL free rects, pick the globally best placement, repeat
 
 ### Skyline
-See texture-packing-reference.md, "Skyline" section for:
+See REF-06-texture-packing-reference.md, "Skyline" section for:
 - Segment data structure: list of `(x, y, width)` tuples representing the skyline profile
 - Placement search: find the position where the rect fits and the resulting max height is minimized
 - Segment update: merge/replace affected segments after placement

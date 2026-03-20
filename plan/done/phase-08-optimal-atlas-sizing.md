@@ -1,9 +1,12 @@
-# bmfontier -- Optimal Atlas Sizing Plan
+# Phase 08 — Optimal Atlas Sizing
+
+> **Status**: Complete
+> **Date**: 2026-03-19
+
+---
 
 > Predict the minimum atlas texture size mathematically instead of brute-force trial-and-error.
 > Uses shelf-packing estimation with binary search for non-square, single verification pack for correctness.
->
-> **Date**: 2026-03-19
 
 ---
 
@@ -119,8 +122,8 @@ Post-estimation:
 
 1. Estimate optimal size with AtlasSizeEstimator
 2. Run packer ONCE with estimated size
-3. If it fits on one page → done (typical case)
-4. If overflow → bump one step (double smaller dimension or next POT)
+3. If it fits on one page -> done (typical case)
+4. If overflow -> bump one step (double smaller dimension or next POT)
 
 Reduces packing runs from 3-5 to 1-2.
 
@@ -174,13 +177,13 @@ Reduces packing runs from 3-5 to 1-2.
 
 Issues identified during QA review that the implementation must address:
 
-**HIGH — Shelf estimate is FFDH-specific, not MaxRects**
+**HIGH -- Shelf estimate is FFDH-specific, not MaxRects**
 The shelf estimate is a valid upper bound for FFDH packing but could underestimate what MaxRects/Skyline needs for certain glyph distributions. The verification pass handles this, but pathological cases could need multiple bumps. Implementation should apply a small safety margin (e.g., multiply shelf estimate by 1.05) to reduce verification failures.
 
-**HIGH — Channel packing mode unaddressed**
+**HIGH -- Channel packing mode unaddressed**
 When `ChannelPacking = true`, 4 glyphs share one pixel position via RGBA channels. The estimator must divide effective total area by 4 (or equivalently, divide glyph count by 4) when channel packing is enabled. Without this, the estimated atlas is 4x too large.
 
-**HIGH — EqualizeCellHeights changes packing characteristics**
+**HIGH -- EqualizeCellHeights changes packing characteristics**
 When all glyphs are padded to the same height, packing becomes a 1D strip problem. The estimator should detect this and use a simpler formula:
 ```
 cells_per_row = floor(width / cell_width)
@@ -188,38 +191,38 @@ rows = ceil(N / cells_per_row)
 height = rows * cell_height
 ```
 
-**MEDIUM — W×H(W) is not convex for step functions**
+**MEDIUM -- W×H(W) is not convex for step functions**
 The shelf height function is a step function, so `W * H(W)` has discontinuities and can have local minima at step boundaries. Binary/ternary search is unsound. For arbitrary (non-POT) sizes, use exhaustive sweep over step-function breakpoints (the widths where a glyph moves shelves). For POT sizes, exhaustive evaluation of ~7 candidates is trivially fast.
 
-**MEDIUM — MaxTexture clamping and multi-page fallback**
+**MEDIUM -- MaxTexture clamping and multi-page fallback**
 When the estimated size exceeds MaxTextureWidth/MaxTextureHeight, clamp to max dimensions and let the packer produce multiple pages. Explicitly preserve the current graceful degradation to multi-page output.
 
-**MEDIUM — PackingEfficiencyHint API**
+**MEDIUM -- PackingEfficiencyHint API**
 Make this property `internal` rather than public. Clamp to [0.50, 0.99] in the estimator. Document that the default 0.90 is tuned for MaxRects BSSF with font glyphs.
 
-**MEDIUM — Integer overflow for large character sets**
+**MEDIUM -- Integer overflow for large character sets**
 Use `long` for total area calculations. Full CJK at 64px with padding approaches int32 limits.
 
-**MEDIUM — Estimator must receive padded GlyphRects**
+**MEDIUM -- Estimator must receive padded GlyphRects**
 Document explicitly that the estimator operates on GlyphRects that already include padding and spacing (as built in BmFont.cs). Do not add padding inside the estimator.
 
-**LOW — Zero-area glyph rects**
+**LOW -- Zero-area glyph rects**
 Filter out glyphs with zero width or height before estimation to avoid NaN/division-by-zero.
 
-**LOW — Thread safety**
+**LOW -- Thread safety**
 `AtlasSizeEstimator` must be stateless (no static mutable fields). All state flows through parameters.
 
 ---
 
 ## References
 
-- Jylänki, J. (2010). "A Thousand Ways to Pack the Bin" — MaxRects efficiency data
-- Steinberg, A. (1997). "A Strip-Packing Algorithm with Absolute Performance Bound 3/2" — Feasibility conditions
-- Coffman, Garey, Johnson, Tarjan (1980). "Performance Bounds for Level-Oriented Two-Dimensional Packing Algorithms" — FFDH bounds
+- Jylänki, J. (2010). "A Thousand Ways to Pack the Bin" -- MaxRects efficiency data
+- Steinberg, A. (1997). "A Strip-Packing Algorithm with Absolute Performance Bound 3/2" -- Feasibility conditions
+- Coffman, Garey, Johnson, Tarjan (1980). "Performance Bounds for Level-Oriented Two-Dimensional Packing Algorithms" -- FFDH bounds
 
 ---
 
 ## Estimated Effort
 
 - **Total**: 1-2 days
-- **Risk**: Low — additive feature, falls back to current behavior if estimate misses
+- **Risk**: Low -- additive feature, falls back to current behavior if estimate misses

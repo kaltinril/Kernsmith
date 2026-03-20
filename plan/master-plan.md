@@ -1,6 +1,6 @@
 # bmfontier -- Master Plan
 
-> **Status**: Phases 1-7 complete. Active work tracked in numbered plan docs below.
+> **Status**: Phases 1-10 complete. Phase 11 (Solution Restructure) and Phase 12 (Pre-Ship Polish) in planning.
 > **Date**: 2026-03-19
 
 ---
@@ -77,20 +77,31 @@ Output Layer
 
 ## Active Plans
 
-Plans with remaining work, numbered by priority:
-
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
-| 01 | [Optimal Atlas Sizing](01-optimal-atlas-sizing.md) | Mathematical atlas size prediction to replace brute-force trial-and-error | Implemented, potential refinements remain |
-| 02 | [Outline Overhaul](02-outline-overhaul.md) | EDT-based anti-aliased outlines, outline color, pipeline fix | Tier 1 (EDT) done; Tier 2 (FT_Stroker) disabled/broken |
-| 03 | [FT_Stroker Fix](03-ft-stroker-fix.md) | Fix compositing issues in the FT_Stroker vector outline path | Not started, blocked on investigation |
-| 04 | [Layered Rendering](04-layered-rendering.md) | Replace order-dependent post-processor chain with layered compositing | Implemented (IGlyphEffect, GlyphCompositor, OutlineEffect, GradientEffect, ShadowEffect) |
+| 11 | [Solution Restructure](phase-11-solution-restructure.md) | Multi-project foundation: Directory.Build.props, central packages, CLI promotion, app scaffolding | Planning |
+| 12 | [Pre-Ship Polish](phase-12-pre-ship-polish.md) | Security hardening, test coverage gaps, NuGet packaging, API polish, FT_Stroker fix | Planning |
 
 ---
 
-## Completed Plans (archived in `done/`)
+## Completed Phases (archived in `done/`)
 
-All completed plan docs are archived in [`plan/done/`](done/). These cover Phases 1-7 and all deferred items that were subsequently completed.
+| # | Document | Description |
+|---|----------|-------------|
+| 01 | [MVP](done/phase-01-mvp.md) | End-to-end pipeline: TTF → rasterize → pack → BMFont text + PNG |
+| 02 | [Complete](done/phase-02-complete.md) | XML/binary output, Skyline packer, SDF, system fonts, variable fonts |
+| 03 | [Ecosystem](done/phase-03-ecosystem.md) | WOFF/WOFF2, channel packing, CLI, benchmarks, color fonts, subsetting |
+| 04 | [Deferred/Future](done/phase-04-deferred-future.md) | fvar parser, BMFont reader, gradient post-processor, variable font axis API |
+| 05 | [Full CLI Tool](done/phase-05-cli-tool.md) | 5 commands, .bmfc config, full option coverage |
+| 06 | [BMFont Parity](done/phase-06-bmfont-parity.md) | TGA, super sampling, shadow, autofit, fallback glyph, 10+ parity features |
+| 07 | [Extended Metadata](done/phase-07-extended-metadata.md) | SDF spread, gradient, shadow, outline metadata in .fnt (text/XML/binary) |
+| 08 | [Optimal Atlas Sizing](done/phase-08-optimal-atlas-sizing.md) | Mathematical atlas size prediction replacing brute-force trial-and-error |
+| 09 | [Outline Overhaul](done/phase-09-outline-overhaul.md) | EDT-based anti-aliased outlines with outline color support |
+| 10 | [Layered Rendering](done/phase-10-layered-rendering.md) | IGlyphEffect compositing replacing order-dependent post-processor chain |
+
+### Topical Plan Docs (archived in `done/`)
+
+These detailed docs were used during implementation and remain as reference material.
 
 | Document | Description |
 |----------|-------------|
@@ -103,12 +114,12 @@ All completed plan docs are archived in [`plan/done/`](done/). These cover Phase
 | [Texture Packing](done/plan-texture-packing.md) | MaxRects/Skyline algorithms, multi-page strategy |
 | [Output Formats](done/plan-output-formats.md) | BMFont model classes, text/XML/binary serialization |
 | [Testing](done/plan-testing.md) | xUnit test strategy, test fonts, validation criteria |
-| [Implementation Order](done/plan-implementation-order.md) | Phased task breakdown (Phases 1-4) |
-| [Future Phase](done/plan-phase-future.md) | Deferred items from Phases 3-4 plus Phases 5-7 |
-| [CLI Tool](done/plan-cli.md) | Full CLI plan -- BMFont.exe replacement |
+| [Implementation Order](done/plan-implementation-order.md) | Original phased task breakdown with dependency graphs (Phases 1-4) |
+| [Future Phases](done/plan-phase-future.md) | Deferred items + Phases 5-7 tracking |
+| [CLI Tool](done/plan-cli.md) | Full CLI plan — BMFont.exe replacement |
 | [BMFont Parity](done/plan-bmfont-parity.md) | 15 missing features from BMFont.exe |
 | [Color Fonts](done/plan-color-fonts.md) | COLRv0/CPAL, sbix, CBDT support |
-| [Font Subsetting](done/plan-font-subsetting.md) | Logical subsetting -- filter cmap/kern/GPOS |
+| [Font Subsetting](done/plan-font-subsetting.md) | Logical subsetting — filter cmap/kern/GPOS |
 | [Extended Metadata](done/plan-extended-metadata.md) | SDF spread, gradient, shadow metadata in .fnt |
 | [Bug Fixes](done/plan-bug-fixes.md) | All applied bug fixes |
 
@@ -116,50 +127,54 @@ All completed plan docs are archived in [`plan/done/`](done/). These cover Phase
 
 ## Phased Implementation
 
-### Phase 1 -- MVP (COMPLETE)
-
+### Phase 1 — MVP (COMPLETE)
 Core pipeline end-to-end: load a TTF, parse required tables, rasterize glyphs, pack into atlas, output BMFont text format + PNG. 28 tasks covering FreeTypeSharp integration, all table parsers (including GPOS), MaxRects packer, atlas builder, PNG encoding, text format output, file output, entry point wiring, CharacterSet, and basic tests.
 
-### Phase 2 -- Complete (COMPLETE)
-
+### Phase 2 — Complete (COMPLETE)
 Additional output formats (XML, binary), Skyline packer, system font enumeration, configurable padding/spacing/outline, SDF mode, font collection (.ttc) support, variable font support, and `GenerateFromSystem()` API.
 
-### Phase 3 -- Ecosystem (COMPLETE)
-
+### Phase 3 — Ecosystem (COMPLETE)
 WOFF/WOFF2 decompression, channel packing, reference CLI tool, performance benchmarks, color font support, font subsetting, NuGet publishing CI, CLI tests.
 
-### Phase 4 -- Deferred / Future (COMPLETE)
-
+### Phase 4 — Deferred / Future (COMPLETE)
 fvar table parser, BMFont reader (text/XML/binary), BmFont.Load() entry point, gradient post-processor, variable font axis API, variable font tests.
 
-### Phase 5 -- Full CLI Tool (COMPLETE)
-
+### Phase 5 — Full CLI Tool (COMPLETE)
 Production-ready CLI with 5 commands (generate, inspect, convert, list-fonts, info), .bmfc config file support, and full option coverage.
 
-### Phase 6 -- BMFont Parity Features (COMPLETE)
-
+### Phase 6 — BMFont Parity Features (COMPLETE)
 Separate texture W/H, TGA output, super sampling, fallback glyph, hinting toggle, force offsets to zero, equalize cell heights, autofit texture size, failed character reporting, shadow post-processor.
 
-### Phase 7 -- Extended Metadata (COMPLETE)
-
+### Phase 7 — Extended Metadata (COMPLETE)
 bmfontier-specific metadata (SDF spread, gradient, shadow, outline, variable axes) stored inline in .fnt output across all three formats (text, XML, binary).
 
-### Active Work
+### Phase 8 — Optimal Atlas Sizing (COMPLETE)
+Mathematical atlas size prediction using shelf-packing estimation. Reduces packing runs from 3-5 to 1-2. Handles channel packing, equalized cell heights, non-square optimization, and int64 overflow prevention for large CJK sets.
 
-See **Active Plans** table above for remaining work items.
+### Phase 9 — Outline Rendering Overhaul (COMPLETE)
+Replaced binary brute-force outline with EDT-based anti-aliased distance rendering. Added configurable outline color (RGB), alpha-over compositing, RGBA input support. FT_Stroker P/Invoke bindings implemented but disabled (tracked in Phase 12).
+
+### Phase 10 — Layered Rendering (COMPLETE)
+Replaced order-dependent post-processor chain with layered compositing system. IGlyphEffect interface, GlyphCompositor, fixed Z-order (shadow → outline → body). Eliminates all post-processor ordering bugs.
+
+### Phase 11 — Solution Restructure (PLANNING)
+Multi-project foundation: Directory.Build.props, central package management, global.json, .editorconfig, CLI promotion from samples/ to tools/, future app scaffolding (UI/Web/Mobile).
+
+### Phase 12 — Pre-Ship Polish (PLANNING)
+Security hardening (10 items), test coverage gaps (~30 new tests), NuGet package readiness (LICENSE, URLs, SourceLink, XML docs, CHANGELOG), API documentation polish, optional FT_Stroker compositing fix.
 
 ---
 
 ## Reference Documents
 
-| Document | Description |
-|----------|-------------|
-| [Library Comparison](../reference/font-library-comparison.md) | Evaluation of .NET font libraries |
-| [FreeTypeSharp Evaluation](../reference/freetypesharp-evaluation.md) | Detailed FreeTypeSharp capabilities and gaps |
-| [Texture Packing Reference](../reference/texture-packing-reference.md) | Rectangle packing algorithm research |
-| [BMFont Format Reference](../reference/bmfont-format-reference.md) | BMFont file format specification |
-| [TTF Font Reference](../reference/ttf-font-reference.md) | TrueType font format reference |
-| [Other Font Formats Reference](../reference/other-font-formats-reference.md) | WOFF, OTF, and other format details |
+| # | Document | Description |
+|---|----------|-------------|
+| REF-01 | [Font Library Comparison](../reference/REF-01-font-library-comparison.md) | Evaluation of .NET font libraries |
+| REF-02 | [FreeTypeSharp Evaluation](../reference/REF-02-freetypesharp-evaluation.md) | Detailed FreeTypeSharp capabilities and gaps |
+| REF-03 | [TTF Font Reference](../reference/REF-03-ttf-font-reference.md) | TrueType font format reference |
+| REF-04 | [Other Font Formats](../reference/REF-04-other-font-formats-reference.md) | WOFF, OTF, and other format details |
+| REF-05 | [BMFont Format Reference](../reference/REF-05-bmfont-format-reference.md) | BMFont file format specification |
+| REF-06 | [Texture Packing Reference](../reference/REF-06-texture-packing-reference.md) | Rectangle packing algorithm research |
 
 ---
 

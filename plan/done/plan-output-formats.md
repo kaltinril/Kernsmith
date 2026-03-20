@@ -170,11 +170,11 @@ Standard XML with `<?xml version="1.0"?>` declaration, `<font>` root element, sa
 The binary format uses a block-based structure: magic bytes `BMF` + version `3`, then 5 typed blocks.
 
 For the complete byte-level field layouts needed during implementation:
-- **Block 1 (Info) byte offsets and types**: See [bmfont-format-reference.md](../reference/bmfont-format-reference.md), "Block 1: Info" section
-- **Block 2 (Common) byte offsets**: See bmfont-format-reference.md, "Block 2: Common" section
-- **Block 3 (Pages)**: See bmfont-format-reference.md, "Block 3: Pages" section
-- **Block 4 (Chars)**: See bmfont-format-reference.md, "Block 4: Characters" section
-- **Block 5 (Kerning Pairs)**: See bmfont-format-reference.md, "Block 5: Kerning Pairs" section
+- **Block 1 (Info) byte offsets and types**: See [REF-05-bmfont-format-reference.md](../reference/REF-05-bmfont-format-reference.md), "Block 1: Info" section
+- **Block 2 (Common) byte offsets**: See REF-05-bmfont-format-reference.md, "Block 2: Common" section
+- **Block 3 (Pages)**: See REF-05-bmfont-format-reference.md, "Block 3: Pages" section
+- **Block 4 (Chars)**: See REF-05-bmfont-format-reference.md, "Block 4: Characters" section
+- **Block 5 (Kerning Pairs)**: See REF-05-bmfont-format-reference.md, "Block 5: Kerning Pairs" section
 
 Key implementation notes:
 - `InfoBlock.Bold`, `.Italic`, `.Unicode`, `.Smooth` pack into a single bitfield byte (bits 3, 2, 1, 0 respectively)

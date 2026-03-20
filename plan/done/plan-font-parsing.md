@@ -165,14 +165,14 @@ All table parsers are **lazy**: they parse on first access, not at construction 
 
 For byte-level table structures needed during implementation:
 
-- **Table directory / sfnt header**: See [ttf-font-reference.md](../reference/ttf-font-reference.md), "File Structure" section
-- **head table layout**: See ttf-font-reference.md, "head — Font Header" section
-- **hhea table layout**: See ttf-font-reference.md, "hhea — Horizontal Header" section
-- **hmtx table layout**: See ttf-font-reference.md, "hmtx — Horizontal Metrics" section
-- **maxp table layout**: See ttf-font-reference.md, "maxp — Maximum Profile" section
-- **OS/2 table layout**: See ttf-font-reference.md, "OS/2 — OS/2 and Windows Metrics" section
-- **name table layout**: See ttf-font-reference.md, "name — Naming Table" section
-- **cmap table (format 4, 12)**: See ttf-font-reference.md, "cmap — Character to Glyph Mapping" section
-- **kern table layout**: See ttf-font-reference.md, "kern — Kerning" section
-- **GPOS table navigation chain**: See ttf-font-reference.md, "GPOS — Glyph Positioning" section
-- **FreeTypeSharp API surface**: See [freetypesharp-evaluation.md](../reference/freetypesharp-evaluation.md)
+- **Table directory / sfnt header**: See [REF-03-ttf-font-reference.md](../reference/REF-03-ttf-font-reference.md), "File Structure" section
+- **head table layout**: See REF-03-ttf-font-reference.md, "head — Font Header" section
+- **hhea table layout**: See REF-03-ttf-font-reference.md, "hhea — Horizontal Header" section
+- **hmtx table layout**: See REF-03-ttf-font-reference.md, "hmtx — Horizontal Metrics" section
+- **maxp table layout**: See REF-03-ttf-font-reference.md, "maxp — Maximum Profile" section
+- **OS/2 table layout**: See REF-03-ttf-font-reference.md, "OS/2 — OS/2 and Windows Metrics" section
+- **name table layout**: See REF-03-ttf-font-reference.md, "name — Naming Table" section
+- **cmap table (format 4, 12)**: See REF-03-ttf-font-reference.md, "cmap — Character to Glyph Mapping" section
+- **kern table layout**: See REF-03-ttf-font-reference.md, "kern — Kerning" section
+- **GPOS table navigation chain**: See REF-03-ttf-font-reference.md, "GPOS — Glyph Positioning" section
+- **FreeTypeSharp API surface**: See [REF-02-freetypesharp-evaluation.md](../reference/REF-02-freetypesharp-evaluation.md)

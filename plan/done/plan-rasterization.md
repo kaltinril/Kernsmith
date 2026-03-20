@@ -156,7 +156,7 @@ In `BmFont.Generate()`, the rasterizer is wrapped in a `using` block:
 using var rasterizer = options.Rasterizer ?? new FreeTypeRasterizer();
 ```
 
-**Important**: FreeTypeSharp's `FreeTypeFaceFacade` has a potential memory leak (noted in the [FreeTypeSharp Evaluation](../reference/freetypesharp-evaluation.md)). We manage the FreeType library and face lifecycle ourselves rather than relying on the facade.
+**Important**: FreeTypeSharp's `FreeTypeFaceFacade` has a potential memory leak (noted in the [FreeTypeSharp Evaluation](../reference/REF-02-freetypesharp-evaluation.md)). We manage the FreeType library and face lifecycle ourselves rather than relying on the facade.
 
 ---
 
@@ -171,7 +171,7 @@ using var rasterizer = options.Rasterizer ?? new FreeTypeRasterizer();
 
 ## Implementation References
 
-- **FreeTypeSharp API surface and known issues**: See [freetypesharp-evaluation.md](../reference/freetypesharp-evaluation.md)
+- **FreeTypeSharp API surface and known issues**: See [REF-02-freetypesharp-evaluation.md](../reference/REF-02-freetypesharp-evaluation.md)
 - **FreeType bitmap struct fields**: `FT_Bitmap_.buffer`, `rows`, `width`, `pitch`, `pixel_mode`
 - **Glyph positioning fields**: `FT_GlyphSlotRec_.bitmap_left` (-> BearingX), `bitmap_top` (-> BearingY)
 - **26.6 fixed-point conversion**: Divide by 64 and round. `(value + 32) >> 6` for rounding, `value >> 6` for truncation.

@@ -33,21 +33,21 @@ Goal: End-to-end pipeline that loads a TTF, parses required tables, rasterizes g
 
 | ID | Task                         | Depends On | Description                                                                                                         | Docs to Read                                                                          |
 |----|------------------------------|-----------|---------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| 2A | **TTF table directory parser** | 1E        | Parse sfnt header, locate table records by tag. This is the foundation for all other table parsers.                  | plan-font-parsing.md, reference/ttf-font-reference.md (File Structure section)        |
-| 2B | **head table parser**        | 2A         | Parse head table: unitsPerEm, bounding box, index format, timestamps                                                | plan-font-parsing.md, reference/ttf-font-reference.md (head section)                  |
-| 2C | **hhea table parser**        | 2A         | Parse hhea table: ascender, descender, lineGap, numberOfHMetrics                                                     | plan-font-parsing.md, reference/ttf-font-reference.md (hhea section)                  |
-| 2D | **hmtx table parser**        | 2A, 2C    | Parse hmtx: per-glyph advance widths and left side bearings. Needs numberOfHMetrics from hhea.                       | plan-font-parsing.md, reference/ttf-font-reference.md (hmtx section)                  |
-| 2E | **OS/2 table parser**        | 2A         | Parse OS/2: weight class, typo metrics, panose, x-height, cap height, char range                                     | plan-font-parsing.md, reference/ttf-font-reference.md (OS/2 section)                  |
-| 2F | **name table parser**        | 2A         | Parse name: font family, subfamily, full name, PostScript name, copyright                                            | plan-font-parsing.md, reference/ttf-font-reference.md (name section)                  |
-| 2G | **cmap table parser**        | 2A         | Parse cmap: format 4 (BMP) and format 12 (full Unicode). Build codepoint→glyphIndex map.                            | plan-font-parsing.md, reference/ttf-font-reference.md (cmap section)                  |
-| 2H | **kern table parser**        | 2A         | Parse legacy kern table: format 0 subtables, extract horizontal kerning pairs                                        | plan-font-parsing.md, reference/ttf-font-reference.md (kern section)                  |
+| 2A | **TTF table directory parser** | 1E        | Parse sfnt header, locate table records by tag. This is the foundation for all other table parsers.                  | plan-font-parsing.md, reference/REF-03-ttf-font-reference.md (File Structure section)        |
+| 2B | **head table parser**        | 2A         | Parse head table: unitsPerEm, bounding box, index format, timestamps                                                | plan-font-parsing.md, reference/REF-03-ttf-font-reference.md (head section)                  |
+| 2C | **hhea table parser**        | 2A         | Parse hhea table: ascender, descender, lineGap, numberOfHMetrics                                                     | plan-font-parsing.md, reference/REF-03-ttf-font-reference.md (hhea section)                  |
+| 2D | **hmtx table parser**        | 2A, 2C    | Parse hmtx: per-glyph advance widths and left side bearings. Needs numberOfHMetrics from hhea.                       | plan-font-parsing.md, reference/REF-03-ttf-font-reference.md (hmtx section)                  |
+| 2E | **OS/2 table parser**        | 2A         | Parse OS/2: weight class, typo metrics, panose, x-height, cap height, char range                                     | plan-font-parsing.md, reference/REF-03-ttf-font-reference.md (OS/2 section)                  |
+| 2F | **name table parser**        | 2A         | Parse name: font family, subfamily, full name, PostScript name, copyright                                            | plan-font-parsing.md, reference/REF-03-ttf-font-reference.md (name section)                  |
+| 2G | **cmap table parser**        | 2A         | Parse cmap: format 4 (BMP) and format 12 (full Unicode). Build codepoint→glyphIndex map.                            | plan-font-parsing.md, reference/REF-03-ttf-font-reference.md (cmap section)                  |
+| 2H | **kern table parser**        | 2A         | Parse legacy kern table: format 0 subtables, extract horizontal kerning pairs                                        | plan-font-parsing.md, reference/REF-03-ttf-font-reference.md (kern section)                  |
 
 ### Group C — Rasterizer + Packer (depends on Group A, parallel with Group B)
 
 | ID | Task                    | Depends On | Description                                                                                                                                                                                                                         | Docs to Read                                                       |
 |----|-------------------------|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| 3A | **FreeTypeRasterizer**  | 1E, 1A    | Implement IRasterizer using FreeTypeSharp: LoadFont (pin data, create library+face), RasterizeGlyph (load glyph, render, copy bitmap, build GlyphMetrics), RasterizeAll, Dispose. Handle null for missing glyphs, normalize mono to grayscale. | plan-rasterization.md, reference/freetypesharp-evaluation.md       |
-| 3B | **MaxRectsPacker**      | 1F, 1A    | Implement IAtlasPacker using MaxRects BSSF: free rect list, placement scoring, 4-way splitting, containment pruning, multi-page overflow, height-descending pre-sort                                                                | plan-texture-packing.md, reference/texture-packing-reference.md (MaxRects section) |
+| 3A | **FreeTypeRasterizer**  | 1E, 1A    | Implement IRasterizer using FreeTypeSharp: LoadFont (pin data, create library+face), RasterizeGlyph (load glyph, render, copy bitmap, build GlyphMetrics), RasterizeAll, Dispose. Handle null for missing glyphs, normalize mono to grayscale. | plan-rasterization.md, reference/REF-02-freetypesharp-evaluation.md       |
+| 3B | **MaxRectsPacker**      | 1F, 1A    | Implement IAtlasPacker using MaxRects BSSF: free rect list, placement scoring, 4-way splitting, containment pruning, multi-page overflow, height-descending pre-sort                                                                | plan-texture-packing.md, reference/REF-06-texture-packing-reference.md (MaxRects section) |
 | 3C | **StbPngEncoder**       | 1F        | Implement IAtlasEncoder using StbImageWriteSharp: encode byte[] pixel data to PNG bytes                                                                                                                                              | plan-texture-packing.md (IAtlasEncoder section)                    |
 | 3D | **AtlasBuilder**        | 1F, 3C    | Implement atlas page composition: allocate page buffers, copy glyph bitmaps at packed positions with padding offsets, create AtlasPage instances                                                                                     | plan-texture-packing.md (AtlasBuilder section)                     |
 
@@ -55,7 +55,7 @@ Goal: End-to-end pipeline that loads a TTF, parses required tables, rasterizes g
 
 | ID | Task                    | Depends On | Description                                                                                                                                                                                              | Docs to Read                                                             |
 |----|-------------------------|-----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| 4A | **GPOS table parser**   | 2A        | Parse GPOS: navigate header → ScriptList → FeatureList → LookupList, find 'kern' feature, extract PairPos (format 1 + format 2) with Coverage and ClassDef parsing. Handle Extension Lookup (Type 9) unwrapping. | plan-font-parsing.md, reference/ttf-font-reference.md (GPOS section) |
+| 4A | **GPOS table parser**   | 2A        | Parse GPOS: navigate header → ScriptList → FeatureList → LookupList, find 'kern' feature, extract PairPos (format 1 + format 2) with Coverage and ClassDef parsing. Handle Extension Lookup (Type 9) unwrapping. | plan-font-parsing.md, reference/REF-03-ttf-font-reference.md (GPOS section) |
 
 ### Group E — Output Formatters (depends on Group A model classes)
 
@@ -115,25 +115,25 @@ Goal: Additional output formats, Skyline packer, system fonts, SDF, .ttc support
 | ID | Task                        | Depends On       | Description                                                                        | Docs to Read                                                                                    |
 |----|-----------------------------|-----------------|-------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
 | 8A | **XmlFormatter**            | Phase 1 complete | Implement IBmFontTextFormatter for XML output                                       | plan-output-formats.md (XML Format section)                                                     |
-| 8B | **BmFontBinaryFormatter**   | Phase 1 complete | Implement IBmFontBinaryFormatter: block-based binary format with bitfield packing    | plan-output-formats.md (Binary Format section), reference/bmfont-format-reference.md (Block 1-5 sections) |
+| 8B | **BmFontBinaryFormatter**   | Phase 1 complete | Implement IBmFontBinaryFormatter: block-based binary format with bitfield packing    | plan-output-formats.md (Binary Format section), reference/REF-05-bmfont-format-reference.md (Block 1-5 sections) |
 
 ### Group I — Additional Packers + Features (parallel with Group H)
 
 | ID | Task                            | Depends On       | Description                                                                              | Docs to Read                                                                         |
 |----|--------------------------------|-----------------|------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| 9A | **SkylinePacker**              | Phase 1 complete | Implement IAtlasPacker using Skyline Bottom-Left algorithm                                | plan-texture-packing.md, reference/texture-packing-reference.md (Skyline section)    |
+| 9A | **SkylinePacker**              | Phase 1 complete | Implement IAtlasPacker using Skyline Bottom-Left algorithm                                | plan-texture-packing.md, reference/REF-06-texture-packing-reference.md (Skyline section)    |
 | 9B | **Outline post-processor**     | Phase 1 complete | Implement IGlyphPostProcessor that adds configurable outline/border to glyphs             | plan-rasterization.md (post-processors section)                                      |
-| 9C | **SDF rendering mode**         | Phase 1 complete | Enable FreeType's FT_RENDER_MODE_SDF in FreeTypeRasterizer, handle SDF-specific metrics   | plan-rasterization.md, reference/freetypesharp-evaluation.md                         |
+| 9C | **SDF rendering mode**         | Phase 1 complete | Enable FreeType's FT_RENDER_MODE_SDF in FreeTypeRasterizer, handle SDF-specific metrics   | plan-rasterization.md, reference/REF-02-freetypesharp-evaluation.md                         |
 | 9D | **Configurable padding/spacing** | Phase 1 complete | Ensure padding and spacing options fully propagate through the pipeline (may already work from Phase 1) | plan-texture-packing.md, plan-api-design.md                                          |
 
 ### Group J — System Fonts + Collections
 
 | ID  | Task                            | Depends On       | Description                                                                                              | Docs to Read                                                                                    |
 |-----|--------------------------------|-----------------|----------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| 10A | **ISystemFontProvider**        | Phase 1 complete | Implement system font enumeration for Windows, macOS, Linux (registry, /Library/Fonts, /usr/share/fonts)  | plan-data-types.md (ISystemFontProvider), reference/other-font-formats-reference.md (System Font Locations section) |
+| 10A | **ISystemFontProvider**        | Phase 1 complete | Implement system font enumeration for Windows, macOS, Linux (registry, /Library/Fonts, /usr/share/fonts)  | plan-data-types.md (ISystemFontProvider), reference/REF-04-other-font-formats-reference.md (System Font Locations section) |
 | 10B | **BmFont.GenerateFromSystem()** | 10A             | Add system font entry point to BmFont class                                                               | plan-api-design.md                                                                              |
-| 10C | **Font collection (.ttc) support** | Phase 1 complete | Verify/fix TtfParser TTC header handling, test with NotoSansCJK.ttc, ensure faceIndex works              | plan-font-parsing.md, reference/other-font-formats-reference.md (.ttc section)                  |
-| 10D | **Variable font support**      | Phase 1 complete | Parse fvar table for axis enumeration and named instances                                                 | reference/other-font-formats-reference.md (Variable Fonts section)                              |
+| 10C | **Font collection (.ttc) support** | Phase 1 complete | Verify/fix TtfParser TTC header handling, test with NotoSansCJK.ttc, ensure faceIndex works              | plan-font-parsing.md, reference/REF-04-other-font-formats-reference.md (.ttc section)                  |
+| 10D | **Variable font support**      | Phase 1 complete | Parse fvar table for axis enumeration and named instances                                                 | reference/REF-04-other-font-formats-reference.md (Variable Fonts section)                              |
 
 ### Group K — BmFontBuilder (depends on output formats)
 
@@ -178,7 +178,7 @@ Goal: WOFF support, channel packing, color fonts, CLI tool, benchmarks, NuGet pu
 
 | ID  | Task                    | Depends On       | Status | Description                                                                                        | Docs to Read                                                                  |
 |-----|-------------------------|-----------------|--------|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
-| 13A | **WOFF decompression**  | Phase 2 complete | DONE | Implement WOFF/WOFF2 header parsing and zlib/Brotli decompression to extract inner TTF/OTF          | reference/other-font-formats-reference.md (WOFF/WOFF2 sections)    |
+| 13A | **WOFF decompression**  | Phase 2 complete | DONE | Implement WOFF/WOFF2 header parsing and zlib/Brotli decompression to extract inner TTF/OTF          | reference/REF-04-other-font-formats-reference.md (WOFF/WOFF2 sections)    |
 | 13B | **Color font support**  | Phase 2 complete | MOVED | COLRv0/CPAL layer rendering, sbix bitmap extraction, CBDT/CBLC bitmap extraction                    | Moved to [plan-phase-future.md](plan-phase-future.md)    |
 | 13C | **Font subsetting**     | Phase 2 complete | MOVED | Strip unused glyphs from font data before processing (reduces memory for large CJK fonts)           | Moved to [plan-phase-future.md](plan-phase-future.md)                |
 
@@ -186,7 +186,7 @@ Goal: WOFF support, channel packing, color fonts, CLI tool, benchmarks, NuGet pu
 
 | ID  | Task                    | Depends On       | Status | Description                                                                       | Docs to Read                                                                                                         |
 |-----|-------------------------|-----------------|--------|-----------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
-| 14A | **Channel packing**     | Phase 2 complete | DONE | Pack monochrome glyphs into individual RGBA channels for 4x density                | reference/texture-packing-reference.md (Channel Packing section), reference/bmfont-format-reference.md (Channel section) |
+| 14A | **Channel packing**     | Phase 2 complete | DONE | Pack monochrome glyphs into individual RGBA channels for 4x density                | reference/REF-06-texture-packing-reference.md (Channel Packing section), reference/REF-05-bmfont-format-reference.md (Channel section) |
 
 ### Group O — Tooling + Publishing
 
@@ -229,11 +229,11 @@ Phase 2 complete
 
 | ID  | Task | Depends On | Status | Description | Docs to Read |
 |-----|------|-----------|--------|-------------|-------------|
-| 17A | **fvar table parser** | Phase 3 complete | DONE | Parse fvar table: axis count, axis records (tag, min, default, max, nameID), named instance records. Add to TtfParser. | reference/other-font-formats-reference.md (Variable Fonts section) |
+| 17A | **fvar table parser** | Phase 3 complete | DONE | Parse fvar table: axis count, axis records (tag, min, default, max, nameID), named instance records. Add to TtfParser. | reference/REF-04-other-font-formats-reference.md (Variable Fonts section) |
 | 17B | **Variable font axis API** | 17A | MOVED | Expose axes on FontInfo, add `Dictionary<string, float> VariationAxes` to FontGeneratorOptions, call `FT_Set_Var_Design_Coordinates` in FreeTypeRasterizer before rendering | Moved to [plan-phase-future.md](plan-phase-future.md). Blocked: FreeTypeSharp lacks `FT_Set_Var_Design_Coordinates`. |
 | 17C | **BMFont reader (text)** | Phase 3 complete | DONE | Parse BMFont text format .fnt file into BmFontModel. Line-by-line parser matching tag + key=value pairs. | plan-output-formats.md (Text Format section) |
 | 17D | **BMFont reader (XML)** | Phase 3 complete | DONE | Parse BMFont XML format .fnt file into BmFontModel using XmlReader. | plan-output-formats.md (XML Format section) |
-| 17E | **BMFont reader (binary)** | Phase 3 complete | DONE | Parse BMFont binary format .fnt file into BmFontModel. Block-by-block reader. | plan-output-formats.md (Binary Format section), reference/bmfont-format-reference.md |
+| 17E | **BMFont reader (binary)** | Phase 3 complete | DONE | Parse BMFont binary format .fnt file into BmFontModel. Block-by-block reader. | plan-output-formats.md (Binary Format section), reference/REF-05-bmfont-format-reference.md |
 | 17F | **BmFont.Load() entry point** | 17C, 17D, 17E | DONE | `BmFont.Load(string path)` and `BmFont.Load(byte[] fntData, byte[][] atlasPages)` — auto-detect format, parse .fnt, load .png atlas pages, return BmFontResult | plan-api-design.md |
 | 17G | **Gradient post-processor** | Phase 3 complete | DONE | IGlyphPostProcessor that applies a configurable color gradient to glyph bitmaps, producing RGBA output | plan-rasterization.md |
 
