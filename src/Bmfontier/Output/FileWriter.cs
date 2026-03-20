@@ -68,11 +68,11 @@ internal static class FileWriter
         IAtlasEncoder encoder)
     {
         var directory = Path.GetDirectoryName(outputPath) ?? ".";
-        var fontName = model.Info.Face;
+        var baseName = Path.GetFileNameWithoutExtension(outputPath);
 
         foreach (var page in pages)
         {
-            var fileName = $"{fontName}_{page.PageIndex}{encoder.FileExtension}";
+            var fileName = $"{baseName}_{page.PageIndex}{encoder.FileExtension}";
             var filePath = Path.Combine(directory, fileName);
             var encoded = encoder.Encode(page.PixelData, page.Width, page.Height, page.Format);
             File.WriteAllBytes(filePath, encoded);

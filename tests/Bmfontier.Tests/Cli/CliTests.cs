@@ -156,8 +156,8 @@ public class CliTests : IDisposable
 
         File.Exists(outputBase + ".fnt").Should().BeTrue("should produce a .fnt file");
 
-        // PNG pages are named {fontFace}_{pageIndex}.png in the output directory
-        var pngPath = Path.Combine(_tempDir, "Roboto_0.png");
+        // PNG pages are named {outputBaseName}_{pageIndex}.png in the output directory
+        var pngPath = Path.Combine(_tempDir, "test-output_0.png");
         File.Exists(pngPath).Should().BeTrue("should produce at least one .png page");
 
         var fntContent = File.ReadAllText(outputBase + ".fnt");
@@ -336,7 +336,7 @@ public class CliTests : IDisposable
         stdout.Should().Contain("Done.");
         File.Exists(outputBase + ".fnt").Should().BeTrue();
 
-        var pngPath = Path.Combine(_tempDir, "Roboto_0.png");
+        var pngPath = Path.Combine(_tempDir, "skyline-out_0.png");
         File.Exists(pngPath).Should().BeTrue();
     }
 
@@ -422,7 +422,7 @@ public class CliTests : IDisposable
         // Assert
         exitCode.Should().Be(0, $"stderr: {stderr}");
 
-        var pngPath = Path.Combine(_tempDir, "Roboto_0.png");
+        var pngPath = Path.Combine(_tempDir, "png-check_0.png");
         var pngBytes = File.ReadAllBytes(pngPath);
         pngBytes.Length.Should().BeGreaterThan(8);
         // PNG magic bytes

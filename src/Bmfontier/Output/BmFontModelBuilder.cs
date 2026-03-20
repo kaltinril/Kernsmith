@@ -16,7 +16,8 @@ internal static class BmFontModelBuilder
         IReadOnlyList<RasterizedGlyph> glyphs,
         PackResult packResult,
         FontGeneratorOptions options,
-        IReadOnlyDictionary<int, int>? glyphChannels = null)
+        IReadOnlyDictionary<int, int>? glyphChannels = null,
+        string? outputBaseName = null)
     {
         var info = new InfoBlock(
             Face: fontInfo.FamilyName,
@@ -70,7 +71,8 @@ internal static class BmFontModelBuilder
         var pages = new List<PageEntry>();
         for (int i = 0; i < packResult.PageCount; i++)
         {
-            pages.Add(new PageEntry(i, $"{fontInfo.FamilyName}_{i}{textureExtension}"));
+            var pageBaseName = outputBaseName ?? fontInfo.FamilyName;
+            pages.Add(new PageEntry(i, $"{pageBaseName}_{i}{textureExtension}"));
         }
 
         // Build a lookup from glyph Id to placement.

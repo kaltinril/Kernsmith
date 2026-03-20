@@ -50,6 +50,25 @@ public sealed class BmFontResult
     {
         var textFormatter = new TextFormatter();
         var encoder = new StbPngEncoder();
-        FileWriter.Write(Model, Pages, outputPath, format, textFormatter, encoder);
+
+        // Rebuild page entries to match the output base name
+        var baseName = Path.GetFileNameWithoutExtension(outputPath);
+        var fixedPages = new List<PageEntry>();
+        for (int i = 0; i < Model.Pages.Count; i++)
+        {
+            var ext = Path.GetExtension(Model.Pages[i].File);
+            fixedPages.Add(new PageEntry(Model.Pages[i].Id, $"{baseName}_{i}{ext}"));
+        }
+        var fixedModel = new BmFontModel
+        {
+            Info = Model.Info,
+            Common = Model.Common,
+            Pages = fixedPages,
+            Characters = Model.Characters,
+            KerningPairs = Model.KerningPairs,
+            Extended = Model.Extended
+        };
+
+        FileWriter.Write(fixedModel, Pages, outputPath, format, textFormatter, encoder);
     }
 }
