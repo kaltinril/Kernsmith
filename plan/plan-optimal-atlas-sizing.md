@@ -59,11 +59,27 @@ function EstimateShelfHeight(sortedGlyphs, width):
     return totalHeight
 ```
 
+### Channel Packing
+
+When `ChannelPacking = true`, 4 glyphs share one pixel position via RGBA channels. The effective total area is divided by 4 (equivalently, glyph count is divided by 4) before estimation. Without this adjustment, the estimated atlas is 4x too large.
+
+### Equalized Cell Heights Fast Path
+
+When `EqualizeCellHeights = true`, all glyphs are padded to the same height, making packing a 1D strip problem. The estimator detects this and uses a simpler formula:
+
+```
+cells_per_row = floor(width / cell_width)
+rows = ceil(N / cells_per_row)
+height = rows * cell_height
+```
+
 ### Non-Square Optimization
 
-`EstimateShelfHeight(W)` is monotonically non-increasing. The product `W * H(W)` forms a roughly convex curve. Binary search (or ternary search) finds the width that minimizes total pixels in O(N log N).
+`EstimateShelfHeight(W)` is monotonically non-increasing. The shelf height function is a step function, so `W * H(W)` has discontinuities and can have local minima at step boundaries. Binary/ternary search is unsound for this function.
 
-For power-of-two: only ~7 candidate widths (64-4096), each evaluated in O(N). Trivially fast.
+For power-of-two sizes: only ~7 candidate widths (64-4096), each evaluated in O(N). Use exhaustive evaluation of all POT width candidates to find the minimum.
+
+For arbitrary (non-POT) sizes: use exhaustive sweep over step-function breakpoints (the widths where a glyph moves shelves) rather than binary search.
 
 ---
 
@@ -72,23 +88,31 @@ For power-of-two: only ~7 candidate widths (64-4096), each evaluated in O(N). Tr
 ### AtlasSizeEstimator.Estimate()
 
 ```
-Input: list of glyph rects, sizing options
+Input: list of glyph rects (already including padding/spacing), sizing options
 Output: (width, height)
 
-1. Compute total_area, max_width, max_height
-2. area_lower = ceil(sqrt(total_area / efficiency))
-3. lower_bound = max(area_lower, max_width, max_height, min_size)
+0. Filter out glyphs with zero width or height
+1. Compute total_area (using long to avoid int32 overflow), max_width, max_height
+2. If channel packing enabled: divide effective total_area by 4
+3. If equalized cell heights: use fast-path formula (cells_per_row / rows)
+4. area_lower = ceil(sqrt(total_area / efficiency))
+5. lower_bound = max(area_lower, max_width, max_height, min_size)
+6. Apply safety margin: multiply shelf estimate by 1.05 to reduce verification failures
 
 If square required:
-    4. side = lower_bound
-    5. If power-of-two: side = NextPowerOfTwo(side)
-    6. Return (side, side)
+    7. side = lower_bound
+    8. If power-of-two: side = NextPowerOfTwo(side)
+    9. Return (side, side)
 
 If non-square allowed:
-    4. Sort glyphs by height descending
-    5. If power-of-two: evaluate W*H at each POT width, pick minimum
-    6. If arbitrary: binary search on width between max_width and sum(widths)
-    7. Return (bestW, bestH)
+    7. Sort glyphs by height descending
+    8. If power-of-two: exhaustively evaluate W*H at each POT width, pick minimum
+    9. If arbitrary: sweep over step-function breakpoints between max_width and sum(widths)
+   10. Return (bestW, bestH)
+
+Post-estimation:
+   11. If estimated size exceeds MaxTextureWidth/MaxTextureHeight, clamp to max dimensions
+       and let the packer produce multiple pages (preserve graceful multi-page fallback)
 ```
 
 ### Integration: Prediction + Single Verification
@@ -120,11 +144,16 @@ Reduces packing runs from 3-5 to 1-2.
 |---|------|---------|--------|
 | 1 | Create `AtlasSizeEstimator` static class with `Estimate()` and `EstimateShelfHeight()` | `Atlas/AtlasSizeEstimator.cs` | Medium |
 | 2 | Create `AtlasSizingOptions` record (efficiency, POT, non-square, max dims) | `Atlas/AtlasSizeEstimator.cs` (nested) | Small |
-| 3 | Refactor autofit block in `BmFont.Generate()` to use estimator + single verification | `BmFont.cs` | Medium |
-| 4 | Refactor non-autofit block to use estimator instead of hardcoded 1.2x | `BmFont.cs` | Small |
-| 5 | Add `PackingEfficiencyHint` to `FontGeneratorOptions` (optional, default 0.90) | `FontGeneratorOptions.cs` | Small |
-| 6 | Unit tests for estimator (empty, single, uniform, tall, many-small, non-square) | `tests/.../AtlasSizeEstimatorTests.cs` | Medium |
-| 7 | Fluent builder method `WithPackingEfficiency(float)` | `BmFontBuilder.cs` | Trivial |
+| 3 | Handle channel packing in estimator (divide effective area by 4) | `Atlas/AtlasSizeEstimator.cs` | Small |
+| 4 | Handle equalized cell heights fast path | `Atlas/AtlasSizeEstimator.cs` | Small |
+| 5 | Use `long` for all area calculations to avoid int32 overflow | `Atlas/AtlasSizeEstimator.cs` | Trivial |
+| 6 | Filter zero-area glyph rects before estimation | `Atlas/AtlasSizeEstimator.cs` | Trivial |
+| 7 | Refactor autofit block in `BmFont.Generate()` to use estimator + single verification | `BmFont.cs` | Medium |
+| 8 | Refactor non-autofit block to use estimator instead of hardcoded 1.2x | `BmFont.cs` | Small |
+| 9 | Add `PackingEfficiencyHint` (`internal`, clamped to [0.50, 0.99]) to `FontGeneratorOptions` | `FontGeneratorOptions.cs` | Small |
+| 10 | Unit tests for estimator (empty, single, uniform, tall, many-small, non-square) | `tests/.../AtlasSizeEstimatorTests.cs` | Medium |
+| 11 | Review-identified test cases: channel packing, equalized heights, large CJK set (int overflow), zero-area glyphs, max-texture clamping, pathological distributions needing multiple bumps | `tests/.../AtlasSizeEstimatorTests.cs` | Medium |
+| 12 | Fluent builder method `WithPackingEfficiency(float)` | `BmFontBuilder.cs` | Trivial |
 
 ---
 
@@ -138,6 +167,47 @@ Reduces packing runs from 3-5 to 1-2.
 | Many tiny glyphs | Area dominates; compact square layout |
 | One huge + many small | max constraints kick in; huge glyph gets own shelf |
 | Exceeds max texture | Clamp to max; packer overflows to multiple pages |
+
+---
+
+## Review Findings
+
+Issues identified during QA review that the implementation must address:
+
+**HIGH — Shelf estimate is FFDH-specific, not MaxRects**
+The shelf estimate is a valid upper bound for FFDH packing but could underestimate what MaxRects/Skyline needs for certain glyph distributions. The verification pass handles this, but pathological cases could need multiple bumps. Implementation should apply a small safety margin (e.g., multiply shelf estimate by 1.05) to reduce verification failures.
+
+**HIGH — Channel packing mode unaddressed**
+When `ChannelPacking = true`, 4 glyphs share one pixel position via RGBA channels. The estimator must divide effective total area by 4 (or equivalently, divide glyph count by 4) when channel packing is enabled. Without this, the estimated atlas is 4x too large.
+
+**HIGH — EqualizeCellHeights changes packing characteristics**
+When all glyphs are padded to the same height, packing becomes a 1D strip problem. The estimator should detect this and use a simpler formula:
+```
+cells_per_row = floor(width / cell_width)
+rows = ceil(N / cells_per_row)
+height = rows * cell_height
+```
+
+**MEDIUM — W×H(W) is not convex for step functions**
+The shelf height function is a step function, so `W * H(W)` has discontinuities and can have local minima at step boundaries. Binary/ternary search is unsound. For arbitrary (non-POT) sizes, use exhaustive sweep over step-function breakpoints (the widths where a glyph moves shelves). For POT sizes, exhaustive evaluation of ~7 candidates is trivially fast.
+
+**MEDIUM — MaxTexture clamping and multi-page fallback**
+When the estimated size exceeds MaxTextureWidth/MaxTextureHeight, clamp to max dimensions and let the packer produce multiple pages. Explicitly preserve the current graceful degradation to multi-page output.
+
+**MEDIUM — PackingEfficiencyHint API**
+Make this property `internal` rather than public. Clamp to [0.50, 0.99] in the estimator. Document that the default 0.90 is tuned for MaxRects BSSF with font glyphs.
+
+**MEDIUM — Integer overflow for large character sets**
+Use `long` for total area calculations. Full CJK at 64px with padding approaches int32 limits.
+
+**MEDIUM — Estimator must receive padded GlyphRects**
+Document explicitly that the estimator operates on GlyphRects that already include padding and spacing (as built in BmFont.cs). Do not add padding inside the estimator.
+
+**LOW — Zero-area glyph rects**
+Filter out glyphs with zero width or height before estimation to avoid NaN/division-by-zero.
+
+**LOW — Thread safety**
+`AtlasSizeEstimator` must be stateless (no static mutable fields). All state flows through parameters.
 
 ---
 
