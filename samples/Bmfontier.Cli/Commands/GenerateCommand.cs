@@ -123,6 +123,8 @@ internal sealed class GenerateCommand
                 genOptions.GradientEndR = bottom.R;
                 genOptions.GradientEndG = bottom.G;
                 genOptions.GradientEndB = bottom.B;
+                genOptions.GradientAngle = options.GradientAngle;
+                genOptions.GradientMidpoint = options.GradientMidpoint;
             }
             if (options.Outline > 0 && options.OutlineColor != null)
             {
@@ -359,6 +361,12 @@ internal sealed class GenerateCommand
                                 "Use --gradient <top>,<bottom> or --gradient <top> <bottom> with valid hex colors.");
                         options.GradientBottom = bottomArg;
                     }
+                    break;
+                case "--gradient-angle":
+                    options.GradientAngle = float.Parse(NextArg(args, ref i, "--gradient-angle"));
+                    break;
+                case "--gradient-midpoint":
+                    options.GradientMidpoint = float.Parse(NextArg(args, ref i, "--gradient-midpoint"));
                     break;
                 case "--kerning":
                     options.Kerning = true;

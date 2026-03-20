@@ -41,6 +41,8 @@ internal sealed class CliOptions
     public string? OutlineColor { get; set; }
     public string? GradientTop { get; set; }
     public string? GradientBottom { get; set; }
+    public float GradientAngle { get; set; } = 90f;
+    public float GradientMidpoint { get; set; } = 0.5f;
     public int ShadowOffsetX { get; set; }
     public int ShadowOffsetY { get; set; }
     public string? ShadowColor { get; set; }
