@@ -1,38 +1,54 @@
-using Bmfontier;
-using Bmfontier.Font;
+using Bmfontier.Cli.Commands;
+using Bmfontier.Cli.Utilities;
 
-if (args.Length == 0 || args[0] == "--help")
+// Handle global flags before command dispatch
+var filtered = new List<string>();
+foreach (var arg in args)
 {
-    ShowHelp();
-    return 0;
+    switch (arg)
+    {
+        case "--no-color":
+            ConsoleOutput.SetNoColor(true);
+            break;
+        default:
+            filtered.Add(arg);
+            break;
+    }
 }
 
-if (args[0] == "list-fonts")
+var processedArgs = filtered.ToArray();
+
+return processedArgs switch
 {
-    ListFonts();
-    return 0;
-}
+    [] or ["--help"] or ["-h"] => ShowHelp(),
+    ["--version"] => ShowVersion(),
+    ["generate", .. var rest] => GenerateCommand.Execute(rest),
+    ["inspect", .. var rest] => InspectCommand.Execute(rest),
+    ["convert", .. var rest] => ConvertCommand.Execute(rest),
+    ["list-fonts", .. var rest] => ListFontsCommand.Execute(rest),
+    ["info", .. var rest] => InfoCommand.Execute(rest),
+    _ => UnknownCommand(processedArgs[0])
+};
 
-if (args[0] == "generate")
-{
-    return Generate(args.Skip(1).ToArray());
-}
-
-Console.Error.WriteLine($"Unknown command: {args[0]}");
-Console.Error.WriteLine("Run with --help for usage information.");
-return 1;
-
-static void ShowHelp()
+static int ShowHelp()
 {
     Console.WriteLine("""
+        bmfontier - Cross-platform BMFont generator
+
         Usage:
           bmfontier generate -f <font> -s <size> [options]
-          bmfontier list-fonts
+          bmfontier inspect <path>
+          bmfontier convert <input> -o <output> [--format <text|xml|binary>]
+          bmfontier list-fonts [--filter <pattern>]
+          bmfontier info <path>
           bmfontier --help
 
         Commands:
           generate      Generate BMFont files from a font
-          list-fonts    List installed system fonts
+          inspect       Inspect an existing .fnt file
+          convert       Convert between BMFont formats (text/xml/binary)
+          list-fonts    List system-installed fonts
+          info          Show font file metadata (TTF/OTF/WOFF)
 
         Generate options:
           -f, --font <path>            Font file path (required)
@@ -46,174 +62,39 @@ static void ShowHelp()
           --spacing <n>                Spacing in pixels (default: 1)
           --sdf                        Enable SDF rendering
           --outline <n>                Outline width in pixels (default: 0)
-          --max-texture-size <n>       Max texture size (default: 1024)
+          --max-texture <n>            Max texture size (default: 1024)
+          --max-texture-size <n>       Max texture size (alias)
+          -b, --bold                   Enable synthetic bold
+          -i, --italic                 Enable synthetic italic
+          --gradient <top> <bottom>    Vertical gradient, colors as hex
+          --no-kerning                 Disable kerning pair extraction
+          --axis <tag>=<value>         Set variation axis (repeatable)
+          --config <path>              Load settings from a .bmfc configuration file
+          --save-config <path>         Save current settings to a .bmfc file
+          --dry-run                    Show what would be generated without writing files
+
+        Global Options:
+          --help, -h    Show help
+          --version     Show version
+          --no-color    Disable colored output
+          -v, --verbose Show detailed progress
+          -q, --quiet   Suppress all output except errors
+
+        Run 'bmfontier <command> --help' for command-specific options.
         """);
+    return ExitCodes.Success;
 }
 
-static void ListFonts()
+static int ShowVersion()
 {
-    Console.WriteLine("Scanning system fonts...");
-    var provider = new DefaultSystemFontProvider();
-    var fonts = provider.GetInstalledFonts();
-
-    var grouped = fonts
-        .OrderBy(f => f.FamilyName, StringComparer.OrdinalIgnoreCase)
-        .ThenBy(f => f.StyleName, StringComparer.OrdinalIgnoreCase)
-        .ToList();
-
-    Console.WriteLine($"Found {grouped.Count} font faces:");
-    Console.WriteLine();
-
-    foreach (var font in grouped)
-    {
-        Console.WriteLine($"  {font.FamilyName} - {font.StyleName}");
-    }
+    var version = typeof(Bmfontier.BmFont).Assembly.GetName().Version;
+    Console.WriteLine($"bmfontier {version?.ToString(3) ?? "0.1.0"}");
+    return ExitCodes.Success;
 }
 
-static int Generate(string[] generateArgs)
+static int UnknownCommand(string command)
 {
-    string? fontPath = null;
-    int? size = null;
-    string? output = null;
-    string charset = "ascii";
-    string format = "text";
-    string packer = "maxrects";
-    int padding = 0;
-    int spacing = 1;
-    bool sdf = false;
-    int outline = 0;
-    int maxTextureSize = 1024;
-
-    for (int i = 0; i < generateArgs.Length; i++)
-    {
-        switch (generateArgs[i])
-        {
-            case "-f":
-            case "--font":
-                fontPath = NextArg(generateArgs, ref i, generateArgs[i]);
-                break;
-            case "-s":
-            case "--size":
-                size = int.Parse(NextArg(generateArgs, ref i, generateArgs[i]));
-                break;
-            case "-o":
-            case "--output":
-                output = NextArg(generateArgs, ref i, generateArgs[i]);
-                break;
-            case "-c":
-            case "--charset":
-                charset = NextArg(generateArgs, ref i, generateArgs[i]);
-                break;
-            case "--format":
-                format = NextArg(generateArgs, ref i, generateArgs[i]);
-                break;
-            case "--packer":
-                packer = NextArg(generateArgs, ref i, generateArgs[i]);
-                break;
-            case "--padding":
-                padding = int.Parse(NextArg(generateArgs, ref i, generateArgs[i]));
-                break;
-            case "--spacing":
-                spacing = int.Parse(NextArg(generateArgs, ref i, generateArgs[i]));
-                break;
-            case "--sdf":
-                sdf = true;
-                break;
-            case "--outline":
-                outline = int.Parse(NextArg(generateArgs, ref i, generateArgs[i]));
-                break;
-            case "--max-texture-size":
-                maxTextureSize = int.Parse(NextArg(generateArgs, ref i, generateArgs[i]));
-                break;
-            default:
-                Console.Error.WriteLine($"Unknown option: {generateArgs[i]}");
-                return 1;
-        }
-    }
-
-    if (fontPath == null)
-    {
-        Console.Error.WriteLine("Error: --font is required.");
-        return 1;
-    }
-
-    if (size == null)
-    {
-        Console.Error.WriteLine("Error: --size is required.");
-        return 1;
-    }
-
-    if (!File.Exists(fontPath))
-    {
-        Console.Error.WriteLine($"Error: Font file not found: {fontPath}");
-        return 1;
-    }
-
-    // Resolve character set
-    CharacterSet characters = charset.ToLowerInvariant() switch
-    {
-        "ascii" => CharacterSet.Ascii,
-        "extended" => CharacterSet.ExtendedAscii,
-        "latin" => CharacterSet.Latin,
-        _ => CharacterSet.FromChars(charset)
-    };
-
-    // Resolve output format
-    OutputFormat outputFormat = format.ToLowerInvariant() switch
-    {
-        "text" => OutputFormat.Text,
-        "xml" => OutputFormat.Xml,
-        "binary" => OutputFormat.Binary,
-        _ => throw new ArgumentException($"Unknown format: {format}. Use text, xml, or binary.")
-    };
-
-    // Resolve packing algorithm
-    PackingAlgorithm packingAlgorithm = packer.ToLowerInvariant() switch
-    {
-        "maxrects" => PackingAlgorithm.MaxRects,
-        "skyline" => PackingAlgorithm.Skyline,
-        _ => throw new ArgumentException($"Unknown packer: {packer}. Use maxrects or skyline.")
-    };
-
-    // Build options
-    var options = new FontGeneratorOptions
-    {
-        Size = size.Value,
-        Characters = characters,
-        Padding = new Padding(padding),
-        Spacing = new Spacing(spacing),
-        PackingAlgorithm = packingAlgorithm,
-        Sdf = sdf,
-        Outline = outline,
-        MaxTextureSize = maxTextureSize
-    };
-
-    // Determine output path
-    if (output == null)
-    {
-        var fontName = Path.GetFileNameWithoutExtension(fontPath);
-        output = Path.Combine(Directory.GetCurrentDirectory(), fontName);
-    }
-
-    Console.WriteLine($"Loading font: {fontPath}");
-    Console.WriteLine($"Size: {size.Value}px, Charset: {charset}, Format: {format}");
-    Console.WriteLine($"Rasterizing {characters.Count} glyphs...");
-
-    var result = BmFont.Generate(fontPath, options);
-
-    Console.WriteLine($"Packing into atlas ({result.Pages.Count} page(s))...");
-    Console.WriteLine($"Writing output to {output}...");
-
-    result.ToFile(output, outputFormat);
-
-    Console.WriteLine("Done.");
-    return 0;
-}
-
-static string NextArg(string[] allArgs, ref int i, string flag)
-{
-    i++;
-    if (i >= allArgs.Length)
-        throw new ArgumentException($"Missing value for {flag}");
-    return allArgs[i];
+    ConsoleOutput.WriteError($"Unknown command: {command}");
+    Console.Error.WriteLine("Run 'bmfontier --help' for usage information.");
+    return ExitCodes.InvalidArguments;
 }

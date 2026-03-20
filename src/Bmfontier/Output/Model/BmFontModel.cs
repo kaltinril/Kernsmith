@@ -19,4 +19,7 @@ public sealed class BmFontModel
 
     /// <summary>Kerning pair adjustments.</summary>
     public IReadOnlyList<KerningEntry> KerningPairs { get; init; } = Array.Empty<KerningEntry>();
+
+    /// <summary>Extended bmfontier-specific metadata (null when not present).</summary>
+    public ExtendedMetadata? Extended { get; init; }
 }

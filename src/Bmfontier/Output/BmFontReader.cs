@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Bmfontier.Output.Model;
@@ -20,6 +22,7 @@ public static class BmFontReader
         var pages = new List<PageEntry>();
         var chars = new List<CharEntry>();
         var kernings = new List<KerningEntry>();
+        ExtendedMetadata? extended = null;
 
         foreach (var line in fntContent.Split('\n'))
         {
@@ -64,6 +67,9 @@ public static class BmFontReader
                         GetInt(kvp, "second"),
                         GetInt(kvp, "amount")));
                     break;
+                case "bmfontier":
+                    extended = ParseExtendedFromKvp(kvp);
+                    break;
                 // "chars" and "kernings" lines just have count, skip them
             }
         }
@@ -80,6 +86,7 @@ public static class BmFontReader
             Pages = pages,
             Characters = chars,
             KerningPairs = kernings,
+            Extended = extended,
         };
     }
 
@@ -99,6 +106,7 @@ public static class BmFontReader
         var pagesEl = fontEl.Element("pages");
         var charsEl = fontEl.Element("chars");
         var kerningsEl = fontEl.Element("kernings");
+        var bmfontierEl = fontEl.Element("bmfontier");
 
         var info = ParseInfoFromXml(infoEl);
         var common = ParseCommonFromXml(commonEl);
@@ -145,6 +153,8 @@ public static class BmFontReader
             }
         }
 
+        var extended = bmfontierEl != null ? ParseExtendedFromXml(bmfontierEl) : null;
+
         return new BmFontModel
         {
             Info = info,
@@ -152,6 +162,7 @@ public static class BmFontReader
             Pages = pages,
             Characters = chars,
             KerningPairs = kernings,
+            Extended = extended,
         };
     }
 
@@ -172,6 +183,7 @@ public static class BmFontReader
         var pages = new List<PageEntry>();
         var chars = new List<CharEntry>();
         var kernings = new List<KerningEntry>();
+        ExtendedMetadata? extended = null;
 
         var offset = 4;
         while (offset < fntData.Length)
@@ -205,6 +217,9 @@ public static class BmFontReader
                 case 5:
                     kernings = ParseKerningsBlockBinary(blockData);
                     break;
+                case 6:
+                    extended = ParseExtendedBlockBinary(blockData);
+                    break;
             }
 
             offset += blockSize;
@@ -222,6 +237,7 @@ public static class BmFontReader
             Pages = pages,
             Characters = chars,
             KerningPairs = kernings,
+            Extended = extended,
         };
     }
 
@@ -565,6 +581,107 @@ public static class BmFontReader
         }
 
         return kernings;
+    }
+
+    #endregion
+
+    #region Extended metadata helpers
+
+    private static ExtendedMetadata ParseExtendedFromKvp(Dictionary<string, string> kvp)
+    {
+        Dictionary<string, float>? axes = null;
+        foreach (var key in kvp.Keys)
+        {
+            if (key.StartsWith("axis_", StringComparison.OrdinalIgnoreCase))
+            {
+                axes ??= new Dictionary<string, float>();
+                var tag = key[5..];
+                if (float.TryParse(kvp[key], CultureInfo.InvariantCulture, out var val))
+                    axes[tag] = val;
+            }
+        }
+
+        return new ExtendedMetadata
+        {
+            GeneratorVersion = GetString(kvp, "version"),
+            SdfSpread = kvp.ContainsKey("sdfSpread") ? GetInt(kvp, "sdfSpread") : null,
+            OutlineThickness = kvp.TryGetValue("outlineThickness", out var ot) && float.TryParse(ot, CultureInfo.InvariantCulture, out var otv) ? otv : null,
+            GradientTopColor = kvp.TryGetValue("gradientTopColor", out var gtc) ? gtc : null,
+            GradientBottomColor = kvp.TryGetValue("gradientBottomColor", out var gbc) ? gbc : null,
+            ShadowOffsetX = kvp.ContainsKey("shadowOffsetX") ? GetInt(kvp, "shadowOffsetX") : null,
+            ShadowOffsetY = kvp.ContainsKey("shadowOffsetY") ? GetInt(kvp, "shadowOffsetY") : null,
+            ShadowColor = kvp.TryGetValue("shadowColor", out var sc) ? sc : null,
+            SuperSampleLevel = kvp.ContainsKey("superSampleLevel") ? GetInt(kvp, "superSampleLevel") : null,
+            ColorFont = GetBool(kvp, "colorFont") ? true : null,
+            VariationAxes = axes
+        };
+    }
+
+    private static ExtendedMetadata ParseExtendedFromXml(XElement el)
+    {
+        Dictionary<string, float>? axes = null;
+        foreach (var attr in el.Attributes())
+        {
+            if (attr.Name.LocalName.StartsWith("axis_", StringComparison.OrdinalIgnoreCase))
+            {
+                axes ??= new Dictionary<string, float>();
+                var tag = attr.Name.LocalName[5..];
+                if (float.TryParse(attr.Value, CultureInfo.InvariantCulture, out var val))
+                    axes[tag] = val;
+            }
+        }
+
+        return new ExtendedMetadata
+        {
+            GeneratorVersion = XmlAttrStr(el, "version"),
+            SdfSpread = el.Attribute("sdfSpread") != null ? XmlAttrInt(el, "sdfSpread") : null,
+            OutlineThickness = el.Attribute("outlineThickness") != null && float.TryParse(el.Attribute("outlineThickness")!.Value, CultureInfo.InvariantCulture, out var otv) ? otv : null,
+            GradientTopColor = el.Attribute("gradientTopColor")?.Value,
+            GradientBottomColor = el.Attribute("gradientBottomColor")?.Value,
+            ShadowOffsetX = el.Attribute("shadowOffsetX") != null ? XmlAttrInt(el, "shadowOffsetX") : null,
+            ShadowOffsetY = el.Attribute("shadowOffsetY") != null ? XmlAttrInt(el, "shadowOffsetY") : null,
+            ShadowColor = el.Attribute("shadowColor")?.Value,
+            SuperSampleLevel = el.Attribute("superSampleLevel") != null ? XmlAttrInt(el, "superSampleLevel") : null,
+            ColorFont = XmlAttrBool(el, "colorFont") ? true : null,
+            VariationAxes = axes
+        };
+    }
+
+    private static ExtendedMetadata? ParseExtendedBlockBinary(ReadOnlySpan<byte> data)
+    {
+        // Find the null terminator to get the JSON string length
+        var end = data.IndexOf((byte)0);
+        var jsonSpan = end >= 0 ? data[..end] : data;
+        var json = Encoding.UTF8.GetString(jsonSpan);
+
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        Dictionary<string, float>? axes = null;
+        if (root.TryGetProperty("variationAxes", out var axesEl) && axesEl.ValueKind == JsonValueKind.Object)
+        {
+            axes = new Dictionary<string, float>();
+            foreach (var prop in axesEl.EnumerateObject())
+            {
+                if (prop.Value.TryGetSingle(out var val))
+                    axes[prop.Name] = val;
+            }
+        }
+
+        return new ExtendedMetadata
+        {
+            GeneratorVersion = root.TryGetProperty("version", out var v) ? v.GetString() ?? "" : "",
+            SdfSpread = root.TryGetProperty("sdfSpread", out var ss) ? ss.GetInt32() : null,
+            OutlineThickness = root.TryGetProperty("outlineThickness", out var otProp) ? otProp.GetSingle() : null,
+            GradientTopColor = root.TryGetProperty("gradientTopColor", out var gtc) ? gtc.GetString() : null,
+            GradientBottomColor = root.TryGetProperty("gradientBottomColor", out var gbc) ? gbc.GetString() : null,
+            ShadowOffsetX = root.TryGetProperty("shadowOffsetX", out var sx) ? sx.GetInt32() : null,
+            ShadowOffsetY = root.TryGetProperty("shadowOffsetY", out var sy) ? sy.GetInt32() : null,
+            ShadowColor = root.TryGetProperty("shadowColor", out var scProp) ? scProp.GetString() : null,
+            SuperSampleLevel = root.TryGetProperty("superSampleLevel", out var sl) ? sl.GetInt32() : null,
+            ColorFont = root.TryGetProperty("colorFont", out var cf) && cf.GetBoolean() ? true : null,
+            VariationAxes = axes
+        };
     }
 
     #endregion

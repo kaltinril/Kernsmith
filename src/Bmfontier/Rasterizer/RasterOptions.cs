@@ -14,6 +14,7 @@ public sealed record RasterOptions
     public bool ColorFont { get; init; }
     public int ColorPaletteIndex { get; init; }
     public Dictionary<string, float>? VariationAxes { get; init; }
+    public bool EnableHinting { get; init; } = true;
 
     /// <summary>
     /// Creates a <see cref="RasterOptions"/> from a <see cref="FontGeneratorOptions"/> instance.
@@ -30,7 +31,8 @@ public sealed record RasterOptions
             Sdf = options.Sdf,
             ColorFont = options.ColorFont,
             ColorPaletteIndex = options.ColorPaletteIndex,
-            VariationAxes = options.VariationAxes
+            VariationAxes = options.VariationAxes,
+            EnableHinting = options.EnableHinting
         };
     }
 }

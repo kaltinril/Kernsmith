@@ -69,7 +69,14 @@ public static class BmFont
             }
 
             var rasterOptions = RasterOptions.FromGeneratorOptions(options);
-            var glyphs = rasterizer.RasterizeAll(codepoints, rasterOptions).ToList();
+
+            // Super sampling: rasterize at Nx size, then downscale after post-processors.
+            var ssLevel = Math.Clamp(options.SuperSampleLevel, 1, 4);
+            var effectiveRasterOptions = ssLevel > 1
+                ? rasterOptions with { Size = rasterOptions.Size * ssLevel }
+                : rasterOptions;
+
+            var glyphs = rasterizer.RasterizeAll(codepoints, effectiveRasterOptions).ToList();
 
             // 4. Apply post-processors
             if (options.PostProcessors != null)
@@ -77,6 +84,23 @@ public static class BmFont
                 foreach (var processor in options.PostProcessors)
                     glyphs = glyphs.Select(g => processor.Process(g)).ToList();
             }
+
+            // 4b. Super sampling downscale (after post-processors, before packing)
+            if (ssLevel > 1)
+            {
+                glyphs = glyphs.Select(g => SuperSampleDownscale(g, ssLevel)).ToList();
+            }
+
+            // 4c. Equalize cell heights — pad all glyphs to the maximum height
+            if (options.EqualizeCellHeights && glyphs.Count > 0)
+            {
+                var maxHeight = glyphs.Max(g => g.Height);
+                glyphs = glyphs.Select(g => EqualizeCellHeight(g, maxHeight)).ToList();
+            }
+
+            // 4d. Collect failed codepoints (requested but not rasterized)
+            var rasterizedCodepoints = new HashSet<int>(glyphs.Select(g => g.Codepoint));
+            var failedCodepoints = codepoints.Where(cp => !rasterizedCodepoints.Contains(cp)).ToList();
 
             // 5. Pack into atlas
             var packer = options.Packer ?? (options.PackingAlgorithm == PackingAlgorithm.Skyline
@@ -90,14 +114,52 @@ public static class BmFont
                 g.Height + padding.Up + padding.Down + spacing.Vertical
             )).ToList();
 
-            int totalArea = glyphRects.Sum(r => r.Width * r.Height);
-            int pageSize = NextPowerOfTwo((int)Math.Sqrt(totalArea * 1.2));
-            pageSize = Math.Clamp(pageSize, 64, options.MaxTextureSize);
+            int pageWidth, pageHeight;
 
-            var packResult = packer.Pack(glyphRects, pageSize, pageSize);
+            if (options.AutofitTexture)
+            {
+                // Autofit: find smallest power-of-2 texture that fits all glyphs on one page.
+                int totalArea = glyphRects.Sum(r => r.Width * r.Height);
+                int startSize = NextPowerOfTwo((int)Math.Sqrt(totalArea));
+                startSize = Math.Max(startSize, 64);
+
+                pageWidth = startSize;
+                pageHeight = startSize;
+
+                // Try progressively larger sizes until everything fits on one page.
+                while (pageWidth <= options.MaxTextureWidth && pageHeight <= options.MaxTextureHeight)
+                {
+                    try
+                    {
+                        var testResult = packer.Pack(glyphRects, pageWidth, pageHeight);
+                        if (testResult.PageCount <= 1) break;
+                    }
+                    catch (InvalidOperationException) { /* doesn't fit */ }
+
+                    // Double the smaller dimension first for efficient use.
+                    if (pageWidth <= pageHeight)
+                        pageWidth *= 2;
+                    else
+                        pageHeight *= 2;
+                }
+
+                pageWidth = Math.Min(pageWidth, options.MaxTextureWidth);
+                pageHeight = Math.Min(pageHeight, options.MaxTextureHeight);
+            }
+            else
+            {
+                int totalArea = glyphRects.Sum(r => r.Width * r.Height);
+                int estSize = NextPowerOfTwo((int)Math.Sqrt(totalArea * 1.2));
+                pageWidth = Math.Clamp(estSize, 64, options.MaxTextureWidth);
+                pageHeight = Math.Clamp(estSize, 64, options.MaxTextureHeight);
+            }
+
+            var packResult = packer.Pack(glyphRects, pageWidth, pageHeight);
 
             // 6. Build atlas pages
-            var encoder = options.AtlasEncoder ?? new StbPngEncoder();
+            var encoder = options.AtlasEncoder ?? (options.TextureFormat == TextureFormat.Tga
+                ? (IAtlasEncoder)new TgaEncoder()
+                : new StbPngEncoder());
             IReadOnlyList<AtlasPage> pages;
             IReadOnlyDictionary<int, int>? glyphChannels = null;
 
@@ -115,7 +177,7 @@ public static class BmFont
             // 7. Assemble BMFont model
             var model = BmFontModelBuilder.Build(fontInfo, glyphs, packResult, options, glyphChannels);
 
-            return new BmFontResult(model, pages);
+            return new BmFontResult(model, pages, failedCodepoints);
         }
         finally
         {
@@ -215,6 +277,127 @@ public static class BmFont
     /// Creates a fluent builder for BMFont generation.
     /// </summary>
     public static BmFontBuilder Builder() => new();
+
+    /// <summary>
+    /// Downscales a rasterized glyph by the given factor using a box filter.
+    /// </summary>
+    private static RasterizedGlyph SuperSampleDownscale(RasterizedGlyph glyph, int level)
+    {
+        if (glyph.Width == 0 || glyph.Height == 0)
+            return glyph;
+
+        var srcW = glyph.Width;
+        var srcH = glyph.Height;
+        var dstW = srcW / level;
+        var dstH = srcH / level;
+
+        if (dstW == 0) dstW = 1;
+        if (dstH == 0) dstH = 1;
+
+        var bpp = glyph.Format == PixelFormat.Rgba32 ? 4 : 1;
+        var dst = new byte[dstW * dstH * bpp];
+        var srcPitch = glyph.Pitch;
+        var area = level * level;
+
+        for (var dy = 0; dy < dstH; dy++)
+        {
+            for (var dx = 0; dx < dstW; dx++)
+            {
+                if (bpp == 1)
+                {
+                    int sum = 0;
+                    for (var sy = 0; sy < level; sy++)
+                    {
+                        for (var sx = 0; sx < level; sx++)
+                        {
+                            var srcIdx = (dy * level + sy) * srcPitch + (dx * level + sx);
+                            if (srcIdx < glyph.BitmapData.Length)
+                                sum += glyph.BitmapData[srcIdx];
+                        }
+                    }
+                    dst[dy * dstW + dx] = (byte)(sum / area);
+                }
+                else
+                {
+                    int sumR = 0, sumG = 0, sumB = 0, sumA = 0;
+                    for (var sy = 0; sy < level; sy++)
+                    {
+                        for (var sx = 0; sx < level; sx++)
+                        {
+                            var srcIdx = (dy * level + sy) * srcPitch + (dx * level + sx) * 4;
+                            if (srcIdx + 3 < glyph.BitmapData.Length)
+                            {
+                                sumR += glyph.BitmapData[srcIdx];
+                                sumG += glyph.BitmapData[srcIdx + 1];
+                                sumB += glyph.BitmapData[srcIdx + 2];
+                                sumA += glyph.BitmapData[srcIdx + 3];
+                            }
+                        }
+                    }
+                    var dstIdx = (dy * dstW + dx) * 4;
+                    dst[dstIdx] = (byte)(sumR / area);
+                    dst[dstIdx + 1] = (byte)(sumG / area);
+                    dst[dstIdx + 2] = (byte)(sumB / area);
+                    dst[dstIdx + 3] = (byte)(sumA / area);
+                }
+            }
+        }
+
+        var metrics = glyph.Metrics;
+        var newMetrics = new Font.Models.GlyphMetrics(
+            BearingX: metrics.BearingX / level,
+            BearingY: metrics.BearingY / level,
+            Advance: metrics.Advance / level,
+            Width: dstW,
+            Height: dstH);
+
+        return new RasterizedGlyph
+        {
+            Codepoint = glyph.Codepoint,
+            GlyphIndex = glyph.GlyphIndex,
+            BitmapData = dst,
+            Width = dstW,
+            Height = dstH,
+            Pitch = dstW * bpp,
+            Metrics = newMetrics,
+            Format = glyph.Format
+        };
+    }
+
+    /// <summary>
+    /// Pads a glyph's bitmap to the specified target height, centering vertically.
+    /// </summary>
+    private static RasterizedGlyph EqualizeCellHeight(RasterizedGlyph glyph, int targetHeight)
+    {
+        if (glyph.Height >= targetHeight)
+            return glyph;
+
+        var bpp = glyph.Format == PixelFormat.Rgba32 ? 4 : 1;
+        var newPitch = glyph.Width * bpp;
+        var dst = new byte[newPitch * targetHeight];
+
+        // Copy the original bitmap at the top (yoffset will handle alignment).
+        for (var row = 0; row < glyph.Height; row++)
+        {
+            var srcOffset = row * glyph.Pitch;
+            var dstOffset = row * newPitch;
+            var rowBytes = Math.Min(glyph.Width * bpp, glyph.BitmapData.Length - srcOffset);
+            if (rowBytes > 0)
+                Array.Copy(glyph.BitmapData, srcOffset, dst, dstOffset, rowBytes);
+        }
+
+        return new RasterizedGlyph
+        {
+            Codepoint = glyph.Codepoint,
+            GlyphIndex = glyph.GlyphIndex,
+            BitmapData = dst,
+            Width = glyph.Width,
+            Height = targetHeight,
+            Pitch = newPitch,
+            Metrics = glyph.Metrics,
+            Format = glyph.Format
+        };
+    }
 
     private static int NextPowerOfTwo(int v)
     {

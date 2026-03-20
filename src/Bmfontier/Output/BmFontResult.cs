@@ -14,10 +14,16 @@ public sealed class BmFontResult
     /// <summary>The rendered atlas pages.</summary>
     public IReadOnlyList<AtlasPage> Pages { get; }
 
-    internal BmFontResult(BmFontModel model, IReadOnlyList<AtlasPage> pages)
+    /// <summary>
+    /// Codepoints that were requested but could not be rasterized (missing from the font).
+    /// </summary>
+    public IReadOnlyList<int> FailedCodepoints { get; }
+
+    internal BmFontResult(BmFontModel model, IReadOnlyList<AtlasPage> pages, IReadOnlyList<int>? failedCodepoints = null)
     {
         Model = model;
         Pages = pages;
+        FailedCodepoints = failedCodepoints ?? Array.Empty<int>();
     }
 
     /// <summary>

@@ -19,6 +19,7 @@ internal sealed class TextFormatter : IBmFontTextFormatter
         FormatPages(sb, model.Pages);
         FormatChars(sb, model.Characters);
         FormatKernings(sb, model.KerningPairs);
+        FormatExtended(sb, model.Extended);
 
         return sb.ToString();
     }
@@ -104,6 +105,41 @@ internal sealed class TextFormatter : IBmFontTextFormatter
             sb.Append($" amount={kern.Amount}");
             sb.AppendLine();
         }
+    }
+
+    private static void FormatExtended(StringBuilder sb, ExtendedMetadata? extended)
+    {
+        if (extended == null)
+            return;
+
+        sb.Append("bmfontier");
+        sb.Append($" version=\"{extended.GeneratorVersion}\"");
+
+        if (extended.SdfSpread.HasValue)
+            sb.Append($" sdfSpread={extended.SdfSpread.Value}");
+        if (extended.OutlineThickness.HasValue)
+            sb.Append($" outlineThickness={extended.OutlineThickness.Value}");
+        if (extended.GradientTopColor != null)
+            sb.Append($" gradientTopColor={extended.GradientTopColor}");
+        if (extended.GradientBottomColor != null)
+            sb.Append($" gradientBottomColor={extended.GradientBottomColor}");
+        if (extended.ShadowOffsetX.HasValue)
+            sb.Append($" shadowOffsetX={extended.ShadowOffsetX.Value}");
+        if (extended.ShadowOffsetY.HasValue)
+            sb.Append($" shadowOffsetY={extended.ShadowOffsetY.Value}");
+        if (extended.ShadowColor != null)
+            sb.Append($" shadowColor={extended.ShadowColor}");
+        if (extended.SuperSampleLevel.HasValue)
+            sb.Append($" superSampleLevel={extended.SuperSampleLevel.Value}");
+        if (extended.ColorFont is true)
+            sb.Append(" colorFont=1");
+        if (extended.VariationAxes is { Count: > 0 })
+        {
+            foreach (var (tag, value) in extended.VariationAxes)
+                sb.Append($" axis_{tag}={value}");
+        }
+
+        sb.AppendLine();
     }
 
     private static int BoolToInt(bool value) => value ? 1 : 0;

@@ -17,6 +17,11 @@ internal static unsafe class FreeTypeNative
     public const int FT_LOAD_COLOR = 1 << 5;
 
     /// <summary>
+    /// FT_LOAD_NO_HINTING flag (1 &lt;&lt; 1 = 2). Disables TrueType hinting.
+    /// </summary>
+    public const int FT_LOAD_NO_HINTING = 1 << 1;
+
+    /// <summary>
     /// Sets the design coordinates for a variable font's variation axes.
     /// Each coordinate is an FT_Fixed value (16.16 fixed-point: multiply float by 65536).
     /// The coords array must contain one entry per axis, ordered as defined in the fvar table.

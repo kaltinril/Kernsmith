@@ -1,4 +1,6 @@
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Bmfontier.Output.Model;
 
 namespace Bmfontier.Output;
@@ -28,6 +30,9 @@ internal sealed class BmFontBinaryFormatter : IBmFontBinaryFormatter
 
         if (model.KerningPairs.Count > 0)
             WriteKerningBlock(writer, model.KerningPairs);
+
+        if (model.Extended != null)
+            WriteExtendedBlock(writer, model.Extended);
 
         writer.Flush();
         return ms.ToArray();
@@ -166,5 +171,42 @@ internal sealed class BmFontBinaryFormatter : IBmFontBinaryFormatter
 
         bw.Flush();
         WriteBlock(writer, 5, ms.ToArray());
+    }
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = false
+    };
+
+    private static void WriteExtendedBlock(BinaryWriter writer, ExtendedMetadata extended)
+    {
+        // Build a dictionary of non-null fields for clean JSON output.
+        var dict = new Dictionary<string, object>
+        {
+            ["version"] = extended.GeneratorVersion
+        };
+
+        if (extended.SdfSpread.HasValue) dict["sdfSpread"] = extended.SdfSpread.Value;
+        if (extended.OutlineThickness.HasValue) dict["outlineThickness"] = extended.OutlineThickness.Value;
+        if (extended.GradientTopColor != null) dict["gradientTopColor"] = extended.GradientTopColor;
+        if (extended.GradientBottomColor != null) dict["gradientBottomColor"] = extended.GradientBottomColor;
+        if (extended.ShadowOffsetX.HasValue) dict["shadowOffsetX"] = extended.ShadowOffsetX.Value;
+        if (extended.ShadowOffsetY.HasValue) dict["shadowOffsetY"] = extended.ShadowOffsetY.Value;
+        if (extended.ShadowColor != null) dict["shadowColor"] = extended.ShadowColor;
+        if (extended.SuperSampleLevel.HasValue) dict["superSampleLevel"] = extended.SuperSampleLevel.Value;
+        if (extended.ColorFont is true) dict["colorFont"] = true;
+        if (extended.VariationAxes is { Count: > 0 }) dict["variationAxes"] = extended.VariationAxes;
+
+        var json = JsonSerializer.Serialize(dict, JsonOptions);
+        var jsonBytes = Encoding.UTF8.GetBytes(json);
+
+        // Null-terminated UTF-8 JSON payload
+        var payload = new byte[jsonBytes.Length + 1];
+        Buffer.BlockCopy(jsonBytes, 0, payload, 0, jsonBytes.Length);
+        // payload[^1] is already 0
+
+        WriteBlock(writer, 6, payload);
     }
 }

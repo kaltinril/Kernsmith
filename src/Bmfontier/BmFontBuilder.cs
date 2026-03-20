@@ -47,6 +47,7 @@ public sealed class BmFontBuilder
     public BmFontBuilder WithItalic(bool italic = true) { _options.Italic = italic; return this; }
     public BmFontBuilder WithAntiAlias(AntiAliasMode mode) { _options.AntiAlias = mode; return this; }
     public BmFontBuilder WithMaxTextureSize(int size) { _options.MaxTextureSize = size; return this; }
+    public BmFontBuilder WithMaxTextureSize(int width, int height) { _options.MaxTextureWidth = width; _options.MaxTextureHeight = height; return this; }
     public BmFontBuilder WithPadding(int up, int right, int down, int left) { _options.Padding = new Padding(up, right, down, left); return this; }
     public BmFontBuilder WithPadding(int all) { _options.Padding = new Padding(all); return this; }
     public BmFontBuilder WithSpacing(int horizontal, int vertical) { _options.Spacing = new Spacing(horizontal, vertical); return this; }
@@ -72,6 +73,21 @@ public sealed class BmFontBuilder
     public BmFontBuilder WithPacker(IAtlasPacker packer) { _options.Packer = packer; return this; }
     public BmFontBuilder WithEncoder(IAtlasEncoder encoder) { _options.AtlasEncoder = encoder; return this; }
     public BmFontBuilder WithFontReader(IFontReader reader) { _options.FontReader = reader; return this; }
+
+    public BmFontBuilder WithSuperSampling(int level) { _options.SuperSampleLevel = level; return this; }
+    public BmFontBuilder WithFallbackCharacter(char fallbackChar) { _options.FallbackCharacter = fallbackChar; return this; }
+    public BmFontBuilder WithTextureFormat(TextureFormat format) { _options.TextureFormat = format; return this; }
+    public BmFontBuilder WithHinting(bool enable = true) { _options.EnableHinting = enable; return this; }
+    public BmFontBuilder WithAutofitTexture(bool autofit = true) { _options.AutofitTexture = autofit; return this; }
+    public BmFontBuilder WithEqualizeCellHeights(bool equalize = true) { _options.EqualizeCellHeights = equalize; return this; }
+    public BmFontBuilder WithForceOffsetsToZero(bool force = true) { _options.ForceOffsetsToZero = force; return this; }
+
+    public BmFontBuilder WithShadow(int offsetX = 2, int offsetY = 2, int blur = 0,
+        (byte R, byte G, byte B)? color = null, float opacity = 1.0f)
+    {
+        var c = color ?? (0, 0, 0);
+        return WithPostProcessor(new ShadowPostProcessor(offsetX, offsetY, blur, c.R, c.G, c.B, opacity));
+    }
 
     public BmFontBuilder WithGradient((byte R, byte G, byte B) startColor, (byte R, byte G, byte B) endColor, float angleDegrees = 90f, float midpoint = 0.5f)
         => WithPostProcessor(GradientPostProcessor.Create(startColor, endColor, angleDegrees, midpoint));

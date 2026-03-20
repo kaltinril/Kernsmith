@@ -31,24 +31,24 @@ Items that were not completed during Phase 4 (Deferred / Future).
 
 ---
 
-## Phase 5 -- Full CLI Tool
+## Phase 5 -- Full CLI Tool (COMPLETE)
 
-Production-ready CLI that replaces BMFont.exe. Config file support (.bmfc), inspect/convert/info commands, .NET global tool packaging.
+Production-ready CLI with 5 commands (generate, inspect, convert, list-fonts, info), .bmfc config file support, and full option coverage.
 
-See **[plan-cli.md](plan-cli.md)** for full specification and task breakdown (Phases A-D).
-
----
-
-## Phase 6 -- BMFont Parity Features
-
-15 features from BMFont.exe not yet implemented: separate texture W/H, per-channel configuration, TGA/DDS output, super sampling, fallback glyph, hinting toggle, force offsets to zero, equalize cell heights, height stretch, autofit texture size, custom glyph images, failed character reporting.
-
-See **[plan-bmfont-parity.md](plan-bmfont-parity.md)** for prioritized feature list with implementation details.
+See **[plan-cli.md](plan-cli.md)** for specification.
 
 ---
 
-## Phase 7 -- Extended Metadata
+## Phase 6 -- BMFont Parity Features (COMPLETE)
 
-Store bmfontier-specific metadata (SDF spread, gradient, shadow settings) inline in .fnt output using custom fields that existing BMFont readers safely ignore. Follows Hiero's precedent.
+Implemented: separate texture W/H, TGA output, super sampling, fallback glyph, hinting toggle, force offsets to zero, equalize cell heights, autofit texture size, failed character reporting, shadow post-processor (beyond parity).
 
-See **[plan-extended-metadata.md](plan-extended-metadata.md)** for full specification, compatibility analysis, and implementation plan.
+See **[plan-bmfont-parity.md](plan-bmfont-parity.md)** for full feature list.
+
+---
+
+## Phase 7 -- Extended Metadata (COMPLETE)
+
+bmfontier-specific metadata (SDF spread, gradient, shadow, outline, variable axes) stored inline in .fnt output across all three formats (text, XML, binary). Existing BMFont readers safely ignore the additions.
+
+See **[plan-extended-metadata.md](plan-extended-metadata.md)** for specification.

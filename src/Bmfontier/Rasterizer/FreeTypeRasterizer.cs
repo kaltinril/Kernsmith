@@ -107,10 +107,13 @@ internal sealed class FreeTypeRasterizer : IRasterizer
         if (glyphIndex == 0)
             return null; // Missing glyph
 
-        // Determine load flags based on anti-alias mode.
+        // Determine load flags based on anti-alias mode and hinting.
         var loadFlags = options.ColorFont
             ? (FT_LOAD)FreeTypeNative.FT_LOAD_COLOR
             : FT_LOAD.FT_LOAD_DEFAULT;
+
+        if (!options.EnableHinting)
+            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
 
         // Load the glyph.
         error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);

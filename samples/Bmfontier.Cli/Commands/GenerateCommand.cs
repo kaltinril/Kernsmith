@@ -1,0 +1,524 @@
+using Bmfontier.Cli.Config;
+using Bmfontier.Cli.Utilities;
+using Bmfontier.Output;
+using Bmfontier.Rasterizer;
+
+namespace Bmfontier.Cli.Commands;
+
+internal sealed class GenerateCommand
+{
+    public static int Execute(string[] args)
+    {
+        if (args.Length == 0 || args is ["--help"])
+        {
+            ShowHelp();
+            return ExitCodes.Success;
+        }
+
+        try
+        {
+            var options = ParseArgs(args);
+
+            // Load config file first, then overlay CLI flags
+            if (options.ConfigPath != null)
+            {
+                var configOptions = BmfcParser.Parse(options.ConfigPath);
+                MergeConfigIntoOptions(configOptions, options);
+                options = configOptions;
+            }
+
+            // Apply global flags
+            ConsoleOutput.SetVerbose(options.Verbose);
+            ConsoleOutput.SetQuiet(options.Quiet);
+
+            // Validate
+            if (options.FontPath == null && options.SystemFontName == null)
+            {
+                ConsoleOutput.WriteError("--font is required.");
+                return ExitCodes.InvalidArguments;
+            }
+
+            if (options.Size == null)
+            {
+                ConsoleOutput.WriteError("--size is required.");
+                return ExitCodes.InvalidArguments;
+            }
+
+            if (options.FontPath != null && !File.Exists(options.FontPath))
+            {
+                ConsoleOutput.WriteError($"Font file not found: {options.FontPath}");
+                return ExitCodes.InvalidArguments;
+            }
+
+            // Build character set
+            var characters = BuildCharacterSet(options);
+
+            // Dry run
+            if (options.DryRun)
+            {
+                PrintDryRun(options, characters);
+                return ExitCodes.Success;
+            }
+
+            // Build FontGeneratorOptions
+            var genOptions = new FontGeneratorOptions
+            {
+                Size = options.Size.Value,
+                Characters = characters,
+                Bold = options.Bold,
+                Italic = options.Italic,
+                AntiAlias = options.AntiAlias,
+                MaxTextureSize = options.MaxTextureSize,
+                Padding = options.Padding,
+                Spacing = options.Spacing,
+                PackingAlgorithm = options.PackingAlgorithm,
+                Kerning = options.Kerning,
+                Outline = options.Outline,
+                Sdf = options.Sdf,
+                PowerOfTwo = options.PowerOfTwo,
+                Dpi = options.Dpi,
+                FaceIndex = options.FaceIndex,
+                ChannelPacking = options.ChannelPacking,
+            };
+
+            if (options.VariationAxes.Count > 0)
+                genOptions.VariationAxes = new Dictionary<string, float>(options.VariationAxes);
+
+            // Post-processors
+            var postProcessors = new List<IGlyphPostProcessor>();
+            if (options.Outline > 0)
+                postProcessors.Add(new OutlinePostProcessor(options.Outline));
+            if (options.GradientTop != null && options.GradientBottom != null)
+            {
+                var top = ColorParser.Parse(options.GradientTop);
+                var bottom = ColorParser.Parse(options.GradientBottom);
+                postProcessors.Add(GradientPostProcessor.Create(top, bottom));
+            }
+            if (postProcessors.Count > 0)
+                genOptions.PostProcessors = postProcessors;
+
+            // Determine output path
+            var outputPath = options.OutputPath;
+            if (outputPath == null)
+            {
+                string baseName;
+                if (options.FontPath != null)
+                    baseName = Path.GetFileNameWithoutExtension(options.FontPath);
+                else
+                    baseName = options.SystemFontName!.Replace(" ", "");
+                outputPath = Path.Combine(Directory.GetCurrentDirectory(), baseName);
+            }
+
+            // Generate
+            var fontDisplay = options.FontPath ?? options.SystemFontName ?? "font";
+            ConsoleOutput.WriteStdout($"Loading font: {fontDisplay}");
+            ConsoleOutput.WriteStdout($"Size: {options.Size}px, Charset: {options.CharsetPreset ?? "custom"}, Format: {options.OutputFormat.ToString().ToLowerInvariant()}");
+            ConsoleOutput.WriteStdout($"Rasterizing {characters.Count} glyphs...");
+
+            BmFontResult result;
+            if (options.SystemFontName != null)
+                result = BmFont.GenerateFromSystem(options.SystemFontName, genOptions);
+            else
+                result = BmFont.Generate(options.FontPath!, genOptions);
+
+            ConsoleOutput.WriteStdout($"Packing into atlas ({result.Pages.Count} page(s))...");
+            ConsoleOutput.WriteStdout($"Writing output to {outputPath}...");
+
+            result.ToFile(outputPath, options.OutputFormat);
+
+            ConsoleOutput.WriteStdout("Done.");
+
+            // Save config if requested
+            if (options.SaveConfigPath != null)
+            {
+                BmfcWriter.Write(options, options.SaveConfigPath);
+                ConsoleOutput.WriteProgress($"Config saved to {options.SaveConfigPath}");
+            }
+
+            return ExitCodes.Success;
+        }
+        catch (FileNotFoundException ex)
+        {
+            ConsoleOutput.WriteError($"File not found: {ex.FileName ?? ex.Message}");
+            return ExitCodes.FileNotFound;
+        }
+        catch (FontParsingException ex)
+        {
+            ConsoleOutput.WriteError($"Font error: {ex.Message}");
+            return ExitCodes.FontParseError;
+        }
+        catch (InvalidOperationException ex)
+        {
+            ConsoleOutput.WriteError($"Generation error: {ex.Message}");
+            return ExitCodes.GenerationError;
+        }
+        catch (IOException ex)
+        {
+            ConsoleOutput.WriteError($"I/O error: {ex.Message}");
+            return ExitCodes.OutputWriteError;
+        }
+        catch (FormatException ex)
+        {
+            ConsoleOutput.WriteError($"Format error: {ex.Message}");
+            return ExitCodes.ConfigParseError;
+        }
+        catch (ArgumentException ex)
+        {
+            ConsoleOutput.WriteError(ex.Message);
+            return ExitCodes.InvalidArguments;
+        }
+    }
+
+    private static CliOptions ParseArgs(string[] args)
+    {
+        var options = new CliOptions();
+
+        for (int i = 0; i < args.Length; i++)
+        {
+            switch (args[i])
+            {
+                case "-f":
+                case "--font":
+                    options.FontPath = NextArg(args, ref i, args[i]);
+                    break;
+                case "--system-font":
+                    options.SystemFontName = NextArg(args, ref i, args[i]);
+                    break;
+                case "-s":
+                case "--size":
+                    options.Size = int.Parse(NextArg(args, ref i, args[i]));
+                    break;
+                case "-o":
+                case "--output":
+                    options.OutputPath = NextArg(args, ref i, args[i]);
+                    break;
+                case "--format":
+                    options.OutputFormat = NextArg(args, ref i, args[i]).ToLowerInvariant() switch
+                    {
+                        "text" => OutputFormat.Text,
+                        "xml" => OutputFormat.Xml,
+                        "binary" => OutputFormat.Binary,
+                        var f => throw new ArgumentException($"Unknown format: {f}. Use text, xml, or binary.")
+                    };
+                    break;
+                case "-c":
+                case "--charset":
+                    options.CharsetPreset = NextArg(args, ref i, args[i]);
+                    break;
+                case "--chars":
+                    options.ExplicitChars = NextArg(args, ref i, args[i]);
+                    break;
+                case "--chars-file":
+                    options.CharsFilePath = NextArg(args, ref i, args[i]);
+                    break;
+                case "--range":
+                    var rangeStr = NextArg(args, ref i, args[i]);
+                    var parts = rangeStr.Split('-', 2);
+                    if (parts.Length != 2)
+                        throw new ArgumentException($"Invalid range: {rangeStr}. Expected format: 0020-007E");
+                    options.UnicodeRanges.Add((Convert.ToInt32(parts[0], 16), Convert.ToInt32(parts[1], 16)));
+                    break;
+                case "--padding":
+                    var padStr = NextArg(args, ref i, args[i]);
+                    options.Padding = ParsePaddingArg(padStr);
+                    break;
+                case "--spacing":
+                    var spcStr = NextArg(args, ref i, args[i]);
+                    options.Spacing = ParseSpacingArg(spcStr);
+                    break;
+                case "--max-texture":
+                case "--max-texture-size":
+                    options.MaxTextureSize = int.Parse(NextArg(args, ref i, args[i]));
+                    break;
+                case "--packer":
+                    options.PackingAlgorithm = NextArg(args, ref i, args[i]).ToLowerInvariant() switch
+                    {
+                        "maxrects" => PackingAlgorithm.MaxRects,
+                        "skyline" => PackingAlgorithm.Skyline,
+                        var p => throw new ArgumentException($"Unknown packer: {p}. Use maxrects or skyline.")
+                    };
+                    break;
+                case "--pot":
+                    options.PowerOfTwo = true;
+                    break;
+                case "--no-pot":
+                    options.PowerOfTwo = false;
+                    break;
+                case "--channel-pack":
+                    options.ChannelPacking = true;
+                    break;
+                case "--sdf":
+                    options.Sdf = true;
+                    break;
+                case "--mono":
+                    options.AntiAlias = AntiAliasMode.None;
+                    break;
+                case "--aa":
+                    options.AntiAlias = NextArg(args, ref i, args[i]).ToLowerInvariant() switch
+                    {
+                        "none" => AntiAliasMode.None,
+                        "grayscale" => AntiAliasMode.Grayscale,
+                        "light" => AntiAliasMode.Light,
+                        "lcd" => AntiAliasMode.Lcd,
+                        var a => throw new ArgumentException($"Unknown anti-alias mode: {a}")
+                    };
+                    break;
+                case "--dpi":
+                    options.Dpi = int.Parse(NextArg(args, ref i, args[i]));
+                    break;
+                case "-b":
+                case "--bold":
+                    options.Bold = true;
+                    break;
+                case "-i":
+                case "--italic":
+                    options.Italic = true;
+                    break;
+                case "--outline":
+                    options.Outline = int.Parse(NextArg(args, ref i, args[i]));
+                    break;
+                case "--gradient":
+                    options.GradientTop = NextArg(args, ref i, args[i]);
+                    options.GradientBottom = NextArg(args, ref i, args[i]);
+                    break;
+                case "--kerning":
+                    options.Kerning = true;
+                    break;
+                case "--no-kerning":
+                    options.Kerning = false;
+                    break;
+                case "--axis":
+                    var axisStr = NextArg(args, ref i, args[i]);
+                    var eqIdx = axisStr.IndexOf('=');
+                    if (eqIdx < 0)
+                        throw new ArgumentException($"Invalid axis: {axisStr}. Expected format: tag=value (e.g., wght=700)");
+                    var tag = axisStr[..eqIdx];
+                    var val = float.Parse(axisStr[(eqIdx + 1)..]);
+                    options.VariationAxes[tag] = val;
+                    break;
+                case "--instance":
+                    options.InstanceName = NextArg(args, ref i, args[i]);
+                    break;
+                case "--face":
+                    options.FaceIndex = int.Parse(NextArg(args, ref i, args[i]));
+                    break;
+                case "--config":
+                    options.ConfigPath = NextArg(args, ref i, args[i]);
+                    break;
+                case "--save-config":
+                    options.SaveConfigPath = NextArg(args, ref i, args[i]);
+                    break;
+                case "--dry-run":
+                    options.DryRun = true;
+                    break;
+                case "-v":
+                case "--verbose":
+                    options.Verbose = true;
+                    break;
+                case "-q":
+                case "--quiet":
+                    options.Quiet = true;
+                    break;
+                case "--no-color":
+                    ConsoleOutput.SetNoColor(true);
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown option: {args[i]}");
+            }
+        }
+
+        return options;
+    }
+
+    /// <summary>
+    /// Merges CLI-provided options over config-loaded options.
+    /// CLI flags that were explicitly set override config values.
+    /// </summary>
+    private static void MergeConfigIntoOptions(CliOptions config, CliOptions cli)
+    {
+        // CLI values override config values (only override if explicitly set by CLI)
+        if (cli.FontPath != null) config.FontPath = cli.FontPath;
+        if (cli.SystemFontName != null) config.SystemFontName = cli.SystemFontName;
+        if (cli.Size != null) config.Size = cli.Size;
+        if (cli.OutputPath != null) config.OutputPath = cli.OutputPath;
+        if (cli.SaveConfigPath != null) config.SaveConfigPath = cli.SaveConfigPath;
+        if (cli.ExplicitChars != null) config.ExplicitChars = cli.ExplicitChars;
+        if (cli.CharsFilePath != null) config.CharsFilePath = cli.CharsFilePath;
+        if (cli.UnicodeRanges.Count > 0) config.UnicodeRanges = cli.UnicodeRanges;
+        if (cli.GradientTop != null) config.GradientTop = cli.GradientTop;
+        if (cli.GradientBottom != null) config.GradientBottom = cli.GradientBottom;
+        if (cli.VariationAxes.Count > 0) config.VariationAxes = cli.VariationAxes;
+
+        // Bool/value flags: these are trickier because defaults look like "not set".
+        // For the CLI overlay, we simply copy all values that differ from defaults.
+        // This is imperfect but practical: the CLI user must use the flag to override.
+        if (cli.Bold) config.Bold = true;
+        if (cli.Italic) config.Italic = true;
+        if (cli.Sdf) config.Sdf = true;
+        if (cli.DryRun) config.DryRun = true;
+        if (cli.Verbose) config.Verbose = true;
+        if (cli.Quiet) config.Quiet = true;
+        if (cli.ChannelPacking) config.ChannelPacking = true;
+        if (!cli.Kerning) config.Kerning = false;
+        if (!cli.PowerOfTwo) config.PowerOfTwo = false;
+    }
+
+    private static CharacterSet BuildCharacterSet(CliOptions options)
+    {
+        var sets = new List<CharacterSet>();
+
+        // Preset
+        if (options.CharsetPreset != null)
+        {
+            sets.Add(options.CharsetPreset.ToLowerInvariant() switch
+            {
+                "ascii" => CharacterSet.Ascii,
+                "extended" => CharacterSet.ExtendedAscii,
+                "latin" => CharacterSet.Latin,
+                _ => CharacterSet.FromChars(options.CharsetPreset)
+            });
+        }
+
+        // Explicit chars
+        if (options.ExplicitChars != null)
+            sets.Add(CharacterSet.FromChars(options.ExplicitChars));
+
+        // Chars file
+        if (options.CharsFilePath != null)
+        {
+            if (!File.Exists(options.CharsFilePath))
+                throw new FileNotFoundException($"Character file not found: {options.CharsFilePath}", options.CharsFilePath);
+            var content = File.ReadAllText(options.CharsFilePath);
+            sets.Add(CharacterSet.FromChars(content));
+        }
+
+        // Unicode ranges
+        if (options.UnicodeRanges.Count > 0)
+        {
+            sets.Add(CharacterSet.FromRanges(options.UnicodeRanges.ToArray()));
+        }
+
+        if (sets.Count == 0)
+            return CharacterSet.Ascii;
+
+        return sets.Count == 1 ? sets[0] : CharacterSet.Union(sets.ToArray());
+    }
+
+    private static void PrintDryRun(CliOptions options, CharacterSet characters)
+    {
+        var fontSource = options.FontPath ?? $"system:{options.SystemFontName}";
+        Console.WriteLine($"[dry-run] Font:      {fontSource}");
+        Console.WriteLine($"[dry-run] Size:      {options.Size}px");
+        Console.WriteLine($"[dry-run] Charset:   {options.CharsetPreset ?? "custom"} ({characters.Count} codepoints)");
+        Console.WriteLine($"[dry-run] Atlas:     max {options.MaxTextureSize}x{options.MaxTextureSize}, {(options.PackingAlgorithm == PackingAlgorithm.MaxRects ? "maxrects" : "skyline")} packer");
+
+        var effects = new List<string>();
+        if (options.Bold) effects.Add("bold");
+        if (options.Italic) effects.Add("italic");
+        if (options.Sdf) effects.Add("SDF");
+        if (options.Outline > 0) effects.Add($"outline {options.Outline}px");
+        if (options.GradientTop != null) effects.Add($"gradient {options.GradientTop}->{options.GradientBottom}");
+        Console.WriteLine($"[dry-run] Effects:   {(effects.Count > 0 ? string.Join(", ", effects) : "none")}");
+
+        var outPath = options.OutputPath ?? Path.GetFileNameWithoutExtension(options.FontPath ?? options.SystemFontName ?? "font");
+        Console.WriteLine($"[dry-run] Output:    ./{outPath}.fnt ({options.OutputFormat.ToString().ToLowerInvariant()} format)");
+        Console.WriteLine("[dry-run] No files written.");
+    }
+
+    private static Padding ParsePaddingArg(string value)
+    {
+        var parts = value.Split(',', StringSplitOptions.TrimEntries);
+        if (parts.Length == 4)
+            return new Padding(int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2]), int.Parse(parts[3]));
+        return new Padding(int.Parse(parts[0]));
+    }
+
+    private static Spacing ParseSpacingArg(string value)
+    {
+        var parts = value.Split(',', StringSplitOptions.TrimEntries);
+        if (parts.Length == 2)
+            return new Spacing(int.Parse(parts[0]), int.Parse(parts[1]));
+        return new Spacing(int.Parse(parts[0]));
+    }
+
+    private static string NextArg(string[] allArgs, ref int i, string flag)
+    {
+        i++;
+        if (i >= allArgs.Length)
+            throw new ArgumentException($"Missing value for {flag}");
+        return allArgs[i];
+    }
+
+    private static void ShowHelp()
+    {
+        Console.WriteLine("""
+            Generate BMFont files from a font.
+
+            Usage: bmfontier generate -f <font> -s <size> [options]
+
+            Font Source (one required):
+              -f, --font <path>           Font file path (TTF, OTF, WOFF)
+              --system-font <name>        Use a system-installed font by family name
+
+            Output:
+              -o, --output <path>         Output file path (default: ./<fontname>)
+              --format <text|xml|binary>  Output format (default: text)
+
+            Size & Rendering:
+              -s, --size <n>              Font size in pixels (required)
+              --dpi <n>                   DPI (default: 72)
+              --aa <none|grayscale|light|lcd>  Anti-aliasing mode (default: grayscale)
+              --sdf                       Enable Signed Distance Field rendering
+              --mono                      Disable anti-aliasing (alias for --aa none)
+
+            Style:
+              -b, --bold                  Enable synthetic bold
+              -i, --italic                Enable synthetic italic
+
+            Character Set:
+              -c, --charset <preset>      Character set preset: ascii, extended, latin (default: ascii)
+              --chars <string>            Explicit characters to include
+              --chars-file <path>         Read characters from a text file (UTF-8)
+              --range <start-end>         Unicode range (hex), repeatable (e.g., --range 0020-007E)
+
+            Texture Atlas:
+              --max-texture <n>           Maximum texture size in pixels (default: 1024)
+              --padding <n>               Padding around each glyph in pixels (default: 0)
+              --padding <u,r,d,l>         Per-side padding (up,right,down,left)
+              --spacing <n>               Spacing between glyphs in pixels (default: 1)
+              --spacing <h,v>             Horizontal,vertical spacing
+              --pot                       Force power-of-two texture dimensions (default: on)
+              --no-pot                    Allow non-power-of-two textures
+              --packer <maxrects|skyline> Packing algorithm (default: maxrects)
+              --channel-pack              Pack glyphs into individual RGBA channels
+
+            Effects:
+              --outline <n>               Outline width in pixels
+              --gradient <top> <bottom>   Vertical gradient, colors as hex
+
+            Kerning:
+              --no-kerning                Disable kerning pair extraction
+              --kerning                   Enable kerning (default: on)
+
+            Variable Fonts:
+              --axis <tag>=<value>        Set variation axis (repeatable)
+              --instance <name>           Use a named instance
+              --face <n>                  Face index for .ttc collections (default: 0)
+
+            Configuration:
+              --config <path>             Load settings from a .bmfc configuration file
+              --save-config <path>        Save current settings to a .bmfc file
+              --dry-run                   Show what would be generated without writing files
+
+            Verbosity:
+              -v, --verbose               Show detailed progress
+              -q, --quiet                 Suppress all output except errors
+              --no-color                  Disable colored output
+
+            Examples:
+              bmfontier generate -f arial.ttf -s 32
+              bmfontier generate -f roboto.ttf -s 48 -b -i --outline 2
+              bmfontier generate --config mygame.bmfc --save-config updated.bmfc
+            """);
+    }
+}

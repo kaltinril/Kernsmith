@@ -14,7 +14,23 @@ public class FontGeneratorOptions
     public bool Bold { get; set; }
     public bool Italic { get; set; }
     public AntiAliasMode AntiAlias { get; set; } = AntiAliasMode.Grayscale;
-    public int MaxTextureSize { get; set; } = 1024;
+
+    /// <summary>
+    /// Convenience property that sets both <see cref="MaxTextureWidth"/> and <see cref="MaxTextureHeight"/>.
+    /// Reading returns <see cref="MaxTextureWidth"/>.
+    /// </summary>
+    public int MaxTextureSize
+    {
+        get => MaxTextureWidth;
+        set { MaxTextureWidth = value; MaxTextureHeight = value; }
+    }
+
+    /// <summary>Maximum atlas texture width in pixels (default 1024).</summary>
+    public int MaxTextureWidth { get; set; } = 1024;
+
+    /// <summary>Maximum atlas texture height in pixels (default 1024).</summary>
+    public int MaxTextureHeight { get; set; } = 1024;
+
     public Padding Padding { get; set; } = new Padding(0, 0, 0, 0);
     public Spacing Spacing { get; set; } = new Spacing(1, 1);
     public PackingAlgorithm PackingAlgorithm { get; set; } = PackingAlgorithm.MaxRects;
@@ -28,6 +44,47 @@ public class FontGeneratorOptions
     public bool ColorFont { get; set; }
     public int ColorPaletteIndex { get; set; }
     public Dictionary<string, float>? VariationAxes { get; set; }
+
+    /// <summary>
+    /// Super sampling level (1-4). When greater than 1, glyphs are rasterized
+    /// at Nx size then downscaled using a box filter for smoother edges.
+    /// </summary>
+    public int SuperSampleLevel { get; set; } = 1;
+
+    /// <summary>
+    /// Fallback character codepoint to display for missing glyphs.
+    /// When set, included in the BMFont output. Common values: '?' (63) or '\uFFFD' (65533).
+    /// </summary>
+    public char? FallbackCharacter { get; set; }
+
+    /// <summary>
+    /// Texture format for atlas output. Default is PNG.
+    /// </summary>
+    public TextureFormat TextureFormat { get; set; } = TextureFormat.Png;
+
+    /// <summary>
+    /// When true, FreeType hinting is enabled for crisp rendering at small sizes.
+    /// When false, glyphs are rendered without hinting for smoother curves.
+    /// </summary>
+    public bool EnableHinting { get; set; } = true;
+
+    /// <summary>
+    /// When true, automatically find the smallest power-of-two texture size that fits all glyphs.
+    /// Overrides <see cref="MaxTextureWidth"/> and <see cref="MaxTextureHeight"/> with the fitted size.
+    /// </summary>
+    public bool AutofitTexture { get; set; }
+
+    /// <summary>
+    /// When true, all character cells in the atlas are padded to the same height.
+    /// YOffset is adjusted so all characters align to a common baseline.
+    /// </summary>
+    public bool EqualizeCellHeights { get; set; }
+
+    /// <summary>
+    /// When true, sets all xoffset and yoffset values to 0 in the output.
+    /// Useful for monospace/grid-based text rendering.
+    /// </summary>
+    public bool ForceOffsetsToZero { get; set; }
 
     // Swappable components (null = use defaults)
     public IFontReader? FontReader { get; set; }

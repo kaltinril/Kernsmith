@@ -32,6 +32,7 @@ internal sealed class XmlFormatter : IBmFontTextFormatter
         WritePages(writer, model.Pages);
         WriteChars(writer, model.Characters);
         WriteKernings(writer, model.KerningPairs);
+        WriteExtended(writer, model.Extended);
 
         writer.WriteEndElement(); // font
         writer.WriteEndDocument();
@@ -128,6 +129,41 @@ internal sealed class XmlFormatter : IBmFontTextFormatter
             writer.WriteAttributeString("second", kern.Second.ToString());
             writer.WriteAttributeString("amount", kern.Amount.ToString());
             writer.WriteEndElement();
+        }
+
+        writer.WriteEndElement();
+    }
+
+    private static void WriteExtended(XmlWriter writer, ExtendedMetadata? extended)
+    {
+        if (extended == null)
+            return;
+
+        writer.WriteStartElement("bmfontier");
+        writer.WriteAttributeString("version", extended.GeneratorVersion);
+
+        if (extended.SdfSpread.HasValue)
+            writer.WriteAttributeString("sdfSpread", extended.SdfSpread.Value.ToString());
+        if (extended.OutlineThickness.HasValue)
+            writer.WriteAttributeString("outlineThickness", extended.OutlineThickness.Value.ToString());
+        if (extended.GradientTopColor != null)
+            writer.WriteAttributeString("gradientTopColor", extended.GradientTopColor);
+        if (extended.GradientBottomColor != null)
+            writer.WriteAttributeString("gradientBottomColor", extended.GradientBottomColor);
+        if (extended.ShadowOffsetX.HasValue)
+            writer.WriteAttributeString("shadowOffsetX", extended.ShadowOffsetX.Value.ToString());
+        if (extended.ShadowOffsetY.HasValue)
+            writer.WriteAttributeString("shadowOffsetY", extended.ShadowOffsetY.Value.ToString());
+        if (extended.ShadowColor != null)
+            writer.WriteAttributeString("shadowColor", extended.ShadowColor);
+        if (extended.SuperSampleLevel.HasValue)
+            writer.WriteAttributeString("superSampleLevel", extended.SuperSampleLevel.Value.ToString());
+        if (extended.ColorFont is true)
+            writer.WriteAttributeString("colorFont", "1");
+        if (extended.VariationAxes is { Count: > 0 })
+        {
+            foreach (var (tag, value) in extended.VariationAxes)
+                writer.WriteAttributeString($"axis_{tag}", value.ToString());
         }
 
         writer.WriteEndElement();
