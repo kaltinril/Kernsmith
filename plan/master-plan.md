@@ -1,7 +1,7 @@
 # bmfontier -- Master Plan
 
-> **Status**: Phases 1-10 complete. Phase 11 (Solution Restructure) and Phase 12 (Pre-Ship Polish) in planning.
-> **Date**: 2026-03-19
+> **Status**: Phases 1-11 complete. Phase 12 (Pre-Ship Polish) in planning. Phase 13 (WASM) researched. Phase 14 (Benchmarking) planned.
+> **Date**: 2026-03-20
 
 ---
 
@@ -79,8 +79,9 @@ Output Layer
 
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
-| 11 | [Solution Restructure](phase-11-solution-restructure.md) | Multi-project foundation: Directory.Build.props, central packages, CLI promotion, app scaffolding | Planning |
 | 12 | [Pre-Ship Polish](phase-12-pre-ship-polish.md) | Security hardening, test coverage gaps, NuGet packaging, API polish, FT_Stroker fix | Planning |
+| 13 | [WASM Rasterization](phase-13-wasm-rasterization.md) | FreeTypeSharp WASM alternatives investigation | Research Complete |
+| 14 | [Benchmarking & Profiling](phase-14-benchmarking-profiling.md) | Comprehensive benchmarking, stage-level profiling, CI regression detection | Planning |
 
 ---
 
@@ -98,6 +99,7 @@ Output Layer
 | 08 | [Optimal Atlas Sizing](done/phase-08-optimal-atlas-sizing.md) | Mathematical atlas size prediction replacing brute-force trial-and-error |
 | 09 | [Outline Overhaul](done/phase-09-outline-overhaul.md) | EDT-based anti-aliased outlines with outline color support |
 | 10 | [Layered Rendering](done/phase-10-layered-rendering.md) | IGlyphEffect compositing replacing order-dependent post-processor chain |
+| 11 | [Solution Restructure](done/phase-11-solution-restructure.md) | Multi-project foundation, net10.0 migration, CLI promotion, app scaffolding |
 
 ### Topical Plan Docs (archived in `done/`)
 
@@ -157,11 +159,17 @@ Replaced binary brute-force outline with EDT-based anti-aliased distance renderi
 ### Phase 10 — Layered Rendering (COMPLETE)
 Replaced order-dependent post-processor chain with layered compositing system. IGlyphEffect interface, GlyphCompositor, fixed Z-order (shadow → outline → body). Eliminates all post-processor ordering bugs.
 
-### Phase 11 — Solution Restructure (PLANNING)
-Multi-project foundation: Directory.Build.props, central package management, global.json, .editorconfig, CLI promotion from samples/ to tools/, future app scaffolding (UI/Web/Mobile).
+### Phase 11 — Solution Restructure (COMPLETE)
+Multi-project foundation: Directory.Build.props, central package management, global.json, .editorconfig, net10.0 migration, CLI promotion from samples/ to tools/, future app scaffolding (UI/Web/Mobile), solution filters. Also fixed UTF-8 BOM bug in .fnt writer and channel packing + effects validation.
 
 ### Phase 12 — Pre-Ship Polish (PLANNING)
 Security hardening (10 items), test coverage gaps (~30 new tests), NuGet package readiness (LICENSE, URLs, SourceLink, XML docs, CHANGELOG), API documentation polish, optional FT_Stroker compositing fix.
+
+### Phase 13 — WASM Rasterization (RESEARCH COMPLETE)
+Investigation of FreeTypeSharp WASM alternatives. Recommendation: server-side rasterization first, then SkiaSharpRasterizer for client-side if needed. IRasterizer abstraction is clean enough to support swapping.
+
+### Phase 14 — Benchmarking & Profiling (PLANNING)
+Comprehensive benchmark suite covering all pipeline stages, stage-level profiling infrastructure, memory/allocation analysis, CI regression detection, CLI profiling commands.
 
 ---
 
@@ -183,7 +191,7 @@ Security hardening (10 items), test coverage gaps (~30 new tests), NuGet package
 | # | Question | Decision | Details |
 |---|----------|----------|---------|
 | 1 | **PNG encoding library** | **StbImageWriteSharp** (public domain) | Confirmed. See [done/plan-project-structure.md](done/plan-project-structure.md). |
-| 2 | **Target framework** | **net8.0** (current LTS) | .NET Standard 2.1 multi-targeting deferred to Phase 2. See [done/plan-project-structure.md](done/plan-project-structure.md). |
+| 2 | **Target framework** | **net10.0** | Migrated from net8.0 in Phase 11. All projects unified on net10.0 via Directory.Build.props. |
 | 3 | **Project license** | **Proprietary** | See LICENSE file. |
 | 4 | **NuGet package name** | **Bmfontier** | Package ID `Bmfontier`, main API class `BmFont`. |
 | 5 | **FreeTypeSharp usage boundary** | Use everything it can do | Our parser only covers what FreeTypeSharp cannot (GPOS, OS/2, name, cmap). No duplication. |

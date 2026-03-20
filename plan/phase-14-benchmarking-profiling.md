@@ -141,14 +141,54 @@ Tasks:
 - [ ] **Store baseline results** in `benchmarks/baselines/` for comparison
 - [ ] **Add PR comment with benchmark comparison** using `github-action-benchmark` or similar
 
-### Phase 6 — CLI Profiling Commands (Optional)
+### Phase 6 — CLI Profiling & Startup Optimization
 
-Add profiling support directly to the CLI tool for users who want to measure their own fonts.
+The CLI currently pays ~1100ms .NET runtime startup cost per invocation (JIT compilation, assembly loading, FreeType native library initialization). Actual font generation is 5-50ms but is invisible to users. This phase makes real generation time visible and reduces perceived latency.
+
+**Evidence**: Running 18 identical-complexity tests via `test_comparison.bat` shows every test takes ~1150ms regardless of font size, glyph count, or features — proving the time is dominated by startup, not generation.
 
 Tasks:
-- [ ] **Add `--profile` flag to CLI generate command** — prints stage-level timing breakdown after generation
-- [ ] **Add `benchmark` CLI command** — runs a quick self-benchmark with the user's font and options, reports timing
-- [ ] **Output format**: human-readable table with stage name, elapsed ms, % of total
+- [ ] **Add `--time` flag to CLI generate command** — prints wall-clock generation time (excluding startup) after completion
+  - Use `Stopwatch` around the `BmFont.Generate()` call only
+  - Output format: `Generated in 12ms (95 glyphs, 1 page)`
+  - Lightweight — no dependency on `PipelineMetrics`
+- [ ] **Add `--profile` flag to CLI generate command** — prints full stage-level timing breakdown after generation
+  - Requires `PipelineMetrics` from Phase 2
+  - Output format: human-readable table with stage name, elapsed ms, % of total
+  - Example:
+    ```
+    Stage                    Time      %
+    ----------------------- ------- -----
+    Font parsing              2ms    4.1%
+    Charset resolution        0ms    0.0%
+    Rasterization            32ms   65.3%
+    Atlas packing             3ms    6.1%
+    Atlas encoding (PNG)     11ms   22.4%
+    Model assembly            1ms    2.0%
+    ----------------------- ------- -----
+    Total generation         49ms
+    Process wall time      1152ms
+    ```
+  - The `Process wall time` vs `Total generation` gap reveals startup overhead
+- [ ] **Add `benchmark` CLI command** — runs a quick self-benchmark with the user's font and options
+  - Runs generation N times (default 10), reports min/mean/max/stddev
+  - First run is warmup (JIT), excluded from stats
+  - Output: `Mean: 12ms, Min: 11ms, Max: 15ms, StdDev: 1.2ms (10 iterations)`
+- [ ] **Investigate AOT publishing** — `dotnet publish -c Release -p:PublishAot=true`
+  - Eliminates JIT startup cost entirely
+  - Test if FreeTypeSharp native interop works under NativeAOT
+  - Test if StbImageWriteSharp works under NativeAOT
+  - Document any trimming/AOT compatibility issues
+  - If successful, add AOT publish profile and update CI to produce AOT binary
+- [ ] **Investigate ReadyToRun (R2R)** as a lighter alternative to AOT
+  - `dotnet publish -c Release -p:PublishReadyToRun=true`
+  - Partial pre-compilation — less aggressive than AOT, fewer compatibility risks
+  - Measure startup improvement vs full AOT
+- [ ] **Investigate batch mode** — accept multiple generation jobs in a single invocation
+  - Pay startup cost once, run N generations
+  - Input: multiple `--job` arguments, or a jobs file (JSON/YAML)
+  - Useful for asset pipelines that generate many fonts at build time
+  - Example: `bmfontier batch jobs.json` or `bmfontier generate --font A -s 32 --and --font B -s 24`
 
 ---
 
@@ -190,6 +230,9 @@ Each benchmark class should test ONE dimension. End-to-end benchmarks are for re
 3. **Actionable profiling**: Stage-level timing available via opt-in flag, no external tools needed
 4. **Low overhead**: Metrics collection adds <1% to total generation time
 5. **Developer experience**: `dotnet run --project benchmarks/Bmfontier.Benchmarks -- --filter *Effects*` works out of the box
+6. **Startup transparency**: `--time` flag shows users that generation is fast (5-50ms) despite ~1100ms process wall time
+7. **Startup reduction**: AOT or R2R publishing reduces CLI cold-start from ~1100ms to <200ms
+8. **Batch efficiency**: Asset pipelines can generate 100 fonts in a single invocation, paying startup cost only once
 
 ---
 

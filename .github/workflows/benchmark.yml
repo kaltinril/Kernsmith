@@ -1,0 +1,29 @@
+name: Benchmarks
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Run benchmarks
+        run: >
+          dotnet run --project benchmarks/Bmfontier.Benchmarks
+          -c Release -- --filter
+          "*FontGenerationBenchmarks*"
+          "*EndToEndBenchmarks*"
+          --exporters json
+          --job short
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: BenchmarkDotNet.Artifacts/results/
+          retention-days: 90

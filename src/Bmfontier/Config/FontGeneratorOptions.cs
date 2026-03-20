@@ -188,4 +188,10 @@ public class FontGeneratorOptions
     public IAtlasPacker? Packer { get; set; }
     public IAtlasEncoder? AtlasEncoder { get; set; }
     public IReadOnlyList<IGlyphPostProcessor>? PostProcessors { get; set; }
+
+    /// <summary>
+    /// When true, collects timing data for each pipeline stage.
+    /// Results are available via <see cref="BmFontResult.Metrics"/>.
+    /// </summary>
+    public bool CollectMetrics { get; set; }
 }

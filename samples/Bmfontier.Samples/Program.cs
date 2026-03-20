@@ -1,144 +1,136 @@
+using System.Diagnostics;
 using Bmfontier;
-using Bmfontier.Rasterizer;
-
-// ===== Find a font =====
-var fontPaths = new[]
-{
-    @"C:\Windows\Fonts\arial.ttf",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    "/System/Library/Fonts/Helvetica.ttc",
-    Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "tests", "Bmfontier.Tests", "Fixtures", "Roboto-Regular.ttf"),
-    Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "tests", "Bmfontier.Tests", "Fixtures", "Roboto-Regular.ttf")),
-};
-
-byte[]? fontData = null;
-string? usedPath = null;
-
-foreach (var p in fontPaths)
-{
-    var resolved = Path.GetFullPath(p);
-    if (File.Exists(resolved))
-    {
-        fontData = File.ReadAllBytes(resolved);
-        usedPath = resolved;
-        break;
-    }
-}
-
-if (fontData == null)
-{
-    Console.Error.WriteLine("ERROR: Could not find any font file. Searched:");
-    foreach (var p in fontPaths)
-        Console.Error.WriteLine($"  - {Path.GetFullPath(p)}");
-    return 1;
-}
-
-Console.WriteLine($"Using font: {usedPath}");
-Console.WriteLine();
+using Bmfontier.Output;
 
 // ===== Create output directory =====
-var outputDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "samples", "output"));
+var outputDir = Path.GetFullPath(Path.Combine(
+    AppContext.BaseDirectory, "..", "..", "..", "..", "..", "output", "comparison-inmemory"));
 Directory.CreateDirectory(outputDir);
 
-// ===== Example 1: Basic ASCII =====
-Console.WriteLine("Example 1: Basic ASCII font...");
-var basic = BmFont.Generate(fontData, 32);
-basic.ToFile(Path.Combine(outputDir, "01_basic"));
-Console.WriteLine($"  -> {basic.Model.Characters.Count} chars, {basic.Pages.Count} page(s)");
-
-// ===== Example 2: Large Size =====
-Console.WriteLine("Example 2: Large 64px font...");
-var large = BmFont.Generate(fontData, new FontGeneratorOptions
+// ===== Pre-load font data (one-time cost, not measured) =====
+var fonts = new Dictionary<string, byte[]>();
+var fontMap = new Dictionary<string, string>
 {
-    Size = 64,
-    Characters = CharacterSet.Ascii
-});
-large.ToFile(Path.Combine(outputDir, "02_large"));
-Console.WriteLine($"  -> {large.Model.Characters.Count} chars, {large.Pages.Count} page(s)");
+    ["Arial"] = @"C:\Windows\Fonts\arial.ttf",
+    ["Times New Roman"] = @"C:\Windows\Fonts\times.ttf",
+    ["Consolas"] = @"C:\Windows\Fonts\consola.ttf",
+};
 
-// ===== Example 3: With Outline =====
-Console.WriteLine("Example 3: Font with outline...");
-var outlined = BmFont.Builder()
-    .WithFont(fontData)
-    .WithSize(48)
-    .WithPostProcessor(new OutlinePostProcessor(3))
-    .Build();
-outlined.ToFile(Path.Combine(outputDir, "03_outline"));
-Console.WriteLine($"  -> {outlined.Model.Characters.Count} chars, outline=3px");
-
-// ===== Example 4: With Gradient =====
-Console.WriteLine("Example 4: Font with gold->red gradient...");
-var gradient = BmFont.Builder()
-    .WithFont(fontData)
-    .WithSize(48)
-    .WithGradient((255, 215, 0), (220, 20, 60))  // Gold -> Crimson
-    .Build();
-gradient.ToFile(Path.Combine(outputDir, "04_gradient"));
-Console.WriteLine($"  -> {gradient.Model.Characters.Count} chars, gradient applied");
-
-// ===== Example 5: Outline + Gradient Combined =====
-Console.WriteLine("Example 5: Outline + gradient combined...");
-var combo = BmFont.Builder()
-    .WithFont(fontData)
-    .WithSize(48)
-    .WithPostProcessor(new OutlinePostProcessor(2))
-    .WithGradient((100, 200, 255), (0, 50, 150))  // Light blue -> Dark blue
-    .Build();
-combo.ToFile(Path.Combine(outputDir, "05_outline_gradient"));
-Console.WriteLine($"  -> {combo.Model.Characters.Count} chars");
-
-// ===== Example 6: Extended ASCII =====
-Console.WriteLine("Example 6: Extended ASCII character set...");
-var extended = BmFont.Generate(fontData, new FontGeneratorOptions
+Console.WriteLine("Loading fonts...");
+foreach (var (name, path) in fontMap)
 {
-    Size = 24,
-    Characters = CharacterSet.ExtendedAscii
-});
-extended.ToFile(Path.Combine(outputDir, "06_extended"));
-Console.WriteLine($"  -> {extended.Model.Characters.Count} chars");
-
-// ===== Example 7: Skyline Packer =====
-Console.WriteLine("Example 7: Skyline packer comparison...");
-var skyline = BmFont.Builder()
-    .WithFont(fontData)
-    .WithSize(32)
-    .WithPackingAlgorithm(PackingAlgorithm.Skyline)
-    .Build();
-skyline.ToFile(Path.Combine(outputDir, "07_skyline"));
-Console.WriteLine($"  -> {skyline.Model.Characters.Count} chars, Skyline packer");
-
-// ===== Example 8: Channel Packing =====
-Console.WriteLine("Example 8: Channel-packed atlas (RGBA)...");
-var channelPacked = BmFont.Builder()
-    .WithFont(fontData)
-    .WithSize(32)
-    .WithChannelPacking()
-    .Build();
-channelPacked.ToFile(Path.Combine(outputDir, "08_channel_packed"));
-Console.WriteLine($"  -> {channelPacked.Model.Characters.Count} chars, packed={channelPacked.Model.Common.Packed}");
-
-// ===== Example 9: All Three Output Formats =====
-Console.WriteLine("Example 9: All output formats (text, XML, binary)...");
-var multi = BmFont.Generate(fontData, 32);
-File.WriteAllText(Path.Combine(outputDir, "09_text.fnt"), multi.ToString());
-File.WriteAllText(Path.Combine(outputDir, "09_xml.fnt"), multi.ToXml());
-File.WriteAllBytes(Path.Combine(outputDir, "09_binary.fnt"), multi.ToBinary());
-Console.WriteLine($"  -> 3 format files written");
-
-// ===== Example 10: Custom Character Set =====
-Console.WriteLine("Example 10: Custom characters only...");
-var custom = BmFont.Generate(fontData, new FontGeneratorOptions
-{
-    Size = 48,
-    Characters = CharacterSet.FromChars("Hello, World! 0123456789")
-});
-custom.ToFile(Path.Combine(outputDir, "10_custom_chars"));
-Console.WriteLine($"  -> {custom.Model.Characters.Count} unique chars");
-
-// ===== Summary =====
+    if (!File.Exists(path))
+    {
+        Console.Error.WriteLine($"  Font not found: {path}");
+        return 1;
+    }
+    fonts[name] = File.ReadAllBytes(path);
+    Console.WriteLine($"  {name}: {path}");
+}
 Console.WriteLine();
-Console.WriteLine($"All examples written to: {Path.GetFullPath(outputDir)}");
-Console.WriteLine("Open the .png files to see the atlas textures.");
-Console.WriteLine("Open the .fnt files to see the BMFont descriptors.");
+
+// ===== Define the 18 tests (matching test_comparison.bat) =====
+var tests = new (string Name, string Font, Action<FontGeneratorOptions> Configure, OutputFormat Format)[]
+{
+    ("Arial 16px", "Arial",
+        o => { o.Size = 16; o.MaxTextureSize = 256; },
+        OutputFormat.Text),
+
+    ("Arial 24px", "Arial",
+        o => { o.Size = 24; o.MaxTextureSize = 512; },
+        OutputFormat.Text),
+
+    ("Arial 32px", "Arial",
+        o => { o.Size = 32; o.MaxTextureSize = 512; },
+        OutputFormat.Text),
+
+    ("Arial 48px", "Arial",
+        o => { o.Size = 48; o.MaxTextureSize = 1024; },
+        OutputFormat.Text),
+
+    ("Arial 32px bold", "Arial",
+        o => { o.Size = 32; o.MaxTextureSize = 512; o.Bold = true; },
+        OutputFormat.Text),
+
+    ("Arial 32px italic", "Arial",
+        o => { o.Size = 32; o.MaxTextureSize = 512; o.Italic = true; },
+        OutputFormat.Text),
+
+    ("Arial 32px bold italic", "Arial",
+        o => { o.Size = 32; o.MaxTextureSize = 512; o.Bold = true; o.Italic = true; },
+        OutputFormat.Text),
+
+    ("Arial 32px padding=2", "Arial",
+        o => { o.Size = 32; o.MaxTextureSize = 512; o.Padding = new Padding(2); },
+        OutputFormat.Text),
+
+    ("Arial 32px spacing=4", "Arial",
+        o => { o.Size = 32; o.MaxTextureSize = 512; o.Spacing = new Spacing(4); },
+        OutputFormat.Text),
+
+    ("Arial 32px XML format", "Arial",
+        o => { o.Size = 32; o.MaxTextureSize = 512; },
+        OutputFormat.Xml),
+
+    ("Arial 32px binary format", "Arial",
+        o => { o.Size = 32; o.MaxTextureSize = 512; },
+        OutputFormat.Binary),
+
+    ("Arial 32px TGA texture", "Arial",
+        o => { o.Size = 32; o.MaxTextureSize = 512; o.TextureFormat = TextureFormat.Tga; },
+        OutputFormat.Text),
+
+    ("Arial 32px DDS texture", "Arial",
+        o => { o.Size = 32; o.MaxTextureSize = 512; o.TextureFormat = TextureFormat.Dds; },
+        OutputFormat.Text),
+
+    ("Arial 32px extended charset", "Arial",
+        o => { o.Size = 32; o.MaxTextureSize = 1024; o.Characters = CharacterSet.ExtendedAscii; },
+        OutputFormat.Text),
+
+    ("Times New Roman 32px", "Times New Roman",
+        o => { o.Size = 32; o.MaxTextureSize = 512; },
+        OutputFormat.Text),
+
+    ("Consolas 24px", "Consolas",
+        o => { o.Size = 24; o.MaxTextureSize = 256; },
+        OutputFormat.Text),
+
+    ("Arial 32px mono (no AA)", "Arial",
+        o => { o.Size = 32; o.MaxTextureSize = 512; o.AntiAlias = AntiAliasMode.None; },
+        OutputFormat.Text),
+
+    ("Arial 32px multi-page (128x128)", "Arial",
+        o => { o.Size = 32; o.MaxTextureSize = 128; },
+        OutputFormat.Text),
+};
+
+// ===== Run all tests =====
+Console.WriteLine($" #  {"Test",-35} {"Time",8}");
+Console.WriteLine($"--- {"".PadRight(35, '-')} {"".PadRight(8, '-')}");
+
+var totalSw = Stopwatch.StartNew();
+
+for (int i = 0; i < tests.Length; i++)
+{
+    var (name, font, configure, format) = tests[i];
+    var options = new FontGeneratorOptions { Characters = CharacterSet.Ascii };
+    configure(options);
+
+    var sw = Stopwatch.StartNew();
+    var result = BmFont.Generate(fonts[font], options);
+    result.ToFile(Path.Combine(outputDir, $"test-{i + 1:D2}"), format);
+    sw.Stop();
+
+    Console.WriteLine($"{i + 1,2}  {name,-35} {sw.ElapsedMilliseconds,5} ms");
+}
+
+totalSw.Stop();
+
+Console.WriteLine();
+Console.WriteLine($"--- {"".PadRight(35, '-')} {"".PadRight(8, '-')}");
+Console.WriteLine($"    {"TOTAL (18 generations)",-35} {totalSw.ElapsedMilliseconds,5} ms");
+Console.WriteLine();
+Console.WriteLine("=== All 18 comparison tests passed! ===");
 
 return 0;

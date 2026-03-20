@@ -19,6 +19,7 @@ public static class BmFont
     public static BmFontResult Generate(byte[] fontData, FontGeneratorOptions? options = null)
     {
         options ??= new FontGeneratorOptions();
+        var metrics = options.CollectMetrics ? new PipelineMetrics() : null;
 
         // 0. Auto-detect and decompress WOFF/WOFF2 to standard sfnt
         if (WoffDecompressor.IsWoff(fontData) || WoffDecompressor.IsWoff2(fontData))
@@ -35,6 +36,7 @@ public static class BmFont
         // The old auto-add OutlinePostProcessor path is no longer needed.
 
         // 1. Parse font
+        metrics?.Begin("FontParsing");
         var fontReader = options.FontReader ?? new TtfFontReader();
 
         // When using the built-in reader, pass codepoint hints for subsetting
@@ -46,8 +48,10 @@ public static class BmFont
         }
 
         var fontInfo = fontReader.ReadFont(fontData, options.FaceIndex);
+        metrics?.End();
 
         // 2. Resolve character set
+        metrics?.Begin("CharsetResolution");
         var codepoints = options.Characters.Resolve(fontInfo.AvailableCodepoints).ToList();
 
         // Ensure fallback character is included in the codepoint list.
@@ -57,6 +61,7 @@ public static class BmFont
             if (!codepoints.Contains(fbCodepoint))
                 codepoints.Add(fbCodepoint);
         }
+        metrics?.End();
 
         // 3. Rasterize glyphs
         var rasterizer = options.Rasterizer ?? new FreeTypeRasterizer();
@@ -118,9 +123,12 @@ public static class BmFont
                 ? rasterOptions with { Size = rasterOptions.Size * ssLevel }
                 : rasterOptions;
 
+            metrics?.Begin("Rasterization");
             var glyphs = rasterizer.RasterizeAll(codepoints, effectiveRasterOptions).ToList();
+            metrics?.End();
 
             // 3b. Height stretch — scale glyphs vertically before other post-processors.
+            metrics?.Begin("PostProcessing");
             if (options.HeightPercent != 100)
             {
                 var stretch = new HeightStretchPostProcessor(options.HeightPercent);
@@ -132,18 +140,22 @@ public static class BmFont
             {
                 glyphs = ApplyCustomGlyphs(glyphs, options.CustomGlyphs, codepoints);
             }
+            metrics?.End();
 
             // 4. Apply layered effects via compositor.
             // Built-in effects (gradient, outline, shadow) are generated independently
             // from the grayscale source and composited in fixed back-to-front order.
+            metrics?.Begin("EffectsCompositing");
             var effects = BuildEffects(options);
 
             if (effects.Count > 0)
                 glyphs = glyphs.Select(g => GlyphCompositor.Composite(g, effects)).ToList();
+            metrics?.End();
 
             // 4a. Apply custom post-processors (non-built-in) after compositor.
             // Built-in post-processors (Gradient/Outline/Shadow) are skipped here
             // because the compositor handles them via the effects system.
+            metrics?.Begin("PostProcessing");
             if (options.PostProcessors != null)
             {
                 foreach (var processor in options.PostProcessors)
@@ -154,19 +166,24 @@ public static class BmFont
                     glyphs = glyphs.Select(g => processor.Process(g)).ToList();
                 }
             }
+            metrics?.End();
 
             // 4b. Super sampling downscale (after post-processors, before packing)
+            metrics?.Begin("SuperSampleDownscale");
             if (ssLevel > 1)
             {
                 glyphs = glyphs.Select(g => SuperSampleDownscale(g, ssLevel)).ToList();
             }
+            metrics?.End();
 
             // 4c. Equalize cell heights — pad all glyphs to the maximum height
+            metrics?.Begin("CellEqualization");
             if (options.EqualizeCellHeights && glyphs.Count > 0)
             {
                 var maxHeight = glyphs.Max(g => g.Height);
                 glyphs = glyphs.Select(g => EqualizeCellHeight(g, maxHeight)).ToList();
             }
+            metrics?.End();
 
             // 4d. Collect failed codepoints (requested but not rasterized)
             var rasterizedCodepoints = new HashSet<int>(glyphs.Select(g => g.Codepoint));
@@ -198,10 +215,13 @@ public static class BmFont
                 EqualizedCellHeights = options.EqualizeCellHeights,
             };
 
+            metrics?.Begin("AtlasSizeEstimation");
             var (estWidth, estHeight) = AtlasSizeEstimator.Estimate(glyphRects, sizingOptions);
             pageWidth = estWidth;
             pageHeight = estHeight;
+            metrics?.End();
 
+            metrics?.Begin("AtlasPacking");
             if (options.AutofitTexture)
             {
                 // Verification pack: confirm the estimate fits on one page.
@@ -220,8 +240,10 @@ public static class BmFont
             }
 
             var packResult = packer.Pack(glyphRects, pageWidth, pageHeight);
+            metrics?.End();
 
             // 6. Build atlas pages
+            metrics?.Begin("AtlasEncoding");
             var encoder = options.AtlasEncoder ?? (options.TextureFormat switch
             {
                 TextureFormat.Tga => (IAtlasEncoder)new TgaEncoder(),
@@ -259,11 +281,14 @@ public static class BmFont
             {
                 pages = AtlasBuilder.Build(glyphs, packResult, padding, encoder);
             }
+            metrics?.End();
 
             // 7. Assemble BMFont model
+            metrics?.Begin("ModelAssembly");
             var model = BmFontModelBuilder.Build(fontInfo, glyphs, packResult, options, glyphChannels);
+            metrics?.End();
 
-            return new BmFontResult(model, pages, failedCodepoints);
+            return new BmFontResult(model, pages, failedCodepoints, metrics);
         }
         finally
         {

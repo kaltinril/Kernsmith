@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Bmfontier.Cli.Config;
 using Bmfontier.Cli.Utilities;
 using Bmfontier.Output;
@@ -88,6 +89,7 @@ internal sealed class GenerateCommand
                 MatchCharHeight = options.MatchCharHeight,
                 ColorFont = options.ColorFont,
                 ColorPaletteIndex = options.ColorPaletteIndex,
+                CollectMetrics = options.ShowProfile,
             };
 
             // Apply texture format if specified
@@ -171,6 +173,8 @@ internal sealed class GenerateCommand
             ConsoleOutput.WriteStdout($"Size: {options.Size}px, Charset: {options.CharsetPreset ?? "custom"}, Format: {options.OutputFormat.ToString().ToLowerInvariant()}");
             ConsoleOutput.WriteStdout($"Rasterizing {characters.Count} glyphs...");
 
+            var sw = options.ShowTime ? Stopwatch.StartNew() : null;
+
             BmFontResult result;
             if (options.SystemFontName != null)
                 result = BmFont.GenerateFromSystem(options.SystemFontName, genOptions);
@@ -182,7 +186,15 @@ internal sealed class GenerateCommand
 
             result.ToFile(outputPath, options.OutputFormat);
 
+            sw?.Stop();
+
             ConsoleOutput.WriteStdout("Done.");
+
+            if (sw != null)
+                Console.WriteLine($"Generated in {sw.ElapsedMilliseconds}ms");
+
+            if (options.ShowProfile && result.Metrics != null)
+                ConsoleOutput.WriteStdout(result.Metrics.ToString());
 
             // Save config if requested
             if (options.SaveConfigPath != null)
@@ -445,6 +457,12 @@ internal sealed class GenerateCommand
                 case "--dry-run":
                     options.DryRun = true;
                     break;
+                case "--time":
+                    options.ShowTime = true;
+                    break;
+                case "--profile":
+                    options.ShowProfile = true;
+                    break;
                 case "-v":
                 case "--verbose":
                     options.Verbose = true;
@@ -704,6 +722,8 @@ internal sealed class GenerateCommand
               --config <path>             Load settings from a .bmfc configuration file
               --save-config <path>        Save current settings to a .bmfc file
               --dry-run                   Show what would be generated without writing files
+              --time                      Print generation time (excludes CLI startup)
+              --profile                   Show per-stage pipeline timing breakdown
 
             Verbosity:
               -v, --verbose               Show detailed progress

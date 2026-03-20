@@ -75,6 +75,8 @@ internal sealed class CliOptions
     public string? ConfigPath { get; set; }
     public string? SaveConfigPath { get; set; }
     public bool DryRun { get; set; }
+    public bool ShowTime { get; set; }
+    public bool ShowProfile { get; set; }
     public bool Verbose { get; set; }
     public bool Quiet { get; set; }
 }

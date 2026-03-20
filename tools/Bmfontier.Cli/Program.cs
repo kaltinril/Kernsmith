@@ -23,6 +23,7 @@ return processedArgs switch
     [] or ["--help"] or ["-h"] => ShowHelp(),
     ["--version"] => ShowVersion(),
     ["generate", .. var rest] => GenerateCommand.Execute(rest),
+    ["benchmark", .. var rest] => BenchmarkCommand.Execute(rest),
     ["inspect", .. var rest] => InspectCommand.Execute(rest),
     ["convert", .. var rest] => ConvertCommand.Execute(rest),
     ["list-fonts", .. var rest] => ListFontsCommand.Execute(rest),
@@ -37,6 +38,7 @@ static int ShowHelp()
 
         Usage:
           bmfontier generate -f <font> -s <size> [options]
+          bmfontier benchmark -f <font> -s <size> [options]
           bmfontier inspect <path>
           bmfontier convert <input> -o <output> [--format <text|xml|binary>]
           bmfontier list-fonts [--filter <pattern>]
@@ -45,6 +47,7 @@ static int ShowHelp()
 
         Commands:
           generate      Generate BMFont files from a font
+          benchmark     Benchmark font generation performance
           inspect       Inspect an existing .fnt file
           convert       Convert between BMFont formats (text/xml/binary)
           list-fonts    List system-installed fonts
@@ -93,6 +96,8 @@ static int ShowHelp()
           --config <path>              Load settings from a .bmfc configuration file
           --save-config <path>         Save current settings to a .bmfc file
           --dry-run                    Show what would be generated without writing files
+          --time                       Print generation time (excludes CLI startup)
+          --profile                    Show per-stage pipeline timing breakdown
 
         Global Options:
           --help, -h    Show help

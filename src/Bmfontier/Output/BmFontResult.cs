@@ -19,11 +19,17 @@ public sealed class BmFontResult
     /// </summary>
     public IReadOnlyList<int> FailedCodepoints { get; }
 
-    internal BmFontResult(BmFontModel model, IReadOnlyList<AtlasPage> pages, IReadOnlyList<int>? failedCodepoints = null)
+    /// <summary>
+    /// Pipeline timing metrics. Only populated when <see cref="FontGeneratorOptions.CollectMetrics"/> is enabled.
+    /// </summary>
+    public PipelineMetrics? Metrics { get; }
+
+    internal BmFontResult(BmFontModel model, IReadOnlyList<AtlasPage> pages, IReadOnlyList<int>? failedCodepoints = null, PipelineMetrics? metrics = null)
     {
         Model = model;
         Pages = pages;
         FailedCodepoints = failedCodepoints ?? Array.Empty<int>();
+        Metrics = metrics;
     }
 
     /// <summary>
