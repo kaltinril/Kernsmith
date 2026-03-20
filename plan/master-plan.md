@@ -1,6 +1,6 @@
 # bmfontier -- Master Plan
 
-> **Status**: Phases 1-4 complete. Remaining items tracked in [plan-phase-future.md](plan-phase-future.md).
+> **Status**: Phases 1-7 complete. Active work tracked in numbered plan docs below.
 > **Date**: 2026-03-19
 
 ---
@@ -75,37 +75,42 @@ Output Layer
 
 ---
 
-## Sub-Documents
+## Active Plans
 
-| Document | Description |
-|----------|-------------|
-| [Data Types](plan-data-types.md) | **All shared types, interfaces, and error handling.** Single source of truth — other docs reference this. |
-| [Project Structure](plan-project-structure.md) | Solution layout, namespace mapping, dependencies, target framework, and licensing |
-| [API Design](plan-api-design.md) | Public API surface, builder pattern, configuration types (`FontGeneratorOptions`, `CharacterSet`), and code examples |
-| [Font Parsing](plan-font-parsing.md) | FreeTypeSharp usage, our TTF parser scope, GPOS parsing, implementation details |
-| [Rasterization](plan-rasterization.md) | Glyph rasterization pipeline, FreeTypeRasterizer implementation, memory management |
-| [Texture Packing](plan-texture-packing.md) | MaxRects/Skyline algorithms, multi-page strategy, atlas building |
-| [Output Formats](plan-output-formats.md) | BMFont model classes, text/XML/binary serialization, file output |
-| [Testing](plan-testing.md) | xUnit test strategy, concrete test fonts, golden data, validation criteria, CI |
-| [Implementation Order](plan-implementation-order.md) | **Phased task breakdown with dependencies and parallel groups.** Start here for building. |
-| [Future Phase](plan-phase-future.md) | **Deferred items from Phases 3-4 plus planned Phases 5-7.** |
-| [CLI Tool](plan-cli.md) | Full-featured CLI plan — BMFont.exe replacement with config files, inspect/convert commands |
-| [BMFont Parity](plan-bmfont-parity.md) | 15 missing features from BMFont.exe — per-channel config, super sampling, TGA, etc. |
-| [Extended Metadata](plan-extended-metadata.md) | How bmfontier stores SDF spread, gradient, shadow, and other metadata in .fnt files |
+Plans with remaining work, numbered by priority:
+
+| # | Document | Description | Status |
+|---|----------|-------------|--------|
+| 01 | [Optimal Atlas Sizing](01-optimal-atlas-sizing.md) | Mathematical atlas size prediction to replace brute-force trial-and-error | Implemented, potential refinements remain |
+| 02 | [Outline Overhaul](02-outline-overhaul.md) | EDT-based anti-aliased outlines, outline color, pipeline fix | Tier 1 (EDT) done; Tier 2 (FT_Stroker) disabled/broken |
+| 03 | [FT_Stroker Fix](03-ft-stroker-fix.md) | Fix compositing issues in the FT_Stroker vector outline path | Not started, blocked on investigation |
+| 04 | [Layered Rendering](04-layered-rendering.md) | Replace order-dependent post-processor chain with layered compositing | Not started |
 
 ---
 
-## Reference Documents
+## Completed Plans (archived in `done/`)
+
+All completed plan docs are archived in [`plan/done/`](done/). These cover Phases 1-7 and all deferred items that were subsequently completed.
 
 | Document | Description |
 |----------|-------------|
-| [Vision](bmfontier-vision.md) | Original project vision and goals |
-| [Library Comparison](../reference/font-library-comparison.md) | Evaluation of .NET font libraries |
-| [FreeTypeSharp Evaluation](../reference/freetypesharp-evaluation.md) | Detailed FreeTypeSharp capabilities and gaps |
-| [Texture Packing Reference](../reference/texture-packing-reference.md) | Rectangle packing algorithm research |
-| [BMFont Format Reference](../reference/bmfont-format-reference.md) | BMFont file format specification |
-| [TTF Font Reference](../reference/ttf-font-reference.md) | TrueType font format reference |
-| [Other Font Formats Reference](../reference/other-font-formats-reference.md) | WOFF, OTF, and other format details |
+| [Vision](done/bmfontier-vision.md) | Original project vision and goals |
+| [Data Types](done/plan-data-types.md) | All shared types, interfaces, and error handling (source of truth) |
+| [Project Structure](done/plan-project-structure.md) | Solution layout, namespace mapping, dependencies |
+| [API Design](done/plan-api-design.md) | Public API surface, builder pattern, configuration types |
+| [Font Parsing](done/plan-font-parsing.md) | FreeTypeSharp usage, TTF parser scope, GPOS parsing |
+| [Rasterization](done/plan-rasterization.md) | Glyph rasterization pipeline, FreeTypeRasterizer |
+| [Texture Packing](done/plan-texture-packing.md) | MaxRects/Skyline algorithms, multi-page strategy |
+| [Output Formats](done/plan-output-formats.md) | BMFont model classes, text/XML/binary serialization |
+| [Testing](done/plan-testing.md) | xUnit test strategy, test fonts, validation criteria |
+| [Implementation Order](done/plan-implementation-order.md) | Phased task breakdown (Phases 1-4) |
+| [Future Phase](done/plan-phase-future.md) | Deferred items from Phases 3-4 plus Phases 5-7 |
+| [CLI Tool](done/plan-cli.md) | Full CLI plan -- BMFont.exe replacement |
+| [BMFont Parity](done/plan-bmfont-parity.md) | 15 missing features from BMFont.exe |
+| [Color Fonts](done/plan-color-fonts.md) | COLRv0/CPAL, sbix, CBDT support |
+| [Font Subsetting](done/plan-font-subsetting.md) | Logical subsetting -- filter cmap/kern/GPOS |
+| [Extended Metadata](done/plan-extended-metadata.md) | SDF spread, gradient, shadow metadata in .fnt |
+| [Bug Fixes](done/plan-bug-fixes.md) | All applied bug fixes |
 
 ---
 
@@ -121,15 +126,40 @@ Additional output formats (XML, binary), Skyline packer, system font enumeration
 
 ### Phase 3 -- Ecosystem (COMPLETE)
 
-WOFF/WOFF2 decompression, channel packing, reference CLI tool, performance benchmarks. Completed 6 of 10 tasks. Incomplete items (color font support, font subsetting, NuGet publishing CI, CLI tests) moved to [plan-phase-future.md](plan-phase-future.md).
+WOFF/WOFF2 decompression, channel packing, reference CLI tool, performance benchmarks, color font support, font subsetting, NuGet publishing CI, CLI tests.
 
 ### Phase 4 -- Deferred / Future (COMPLETE)
 
-fvar table parser, BMFont reader (text/XML/binary), BmFont.Load() entry point, gradient post-processor. Completed 8 of 10 tasks. Incomplete items (variable font axis application, variable font tests) moved to [plan-phase-future.md](plan-phase-future.md). Variable font axis application is blocked on FreeTypeSharp lacking `FT_Set_Var_Design_Coordinates`.
+fvar table parser, BMFont reader (text/XML/binary), BmFont.Load() entry point, gradient post-processor, variable font axis API, variable font tests.
 
-### Future Phases
+### Phase 5 -- Full CLI Tool (COMPLETE)
 
-Incomplete items from Phases 3-4 plus planned future work are collected in **[plan-phase-future.md](plan-phase-future.md)**. This includes Phases 5 (Full CLI Tool), 6 (BMFont Parity Features), and 7 (Extended Metadata).
+Production-ready CLI with 5 commands (generate, inspect, convert, list-fonts, info), .bmfc config file support, and full option coverage.
+
+### Phase 6 -- BMFont Parity Features (COMPLETE)
+
+Separate texture W/H, TGA output, super sampling, fallback glyph, hinting toggle, force offsets to zero, equalize cell heights, autofit texture size, failed character reporting, shadow post-processor.
+
+### Phase 7 -- Extended Metadata (COMPLETE)
+
+bmfontier-specific metadata (SDF spread, gradient, shadow, outline, variable axes) stored inline in .fnt output across all three formats (text, XML, binary).
+
+### Active Work
+
+See **Active Plans** table above for remaining work items.
+
+---
+
+## Reference Documents
+
+| Document | Description |
+|----------|-------------|
+| [Library Comparison](../reference/font-library-comparison.md) | Evaluation of .NET font libraries |
+| [FreeTypeSharp Evaluation](../reference/freetypesharp-evaluation.md) | Detailed FreeTypeSharp capabilities and gaps |
+| [Texture Packing Reference](../reference/texture-packing-reference.md) | Rectangle packing algorithm research |
+| [BMFont Format Reference](../reference/bmfont-format-reference.md) | BMFont file format specification |
+| [TTF Font Reference](../reference/ttf-font-reference.md) | TrueType font format reference |
+| [Other Font Formats Reference](../reference/other-font-formats-reference.md) | WOFF, OTF, and other format details |
 
 ---
 
@@ -137,15 +167,15 @@ Incomplete items from Phases 3-4 plus planned future work are collected in **[pl
 
 | # | Question | Decision | Details |
 |---|----------|----------|---------|
-| 1 | **PNG encoding library** | **StbImageWriteSharp** (public domain) | Confirmed. See [plan-project-structure.md](plan-project-structure.md). |
-| 2 | **Target framework** | **net8.0** (current LTS) | .NET Standard 2.1 multi-targeting deferred to Phase 2. See [plan-project-structure.md](plan-project-structure.md). |
+| 1 | **PNG encoding library** | **StbImageWriteSharp** (public domain) | Confirmed. See [done/plan-project-structure.md](done/plan-project-structure.md). |
+| 2 | **Target framework** | **net8.0** (current LTS) | .NET Standard 2.1 multi-targeting deferred to Phase 2. See [done/plan-project-structure.md](done/plan-project-structure.md). |
 | 3 | **Project license** | **Proprietary** | See LICENSE file. |
 | 4 | **NuGet package name** | **Bmfontier** | Package ID `Bmfontier`, main API class `BmFont`. |
 | 5 | **FreeTypeSharp usage boundary** | Use everything it can do | Our parser only covers what FreeTypeSharp cannot (GPOS, OS/2, name, cmap). No duplication. |
 | 6 | **Unsafe code policy** | `AllowUnsafeBlocks` in main project | Isolated to FreeType interop (`FreeTypeRasterizer.cs`, `TtfFontReader.cs`). Rest is safe C#. |
-| 7 | **FreeType memory** | Manual lifecycle via `IDisposable` | Pin font data with `GCHandle`. Do NOT use `FreeTypeFaceFacade`. See [plan-rasterization.md](plan-rasterization.md). |
-| 8 | **Test framework** | **xUnit** + FluentAssertions | See [plan-testing.md](plan-testing.md). |
-| 9 | **Error handling** | Custom exception hierarchy | `FontParsingException`, `RasterizationException`, `AtlasPackingException`. See [plan-data-types.md](plan-data-types.md). |
+| 7 | **FreeType memory** | Manual lifecycle via `IDisposable` | Pin font data with `GCHandle`. Do NOT use `FreeTypeFaceFacade`. See [done/plan-rasterization.md](done/plan-rasterization.md). |
+| 8 | **Test framework** | **xUnit** + FluentAssertions | See [done/plan-testing.md](done/plan-testing.md). |
+| 9 | **Error handling** | Custom exception hierarchy | `FontParsingException`, `RasterizationException`, `AtlasPackingException`. See [done/plan-data-types.md](done/plan-data-types.md). |
 
 ---
 

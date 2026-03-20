@@ -26,7 +26,7 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 
 ### When Working on This Project
 
-1. **Read plan docs first** — `plan/plan-data-types.md` is the single source of truth for types and interfaces
+1. **Read plan docs first** — `plan/done/plan-data-types.md` is the single source of truth for types and interfaces
 2. **Follow existing patterns** — check 2-3 nearby files before writing new code
 3. **Never hardcode credentials** — use environment variables or `.env` + appropriate library
 4. **Test with real data** — test font is at `tests/Bmfontier.Tests/Fixtures/Roboto-Regular.ttf`
