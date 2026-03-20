@@ -111,6 +111,13 @@ public class FontGeneratorOptions
     /// </summary>
     public bool MatchCharHeight { get; set; }
 
+    /// <summary>
+    /// Hint for the atlas size estimator's expected packing efficiency (0.50 to 0.99).
+    /// Default 0.90 is tuned for MaxRects BSSF with font glyphs.
+    /// Clamped internally; lower values produce larger atlases with fewer multi-page fallbacks.
+    /// </summary>
+    internal float PackingEfficiencyHint { get; set; } = 0.90f;
+
     // Swappable components (null = use defaults)
     public IFontReader? FontReader { get; set; }
     public IRasterizer? Rasterizer { get; set; }

@@ -112,6 +112,7 @@ public sealed class BmFontBuilder
     }
 
     public BmFontBuilder WithMatchCharHeight(bool match = true) { _options.MatchCharHeight = match; return this; }
+    public BmFontBuilder WithPackingEfficiency(float efficiency) { _options.PackingEfficiencyHint = efficiency; return this; }
 
     public BmFontBuilder WithShadow(int offsetX = 2, int offsetY = 2, int blur = 0,
         (byte R, byte G, byte B)? color = null, float opacity = 1.0f)

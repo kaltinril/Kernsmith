@@ -176,51 +176,37 @@ public static class BmFont
 
             int pageWidth, pageHeight;
 
+            // Build sizing options from generator options.
+            var sizingOptions = new AtlasSizingOptions
+            {
+                PackingEfficiency = options.PackingEfficiencyHint,
+                PowerOfTwo = options.AutofitTexture ? true : options.PowerOfTwo,
+                AllowNonSquare = options.AutofitTexture || !options.PowerOfTwo,
+                MaxWidth = options.MaxTextureWidth,
+                MaxHeight = options.MaxTextureHeight,
+                ChannelPacking = options.ChannelPacking,
+                EqualizedCellHeights = options.EqualizeCellHeights,
+            };
+
+            var (estWidth, estHeight) = AtlasSizeEstimator.Estimate(glyphRects, sizingOptions);
+            pageWidth = estWidth;
+            pageHeight = estHeight;
+
             if (options.AutofitTexture)
             {
-                // Autofit: find smallest power-of-2 texture that fits all glyphs on one page.
-                int totalArea = glyphRects.Sum(r => r.Width * r.Height);
-                int startSize = NextPowerOfTwo((int)Math.Sqrt(totalArea));
-                startSize = Math.Max(startSize, 64);
-
-                pageWidth = startSize;
-                pageHeight = startSize;
-
-                // Try progressively larger sizes until everything fits on one page.
-                while (pageWidth <= options.MaxTextureWidth && pageHeight <= options.MaxTextureHeight)
+                // Verification pack: confirm the estimate fits on one page.
+                var verifyResult = packer.Pack(glyphRects, pageWidth, pageHeight);
+                if (verifyResult.PageCount > 1)
                 {
-                    try
-                    {
-                        var testResult = packer.Pack(glyphRects, pageWidth, pageHeight);
-                        if (testResult.PageCount <= 1) break;
-                    }
-                    catch (InvalidOperationException) { /* doesn't fit */ }
-
-                    // Double the smaller dimension first for efficient use.
+                    // One-step bump: double the smaller dimension (or next POT).
                     if (pageWidth <= pageHeight)
-                        pageWidth *= 2;
+                        pageWidth = sizingOptions.PowerOfTwo ? pageWidth * 2 : (int)(pageWidth * 1.5);
                     else
-                        pageHeight *= 2;
-                }
+                        pageHeight = sizingOptions.PowerOfTwo ? pageHeight * 2 : (int)(pageHeight * 1.5);
 
-                pageWidth = Math.Min(pageWidth, options.MaxTextureWidth);
-                pageHeight = Math.Min(pageHeight, options.MaxTextureHeight);
-            }
-            else
-            {
-                int totalArea = glyphRects.Sum(r => r.Width * r.Height);
-                int estSize;
-                if (options.PowerOfTwo)
-                {
-                    estSize = NextPowerOfTwo((int)Math.Sqrt(totalArea * 1.2));
+                    pageWidth = Math.Min(pageWidth, options.MaxTextureWidth);
+                    pageHeight = Math.Min(pageHeight, options.MaxTextureHeight);
                 }
-                else
-                {
-                    estSize = (int)Math.Ceiling(Math.Sqrt(totalArea * 1.2));
-                    estSize = Math.Max(estSize, 64);
-                }
-                pageWidth = Math.Clamp(estSize, 64, options.MaxTextureWidth);
-                pageHeight = Math.Clamp(estSize, 64, options.MaxTextureHeight);
             }
 
             var packResult = packer.Pack(glyphRects, pageWidth, pageHeight);
