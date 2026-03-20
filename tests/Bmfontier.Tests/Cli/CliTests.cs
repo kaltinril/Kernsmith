@@ -6,7 +6,7 @@ namespace Bmfontier.Tests.Cli;
 public class CliTests : IDisposable
 {
     private static readonly string ProjectPath = Path.GetFullPath(
-        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "samples", "Bmfontier.Cli", "Bmfontier.Cli.csproj"));
+        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "tools", "Bmfontier.Cli", "Bmfontier.Cli.csproj"));
 
     private static readonly string FontPath = Path.Combine(
         AppContext.BaseDirectory, "Fixtures", "Roboto-Regular.ttf");

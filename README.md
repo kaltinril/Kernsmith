@@ -262,7 +262,7 @@ var model2 = BmFont.LoadModel(fntTextContent);
 
 ## CLI Tool
 
-A reference command-line tool is included in `samples/Bmfontier.Cli/`. See the [CLI README](samples/Bmfontier.Cli/README.md) for usage.
+A reference command-line tool is included in `tools/Bmfontier.Cli/`. See the [CLI README](tools/Bmfontier.Cli/README.md) for usage.
 
 ## Advanced Features
 

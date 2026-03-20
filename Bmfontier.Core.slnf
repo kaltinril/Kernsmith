@@ -1,0 +1,12 @@
+{
+  "solution": {
+    "path": "Bmfontier.sln",
+    "projects": [
+      "src\\Bmfontier\\Bmfontier.csproj",
+      "tests\\Bmfontier.Tests\\Bmfontier.Tests.csproj",
+      "tools\\Bmfontier.Cli\\Bmfontier.Cli.csproj",
+      "benchmarks\\Bmfontier.Benchmarks\\Bmfontier.Benchmarks.csproj",
+      "samples\\Bmfontier.Samples\\Bmfontier.Samples.csproj"
+    ]
+  }
+}

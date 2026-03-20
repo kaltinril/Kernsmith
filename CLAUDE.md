@@ -10,8 +10,10 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 |--------|---------|
 | `src/Bmfontier/` | **Main library** — the NuGet package |
 | `tests/Bmfontier.Tests/` | **xUnit + FluentAssertions test suite** |
-| `samples/Bmfontier.Cli/` | **Reference CLI tool** |
+| `tools/Bmfontier.Cli/` | **CLI tool** for bitmap font generation |
+| `samples/Bmfontier.Samples/` | **Usage examples** |
 | `benchmarks/Bmfontier.Benchmarks/` | **BenchmarkDotNet performance benchmarks** |
+| `apps/` | **Future app projects** — Ui, Web, Mobile (placeholders) |
 | `plan/` | **Technical plan docs** — active plans; completed plans archived in `plan/done/` |
 | `reference/` | **Reference docs** — TTF spec, BMFont format, algorithm research |
 
@@ -33,7 +35,7 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 
 ### Key Conventions
 
-- **Language**: C# / .NET 8.0 (LTS)
+- **Language**: C# / .NET 10.0
 - **Nullable**: enabled
 - **Unsafe**: allowed only in FreeType interop (`FreeTypeRasterizer.cs`, `FreeTypeNative.cs`)
 - **Testing**: xUnit + FluentAssertions

@@ -46,12 +46,12 @@ internal static class FileWriter
         {
             case OutputFormat.Text:
                 var text = textFormatter.FormatText(model);
-                File.WriteAllText(fntPath, text, Encoding.UTF8);
+                File.WriteAllText(fntPath, text, new UTF8Encoding(false));
                 break;
 
             case OutputFormat.Xml:
                 var xml = new XmlFormatter().FormatText(model);
-                File.WriteAllText(fntPath, xml, Encoding.UTF8);
+                File.WriteAllText(fntPath, xml, new UTF8Encoding(false));
                 break;
 
             case OutputFormat.Binary:

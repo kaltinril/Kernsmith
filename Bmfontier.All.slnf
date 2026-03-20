@@ -1,0 +1,15 @@
+{
+  "solution": {
+    "path": "Bmfontier.sln",
+    "projects": [
+      "src\\Bmfontier\\Bmfontier.csproj",
+      "tests\\Bmfontier.Tests\\Bmfontier.Tests.csproj",
+      "tools\\Bmfontier.Cli\\Bmfontier.Cli.csproj",
+      "benchmarks\\Bmfontier.Benchmarks\\Bmfontier.Benchmarks.csproj",
+      "samples\\Bmfontier.Samples\\Bmfontier.Samples.csproj",
+      "apps\\Bmfontier.Ui\\Bmfontier.Ui.csproj",
+      "apps\\Bmfontier.Web\\Bmfontier.Web.csproj",
+      "apps\\Bmfontier.Mobile\\Bmfontier.Mobile.csproj"
+    ]
+  }
+}

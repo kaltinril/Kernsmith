@@ -8,4 +8,6 @@
     <ProjectReference Include="..\..\src\Bmfontier\Bmfontier.csproj" />
   </ItemGroup>
 
+  <!-- TODO: Add MonoGame or MAUI packages when platform targets are decided -->
+
 </Project>

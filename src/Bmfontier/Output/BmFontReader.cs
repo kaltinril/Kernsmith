@@ -17,6 +17,10 @@ public static class BmFontReader
     /// </summary>
     public static BmFontModel ReadText(string fntContent)
     {
+        // Strip UTF-8 BOM if present (defense-in-depth for files written with BOM).
+        if (fntContent.Length > 0 && fntContent[0] == '\uFEFF')
+            fntContent = fntContent[1..];
+
         InfoBlock? info = null;
         CommonBlock? common = null;
         var pages = new List<PageEntry>();

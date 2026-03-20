@@ -68,6 +68,13 @@ public static class BmFont
                     "Channel packing and color font rendering cannot be used together. " +
                     "Color glyphs are RGBA and cannot be packed into individual channels.");
 
+            // Guard: channel packing is incompatible with effects (outline, gradient, shadow).
+            // Effects convert grayscale glyphs to RGBA, which cannot be packed into individual channels.
+            if (options.ChannelPacking && HasAnyEffects(options))
+                throw new InvalidOperationException(
+                    "Channel packing cannot be combined with effects (outline, gradient, shadow). " +
+                    "Effects produce RGBA glyphs which cannot be packed into individual channels.");
+
             rasterizer.LoadFont(fontData, options.FaceIndex);
 
             // Apply variable font axes if the user specified any and the font has fvar data.
@@ -356,6 +363,27 @@ public static class BmFont
     /// Creates a fluent builder for BMFont generation.
     /// </summary>
     public static BmFontBuilder Builder() => new();
+
+    /// <summary>
+    /// Returns true if the options specify any built-in effects (outline, gradient, shadow)
+    /// either via direct properties or via PostProcessors.
+    /// </summary>
+    private static bool HasAnyEffects(FontGeneratorOptions options)
+    {
+        if (options.Outline > 0 || options.HasGradient || options.HasShadow)
+            return true;
+
+        if (options.PostProcessors != null)
+        {
+            foreach (var pp in options.PostProcessors)
+            {
+                if (pp is OutlinePostProcessor or GradientPostProcessor or ShadowPostProcessor)
+                    return true;
+            }
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// Builds the list of layered effects from FontGeneratorOptions and any
