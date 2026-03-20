@@ -70,6 +70,23 @@ public static class BmFont
 
             var rasterOptions = RasterOptions.FromGeneratorOptions(options);
 
+            // Match char height: two-pass rendering to scale font so tallest glyph
+            // exactly matches the requested pixel height.
+            if (options.MatchCharHeight)
+            {
+                var probeGlyphs = rasterizer.RasterizeAll(codepoints, rasterOptions).ToList();
+                if (probeGlyphs.Count > 0)
+                {
+                    var maxRenderedHeight = probeGlyphs.Max(g => g.Height);
+                    if (maxRenderedHeight > 0 && maxRenderedHeight != rasterOptions.Size)
+                    {
+                        var adjustedSize = rasterOptions.Size * rasterOptions.Size / maxRenderedHeight;
+                        if (adjustedSize < 1) adjustedSize = 1;
+                        rasterOptions = rasterOptions with { Size = adjustedSize };
+                    }
+                }
+            }
+
             // Super sampling: rasterize at Nx size, then downscale after post-processors.
             var ssLevel = Math.Clamp(options.SuperSampleLevel, 1, 4);
             var effectiveRasterOptions = ssLevel > 1
@@ -77,6 +94,19 @@ public static class BmFont
                 : rasterOptions;
 
             var glyphs = rasterizer.RasterizeAll(codepoints, effectiveRasterOptions).ToList();
+
+            // 3b. Height stretch — scale glyphs vertically before other post-processors.
+            if (options.HeightPercent != 100)
+            {
+                var stretch = new HeightStretchPostProcessor(options.HeightPercent);
+                glyphs = glyphs.Select(g => stretch.Process(g)).ToList();
+            }
+
+            // 3c. Custom glyph replacement — substitute rasterized glyphs with user images.
+            if (options.CustomGlyphs is { Count: > 0 })
+            {
+                glyphs = ApplyCustomGlyphs(glyphs, options.CustomGlyphs, codepoints);
+            }
 
             // 4. Apply post-processors
             if (options.PostProcessors != null)
@@ -157,13 +187,34 @@ public static class BmFont
             var packResult = packer.Pack(glyphRects, pageWidth, pageHeight);
 
             // 6. Build atlas pages
-            var encoder = options.AtlasEncoder ?? (options.TextureFormat == TextureFormat.Tga
-                ? (IAtlasEncoder)new TgaEncoder()
-                : new StbPngEncoder());
+            var encoder = options.AtlasEncoder ?? (options.TextureFormat switch
+            {
+                TextureFormat.Tga => (IAtlasEncoder)new TgaEncoder(),
+                TextureFormat.Dds => new DdsEncoder(),
+                _ => new StbPngEncoder()
+            });
             IReadOnlyList<AtlasPage> pages;
             IReadOnlyDictionary<int, int>? glyphChannels = null;
 
-            if (options.ChannelPacking)
+            if (options.Channels is { } channelConfig && !channelConfig.IsDefault)
+            {
+                // Per-channel compositing: generate outline glyphs if any channel needs them.
+                IReadOnlyList<RasterizedGlyph>? outlineGlyphs = null;
+                var needsOutline = channelConfig.Alpha is ChannelContent.Outline or ChannelContent.GlyphAndOutline
+                    || channelConfig.Red is ChannelContent.Outline or ChannelContent.GlyphAndOutline
+                    || channelConfig.Green is ChannelContent.Outline or ChannelContent.GlyphAndOutline
+                    || channelConfig.Blue is ChannelContent.Outline or ChannelContent.GlyphAndOutline;
+
+                if (needsOutline)
+                {
+                    var outlineWidth = options.Outline > 0 ? options.Outline : 1;
+                    var outlineProcessor = new OutlinePostProcessor(outlineWidth);
+                    outlineGlyphs = glyphs.Select(g => outlineProcessor.Process(g)).ToList();
+                }
+
+                pages = ChannelCompositor.Build(glyphs, outlineGlyphs, packResult, padding, channelConfig, encoder);
+            }
+            else if (options.ChannelPacking)
             {
                 var channelResult = ChannelPackedAtlasBuilder.Build(glyphs, packResult, padding, encoder);
                 pages = channelResult.Pages;
@@ -396,6 +447,65 @@ public static class BmFont
             Pitch = newPitch,
             Metrics = glyph.Metrics,
             Format = glyph.Format
+        };
+    }
+
+    /// <summary>
+    /// Applies custom glyph images, replacing rasterized glyphs or adding new ones.
+    /// </summary>
+    private static List<RasterizedGlyph> ApplyCustomGlyphs(
+        List<RasterizedGlyph> glyphs,
+        Dictionary<int, CustomGlyph> customGlyphs,
+        List<int> codepoints)
+    {
+        var result = new List<RasterizedGlyph>(glyphs.Count);
+        var replaced = new HashSet<int>();
+
+        foreach (var glyph in glyphs)
+        {
+            if (customGlyphs.TryGetValue(glyph.Codepoint, out var custom))
+            {
+                result.Add(CreateFromCustom(glyph.Codepoint, glyph.GlyphIndex, custom));
+                replaced.Add(glyph.Codepoint);
+            }
+            else
+            {
+                result.Add(glyph);
+            }
+        }
+
+        // Add custom glyphs for codepoints that weren't in the rasterized set.
+        foreach (var (cp, custom) in customGlyphs)
+        {
+            if (!replaced.Contains(cp))
+            {
+                result.Add(CreateFromCustom(cp, 0, custom));
+            }
+        }
+
+        return result;
+    }
+
+    private static RasterizedGlyph CreateFromCustom(int codepoint, int glyphIndex, CustomGlyph custom)
+    {
+        var bpp = custom.Format == PixelFormat.Rgba32 ? 4 : 1;
+        var advance = custom.XAdvance ?? custom.Width;
+
+        return new RasterizedGlyph
+        {
+            Codepoint = codepoint,
+            GlyphIndex = glyphIndex,
+            BitmapData = custom.PixelData,
+            Width = custom.Width,
+            Height = custom.Height,
+            Pitch = custom.Width * bpp,
+            Metrics = new Font.Models.GlyphMetrics(
+                BearingX: 0,
+                BearingY: custom.Height,
+                Advance: advance,
+                Width: custom.Width,
+                Height: custom.Height),
+            Format = custom.Format
         };
     }
 

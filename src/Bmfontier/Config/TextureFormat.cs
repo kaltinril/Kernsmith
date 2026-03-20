@@ -9,5 +9,8 @@ public enum TextureFormat
     Png = 0,
 
     /// <summary>TGA (Targa) format — uncompressed, simple header + raw pixels.</summary>
-    Tga = 1
+    Tga = 1,
+
+    /// <summary>DDS (DirectDraw Surface) format — uncompressed, for DirectX-based engines.</summary>
+    Dds = 2
 }

@@ -82,6 +82,37 @@ public sealed class BmFontBuilder
     public BmFontBuilder WithEqualizeCellHeights(bool equalize = true) { _options.EqualizeCellHeights = equalize; return this; }
     public BmFontBuilder WithForceOffsetsToZero(bool force = true) { _options.ForceOffsetsToZero = force; return this; }
 
+    public BmFontBuilder WithChannels(ChannelConfig config) { _options.Channels = config; return this; }
+    public BmFontBuilder WithChannels(
+        ChannelContent alpha = ChannelContent.Glyph,
+        ChannelContent red = ChannelContent.Glyph,
+        ChannelContent green = ChannelContent.Glyph,
+        ChannelContent blue = ChannelContent.Glyph,
+        bool invertAlpha = false,
+        bool invertRed = false,
+        bool invertGreen = false,
+        bool invertBlue = false)
+    {
+        _options.Channels = new ChannelConfig(alpha, red, green, blue, invertAlpha, invertRed, invertGreen, invertBlue);
+        return this;
+    }
+
+    public BmFontBuilder WithHeightPercent(int percent) { _options.HeightPercent = percent; return this; }
+
+    public BmFontBuilder WithCustomGlyph(int codepoint, CustomGlyph glyph)
+    {
+        _options.CustomGlyphs ??= new Dictionary<int, CustomGlyph>();
+        _options.CustomGlyphs[codepoint] = glyph;
+        return this;
+    }
+
+    public BmFontBuilder WithCustomGlyph(int codepoint, int width, int height, byte[] pixelData, PixelFormat format = PixelFormat.Rgba32, int? xAdvance = null)
+    {
+        return WithCustomGlyph(codepoint, new CustomGlyph(width, height, pixelData, format, xAdvance));
+    }
+
+    public BmFontBuilder WithMatchCharHeight(bool match = true) { _options.MatchCharHeight = match; return this; }
+
     public BmFontBuilder WithShadow(int offsetX = 2, int offsetY = 2, int blur = 0,
         (byte R, byte G, byte B)? color = null, float opacity = 1.0f)
     {

@@ -38,6 +38,17 @@ internal static class BmFontModelBuilder
         // When channel packing is enabled, mark the font as packed and indicate
         // that each channel holds glyph data (value 0 = glyph data per BMFont spec).
         var packed = options.ChannelPacking;
+
+        // Per-channel configuration: write the channel content values to the common block.
+        int alphaChnl = 0, redChnl = 0, greenChnl = 0, blueChnl = 0;
+        if (options.Channels is { } channelConfig && !channelConfig.IsDefault)
+        {
+            alphaChnl = (int)channelConfig.Alpha;
+            redChnl = (int)channelConfig.Red;
+            greenChnl = (int)channelConfig.Green;
+            blueChnl = (int)channelConfig.Blue;
+        }
+
         var common = new CommonBlock(
             LineHeight: lineHeight,
             Base: baseLine,
@@ -45,12 +56,17 @@ internal static class BmFontModelBuilder
             ScaleH: packResult.PageHeight,
             Pages: packResult.PageCount,
             Packed: packed,
-            AlphaChnl: packed ? 0 : 0,
-            RedChnl: packed ? 0 : 0,
-            GreenChnl: packed ? 0 : 0,
-            BlueChnl: packed ? 0 : 0);
+            AlphaChnl: alphaChnl,
+            RedChnl: redChnl,
+            GreenChnl: greenChnl,
+            BlueChnl: blueChnl);
 
-        var textureExtension = options.TextureFormat == TextureFormat.Tga ? ".tga" : ".png";
+        var textureExtension = options.TextureFormat switch
+        {
+            TextureFormat.Tga => ".tga",
+            TextureFormat.Dds => ".dds",
+            _ => ".png"
+        };
         var pages = new List<PageEntry>();
         for (int i = 0; i < packResult.PageCount; i++)
         {

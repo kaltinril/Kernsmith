@@ -86,6 +86,31 @@ public class FontGeneratorOptions
     /// </summary>
     public bool ForceOffsetsToZero { get; set; }
 
+    /// <summary>
+    /// Per-channel configuration for the atlas texture.
+    /// When set, each RGBA channel can independently hold glyph data, outline data,
+    /// combined glyph+outline, zero, or one. Produces RGBA output.
+    /// </summary>
+    public ChannelConfig? Channels { get; set; }
+
+    /// <summary>
+    /// Vertical height scaling percentage. 100 = no change. Values above 100 stretch
+    /// glyphs taller; values below 100 squish them shorter.
+    /// </summary>
+    public int HeightPercent { get; set; } = 100;
+
+    /// <summary>
+    /// Custom glyph images keyed by codepoint. These replace or add glyphs in the
+    /// generated font. Users must supply pre-decoded raw pixel data.
+    /// </summary>
+    public Dictionary<int, CustomGlyph>? CustomGlyphs { get; set; }
+
+    /// <summary>
+    /// When true, adjusts the font size so the tallest rendered character exactly matches
+    /// the requested pixel height, rather than using the typographic em size.
+    /// </summary>
+    public bool MatchCharHeight { get; set; }
+
     // Swappable components (null = use defaults)
     public IFontReader? FontReader { get; set; }
     public IRasterizer? Rasterizer { get; set; }
