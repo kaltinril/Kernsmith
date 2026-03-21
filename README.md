@@ -1,6 +1,19 @@
-# KernSmith
+<p align="center">
+  <img src="assets/icon.png" alt="KernSmith" width="128" height="128">
+</p>
 
-Cross-platform .NET library that generates BMFont-compatible bitmap font atlases from TTF/OTF/WOFF files. In-memory by default, no temp files required.
+<h1 align="center">KernSmith</h1>
+
+<p align="center">
+  Cross-platform .NET library that generates BMFont-compatible bitmap font atlases from TTF/OTF/WOFF files.<br>
+  In-memory by default, no temp files required.
+</p>
+
+<p align="center">
+  <a href="LICENSE">Proprietary License</a> &middot;
+  <a href="CHANGELOG.md">Changelog</a> &middot;
+  <a href="samples/KernSmith.Samples/">Samples</a>
+</p>
 
 ## Features
 
