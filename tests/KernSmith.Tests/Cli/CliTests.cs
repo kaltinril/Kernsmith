@@ -39,6 +39,8 @@ public class CliTests : IDisposable
         psi.ArgumentList.Add("run");
         psi.ArgumentList.Add("--project");
         psi.ArgumentList.Add(ProjectPath);
+        psi.ArgumentList.Add("--framework");
+        psi.ArgumentList.Add("net10.0");
         psi.ArgumentList.Add("--");
 
         foreach (var arg in args)
