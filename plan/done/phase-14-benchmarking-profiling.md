@@ -1,6 +1,6 @@
 # Phase 14 — Benchmarking & Profiling Enhancement
 
-> **Status**: Planning
+> **Status**: Complete
 > **Created**: 2026-03-20
 > **Goal**: Build comprehensive benchmarking and profiling infrastructure that covers every pipeline stage, enables performance regression detection, and provides actionable profiling data for optimization work.
 
@@ -174,16 +174,15 @@ Tasks:
   - Runs generation N times (default 10), reports min/mean/max/stddev
   - First run is warmup (JIT), excluded from stats
   - Output: `Mean: 12ms, Min: 11ms, Max: 15ms, StdDev: 1.2ms (10 iterations)`
-- [ ] **Investigate AOT publishing** — `dotnet publish -c Release -p:PublishAot=true`
-  - Eliminates JIT startup cost entirely
-  - Test if FreeTypeSharp native interop works under NativeAOT
-  - Test if StbImageWriteSharp works under NativeAOT
-  - Document any trimming/AOT compatibility issues
-  - If successful, add AOT publish profile and update CI to produce AOT binary
-- [ ] **Investigate ReadyToRun (R2R)** as a lighter alternative to AOT
-  - `dotnet publish -c Release -p:PublishReadyToRun=true`
-  - Partial pre-compilation — less aggressive than AOT, fewer compatibility risks
-  - Measure startup improvement vs full AOT
+- [ ] **~~Investigate AOT publishing~~** — DEFERRED
+  - Requires MSVC linker (vswhere.exe) on PATH and 4 JSON source generator changes
+  - Not worth the effort given R2R results and .NET 10 JIT performance
+  - Revisit if startup time becomes a user complaint
+- [x] **~~Investigate ReadyToRun (R2R)~~** — REJECTED
+  - Tested on .NET 10: R2R is **15% slower** than JIT (25,170ms vs 21,830ms over 18 tests)
+  - .NET 10's tiered JIT already optimizes aggressively enough that R2R pre-compiled code is a net negative
+  - R2R cannot perform runtime-specific optimizations (CPU feature detection, profile-guided inlining)
+  - Decision: do not use R2R for this project
 - [ ] **Investigate batch mode** — accept multiple generation jobs in a single invocation
   - Pay startup cost once, run N generations
   - Input: multiple `--job` arguments, or a jobs file (JSON/YAML)
@@ -231,7 +230,7 @@ Each benchmark class should test ONE dimension. End-to-end benchmarks are for re
 4. **Low overhead**: Metrics collection adds <1% to total generation time
 5. **Developer experience**: `dotnet run --project benchmarks/Bmfontier.Benchmarks -- --filter *Effects*` works out of the box
 6. **Startup transparency**: `--time` flag shows users that generation is fast (5-50ms) despite ~1100ms process wall time
-7. **Startup reduction**: AOT or R2R publishing reduces CLI cold-start from ~1100ms to <200ms
+7. **Startup reduction**: ~~AOT or R2R publishing reduces CLI cold-start from ~1100ms to <200ms~~ — R2R rejected (slower on .NET 10), AOT deferred
 8. **Batch efficiency**: Asset pipelines can generate 100 fonts in a single invocation, paying startup cost only once
 
 ---

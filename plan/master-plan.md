@@ -1,6 +1,6 @@
 # bmfontier -- Master Plan
 
-> **Status**: Phases 1-11 complete. Phase 12 (Pre-Ship Polish) in planning. Phase 13 (WASM) researched. Phase 14 (Benchmarking) planned.
+> **Status**: Phases 1-11, 13-14 complete. Phase 12 (Pre-Ship Polish) is the only remaining phase.
 > **Date**: 2026-03-20
 
 ---
@@ -80,8 +80,6 @@ Output Layer
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
 | 12 | [Pre-Ship Polish](phase-12-pre-ship-polish.md) | Security hardening, test coverage gaps, NuGet packaging, API polish, FT_Stroker fix | Planning |
-| 13 | [WASM Rasterization](phase-13-wasm-rasterization.md) | FreeTypeSharp WASM alternatives investigation | Research Complete |
-| 14 | [Benchmarking & Profiling](phase-14-benchmarking-profiling.md) | Comprehensive benchmarking, stage-level profiling, CI regression detection | Planning |
 
 ---
 
@@ -100,6 +98,8 @@ Output Layer
 | 09 | [Outline Overhaul](done/phase-09-outline-overhaul.md) | EDT-based anti-aliased outlines with outline color support |
 | 10 | [Layered Rendering](done/phase-10-layered-rendering.md) | IGlyphEffect compositing replacing order-dependent post-processor chain |
 | 11 | [Solution Restructure](done/phase-11-solution-restructure.md) | Multi-project foundation, net10.0 migration, CLI promotion, app scaffolding |
+| 13 | [WASM Rasterization](done/phase-13-wasm-rasterization.md) | FreeTypeSharp WASM alternatives investigation (research only) |
+| 14 | [Benchmarking & Profiling](done/phase-14-benchmarking-profiling.md) | 50+ benchmarks, PipelineMetrics, CLI --time/--profile, benchmark command |
 
 ### Topical Plan Docs (archived in `done/`)
 
@@ -168,8 +168,8 @@ Security hardening (10 items), test coverage gaps (~30 new tests), NuGet package
 ### Phase 13 — WASM Rasterization (RESEARCH COMPLETE)
 Investigation of FreeTypeSharp WASM alternatives. Recommendation: server-side rasterization first, then SkiaSharpRasterizer for client-side if needed. IRasterizer abstraction is clean enough to support swapping.
 
-### Phase 14 — Benchmarking & Profiling (PLANNING)
-Comprehensive benchmark suite covering all pipeline stages, stage-level profiling infrastructure, memory/allocation analysis, CI regression detection, CLI profiling commands.
+### Phase 14 — Benchmarking & Profiling (COMPLETE)
+50+ benchmarks across 7 classes, PipelineMetrics with stage-level timing, CLI --time/--profile flags, benchmark command, CI workflow. R2R tested and rejected (15% slower on .NET 10). AOT deferred.
 
 ---
 
