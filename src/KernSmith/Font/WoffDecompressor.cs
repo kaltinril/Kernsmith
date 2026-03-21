@@ -63,6 +63,11 @@ internal static class WoffDecompressor
         var numTables = BinaryPrimitives.ReadUInt16BigEndian(woffData.Slice(12));
         var totalSfntSize = (int)BinaryPrimitives.ReadUInt32BigEndian(woffData.Slice(16));
 
+        const int MaxSfntSize = 100 * 1024 * 1024; // 100 MB
+        if (totalSfntSize > MaxSfntSize)
+            throw new FontParsingException(
+                $"WOFF totalSfntSize ({totalSfntSize} bytes) exceeds the maximum allowed size ({MaxSfntSize} bytes).");
+
         // Validate table directory fits
         var tableDirEnd = WoffHeaderSize + numTables * WoffTableDirEntrySize;
         if (tableDirEnd > woffData.Length)

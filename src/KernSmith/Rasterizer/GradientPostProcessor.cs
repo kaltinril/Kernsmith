@@ -1,33 +1,51 @@
 namespace KernSmith.Rasterizer;
 
 /// <summary>
-/// Post-processor that applies a color gradient to glyph bitmaps at any angle,
-/// converting them from grayscale to RGBA.
+/// Applies a two-color linear gradient across each glyph at a configurable angle. Converts grayscale glyphs to RGBA.
 /// </summary>
 public sealed class GradientPostProcessor : IGlyphPostProcessor
 {
+    /// <summary>Start color red (0-255).</summary>
     public byte StartR { get; }
+
+    /// <summary>Start color green (0-255).</summary>
     public byte StartG { get; }
+
+    /// <summary>Start color blue (0-255).</summary>
     public byte StartB { get; }
+
+    /// <summary>End color red (0-255).</summary>
     public byte EndR { get; }
+
+    /// <summary>End color green (0-255).</summary>
     public byte EndG { get; }
+
+    /// <summary>End color blue (0-255).</summary>
     public byte EndB { get; }
 
     /// <summary>
-    /// Gradient angle in degrees. 0 = left-to-right, 90 = top-to-bottom,
+    /// Angle of the gradient in degrees. 0 = left-to-right, 90 = top-to-bottom,
     /// 180 = right-to-left, 270 = bottom-to-top.
     /// </summary>
     public float AngleDegrees { get; }
 
     /// <summary>
-    /// Controls where the midpoint of the gradient falls (0.0 to 1.0).
-    /// Default 0.5 = even blend. Lower values push the start color further
-    /// (e.g., 0.1 = 90% start color, 10% transition to end color).
-    /// Higher values push the end color further
-    /// (e.g., 0.9 = 10% transition from start, 90% end color).
+    /// Position of the 50% blend point along the gradient, from 0.0 to 1.0. Default 0.5.
+    /// Lower values shift the blend toward the start color; higher values toward the end color.
     /// </summary>
     public float Midpoint { get; }
 
+    /// <summary>
+    /// Creates a gradient effect with the given colors, angle, and midpoint.
+    /// </summary>
+    /// <param name="startR">Start color red.</param>
+    /// <param name="startG">Start color green.</param>
+    /// <param name="startB">Start color blue.</param>
+    /// <param name="endR">End color red.</param>
+    /// <param name="endG">End color green.</param>
+    /// <param name="endB">End color blue.</param>
+    /// <param name="angleDegrees">Angle in degrees. Default 90 = top-to-bottom.</param>
+    /// <param name="midpoint">Blend midpoint, 0.0 to 1.0. Default 0.5.</param>
     public GradientPostProcessor(
         byte startR, byte startG, byte startB,
         byte endR, byte endG, byte endB,
@@ -41,8 +59,12 @@ public sealed class GradientPostProcessor : IGlyphPostProcessor
     }
 
     /// <summary>
-    /// Creates a gradient with configurable angle and midpoint.
+    /// Creates a gradient post-processor from two RGB color tuples.
     /// </summary>
+    /// <param name="startColor">Start color as (R, G, B).</param>
+    /// <param name="endColor">End color as (R, G, B).</param>
+    /// <param name="angleDegrees">Angle in degrees. Default 90 = top-to-bottom.</param>
+    /// <param name="midpoint">Blend midpoint, 0.0 to 1.0. Default 0.5.</param>
     public static GradientPostProcessor Create(
         (byte R, byte G, byte B) startColor,
         (byte R, byte G, byte B) endColor,
@@ -52,6 +74,7 @@ public sealed class GradientPostProcessor : IGlyphPostProcessor
                endColor.R, endColor.G, endColor.B,
                angleDegrees, midpoint);
 
+    /// <inheritdoc />
     public RasterizedGlyph Process(RasterizedGlyph glyph)
     {
         // Skip RGBA glyphs (e.g., color emoji) — they already have color data.

@@ -5,13 +5,13 @@ namespace KernSmith.Output.Model;
 /// </summary>
 public sealed class BmFontModel
 {
-    /// <summary>Font metadata.</summary>
+    /// <summary>Font metadata and generation settings.</summary>
     public required InfoBlock Info { get; init; }
 
     /// <summary>Common metrics shared across all glyphs.</summary>
     public required CommonBlock Common { get; init; }
 
-    /// <summary>Atlas page filenames.</summary>
+    /// <summary>Atlas texture page entries with filenames.</summary>
     public required IReadOnlyList<PageEntry> Pages { get; init; }
 
     /// <summary>Per-character glyph entries.</summary>
@@ -20,6 +20,6 @@ public sealed class BmFontModel
     /// <summary>Kerning pair adjustments.</summary>
     public IReadOnlyList<KerningEntry> KerningPairs { get; init; } = Array.Empty<KerningEntry>();
 
-    /// <summary>Extended kernsmith-specific metadata (null when not present).</summary>
+    /// <summary>KernSmith-specific extended metadata, or null if not present.</summary>
     public ExtendedMetadata? Extended { get; init; }
 }

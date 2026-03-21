@@ -1,12 +1,11 @@
 namespace KernSmith.Output.Model;
 
 /// <summary>
-/// Extended metadata for kernsmith-specific generation settings
-/// that do not fit in the standard BMFont format.
+/// KernSmith-specific metadata for generation settings that are not part of the standard BMFont format.
 /// </summary>
 public sealed class ExtendedMetadata
 {
-    /// <summary>Library version that generated the font.</summary>
+    /// <summary>KernSmith library version that generated this font.</summary>
     public required string GeneratorVersion { get; init; }
 
     /// <summary>SDF spread value, if SDF mode was used.</summary>
@@ -36,10 +35,10 @@ public sealed class ExtendedMetadata
     /// <summary>Variable font axis values used during generation.</summary>
     public IReadOnlyDictionary<string, float>? VariationAxes { get; init; }
 
-    /// <summary>Whether color font rendering was used.</summary>
+    /// <summary>True if color font rendering (COLR/CPAL) was enabled during generation.</summary>
     public bool? ColorFont { get; init; }
 
-    /// <summary>Fallback character codepoint for missing glyphs, if configured.</summary>
+    /// <summary>Unicode codepoint of the fallback character for missing glyphs, if configured.</summary>
     public int? FallbackCharacter { get; init; }
 
     /// <summary>

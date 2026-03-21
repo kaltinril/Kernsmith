@@ -145,13 +145,13 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
                                 FaceIndex = faceIndex
                             });
                         }
-                        catch
+                        catch (Exception ex) when (ex is FontParsingException or IOException or UnauthorizedAccessException)
                         {
                             // Skip faces that can't be parsed
                         }
                     }
                 }
-                catch
+                catch (Exception ex) when (ex is FontParsingException or IOException or UnauthorizedAccessException)
                 {
                     // Skip files that can't be read or parsed
                 }

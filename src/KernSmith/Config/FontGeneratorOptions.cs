@@ -1,23 +1,33 @@
 using KernSmith.Atlas;
 using KernSmith.Font;
+using KernSmith.Output;
 using KernSmith.Rasterizer;
 
 namespace KernSmith;
 
 /// <summary>
-/// Configuration options for BMFont generation.
+/// All the settings for generating a BMFont. Sensible defaults are provided.
 /// </summary>
 public class FontGeneratorOptions
 {
+    /// <summary>Font size in pixels (default 32).</summary>
     public int Size { get; set; } = 32;
+
+    /// <summary>Character set to include in the generated font.</summary>
     public CharacterSet Characters { get; set; } = CharacterSet.Ascii;
+
+    /// <summary>If true, applies synthetic bold.</summary>
     public bool Bold { get; set; }
+
+    /// <summary>If true, applies synthetic italic.</summary>
     public bool Italic { get; set; }
+
+    /// <summary>Anti-aliasing mode. Default is grayscale.</summary>
     public AntiAliasMode AntiAlias { get; set; } = AntiAliasMode.Grayscale;
 
     /// <summary>
-    /// Convenience property that sets both <see cref="MaxTextureWidth"/> and <see cref="MaxTextureHeight"/>.
-    /// Reading returns <see cref="MaxTextureWidth"/>.
+    /// Shortcut to set both MaxTextureWidth and MaxTextureHeight at once.
+    /// Reading returns MaxTextureWidth.
     /// </summary>
     public int MaxTextureSize
     {
@@ -31,10 +41,19 @@ public class FontGeneratorOptions
     /// <summary>Maximum atlas texture height in pixels (default 1024).</summary>
     public int MaxTextureHeight { get; set; } = 1024;
 
+    /// <summary>Padding around each glyph in the atlas.</summary>
     public Padding Padding { get; set; } = new Padding(0, 0, 0, 0);
+
+    /// <summary>Spacing between glyphs in the atlas.</summary>
     public Spacing Spacing { get; set; } = new Spacing(1, 1);
+
+    /// <summary>Algorithm used for packing glyphs into atlas pages.</summary>
     public PackingAlgorithm PackingAlgorithm { get; set; } = PackingAlgorithm.MaxRects;
+
+    /// <summary>If true, includes kerning pairs in the output (default true).</summary>
     public bool Kerning { get; set; } = true;
+
+    /// <summary>Outline thickness in pixels. 0 = no outline.</summary>
     public int Outline { get; set; }
 
     /// <summary>Outline color red channel (default 0 = black).</summary>
@@ -45,82 +64,87 @@ public class FontGeneratorOptions
 
     /// <summary>Outline color blue channel (default 0 = black).</summary>
     public byte OutlineB { get; set; }
+
+    /// <summary>If true, generates a signed distance field (SDF) font.</summary>
     public bool Sdf { get; set; }
+
+    /// <summary>If true, atlas dimensions are rounded up to powers of two (default true).</summary>
     public bool PowerOfTwo { get; set; } = true;
+
+    /// <summary>Rendering DPI (default 72). 72 DPI is standard for screen rendering.</summary>
     public int Dpi { get; set; } = 72;
+
+    /// <summary>Face index for font collections (TTC/OTC). 0 = first face.</summary>
     public int FaceIndex { get; set; }
+
+    /// <summary>If true, packs multiple glyphs into separate RGBA channels for smaller textures.</summary>
     public bool ChannelPacking { get; set; }
+
+    /// <summary>If true, renders color font glyphs (COLR/CPAL tables, like emoji fonts).</summary>
     public bool ColorFont { get; set; }
+
+    /// <summary>Which CPAL color palette to use for color fonts. 0 = default palette.</summary>
     public int ColorPaletteIndex { get; set; }
+
+    /// <summary>Variable font axis values, keyed by tag. For example: { "wght", 700 } for bold weight.</summary>
     public Dictionary<string, float>? VariationAxes { get; set; }
 
     /// <summary>
-    /// Super sampling level (1-4). When greater than 1, glyphs are rasterized
-    /// at Nx size then downscaled using a box filter for smoother edges.
+    /// Super sampling level (1-4). Higher values render at Nx size then
+    /// downscale for smoother edges. 1 = no super sampling.
     /// </summary>
     public int SuperSampleLevel { get; set; } = 1;
 
     /// <summary>
-    /// Fallback character codepoint to display for missing glyphs.
-    /// When set, included in the BMFont output. Common values: '?' (63) or '\uFFFD' (65533).
+    /// Character to show for missing glyphs. Common choices: '?' or '\uFFFD'.
     /// </summary>
     public char? FallbackCharacter { get; set; }
 
-    /// <summary>
-    /// Texture format for atlas output. Default is PNG.
-    /// </summary>
+    /// <summary>Texture format for atlas output (PNG, TGA, or DDS). Default is PNG.</summary>
     public TextureFormat TextureFormat { get; set; } = TextureFormat.Png;
 
     /// <summary>
-    /// When true, FreeType hinting is enabled for crisp rendering at small sizes.
-    /// When false, glyphs are rendered without hinting for smoother curves.
+    /// If true, enables FreeType hinting for crisp small text.
+    /// If false, renders without hinting for smoother curves.
     /// </summary>
     public bool EnableHinting { get; set; } = true;
 
     /// <summary>
-    /// When true, automatically find the smallest power-of-two texture size that fits all glyphs.
-    /// Overrides <see cref="MaxTextureWidth"/> and <see cref="MaxTextureHeight"/> with the fitted size.
+    /// If true, picks the smallest power-of-two texture that fits all glyphs.
+    /// Overrides MaxTextureWidth/MaxTextureHeight.
     /// </summary>
     public bool AutofitTexture { get; set; }
 
     /// <summary>
-    /// When true, all character cells in the atlas are padded to the same height.
-    /// YOffset is adjusted so all characters align to a common baseline.
+    /// If true, pads all glyph cells to the same height and aligns them to a common baseline.
     /// </summary>
     public bool EqualizeCellHeights { get; set; }
 
     /// <summary>
-    /// When true, sets all xoffset and yoffset values to 0 in the output.
-    /// Useful for monospace/grid-based text rendering.
+    /// If true, zeroes out all xoffset/yoffset values. Useful for monospace or grid-based rendering.
     /// </summary>
     public bool ForceOffsetsToZero { get; set; }
 
     /// <summary>
-    /// Per-channel configuration for the atlas texture.
-    /// When set, each RGBA channel can independently hold glyph data, outline data,
-    /// combined glyph+outline, zero, or one. Produces RGBA output.
+    /// Per-channel control over what goes into each RGBA channel (glyph, outline, both, zero, or one).
     /// </summary>
     public ChannelConfig? Channels { get; set; }
 
     /// <summary>
-    /// Vertical height scaling percentage. 100 = no change. Values above 100 stretch
-    /// glyphs taller; values below 100 squish them shorter.
+    /// Vertical height scaling. 100 = normal, 150 = 50% taller, 75 = 25% shorter.
     /// </summary>
     public int HeightPercent { get; set; } = 100;
 
     /// <summary>
-    /// Custom glyph images keyed by codepoint. These replace or add glyphs in the
-    /// generated font. Users must supply pre-decoded raw pixel data.
+    /// Custom glyph images keyed by character code. These replace or add glyphs.
+    /// You must supply raw pixel data (not encoded PNG/etc).
     /// </summary>
     public Dictionary<int, CustomGlyph>? CustomGlyphs { get; set; }
 
     /// <summary>
-    /// When true, adjusts the font size so the tallest rendered character exactly matches
-    /// the requested pixel height, rather than using the typographic em size.
+    /// If true, scales the font so the tallest character exactly matches the requested pixel size.
     /// </summary>
     public bool MatchCharHeight { get; set; }
-
-    // --- Gradient effect properties ---
 
     /// <summary>Gradient start (top) color red channel.</summary>
     public byte? GradientStartR { get; set; }
@@ -146,10 +170,8 @@ public class FontGeneratorOptions
     /// <summary>Gradient midpoint bias (0.0 to 1.0, default 0.5).</summary>
     public float GradientMidpoint { get; set; } = 0.5f;
 
-    /// <summary>Whether a gradient has been configured.</summary>
+    /// <summary>True if gradient start and end colors are both set.</summary>
     internal bool HasGradient => GradientStartR.HasValue && GradientEndR.HasValue;
-
-    // --- Shadow effect properties ---
 
     /// <summary>Shadow horizontal offset in pixels (positive = right).</summary>
     public int ShadowOffsetX { get; set; }
@@ -172,26 +194,30 @@ public class FontGeneratorOptions
     /// <summary>Shadow blur radius. 0 = hard shadow.</summary>
     public int ShadowBlur { get; set; }
 
-    /// <summary>Whether a shadow has been configured.</summary>
+    /// <summary>True if any shadow offset or blur is set.</summary>
     internal bool HasShadow => ShadowOffsetX != 0 || ShadowOffsetY != 0 || ShadowBlur > 0;
 
     /// <summary>
-    /// Hint for the atlas size estimator's expected packing efficiency (0.50 to 0.99).
-    /// Default 0.90 is tuned for MaxRects BSSF with font glyphs.
-    /// Clamped internally; lower values produce larger atlases with fewer multi-page fallbacks.
+    /// Expected packing efficiency (0.50 to 0.99). Lower values waste more space but
+    /// reduce the chance of needing multiple atlas pages. Default 0.90.
     /// </summary>
     internal float PackingEfficiencyHint { get; set; } = 0.90f;
 
-    // Swappable components (null = use defaults)
+    /// <summary>Custom font reader. When null, uses the built-in TTF parser.</summary>
     public IFontReader? FontReader { get; set; }
+
+    /// <summary>Custom rasterizer. When null, uses FreeType.</summary>
     public IRasterizer? Rasterizer { get; set; }
+
+    /// <summary>Custom atlas packer. When null, uses the PackingAlgorithm setting.</summary>
     public IAtlasPacker? Packer { get; set; }
+
+    /// <summary>Custom atlas encoder. When null, uses the TextureFormat setting.</summary>
     public IAtlasEncoder? AtlasEncoder { get; set; }
+
+    /// <summary>Extra post-processors to run on each glyph after rasterization.</summary>
     public IReadOnlyList<IGlyphPostProcessor>? PostProcessors { get; set; }
 
-    /// <summary>
-    /// When true, collects timing data for each pipeline stage.
-    /// Results are available via <see cref="BmFontResult.Metrics"/>.
-    /// </summary>
+    /// <summary>If true, records how long each pipeline stage takes. Check BmFontResult.Metrics for results.</summary>
     public bool CollectMetrics { get; set; }
 }

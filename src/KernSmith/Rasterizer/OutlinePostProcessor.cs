@@ -4,9 +4,8 @@ using KernSmith.Font.Models;
 namespace KernSmith.Rasterizer;
 
 /// <summary>
-/// Post-processor that adds an anti-aliased outline (border) around glyphs
-/// using a Euclidean Distance Transform. Supports configurable outline color
-/// and accepts both grayscale and RGBA input.
+/// Adds a colored outline (border) around each glyph. Works with both grayscale and RGBA glyphs.
+/// The outline is anti-aliased for smooth edges.
 /// </summary>
 public sealed class OutlinePostProcessor : IGlyphPostProcessor
 {
@@ -20,6 +19,13 @@ public sealed class OutlinePostProcessor : IGlyphPostProcessor
     internal byte OutlineG => _outlineG;
     internal byte OutlineB => _outlineB;
 
+    /// <summary>
+    /// Creates an outline effect with the given thickness and color.
+    /// </summary>
+    /// <param name="outlineWidth">Thickness in pixels.</param>
+    /// <param name="outlineR">Outline color red (0-255). Default is black.</param>
+    /// <param name="outlineG">Outline color green (0-255).</param>
+    /// <param name="outlineB">Outline color blue (0-255).</param>
     public OutlinePostProcessor(int outlineWidth, byte outlineR = 0, byte outlineG = 0, byte outlineB = 0)
     {
         _outlineWidth = outlineWidth;
@@ -28,6 +34,7 @@ public sealed class OutlinePostProcessor : IGlyphPostProcessor
         _outlineB = outlineB;
     }
 
+    /// <inheritdoc />
     public RasterizedGlyph Process(RasterizedGlyph glyph)
     {
         if (_outlineWidth <= 0 || glyph.BitmapData.Length == 0)

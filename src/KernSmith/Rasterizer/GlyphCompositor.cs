@@ -9,7 +9,7 @@ namespace KernSmith.Rasterizer;
 internal static class GlyphCompositor
 {
     /// <summary>
-    /// Generates all layers from effects and composites them back-to-front.
+    /// Applies all effects to a source glyph and composites the resulting layers into a single RGBA bitmap.
     /// </summary>
     public static RasterizedGlyph Composite(
         RasterizedGlyph sourceGlyph,

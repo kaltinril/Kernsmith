@@ -20,24 +20,33 @@ internal sealed class FreeTypeRasterizer : IRasterizer
 
     public unsafe void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0)
     {
-        _library = new FreeTypeLibrary();
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
-        // Pin a copy of the font data so FreeType can access it for the lifetime of the face.
-        var fontBytes = fontData.ToArray();
-        _pinnedFontData = GCHandle.Alloc(fontBytes, GCHandleType.Pinned);
+        try
+        {
+            _library = new FreeTypeLibrary();
 
-        FT_FaceRec_* face;
-        var error = FT.FT_New_Memory_Face(
-            _library.Native,
-            (byte*)_pinnedFontData.AddrOfPinnedObject(),
-            (IntPtr)fontBytes.Length,
-            (IntPtr)faceIndex,
-            &face);
+            // Pin a copy of the font data so FreeType can access it for the lifetime of the face.
+            var fontBytes = fontData.ToArray();
+            _pinnedFontData = GCHandle.Alloc(fontBytes, GCHandleType.Pinned);
 
-        if (error != FT_Error.FT_Err_Ok)
-            throw new FreeTypeException(error);
+            FT_FaceRec_* face;
+            var error = FT.FT_New_Memory_Face(
+                _library.Native,
+                (byte*)_pinnedFontData.AddrOfPinnedObject(),
+                (IntPtr)fontBytes.Length,
+                (IntPtr)faceIndex,
+                &face);
 
-        _face = face;
+            if (error != FT_Error.FT_Err_Ok)
+                throw new FreeTypeException(error);
+
+            _face = face;
+        }
+        catch (Exception ex) when (ex is not FontParsingException and not ObjectDisposedException)
+        {
+            throw new FontParsingException($"Failed to load font: {ex.Message}", ex);
+        }
     }
 
     /// <summary>
@@ -106,6 +115,8 @@ internal sealed class FreeTypeRasterizer : IRasterizer
 
     public unsafe RasterizedGlyph? RasterizeGlyph(int codepoint, RasterOptions options)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         if (_face == null || _library == null)
             throw new InvalidOperationException("Font not loaded. Call LoadFont first.");
 
@@ -399,6 +410,8 @@ internal sealed class FreeTypeRasterizer : IRasterizer
 
     public IReadOnlyList<RasterizedGlyph> RasterizeAll(IEnumerable<int> codepoints, RasterOptions options)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         var results = new List<RasterizedGlyph>();
         foreach (var cp in codepoints)
         {
@@ -423,16 +436,26 @@ internal sealed class FreeTypeRasterizer : IRasterizer
         if (_disposed) return;
         _disposed = true;
 
-        if (_face != null)
+        try
         {
-            FT.FT_Done_Face(_face);
-            _face = null;
+            if (_face != null)
+            {
+                FT.FT_Done_Face(_face);
+                _face = null;
+            }
         }
-
-        _library?.Dispose();
-        _library = null;
-
-        if (_pinnedFontData.IsAllocated)
-            _pinnedFontData.Free();
+        finally
+        {
+            try
+            {
+                _library?.Dispose();
+                _library = null;
+            }
+            finally
+            {
+                if (_pinnedFontData.IsAllocated)
+                    _pinnedFontData.Free();
+            }
+        }
     }
 }

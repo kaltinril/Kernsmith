@@ -1,7 +1,7 @@
 namespace KernSmith.Font.Models;
 
 /// <summary>
-/// Per-glyph metrics in pixels (post-rasterization).
+/// Per-glyph positioning metrics in pixels, computed during rasterization.
 /// </summary>
 public readonly record struct GlyphMetrics(
     int BearingX,

@@ -3,25 +3,48 @@ using System.Diagnostics;
 namespace KernSmith;
 
 /// <summary>
-/// Records timing data for each stage of the font generation pipeline.
-/// Populated when <see cref="FontGeneratorOptions.CollectMetrics"/> is enabled.
+/// Timing breakdown for each stage of font generation.
+/// Enable with <see cref="FontGeneratorOptions.CollectMetrics"/>.
 /// </summary>
 public sealed class PipelineMetrics
 {
     private readonly Stopwatch _stopwatch = new();
     private string? _currentStage;
 
+    /// <summary>Time reading and parsing the font file.</summary>
     public TimeSpan FontParsing { get; private set; }
+
+    /// <summary>Time matching requested characters to what the font has.</summary>
     public TimeSpan CharsetResolution { get; private set; }
+
+    /// <summary>Time rendering glyphs to bitmaps.</summary>
     public TimeSpan Rasterization { get; private set; }
+
+    /// <summary>Time applying effects (outline, gradient, shadow).</summary>
     public TimeSpan EffectsCompositing { get; private set; }
+
+    /// <summary>Time running custom post-processors.</summary>
     public TimeSpan PostProcessing { get; private set; }
+
+    /// <summary>Time downscaling super-sampled glyphs.</summary>
     public TimeSpan SuperSampleDownscale { get; private set; }
+
+    /// <summary>Time padding glyphs to equal cell heights.</summary>
     public TimeSpan CellEqualization { get; private set; }
+
+    /// <summary>Time estimating optimal atlas dimensions.</summary>
     public TimeSpan AtlasSizeEstimation { get; private set; }
+
+    /// <summary>Time packing glyphs into atlas pages.</summary>
     public TimeSpan AtlasPacking { get; private set; }
+
+    /// <summary>Time encoding atlas textures to PNG/TGA/DDS.</summary>
     public TimeSpan AtlasEncoding { get; private set; }
+
+    /// <summary>Time building the final BMFont data model.</summary>
     public TimeSpan ModelAssembly { get; private set; }
+
+    /// <summary>Total elapsed time across all stages.</summary>
     public TimeSpan Total { get; private set; }
 
     internal void Begin(string stage)
@@ -54,9 +77,7 @@ public sealed class PipelineMetrics
         _currentStage = null;
     }
 
-    /// <summary>
-    /// Returns a formatted summary of all stage timings.
-    /// </summary>
+    /// <summary>Prints a table of all stage timings with percentages.</summary>
     public override string ToString()
     {
         var stages = new (string Name, TimeSpan Time)[]

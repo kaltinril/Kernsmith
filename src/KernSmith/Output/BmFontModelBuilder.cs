@@ -156,12 +156,7 @@ internal static class BmFontModelBuilder
             {
                 if (pp is OutlinePostProcessor outline)
                 {
-                    // The OutlinePostProcessor stores the width in a private field.
-                    // We can read it via the constructor parameter that was passed.
-                    var field = typeof(OutlinePostProcessor).GetField("_outlineWidth",
-                        BindingFlags.NonPublic | BindingFlags.Instance);
-                    if (field != null)
-                        outlineThickness = (int?)field.GetValue(outline);
+                    outlineThickness = outline.OutlineWidth;
                 }
                 else if (pp is GradientPostProcessor gradient)
                 {

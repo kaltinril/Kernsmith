@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Xml;
 using System.Xml.Linq;
 using KernSmith.Output.Model;
 
@@ -99,7 +100,9 @@ public static class BmFontReader
     /// </summary>
     public static BmFontModel ReadXml(string fntContent)
     {
-        var doc = XDocument.Parse(fntContent);
+        var settings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit };
+        using var reader = XmlReader.Create(new StringReader(fntContent), settings);
+        var doc = XDocument.Load(reader);
         var root = doc.Root ?? throw new FormatException("BMFont XML: missing root element.");
 
         // The root should be <font>

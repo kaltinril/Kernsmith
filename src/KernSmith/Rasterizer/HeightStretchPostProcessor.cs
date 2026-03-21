@@ -3,20 +3,23 @@ using KernSmith.Font.Models;
 namespace KernSmith.Rasterizer;
 
 /// <summary>
-/// Post-processor that scales glyph bitmaps vertically by a percentage.
-/// A value of 100 means no change; 120 stretches glyphs to 120% height.
-/// Uses bilinear interpolation for smooth scaling.
+/// Scales glyph height by a percentage. 100 = normal, 120 = 20% taller, 80 = 20% shorter.
 /// </summary>
 public sealed class HeightStretchPostProcessor : IGlyphPostProcessor
 {
-    /// <summary>Height percentage (100 = no change).</summary>
+    /// <summary>Target height as a percentage. 100 = no change.</summary>
     public int HeightPercent { get; }
 
+    /// <summary>
+    /// Creates a height stretch effect.
+    /// </summary>
+    /// <param name="heightPercent">Height percentage (100 = normal, 120 = 20% taller). Minimum is 10.</param>
     public HeightStretchPostProcessor(int heightPercent)
     {
         HeightPercent = Math.Max(10, heightPercent);
     }
 
+    /// <inheritdoc />
     public RasterizedGlyph Process(RasterizedGlyph glyph)
     {
         if (HeightPercent == 100 || glyph.Width == 0 || glyph.Height == 0 || glyph.BitmapData.Length == 0)

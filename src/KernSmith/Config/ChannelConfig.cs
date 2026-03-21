@@ -15,7 +15,7 @@ public sealed record ChannelConfig(
     bool InvertBlue = false)
 {
     /// <summary>
-    /// Returns true when all channels are set to Glyph with no inversion (default behavior).
+    /// True when all channels hold glyph data with no inversion (the default configuration).
     /// </summary>
     public bool IsDefault =>
         Alpha == ChannelContent.Glyph &&

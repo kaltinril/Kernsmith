@@ -118,11 +118,9 @@ internal static unsafe class FreeTypeNative
         rows = Marshal.ReadInt32(bitmapGlyph, bitmapOffset);        // unsigned int rows
         width = Marshal.ReadInt32(bitmapGlyph, bitmapOffset + 4);   // unsigned int width
         pitch = Marshal.ReadInt32(bitmapGlyph, bitmapOffset + 8);   // int pitch
-        buffer = Marshal.ReadIntPtr(bitmapGlyph, bitmapOffset + 8 + ptrSize); // byte* buffer (after pitch, padded)
 
-        // On 64-bit: pitch is at +12 within FT_Bitmap, buffer at +16 (pitch(4) + 4pad + ptr)
-        // Actually FT_Bitmap layout: rows(4) + width(4) + pitch(4) + buffer(ptr, aligned)
-        // So buffer offset = 8 + roundup(4, ptrSize) = 8 + 8 on 64bit = 16, or 8 + 4 on 32bit = 12
+        // FT_Bitmap layout: rows(4) + width(4) + pitch(4) + buffer(ptr, aligned)
+        // buffer offset = 8 + roundup(4, ptrSize) = 8 + 8 on 64bit = 16, or 8 + 4 on 32bit = 12
         if (ptrSize == 8)
             buffer = Marshal.ReadIntPtr(bitmapGlyph, bitmapOffset + 16); // 4+4+4+pad4 = 16
         else

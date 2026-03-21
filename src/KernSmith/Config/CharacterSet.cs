@@ -1,7 +1,7 @@
 namespace KernSmith;
 
 /// <summary>
-/// Represents a set of Unicode codepoints to include in the generated font.
+/// Defines which Unicode characters to include in the generated bitmap font.
 /// </summary>
 public class CharacterSet
 {
@@ -12,31 +12,23 @@ public class CharacterSet
         _codepoints = new HashSet<int>(codepoints);
     }
 
-    // --- Predefined sets ---
-
-    /// <summary>
-    /// Printable ASCII characters: U+0020..U+007E (95 characters).
-    /// </summary>
+    /// <summary>Printable ASCII characters (space through tilde, 95 chars).</summary>
     public static CharacterSet Ascii { get; } = FromRanges((0x0020, 0x007E));
 
-    /// <summary>
-    /// Extended ASCII characters: U+0020..U+00FF (224 characters).
-    /// </summary>
+    /// <summary>Extended ASCII characters including accented Latin (224 chars).</summary>
     public static CharacterSet ExtendedAscii { get; } = FromRanges((0x0020, 0x00FF));
 
-    /// <summary>
-    /// Latin characters: ASCII + Latin Extended-A (U+0100..U+017F) + Latin Extended-B (U+0180..U+024F).
-    /// </summary>
+    /// <summary>ASCII plus Latin Extended-A and Extended-B blocks.</summary>
     public static CharacterSet Latin { get; } = FromRanges(
         (0x0020, 0x007E),
         (0x0100, 0x017F),
         (0x0180, 0x024F));
 
-    // --- Factory methods ---
-
     /// <summary>
-    /// Creates a character set from one or more inclusive codepoint ranges.
+    /// Creates a character set from one or more (start, end) character code ranges.
+    /// For example, <c>(0x0020, 0x007E)</c> covers printable ASCII.
     /// </summary>
+    /// <param name="ranges">One or more (start, end) ranges, both ends included.</param>
     public static CharacterSet FromRanges(params (int start, int end)[] ranges)
     {
         var codepoints = new HashSet<int>();
@@ -51,10 +43,13 @@ public class CharacterSet
     }
 
     /// <summary>
-    /// Creates a character set from the unique codepoints in a string.
+    /// Creates a character set from the unique characters in a string.
+    /// For example, <c>FromChars("ABCabc123")</c> includes exactly those 9 characters.
     /// </summary>
+    /// <param name="characters">The characters to include.</param>
     public static CharacterSet FromChars(string characters)
     {
+        ArgumentNullException.ThrowIfNull(characters);
         var codepoints = new HashSet<int>();
         for (int i = 0; i < characters.Length; i++)
         {
@@ -73,19 +68,16 @@ public class CharacterSet
         return new CharacterSet(codepoints);
     }
 
-    /// <summary>
-    /// Creates a character set from an explicit list of codepoints.
-    /// </summary>
+    /// <summary>Creates a character set from an explicit list of Unicode character codes.</summary>
+    /// <param name="codepoints">The character codes to include.</param>
     public static CharacterSet FromChars(IEnumerable<int> codepoints)
     {
+        ArgumentNullException.ThrowIfNull(codepoints);
         return new CharacterSet(codepoints);
     }
 
-    // --- Combination ---
-
-    /// <summary>
-    /// Merges multiple character sets into one.
-    /// </summary>
+    /// <summary>Merges multiple character sets into one.</summary>
+    /// <param name="sets">The character sets to combine.</param>
     public static CharacterSet Union(params CharacterSet[] sets)
     {
         var combined = new HashSet<int>();
@@ -96,11 +88,7 @@ public class CharacterSet
         return new CharacterSet(combined);
     }
 
-    // --- Instance members ---
-
-    /// <summary>
-    /// Returns the codepoints in this set, sorted in ascending order.
-    /// </summary>
+    /// <summary>Returns all character codes in this set, sorted ascending.</summary>
     public IEnumerable<int> GetCodepoints()
     {
         var sorted = new List<int>(_codepoints);
@@ -108,20 +96,16 @@ public class CharacterSet
         return sorted;
     }
 
-    /// <summary>
-    /// Gets the number of codepoints in this set.
-    /// </summary>
+    /// <summary>Number of characters in this set.</summary>
     public int Count => _codepoints.Count;
 
-    /// <summary>
-    /// Returns the internal codepoint set for use as a filter hint during parsing.
-    /// </summary>
+    /// <summary>Returns the internal set for use as a filter hint during parsing.</summary>
     internal HashSet<int> GetCodepointsHashSet() => _codepoints;
 
     /// <summary>
-    /// Returns only the codepoints that exist in both this set and the available codepoints list (intersection).
-    /// This filters the character set to only glyphs the font actually has.
+    /// Filters this set down to only characters the font actually contains.
     /// </summary>
+    /// <param name="availableCodepoints">Characters available in the font.</param>
     public IEnumerable<int> Resolve(IReadOnlyList<int> availableCodepoints)
     {
         var available = new HashSet<int>(availableCodepoints);

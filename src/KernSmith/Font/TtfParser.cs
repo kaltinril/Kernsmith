@@ -171,15 +171,10 @@ internal class TtfParser
         Hhea = new HheaTable(ascender, descender, lineGap, advanceWidthMax, numberOfHMetrics);
     }
 
-    // 2D: hmtx Table
-    // Note: advance widths are not stored — FreeType provides per-glyph metrics at rasterization time.
-    // This method is kept as a no-op placeholder; the hmtx table is validated implicitly by FreeType.
-    private void ParseHmtx()
-    {
-        // Intentionally empty: advance widths were previously parsed and stored in _advanceWidths
-        // but never consumed after parsing. FreeType provides accurate advance widths via
-        // FT_Load_Glyph, so we skip this work entirely.
-    }
+    // 2D: hmtx Table — intentionally skipped.
+    // FreeType provides per-glyph advance widths via FT_Load_Glyph,
+    // so parsing hmtx here would be redundant.
+    private void ParseHmtx() { }
 
     // 2E: OS/2 Table
     private void ParseOs2()
@@ -538,7 +533,7 @@ internal class TtfParser
                 break;
 
             var startCharCode = (int)BinaryPrimitives.ReadUInt32BigEndian(subtable.Slice(groupOffset));
-            var endCharCode = (int)BinaryPrimitives.ReadUInt32BigEndian(subtable.Slice(groupOffset + 4));
+            var endCharCode = Math.Min((int)BinaryPrimitives.ReadUInt32BigEndian(subtable.Slice(groupOffset + 4)), 0x10FFFF);
             var startGlyphID = (int)BinaryPrimitives.ReadUInt32BigEndian(subtable.Slice(groupOffset + 8));
 
             for (var c = startCharCode; c <= endCharCode; c++)

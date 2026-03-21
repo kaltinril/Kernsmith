@@ -6,7 +6,7 @@ using KernSmith.Rasterizer;
 namespace KernSmith;
 
 /// <summary>
-/// Fluent builder for BMFont generation. Syntactic sugar over FontGeneratorOptions.
+/// Fluent builder for configuring and generating bitmap fonts.
 /// </summary>
 public sealed class BmFontBuilder
 {
@@ -17,6 +17,9 @@ public sealed class BmFontBuilder
 
     internal BmFontBuilder() { }
 
+    /// <summary>Loads a font from raw byte data.</summary>
+    /// <param name="fontData">The font file bytes.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithFont(byte[] fontData)
     {
         _fontData = fontData;
@@ -25,6 +28,9 @@ public sealed class BmFontBuilder
         return this;
     }
 
+    /// <summary>Loads a font from a file path.</summary>
+    /// <param name="fontPath">Path to a .ttf, .otf, or .woff file.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithFont(string fontPath)
     {
         _fontPath = fontPath;
@@ -33,6 +39,9 @@ public sealed class BmFontBuilder
         return this;
     }
 
+    /// <summary>Uses a system-installed font by family name (e.g., "Arial").</summary>
+    /// <param name="familyName">Font family name.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithSystemFont(string familyName)
     {
         _systemFontFamily = familyName;
@@ -41,20 +50,87 @@ public sealed class BmFontBuilder
         return this;
     }
 
+    /// <summary>Sets the font size in points.</summary>
+    /// <param name="size">Font size in points.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithSize(int size) { _options.Size = size; return this; }
+
+    /// <summary>Sets which characters to include in the output.</summary>
+    /// <param name="characters">The character set to render.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithCharacters(CharacterSet characters) { _options.Characters = characters; return this; }
+
+    /// <summary>If true, applies synthetic bold.</summary>
+    /// <param name="bold">Enable bold.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithBold(bool bold = true) { _options.Bold = bold; return this; }
+
+    /// <summary>If true, applies synthetic italic.</summary>
+    /// <param name="italic">Enable italic.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithItalic(bool italic = true) { _options.Italic = italic; return this; }
+
+    /// <summary>Sets the anti-aliasing mode.</summary>
+    /// <param name="mode">Anti-aliasing mode.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithAntiAlias(AntiAliasMode mode) { _options.AntiAlias = mode; return this; }
+
+    /// <summary>Sets the max texture size (both width and height) in pixels.</summary>
+    /// <param name="size">Max width and height in pixels.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithMaxTextureSize(int size) { _options.MaxTextureSize = size; return this; }
+
+    /// <summary>Sets the max texture width and height separately.</summary>
+    /// <param name="width">Max texture width in pixels.</param>
+    /// <param name="height">Max texture height in pixels.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithMaxTextureSize(int width, int height) { _options.MaxTextureWidth = width; _options.MaxTextureHeight = height; return this; }
+
+    /// <summary>Sets per-side glyph padding in pixels.</summary>
+    /// <param name="up">Top padding.</param>
+    /// <param name="right">Right padding.</param>
+    /// <param name="down">Bottom padding.</param>
+    /// <param name="left">Left padding.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithPadding(int up, int right, int down, int left) { _options.Padding = new Padding(up, right, down, left); return this; }
+
+    /// <summary>Sets uniform glyph padding on all sides.</summary>
+    /// <param name="all">Padding in pixels for every side.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithPadding(int all) { _options.Padding = new Padding(all); return this; }
+
+    /// <summary>Sets the gap between glyphs in the atlas.</summary>
+    /// <param name="horizontal">Horizontal gap in pixels.</param>
+    /// <param name="vertical">Vertical gap in pixels.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithSpacing(int horizontal, int vertical) { _options.Spacing = new Spacing(horizontal, vertical); return this; }
+
+    /// <summary>Sets uniform glyph spacing in the atlas.</summary>
+    /// <param name="both">Gap in pixels for both axes.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithSpacing(int both) { _options.Spacing = new Spacing(both); return this; }
+
+    /// <summary>Sets the atlas packing algorithm.</summary>
+    /// <param name="algorithm">Packing algorithm.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithPackingAlgorithm(PackingAlgorithm algorithm) { _options.PackingAlgorithm = algorithm; return this; }
+
+    /// <summary>If true, includes kerning pairs in the output.</summary>
+    /// <param name="kerning">Enable kerning.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithKerning(bool kerning = true) { _options.Kerning = kerning; return this; }
+
+    /// <summary>Adds an outline around each glyph.</summary>
+    /// <param name="outline">Outline width in pixels.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithOutline(int outline) { _options.Outline = outline; return this; }
+
+    /// <summary>Adds a colored outline around each glyph.</summary>
+    /// <param name="width">Outline width in pixels.</param>
+    /// <param name="r">Red (0-255).</param>
+    /// <param name="g">Green (0-255).</param>
+    /// <param name="b">Blue (0-255).</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithOutline(int width, byte r, byte g = 0, byte b = 0)
     {
         _options.Outline = width;
@@ -63,13 +139,46 @@ public sealed class BmFontBuilder
         _options.OutlineB = b;
         return this;
     }
+
+    /// <summary>If true, generates signed distance field (SDF) output instead of bitmaps.</summary>
+    /// <param name="sdf">Enable SDF.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithSdf(bool sdf = true) { _options.Sdf = sdf; return this; }
+
+    /// <summary>If true, rounds texture dimensions up to powers of two.</summary>
+    /// <param name="powerOfTwo">Enable power-of-two sizing.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithPowerOfTwo(bool powerOfTwo = true) { _options.PowerOfTwo = powerOfTwo; return this; }
+
+    /// <summary>Sets the DPI used for font size calculation.</summary>
+    /// <param name="dpi">Dots per inch.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithDpi(int dpi) { _options.Dpi = dpi; return this; }
+
+    /// <summary>Selects which face to use in a font collection (.ttc) file.</summary>
+    /// <param name="faceIndex">Zero-based face index.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithFaceIndex(int faceIndex) { _options.FaceIndex = faceIndex; return this; }
+
+    /// <summary>If true, packs multiple glyphs into separate RGBA channels to save space.</summary>
+    /// <param name="channelPacking">Enable channel packing.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithChannelPacking(bool channelPacking = true) { _options.ChannelPacking = channelPacking; return this; }
+
+    /// <summary>If true, renders color font layers (emoji, etc.).</summary>
+    /// <param name="colorFont">Enable color font rendering.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithColorFont(bool colorFont = true) { _options.ColorFont = colorFont; return this; }
+
+    /// <summary>Selects which CPAL color palette to use for color fonts.</summary>
+    /// <param name="index">Zero-based palette index.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithColorPaletteIndex(int index) { _options.ColorPaletteIndex = index; return this; }
+
+    /// <summary>Sets a variable font axis value (e.g., "wght" = 700 for bold weight).</summary>
+    /// <param name="tag">Four-character axis tag like "wght" or "wdth".</param>
+    /// <param name="value">Axis value.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithVariationAxis(string tag, float value)
     {
         _options.VariationAxes ??= new Dictionary<string, float>();
@@ -77,20 +186,76 @@ public sealed class BmFontBuilder
         return this;
     }
 
+    /// <summary>Uses a custom rasterizer instead of the default FreeType one.</summary>
+    /// <param name="rasterizer">Rasterizer to use.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithRasterizer(IRasterizer rasterizer) { _options.Rasterizer = rasterizer; return this; }
+
+    /// <summary>Uses a custom atlas packer instead of the default.</summary>
+    /// <param name="packer">Packer to use.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithPacker(IAtlasPacker packer) { _options.Packer = packer; return this; }
+
+    /// <summary>Uses a custom atlas encoder instead of the default.</summary>
+    /// <param name="encoder">Encoder to use.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithEncoder(IAtlasEncoder encoder) { _options.AtlasEncoder = encoder; return this; }
+
+    /// <summary>Uses a custom font reader instead of the default.</summary>
+    /// <param name="reader">Font reader to use.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithFontReader(IFontReader reader) { _options.FontReader = reader; return this; }
 
+    /// <summary>Sets the super-sampling level (1 = off, 2 = 2x, 4 = 4x). Higher values give smoother edges.</summary>
+    /// <param name="level">Super-sampling multiplier.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithSuperSampling(int level) { _options.SuperSampleLevel = level; return this; }
+
+    /// <summary>Sets the character shown when a glyph is missing from the font.</summary>
+    /// <param name="fallbackChar">Fallback character.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithFallbackCharacter(char fallbackChar) { _options.FallbackCharacter = fallbackChar; return this; }
+
+    /// <summary>Sets the output texture format (PNG, TGA, or DDS).</summary>
+    /// <param name="format">Texture format.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithTextureFormat(TextureFormat format) { _options.TextureFormat = format; return this; }
+
+    /// <summary>If true, enables font hinting for sharper small text.</summary>
+    /// <param name="enable">Enable hinting.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithHinting(bool enable = true) { _options.EnableHinting = enable; return this; }
+
+    /// <summary>If true, shrinks the texture to fit the glyphs tightly.</summary>
+    /// <param name="autofit">Enable auto-fit.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithAutofitTexture(bool autofit = true) { _options.AutofitTexture = autofit; return this; }
+
+    /// <summary>If true, makes all glyph cells the same height.</summary>
+    /// <param name="equalize">Enable equal cell heights.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithEqualizeCellHeights(bool equalize = true) { _options.EqualizeCellHeights = equalize; return this; }
+
+    /// <summary>If true, forces all glyph x/y offsets to zero.</summary>
+    /// <param name="force">Enable zeroed offsets.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithForceOffsetsToZero(bool force = true) { _options.ForceOffsetsToZero = force; return this; }
 
+    /// <summary>Sets how each RGBA channel is used in the output texture.</summary>
+    /// <param name="config">Channel configuration.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithChannels(ChannelConfig config) { _options.Channels = config; return this; }
+
+    /// <summary>Sets what each RGBA channel contains and whether to invert it.</summary>
+    /// <param name="alpha">What the alpha channel holds.</param>
+    /// <param name="red">What the red channel holds.</param>
+    /// <param name="green">What the green channel holds.</param>
+    /// <param name="blue">What the blue channel holds.</param>
+    /// <param name="invertAlpha">Invert alpha channel.</param>
+    /// <param name="invertRed">Invert red channel.</param>
+    /// <param name="invertGreen">Invert green channel.</param>
+    /// <param name="invertBlue">Invert blue channel.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithChannels(
         ChannelContent alpha = ChannelContent.Glyph,
         ChannelContent red = ChannelContent.Glyph,
@@ -105,8 +270,15 @@ public sealed class BmFontBuilder
         return this;
     }
 
+    /// <summary>Scales glyph height as a percentage. 100 = normal, 200 = double height.</summary>
+    /// <param name="percent">Height as a percentage.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithHeightPercent(int percent) { _options.HeightPercent = percent; return this; }
 
+    /// <summary>Adds a custom bitmap for a specific character code.</summary>
+    /// <param name="codepoint">Unicode character code to replace.</param>
+    /// <param name="glyph">The custom glyph data.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithCustomGlyph(int codepoint, CustomGlyph glyph)
     {
         _options.CustomGlyphs ??= new Dictionary<int, CustomGlyph>();
@@ -114,14 +286,36 @@ public sealed class BmFontBuilder
         return this;
     }
 
+    /// <summary>Adds a custom bitmap for a specific character code from raw pixels.</summary>
+    /// <param name="codepoint">Unicode character code to replace.</param>
+    /// <param name="width">Glyph width in pixels.</param>
+    /// <param name="height">Glyph height in pixels.</param>
+    /// <param name="pixelData">Raw pixel data.</param>
+    /// <param name="format">Pixel format of the data.</param>
+    /// <param name="xAdvance">Custom horizontal advance, or null to auto-calculate.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithCustomGlyph(int codepoint, int width, int height, byte[] pixelData, PixelFormat format = PixelFormat.Rgba32, int? xAdvance = null)
     {
         return WithCustomGlyph(codepoint, new CustomGlyph(width, height, pixelData, format, xAdvance));
     }
 
+    /// <summary>If true, scales custom glyph advances to match the font's character height.</summary>
+    /// <param name="match">Enable height matching.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithMatchCharHeight(bool match = true) { _options.MatchCharHeight = match; return this; }
+
+    /// <summary>Sets the expected packing efficiency for atlas size estimation. 0.0 = worst, 1.0 = perfect.</summary>
+    /// <param name="efficiency">Packing efficiency between 0.0 and 1.0.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithPackingEfficiency(float efficiency) { _options.PackingEfficiencyHint = efficiency; return this; }
 
+    /// <summary>Adds a drop shadow behind each glyph.</summary>
+    /// <param name="offsetX">Horizontal offset in pixels.</param>
+    /// <param name="offsetY">Vertical offset in pixels.</param>
+    /// <param name="blur">Blur radius in pixels.</param>
+    /// <param name="color">Shadow color as (R, G, B); defaults to black.</param>
+    /// <param name="opacity">Shadow opacity, 0.0 to 1.0.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithShadow(int offsetX = 2, int offsetY = 2, int blur = 0,
         (byte R, byte G, byte B)? color = null, float opacity = 1.0f)
     {
@@ -136,6 +330,12 @@ public sealed class BmFontBuilder
         return this;
     }
 
+    /// <summary>Applies a color gradient across all glyphs.</summary>
+    /// <param name="startColor">Start color as (R, G, B).</param>
+    /// <param name="endColor">End color as (R, G, B).</param>
+    /// <param name="angleDegrees">Angle in degrees. 0 = left-to-right, 90 = top-to-bottom.</param>
+    /// <param name="midpoint">Where the midpoint falls, 0.0 to 1.0.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithGradient((byte R, byte G, byte B) startColor, (byte R, byte G, byte B) endColor, float angleDegrees = 90f, float midpoint = 0.5f)
     {
         _options.GradientStartR = startColor.R;
@@ -149,6 +349,9 @@ public sealed class BmFontBuilder
         return this;
     }
 
+    /// <summary>Adds a custom post-processing step that runs on each glyph after rasterization.</summary>
+    /// <param name="processor">The post-processor to add.</param>
+    /// <returns>This builder.</returns>
     public BmFontBuilder WithPostProcessor(IGlyphPostProcessor processor)
     {
         var list = _options.PostProcessors?.ToList() ?? new List<IGlyphPostProcessor>();
@@ -157,6 +360,8 @@ public sealed class BmFontBuilder
         return this;
     }
 
+    /// <summary>Generates the bitmap font, returning the descriptor model and atlas texture pages.</summary>
+    /// <returns>The generated bitmap font result.</returns>
     public BmFontResult Build()
     {
         if (_systemFontFamily != null)

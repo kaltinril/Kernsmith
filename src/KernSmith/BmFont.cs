@@ -7,26 +7,31 @@ using KernSmith.Rasterizer;
 namespace KernSmith;
 
 /// <summary>
-/// Main entry point for BMFont generation.
+/// The main API for generating and loading BMFont bitmap fonts.
 /// </summary>
 public static class BmFont
 {
     private static readonly Lazy<DefaultSystemFontProvider> s_systemFontProvider = new();
 
-    /// <summary>
-    /// Internal access to the shared system font provider for use by FontCache.
-    /// </summary>
+    /// <summary>Shared system font provider, used by FontCache.</summary>
     internal static DefaultSystemFontProvider SystemFontProvider => s_systemFontProvider.Value;
 
-    /// <summary>
-    /// Generates a BMFont atlas from font file data.
-    /// </summary>
-    /// <param name="fontData">Raw font file bytes (TTF/OTF).</param>
+    /// <summary>Generates a BMFont from raw font bytes.</summary>
+    /// <param name="fontData">Raw TTF/OTF/WOFF file bytes.</param>
     /// <param name="options">Generation options, or null for defaults.</param>
-    /// <returns>A result containing the BMFont model and atlas pages.</returns>
     public static BmFontResult Generate(byte[] fontData, FontGeneratorOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(fontData);
+
         options ??= new FontGeneratorOptions();
+
+        if (options.Size <= 0 || options.Size > 10000)
+            throw new ArgumentOutOfRangeException(nameof(options), $"Size must be between 1 and 10000, was {options.Size}.");
+        if (options.MaxTextureWidth <= 0)
+            throw new ArgumentOutOfRangeException(nameof(options), $"MaxTextureWidth must be positive, was {options.MaxTextureWidth}.");
+        if (options.MaxTextureHeight <= 0)
+            throw new ArgumentOutOfRangeException(nameof(options), $"MaxTextureHeight must be positive, was {options.MaxTextureHeight}.");
+
         var metrics = options.CollectMetrics ? new PipelineMetrics() : null;
 
         // 0. Auto-detect and decompress WOFF/WOFF2 to standard sfnt
@@ -38,10 +43,6 @@ public static class BmFont
             throw new InvalidOperationException(
                 "SDF rendering cannot be combined with super sampling (SuperSampleLevel > 1). " +
                 "The box-filter downscale corrupts signed distance field values.");
-
-        // 0c. Build layered effects from options (replaces old auto-add logic).
-        // Built-in effects (outline, gradient, shadow) are handled by the compositor.
-        // The old auto-add OutlinePostProcessor path is no longer needed.
 
         // 1. Parse font
         metrics?.Begin("FontParsing");
@@ -306,53 +307,60 @@ public static class BmFont
         }
     }
 
-    /// <summary>
-    /// Generates a BMFont atlas from font file data with the specified size.
-    /// </summary>
+    /// <summary>Generates a BMFont from raw font bytes at the given size.</summary>
+    /// <param name="fontData">Raw TTF/OTF/WOFF file bytes.</param>
+    /// <param name="size">Font size in pixels.</param>
     public static BmFontResult Generate(byte[] fontData, int size)
         => Generate(fontData, new FontGeneratorOptions { Size = size });
 
-    /// <summary>
-    /// Generates a BMFont atlas from a font file path.
-    /// </summary>
-    public static BmFontResult Generate(string fontPath, FontGeneratorOptions? options = null)
-        => Generate(File.ReadAllBytes(fontPath), options);
-
-    /// <summary>
-    /// Generates a BMFont atlas from a font file path with the specified size.
-    /// </summary>
-    public static BmFontResult Generate(string fontPath, int size)
-        => Generate(File.ReadAllBytes(fontPath), new FontGeneratorOptions { Size = size });
-
-    /// <summary>
-    /// Generates a BMFont atlas from a system-installed font, looked up by family name.
-    /// </summary>
-    /// <param name="fontFamily">The font family name to search for (e.g., "Arial").</param>
+    /// <summary>Generates a BMFont from a font file on disk.</summary>
+    /// <param name="fontPath">Path to a TTF/OTF/WOFF file.</param>
     /// <param name="options">Generation options, or null for defaults.</param>
-    /// <returns>A result containing the BMFont model and atlas pages.</returns>
-    /// <exception cref="FontParsingException">Thrown when the specified font family is not found on the system.</exception>
+    public static BmFontResult Generate(string fontPath, FontGeneratorOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(fontPath);
+        return Generate(File.ReadAllBytes(fontPath), options);
+    }
+
+    /// <summary>Generates a BMFont from a font file on disk at the given size.</summary>
+    /// <param name="fontPath">Path to a TTF/OTF/WOFF file.</param>
+    /// <param name="size">Font size in pixels.</param>
+    public static BmFontResult Generate(string fontPath, int size)
+    {
+        ArgumentNullException.ThrowIfNull(fontPath);
+        return Generate(File.ReadAllBytes(fontPath), new FontGeneratorOptions { Size = size });
+    }
+
+    /// <summary>Generates a BMFont from a system-installed font, looked up by family name (e.g., "Arial").</summary>
+    /// <param name="fontFamily">Font family name, like "Arial" or "Times New Roman".</param>
+    /// <param name="options">Generation options, or null for defaults.</param>
+    /// <exception cref="FontParsingException">Thrown if the font family is not installed.</exception>
     public static BmFontResult GenerateFromSystem(string fontFamily, FontGeneratorOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(fontFamily);
         options ??= new FontGeneratorOptions();
         var fontData = s_systemFontProvider.Value.LoadFont(fontFamily)
             ?? throw new FontParsingException($"System font '{fontFamily}' not found");
         return Generate(fontData, options);
     }
 
-    /// <summary>
-    /// Generates a BMFont atlas from a system-installed font with the specified size.
-    /// </summary>
+    /// <summary>Generates a BMFont from a system-installed font at the given size.</summary>
+    /// <param name="fontFamily">Font family name, like "Arial".</param>
+    /// <param name="size">Font size in pixels.</param>
     public static BmFontResult GenerateFromSystem(string fontFamily, int size)
-        => GenerateFromSystem(fontFamily, new FontGeneratorOptions { Size = size });
+    {
+        ArgumentNullException.ThrowIfNull(fontFamily);
+        return GenerateFromSystem(fontFamily, new FontGeneratorOptions { Size = size });
+    }
 
     /// <summary>
-    /// Loads a BMFont from a .fnt file path. Auto-detects format (text, XML, or binary).
-    /// Also loads atlas .png files from the same directory as raw PNG bytes.
+    /// Loads a BMFont from a .fnt file, auto-detecting text/XML/binary format.
+    /// Also loads atlas images (.png) from the same directory.
     /// </summary>
-    /// <param name="fntPath">Path to the .fnt descriptor file.</param>
-    /// <returns>A result containing the parsed BMFont model and atlas pages.</returns>
+    /// <param name="fntPath">Path to the .fnt file.</param>
     public static BmFontResult Load(string fntPath)
     {
+        ArgumentNullException.ThrowIfNull(fntPath);
         var fntData = File.ReadAllBytes(fntPath);
         var model = BmFontReader.Read(fntData);
 
@@ -361,7 +369,7 @@ public static class BmFont
 
         foreach (var pageEntry in model.Pages)
         {
-            var pagePath = Path.Combine(dir, pageEntry.File);
+            var pagePath = Path.Combine(dir, Path.GetFileName(pageEntry.File));
             if (File.Exists(pagePath))
             {
                 var pngBytes = File.ReadAllBytes(pagePath);
@@ -379,27 +387,26 @@ public static class BmFont
         return new BmFontResult(model, pages);
     }
 
-    /// <summary>
-    /// Loads a BMFont model from raw .fnt data, auto-detecting the format.
-    /// Does not load atlas images.
-    /// </summary>
-    public static Output.Model.BmFontModel LoadModel(byte[] fntData) => BmFontReader.Read(fntData);
+    /// <summary>Loads a BMFont model from raw .fnt bytes. Does not load atlas images.</summary>
+    /// <param name="fntData">Raw .fnt file bytes.</param>
+    public static Output.Model.BmFontModel LoadModel(byte[] fntData)
+    {
+        ArgumentNullException.ThrowIfNull(fntData);
+        return BmFontReader.Read(fntData);
+    }
 
-    /// <summary>
-    /// Loads a BMFont model from a text-format .fnt string.
-    /// Does not load atlas images.
-    /// </summary>
-    public static Output.Model.BmFontModel LoadModel(string fntContent) => BmFontReader.ReadText(fntContent);
+    /// <summary>Loads a BMFont model from a text-format .fnt string. Does not load atlas images.</summary>
+    /// <param name="fntContent">Text-format .fnt content.</param>
+    public static Output.Model.BmFontModel LoadModel(string fntContent)
+    {
+        ArgumentNullException.ThrowIfNull(fntContent);
+        return BmFontReader.ReadText(fntContent);
+    }
 
-    /// <summary>
-    /// Creates a fluent builder for BMFont generation.
-    /// </summary>
+    /// <summary>Creates a fluent builder for BMFont generation.</summary>
     public static BmFontBuilder Builder() => new();
 
-    /// <summary>
-    /// Returns true if the options specify any built-in effects (outline, gradient, shadow)
-    /// either via direct properties or via PostProcessors.
-    /// </summary>
+    /// <summary>Checks if any built-in effects (outline, gradient, shadow) are enabled.</summary>
     private static bool HasAnyEffects(FontGeneratorOptions options)
     {
         if (options.Outline > 0 || options.HasGradient || options.HasShadow)
@@ -417,10 +424,7 @@ public static class BmFont
         return false;
     }
 
-    /// <summary>
-    /// Builds the list of layered effects from FontGeneratorOptions and any
-    /// built-in post-processors in the PostProcessors list.
-    /// </summary>
+    /// <summary>Builds the list of layered effects from the generation options.</summary>
     private static List<IGlyphEffect> BuildEffects(FontGeneratorOptions options)
     {
         var effects = new List<IGlyphEffect>();
@@ -489,9 +493,7 @@ public static class BmFont
         return effects;
     }
 
-    /// <summary>
-    /// Downscales a rasterized glyph by the given factor using a box filter.
-    /// </summary>
+    /// <summary>Downscales a super-sampled glyph using a box filter.</summary>
     private static RasterizedGlyph SuperSampleDownscale(RasterizedGlyph glyph, int level)
     {
         if (glyph.Width == 0 || glyph.Height == 0)
@@ -582,9 +584,7 @@ public static class BmFont
         };
     }
 
-    /// <summary>
-    /// Pads a glyph's bitmap to the specified target height, centering vertically.
-    /// </summary>
+    /// <summary>Pads a glyph bitmap to the target height for uniform cell sizes.</summary>
     private static RasterizedGlyph EqualizeCellHeight(RasterizedGlyph glyph, int targetHeight)
     {
         if (glyph.Height >= targetHeight)
@@ -617,9 +617,7 @@ public static class BmFont
         };
     }
 
-    /// <summary>
-    /// Applies custom glyph images, replacing rasterized glyphs or adding new ones.
-    /// </summary>
+    /// <summary>Swaps in custom glyph images, replacing rasterized glyphs or adding new ones.</summary>
     private static List<RasterizedGlyph> ApplyCustomGlyphs(
         List<RasterizedGlyph> glyphs,
         Dictionary<int, CustomGlyph> customGlyphs,
@@ -676,10 +674,7 @@ public static class BmFont
         };
     }
 
-    /// <summary>
-    /// Composites a glyph with its FT_Stroker outline: draws outline first, then glyph on top.
-    /// Falls back to the original glyph if stroking fails.
-    /// </summary>
+    /// <summary>Draws the outline behind the glyph using FreeType's stroker. Falls back to the original on failure.</summary>
     private static RasterizedGlyph CompositeWithFtStroker(
         FreeTypeRasterizer rasterizer, RasterizedGlyph glyph,
         RasterOptions rasterOptions, int outlineWidth,
@@ -694,7 +689,7 @@ public static class BmFont
             outlineGlyph = rasterizer.RasterizeOutline(
                 glyph.Codepoint, rasterOptions, outlineWidth, outlineR, outlineG, outlineB);
         }
-        catch
+        catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
         {
             // FT_Stroker can fail for certain glyph types; fall back gracefully.
             return glyph;
@@ -780,14 +775,12 @@ public static class BmFont
         };
     }
 
-    /// <summary>
-    /// Generates multiple BMFont atlases in batch, with optional parallelism and font caching.
-    /// </summary>
-    /// <param name="jobs">The list of batch jobs to execute.</param>
-    /// <param name="options">Batch execution options, or null for defaults (sequential).</param>
-    /// <returns>A result containing per-job results, timing, and success/failure counts.</returns>
+    /// <summary>Generates multiple BMFonts in batch, with optional parallelism and font caching.</summary>
+    /// <param name="jobs">The batch jobs to run.</param>
+    /// <param name="options">Batch options, or null for sequential execution.</param>
     public static BatchResult GenerateBatch(IReadOnlyList<BatchJob> jobs, BatchOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(jobs);
         options ??= new BatchOptions();
         var maxParallelism = options.MaxParallelism == 0 ? Environment.ProcessorCount : options.MaxParallelism;
 

@@ -9,14 +9,14 @@ public sealed class FontCache
 {
     private readonly ConcurrentDictionary<string, byte[]> _cache = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Load a font file and cache it by its full file path.</summary>
+    /// <summary>Loads a font file from disk and caches it by its full file path.</summary>
     public void LoadFile(string path)
     {
         var fullPath = Path.GetFullPath(path);
         _cache.TryAdd(fullPath, File.ReadAllBytes(fullPath));
     }
 
-    /// <summary>Load a system font by family name and cache it.</summary>
+    /// <summary>Resolves a system font by family name and caches the font data.</summary>
     public void LoadSystemFont(string fontFamily)
     {
         _cache.GetOrAdd(fontFamily, key =>
@@ -27,27 +27,27 @@ public sealed class FontCache
         });
     }
 
-    /// <summary>Add raw font data with a key.</summary>
+    /// <summary>Adds raw font data bytes to the cache under the specified key.</summary>
     public void Add(string key, byte[] fontData)
     {
         _cache[key] = fontData;
     }
 
-    /// <summary>Get cached font data by key.</summary>
+    /// <summary>Retrieves cached font data by key. Throws if the key is not cached.</summary>
     public byte[] Get(string key) =>
         _cache.TryGetValue(key, out var data)
             ? data
             : throw new KeyNotFoundException($"Font not cached: {key}");
 
-    /// <summary>Check if a font is cached.</summary>
+    /// <summary>Returns true if the specified key exists in the cache.</summary>
     public bool Contains(string key) => _cache.ContainsKey(key);
 
-    /// <summary>Number of cached fonts.</summary>
+    /// <summary>Number of fonts currently in the cache.</summary>
     public int Count => _cache.Count;
 
-    /// <summary>Clear all cached fonts.</summary>
+    /// <summary>Removes all entries from the cache.</summary>
     public void Clear() => _cache.Clear();
 
-    /// <summary>Try to get cached font data.</summary>
+    /// <summary>Attempts to retrieve cached font data. Returns true if found.</summary>
     public bool TryGet(string key, out byte[] fontData) => _cache.TryGetValue(key, out fontData!);
 }

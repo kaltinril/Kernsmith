@@ -1,21 +1,17 @@
 namespace KernSmith;
 
 /// <summary>
-/// A custom glyph image to replace or add as a font glyph.
-/// Users are responsible for decoding their images into raw pixel data.
+/// A custom glyph image that replaces or adds a glyph in the font.
+/// You must decode images to raw pixels yourself before passing them here.
 /// </summary>
+/// <param name="Width">Width in pixels.</param>
+/// <param name="Height">Height in pixels.</param>
+/// <param name="PixelData">Raw pixel data (not PNG/JPG -- already decoded).</param>
+/// <param name="Format">Pixel format. Default is RGBA.</param>
+/// <param name="XAdvance">Cursor advance after this glyph. When null, uses the glyph width.</param>
 public sealed record CustomGlyph(
-    /// <summary>Width of the glyph image in pixels.</summary>
     int Width,
-
-    /// <summary>Height of the glyph image in pixels.</summary>
     int Height,
-
-    /// <summary>Raw pixel data in the specified format.</summary>
     byte[] PixelData,
-
-    /// <summary>Pixel format of the data. Default is RGBA.</summary>
     PixelFormat Format = PixelFormat.Rgba32,
-
-    /// <summary>Optional custom x-advance. When null, uses the glyph width.</summary>
     int? XAdvance = null);

@@ -3,32 +3,34 @@ using KernSmith.Font.Models;
 namespace KernSmith.Rasterizer;
 
 /// <summary>
-/// Post-processor that adds a drop shadow behind glyphs.
-/// Supports configurable offset, color, opacity, and optional box blur.
+/// Adds a drop shadow behind each glyph with configurable offset, color, blur radius, and opacity.
 /// </summary>
 public sealed class ShadowPostProcessor : IGlyphPostProcessor
 {
-    /// <summary>Horizontal shadow offset in pixels (positive = right).</summary>
+    /// <summary>Pixels to shift the shadow right. Negative goes left.</summary>
     public int OffsetX { get; }
 
-    /// <summary>Vertical shadow offset in pixels (positive = down).</summary>
+    /// <summary>Pixels to shift the shadow down. Negative goes up.</summary>
     public int OffsetY { get; }
 
-    /// <summary>Blur radius. 0 = hard shadow, greater values produce softer shadows.</summary>
+    /// <summary>Blur radius in pixels. 0 = hard shadow, higher values produce a softer edge.</summary>
     public int BlurRadius { get; }
 
-    /// <summary>Shadow red channel.</summary>
+    /// <summary>Shadow color red (0-255).</summary>
     public byte ShadowR { get; }
 
-    /// <summary>Shadow green channel.</summary>
+    /// <summary>Shadow color green (0-255).</summary>
     public byte ShadowG { get; }
 
-    /// <summary>Shadow blue channel.</summary>
+    /// <summary>Shadow color blue (0-255).</summary>
     public byte ShadowB { get; }
 
-    /// <summary>Shadow opacity (0.0 to 1.0).</summary>
+    /// <summary>Shadow opacity from 0.0 (invisible) to 1.0 (fully opaque).</summary>
     public float Opacity { get; }
 
+    /// <summary>
+    /// Creates a drop shadow effect.
+    /// </summary>
     public ShadowPostProcessor(
         int offsetX = 2,
         int offsetY = 2,
@@ -47,6 +49,7 @@ public sealed class ShadowPostProcessor : IGlyphPostProcessor
         Opacity = Math.Clamp(opacity, 0f, 1f);
     }
 
+    /// <inheritdoc />
     public RasterizedGlyph Process(RasterizedGlyph glyph)
     {
         if (glyph.Width == 0 || glyph.Height == 0 || glyph.BitmapData.Length == 0)
@@ -189,7 +192,7 @@ public sealed class ShadowPostProcessor : IGlyphPostProcessor
     }
 
     /// <summary>
-    /// Two-pass separable box blur.
+    /// Blurs a float buffer using a two-pass box blur (horizontal then vertical).
     /// </summary>
     private static float[] BoxBlur(float[] src, int width, int height, int radius)
     {

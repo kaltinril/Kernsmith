@@ -9,6 +9,9 @@
     <PackageVersion Include="FreeTypeSharp" Version="3.1.0" />
     <PackageVersion Include="StbImageWriteSharp" Version="1.16.7" />
 
+    <!-- SourceLink -->
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.102" />
+
     <!-- Test dependencies -->
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="FluentAssertions" Version="8.9.0" />

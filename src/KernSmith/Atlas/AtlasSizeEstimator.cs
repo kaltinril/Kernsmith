@@ -1,7 +1,7 @@
 namespace KernSmith.Atlas;
 
 /// <summary>
-/// Options controlling atlas size estimation.
+/// Configuration for atlas size estimation.
 /// </summary>
 internal sealed record AtlasSizingOptions
 {
@@ -36,8 +36,8 @@ internal sealed record AtlasSizingOptions
 }
 
 /// <summary>
-/// Predicts the minimum atlas texture size using shelf-packing estimation.
-/// Stateless and thread-safe — all state flows through parameters.
+/// Estimates the minimum atlas texture dimensions using shelf-packing heuristics.
+/// Stateless and thread-safe.
 /// </summary>
 /// <remarks>
 /// Operates on GlyphRects that already include padding and spacing.
@@ -67,7 +67,6 @@ internal static class AtlasSizeEstimator
                 rects.Add(r);
         }
 
-        // Empty glyph list.
         if (rects.Count == 0)
         {
             var emptySize = options.PowerOfTwo ? NextPowerOfTwo(minSize) : minSize;
@@ -103,7 +102,6 @@ internal static class AtlasSizeEstimator
 
         if (!options.AllowNonSquare)
         {
-            // Square atlas.
             var side = lowerBound;
 
             // Verify with shelf estimate: the side must also accommodate the estimated height.
