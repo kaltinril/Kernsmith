@@ -14,6 +14,7 @@
 # Generated output (root-level only, not src/KernSmith/Output/)
 /output/
 /samples/output/
+/samples/KernSmith.Samples/output/
 /tests/output/
 
 # Generated font files at repo root (from CLI testing)

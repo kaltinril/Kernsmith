@@ -1,0 +1,9 @@
+fileVersion=1
+fontFile=../../tests/KernSmith.Tests/Fixtures/Roboto-Regular.ttf
+fontSize=32
+chars=32-126
+outWidth=512
+outHeight=512
+fontDescFormat=0
+textureFormat=png
+outputPath=output/from-config
