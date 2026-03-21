@@ -220,4 +220,10 @@ public class FontGeneratorOptions
 
     /// <summary>If true, records how long each pipeline stage takes. Check BmFontResult.Metrics for results.</summary>
     public bool CollectMetrics { get; set; }
+
+    /// <summary>Atlas size constraints (force square, force power-of-two, fixed width).</summary>
+    public AtlasSizeConstraints? SizeConstraints { get; set; }
+
+    /// <summary>When set, renders glyphs into a region of an existing PNG image.</summary>
+    public AtlasTargetRegion? TargetRegion { get; set; }
 }

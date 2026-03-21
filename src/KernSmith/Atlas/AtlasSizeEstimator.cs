@@ -354,6 +354,56 @@ internal static class AtlasSizeEstimator
         return (bestWidth, bestHeight);
     }
 
+    /// <summary>
+    /// Applies user-specified constraints (fixed width, force square, force power-of-two)
+    /// to estimated atlas dimensions.
+    /// </summary>
+    internal static (int Width, int Height) ApplyConstraints(
+        int width, int height,
+        AtlasSizeConstraints constraints,
+        AtlasSizingOptions options,
+        IReadOnlyList<GlyphRect>? glyphRects = null)
+    {
+        // If FixedWidth > 0: set width to FixedWidth, recalculate height.
+        if (constraints.FixedWidth > 0)
+        {
+            width = constraints.FixedWidth;
+
+            if (glyphRects != null && glyphRects.Count > 0)
+            {
+                // Sort by height descending for shelf estimation.
+                var sorted = glyphRects
+                    .Where(r => r.Width > 0 && r.Height > 0)
+                    .OrderByDescending(r => r.Height)
+                    .ThenByDescending(r => r.Width)
+                    .ToArray();
+
+                height = EstimateShelfHeight(sorted, width);
+            }
+        }
+
+        // ForcePowerOfTwo: round both dims to next power of two.
+        if (constraints.ForcePowerOfTwo)
+        {
+            width = NextPowerOfTwo(width);
+            height = NextPowerOfTwo(height);
+        }
+
+        // ForceSquare (only when FixedWidth is not set): set both to max.
+        if (constraints.ForceSquare && constraints.FixedWidth <= 0)
+        {
+            var side = Math.Max(width, height);
+            width = side;
+            height = side;
+        }
+
+        // Clamp to MaxWidth/MaxHeight.
+        width = Math.Min(width, options.MaxWidth);
+        height = Math.Min(height, options.MaxHeight);
+
+        return (width, height);
+    }
+
     private static int NextPowerOfTwo(int v)
     {
         if (v <= 0) return 1;

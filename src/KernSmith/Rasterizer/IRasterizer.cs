@@ -25,4 +25,11 @@ public interface IRasterizer : IDisposable
     /// <param name="codepoints">The Unicode character codes to render.</param>
     /// <param name="options">Size, DPI, anti-aliasing, and other rendering settings.</param>
     IReadOnlyList<RasterizedGlyph> RasterizeAll(IEnumerable<int> codepoints, RasterOptions options);
+
+    /// <summary>
+    /// Gets glyph metrics without rasterizing. Returns null if the glyph is missing from the font.
+    /// </summary>
+    /// <param name="codepoint">The Unicode character code.</param>
+    /// <param name="options">Size, DPI, and other settings.</param>
+    Font.Models.GlyphMetrics? GetGlyphMetrics(int codepoint, RasterOptions options) => null;
 }

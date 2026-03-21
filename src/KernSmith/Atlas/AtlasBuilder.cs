@@ -126,4 +126,30 @@ internal static class AtlasBuilder
 
         return pages;
     }
+
+    internal static void CompositeOnto(byte[] targetPixels, int targetWidth, int regionX, int regionY, byte[] sourcePixels, int sourceWidth, int sourceHeight)
+    {
+        for (var row = 0; row < sourceHeight; row++)
+        {
+            for (var col = 0; col < sourceWidth; col++)
+            {
+                var srcIdx = (row * sourceWidth + col) * 4;
+                if (srcIdx + 3 >= sourcePixels.Length)
+                    continue;
+
+                var alpha = sourcePixels[srcIdx + 3];
+                if (alpha == 0)
+                    continue;
+
+                var dstIdx = ((regionY + row) * targetWidth + (regionX + col)) * 4;
+                if (dstIdx < 0 || dstIdx + 3 >= targetPixels.Length)
+                    continue;
+
+                targetPixels[dstIdx + 0] = sourcePixels[srcIdx + 0];
+                targetPixels[dstIdx + 1] = sourcePixels[srcIdx + 1];
+                targetPixels[dstIdx + 2] = sourcePixels[srcIdx + 2];
+                targetPixels[dstIdx + 3] = sourcePixels[srcIdx + 3];
+            }
+        }
+    }
 }
