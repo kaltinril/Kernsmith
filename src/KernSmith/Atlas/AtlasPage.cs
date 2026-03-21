@@ -32,4 +32,14 @@ public sealed class AtlasPage
     public byte[] ToPng() =>
         (_encoder ?? throw new InvalidOperationException("No encoder configured"))
             .Encode(PixelData, Width, Height, Format);
+
+    /// <summary>Encodes this atlas page as a TGA image.</summary>
+    /// <returns>The TGA file bytes.</returns>
+    public byte[] ToTga() =>
+        new TgaEncoder().Encode(PixelData, Width, Height, Format);
+
+    /// <summary>Encodes this atlas page as a DDS image.</summary>
+    /// <returns>The DDS file bytes.</returns>
+    public byte[] ToDds() =>
+        new DdsEncoder().Encode(PixelData, Width, Height, Format);
 }

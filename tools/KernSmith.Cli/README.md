@@ -195,6 +195,34 @@ kernsmith generate -f font.ttf -s 32 -o output/myfont
 
 ---
 
+### init
+
+Generate a `.bmfc` configuration file from CLI flags without rendering a font. This lets you scaffold a config, tweak it by hand, then run `kernsmith generate --config`.
+
+The `init` command accepts all the same flags as `generate` (font source, size, effects, atlas settings, etc.). The `-o` flag sets the output `.bmfc` file path instead of the font output path.
+
+```
+kernsmith init [options]
+```
+
+```
+# Create a basic config for a system font
+kernsmith init --system-font "Arial" -s 32 -o my-font.bmfc
+
+# Scaffold a config with effects
+kernsmith init --system-font "Arial" -s 48 --outline 3,0055AA -o my-font.bmfc
+
+# Create a config from a font file with extended Latin
+kernsmith init -f fonts/Roboto-Regular.ttf -s 24 -c latin --kerning -o roboto.bmfc
+
+# Then generate from the config (with optional overrides)
+kernsmith generate --config roboto.bmfc
+```
+
+If no `-o` flag is provided, the default output is `font.bmfc` in the current directory.
+
+---
+
 ### inspect
 
 Inspect an existing `.fnt` file. Auto-detects text, XML, and binary formats.

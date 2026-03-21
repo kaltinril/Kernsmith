@@ -20,6 +20,9 @@ public static class BmFont
     /// <param name="fontData">Raw TTF/OTF/WOFF file bytes.</param>
     /// <param name="options">Generation options, or null for defaults.</param>
     public static BmFontResult Generate(byte[] fontData, FontGeneratorOptions? options = null)
+        => GenerateCore(fontData, options, sourceFontFile: null, sourceFontName: null);
+
+    private static BmFontResult GenerateCore(byte[] fontData, FontGeneratorOptions? options, string? sourceFontFile, string? sourceFontName)
     {
         ArgumentNullException.ThrowIfNull(fontData);
 
@@ -297,7 +300,7 @@ public static class BmFont
             var model = BmFontModelBuilder.Build(fontInfo, glyphs, packResult, options, glyphChannels);
             metrics?.End();
 
-            return new BmFontResult(model, pages, failedCodepoints, metrics);
+            return new BmFontResult(model, pages, failedCodepoints, metrics, options, sourceFontFile, sourceFontName);
         }
         finally
         {
@@ -319,7 +322,7 @@ public static class BmFont
     public static BmFontResult Generate(string fontPath, FontGeneratorOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(fontPath);
-        return Generate(File.ReadAllBytes(fontPath), options);
+        return GenerateCore(File.ReadAllBytes(fontPath), options, sourceFontFile: fontPath, sourceFontName: null);
     }
 
     /// <summary>Generates a BMFont from a font file on disk at the given size.</summary>
@@ -328,7 +331,7 @@ public static class BmFont
     public static BmFontResult Generate(string fontPath, int size)
     {
         ArgumentNullException.ThrowIfNull(fontPath);
-        return Generate(File.ReadAllBytes(fontPath), new FontGeneratorOptions { Size = size });
+        return GenerateCore(File.ReadAllBytes(fontPath), new FontGeneratorOptions { Size = size }, sourceFontFile: fontPath, sourceFontName: null);
     }
 
     /// <summary>Generates a BMFont from a system-installed font, looked up by family name (e.g., "Arial").</summary>
@@ -341,7 +344,7 @@ public static class BmFont
         options ??= new FontGeneratorOptions();
         var fontData = s_systemFontProvider.Value.LoadFont(fontFamily)
             ?? throw new FontParsingException($"System font '{fontFamily}' not found");
-        return Generate(fontData, options);
+        return GenerateCore(fontData, options, sourceFontFile: null, sourceFontName: fontFamily);
     }
 
     /// <summary>Generates a BMFont from a system-installed font at the given size.</summary>
@@ -351,6 +354,43 @@ public static class BmFont
     {
         ArgumentNullException.ThrowIfNull(fontFamily);
         return GenerateFromSystem(fontFamily, new FontGeneratorOptions { Size = size });
+    }
+
+    /// <summary>Generates a bitmap font from a .bmfc config file.</summary>
+    /// <param name="bmfcPath">Path to the .bmfc configuration file.</param>
+    /// <returns>The generated bitmap font result.</returns>
+    public static BmFontResult FromConfig(string bmfcPath)
+    {
+        ArgumentNullException.ThrowIfNull(bmfcPath);
+        var config = BmfcConfigReader.Read(bmfcPath);
+        return FromConfig(config);
+    }
+
+    /// <summary>Generates a bitmap font from a parsed .bmfc config.</summary>
+    /// <param name="config">The parsed .bmfc configuration.</param>
+    /// <returns>The generated bitmap font result.</returns>
+    public static BmFontResult FromConfig(BmfcConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        if (!string.IsNullOrEmpty(config.FontFile))
+        {
+            return GenerateCore(
+                File.ReadAllBytes(config.FontFile),
+                config.Options,
+                sourceFontFile: config.FontFile,
+                sourceFontName: config.FontName);
+        }
+
+        if (!string.IsNullOrEmpty(config.FontName))
+        {
+            var fontData = s_systemFontProvider.Value.LoadFont(config.FontName)
+                ?? throw new FontParsingException($"System font '{config.FontName}' not found");
+            return GenerateCore(fontData, config.Options, sourceFontFile: null, sourceFontName: config.FontName);
+        }
+
+        throw new InvalidOperationException(
+            "The .bmfc config must specify either a FontFile or FontName.");
     }
 
     /// <summary>

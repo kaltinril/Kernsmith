@@ -42,18 +42,25 @@ Install-Package KernSmith
 
 ## Quick Start
 
-Generate a bitmap font from a TTF file using `FontGeneratorOptions`:
+Generate a bitmap font from a `.bmfc` config file in one call:
 
 ```csharp
 using KernSmith;
 
+var result = BmFont.FromConfig("myfont.bmfc");
+result.ToFile("output/myfont");
+```
+
+Generate from a TTF file using `FontGeneratorOptions`:
+
+```csharp
 var result = BmFont.Generate("path/to/font.ttf", new FontGeneratorOptions
 {
     Size = 32,
     Characters = CharacterSet.Ascii
 });
 
-// Write .fnt + .png files to disk
+// Write .fnt + .png + .bmfc files to disk
 result.ToFile("output/myfont");
 ```
 
@@ -90,6 +97,15 @@ var result = BmFont.Builder()
     .Build();
 
 result.ToFile("output/myfont");
+```
+
+You can also start the builder from a `.bmfc` config and override individual settings:
+
+```csharp
+var result = BmFont.Builder()
+    .FromConfig("base.bmfc")
+    .WithSize(48)
+    .Build();
 ```
 
 ## System Fonts
@@ -274,27 +290,81 @@ result.ToFile("output/myfont", OutputFormat.Xml);
 result.ToFile("output/myfont", OutputFormat.Binary);
 ```
 
-`ToFile` writes both the `.fnt` descriptor and all `.png` atlas pages.
+`ToFile` writes the `.fnt` descriptor, all `.png` atlas pages, and a `.bmfc` config file (when source options are available).
 
 ### In-Memory Access
 
+Convenience properties give you the `.fnt` content without calling a formatter directly:
+
 ```csharp
-// BMFont text format as a string
-string fntText = result.ToString();
+// BMFont text format
+string fntText = result.FntText;
 
-// BMFont XML format as a string
-string fntXml = result.ToXml();
+// BMFont XML format
+string fntXml = result.FntXml;
 
-// BMFont binary format as a byte array
-byte[] fntBinary = result.ToBinary();
+// BMFont binary format
+byte[] fntBinary = result.FntBinary;
 
-// Access atlas page images directly
+// Encode atlas pages to PNG/TGA/DDS byte arrays
+byte[][] pngFiles = result.GetPngData();
+byte[] firstPng = result.GetPngData(0);
+byte[][] tgaFiles = result.GetTgaData();
+byte[][] ddsFiles = result.GetDdsData();
+
+// Round-trip: export the config that produced this result
+string bmfcText = result.ToBmfc();
+```
+
+The older `ToString()`, `ToXml()`, and `ToBinary()` methods still work and return the same data.
+
+### MonoGame / Game Engine Integration
+
+Generate a bitmap font and load it straight into your engine without writing temp files:
+
+```csharp
+var result = BmFont.FromConfig("ui-font.bmfc");
+
+// Feed these to your engine's SpriteFont or BMFont loader
+string fntText = result.FntText;
+byte[] pngBytes = result.GetPngData(0);
+```
+
+### Raw Pixel Access
+
+You can also access the raw RGBA pixel data on each atlas page:
+
+```csharp
 foreach (var page in result.Pages)
 {
-    byte[] imageData = page.PixelData;
+    byte[] rgba = page.PixelData;
     int width = page.Width;
     int height = page.Height;
+
+    // Encode individual pages to other formats
+    byte[] tga = page.ToTga();
+    byte[] dds = page.ToDds();
 }
+```
+
+## Reading and Writing .bmfc Config Files
+
+Use `BmfcConfigReader` and `BmfcConfigWriter` to work with `.bmfc` configuration files programmatically:
+
+```csharp
+using KernSmith;
+
+// Read a .bmfc config file
+BmfcConfig config = BmfcConfigReader.Read("path/to/font.bmfc");
+
+// Or parse from a string
+BmfcConfig config2 = BmfcConfigReader.Parse(bmfcContent);
+
+// Modify and write back
+BmfcConfigWriter.WriteToFile(config, "path/to/output.bmfc");
+
+// Or serialize to a string
+string bmfcText = BmfcConfigWriter.Write(config);
 ```
 
 ## Reading BMFont Files
@@ -320,7 +390,9 @@ var model2 = BmFont.LoadModel(fntTextContent);
 
 A reference command-line tool is included in `tools/KernSmith.Cli/`. See the [CLI README](tools/KernSmith.Cli/README.md) for usage.
 
-Available commands: `generate`, `batch`, `benchmark`, `inspect`, `convert`, `list-fonts`, `info`.
+Available commands: `generate`, `init`, `batch`, `benchmark`, `inspect`, `convert`, `list-fonts`, `info`.
+
+The `init` command generates a `.bmfc` config file from CLI flags without rendering a font, so you can scaffold a config and tweak it by hand.
 
 Use `--time` to display elapsed time or `--profile` to show a full pipeline stage breakdown.
 

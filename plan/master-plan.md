@@ -1,6 +1,6 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-11, 13-17 complete. Phase 12 (Pre-Ship Polish) and Phase 30 (WASM) are active.
+> **Status**: Phases 1-18 complete. Phase 19 (Layer Output) and Phase 30 (WASM) are future/exploratory.
 > **Date**: 2026-03-20
 
 ---
@@ -79,8 +79,8 @@ Output Layer
 
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
-| 12 | [Pre-Ship Polish](phase-12-pre-ship-polish.md) | Security hardening, test coverage gaps, NuGet packaging, API polish, FT_Stroker fix | Planning |
-| 30 | [WASM Rasterization](phase-30-wasm-rasterization.md) | Live investigation of WASM-compatible rasterizers (prior research was preliminary) | Planning |
+| 19 | [Separate Layer Output](phase-19-layer-output.md) | Output effect layers (shadow, outline, body) as separate atlas pages for parallax/shader use | Future |
+| 30 | [WASM Rasterization](phase-30-wasm-rasterization.md) | Live investigation of WASM-compatible rasterizers (prior research was preliminary) | Future |
 
 ---
 
@@ -102,8 +102,10 @@ Output Layer
 | 13 | [Batch CLI](done/phase-13-batch-cli.md) | Batch command, .bmfc multi-file processing, collision detection |
 | 14 | [Benchmarking & Profiling](done/phase-14-benchmarking-profiling.md) | 50+ benchmarks, PipelineMetrics, CLI --time/--profile, benchmark command |
 | 15 | [Library Performance](done/phase-15-library-performance.md) | FontCache, GenerateBatch API, static SystemFontProvider -- 18 fonts in 196ms |
+| 12 | [Pre-Ship Polish](done/phase-12-pre-ship-polish.md) | Security hardening, 65 tests, NuGet packaging, XML docs, API polish |
 | 16 | [BMFont .bmfc Compatibility](done/phase-16-bmfc-compatibility.md) | Standard BMFont key=value format, drop legacy INI, same files work in both tools |
 | 17 | [Rebrand to KernSmith](done/phase-17-rebrand-kernsmith.md) | Full project rename from bmfontier to KernSmith |
+| 18 | [API Usability](done/phase-18-api-usability.md) | FromConfig, convenience properties, GetPngData, ToBmfc, Builder.FromConfig, init CLI command |
 
 ### Topical Plan Docs (archived in `done/`)
 
@@ -166,13 +168,19 @@ Replaced order-dependent post-processor chain with layered compositing system. I
 ### Phase 11 -- Solution Restructure (COMPLETE)
 Multi-project foundation: Directory.Build.props, central package management, global.json, .editorconfig, net10.0 migration, CLI promotion from samples/ to tools/, future app scaffolding (UI/Web/Mobile), solution filters. Also fixed UTF-8 BOM bug in .fnt writer and channel packing + effects validation.
 
-### Phase 12 -- Pre-Ship Polish (PLANNING)
-Security hardening (10 items), test coverage gaps (~30 new tests), NuGet package readiness (LICENSE, URLs, SourceLink, XML docs, CHANGELOG), API documentation polish, optional FT_Stroker compositing fix.
+### Phase 12 -- Pre-Ship Polish (COMPLETE)
+Security hardening (10 items), 65 new tests, NuGet package readiness (LICENSE, SourceLink, XML docs, CHANGELOG), API documentation polish, XML IntelliSense for all public members.
 
 ### Phase 17 -- Rebrand to KernSmith (COMPLETE)
 Full project rename from bmfontier to KernSmith -- namespaces, assemblies, directories, project files, docs, CLI commands, NuGet package, and all references.
 
-### Phase 30 -- WASM Rasterization (PLANNING)
+### Phase 18 -- API Usability (COMPLETE)
+Convenience API for game developers: BmFont.FromConfig() one-liner, FntText/FntXml/FntBinary properties, GetPngData()/GetTgaData()/GetDdsData() encoding methods, ToBmfc() round-trip, Builder.FromConfig(), library-level BmfcConfigReader/BmfcConfigWriter, CLI init command, ToFile() writes .bmfc alongside .fnt and .png.
+
+### Phase 19 -- Separate Layer Output (FUTURE)
+Output effect layers (shadow, outline, body) as separate atlas page sets instead of compositing into one. Enables parallax/3D effects, runtime shaders, and dynamic layer adjustment in games. Exploratory -- no timeline.
+
+### Phase 30 -- WASM Rasterization (FUTURE)
 Live investigation of WASM-compatible font rasterizers. Prior preliminary research suggested server-side rasterization or SkiaSharp, but findings were not validated with actual testing. Requires checking current FreeTypeSharp WASM status, testing Emscripten builds, evaluating SkiaSharp.Views.Blazor, and verifying IRasterizer swappability.
 
 ### Phase 13 -- Batch CLI (COMPLETE)

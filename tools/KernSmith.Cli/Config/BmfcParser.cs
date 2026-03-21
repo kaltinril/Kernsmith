@@ -1,307 +1,129 @@
-using System.Globalization;
 using KernSmith.Cli.Utilities;
 
 namespace KernSmith.Cli.Config;
 
 /// <summary>
-/// Reads .bmfc configuration files in BMFont flat key=value format into <see cref="CliOptions"/>.
+/// Reads .bmfc configuration files into <see cref="CliOptions"/>.
+/// Delegates to the library-level <see cref="BmfcConfigReader"/> and maps the result.
 /// </summary>
 internal static class BmfcParser
 {
     public static CliOptions Parse(string filePath)
     {
-        if (!File.Exists(filePath))
-            throw new FileNotFoundException($"Config file not found: {filePath}", filePath);
+        var config = BmfcConfigReader.Read(filePath);
+        return MapToCliOptions(config);
+    }
 
-        var dir = Path.GetDirectoryName(Path.GetFullPath(filePath)) ?? ".";
-        var lines = File.ReadAllLines(filePath);
-        var options = new CliOptions();
-
-        // Accumulate padding/spacing values with defaults
-        int paddingUp = 0, paddingDown = 0, paddingRight = 0, paddingLeft = 0;
-        int spacingHoriz = 1, spacingVert = 1;
-        bool hasPadding = false, hasSpacing = false;
-
-        foreach (var rawLine in lines)
+    private static CliOptions MapToCliOptions(BmfcConfig config)
+    {
+        var gen = config.Options;
+        var options = new CliOptions
         {
-            var line = rawLine.Trim();
+            FontPath = config.FontFile,
+            SystemFontName = config.FontName,
+            OutputPath = config.OutputPath,
+            OutputFormat = config.OutputFormat,
 
-            // Skip empty lines and comments
-            if (line.Length == 0 || line[0] == '#')
-                continue;
+            // Rendering
+            Size = gen.Size,
+            Dpi = gen.Dpi,
+            AntiAlias = gen.AntiAlias,
+            Sdf = gen.Sdf,
+            Bold = gen.Bold,
+            Italic = gen.Italic,
 
-            var eqIndex = line.IndexOf('=');
-            if (eqIndex < 0)
-                continue;
+            // Atlas
+            Padding = gen.Padding,
+            Spacing = gen.Spacing,
+            PackingAlgorithm = gen.PackingAlgorithm,
+            ChannelPacking = gen.ChannelPacking,
+            AutofitTexture = gen.AutofitTexture,
+            MaxTextureWidth = gen.MaxTextureWidth,
+            MaxTextureHeight = gen.MaxTextureHeight,
 
-            var key = line[..eqIndex].Trim();
-            var value = line[(eqIndex + 1)..].Trim();
+            // Effects
+            Outline = gen.Outline,
+            GradientAngle = gen.GradientAngle,
+            GradientMidpoint = gen.GradientMidpoint,
+            ShadowOffsetX = gen.ShadowOffsetX,
+            ShadowOffsetY = gen.ShadowOffsetY,
+            ShadowBlur = gen.ShadowBlur,
 
-            try
-            {
-                switch (key)
-                {
-                    // Font settings
-                    case "fontName":
-                        options.SystemFontName = value;
-                        break;
-                    case "fontFile":
-                        if (!string.IsNullOrEmpty(value))
-                            options.FontPath = Path.IsPathRooted(value)
-                                ? value
-                                : Path.GetFullPath(Path.Combine(dir, value));
-                        break;
-                    case "fontSize":
-                        var sizeVal = int.Parse(value);
-                        if (sizeVal < 0)
-                        {
-                            options.Size = Math.Abs(sizeVal);
-                            options.MatchCharHeight = true;
-                        }
-                        else
-                        {
-                            options.Size = sizeVal;
-                        }
-                        break;
-                    case "isBold":
-                        options.Bold = value == "1";
-                        break;
-                    case "isItalic":
-                        options.Italic = value == "1";
-                        break;
-                    case "useSmoothing":
-                        if (value == "0")
-                            options.AntiAlias = AntiAliasMode.None;
-                        break;
-                    case "aa":
-                        // 1=grayscale (default), 2=ClearType (map to Light as closest)
-                        if (value == "2")
-                            options.AntiAlias = AntiAliasMode.Light;
-                        break;
-                    case "useHinting":
-                        options.EnableHinting = value == "1";
-                        break;
-                    case "scaleH":
-                        options.HeightPercent = int.Parse(value);
-                        break;
-                    case "dontIncludeKerningPairs":
-                        options.Kerning = value != "1";
-                        break;
-                    case "autoFitNumPages":
-                        if (int.Parse(value) > 0)
-                            options.AutofitTexture = true;
-                        break;
+            // Kerning
+            Kerning = gen.Kerning,
 
-                    // Character alignment
-                    case "paddingUp":
-                        paddingUp = int.Parse(value);
-                        hasPadding = true;
-                        break;
-                    case "paddingDown":
-                        paddingDown = int.Parse(value);
-                        hasPadding = true;
-                        break;
-                    case "paddingRight":
-                        paddingRight = int.Parse(value);
-                        hasPadding = true;
-                        break;
-                    case "paddingLeft":
-                        paddingLeft = int.Parse(value);
-                        hasPadding = true;
-                        break;
-                    case "spacingHoriz":
-                        spacingHoriz = int.Parse(value);
-                        hasSpacing = true;
-                        break;
-                    case "spacingVert":
-                        spacingVert = int.Parse(value);
-                        hasSpacing = true;
-                        break;
-                    case "useFixedHeight":
-                        options.EqualizeCellHeights = value == "1";
-                        break;
-                    case "forceZero":
-                        options.ForceOffsetsToZero = value == "1";
-                        break;
+            // Rendering extras
+            SuperSampleLevel = gen.SuperSampleLevel,
+            FallbackCharacter = gen.FallbackCharacter,
+            EnableHinting = gen.EnableHinting,
+            EqualizeCellHeights = gen.EqualizeCellHeights,
+            ForceOffsetsToZero = gen.ForceOffsetsToZero,
+            HeightPercent = gen.HeightPercent,
+            MatchCharHeight = gen.MatchCharHeight,
+            ColorFont = gen.ColorFont,
+            ColorPaletteIndex = gen.ColorPaletteIndex,
+            FaceIndex = gen.FaceIndex,
+            PowerOfTwo = gen.PowerOfTwo,
+        };
 
-                    // Output file
-                    case "outWidth":
-                        options.MaxTextureWidth = int.Parse(value);
-                        break;
-                    case "outHeight":
-                        options.MaxTextureHeight = int.Parse(value);
-                        break;
-                    case "fontDescFormat":
-                        options.OutputFormat = int.Parse(value) switch
-                        {
-                            0 => OutputFormat.Text,
-                            1 => OutputFormat.Xml,
-                            2 => OutputFormat.Binary,
-                            _ => OutputFormat.Text
-                        };
-                        break;
-                    case "textureFormat":
-                        options.TextureFormat = value.ToLowerInvariant();
-                        break;
-                    case "fourChnlPacked":
-                        options.ChannelPacking = value == "1";
-                        break;
+        // Map TextureFormat enum back to string
+        options.TextureFormat = gen.TextureFormat switch
+        {
+            KernSmith.TextureFormat.Tga => "tga",
+            KernSmith.TextureFormat.Dds => "dds",
+            _ => null // null means default (png) -- CLI treats null as "not explicitly set"
+        };
 
-                    // Outline
-                    case "outlineThickness":
-                        options.Outline = int.Parse(value);
-                        break;
-
-                    // Characters
-                    case "chars":
-                        ParseBmFontChars(options, value);
-                        break;
-
-                    // kernsmith extension keys
-                    case "gradientTop":
-                        if (!string.IsNullOrEmpty(value))
-                            options.GradientTop = value;
-                        break;
-                    case "gradientBottom":
-                        if (!string.IsNullOrEmpty(value))
-                            options.GradientBottom = value;
-                        break;
-                    case "gradientAngle":
-                        options.GradientAngle = float.Parse(value, CultureInfo.InvariantCulture);
-                        break;
-                    case "gradientMidpoint":
-                        options.GradientMidpoint = float.Parse(value, CultureInfo.InvariantCulture);
-                        break;
-                    case "shadowOffsetX":
-                        options.ShadowOffsetX = int.Parse(value);
-                        break;
-                    case "shadowOffsetY":
-                        options.ShadowOffsetY = int.Parse(value);
-                        break;
-                    case "shadowColor":
-                        if (!string.IsNullOrEmpty(value))
-                            options.ShadowColor = value;
-                        break;
-                    case "shadowBlur":
-                        options.ShadowBlur = int.Parse(value);
-                        break;
-                    case "outlineColor":
-                        if (!string.IsNullOrEmpty(value))
-                            options.OutlineColor = value;
-                        break;
-                    case "useSdf":
-                        options.Sdf = value == "1";
-                        break;
-                    case "superSample":
-                        options.SuperSampleLevel = int.Parse(value);
-                        break;
-                    case "packer":
-                        options.PackingAlgorithm = value.ToLowerInvariant() switch
-                        {
-                            "maxrects" => PackingAlgorithm.MaxRects,
-                            "skyline" => PackingAlgorithm.Skyline,
-                            _ => PackingAlgorithm.MaxRects
-                        };
-                        break;
-                    case "outputPath":
-                        if (!string.IsNullOrEmpty(value))
-                            options.OutputPath = Path.IsPathRooted(value)
-                                ? value
-                                : Path.GetFullPath(Path.Combine(dir, value));
-                        break;
-                    case "fallbackChar":
-                        if (!string.IsNullOrEmpty(value))
-                            options.FallbackCharacter = value.Length == 1 ? value[0] : (char)int.Parse(value);
-                        break;
-                    case "colorFont":
-                        options.ColorFont = value == "1";
-                        break;
-                    case "colorPalette":
-                        options.ColorPaletteIndex = int.Parse(value);
-                        break;
-                    case "faceIndex":
-                        options.FaceIndex = int.Parse(value);
-                        break;
-                    case "dpi":
-                        options.Dpi = int.Parse(value);
-                        break;
-                    case "powerOfTwo":
-                        options.PowerOfTwo = value == "1";
-                        break;
-                    case "autofit":
-                        options.AutofitTexture = value == "1";
-                        break;
-
-                    // Ignored BMFont keys we don't support
-                    case "fileVersion":
-                    case "charSet":
-                    case "useUnicode":
-                    case "disableBoxChars":
-                    case "outputInvalidCharGlyph":
-                    case "renderFromOutline":
-                    case "useClearType":
-                    case "autoFitFontSizeMin":
-                    case "autoFitFontSizeMax":
-                    case "widthPaddingFactor":
-                    case "outBitDepth":
-                    case "textureCompression":
-                    case "alphaChnl":
-                    case "redChnl":
-                    case "greenChnl":
-                    case "blueChnl":
-                    case "invA":
-                    case "invR":
-                    case "invG":
-                    case "invB":
-                        // Silently ignore known BMFont keys we don't map
-                        break;
-
-                    default:
-                        // Unknown key — skip silently for forward compatibility
-                        break;
-                }
-            }
-            catch (Exception ex) when (ex is not FileNotFoundException)
-            {
-                ConsoleOutput.WriteWarning($"Config: ignoring invalid entry {key}={value}: {ex.Message}");
-            }
+        // Map color bytes back to hex strings for CLI
+        if (gen.GradientStartR.HasValue && gen.GradientEndR.HasValue)
+        {
+            options.GradientTop = FormatColor(gen.GradientStartR.Value, gen.GradientStartG.GetValueOrDefault(), gen.GradientStartB.GetValueOrDefault());
+            options.GradientBottom = FormatColor(gen.GradientEndR.Value, gen.GradientEndG.GetValueOrDefault(), gen.GradientEndB.GetValueOrDefault());
         }
 
-        if (hasPadding)
-            options.Padding = new Padding(paddingUp, paddingRight, paddingDown, paddingLeft);
-        if (hasSpacing)
-            options.Spacing = new Spacing(spacingHoriz, spacingVert);
+        if (gen.Outline > 0 && (gen.OutlineR != 0 || gen.OutlineG != 0 || gen.OutlineB != 0))
+            options.OutlineColor = FormatColor(gen.OutlineR, gen.OutlineG, gen.OutlineB);
+
+        if (gen.ShadowR != 0 || gen.ShadowG != 0 || gen.ShadowB != 0)
+            options.ShadowColor = FormatColor(gen.ShadowR, gen.ShadowG, gen.ShadowB);
+
+        // Map character set: extract ranges from the CharacterSet for CLI compatibility
+        var codepoints = gen.Characters.GetCodepoints().OrderBy(c => c).ToArray();
+        if (codepoints.Length > 0)
+        {
+            options.CharsetPreset = null; // Explicit chars override preset
+            options.UnicodeRanges = ExtractRanges(codepoints);
+        }
+
+        // Map variation axes
+        if (gen.VariationAxes is { Count: > 0 })
+            options.VariationAxes = new Dictionary<string, float>(gen.VariationAxes);
 
         return options;
     }
 
-    /// <summary>
-    /// Parses BMFont chars= format: comma-separated decimal codepoints and ranges.
-    /// Example: "32-126,160-255,8364"
-    /// </summary>
-    private static void ParseBmFontChars(CliOptions options, string value)
+    private static List<(int Start, int End)> ExtractRanges(int[] sortedCodepoints)
     {
-        // Clear default preset since we have explicit character definitions
-        options.CharsetPreset = null;
+        var ranges = new List<(int Start, int End)>();
+        if (sortedCodepoints.Length == 0)
+            return ranges;
 
-        foreach (var part in value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+        int start = sortedCodepoints[0], end = sortedCodepoints[0];
+        for (int i = 1; i < sortedCodepoints.Length; i++)
         {
-            var dashIndex = part.IndexOf('-');
-            if (dashIndex >= 0)
+            if (sortedCodepoints[i] == end + 1)
             {
-                // Range: "32-126" (decimal)
-                var startStr = part[..dashIndex].Trim();
-                var endStr = part[(dashIndex + 1)..].Trim();
-                var start = int.Parse(startStr);
-                var end = int.Parse(endStr);
-                options.UnicodeRanges.Add((start, end));
+                end = sortedCodepoints[i];
             }
             else
             {
-                // Single codepoint: "8364" (decimal)
-                var code = int.Parse(part);
-                options.UnicodeRanges.Add((code, code));
+                ranges.Add((start, end));
+                start = end = sortedCodepoints[i];
             }
         }
+        ranges.Add((start, end));
+        return ranges;
     }
+
+    private static string FormatColor(byte r, byte g, byte b) => $"{r:X2}{g:X2}{b:X2}";
 }

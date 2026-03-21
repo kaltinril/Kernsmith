@@ -17,6 +17,42 @@ public sealed class BmFontBuilder
 
     internal BmFontBuilder() { }
 
+    /// <summary>Loads settings from a .bmfc config file as a starting point.</summary>
+    /// <param name="bmfcPath">Path to the .bmfc configuration file.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder FromConfig(string bmfcPath)
+    {
+        ArgumentNullException.ThrowIfNull(bmfcPath);
+        return FromConfig(BmfcConfigReader.Read(bmfcPath));
+    }
+
+    /// <summary>Loads settings from a parsed .bmfc config as a starting point.</summary>
+    /// <param name="config">The parsed .bmfc configuration.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder FromConfig(BmfcConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        // Copy options from config
+        CopyOptions(config.Options);
+
+        // Set font source
+        if (!string.IsNullOrEmpty(config.FontFile))
+        {
+            _fontPath = config.FontFile;
+            _fontData = null;
+            _systemFontFamily = null;
+        }
+        else if (!string.IsNullOrEmpty(config.FontName))
+        {
+            _systemFontFamily = config.FontName;
+            _fontData = null;
+            _fontPath = null;
+        }
+
+        return this;
+    }
+
     /// <summary>Loads a font from raw byte data.</summary>
     /// <param name="fontData">The font file bytes.</param>
     /// <returns>This builder.</returns>
@@ -358,6 +394,66 @@ public sealed class BmFontBuilder
         list.Add(processor);
         _options.PostProcessors = list;
         return this;
+    }
+
+    private void CopyOptions(FontGeneratorOptions source)
+    {
+        _options.Size = source.Size;
+        _options.Characters = source.Characters;
+        _options.Bold = source.Bold;
+        _options.Italic = source.Italic;
+        _options.AntiAlias = source.AntiAlias;
+        _options.MaxTextureWidth = source.MaxTextureWidth;
+        _options.MaxTextureHeight = source.MaxTextureHeight;
+        _options.Padding = source.Padding;
+        _options.Spacing = source.Spacing;
+        _options.PackingAlgorithm = source.PackingAlgorithm;
+        _options.Kerning = source.Kerning;
+        _options.Outline = source.Outline;
+        _options.OutlineR = source.OutlineR;
+        _options.OutlineG = source.OutlineG;
+        _options.OutlineB = source.OutlineB;
+        _options.Sdf = source.Sdf;
+        _options.PowerOfTwo = source.PowerOfTwo;
+        _options.Dpi = source.Dpi;
+        _options.FaceIndex = source.FaceIndex;
+        _options.ChannelPacking = source.ChannelPacking;
+        _options.ColorFont = source.ColorFont;
+        _options.ColorPaletteIndex = source.ColorPaletteIndex;
+        _options.VariationAxes = source.VariationAxes != null ? new Dictionary<string, float>(source.VariationAxes) : null;
+        _options.SuperSampleLevel = source.SuperSampleLevel;
+        _options.FallbackCharacter = source.FallbackCharacter;
+        _options.TextureFormat = source.TextureFormat;
+        _options.EnableHinting = source.EnableHinting;
+        _options.AutofitTexture = source.AutofitTexture;
+        _options.EqualizeCellHeights = source.EqualizeCellHeights;
+        _options.ForceOffsetsToZero = source.ForceOffsetsToZero;
+        _options.Channels = source.Channels;
+        _options.HeightPercent = source.HeightPercent;
+        _options.MatchCharHeight = source.MatchCharHeight;
+        _options.PackingEfficiencyHint = source.PackingEfficiencyHint;
+        _options.ShadowOffsetX = source.ShadowOffsetX;
+        _options.ShadowOffsetY = source.ShadowOffsetY;
+        _options.ShadowBlur = source.ShadowBlur;
+        _options.ShadowR = source.ShadowR;
+        _options.ShadowG = source.ShadowG;
+        _options.ShadowB = source.ShadowB;
+        _options.ShadowOpacity = source.ShadowOpacity;
+        _options.GradientStartR = source.GradientStartR;
+        _options.GradientStartG = source.GradientStartG;
+        _options.GradientStartB = source.GradientStartB;
+        _options.GradientEndR = source.GradientEndR;
+        _options.GradientEndG = source.GradientEndG;
+        _options.GradientEndB = source.GradientEndB;
+        _options.GradientAngle = source.GradientAngle;
+        _options.GradientMidpoint = source.GradientMidpoint;
+        _options.CollectMetrics = source.CollectMetrics;
+        _options.CustomGlyphs = source.CustomGlyphs != null ? new Dictionary<int, CustomGlyph>(source.CustomGlyphs) : null;
+        _options.PostProcessors = source.PostProcessors?.ToList();
+        _options.Rasterizer = source.Rasterizer;
+        _options.Packer = source.Packer;
+        _options.AtlasEncoder = source.AtlasEncoder;
+        _options.FontReader = source.FontReader;
     }
 
     /// <summary>Generates the bitmap font, returning the descriptor model and atlas texture pages.</summary>

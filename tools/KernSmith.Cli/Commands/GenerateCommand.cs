@@ -296,7 +296,7 @@ internal sealed class GenerateCommand
         };
     }
 
-    private static CliOptions ParseArgs(string[] args)
+    internal static CliOptions ParseArgs(string[] args)
     {
         var options = new CliOptions();
 

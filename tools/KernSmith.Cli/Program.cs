@@ -23,6 +23,7 @@ return processedArgs switch
     [] or ["--help"] or ["-h"] => ShowHelp(),
     ["--version"] => ShowVersion(),
     ["generate", .. var rest] => GenerateCommand.Execute(rest),
+    ["init", .. var rest] => InitCommand.Execute(rest),
     ["batch", .. var rest] => BatchCommand.Execute(rest),
     ["benchmark", .. var rest] => BenchmarkCommand.Execute(rest),
     ["inspect", .. var rest] => InspectCommand.Execute(rest),
@@ -39,6 +40,7 @@ static int ShowHelp()
 
         Usage:
           kernsmith generate -f <font> -s <size> [options]
+          kernsmith init [options] -o <path>
           kernsmith batch <config1.bmfc> [config2.bmfc ...] [options]
           kernsmith benchmark -f <font> -s <size> [options]
           kernsmith inspect <path>
@@ -49,6 +51,7 @@ static int ShowHelp()
 
         Commands:
           generate      Generate BMFont files from a font
+          init          Generate a .bmfc config file without rendering
           batch         Process multiple .bmfc configs in a single invocation
           benchmark     Benchmark font generation performance
           inspect       Inspect an existing .fnt file
