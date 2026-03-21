@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Package icon added and wired into NuGet package
+- CLI tool now has a Windows application icon
 - `BmFont.FromConfig()` -- generate a bitmap font directly from a .bmfc config file
 - `BmFontResult.FntText`, `.FntXml`, `.FntBinary` -- convenience properties for in-memory .fnt access
 - `BmFontResult.GetPngData()`, `.GetTgaData()`, `.GetDdsData()` -- encode atlas pages to byte arrays
@@ -16,6 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `BmFontBuilder.FromConfig()` -- load a .bmfc config as the builder starting point
 - `AtlasPage.ToTga()`, `.ToDds()` -- encode individual atlas pages to TGA or DDS format
 - `ToFile()` now also writes a .bmfc config file alongside .fnt and atlas pages
+
+### Changed
+
+- Version bumped from 0.8.0 to 0.9.0
+- Assets moved to `assets/` folder (icon, favicons, social preview)
+- .gitignore updated for generated font files
+- License changed from MIT to proprietary
+- Benchmark CI workflow changed to manual-only trigger
 
 ## [0.8.0] - 2026-03-20
 

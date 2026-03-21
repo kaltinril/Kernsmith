@@ -1,6 +1,6 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-18 complete. Phase 19 (Layer Output) and Phase 30 (WASM) are future/exploratory.
+> **Status**: Phases 1-18 and 20 complete. Phase 30 (WASM) is future/exploratory.
 > **Date**: 2026-03-20
 
 ---
@@ -79,7 +79,6 @@ Output Layer
 
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
-| 20 | [Release Readiness](phase-20-release-readiness.md) | Version alignment, package icon, dotnet pack, CI verification, GitHub polish, first NuGet publish | Planning |
 | 30 | [WASM Rasterization](phase-30-wasm-rasterization.md) | Live investigation of WASM-compatible rasterizers (prior research was preliminary) | Future |
 | 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
 
@@ -107,6 +106,7 @@ Output Layer
 | 16 | [BMFont .bmfc Compatibility](done/phase-16-bmfc-compatibility.md) | Standard BMFont key=value format, drop legacy INI, same files work in both tools |
 | 17 | [Rebrand to KernSmith](done/phase-17-rebrand-kernsmith.md) | Full project rename from bmfontier to KernSmith |
 | 18 | [API Usability](done/phase-18-api-usability.md) | FromConfig, convenience properties, GetPngData, ToBmfc, Builder.FromConfig, init CLI command |
+| 20 | [Release Readiness](done/phase-20-release-readiness.md) | Version alignment, package icon, dotnet pack, CI verification, GitHub polish, first NuGet publish |
 
 ### Topical Plan Docs (archived in `done/`)
 
@@ -178,7 +178,7 @@ Full project rename from bmfontier to KernSmith -- namespaces, assemblies, direc
 ### Phase 18 -- API Usability (COMPLETE)
 Convenience API for game developers: BmFont.FromConfig() one-liner, FntText/FntXml/FntBinary properties, GetPngData()/GetTgaData()/GetDdsData() encoding methods, ToBmfc() round-trip, Builder.FromConfig(), library-level BmfcConfigReader/BmfcConfigWriter, CLI init command, ToFile() writes .bmfc alongside .fnt and .png.
 
-### Phase 20 -- Release Readiness (PLANNING)
+### Phase 20 -- Release Readiness (COMPLETE)
 Version alignment, package icon, dotnet pack verification, CI smoke test, SourceLink check, GitHub repo polish, first NuGet publish, sample project updates.
 
 ### Phase 50 -- In-Memory Layer Retention (FUTURE)
