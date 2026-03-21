@@ -1,0 +1,3 @@
+# Exclude Claude Code skill scripts from GitHub language statistics
+.claude/** linguist-vendored
+extract_prompt_history.py linguist-vendored
