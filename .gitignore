@@ -14,6 +14,7 @@
 # Generated output (root-level only, not src/Bmfontier/Output/)
 /output/
 /samples/output/
+/tests/output/
 
 # Build results
 [Dd]ebug/
