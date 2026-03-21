@@ -145,7 +145,7 @@ public sealed class OutlinePostProcessor : IGlyphPostProcessor
         var newMetrics = new GlyphMetrics(
             BearingX: metrics.BearingX - ow,
             BearingY: metrics.BearingY + ow,
-            Advance: metrics.Advance,
+            Advance: metrics.Advance + 2 * ow,
             Width: metrics.Width + 2 * ow,
             Height: metrics.Height + 2 * ow);
 
