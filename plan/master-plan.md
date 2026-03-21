@@ -79,8 +79,8 @@ Output Layer
 
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
-| 19 | [Separate Layer Output](phase-19-layer-output.md) | Output effect layers (shadow, outline, body) as separate atlas pages for parallax/shader use | Future |
 | 30 | [WASM Rasterization](phase-30-wasm-rasterization.md) | Live investigation of WASM-compatible rasterizers (prior research was preliminary) | Future |
+| 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
 
 ---
 
@@ -177,8 +177,8 @@ Full project rename from bmfontier to KernSmith -- namespaces, assemblies, direc
 ### Phase 18 -- API Usability (COMPLETE)
 Convenience API for game developers: BmFont.FromConfig() one-liner, FntText/FntXml/FntBinary properties, GetPngData()/GetTgaData()/GetDdsData() encoding methods, ToBmfc() round-trip, Builder.FromConfig(), library-level BmfcConfigReader/BmfcConfigWriter, CLI init command, ToFile() writes .bmfc alongside .fnt and .png.
 
-### Phase 19 -- Separate Layer Output (FUTURE)
-Output effect layers (shadow, outline, body) as separate atlas page sets instead of compositing into one. Enables parallax/3D effects, runtime shaders, and dynamic layer adjustment in games. Exploratory -- no timeline.
+### Phase 50 -- In-Memory Layer Retention (FUTURE)
+Optionally retain per-glyph effect layer bitmaps (shadow, outline, body) in memory on the result. Enables engine-side compositing for parallax, runtime shaders, and dynamic layer adjustment. Nice-to-have -- implement when requested.
 
 ### Phase 30 -- WASM Rasterization (FUTURE)
 Live investigation of WASM-compatible font rasterizers. Prior preliminary research suggested server-side rasterization or SkiaSharp, but findings were not validated with actual testing. Requires checking current FreeTypeSharp WASM status, testing Emscripten builds, evaluating SkiaSharp.Views.Blazor, and verifying IRasterizer swappability.
