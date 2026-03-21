@@ -58,6 +58,7 @@ static int ShowHelp()
 
         Generate options:
           -f, --font <path>            Font file path (required)
+          --system-font <name>         System font family name (alternative to --font)
           -s, --size <pixels>          Font size in pixels (required)
           -o, --output <path>          Output path, without extension (default: ./<fontname>)
           -c, --charset <set>          Character set: ascii (default), extended, latin,
@@ -70,6 +71,7 @@ static int ShowHelp()
           --sdf                        Enable SDF rendering
           --outline <n>                Outline width in pixels (default: 0)
           --gradient <top>,<bottom>    Vertical gradient (comma or space separated)
+          --shadow <x>,<y>,<color>,<blur>  Drop shadow
           --max-texture <n>            Max texture size (default: 1024)
           --max-texture-size <n>       Max texture size (alias)
           --max-texture-width <n>      Max texture width (independent)

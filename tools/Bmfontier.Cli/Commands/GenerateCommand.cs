@@ -599,6 +599,10 @@ internal sealed class GenerateCommand
         if (cli.ShadowOffsetX != 0 || cli.ShadowOffsetY != 0) { config.ShadowOffsetX = cli.ShadowOffsetX; config.ShadowOffsetY = cli.ShadowOffsetY; }
         if (cli.ShadowColor != null) config.ShadowColor = cli.ShadowColor;
         if (cli.ShadowBlur != 0) config.ShadowBlur = cli.ShadowBlur;
+        if (cli.ShowTime) config.ShowTime = true;
+        if (cli.ShowProfile) config.ShowProfile = true;
+        if (cli.GradientAngle != 90f) config.GradientAngle = cli.GradientAngle;
+        if (cli.GradientMidpoint != 0.5f) config.GradientMidpoint = cli.GradientMidpoint;
     }
 
     internal static CharacterSet BuildCharacterSet(CliOptions options)
@@ -766,6 +770,8 @@ internal sealed class GenerateCommand
               --outline <n>[,color]        Outline width in pixels, optional hex color (e.g., --outline 2,FF0000)
               --gradient <top>,<bottom>   Vertical gradient, colors as hex
               --gradient <top> <bottom>   Vertical gradient (two-argument form)
+              --gradient-angle <deg>      Gradient rotation in degrees (default: 90)
+              --gradient-midpoint <0-1>   Gradient midpoint bias (default: 0.5)
               --shadow <x>,<y>[,color[,blur]]  Drop shadow (e.g., --shadow 2,2,000000,1)
 
             Kerning:

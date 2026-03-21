@@ -24,7 +24,9 @@ Cross-platform .NET library that generates BMFont-compatible bitmap font atlases
 - **Fluent builder API** -- chainable configuration as an alternative to options objects
 - **System font loading** -- generate from installed fonts by family name
 - **Fully in-memory** -- entire pipeline runs without touching disk unless you call `ToFile()`
-- **Cross-platform** -- Windows, Linux, macOS via .NET 8.0
+- **Batch generation** -- parallel multi-font generation with font caching
+- **Pipeline metrics** -- stage-level timing breakdown for profiling
+- **Cross-platform** -- Windows, Linux, macOS via .NET 10.0
 
 ## Installation
 
@@ -110,6 +112,60 @@ var result = BmFont.Builder()
     .WithSize(36)
     .WithCharacters(CharacterSet.Latin)
     .Build();
+```
+
+## Batch Generation
+
+Generate multiple fonts in parallel with shared font caching:
+
+```csharp
+// Batch generate multiple fonts with parallel execution
+var jobs = new List<BatchJob>
+{
+    new BatchJob { SystemFont = "Arial", Options = new FontGeneratorOptions { Size = 32 } },
+    new BatchJob { SystemFont = "Arial", Options = new FontGeneratorOptions { Size = 48, Bold = true } },
+    new BatchJob { FontPath = "custom.ttf", Options = new FontGeneratorOptions { Size = 24 } },
+};
+
+var result = BmFont.GenerateBatch(jobs, new BatchOptions { MaxParallelism = 4 });
+
+foreach (var job in result.Results)
+{
+    if (job.Success)
+        job.Result!.ToFile($"output/font-{job.Index}");
+}
+```
+
+### Font Cache
+
+Pre-load fonts for reuse across multiple generations:
+
+```csharp
+// Pre-load fonts for reuse across multiple generations
+var cache = new FontCache();
+cache.LoadSystemFont("Arial");
+cache.LoadFile("custom.ttf");
+
+var result = BmFont.GenerateBatch(jobs, new BatchOptions
+{
+    FontCache = cache,
+    MaxParallelism = 4
+});
+```
+
+### Pipeline Metrics
+
+Profile pipeline stages to identify bottlenecks:
+
+```csharp
+// Profile pipeline stages
+var result = BmFont.Generate(fontData, new FontGeneratorOptions
+{
+    Size = 32,
+    CollectMetrics = true
+});
+
+Console.WriteLine(result.Metrics); // Prints stage-level timing breakdown
 ```
 
 ## Character Sets
@@ -263,6 +319,10 @@ var model2 = BmFont.LoadModel(fntTextContent);
 ## CLI Tool
 
 A reference command-line tool is included in `tools/Bmfontier.Cli/`. See the [CLI README](tools/Bmfontier.Cli/README.md) for usage.
+
+Available commands: `generate`, `batch`, `benchmark`, `inspect`, `convert`, `list-fonts`, `info`.
+
+Use `--time` to display elapsed time or `--profile` to show a full pipeline stage breakdown.
 
 ## Advanced Features
 

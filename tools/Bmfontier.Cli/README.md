@@ -187,6 +187,8 @@ bmfontier generate -f font.ttf -s 32 -o output/myfont
 | `--config <path>` | Load settings from a .bmfc configuration file |
 | `--save-config <path>` | Save current settings to a .bmfc file |
 | `--dry-run` | Show what would be generated without writing files |
+| `--time` | Print actual generation time (excludes CLI startup) |
+| `--profile` | Print stage-level timing breakdown (font parsing, rasterization, packing, etc.) |
 | `-v, --verbose` | Show detailed progress |
 | `-q, --quiet` | Suppress all output except errors |
 | `--no-color` | Disable colored output |
@@ -271,6 +273,58 @@ bmfontier info Roboto-Regular.ttf
 
 # JSON output
 bmfontier info RobotoFlex.ttf --json
+```
+
+---
+
+### batch
+
+Process multiple `.bmfc` config files in a single invocation. Output paths are checked for collisions before any generation starts. A failed job does not stop other jobs from running.
+
+```
+bmfontier batch <config1.bmfc> [config2.bmfc ...] [options]
+```
+
+| Flag | Description |
+|------|-------------|
+| `<paths>` | One or more `.bmfc` config file paths (supports glob patterns) |
+| `--jobs <file>` | Text file listing `.bmfc` paths (one per line, `#` comments) |
+| `--parallel <n>` | Max parallel jobs (default: 1, 0 = all CPU cores) |
+| `--time` | Show total elapsed time in summary |
+
+```
+# Process all .bmfc files in a directory with 4 parallel jobs
+bmfontier batch fonts/*.bmfc --parallel 4 --time
+
+# Process from a jobs file using all CPU cores
+bmfontier batch --jobs jobs.txt --parallel 0
+```
+
+---
+
+### benchmark
+
+Benchmark font generation performance. Runs N+1 iterations (first is warmup) and reports timing statistics. No output files are written.
+
+```
+bmfontier benchmark -f <font> -s <size> [options]
+```
+
+| Flag | Description |
+|------|-------------|
+| `-f, --font <path>` | Font file path (TTF, OTF, WOFF) |
+| `--system-font <name>` | Use a system-installed font by family name |
+| `-s, --size <n>` | Font size in pixels (default: 32) |
+| `-c, --charset <preset>` | Character set: `ascii` (default), `extended`, `latin` |
+| `--packer <maxrects\|skyline>` | Packing algorithm (default: maxrects) |
+| `--iterations <n>` | Number of timed iterations (default: 10) |
+
+```
+# Benchmark with 20 iterations
+bmfontier benchmark -f roboto.ttf -s 32 --iterations 20
+
+# Benchmark a system font
+bmfontier benchmark --system-font "Arial" -s 48
 ```
 
 ## Effects
