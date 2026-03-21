@@ -15,7 +15,8 @@ public sealed record InfoBlock(
     string Charset,
     int Aa,
     Padding Padding,
-    Spacing Spacing)
+    Spacing Spacing,
+    int Outline = 0)
 {
     /// <summary>Horizontal stretch percentage.</summary>
     public int StretchH { get; init; } = StretchH is 0 ? 100 : StretchH;
@@ -25,4 +26,7 @@ public sealed record InfoBlock(
 
     /// <summary>Anti-aliasing level.</summary>
     public int Aa { get; init; } = Aa is 0 ? 1 : Aa;
+
+    /// <summary>Outline thickness in pixels. 0 = no outline.</summary>
+    public int Outline { get; init; } = Outline;
 }

@@ -36,10 +36,27 @@ internal static class BmFontModelBuilder
             Charset: "",
             Aa: 1,
             Padding: options.Padding,
-            Spacing: options.Spacing);
+            Spacing: options.Spacing,
+            Outline: options.Outline);
 
-        int lineHeight = (int)Math.Ceiling((double)fontInfo.LineHeight * options.Size / fontInfo.UnitsPerEm);
-        int baseLine = (int)Math.Ceiling((double)fontInfo.Ascender * options.Size / fontInfo.UnitsPerEm);
+        int lineHeight;
+        int baseLine;
+
+        if (fontInfo.Os2 is { } os2 && os2.WinAscent > 0)
+        {
+            // Use OS/2 usWinAscent/usWinDescent when available. These match what
+            // Windows GDI uses for TEXTMETRIC.tmAscent/tmDescent, and therefore
+            // what bmfont.exe uses for lineHeight and base. This produces consistent
+            // line spacing across generators. Note: WinDescent is positive (unlike
+            // hhea Descender which is negative).
+            lineHeight = (int)Math.Ceiling((double)(os2.WinAscent + os2.WinDescent) * options.Size / fontInfo.UnitsPerEm);
+            baseLine = (int)Math.Ceiling((double)os2.WinAscent * options.Size / fontInfo.UnitsPerEm);
+        }
+        else
+        {
+            lineHeight = (int)Math.Ceiling((double)fontInfo.LineHeight * options.Size / fontInfo.UnitsPerEm);
+            baseLine = (int)Math.Ceiling((double)fontInfo.Ascender * options.Size / fontInfo.UnitsPerEm);
+        }
 
         // When channel packing is enabled, mark the font as packed and indicate
         // that each channel holds glyph data (value 0 = glyph data per BMFont spec).

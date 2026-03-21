@@ -74,7 +74,13 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
             }
         }
 
-        // Fall back to first match if no exact style match
+        // When a specific style was requested but not found, return null
+        // so the caller knows it needs synthetic bold/italic. Only fall back
+        // to the first match when no style was requested.
+        if (best == null && styleName != null)
+        {
+            return null;
+        }
         best ??= matches[0];
 
         try
