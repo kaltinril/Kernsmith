@@ -4,11 +4,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>KernSmith</PackageId>
-    <Version>0.8.0</Version>
+    <Version>0.9.0</Version>
     <Description>Generate BMFont-compatible bitmap font atlases from TTF/OTF/WOFF files. Features layered effects (outline, gradient, shadow), color font support (COLRv0/CPAL, sbix, CBDT), variable fonts, SDF rendering, font subsetting, channel packing, super sampling, TGA/DDS/PNG output, and extended metadata. In-memory pipeline with text/XML/binary .fnt output.</Description>
     <PackageProjectUrl>https://github.com/kaltinril/KernSmith</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <!-- TODO: Add an icon.png file to the repo root and uncomment the None Include below -->
     <PackageIcon>icon.png</PackageIcon>
     <PackageReleaseNotes>See CHANGELOG.md</PackageReleaseNotes>
     <PackageTags>bmfont;bitmap-font;font;atlas;texture-packing;game-dev;sdf;signed-distance-field;freetype;ttf;otf;woff;outline;gradient;shadow;color-font;variable-font;font-subsetting;tga;dds</PackageTags>
@@ -16,8 +15,7 @@
 
   <ItemGroup>
     <None Include="../../README.md" Pack="true" PackagePath="/" />
-    <!-- TODO: Provide an icon.png file at the repo root, then uncomment the line below -->
-    <!-- <None Include="../../icon.png" Pack="true" PackagePath="/" /> -->
+    <None Include="../../assets/icon.png" Pack="true" PackagePath="/" />
   </ItemGroup>
 
   <ItemGroup>

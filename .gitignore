@@ -16,6 +16,13 @@
 /samples/output/
 /tests/output/
 
+# Generated font files at repo root (from CLI testing)
+/*.fnt
+/*.bmfc
+# Don't ignore icon.png or social-preview.png (they're checked in)
+/colorblind-demo*
+/demo-*
+
 # Build results
 [Dd]ebug/
 [Rr]elease/
