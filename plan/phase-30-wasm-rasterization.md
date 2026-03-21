@@ -151,6 +151,33 @@ public interface IRasterizer : IDisposable
 to the core pipeline. The only friction point is sync vs. async, which is
 manageable.
 
+### KNI as Web UI Framework
+
+A separate concern from rasterization is the UI framework itself. The desktop UI (Phases 60-69) uses MonoGame DesktopGL + GUM UI + MonoGame.Extended. Stock MonoGame has **no WASM/web target**. However, KNI (nkast's MonoGame fork) adds Blazor WebGL support.
+
+**KNI Overview:**
+- KNI is an API-compatible fork of MonoGame by nkast (Nikos Kastellanos)
+- Adds `nkast.Xna.Framework.Blazor` for WebAssembly/WebGL rendering
+- Same API surface as MonoGame — switching requires changing NuGet references, not code
+- Production-ready (v4.0.9001+), actively maintained
+- GUM has a `Gum.KNI` NuGet package with identical API to `Gum.MonoGame`
+- MonoGame.Extended has `KNI.Extended` NuGet package with identical API
+
+**Web UI Path:**
+If a web version of the KernSmith UI is desired, the architecture would be:
+1. **UI Layer**: Swap `MonoGame.Framework.DesktopGL` → `nkast.Xna.Framework.Blazor`, `Gum.MonoGame` → `Gum.KNI`, `MonoGame.Extended` → `KNI.Extended`
+2. **Rasterization**: Use one of the approaches documented above (server-side recommended)
+3. **Code changes**: Minimal — KNI is API-compatible with MonoGame
+
+**KNI Web Limitations:**
+- No GamePad or Touchscreen input in the browser
+- WebGL2/GLES2 shader constraints
+- `VertexBuffer.GetData()` not supported (WebGL limitation)
+- Slower load times (~3-6 seconds vs sub-second for native JS)
+- Blazor WASM bundle size (~2-3 MB with brotli compression)
+
+**Verdict:** KNI is the clear path for a web-deployed KernSmith UI. Building on MonoGame DesktopGL now does not lock out KNI later — the swap is a NuGet reference change. The rasterization problem (FreeTypeSharp in WASM) remains the primary blocker regardless of UI framework choice.
+
 ## Recommendation
 
 **Short term: Server-side rasterization (Phase 13a)**
@@ -167,6 +194,8 @@ IRasterizer` that uses SkiaSharp's Blazor WASM support. SkiaSharp already solves
 the Emscripten build problem and provides font rasterization, though some
 KernSmith features (SDF, layered effects) would need to be reimplemented using
 Skia's drawing API.
+
+**Web UI Framework:** When a web version of the UI is pursued (post Phase 69), swap MonoGame → KNI for the Blazor WebGL target. The desktop UI code (Phases 60-69) is designed on MonoGame DesktopGL, which is API-compatible with KNI. See Phases 60-69 for the UI architecture.
 
 **Not recommended:**
 - DIY Emscripten builds of libfreetype — high maintenance burden for marginal
@@ -187,3 +216,7 @@ Skia's drawing API.
 - [FontKit (JS/WASM)](https://github.com/rsms/fontkit)
 - [Compiling C# game engines to WASM](https://kylekukshtel.com/csharp-wasm-game-engine-compile-web-emscripten)
 - [Blazor WebAssembly AOT compilation](https://learn.microsoft.com/en-us/aspnet/core/blazor/webassembly-build-tools-and-aot?view=aspnetcore-10.0)
+- [KNI Engine GitHub](https://github.com/kniEngine/kni)
+- [Gum.KNI NuGet](https://www.nuget.org/packages/Gum.KNI)
+- [KNI.Extended NuGet](https://www.nuget.org/packages/KNI.Extended)
+- [KNI Blazor Discussion](https://github.com/kniEngine/kni/discussions/1863)
