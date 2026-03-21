@@ -1,12 +1,5 @@
 <p align="center">
-  <img src="assets/icon.png" alt="KernSmith" width="128" height="128">
-</p>
-
-<h1 align="center">KernSmith</h1>
-
-<p align="center">
-  Cross-platform .NET library that generates BMFont-compatible bitmap font atlases from TTF/OTF/WOFF files.<br>
-  In-memory by default, no temp files required.
+  <img src="assets/social-preview.png" alt="KernSmith — .NET bitmap font generator" width="640">
 </p>
 
 <p align="center">
