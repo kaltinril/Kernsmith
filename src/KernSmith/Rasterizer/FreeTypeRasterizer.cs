@@ -186,13 +186,19 @@ internal sealed class FreeTypeRasterizer : IRasterizer
 
         var slot = _face->glyph;
 
-        // Apply bold embolden if requested.
-        if (options.Bold)
+        // Apply synthetic bold only if the font isn't already bold.
+        // This matches GDI behavior: requesting bold on an already-bold face
+        // doesn't apply additional emboldening.
+        if (options.Bold && (_face->style_flags & 0x01) == 0)
+        {
             FT.FT_GlyphSlot_Embolden(slot);
+        }
 
-        // Apply italic oblique if requested.
-        if (options.Italic)
+        // Apply synthetic italic only if the font isn't already italic.
+        if (options.Italic && (_face->style_flags & 0x02) == 0)
+        {
             FT.FT_GlyphSlot_Oblique(slot);
+        }
 
         // Determine render mode.
         // When SDF is enabled, FT_RENDER_MODE_SDF (value 6) produces an 8-bit bitmap where
@@ -304,10 +310,14 @@ internal sealed class FreeTypeRasterizer : IRasterizer
 
         var slot = _face->glyph;
 
-        if (options.Bold)
+        if (options.Bold && (_face->style_flags & 0x01) == 0)
+        {
             FT.FT_GlyphSlot_Embolden(slot);
-        if (options.Italic)
+        }
+        if (options.Italic && (_face->style_flags & 0x02) == 0)
+        {
             FT.FT_GlyphSlot_Oblique(slot);
+        }
 
         // Get a copy of the glyph.
         error = FreeTypeNative.FT_Get_Glyph(slot, out var ftGlyph);
@@ -473,10 +483,14 @@ internal sealed class FreeTypeRasterizer : IRasterizer
 
         var slot = _face->glyph;
 
-        if (options.Bold)
+        if (options.Bold && (_face->style_flags & 0x01) == 0)
+        {
             FT.FT_GlyphSlot_Embolden(slot);
-        if (options.Italic)
+        }
+        if (options.Italic && (_face->style_flags & 0x02) == 0)
+        {
             FT.FT_GlyphSlot_Oblique(slot);
+        }
 
         // Extract metrics from 26.6 fixed-point values (no rendering needed).
         ref var metrics = ref slot->metrics;

@@ -450,8 +450,43 @@ public static class BmFont
     {
         ArgumentNullException.ThrowIfNull(fontFamily);
         options ??= new FontGeneratorOptions();
-        var fontData = s_systemFontProvider.Value.LoadFont(fontFamily)
+
+        // Try to load a style-specific variant (e.g., "Bold", "Italic", "Bold Italic")
+        // to match GDI behavior: if the font family has a dedicated bold face, use it
+        // directly without synthetic emboldening. If no styled variant exists, fall back
+        // to the regular face and let FreeType apply synthetic bold/italic.
+        byte[]? fontData = null;
+        if (options.Bold && options.Italic)
+        {
+            fontData = s_systemFontProvider.Value.LoadFont(fontFamily, "Bold Italic");
+            if (fontData != null)
+            {
+                options.Bold = false;
+                options.Italic = false;
+            }
+        }
+
+        if (fontData == null && options.Bold)
+        {
+            fontData = s_systemFontProvider.Value.LoadFont(fontFamily, "Bold");
+            if (fontData != null)
+            {
+                options.Bold = false;
+            }
+        }
+
+        if (fontData == null && options.Italic)
+        {
+            fontData = s_systemFontProvider.Value.LoadFont(fontFamily, "Italic");
+            if (fontData != null)
+            {
+                options.Italic = false;
+            }
+        }
+
+        fontData ??= s_systemFontProvider.Value.LoadFont(fontFamily)
             ?? throw new FontParsingException($"System font '{fontFamily}' not found");
+
         return GenerateCore(fontData, options, sourceFontFile: null, sourceFontName: fontFamily);
     }
 
