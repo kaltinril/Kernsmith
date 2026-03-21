@@ -186,13 +186,19 @@ internal sealed class FreeTypeRasterizer : IRasterizer
 
         var slot = _face->glyph;
 
-        // Apply bold embolden if requested.
-        if (options.Bold)
+        // Apply synthetic bold only if the font isn't already bold.
+        // This matches GDI behavior: requesting bold on an already-bold face
+        // doesn't apply additional emboldening.
+        if (options.Bold && (_face->style_flags & 0x01) == 0)
+        {
             FT.FT_GlyphSlot_Embolden(slot);
+        }
 
-        // Apply italic oblique if requested.
-        if (options.Italic)
+        // Apply synthetic italic only if the font isn't already italic.
+        if (options.Italic && (_face->style_flags & 0x02) == 0)
+        {
             FT.FT_GlyphSlot_Oblique(slot);
+        }
 
         // Determine render mode.
         // When SDF is enabled, FT_RENDER_MODE_SDF (value 6) produces an 8-bit bitmap where
@@ -304,10 +310,14 @@ internal sealed class FreeTypeRasterizer : IRasterizer
 
         var slot = _face->glyph;
 
-        if (options.Bold)
+        if (options.Bold && (_face->style_flags & 0x01) == 0)
+        {
             FT.FT_GlyphSlot_Embolden(slot);
-        if (options.Italic)
+        }
+        if (options.Italic && (_face->style_flags & 0x02) == 0)
+        {
             FT.FT_GlyphSlot_Oblique(slot);
+        }
 
         // Get a copy of the glyph.
         error = FreeTypeNative.FT_Get_Glyph(slot, out var ftGlyph);
@@ -406,6 +416,90 @@ internal sealed class FreeTypeRasterizer : IRasterizer
             FreeTypeNative.FT_Stroker_Done(stroker);
             FreeTypeNative.FT_Done_Glyph(ftGlyph);
         }
+    }
+
+    public unsafe Font.Models.GlyphMetrics? GetGlyphMetrics(int codepoint, RasterOptions options)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (_face == null || _library == null)
+            throw new InvalidOperationException("Font not loaded. Call LoadFont first.");
+
+        // Set character size: FreeType expects size in 26.6 fixed-point (multiply by 64).
+        var sizeF26D6 = (IntPtr)(options.Size * 64);
+        var error = FT.FT_Set_Char_Size(_face, sizeF26D6, sizeF26D6, (uint)options.Dpi, (uint)options.Dpi);
+        if (error != FT_Error.FT_Err_Ok)
+        {
+            if (_face->num_fixed_sizes > 0)
+            {
+                var bestIndex = 0;
+                var bestDiff = int.MaxValue;
+                for (var s = 0; s < _face->num_fixed_sizes; s++)
+                {
+                    var strikeHeight = _face->available_sizes[s].height;
+                    var diff = Math.Abs(strikeHeight - options.Size);
+                    if (diff < bestDiff)
+                    {
+                        bestDiff = diff;
+                        bestIndex = s;
+                    }
+                }
+
+                error = FreeTypeNative.FT_Select_Size(_face, bestIndex);
+                if (error != FT_Error.FT_Err_Ok)
+                    throw new FreeTypeException(error);
+            }
+            else
+            {
+                throw new FreeTypeException(error);
+            }
+        }
+
+        // Re-apply variation coordinates after FT_Set_Char_Size.
+        if (_variationCoords != null)
+        {
+            fixed (int* coords = _variationCoords)
+            {
+                error = FreeTypeNative.FT_Set_Var_Design_Coordinates(
+                    _face, (uint)_variationCoords.Length, coords);
+                if (error != FT_Error.FT_Err_Ok)
+                    throw new FreeTypeException(error);
+            }
+        }
+
+        // Get glyph index for the codepoint.
+        var glyphIndex = FT.FT_Get_Char_Index(_face, (UIntPtr)codepoint);
+        if (glyphIndex == 0)
+            return null; // Missing glyph
+
+        // Load the glyph without rendering.
+        var loadFlags = FT_LOAD.FT_LOAD_DEFAULT;
+        if (!options.EnableHinting)
+            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
+
+        error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
+        if (error != FT_Error.FT_Err_Ok)
+            throw new FreeTypeException(error);
+
+        var slot = _face->glyph;
+
+        if (options.Bold && (_face->style_flags & 0x01) == 0)
+        {
+            FT.FT_GlyphSlot_Embolden(slot);
+        }
+        if (options.Italic && (_face->style_flags & 0x02) == 0)
+        {
+            FT.FT_GlyphSlot_Oblique(slot);
+        }
+
+        // Extract metrics from 26.6 fixed-point values (no rendering needed).
+        ref var metrics = ref slot->metrics;
+        return new Font.Models.GlyphMetrics(
+            BearingX: F26Dot6ToRounded(metrics.horiBearingX),
+            BearingY: F26Dot6ToRounded(metrics.horiBearingY),
+            Advance: F26Dot6ToRounded(metrics.horiAdvance),
+            Width: F26Dot6ToRounded(metrics.width),
+            Height: F26Dot6ToRounded(metrics.height));
     }
 
     public IReadOnlyList<RasterizedGlyph> RasterizeAll(IEnumerable<int> codepoints, RasterOptions options)

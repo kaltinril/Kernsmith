@@ -402,4 +402,158 @@ public class EndToEndTests
         charWith.Height.Should().BeGreaterThan(charWithout.Height,
             "outlined glyph should be taller than non-outlined glyph");
     }
+
+    [Fact]
+    public void Generate_WithOutlineProperty_AdvanceIsUnchanged()
+    {
+        // Arrange — outline expands the glyph bitmap and bearing but should NOT
+        // change the advance. The outline is allowed to overlap into adjacent space.
+        var fontData = LoadTestFont();
+        var chars = CharacterSet.FromChars("A");
+
+        // Act
+        var resultWithout = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = chars
+        });
+
+        var resultWith = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = chars,
+            Outline = 4
+        });
+
+        // Assert
+        var charWithout = resultWithout.Model.Characters.First(c => c.Id == 65);
+        var charWith = resultWith.Model.Characters.First(c => c.Id == 65);
+
+        charWith.XAdvance.Should().Be(charWithout.XAdvance,
+            "outline should not change the advance — outlines overlap into adjacent glyph space");
+    }
+
+    [Fact]
+    public void Generate_WithOutlinePostProcessor_AdvanceIsUnchanged()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+        var chars = CharacterSet.FromChars("A");
+
+        // Act
+        var resultWithout = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = chars
+        });
+
+        var resultWith = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = chars,
+            PostProcessors = new[] { new OutlinePostProcessor(4) }
+        });
+
+        // Assert
+        var charWithout = resultWithout.Model.Characters.First(c => c.Id == 65);
+        var charWith = resultWith.Model.Characters.First(c => c.Id == 65);
+
+        charWith.XAdvance.Should().Be(charWithout.XAdvance,
+            "outline should not change the advance — outlines overlap into adjacent glyph space");
+    }
+
+    [Fact]
+    public void Generate_WithOutlineAndCustomChannels_ExpandsMetrics()
+    {
+        // Arrange — mimics Gum's outline channel layout:
+        // alpha=outline, RGB=glyph (white text with outline in alpha)
+        var fontData = LoadTestFont();
+        var chars = CharacterSet.FromChars("A");
+        var outlineWidth = 4;
+
+        // Act
+        var resultWithout = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = chars,
+            Channels = new ChannelConfig(
+                Alpha: ChannelContent.Glyph,
+                Red: ChannelContent.One,
+                Green: ChannelContent.One,
+                Blue: ChannelContent.One)
+        });
+
+        var resultWith = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = chars,
+            Outline = outlineWidth,
+            Channels = new ChannelConfig(
+                Alpha: ChannelContent.Outline,
+                Red: ChannelContent.Glyph,
+                Green: ChannelContent.Glyph,
+                Blue: ChannelContent.Glyph)
+        });
+
+        // Assert — metrics must reflect the outline expansion
+        var charWithout = resultWithout.Model.Characters.First(c => c.Id == 65);
+        var charWith = resultWith.Model.Characters.First(c => c.Id == 65);
+
+        charWith.Width.Should().BeGreaterThan(charWithout.Width,
+            "outlined glyph should be wider when using custom channel config");
+        charWith.Height.Should().BeGreaterThan(charWithout.Height,
+            "outlined glyph should be taller when using custom channel config");
+        charWith.XAdvance.Should().Be(charWithout.XAdvance,
+            "outline should not change the advance — outlines overlap into adjacent glyph space");
+    }
+
+    [Fact]
+    public void Generate_WithOutlineAndCustomChannels_GlyphChannelDiffersFromOutlineChannel()
+    {
+        // Arrange — verify the atlas has different data in glyph vs outline channels,
+        // not the same data in both (which would make outlines invisible).
+        var fontData = LoadTestFont();
+        var chars = CharacterSet.FromChars("A");
+
+        // Act
+        var result = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 48,
+            Characters = chars,
+            Outline = 3,
+            Channels = new ChannelConfig(
+                Alpha: ChannelContent.Outline,
+                Red: ChannelContent.Glyph,
+                Green: ChannelContent.Glyph,
+                Blue: ChannelContent.Glyph)
+        });
+
+        // Assert — the outline (alpha channel) should have non-zero pixels in regions
+        // where the glyph channel (red) is zero, because the outline extends beyond the glyph.
+        var page = result.Pages[0];
+        var charEntry = result.Model.Characters.First(c => c.Id == 65);
+        var hasOutlineBeyondGlyph = false;
+
+        for (var y = charEntry.Y; y < charEntry.Y + charEntry.Height && y < page.Height; y++)
+        {
+            for (var x = charEntry.X; x < charEntry.X + charEntry.Width && x < page.Width; x++)
+            {
+                var idx = (y * page.Width + x) * 4;
+                var red = page.PixelData[idx + 0];   // glyph channel
+                var alpha = page.PixelData[idx + 3]; // outline channel
+
+                if (alpha > 0 && red == 0)
+                {
+                    // Outline pixel exists where glyph pixel doesn't — this is the outline ring
+                    hasOutlineBeyondGlyph = true;
+                    break;
+                }
+            }
+            if (hasOutlineBeyondGlyph) break;
+        }
+
+        hasOutlineBeyondGlyph.Should().BeTrue(
+            "outline channel should contain pixels beyond the glyph boundary — " +
+            "if both channels are identical, the outline is invisible");
+    }
 }

@@ -38,7 +38,7 @@ internal sealed class TextFormatter : IBmFontTextFormatter
         sb.Append($" aa={info.Aa}");
         sb.Append($" padding={info.Padding.Up},{info.Padding.Right},{info.Padding.Down},{info.Padding.Left}");
         sb.Append($" spacing={info.Spacing.Horizontal},{info.Spacing.Vertical}");
-        sb.Append(" outline=0");
+        sb.Append($" outline={info.Outline}");
         sb.AppendLine();
     }
 

@@ -55,7 +55,7 @@ internal sealed class XmlFormatter : IBmFontTextFormatter
         writer.WriteAttributeString("aa", info.Aa.ToString());
         writer.WriteAttributeString("padding", $"{info.Padding.Up},{info.Padding.Right},{info.Padding.Down},{info.Padding.Left}");
         writer.WriteAttributeString("spacing", $"{info.Spacing.Horizontal},{info.Spacing.Vertical}");
-        writer.WriteAttributeString("outline", "0");
+        writer.WriteAttributeString("outline", info.Outline.ToString());
         writer.WriteEndElement();
     }
 

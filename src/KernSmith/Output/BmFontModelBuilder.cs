@@ -17,7 +17,12 @@ internal static class BmFontModelBuilder
         PackResult packResult,
         FontGeneratorOptions options,
         IReadOnlyDictionary<int, int>? glyphChannels = null,
-        string? outputBaseName = null)
+        string? outputBaseName = null,
+        IReadOnlyDictionary<int, GlyphPlacement>? placementOverride = null,
+        int charOffsetX = 0,
+        int charOffsetY = 0,
+        int? overrideScaleW = null,
+        int? overrideScaleH = null)
     {
         var info = new InfoBlock(
             Face: fontInfo.FamilyName,
@@ -31,10 +36,27 @@ internal static class BmFontModelBuilder
             Charset: "",
             Aa: 1,
             Padding: options.Padding,
-            Spacing: options.Spacing);
+            Spacing: options.Spacing,
+            Outline: options.Outline);
 
-        int lineHeight = (int)Math.Ceiling((double)fontInfo.LineHeight * options.Size / fontInfo.UnitsPerEm);
-        int baseLine = (int)Math.Ceiling((double)fontInfo.Ascender * options.Size / fontInfo.UnitsPerEm);
+        int lineHeight;
+        int baseLine;
+
+        if (fontInfo.Os2 is { } os2 && os2.WinAscent > 0)
+        {
+            // Use OS/2 usWinAscent/usWinDescent when available. These match what
+            // Windows GDI uses for TEXTMETRIC.tmAscent/tmDescent, and therefore
+            // what bmfont.exe uses for lineHeight and base. This produces consistent
+            // line spacing across generators. Note: WinDescent is positive (unlike
+            // hhea Descender which is negative).
+            lineHeight = (int)Math.Ceiling((double)(os2.WinAscent + os2.WinDescent) * options.Size / fontInfo.UnitsPerEm);
+            baseLine = (int)Math.Ceiling((double)os2.WinAscent * options.Size / fontInfo.UnitsPerEm);
+        }
+        else
+        {
+            lineHeight = (int)Math.Ceiling((double)fontInfo.LineHeight * options.Size / fontInfo.UnitsPerEm);
+            baseLine = (int)Math.Ceiling((double)fontInfo.Ascender * options.Size / fontInfo.UnitsPerEm);
+        }
 
         // When channel packing is enabled, mark the font as packed and indicate
         // that each channel holds glyph data (value 0 = glyph data per BMFont spec).
@@ -53,8 +75,8 @@ internal static class BmFontModelBuilder
         var common = new CommonBlock(
             LineHeight: lineHeight,
             Base: baseLine,
-            ScaleW: packResult.PageWidth,
-            ScaleH: packResult.PageHeight,
+            ScaleW: overrideScaleW ?? packResult.PageWidth,
+            ScaleH: overrideScaleH ?? packResult.PageHeight,
             Pages: packResult.PageCount,
             Packed: packed,
             AlphaChnl: alphaChnl,
@@ -76,9 +98,18 @@ internal static class BmFontModelBuilder
         }
 
         // Build a lookup from glyph Id to placement.
-        var placementById = new Dictionary<int, GlyphPlacement>();
-        foreach (var p in packResult.Placements)
-            placementById[p.Id] = p;
+        IReadOnlyDictionary<int, GlyphPlacement> placementById;
+        if (placementOverride != null)
+        {
+            placementById = placementOverride;
+        }
+        else
+        {
+            var dict = new Dictionary<int, GlyphPlacement>();
+            foreach (var p in packResult.Placements)
+                dict[p.Id] = p;
+            placementById = dict;
+        }
 
         var characters = new List<CharEntry>();
         foreach (var glyph in glyphs)
@@ -93,8 +124,8 @@ internal static class BmFontModelBuilder
 
             characters.Add(new CharEntry(
                 Id: glyph.Codepoint,
-                X: placement.X,
-                Y: placement.Y,
+                X: placement.X + charOffsetX,
+                Y: placement.Y + charOffsetY,
                 Width: glyph.Width,
                 Height: glyph.Height,
                 XOffset: xOffset,

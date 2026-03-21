@@ -1,6 +1,6 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-18 and 20 complete. Phase 30 (WASM) is future/exploratory. Phases 60-69 (UI) in planning.
+> **Status**: Phases 1-18, 20, and 21 complete. Phase 30 (WASM) is future/exploratory. Phases 60-69 (UI) in planning.
 > **Date**: 2026-03-21
 
 ---
@@ -79,6 +79,7 @@ Output Layer
 
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
+| 21 | [Atlas Output Modes](phase-21-atlas-output-modes.md) | Combined batch atlas, render-to-existing-PNG, atlas size query & constraints | Planning |
 | 30 | [WASM Rasterization](phase-30-wasm-rasterization.md) | Live investigation of WASM-compatible rasterizers (prior research was preliminary) | Future |
 | 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
 | 55 | [UI Core Library Prerequisites](phase-55-ui-core-library-prerequisites.md) | API additions needed by the UI: public font reader, missing builder methods, FontInfo expansion, CancellationToken, progress reporting | Planning |
@@ -191,6 +192,9 @@ Convenience API for game developers: BmFont.FromConfig() one-liner, FntText/FntX
 
 ### Phase 20 -- Release Readiness (COMPLETE)
 Version alignment, package icon, dotnet pack verification, CI smoke test, SourceLink check, GitHub repo polish, first NuGet publish, sample project updates.
+
+### Phase 21 -- Atlas Output Modes (PLANNING)
+Combined batch atlas output (multiple fonts into shared PNG), render-to-existing-PNG at target rectangle, and atlas size query/constraint API (square, power-of-2, fixed-width modes).
 
 ### Phase 50 -- In-Memory Layer Retention (FUTURE)
 Optionally retain per-glyph effect layer bitmaps (shadow, outline, body) in memory on the result. Enables engine-side compositing for parallax, runtime shaders, and dynamic layer adjustment. Nice-to-have -- implement when requested.
