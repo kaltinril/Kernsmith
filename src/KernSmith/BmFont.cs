@@ -377,9 +377,25 @@ public static class BmFont
                     var outlineWidth = options.Outline > 0 ? options.Outline : 1;
                     var outlineProcessor = new OutlinePostProcessor(outlineWidth, options.OutlineR, options.OutlineG, options.OutlineB);
                     outlineGlyphs = glyphs.Select(g => outlineProcessor.Process(g)).ToList();
+
+                    // Re-pack using the larger outline glyph dimensions so atlas cells
+                    // are big enough to contain the outline fringe.
+                    var outlineRects = outlineGlyphs.Select(g =>
+                        new GlyphRect(g.Codepoint, g.Width + padding.Left + padding.Right,
+                                      g.Height + padding.Up + padding.Down)).ToList();
+                    packResult = packer.Pack(outlineRects, pageWidth, pageHeight);
                 }
 
+                // Build atlas pages with original glyphs for glyph channels and
+                // outline glyphs for outline channels.
                 pages = ChannelCompositor.Build(glyphs, outlineGlyphs, packResult, padding, channelConfig, encoder);
+
+                if (needsOutline)
+                {
+                    // Use outline glyphs for the model so .fnt metrics (width, height,
+                    // xoffset, yoffset, xadvance) reflect the expanded dimensions.
+                    glyphs = outlineGlyphs!.ToList();
+                }
             }
             else if (options.ChannelPacking)
             {
