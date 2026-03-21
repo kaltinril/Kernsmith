@@ -220,7 +220,7 @@ Replaced custom INI-style .bmfc format with standard AngelCode BMFont flat key=v
 |---|----------|----------|---------|
 | 1 | **PNG encoding library** | **StbImageWriteSharp** (public domain) | Confirmed. See [done/plan-project-structure.md](done/plan-project-structure.md). |
 | 2 | **Target framework** | **net10.0** | Migrated from net8.0 in Phase 11. All projects unified on net10.0 via Directory.Build.props. |
-| 3 | **Project license** | **Proprietary** | See LICENSE file. |
+| 3 | **Project license** | **TBD** | Currently MIT but may change to proprietary/commercial. Do not publish publicly until licensing is finalized. |
 | 4 | **NuGet package name** | **KernSmith** | Package ID `KernSmith`, main API class `KernSmith`. |
 | 5 | **FreeTypeSharp usage boundary** | Use everything it can do | Our parser only covers what FreeTypeSharp cannot (GPOS, OS/2, name, cmap). No duplication. |
 | 6 | **Unsafe code policy** | `AllowUnsafeBlocks` in main project | Isolated to FreeType interop (`FreeTypeRasterizer.cs`, `FreeTypeNative.cs`). Rest is safe C#. |
