@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Bmfontier.Atlas;
 using Bmfontier.Font;
 using Bmfontier.Output;
@@ -10,6 +11,13 @@ namespace Bmfontier;
 /// </summary>
 public static class BmFont
 {
+    private static readonly Lazy<DefaultSystemFontProvider> s_systemFontProvider = new();
+
+    /// <summary>
+    /// Internal access to the shared system font provider for use by FontCache.
+    /// </summary>
+    internal static DefaultSystemFontProvider SystemFontProvider => s_systemFontProvider.Value;
+
     /// <summary>
     /// Generates a BMFont atlas from font file data.
     /// </summary>
@@ -326,8 +334,7 @@ public static class BmFont
     public static BmFontResult GenerateFromSystem(string fontFamily, FontGeneratorOptions? options = null)
     {
         options ??= new FontGeneratorOptions();
-        var provider = new DefaultSystemFontProvider();
-        var fontData = provider.LoadFont(fontFamily)
+        var fontData = s_systemFontProvider.Value.LoadFont(fontFamily)
             ?? throw new FontParsingException($"System font '{fontFamily}' not found");
         return Generate(fontData, options);
     }
@@ -771,6 +778,87 @@ public static class BmFont
             Metrics = outlineGlyph.Metrics,
             Format = PixelFormat.Rgba32
         };
+    }
+
+    /// <summary>
+    /// Generates multiple BMFont atlases in batch, with optional parallelism and font caching.
+    /// </summary>
+    /// <param name="jobs">The list of batch jobs to execute.</param>
+    /// <param name="options">Batch execution options, or null for defaults (sequential).</param>
+    /// <returns>A result containing per-job results, timing, and success/failure counts.</returns>
+    public static BatchResult GenerateBatch(IReadOnlyList<BatchJob> jobs, BatchOptions? options = null)
+    {
+        options ??= new BatchOptions();
+        var maxParallelism = options.MaxParallelism == 0 ? Environment.ProcessorCount : options.MaxParallelism;
+
+        // Build font cache — either use provided or create temporary
+        var cache = options.FontCache ?? new FontCache();
+
+        // Pre-load all fonts into cache
+        foreach (var job in jobs)
+        {
+            if (job.FontData != null) continue; // Already has bytes
+
+            var key = job.FontPath ?? job.SystemFont;
+            if (key == null) continue;
+            if (cache.Contains(key)) continue;
+
+            if (job.FontPath != null)
+                cache.LoadFile(job.FontPath);
+            else if (job.SystemFont != null)
+                cache.LoadSystemFont(job.SystemFont);
+        }
+
+        var totalSw = Stopwatch.StartNew();
+        var results = new BatchJobResult[jobs.Count];
+
+        if (maxParallelism <= 1)
+        {
+            // Sequential
+            for (int i = 0; i < jobs.Count; i++)
+                results[i] = RunBatchJob(i, jobs[i], cache);
+        }
+        else
+        {
+            // Parallel
+            var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxParallelism };
+            Parallel.For(0, jobs.Count, parallelOptions, i =>
+            {
+                results[i] = RunBatchJob(i, jobs[i], cache);
+            });
+        }
+
+        totalSw.Stop();
+        return new BatchResult { Results = results, TotalElapsed = totalSw.Elapsed };
+    }
+
+    private static BatchJobResult RunBatchJob(int index, BatchJob job, FontCache cache)
+    {
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            // Resolve font data
+            byte[] fontData;
+            if (job.FontData != null)
+            {
+                fontData = job.FontData;
+            }
+            else
+            {
+                var key = job.FontPath ?? job.SystemFont
+                    ?? throw new ArgumentException($"Job {index}: no font source specified");
+                fontData = cache.Get(key);
+            }
+
+            var result = Generate(fontData, job.Options);
+            sw.Stop();
+            return new BatchJobResult { Index = index, Success = true, Result = result, Elapsed = sw.Elapsed };
+        }
+        catch (Exception ex)
+        {
+            sw.Stop();
+            return new BatchJobResult { Index = index, Success = false, Error = ex, Elapsed = sw.Elapsed };
+        }
     }
 
     private static int NextPowerOfTwo(int v)

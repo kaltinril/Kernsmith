@@ -147,24 +147,15 @@ internal sealed class GenerateCommand
     }
 
     /// <summary>
-    /// Runs a single font generation job from fully-resolved options and character set.
+    /// Builds a <see cref="FontGeneratorOptions"/> from CLI options.
     /// </summary>
-    internal static JobResult RunJob(CliOptions options, CharacterSet? characters = null, byte[]? fontData = null)
+    internal static FontGeneratorOptions BuildGenOptions(CliOptions options, CharacterSet? characters = null)
     {
-        // Validate
-        if (options.FontPath == null && options.SystemFontName == null)
-            throw new ArgumentException("--font is required.");
-        if (options.Size == null)
-            throw new ArgumentException("--size is required.");
-        if (options.FontPath != null && fontData == null && !File.Exists(options.FontPath))
-            throw new FileNotFoundException($"Font file not found: {options.FontPath}", options.FontPath);
-
         characters ??= BuildCharacterSet(options);
 
-        // Build FontGeneratorOptions
         var genOptions = new FontGeneratorOptions
         {
-            Size = options.Size.Value,
+            Size = options.Size!.Value,
             Characters = characters,
             Bold = options.Bold,
             Italic = options.Italic,
@@ -248,6 +239,26 @@ internal sealed class GenerateCommand
                 genOptions.ShadowB = sc.B;
             }
         }
+
+        return genOptions;
+    }
+
+    /// <summary>
+    /// Runs a single font generation job from fully-resolved options and character set.
+    /// </summary>
+    internal static JobResult RunJob(CliOptions options, CharacterSet? characters = null, byte[]? fontData = null)
+    {
+        // Validate
+        if (options.FontPath == null && options.SystemFontName == null)
+            throw new ArgumentException("--font is required.");
+        if (options.Size == null)
+            throw new ArgumentException("--size is required.");
+        if (options.FontPath != null && fontData == null && !File.Exists(options.FontPath))
+            throw new FileNotFoundException($"Font file not found: {options.FontPath}", options.FontPath);
+
+        characters ??= BuildCharacterSet(options);
+
+        var genOptions = BuildGenOptions(options, characters);
 
         // Determine output path
         var outputPath = ResolveOutputPath(options);
@@ -590,7 +601,7 @@ internal sealed class GenerateCommand
         if (cli.ShadowBlur != 0) config.ShadowBlur = cli.ShadowBlur;
     }
 
-    private static CharacterSet BuildCharacterSet(CliOptions options)
+    internal static CharacterSet BuildCharacterSet(CliOptions options)
     {
         var sets = new List<CharacterSet>();
 

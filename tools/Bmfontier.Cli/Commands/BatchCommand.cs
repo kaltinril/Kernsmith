@@ -1,8 +1,6 @@
-using System.Collections.Concurrent;
-using System.Diagnostics;
 using Bmfontier.Cli.Config;
 using Bmfontier.Cli.Utilities;
-using Bmfontier.Font;
+using Bmfontier.Output;
 
 namespace Bmfontier.Cli.Commands;
 
@@ -171,128 +169,86 @@ internal sealed class BatchCommand
             return ExitCodes.InvalidArguments;
         }
 
-        // Run jobs
-        int total = jobs.Count + parseFailures.Count;
-        int totalJobs = jobs.Count;
-        var totalSw = showTime ? Stopwatch.StartNew() : null;
-
-        var results = new ConcurrentBag<(string ConfigPath, bool Success, string Message, long ElapsedMs)>();
-        int completedCount = 0;
-        var lockObj = new object();
-
-        // Pre-add parse failures as failed results
-        foreach (var (path, error) in parseFailures)
-        {
-            results.Add((path, false, error, 0));
-        }
-
-        // Pre-load and cache font data to avoid repeated system font resolution
-        var fontCache = new ConcurrentDictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
-        var systemFontProvider = new DefaultSystemFontProvider();
-        Console.WriteLine("Pre-loading fonts...");
+        // Build BatchJob list from parsed CliOptions
+        var batchJobs = new List<BatchJob>();
         foreach (var (configPath, options) in jobs)
         {
-            var fontKey = options.FontPath ?? options.SystemFontName;
-            if (fontKey == null) continue;
+            var characters = GenerateCommand.BuildCharacterSet(options);
+            var genOptions = GenerateCommand.BuildGenOptions(options, characters);
 
-            fontCache.GetOrAdd(fontKey, key =>
+            batchJobs.Add(new BatchJob
             {
-                if (options.FontPath != null)
-                {
-                    Console.WriteLine($"  Loading: {key}");
-                    return File.ReadAllBytes(key);
-                }
-                else
-                {
-                    Console.WriteLine($"  Loading system font: {key}");
-                    return systemFontProvider.LoadFont(key)
-                        ?? throw new FileNotFoundException($"System font not found: {key}");
-                }
+                FontPath = options.FontPath,
+                SystemFont = options.SystemFontName,
+                Options = genOptions,
             });
         }
 
+        // Call library batch API
+        var batchOptions = new BatchOptions
+        {
+            MaxParallelism = parallel,
+        };
+
+        int total = jobs.Count + parseFailures.Count;
         Console.WriteLine($"Processing {total} job(s) (parallel: {parallel})...");
 
         // Suppress per-glyph verbose output in batch mode; batch prints its own status lines
         ConsoleOutput.SetQuiet(true);
 
-        if (parallel > 1)
+        var batchResult = BmFont.GenerateBatch(batchJobs, batchOptions);
+
+        // Write output files and print progress
+        int succeeded = 0;
+        int failed = parseFailures.Count;
+        var failures = new List<(string ConfigPath, string Error)>(parseFailures);
+
+        for (int i = 0; i < batchResult.Results.Count; i++)
         {
-            var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = parallel };
-            Parallel.ForEach(jobs, parallelOptions, job =>
+            var jobResult = batchResult.Results[i];
+            var (configPath, options) = jobs[i];
+            var outputPath = GenerateCommand.ResolveOutputPath(options);
+
+            if (jobResult.Success)
             {
-                var (configPath, options) = job;
-                var fontKey = options.FontPath ?? options.SystemFontName;
-                var fontData = fontKey != null && fontCache.TryGetValue(fontKey, out var cached) ? cached : null;
-                RunSingleJob(configPath, options, fontData, ref completedCount, totalJobs, results, lockObj);
-            });
-        }
-        else
-        {
-            foreach (var (configPath, options) in jobs)
+                try
+                {
+                    jobResult.Result!.ToFile(outputPath, options.OutputFormat);
+                    Console.WriteLine($"[{i + 1}/{total}] OK {configPath} -> {outputPath} ({jobResult.Elapsed.TotalMilliseconds:F0}ms)");
+                    succeeded++;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[{i + 1}/{total}] FAIL {configPath} - {ex.Message}");
+                    failures.Add((configPath, ex.Message));
+                    failed++;
+                }
+            }
+            else
             {
-                var fontKey = options.FontPath ?? options.SystemFontName;
-                var fontData = fontKey != null && fontCache.TryGetValue(fontKey, out var cached) ? cached : null;
-                RunSingleJob(configPath, options, fontData, ref completedCount, totalJobs, results, lockObj);
+                Console.WriteLine($"[{i + 1}/{total}] FAIL {configPath} - {jobResult.Error?.Message}");
+                failures.Add((configPath, jobResult.Error?.Message ?? "Unknown error"));
+                failed++;
             }
         }
 
-        totalSw?.Stop();
-
         // Summary
-        var succeeded = results.Count(r => r.Success);
-        var failed = results.Count(r => !r.Success);
-
         Console.WriteLine();
-        if (showTime && totalSw != null)
-            Console.WriteLine($"Done. {succeeded} succeeded, {failed} failed in {totalSw.ElapsedMilliseconds}ms total");
+        if (showTime)
+            Console.WriteLine($"Done. {succeeded} succeeded, {failed} failed in {batchResult.TotalElapsed.TotalMilliseconds:F0}ms total");
         else
             Console.WriteLine($"Done. {succeeded} succeeded, {failed} failed");
 
         // Report failures at the end
-        var failures = results.Where(r => !r.Success).ToList();
         if (failures.Count > 0)
         {
             Console.Error.WriteLine();
             Console.Error.WriteLine("Failures:");
             foreach (var f in failures)
-                Console.Error.WriteLine($"  {f.ConfigPath}: {f.Message}");
+                Console.Error.WriteLine($"  {f.ConfigPath}: {f.Error}");
         }
 
         return failed > 0 ? ExitCodes.InvalidArguments : ExitCodes.Success;
-    }
-
-    private static void RunSingleJob(
-        string configPath,
-        CliOptions options,
-        byte[]? fontData,
-        ref int completedCount,
-        int total,
-        ConcurrentBag<(string ConfigPath, bool Success, string Message, long ElapsedMs)> results,
-        object lockObj)
-    {
-        try
-        {
-            var jobResult = GenerateCommand.RunJob(options, fontData: fontData);
-
-            var idx = Interlocked.Increment(ref completedCount);
-            lock (lockObj)
-            {
-                Console.WriteLine($"[{idx}/{total}] OK {configPath} -> {jobResult.OutputPath} ({jobResult.ElapsedMs}ms)");
-            }
-
-            results.Add((configPath, true, jobResult.OutputPath, jobResult.ElapsedMs));
-        }
-        catch (Exception ex)
-        {
-            var idx = Interlocked.Increment(ref completedCount);
-            lock (lockObj)
-            {
-                Console.WriteLine($"[{idx}/{total}] FAIL {configPath} - {ex.Message}");
-            }
-
-            results.Add((configPath, false, ex.Message, 0));
-        }
     }
 
     private static void ShowHelp()

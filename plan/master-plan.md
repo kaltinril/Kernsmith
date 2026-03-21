@@ -1,6 +1,6 @@
 # bmfontier -- Master Plan
 
-> **Status**: Phases 1-11, 14 complete. Phase 12 (Pre-Ship Polish) and Phase 30 (WASM) are active.
+> **Status**: Phases 1-11, 13-15 complete. Phase 12 (Pre-Ship Polish) and Phase 30 (WASM) are active.
 > **Date**: 2026-03-20
 
 ---
@@ -99,7 +99,9 @@ Output Layer
 | 09 | [Outline Overhaul](done/phase-09-outline-overhaul.md) | EDT-based anti-aliased outlines with outline color support |
 | 10 | [Layered Rendering](done/phase-10-layered-rendering.md) | IGlyphEffect compositing replacing order-dependent post-processor chain |
 | 11 | [Solution Restructure](done/phase-11-solution-restructure.md) | Multi-project foundation, net10.0 migration, CLI promotion, app scaffolding |
+| 13 | [Batch CLI](done/phase-13-batch-cli.md) | Batch command, .bmfc multi-file processing, collision detection |
 | 14 | [Benchmarking & Profiling](done/phase-14-benchmarking-profiling.md) | 50+ benchmarks, PipelineMetrics, CLI --time/--profile, benchmark command |
+| 15 | [Library Performance](done/phase-15-library-performance.md) | FontCache, GenerateBatch API, static SystemFontProvider — 18 fonts in 196ms |
 
 ### Topical Plan Docs (archived in `done/`)
 
@@ -168,8 +170,14 @@ Security hardening (10 items), test coverage gaps (~30 new tests), NuGet package
 ### Phase 30 — WASM Rasterization (PLANNING)
 Live investigation of WASM-compatible font rasterizers. Prior preliminary research suggested server-side rasterization or SkiaSharp, but findings were not validated with actual testing. Requires checking current FreeTypeSharp WASM status, testing Emscripten builds, evaluating SkiaSharp.Views.Blazor, and verifying IRasterizer swappability.
 
+### Phase 13 — Batch CLI (COMPLETE)
+Batch command for multi-file .bmfc processing with output collision detection, parallel execution, and font caching. 18 fonts in 1.5s vs 22s with separate invocations.
+
 ### Phase 14 — Benchmarking & Profiling (COMPLETE)
 50+ benchmarks across 7 classes, PipelineMetrics with stage-level timing, CLI --time/--profile flags, benchmark command, CI workflow. R2R tested and rejected (15% slower on .NET 10). AOT deferred.
+
+### Phase 15 — Library Performance & Batch API (COMPLETE)
+Moved font caching and batch execution from CLI into NuGet library. Static SystemFontProvider singleton eliminates 800ms/call overhead. FontCache class, BmFont.GenerateBatch() with parallelism. 18 fonts in 196ms via library API.
 
 ---
 

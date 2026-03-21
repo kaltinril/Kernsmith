@@ -1,6 +1,6 @@
 # Phase 15 — Library Performance & Batch API
 
-> **Status**: Planning
+> **Status**: Complete
 > **Created**: 2026-03-20
 > **Goal**: Move performance optimizations (font caching, batch generation, parallelism) from the CLI into the NuGet library so ALL consumers benefit, not just CLI users.
 
