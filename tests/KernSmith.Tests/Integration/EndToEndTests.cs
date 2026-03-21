@@ -402,4 +402,64 @@ public class EndToEndTests
         charWith.Height.Should().BeGreaterThan(charWithout.Height,
             "outlined glyph should be taller than non-outlined glyph");
     }
+
+    [Fact]
+    public void Generate_WithOutlineProperty_ExpandsAdvance()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+        var chars = CharacterSet.FromChars("A");
+        var outlineWidth = 4;
+
+        // Act
+        var resultWithout = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = chars
+        });
+
+        var resultWith = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = chars,
+            Outline = outlineWidth
+        });
+
+        // Assert — advance must grow to avoid clipping the outline on the right side
+        var charWithout = resultWithout.Model.Characters.First(c => c.Id == 65);
+        var charWith = resultWith.Model.Characters.First(c => c.Id == 65);
+
+        charWith.XAdvance.Should().BeGreaterThan(charWithout.XAdvance,
+            "outlined glyph advance must be larger to prevent right-side clipping");
+    }
+
+    [Fact]
+    public void Generate_WithOutlinePostProcessor_ExpandsAdvance()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+        var chars = CharacterSet.FromChars("A");
+        var outlineWidth = 4;
+
+        // Act
+        var resultWithout = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = chars
+        });
+
+        var resultWith = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = chars,
+            PostProcessors = new[] { new OutlinePostProcessor(outlineWidth) }
+        });
+
+        // Assert — advance must grow to avoid clipping the outline on the right side
+        var charWithout = resultWithout.Model.Characters.First(c => c.Id == 65);
+        var charWith = resultWith.Model.Characters.First(c => c.Id == 65);
+
+        charWith.XAdvance.Should().BeGreaterThan(charWithout.XAdvance,
+            "outlined glyph advance must be larger to prevent right-side clipping");
+    }
 }
