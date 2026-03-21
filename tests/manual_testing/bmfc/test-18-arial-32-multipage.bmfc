@@ -1,0 +1,16 @@
+# Test 18: Arial 32px max-tex 128 (multi-page)
+[font]
+system-font = Arial
+
+[rendering]
+size = 32
+
+[characters]
+preset = ascii
+
+[atlas]
+max-texture-size = 128
+
+[output]
+format = text
+path = ../../output/comparison-batch/test-18

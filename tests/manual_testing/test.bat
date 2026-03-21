@@ -1,5 +1,6 @@
 @echo off
 setlocal
+cd /d "%~dp0\..\.."
 
 echo === Building CLI ===
 dotnet build tools\Bmfontier.Cli -c Release --nologo -v minimal

@@ -1,0 +1,16 @@
+# Test 15: Times New Roman 32px, max-tex 512
+[font]
+system-font = Times New Roman
+
+[rendering]
+size = 32
+
+[characters]
+preset = ascii
+
+[atlas]
+max-texture-size = 512
+
+[output]
+format = text
+path = ../../output/comparison-batch/test-15

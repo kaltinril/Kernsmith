@@ -1,0 +1,17 @@
+# Test 09: Arial 32px spacing=4, max-tex 512
+[font]
+system-font = Arial
+
+[rendering]
+size = 32
+
+[characters]
+preset = ascii
+
+[atlas]
+max-texture-size = 512
+spacing = 4
+
+[output]
+format = text
+path = ../../output/comparison-batch/test-09

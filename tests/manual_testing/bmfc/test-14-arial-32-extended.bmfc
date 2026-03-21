@@ -1,0 +1,16 @@
+# Test 14: Arial 32px extended charset, max-tex 1024
+[font]
+system-font = Arial
+
+[rendering]
+size = 32
+
+[characters]
+preset = extended
+
+[atlas]
+max-texture-size = 1024
+
+[output]
+format = text
+path = ../../output/comparison-batch/test-14

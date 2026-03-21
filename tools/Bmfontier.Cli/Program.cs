@@ -23,6 +23,7 @@ return processedArgs switch
     [] or ["--help"] or ["-h"] => ShowHelp(),
     ["--version"] => ShowVersion(),
     ["generate", .. var rest] => GenerateCommand.Execute(rest),
+    ["batch", .. var rest] => BatchCommand.Execute(rest),
     ["benchmark", .. var rest] => BenchmarkCommand.Execute(rest),
     ["inspect", .. var rest] => InspectCommand.Execute(rest),
     ["convert", .. var rest] => ConvertCommand.Execute(rest),
@@ -38,6 +39,7 @@ static int ShowHelp()
 
         Usage:
           bmfontier generate -f <font> -s <size> [options]
+          bmfontier batch <config1.bmfc> [config2.bmfc ...] [options]
           bmfontier benchmark -f <font> -s <size> [options]
           bmfontier inspect <path>
           bmfontier convert <input> -o <output> [--format <text|xml|binary>]
@@ -47,6 +49,7 @@ static int ShowHelp()
 
         Commands:
           generate      Generate BMFont files from a font
+          batch         Process multiple .bmfc configs in a single invocation
           benchmark     Benchmark font generation performance
           inspect       Inspect an existing .fnt file
           convert       Convert between BMFont formats (text/xml/binary)

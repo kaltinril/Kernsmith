@@ -1,0 +1,16 @@
+# Test 16: Consolas 24px, max-tex 256
+[font]
+system-font = Consolas
+
+[rendering]
+size = 24
+
+[characters]
+preset = ascii
+
+[atlas]
+max-texture-size = 256
+
+[output]
+format = text
+path = ../../output/comparison-batch/test-16

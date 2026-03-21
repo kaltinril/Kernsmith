@@ -1,5 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
+cd /d "%~dp0\..\.."
 
 REM ============================================================================
 REM BMFont vs bmfontier comparison tests
@@ -189,6 +190,15 @@ echo 18  Arial 32px multi-page (128x128)   !DUR! ms
 
 echo.
 echo --- --------------------------------- --------
+
+REM --- Batch mode ---
+echo.
+echo === Batch mode (all 18 via single invocation) ===
+for /f "tokens=1-4 delims=:." %%a in ("%TIME: =0%") do set /a "T0=(((%%a*60+1%%b%%100)*60+1%%c%%100)*100+1%%d%%100)"
+%EXE% batch tests\manual_testing\bmfc\*.bmfc --time
+for /f "tokens=1-4 delims=:." %%a in ("%TIME: =0%") do set /a "T1=(((%%a*60+1%%b%%100)*60+1%%c%%100)*100+1%%d%%100)"
+set /a "DUR=(T1-T0)*10"
+echo     Batch total:                      !DUR! ms
 
 REM Capture overall end time
 for /f "tokens=1-4 delims=:." %%a in ("%TIME: =0%") do set /a "TOTAL_END=(((%%a*60+1%%b%%100)*60+1%%c%%100)*100+1%%d%%100)"

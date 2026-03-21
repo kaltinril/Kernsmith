@@ -60,141 +60,14 @@ internal sealed class GenerateCommand
                 return ExitCodes.Success;
             }
 
-            // Build FontGeneratorOptions
-            var genOptions = new FontGeneratorOptions
-            {
-                Size = options.Size.Value,
-                Characters = characters,
-                Bold = options.Bold,
-                Italic = options.Italic,
-                AntiAlias = options.AntiAlias,
-                MaxTextureSize = options.MaxTextureSize,
-                Padding = options.Padding,
-                Spacing = options.Spacing,
-                PackingAlgorithm = options.PackingAlgorithm,
-                Kerning = options.Kerning ?? true,
-                Outline = options.Outline,
-                Sdf = options.Sdf,
-                PowerOfTwo = options.PowerOfTwo ?? true,
-                Dpi = options.Dpi,
-                FaceIndex = options.FaceIndex,
-                ChannelPacking = options.ChannelPacking,
-                SuperSampleLevel = options.SuperSampleLevel,
-                FallbackCharacter = options.FallbackCharacter,
-                EnableHinting = options.EnableHinting ?? true,
-                AutofitTexture = options.AutofitTexture,
-                EqualizeCellHeights = options.EqualizeCellHeights,
-                ForceOffsetsToZero = options.ForceOffsetsToZero,
-                HeightPercent = options.HeightPercent,
-                MatchCharHeight = options.MatchCharHeight,
-                ColorFont = options.ColorFont,
-                ColorPaletteIndex = options.ColorPaletteIndex,
-                CollectMetrics = options.ShowProfile,
-            };
+            // Run the generation job
+            var jobResult = RunJob(options, characters);
 
-            // Apply texture format if specified
-            if (options.TextureFormat != null)
-            {
-                genOptions.TextureFormat = options.TextureFormat.ToLowerInvariant() switch
-                {
-                    "png" => Bmfontier.TextureFormat.Png,
-                    "tga" => Bmfontier.TextureFormat.Tga,
-                    "dds" => Bmfontier.TextureFormat.Dds,
-                    var f => throw new ArgumentException($"Unknown texture format: {f}. Use png, tga, or dds.")
-                };
-            }
+            if (options.ShowTime)
+                Console.WriteLine($"Generated in {jobResult.ElapsedMs}ms");
 
-            // Apply independent max texture width/height if specified
-            if (options.MaxTextureWidth.HasValue)
-                genOptions.MaxTextureWidth = options.MaxTextureWidth.Value;
-            if (options.MaxTextureHeight.HasValue)
-                genOptions.MaxTextureHeight = options.MaxTextureHeight.Value;
-
-            if (options.VariationAxes.Count > 0)
-                genOptions.VariationAxes = new Dictionary<string, float>(options.VariationAxes);
-
-            // Effects are now driven by FontGeneratorOptions properties.
-            // The pipeline builds the correct layered effects automatically.
-            if (options.GradientTop != null && options.GradientBottom != null)
-            {
-                var top = ColorParser.Parse(options.GradientTop);
-                var bottom = ColorParser.Parse(options.GradientBottom);
-                genOptions.GradientStartR = top.R;
-                genOptions.GradientStartG = top.G;
-                genOptions.GradientStartB = top.B;
-                genOptions.GradientEndR = bottom.R;
-                genOptions.GradientEndG = bottom.G;
-                genOptions.GradientEndB = bottom.B;
-                genOptions.GradientAngle = options.GradientAngle;
-                genOptions.GradientMidpoint = options.GradientMidpoint;
-            }
-            if (options.Outline > 0 && options.OutlineColor != null)
-            {
-                var oc = ColorParser.Parse(options.OutlineColor);
-                genOptions.OutlineR = oc.R;
-                genOptions.OutlineG = oc.G;
-                genOptions.OutlineB = oc.B;
-            }
-            if (options.ShadowOffsetX != 0 || options.ShadowOffsetY != 0 || options.ShadowColor != null)
-            {
-                genOptions.ShadowOffsetX = options.ShadowOffsetX;
-                genOptions.ShadowOffsetY = options.ShadowOffsetY;
-                genOptions.ShadowBlur = options.ShadowBlur;
-                if (options.ShadowColor != null)
-                {
-                    var sc = ColorParser.Parse(options.ShadowColor);
-                    genOptions.ShadowR = sc.R;
-                    genOptions.ShadowG = sc.G;
-                    genOptions.ShadowB = sc.B;
-                }
-            }
-
-            // Determine output path
-            string baseName;
-            if (options.FontPath != null)
-                baseName = Path.GetFileNameWithoutExtension(options.FontPath);
-            else
-                baseName = options.SystemFontName!.Replace(" ", "");
-
-            var outputPath = options.OutputPath;
-            if (outputPath == null)
-            {
-                outputPath = Path.Combine(Directory.GetCurrentDirectory(), baseName);
-            }
-            else if (Directory.Exists(outputPath) || outputPath.EndsWith(Path.DirectorySeparatorChar) || outputPath.EndsWith(Path.AltDirectorySeparatorChar))
-            {
-                Directory.CreateDirectory(outputPath);
-                outputPath = Path.Combine(outputPath, baseName);
-            }
-
-            // Generate
-            var fontDisplay = options.FontPath ?? options.SystemFontName ?? "font";
-            ConsoleOutput.WriteStdout($"Loading font: {fontDisplay}");
-            ConsoleOutput.WriteStdout($"Size: {options.Size}px, Charset: {options.CharsetPreset ?? "custom"}, Format: {options.OutputFormat.ToString().ToLowerInvariant()}");
-            ConsoleOutput.WriteStdout($"Rasterizing {characters.Count} glyphs...");
-
-            var sw = options.ShowTime ? Stopwatch.StartNew() : null;
-
-            BmFontResult result;
-            if (options.SystemFontName != null)
-                result = BmFont.GenerateFromSystem(options.SystemFontName, genOptions);
-            else
-                result = BmFont.Generate(options.FontPath!, genOptions);
-
-            ConsoleOutput.WriteStdout($"Packing into atlas ({result.Pages.Count} page(s))...");
-            ConsoleOutput.WriteStdout($"Writing output to {outputPath}...");
-
-            result.ToFile(outputPath, options.OutputFormat);
-
-            sw?.Stop();
-
-            ConsoleOutput.WriteStdout("Done.");
-
-            if (sw != null)
-                Console.WriteLine($"Generated in {sw.ElapsedMilliseconds}ms");
-
-            if (options.ShowProfile && result.Metrics != null)
-                ConsoleOutput.WriteStdout(result.Metrics.ToString());
+            if (options.ShowProfile && jobResult.Metrics != null)
+                ConsoleOutput.WriteStdout(jobResult.Metrics);
 
             // Save config if requested
             if (options.SaveConfigPath != null)
@@ -235,6 +108,181 @@ internal sealed class GenerateCommand
             ConsoleOutput.WriteError(ex.Message);
             return ExitCodes.InvalidArguments;
         }
+    }
+
+    /// <summary>
+    /// Result of a single font generation job.
+    /// </summary>
+    internal sealed class JobResult
+    {
+        public required string OutputPath { get; init; }
+        public required long ElapsedMs { get; init; }
+        public string? Metrics { get; init; }
+    }
+
+    /// <summary>
+    /// Resolves the output path from a <see cref="CliOptions"/> instance.
+    /// Returns the normalized base path (without extension) where .fnt and texture files will be written.
+    /// </summary>
+    internal static string ResolveOutputPath(CliOptions options)
+    {
+        string baseName;
+        if (options.FontPath != null)
+            baseName = Path.GetFileNameWithoutExtension(options.FontPath);
+        else
+            baseName = options.SystemFontName!.Replace(" ", "");
+
+        var outputPath = options.OutputPath;
+        if (outputPath == null)
+        {
+            outputPath = Path.Combine(Directory.GetCurrentDirectory(), baseName);
+        }
+        else if (Directory.Exists(outputPath) || outputPath.EndsWith(Path.DirectorySeparatorChar) || outputPath.EndsWith(Path.AltDirectorySeparatorChar))
+        {
+            Directory.CreateDirectory(outputPath);
+            outputPath = Path.Combine(outputPath, baseName);
+        }
+
+        return outputPath;
+    }
+
+    /// <summary>
+    /// Runs a single font generation job from fully-resolved options and character set.
+    /// </summary>
+    internal static JobResult RunJob(CliOptions options, CharacterSet? characters = null, byte[]? fontData = null)
+    {
+        // Validate
+        if (options.FontPath == null && options.SystemFontName == null)
+            throw new ArgumentException("--font is required.");
+        if (options.Size == null)
+            throw new ArgumentException("--size is required.");
+        if (options.FontPath != null && fontData == null && !File.Exists(options.FontPath))
+            throw new FileNotFoundException($"Font file not found: {options.FontPath}", options.FontPath);
+
+        characters ??= BuildCharacterSet(options);
+
+        // Build FontGeneratorOptions
+        var genOptions = new FontGeneratorOptions
+        {
+            Size = options.Size.Value,
+            Characters = characters,
+            Bold = options.Bold,
+            Italic = options.Italic,
+            AntiAlias = options.AntiAlias,
+            MaxTextureSize = options.MaxTextureSize,
+            Padding = options.Padding,
+            Spacing = options.Spacing,
+            PackingAlgorithm = options.PackingAlgorithm,
+            Kerning = options.Kerning ?? true,
+            Outline = options.Outline,
+            Sdf = options.Sdf,
+            PowerOfTwo = options.PowerOfTwo ?? true,
+            Dpi = options.Dpi,
+            FaceIndex = options.FaceIndex,
+            ChannelPacking = options.ChannelPacking,
+            SuperSampleLevel = options.SuperSampleLevel,
+            FallbackCharacter = options.FallbackCharacter,
+            EnableHinting = options.EnableHinting ?? true,
+            AutofitTexture = options.AutofitTexture,
+            EqualizeCellHeights = options.EqualizeCellHeights,
+            ForceOffsetsToZero = options.ForceOffsetsToZero,
+            HeightPercent = options.HeightPercent,
+            MatchCharHeight = options.MatchCharHeight,
+            ColorFont = options.ColorFont,
+            ColorPaletteIndex = options.ColorPaletteIndex,
+            CollectMetrics = options.ShowProfile,
+        };
+
+        // Apply texture format if specified
+        if (options.TextureFormat != null)
+        {
+            genOptions.TextureFormat = options.TextureFormat.ToLowerInvariant() switch
+            {
+                "png" => Bmfontier.TextureFormat.Png,
+                "tga" => Bmfontier.TextureFormat.Tga,
+                "dds" => Bmfontier.TextureFormat.Dds,
+                var f => throw new ArgumentException($"Unknown texture format: {f}. Use png, tga, or dds.")
+            };
+        }
+
+        // Apply independent max texture width/height if specified
+        if (options.MaxTextureWidth.HasValue)
+            genOptions.MaxTextureWidth = options.MaxTextureWidth.Value;
+        if (options.MaxTextureHeight.HasValue)
+            genOptions.MaxTextureHeight = options.MaxTextureHeight.Value;
+
+        if (options.VariationAxes.Count > 0)
+            genOptions.VariationAxes = new Dictionary<string, float>(options.VariationAxes);
+
+        // Effects
+        if (options.GradientTop != null && options.GradientBottom != null)
+        {
+            var top = ColorParser.Parse(options.GradientTop);
+            var bottom = ColorParser.Parse(options.GradientBottom);
+            genOptions.GradientStartR = top.R;
+            genOptions.GradientStartG = top.G;
+            genOptions.GradientStartB = top.B;
+            genOptions.GradientEndR = bottom.R;
+            genOptions.GradientEndG = bottom.G;
+            genOptions.GradientEndB = bottom.B;
+            genOptions.GradientAngle = options.GradientAngle;
+            genOptions.GradientMidpoint = options.GradientMidpoint;
+        }
+        if (options.Outline > 0 && options.OutlineColor != null)
+        {
+            var oc = ColorParser.Parse(options.OutlineColor);
+            genOptions.OutlineR = oc.R;
+            genOptions.OutlineG = oc.G;
+            genOptions.OutlineB = oc.B;
+        }
+        if (options.ShadowOffsetX != 0 || options.ShadowOffsetY != 0 || options.ShadowColor != null)
+        {
+            genOptions.ShadowOffsetX = options.ShadowOffsetX;
+            genOptions.ShadowOffsetY = options.ShadowOffsetY;
+            genOptions.ShadowBlur = options.ShadowBlur;
+            if (options.ShadowColor != null)
+            {
+                var sc = ColorParser.Parse(options.ShadowColor);
+                genOptions.ShadowR = sc.R;
+                genOptions.ShadowG = sc.G;
+                genOptions.ShadowB = sc.B;
+            }
+        }
+
+        // Determine output path
+        var outputPath = ResolveOutputPath(options);
+
+        // Generate
+        var fontDisplay = options.FontPath ?? options.SystemFontName ?? "font";
+        ConsoleOutput.WriteStdout($"Loading font: {fontDisplay}");
+        ConsoleOutput.WriteStdout($"Size: {options.Size}px, Charset: {options.CharsetPreset ?? "custom"}, Format: {options.OutputFormat.ToString().ToLowerInvariant()}");
+        ConsoleOutput.WriteStdout($"Rasterizing {characters.Count} glyphs...");
+
+        var sw = Stopwatch.StartNew();
+
+        BmFontResult result;
+        if (fontData != null)
+            result = BmFont.Generate(fontData, genOptions);
+        else if (options.SystemFontName != null)
+            result = BmFont.GenerateFromSystem(options.SystemFontName, genOptions);
+        else
+            result = BmFont.Generate(options.FontPath!, genOptions);
+
+        ConsoleOutput.WriteStdout($"Packing into atlas ({result.Pages.Count} page(s))...");
+        ConsoleOutput.WriteStdout($"Writing output to {outputPath}...");
+
+        result.ToFile(outputPath, options.OutputFormat);
+
+        sw.Stop();
+
+        ConsoleOutput.WriteStdout("Done.");
+
+        return new JobResult
+        {
+            OutputPath = outputPath,
+            ElapsedMs = sw.ElapsedMilliseconds,
+            Metrics = options.ShowProfile && result.Metrics != null ? result.Metrics.ToString() : null,
+        };
     }
 
     private static CliOptions ParseArgs(string[] args)

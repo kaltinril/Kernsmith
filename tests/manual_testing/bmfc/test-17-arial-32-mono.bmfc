@@ -1,0 +1,17 @@
+# Test 17: Arial 32px mono (no AA), max-tex 512
+[font]
+system-font = Arial
+
+[rendering]
+size = 32
+anti-alias = none
+
+[characters]
+preset = ascii
+
+[atlas]
+max-texture-size = 512
+
+[output]
+format = text
+path = ../../output/comparison-batch/test-17

@@ -1,0 +1,17 @@
+# Test 06: Arial 32px italic, max-tex 512
+[font]
+system-font = Arial
+
+[rendering]
+size = 32
+italic = true
+
+[characters]
+preset = ascii
+
+[atlas]
+max-texture-size = 512
+
+[output]
+format = text
+path = ../../output/comparison-batch/test-06

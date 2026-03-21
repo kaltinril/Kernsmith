@@ -1,0 +1,17 @@
+# Test 13: Arial 32px DDS texture, max-tex 512
+[font]
+system-font = Arial
+
+[rendering]
+size = 32
+
+[characters]
+preset = ascii
+
+[atlas]
+max-texture-size = 512
+texture-format = dds
+
+[output]
+format = text
+path = ../../output/comparison-batch/test-13

@@ -1,6 +1,6 @@
 # bmfontier -- Master Plan
 
-> **Status**: Phases 1-11, 13-14 complete. Phase 12 (Pre-Ship Polish) is the only remaining phase.
+> **Status**: Phases 1-11, 14 complete. Phase 12 (Pre-Ship Polish) and Phase 30 (WASM) are active.
 > **Date**: 2026-03-20
 
 ---
@@ -80,6 +80,7 @@ Output Layer
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
 | 12 | [Pre-Ship Polish](phase-12-pre-ship-polish.md) | Security hardening, test coverage gaps, NuGet packaging, API polish, FT_Stroker fix | Planning |
+| 30 | [WASM Rasterization](phase-30-wasm-rasterization.md) | Live investigation of WASM-compatible rasterizers (prior research was preliminary) | Planning |
 
 ---
 
@@ -98,7 +99,6 @@ Output Layer
 | 09 | [Outline Overhaul](done/phase-09-outline-overhaul.md) | EDT-based anti-aliased outlines with outline color support |
 | 10 | [Layered Rendering](done/phase-10-layered-rendering.md) | IGlyphEffect compositing replacing order-dependent post-processor chain |
 | 11 | [Solution Restructure](done/phase-11-solution-restructure.md) | Multi-project foundation, net10.0 migration, CLI promotion, app scaffolding |
-| 13 | [WASM Rasterization](done/phase-13-wasm-rasterization.md) | FreeTypeSharp WASM alternatives investigation (research only) |
 | 14 | [Benchmarking & Profiling](done/phase-14-benchmarking-profiling.md) | 50+ benchmarks, PipelineMetrics, CLI --time/--profile, benchmark command |
 
 ### Topical Plan Docs (archived in `done/`)
@@ -165,8 +165,8 @@ Multi-project foundation: Directory.Build.props, central package management, glo
 ### Phase 12 — Pre-Ship Polish (PLANNING)
 Security hardening (10 items), test coverage gaps (~30 new tests), NuGet package readiness (LICENSE, URLs, SourceLink, XML docs, CHANGELOG), API documentation polish, optional FT_Stroker compositing fix.
 
-### Phase 13 — WASM Rasterization (RESEARCH COMPLETE)
-Investigation of FreeTypeSharp WASM alternatives. Recommendation: server-side rasterization first, then SkiaSharpRasterizer for client-side if needed. IRasterizer abstraction is clean enough to support swapping.
+### Phase 30 — WASM Rasterization (PLANNING)
+Live investigation of WASM-compatible font rasterizers. Prior preliminary research suggested server-side rasterization or SkiaSharp, but findings were not validated with actual testing. Requires checking current FreeTypeSharp WASM status, testing Emscripten builds, evaluating SkiaSharp.Views.Blazor, and verifying IRasterizer swappability.
 
 ### Phase 14 — Benchmarking & Profiling (COMPLETE)
 50+ benchmarks across 7 classes, PipelineMetrics with stage-level timing, CLI --time/--profile flags, benchmark command, CI workflow. R2R tested and rejected (15% slower on .NET 10). AOT deferred.
