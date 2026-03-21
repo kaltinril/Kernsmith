@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="LICENSE">Proprietary License</a> &middot;
+  <a href="LICENSE">License</a> &middot;
   <a href="CHANGELOG.md">Changelog</a> &middot;
   <a href="samples/KernSmith.Samples/">Samples</a>
 </p>
@@ -503,4 +503,4 @@ var result = BmFont.Generate("font.ttf", new FontGeneratorOptions
 
 ## License
 
-MIT
+Proprietary. See [LICENSE](LICENSE) for details.
