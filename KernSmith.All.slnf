@@ -1,0 +1,15 @@
+{
+  "solution": {
+    "path": "KernSmith.sln",
+    "projects": [
+      "src\\KernSmith\\KernSmith.csproj",
+      "tests\\KernSmith.Tests\\KernSmith.Tests.csproj",
+      "tools\\KernSmith.Cli\\KernSmith.Cli.csproj",
+      "benchmarks\\KernSmith.Benchmarks\\KernSmith.Benchmarks.csproj",
+      "samples\\KernSmith.Samples\\KernSmith.Samples.csproj",
+      "apps\\KernSmith.Ui\\KernSmith.Ui.csproj",
+      "apps\\KernSmith.Web\\KernSmith.Web.csproj",
+      "apps\\KernSmith.Mobile\\KernSmith.Mobile.csproj"
+    ]
+  }
+}

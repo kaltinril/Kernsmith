@@ -10,7 +10,7 @@
 
 The project has minimal benchmarking infrastructure:
 
-- **4 BenchmarkDotNet scenarios** in `benchmarks/Bmfontier.Benchmarks/FontGenerationBenchmarks.cs`:
+- **4 BenchmarkDotNet scenarios** in `benchmarks/KernSmith.Benchmarks/FontGenerationBenchmarks.cs`:
   - ASCII 32px with MaxRects packer
   - ASCII 32px with Skyline packer
   - ExtendedAscii 32px
@@ -187,7 +187,7 @@ Tasks:
   - Pay startup cost once, run N generations
   - Input: multiple `--job` arguments, or a jobs file (JSON/YAML)
   - Useful for asset pipelines that generate many fonts at build time
-  - Example: `bmfontier batch jobs.json` or `bmfontier generate --font A -s 32 --and --font B -s 24`
+  - Example: `KernSmith batch jobs.json` or `KernSmith generate --font A -s 32 --and --font B -s 24`
 
 ---
 
@@ -218,7 +218,7 @@ Each benchmark class should test ONE dimension. End-to-end benchmarks are for re
 - **Roboto-Regular.ttf** (299KB): Primary benchmark font — small, fast to load, good baseline
 - **RobotoFlex-Variable.ttf** (1.8MB): Variable font benchmarks
 - **NotoColorEmoji.ttf** (11MB): Color font / large font benchmarks
-- All already in `tests/Bmfontier.Tests/Fixtures/` — benchmarks should reference them via relative path
+- All already in `tests/KernSmith.Tests/Fixtures/` — benchmarks should reference them via relative path
 
 ---
 
@@ -228,7 +228,7 @@ Each benchmark class should test ONE dimension. End-to-end benchmarks are for re
 2. **Regression detection**: CI catches >10% regressions on critical-path benchmarks
 3. **Actionable profiling**: Stage-level timing available via opt-in flag, no external tools needed
 4. **Low overhead**: Metrics collection adds <1% to total generation time
-5. **Developer experience**: `dotnet run --project benchmarks/Bmfontier.Benchmarks -- --filter *Effects*` works out of the box
+5. **Developer experience**: `dotnet run --project benchmarks/KernSmith.Benchmarks -- --filter *Effects*` works out of the box
 6. **Startup transparency**: `--time` flag shows users that generation is fast (5-50ms) despite ~1100ms process wall time
 7. **Startup reduction**: ~~AOT or R2R publishing reduces CLI cold-start from ~1100ms to <200ms~~ — R2R rejected (slower on .NET 10), AOT deferred
 8. **Batch efficiency**: Asset pipelines can generate 100 fonts in a single invocation, paying startup cost only once

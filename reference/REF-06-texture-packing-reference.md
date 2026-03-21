@@ -13,7 +13,7 @@
 5. [What Existing Tools Use](#what-existing-tools-use)
 6. [Multi-Page Strategy](#multi-page-strategy)
 7. [Existing C# Implementations](#existing-c-implementations)
-8. [Recommendation for bmfontier](#recommendation-for-bmfontier)
+8. [Recommendation for KernSmith](#recommendation-for-KernSmith)
 9. [References](#references)
 
 ---
@@ -445,7 +445,7 @@ Height-descending is the standard recommendation for font glyphs because it crea
 | Unity MaxRectsBinPack | MaxRects (all 5 heuristics) | Public domain | Widely used C# port, originally from Unity wiki |
 | Various gists/forks | MaxRects | Public domain | Many standalone C# files available |
 
-### Recommendation for bmfontier
+### Recommendation for KernSmith
 
 **Best option: RectangleBinPack.CSharp** or **implement MaxRects directly**.
 
@@ -461,7 +461,7 @@ If preferring a lighter dependency:
 
 ---
 
-## Recommendation for bmfontier
+## Recommendation for KernSmith
 
 ### Primary Algorithm: MaxRects with BestShortSideFit
 

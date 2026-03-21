@@ -6,6 +6,6 @@
 
 ---
 
-bmfontier-specific metadata (SDF spread, gradient, shadow, outline, variable axes) stored inline in .fnt output across all three formats (text, XML, binary). Existing BMFont readers safely ignore the additions.
+KernSmith-specific metadata (SDF spread, gradient, shadow, outline, variable axes) stored inline in .fnt output across all three formats (text, XML, binary). Existing BMFont readers safely ignore the additions.
 
 See **[plan-extended-metadata.md](plan-extended-metadata.md)** for full specification, compatibility analysis, and implementation plan.

@@ -23,7 +23,7 @@ outlineThickness=6
 # selected chars
 chars=32-126
 
-# bmfontier extensions
+# kernsmith extensions
 autofit=1
 packer=skyline
 outlineColor=1B0030

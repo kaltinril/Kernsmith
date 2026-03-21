@@ -1,4 +1,4 @@
-# bmfontier -- Project Structure
+# KernSmith -- Project Structure
 
 > Part of the [Master Plan](master-plan.md).
 > Related: [API Design](plan-api-design.md)
@@ -10,10 +10,10 @@
 ## Solution Layout
 
 ```
-bmfontier/
+KernSmith/
 +-- src/
-|   +-- Bmfontier/                        # Main NuGet package
-|       +-- Bmfontier.csproj
+|   +-- KernSmith/                        # Main NuGet package
+|       +-- KernSmith.csproj
 |       +-- BmFont.cs                      # Main entry point / builder API
 |       +-- Font/                          # Font loading and parsing
 |       |   +-- IFontReader.cs             # Interface for font reading
@@ -68,23 +68,23 @@ bmfontier/
 |       |   +-- CharacterSet.cs            # Predefined and custom char sets
 |       |   +-- PixelFormat.cs             # Pixel format enumeration
 |       +-- Exceptions/                    # Custom exception types
-|           +-- BmfontierException.cs      # Base exception
+|           +-- KernSmithException.cs      # Base exception
 |           +-- FontParsingException.cs    # Font parsing errors
 |           +-- RasterizationException.cs  # Rasterization errors
 |           +-- AtlasPackingException.cs   # Atlas packing errors
 +-- tests/
-|   +-- Bmfontier.Tests/
-|       +-- Bmfontier.Tests.csproj
+|   +-- KernSmith.Tests/
+|       +-- KernSmith.Tests.csproj
 |       +-- Font/                          # Parser tests (each table)
 |       +-- Packing/                       # Packing algorithm tests
 |       +-- Output/                        # Format output tests
 |       +-- Integration/                   # End-to-end tests
 +-- samples/
-|   +-- Bmfontier.Cli/                    # Reference CLI tool
+|   +-- KernSmith.Cli/                    # Reference CLI tool
 |       +-- Program.cs
 +-- plan/                                  # Project plans & design docs (not shipped)
 +-- reference/                             # Research & reference material (not shipped)
-+-- bmfontier.sln
++-- KernSmith.sln
 +-- README.md
 +-- LICENSE
 +-- CLAUDE.md
@@ -96,18 +96,18 @@ bmfontier/
 
 | Namespace | Folder | Contains |
 |-----------|--------|----------|
-| `Bmfontier` | root | `BmFont` (entry point) |
-| `Bmfontier` | Config/ | `FontGeneratorOptions`, `CharacterSet`, `PixelFormat` (see note below) |
-| `Bmfontier.Font` | Font/ | `IFontReader`, `FontLoader`, `TtfParser` |
-| `Bmfontier.Font.Tables` | Font/Tables/ | Individual table parsers |
-| `Bmfontier.Font.Models` | Font/Models/ | `FontInfo`, `GlyphMetrics`, `KerningPair`, `HeadTable`, `HheaTable`, `Os2Metrics`, `NameInfo` |
-| `Bmfontier.Rasterizer` | Rasterizer/ | `IRasterizer`, `IGlyphPostProcessor`, `GlyphRasterizer`, `RasterizedGlyph`, `RasterOptions` |
-| `Bmfontier.Packing` | Packing/ | `IAtlasPacker`, `MaxRectsPacker`, `SkylinePacker`, `PackResult` |
-| `Bmfontier.Atlas` | Atlas/ | `IAtlasPacker`, `IAtlasEncoder`, `AtlasBuilder`, `AtlasPage`, `GlyphRect`, `GlyphPlacement`, `PackResult` |
-| `Bmfontier.Output` | Output/ | `IBmFontFormatter`, `BmFontModel`, `TextFormatter`, `XmlFormatter`, `BmFontBinaryFormatter`, `FileWriter` |
-| `Bmfontier.Exceptions` | Exceptions/ | `BmfontierException`, `FontParsingException`, `RasterizationException`, `AtlasPackingException` |
+| `KernSmith` | root | `BmFont` (entry point) |
+| `KernSmith` | Config/ | `FontGeneratorOptions`, `CharacterSet`, `PixelFormat` (see note below) |
+| `KernSmith.Font` | Font/ | `IFontReader`, `FontLoader`, `TtfParser` |
+| `KernSmith.Font.Tables` | Font/Tables/ | Individual table parsers |
+| `KernSmith.Font.Models` | Font/Models/ | `FontInfo`, `GlyphMetrics`, `KerningPair`, `HeadTable`, `HheaTable`, `Os2Metrics`, `NameInfo` |
+| `KernSmith.Rasterizer` | Rasterizer/ | `IRasterizer`, `IGlyphPostProcessor`, `GlyphRasterizer`, `RasterizedGlyph`, `RasterOptions` |
+| `KernSmith.Packing` | Packing/ | `IAtlasPacker`, `MaxRectsPacker`, `SkylinePacker`, `PackResult` |
+| `KernSmith.Atlas` | Atlas/ | `IAtlasPacker`, `IAtlasEncoder`, `AtlasBuilder`, `AtlasPage`, `GlyphRect`, `GlyphPlacement`, `PackResult` |
+| `KernSmith.Output` | Output/ | `IBmFontFormatter`, `BmFontModel`, `TextFormatter`, `XmlFormatter`, `BmFontBinaryFormatter`, `FileWriter` |
+| `KernSmith.Exceptions` | Exceptions/ | `KernSmithException`, `FontParsingException`, `RasterizationException`, `AtlasPackingException` |
 
-> **Config/ namespace note:** Files in `Config/` use the root `Bmfontier` namespace (not `Bmfontier.Config`) because these are core configuration types that users reference frequently. Use `<RootNamespace>` in the folder's files or explicit namespace declarations.
+> **Config/ namespace note:** Files in `Config/` use the root `KernSmith` namespace (not `KernSmith.Config`) because these are core configuration types that users reference frequently. Use `<RootNamespace>` in the folder's files or explicit namespace declarations.
 
 ---
 
@@ -159,7 +159,7 @@ Key considerations:
 
 ## Project File (.csproj)
 
-Minimal `.csproj` skeleton for `src/Bmfontier/Bmfontier.csproj`:
+Minimal `.csproj` skeleton for `src/KernSmith/KernSmith.csproj`:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -169,9 +169,9 @@ Minimal `.csproj` skeleton for `src/Bmfontier/Bmfontier.csproj`:
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PackageId>Bmfontier</PackageId>
+    <PackageId>KernSmith</PackageId>
     <Version>0.1.0</Version>
-    <Authors>bmfontier contributors</Authors>
+    <Authors>KernSmith contributors</Authors>
     <Description>Generate BMFont bitmap font atlases from TTF/OTF files</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>

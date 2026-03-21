@@ -1,4 +1,4 @@
-# bmfontier -- Bug Fixes and Audit Findings
+# KernSmith -- Bug Fixes and Audit Findings
 
 > Captures all findings from the codebase audit: missing BMFC config keys,
 > GenerateCommand issues, and utility command defects.

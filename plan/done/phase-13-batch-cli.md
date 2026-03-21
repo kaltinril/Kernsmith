@@ -8,7 +8,7 @@
 
 ## Current State
 
-The CLI (`tools/Bmfontier.Cli`) processes one font generation job per invocation via `bmfontier generate`. Each invocation pays approximately 1100ms of .NET runtime startup overhead. The actual font generation typically takes only 4-6ms per font, so when generating multiple fonts (e.g., 18 test fonts), total wall time is dominated by startup: 18 x 1100ms = ~20s.
+The CLI (`tools/KernSmith.Cli`) processes one font generation job per invocation via `KernSmith generate`. Each invocation pays approximately 1100ms of .NET runtime startup overhead. The actual font generation typically takes only 4-6ms per font, so when generating multiple fonts (e.g., 18 test fonts), total wall time is dominated by startup: 18 x 1100ms = ~20s.
 
 The CLI already supports loading generation settings from `.bmfc` configuration files via `--config <path>` on the `generate` command, and saving settings via `--save-config <path>`. The `BmfcParser` reads INI-like `.bmfc` files into `CliOptions`, and the `GenerateCommand` builds `FontGeneratorOptions` from those options and calls `BmFont.Generate()` or `BmFont.GenerateFromSystem()`.
 
@@ -26,9 +26,9 @@ A new `batch` command accepts multiple `.bmfc` file paths and runs all jobs in a
 
 The batch command supports multiple ways to specify jobs:
 
-1. **Positional args**: `bmfontier batch a.bmfc b.bmfc c.bmfc`
-2. **Glob patterns**: `bmfontier batch fonts/*.bmfc` (shell-expanded on Unix; the CLI should also expand globs internally for Windows compatibility)
-3. **Job list file**: `bmfontier batch --jobs jobs.txt` (one `.bmfc` path per line, blank lines and `#` comments ignored)
+1. **Positional args**: `KernSmith batch a.bmfc b.bmfc c.bmfc`
+2. **Glob patterns**: `KernSmith batch fonts/*.bmfc` (shell-expanded on Unix; the CLI should also expand globs internally for Windows compatibility)
+3. **Job list file**: `KernSmith batch --jobs jobs.txt` (one `.bmfc` path per line, blank lines and `#` comments ignored)
 
 All methods can be combined in a single invocation.
 
@@ -75,7 +75,7 @@ Before running ANY jobs, validate that no two jobs would write to the same outpu
 
 ### Phase 1 — Batch Command Skeleton
 
-- [ ] Create `BatchCommand.cs` in `tools/Bmfontier.Cli/Commands/`
+- [ ] Create `BatchCommand.cs` in `tools/KernSmith.Cli/Commands/`
 - [ ] Accept positional args as `.bmfc` file paths
 - [ ] Accept `--jobs <file>` for a text file listing `.bmfc` paths (one per line, `#` comments, blank lines skipped)
 - [ ] Expand glob patterns using `Directory.GetFiles()` with the pattern for Windows compatibility
@@ -149,7 +149,7 @@ Each font generation allocates atlas texture pages as large byte arrays (e.g., 1
 
 ### Glob Expansion
 
-On Unix shells, `bmfontier batch fonts/*.bmfc` is expanded by the shell before the CLI sees it, so the CLI receives individual file paths. On Windows (cmd.exe, PowerShell), glob expansion does not happen automatically. The batch command should detect unexpanded glob patterns (containing `*` or `?`) in positional args and expand them via `Directory.GetFiles()`.
+On Unix shells, `KernSmith batch fonts/*.bmfc` is expanded by the shell before the CLI sees it, so the CLI receives individual file paths. On Windows (cmd.exe, PowerShell), glob expansion does not happen automatically. The batch command should detect unexpanded glob patterns (containing `*` or `?`) in positional args and expand them via `Directory.GetFiles()`.
 
 ---
 
@@ -157,17 +157,17 @@ On Unix shells, `bmfontier batch fonts/*.bmfc` is expanded by the shell before t
 
 | File | Change |
 |------|--------|
-| `tools/Bmfontier.Cli/Commands/BatchCommand.cs` | **New** — batch command implementation |
-| `tools/Bmfontier.Cli/Commands/GenerateCommand.cs` | **Modify** — extract `RunJob()` method for reuse |
-| `tools/Bmfontier.Cli/Program.cs` | **Modify** — add `batch` routing and help text |
-| `tests/Bmfontier.Tests/Cli/BatchCommandTests.cs` | **New** — collision detection and batch execution tests |
+| `tools/KernSmith.Cli/Commands/BatchCommand.cs` | **New** — batch command implementation |
+| `tools/KernSmith.Cli/Commands/GenerateCommand.cs` | **Modify** — extract `RunJob()` method for reuse |
+| `tools/KernSmith.Cli/Program.cs` | **Modify** — add `batch` routing and help text |
+| `tests/KernSmith.Tests/Cli/BatchCommandTests.cs` | **New** — collision detection and batch execution tests |
 
 ---
 
 ## Success Criteria
 
-1. `bmfontier batch *.bmfc` processes all matching files in one invocation
-2. `bmfontier batch --jobs jobs.txt` reads configs from a job list file
+1. `KernSmith batch *.bmfc` processes all matching files in one invocation
+2. `KernSmith batch --jobs jobs.txt` reads configs from a job list file
 3. Output collision detection catches conflicts before any work starts
 4. `--parallel 4` runs 4 jobs concurrently with no output interleaving
 5. One failed job does not block others; summary shows all failures

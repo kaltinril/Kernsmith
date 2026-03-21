@@ -9,15 +9,15 @@
 
   <!-- Shared metadata for the NuGet package (only applies when IsPackable=true) -->
   <PropertyGroup>
-    <Authors>bmfontier contributors</Authors>
+    <Authors>KernSmith contributors</Authors>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <RepositoryUrl>https://github.com/user/bmfontier</RepositoryUrl>
+    <RepositoryUrl>https://github.com/kaltinril/KernSmith</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <Copyright>Copyright (c) bmfontier contributors</Copyright>
+    <Copyright>Copyright (c) KernSmith contributors</Copyright>
   </PropertyGroup>
 
   <!-- Non-library projects are not packable by default -->
-  <PropertyGroup Condition="'$(MSBuildProjectName)' != 'Bmfontier'">
+  <PropertyGroup Condition="'$(MSBuildProjectName)' != 'KernSmith'">
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 

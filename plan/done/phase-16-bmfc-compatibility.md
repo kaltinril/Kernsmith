@@ -31,7 +31,7 @@ textureFormat=tga
 chars=32-126
 ```
 
-These are **completely incompatible**. Users with existing BMFont .bmfc files can't use them with bmfontier, and our .bmfc files don't work with BMFont. Since we're positioning as a BMFont-compatible tool, this is a significant interop gap.
+These are **completely incompatible**. Users with existing BMFont .bmfc files can't use them with KernSmith, and our .bmfc files don't work with BMFont. Since we're positioning as a BMFont-compatible tool, this is a significant interop gap.
 
 ## BMFont .bmfc Format Reference
 
@@ -99,9 +99,9 @@ chars=32-126
 # imported icon images
 ```
 
-### Key Mappings (BMFont -> bmfontier)
+### Key Mappings (BMFont -> KernSmith)
 
-| BMFont Key | BMFont Values | bmfontier Equivalent |
+| BMFont Key | BMFont Values | KernSmith Equivalent |
 |-----------|---------------|---------------------|
 | `fontName` | font family name | `--system-font` |
 | `fontFile` | path to .ttf | `--font` |
@@ -127,9 +127,9 @@ chars=32-126
 | `autoFitNumPages` | 0=off, N=target pages | `--autofit` |
 | `outBitDepth` | 8/32 | grayscale vs RGBA |
 
-### bmfontier Extensions (not in BMFont)
+### KernSmith Extensions (not in BMFont)
 
-These are bmfontier-specific features with no BMFont equivalent:
+These are KernSmith-specific features with no BMFont equivalent:
 - Gradient (top/bottom colors, angle, midpoint)
 - Shadow (offset, color, blur, opacity)
 - Outline color (BMFont only has thickness)
@@ -148,15 +148,15 @@ These are bmfontier-specific features with no BMFont equivalent:
 
 1. **Auto-detect format** on read: if file contains `[section]` headers, use legacy parser; if flat `key=value`, use BMFont parser
 2. **Write BMFont format** by default from `--save-config`
-3. **Support bmfontier extensions** via `# bmfontier:` prefixed comments (ignored by BMFont but preserved by bmfontier)
+3. **Support KernSmith extensions** via `# KernSmith:` prefixed comments (ignored by BMFont but preserved by KernSmith)
 4. **Deprecate** our custom INI format — warn when reading it, suggest migration
 
 ### Extension Keys
 
-For bmfontier-specific features, add new `key=value` pairs in the same flat style. BMFont will ignore keys it doesn't recognize:
+For KernSmith-specific features, add new `key=value` pairs in the same flat style. BMFont will ignore keys it doesn't recognize:
 
 ```
-# bmfontier extensions
+# KernSmith extensions
 gradientTop=FF0000
 gradientBottom=FFD700
 gradientAngle=90
@@ -182,7 +182,7 @@ BMFont ignores unknown keys, so these files remain compatible. Our parser reads 
 - [ ] Map all BMFont keys to CliOptions
 - [ ] Handle `chars=` format (comma-separated codes and ranges like `32-126,160-255`)
 - [ ] Handle `fontSize` sign convention (BMFont uses negative for "match char height")
-- [ ] Parse `# bmfontier:` extension comments
+- [ ] Parse `# KernSmith:` extension comments
 
 ### Phase 2 — Auto-Detection
 - [ ] Update `BmfcParser.Parse()` to auto-detect format (check for `[` section headers)
@@ -191,7 +191,7 @@ BMFont ignores unknown keys, so these files remain compatible. Our parser reads 
 
 ### Phase 3 — BMFont Format Writer
 - [ ] Update `BmfcWriter` to output standard BMFont flat `key=value` format
-- [ ] Include bmfontier extension keys as additional `key=value` pairs
+- [ ] Include KernSmith extension keys as additional `key=value` pairs
 - [ ] Preserve round-trip compatibility: read BMFont .bmfc -> save -> identical output
 
 ### Phase 4 — Migrate Test Files
@@ -209,9 +209,9 @@ BMFont ignores unknown keys, so these files remain compatible. Our parser reads 
 
 ## Success Criteria
 
-1. `bmfontier generate --config file.bmfc` works with BMFont-generated .bmfc files
-2. `bmfontier generate --save-config out.bmfc` produces files BMFont can read (minus extensions)
-3. bmfontier extensions round-trip through `# bmfontier:` comments
+1. `KernSmith generate --config file.bmfc` works with BMFont-generated .bmfc files
+2. `KernSmith generate --save-config out.bmfc` produces files BMFont can read (minus extensions)
+3. KernSmith extensions round-trip through `# KernSmith:` comments
 4. Legacy INI .bmfc files still work (with deprecation warning)
 5. All 32 test .bmfc files converted to standard format
 

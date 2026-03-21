@@ -20,5 +20,5 @@ textureFormat=png
 # selected chars
 chars=32-126
 
-# bmfontier extensions
+# kernsmith extensions
 outputPath=../../output/comparison-batch/test-07

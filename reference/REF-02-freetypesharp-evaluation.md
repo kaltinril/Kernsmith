@@ -1,4 +1,4 @@
-# FreeTypeSharp Deep Evaluation for BMFontier
+# FreeTypeSharp Deep Evaluation for KernSmith
 
 **Date:** 2026-03-18
 **Package:** [FreeTypeSharp](https://github.com/ryancheung/FreeTypeSharp) by ryancheung
@@ -353,7 +353,7 @@ For kerning pairs:
 ### Architecture Sketch
 
 ```
-BMFontier Pipeline:
+KernSmith Pipeline:
 
   [TTF File / byte[]]
        |

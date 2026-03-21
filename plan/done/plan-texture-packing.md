@@ -1,4 +1,4 @@
-# bmfontier -- Texture Packing
+# KernSmith -- Texture Packing
 
 > Part of the [Master Plan](master-plan.md).
 > Related: [Rasterization](plan-rasterization.md), [Output Formats](plan-output-formats.md), [API Design](plan-api-design.md)

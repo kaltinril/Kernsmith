@@ -3,12 +3,12 @@ setlocal
 cd /d "%~dp0\..\.."
 
 echo === Building CLI ===
-dotnet build tools\Bmfontier.Cli -c Release --nologo -v minimal
+dotnet build tools\KernSmith.Cli -c Release --nologo -v minimal
 if errorlevel 1 goto :fail
 
 if not exist output mkdir output
 
-set EXE=tools\Bmfontier.Cli\bin\Release\net10.0\Bmfontier.Cli.exe
+set EXE=tools\KernSmith.Cli\bin\Release\net10.0\KernSmith.Cli.exe
 
 echo.
 echo === 1. Neon Cyberpunk — pink-to-cyan gradient, dark outline ===

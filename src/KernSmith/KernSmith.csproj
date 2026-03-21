@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PackageId>KernSmith</PackageId>
+    <Version>0.8.0</Version>
+    <Description>Generate BMFont-compatible bitmap font atlases from TTF/OTF/WOFF files. Features layered effects (outline, gradient, shadow), color font support (COLRv0/CPAL, sbix, CBDT), variable fonts, SDF rendering, font subsetting, channel packing, super sampling, TGA/DDS/PNG output, and extended metadata. In-memory pipeline with text/XML/binary .fnt output.</Description>
+    <PackageProjectUrl>https://github.com/kaltinril/KernSmith</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>bmfont;bitmap-font;font;atlas;texture-packing;game-dev;sdf;signed-distance-field;freetype;ttf;otf;woff;outline;gradient;shadow;color-font;variable-font;font-subsetting;tga;dds</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KernSmith.Tests" />
+    <InternalsVisibleTo Include="KernSmith.Cli" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FreeTypeSharp" />
+    <PackageReference Include="StbImageWriteSharp" />
+  </ItemGroup>
+
+</Project>

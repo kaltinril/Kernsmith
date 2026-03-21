@@ -25,7 +25,7 @@ outlineThickness=3
 # selected chars
 chars=32-126
 
-# bmfontier extensions
+# kernsmith extensions
 outlineColor=0A0000
 gradientTop=8B0000
 gradientBottom=DC143C

@@ -1,4 +1,4 @@
-# bmfontier -- Font Parsing
+# KernSmith -- Font Parsing
 
 > Part of the [Master Plan](master-plan.md).
 > Related: [API Design](plan-api-design.md), [Rasterization](plan-rasterization.md)
@@ -127,7 +127,7 @@ public class TtfParser
 }
 ```
 
-`TtfParser` implements the parsing logic used by `TtfFontReader` (the default `IFontReader` implementation). Each table parser is a separate class in `Bmfontier.Font.Tables`.
+`TtfParser` implements the parsing logic used by `TtfFontReader` (the default `IFontReader` implementation). Each table parser is a separate class in `KernSmith.Font.Tables`.
 
 > Merge strategy: Start with kern table pairs. Then apply GPOS pairs — if a pair exists in both kern and GPOS, GPOS takes precedence (per OpenType spec, GPOS supersedes kern). The `GetKerningPairs` method should NOT take `unitsPerEm` as a parameter — it already has access to the `head` table. Return values in font units; the caller scales to pixels.
 

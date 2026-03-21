@@ -1,6 +1,6 @@
 # Other Font Formats Reference
 
-A comprehensive reference for font formats beyond TrueType (.ttf), covering format internals, detection strategies, conversion considerations, and implementation priorities for bmfontier.
+A comprehensive reference for font formats beyond TrueType (.ttf), covering format internals, detection strategies, conversion considerations, and implementation priorities for KernSmith.
 
 ---
 
@@ -18,7 +18,7 @@ A comprehensive reference for font formats beyond TrueType (.ttf), covering form
 10. [Font Format Detection](#10-font-format-detection)
 11. [Format Conversion Considerations](#11-format-conversion-considerations)
 12. [Licensing Considerations](#12-licensing-considerations)
-13. [Format Priority for bmfontier](#13-format-priority-for-bmfontier)
+13. [Format Priority for KernSmith](#13-format-priority-for-KernSmith)
 14. [References](#14-references)
 
 ---
@@ -113,7 +113,7 @@ The **GSUB** (Glyph Substitution) and **GPOS** (Glyph Positioning) tables power 
 | 8 | **Chaining Context Positioning** | Context positioning with backtrack and lookahead |
 | 9 | **Extension Positioning** | Wrapper for 32-bit offsets to other lookup types |
 
-> **Relevance to BMFont**: Kerning data may be stored in GPOS Lookup Type 2 (Pair Adjustment) rather than or in addition to the legacy `kern` table. bmfontier **must** extract kerning from GPOS when present, as many modern fonts store kerning exclusively there. The legacy `kern` table is increasingly omitted.
+> **Relevance to BMFont**: Kerning data may be stored in GPOS Lookup Type 2 (Pair Adjustment) rather than or in addition to the legacy `kern` table. KernSmith **must** extract kerning from GPOS when present, as many modern fonts store kerning exclusively there. The legacy `kern` table is increasingly omitted.
 
 ### Required Tables
 
@@ -280,7 +280,7 @@ Offset  Size  Field
 | **Collections** | Not supported | Supported (CollectionHeader + CollectionFontEntry records) |
 | **Typical savings** | ~40% vs raw sfnt | ~5-10% better than WOFF 1.0 on average (up to ~30% for larger fonts) |
 
-### Relevance to bmfontier
+### Relevance to KernSmith
 
 The handling strategy is:
 
@@ -305,7 +305,7 @@ Embedded OpenType is **Microsoft's proprietary web font format**, introduced in 
 
 **Status**: **OBSOLETE**. EOT was only ever supported by Internet Explorer. It is not supported by any modern browser (Chrome, Firefox, Safari, Edge). Internet Explorer itself reached end of life in June 2022.
 
-**Priority for bmfontier**: **Low**. Implementing MTX decompression is non-trivial, and the format has no remaining user base. If EOT support is ever considered, the simplest approach would be to shell out to an existing conversion tool.
+**Priority for KernSmith**: **Low**. Implementing MTX decompression is non-trivial, and the format has no remaining user base. If EOT support is ever considered, the simplest approach would be to shell out to an existing conversion tool.
 
 **Reference**: <https://www.w3.org/Submission/EOT/>
 
@@ -348,13 +348,13 @@ A complete Type 1 font installation typically consists of multiple files:
 
 **Status**: **DEPRECATED**. Adobe officially ended Type 1 support in January 2023 across all its products. Major operating systems no longer include Type 1 rasterizers by default.
 
-**Priority for bmfontier**: **Low**. Type 1 fonts are increasingly rare in active use. If support is added, it would involve parsing the .pfb/.pfa for outlines and the .afm for metrics. FreeType can load Type 1 fonts transparently, so if bmfontier uses FreeType or a similar library as its rasterization backend, Type 1 support may come "for free."
+**Priority for KernSmith**: **Low**. Type 1 fonts are increasingly rare in active use. If support is added, it would involve parsing the .pfb/.pfa for outlines and the .afm for metrics. FreeType can load Type 1 fonts transparently, so if KernSmith uses FreeType or a similar library as its rasterization backend, Type 1 support may come "for free."
 
 ---
 
 ## 5. Bitmap Font Formats
 
-These are existing bitmap font formats -- formats that store pre-rendered pixel data rather than scalable outlines. They are documented here for reference, but they are **NOT** input formats for bmfontier. bmfontier's purpose is to rasterize *outline* fonts into BMFont-format bitmap atlases.
+These are existing bitmap font formats -- formats that store pre-rendered pixel data rather than scalable outlines. They are documented here for reference, but they are **NOT** input formats for KernSmith. KernSmith's purpose is to rasterize *outline* fonts into BMFont-format bitmap atlases.
 
 ### BDF (Bitmap Distribution Format)
 
@@ -488,7 +488,7 @@ The `Fixed` type is a 16.16 fixed-point number (e.g., `0x02BC0000` = 700.0).
 
 BMFont is a bitmap format -- it represents glyphs at a fixed size and style. A variable font must therefore be **instantiated** at specific axis values before rasterization.
 
-Steps for bmfontier:
+Steps for KernSmith:
 
 1. **Read the `fvar` table** to discover available axes and named instances.
 2. **Select an instance**: Either a named instance or arbitrary axis values provided by the user.
@@ -668,7 +668,7 @@ Tables that usually differ between fonts in a collection:
 - `head` -- font-specific flags and dates
 - `hhea` -- font-specific ascender/descender values
 
-### Handling for bmfontier
+### Handling for KernSmith
 
 1. **Detect**: Read first 4 bytes. If `ttcf`, it is a collection.
 2. **Parse TTC header**: Read `numFonts` and `tableDirectoryOffsets`.
@@ -870,9 +870,9 @@ The `fsType` field in the `OS/2` table specifies font embedding and usage permis
 | 9 | `0x0200` | **Bitmap Embedding Only** | Only bitmap data (not outlines) may be embedded. Outline embedding is prohibited. |
 | 10--15 | `0xFC00` | Reserved | Must be zero. |
 
-### Implications for bmfontier
+### Implications for KernSmith
 
-bmfontier converts fonts to bitmap atlases, which involves rasterizing outlines -- an operation that may be restricted by the font's license.
+KernSmith converts fonts to bitmap atlases, which involves rasterizing outlines -- an operation that may be restricted by the font's license.
 
 - **Installable (0)**: No restrictions. Process normally.
 - **Restricted License (2)**: **Refuse to process** or display a prominent warning. Converting to BMFont could violate the license.
@@ -892,11 +892,11 @@ bmfontier converts fonts to bitmap atlases, which involves rasterizing outlines 
 | **Commercial / Proprietary** | Check the EULA | Many commercial licenses prohibit conversion or embedding. Some offer "app embedding" licenses for this purpose. |
 | **GPL with Font Exception** | Yes | The Font Exception explicitly permits embedding and bundling without triggering GPL's copyleft for the embedding application. |
 
-> **Note**: `fsType` is informational/honor-system -- it is not DRM. However, violating it may constitute a license breach. bmfontier should surface this information to help users make informed decisions.
+> **Note**: `fsType` is informational/honor-system -- it is not DRM. However, violating it may constitute a license breach. KernSmith should surface this information to help users make informed decisions.
 
 ---
 
-## 13. Format Priority for bmfontier
+## 13. Format Priority for KernSmith
 
 Implementation priority, based on format prevalence and user impact:
 
@@ -907,7 +907,7 @@ Implementation priority, based on format prevalence and user impact:
 | **P2** (Nice to have) | COLRv0/CPAL, sbix/CBDT | Basic color font support for emoji and icon fonts. |
 | **P3** (Low priority) | COLRv1, SVG table, Type 1 (.pfb/.pfa) | COLRv1 and SVG are complex to render; Type 1 is legacy. |
 | **P4** (Minimal priority) | EOT | Obsolete format with no remaining user base. |
-| **N/A** (Not applicable) | BDF, PCF, PSF, FNT | Bitmap font inputs are out of scope -- bmfontier converts *outline* fonts to bitmaps. |
+| **N/A** (Not applicable) | BDF, PCF, PSF, FNT | Bitmap font inputs are out of scope -- KernSmith converts *outline* fonts to bitmaps. |
 
 ---
 

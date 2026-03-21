@@ -1,4 +1,4 @@
-# bmfontier -- Font Subsetting Plan (Task 13C)
+# KernSmith -- Font Subsetting Plan (Task 13C)
 
 > Logical subsetting: filter TTF parser output to requested codepoints during parsing.
 > Binary TTF subsetting (rewriting font files) is NOT recommended — FreeType loads glyphs lazily.

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\KernSmith\KernSmith.csproj" />
+  </ItemGroup>
+
+  <!-- TODO: Add KNI framework packages when WASM rasterization approach is decided (see plan/phase-13-wasm-rasterization.md) -->
+
+</Project>

@@ -1,4 +1,4 @@
-# bmfontier -- API Design
+# KernSmith -- API Design
 
 > Part of the [Master Plan](master-plan.md).
 > Related: [Project Structure](plan-project-structure.md), [Font Parsing](plan-font-parsing.md), [Rasterization](plan-rasterization.md), [Texture Packing](plan-texture-packing.md), [Output Formats](plan-output-formats.md)

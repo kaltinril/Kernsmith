@@ -16,7 +16,7 @@ textureFormat=tga
 # selected chars
 chars=32-126
 
-# bmfontier extensions
+# kernsmith extensions
 autofit=1
 gradientTop=00FF41
 gradientBottom=00CC33

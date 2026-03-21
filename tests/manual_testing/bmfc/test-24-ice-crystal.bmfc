@@ -22,7 +22,7 @@ outlineThickness=2
 # selected chars
 chars=32-126
 
-# bmfontier extensions
+# kernsmith extensions
 autofit=1
 useSdf=1
 outlineColor=1A237E

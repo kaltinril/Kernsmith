@@ -1,13 +1,13 @@
-# bmfontier -- Master Plan
+# KernSmith -- Master Plan
 
-> **Status**: Phases 1-11, 13-16 complete. Phase 12 (Pre-Ship Polish) and Phase 30 (WASM) are active.
+> **Status**: Phases 1-11, 13-17 complete. Phase 12 (Pre-Ship Polish) and Phase 30 (WASM) are active.
 > **Date**: 2026-03-20
 
 ---
 
 ## Project Summary
 
-**bmfontier** is a cross-platform .NET library that generates BMFont-compatible bitmap fonts from TTF files. It combines FreeTypeSharp for glyph rasterization with our own TTF table parsers (for GPOS kerning, OS/2 metadata, etc.), packs glyphs into texture atlases, and outputs industry-standard BMFont `.fnt` + `.png` pairs. The entire pipeline operates in-memory by default with zero disk I/O required.
+**KernSmith** is a cross-platform .NET library that generates BMFont-compatible bitmap fonts from TTF files. It combines FreeTypeSharp for glyph rasterization with our own TTF table parsers (for GPOS kerning, OS/2 metadata, etc.), packs glyphs into texture atlases, and outputs industry-standard BMFont `.fnt` + `.png` pairs. The entire pipeline operates in-memory by default with zero disk I/O required.
 
 ---
 
@@ -88,7 +88,7 @@ Output Layer
 
 | # | Document | Description |
 |---|----------|-------------|
-| 01 | [MVP](done/phase-01-mvp.md) | End-to-end pipeline: TTF → rasterize → pack → BMFont text + PNG |
+| 01 | [MVP](done/phase-01-mvp.md) | End-to-end pipeline: TTF -> rasterize -> pack -> BMFont text + PNG |
 | 02 | [Complete](done/phase-02-complete.md) | XML/binary output, Skyline packer, SDF, system fonts, variable fonts |
 | 03 | [Ecosystem](done/phase-03-ecosystem.md) | WOFF/WOFF2, channel packing, CLI, benchmarks, color fonts, subsetting |
 | 04 | [Deferred/Future](done/phase-04-deferred-future.md) | fvar parser, BMFont reader, gradient post-processor, variable font axis API |
@@ -101,8 +101,9 @@ Output Layer
 | 11 | [Solution Restructure](done/phase-11-solution-restructure.md) | Multi-project foundation, net10.0 migration, CLI promotion, app scaffolding |
 | 13 | [Batch CLI](done/phase-13-batch-cli.md) | Batch command, .bmfc multi-file processing, collision detection |
 | 14 | [Benchmarking & Profiling](done/phase-14-benchmarking-profiling.md) | 50+ benchmarks, PipelineMetrics, CLI --time/--profile, benchmark command |
-| 15 | [Library Performance](done/phase-15-library-performance.md) | FontCache, GenerateBatch API, static SystemFontProvider — 18 fonts in 196ms |
+| 15 | [Library Performance](done/phase-15-library-performance.md) | FontCache, GenerateBatch API, static SystemFontProvider -- 18 fonts in 196ms |
 | 16 | [BMFont .bmfc Compatibility](done/phase-16-bmfc-compatibility.md) | Standard BMFont key=value format, drop legacy INI, same files work in both tools |
+| 17 | [Rebrand to KernSmith](phase-17-rebrand-kernsmith.md) | Full project rename from KernSmith to KernSmith |
 
 ### Topical Plan Docs (archived in `done/`)
 
@@ -110,7 +111,7 @@ These detailed docs were used during implementation and remain as reference mate
 
 | Document | Description |
 |----------|-------------|
-| [Vision](done/bmfontier-vision.md) | Original project vision and goals |
+| [Vision](done/KernSmith-vision.md) | Original project vision and goals |
 | [Data Types](done/plan-data-types.md) | All shared types, interfaces, and error handling (source of truth) |
 | [Project Structure](done/plan-project-structure.md) | Solution layout, namespace mapping, dependencies |
 | [API Design](done/plan-api-design.md) | Public API surface, builder pattern, configuration types |
@@ -121,10 +122,10 @@ These detailed docs were used during implementation and remain as reference mate
 | [Testing](done/plan-testing.md) | xUnit test strategy, test fonts, validation criteria |
 | [Implementation Order](done/plan-implementation-order.md) | Original phased task breakdown with dependency graphs (Phases 1-4) |
 | [Future Phases](done/plan-phase-future.md) | Deferred items + Phases 5-7 tracking |
-| [CLI Tool](done/plan-cli.md) | Full CLI plan — BMFont.exe replacement |
+| [CLI Tool](done/plan-cli.md) | Full CLI plan -- BMFont.exe replacement |
 | [BMFont Parity](done/plan-bmfont-parity.md) | 15 missing features from BMFont.exe |
 | [Color Fonts](done/plan-color-fonts.md) | COLRv0/CPAL, sbix, CBDT support |
-| [Font Subsetting](done/plan-font-subsetting.md) | Logical subsetting — filter cmap/kern/GPOS |
+| [Font Subsetting](done/plan-font-subsetting.md) | Logical subsetting -- filter cmap/kern/GPOS |
 | [Extended Metadata](done/plan-extended-metadata.md) | SDF spread, gradient, shadow metadata in .fnt |
 | [Bug Fixes](done/plan-bug-fixes.md) | All applied bug fixes |
 
@@ -132,56 +133,59 @@ These detailed docs were used during implementation and remain as reference mate
 
 ## Phased Implementation
 
-### Phase 1 — MVP (COMPLETE)
+### Phase 1 -- MVP (COMPLETE)
 Core pipeline end-to-end: load a TTF, parse required tables, rasterize glyphs, pack into atlas, output BMFont text format + PNG. 28 tasks covering FreeTypeSharp integration, all table parsers (including GPOS), MaxRects packer, atlas builder, PNG encoding, text format output, file output, entry point wiring, CharacterSet, and basic tests.
 
-### Phase 2 — Complete (COMPLETE)
+### Phase 2 -- Complete (COMPLETE)
 Additional output formats (XML, binary), Skyline packer, system font enumeration, configurable padding/spacing/outline, SDF mode, font collection (.ttc) support, variable font support, and `GenerateFromSystem()` API.
 
-### Phase 3 — Ecosystem (COMPLETE)
+### Phase 3 -- Ecosystem (COMPLETE)
 WOFF/WOFF2 decompression, channel packing, reference CLI tool, performance benchmarks, color font support, font subsetting, NuGet publishing CI, CLI tests.
 
-### Phase 4 — Deferred / Future (COMPLETE)
-fvar table parser, BMFont reader (text/XML/binary), BmFont.Load() entry point, gradient post-processor, variable font axis API, variable font tests.
+### Phase 4 -- Deferred / Future (COMPLETE)
+fvar table parser, BMFont reader (text/XML/binary), KernSmith.Load() entry point, gradient post-processor, variable font axis API, variable font tests.
 
-### Phase 5 — Full CLI Tool (COMPLETE)
+### Phase 5 -- Full CLI Tool (COMPLETE)
 Production-ready CLI with 5 commands (generate, inspect, convert, list-fonts, info), .bmfc config file support, and full option coverage.
 
-### Phase 6 — BMFont Parity Features (COMPLETE)
+### Phase 6 -- BMFont Parity Features (COMPLETE)
 Separate texture W/H, TGA output, super sampling, fallback glyph, hinting toggle, force offsets to zero, equalize cell heights, autofit texture size, failed character reporting, shadow post-processor.
 
-### Phase 7 — Extended Metadata (COMPLETE)
-bmfontier-specific metadata (SDF spread, gradient, shadow, outline, variable axes) stored inline in .fnt output across all three formats (text, XML, binary).
+### Phase 7 -- Extended Metadata (COMPLETE)
+KernSmith-specific metadata (SDF spread, gradient, shadow, outline, variable axes) stored inline in .fnt output across all three formats (text, XML, binary).
 
-### Phase 8 — Optimal Atlas Sizing (COMPLETE)
+### Phase 8 -- Optimal Atlas Sizing (COMPLETE)
 Mathematical atlas size prediction using shelf-packing estimation. Reduces packing runs from 3-5 to 1-2. Handles channel packing, equalized cell heights, non-square optimization, and int64 overflow prevention for large CJK sets.
 
-### Phase 9 — Outline Rendering Overhaul (COMPLETE)
+### Phase 9 -- Outline Rendering Overhaul (COMPLETE)
 Replaced binary brute-force outline with EDT-based anti-aliased distance rendering. Added configurable outline color (RGB), alpha-over compositing, RGBA input support. FT_Stroker P/Invoke bindings implemented but disabled (tracked in Phase 12).
 
-### Phase 10 — Layered Rendering (COMPLETE)
-Replaced order-dependent post-processor chain with layered compositing system. IGlyphEffect interface, GlyphCompositor, fixed Z-order (shadow → outline → body). Eliminates all post-processor ordering bugs.
+### Phase 10 -- Layered Rendering (COMPLETE)
+Replaced order-dependent post-processor chain with layered compositing system. IGlyphEffect interface, GlyphCompositor, fixed Z-order (shadow -> outline -> body). Eliminates all post-processor ordering bugs.
 
-### Phase 11 — Solution Restructure (COMPLETE)
+### Phase 11 -- Solution Restructure (COMPLETE)
 Multi-project foundation: Directory.Build.props, central package management, global.json, .editorconfig, net10.0 migration, CLI promotion from samples/ to tools/, future app scaffolding (UI/Web/Mobile), solution filters. Also fixed UTF-8 BOM bug in .fnt writer and channel packing + effects validation.
 
-### Phase 12 — Pre-Ship Polish (PLANNING)
+### Phase 12 -- Pre-Ship Polish (PLANNING)
 Security hardening (10 items), test coverage gaps (~30 new tests), NuGet package readiness (LICENSE, URLs, SourceLink, XML docs, CHANGELOG), API documentation polish, optional FT_Stroker compositing fix.
 
-### Phase 30 — WASM Rasterization (PLANNING)
+### Phase 17 -- Rebrand to KernSmith (COMPLETE)
+Full project rename from KernSmith to KernSmith -- namespaces, assemblies, directories, project files, docs, CLI commands, NuGet package, and all references.
+
+### Phase 30 -- WASM Rasterization (PLANNING)
 Live investigation of WASM-compatible font rasterizers. Prior preliminary research suggested server-side rasterization or SkiaSharp, but findings were not validated with actual testing. Requires checking current FreeTypeSharp WASM status, testing Emscripten builds, evaluating SkiaSharp.Views.Blazor, and verifying IRasterizer swappability.
 
-### Phase 13 — Batch CLI (COMPLETE)
+### Phase 13 -- Batch CLI (COMPLETE)
 Batch command for multi-file .bmfc processing with output collision detection, parallel execution, and font caching. 18 fonts in 1.5s vs 22s with separate invocations.
 
-### Phase 14 — Benchmarking & Profiling (COMPLETE)
+### Phase 14 -- Benchmarking & Profiling (COMPLETE)
 50+ benchmarks across 7 classes, PipelineMetrics with stage-level timing, CLI --time/--profile flags, benchmark command, CI workflow. R2R tested and rejected (15% slower on .NET 10). AOT deferred.
 
-### Phase 15 — Library Performance & Batch API (COMPLETE)
-Moved font caching and batch execution from CLI into NuGet library. Static SystemFontProvider singleton eliminates 800ms/call overhead. FontCache class, BmFont.GenerateBatch() with parallelism. 18 fonts in 196ms via library API.
+### Phase 15 -- Library Performance & Batch API (COMPLETE)
+Moved font caching and batch execution from CLI into NuGet library. Static SystemFontProvider singleton eliminates 800ms/call overhead. FontCache class, KernSmith.GenerateBatch() with parallelism. 18 fonts in 196ms via library API.
 
-### Phase 16 — BMFont .bmfc Compatibility (COMPLETE)
-Replaced custom INI-style .bmfc format with standard AngelCode BMFont flat key=value format. Same .bmfc files work in both BMFont and bmfontier — BMFont ignores extension keys. Legacy INI parser removed. All 32 test .bmfc files converted.
+### Phase 16 -- BMFont .bmfc Compatibility (COMPLETE)
+Replaced custom INI-style .bmfc format with standard AngelCode BMFont flat key=value format. Same .bmfc files work in both BMFont and KernSmith -- BMFont ignores extension keys. Legacy INI parser removed. All 32 test .bmfc files converted.
 
 ---
 
@@ -205,7 +209,7 @@ Replaced custom INI-style .bmfc format with standard AngelCode BMFont flat key=v
 | 1 | **PNG encoding library** | **StbImageWriteSharp** (public domain) | Confirmed. See [done/plan-project-structure.md](done/plan-project-structure.md). |
 | 2 | **Target framework** | **net10.0** | Migrated from net8.0 in Phase 11. All projects unified on net10.0 via Directory.Build.props. |
 | 3 | **Project license** | **Proprietary** | See LICENSE file. |
-| 4 | **NuGet package name** | **Bmfontier** | Package ID `Bmfontier`, main API class `BmFont`. |
+| 4 | **NuGet package name** | **KernSmith** | Package ID `KernSmith`, main API class `KernSmith`. |
 | 5 | **FreeTypeSharp usage boundary** | Use everything it can do | Our parser only covers what FreeTypeSharp cannot (GPOS, OS/2, name, cmap). No duplication. |
 | 6 | **Unsafe code policy** | `AllowUnsafeBlocks` in main project | Isolated to FreeType interop (`FreeTypeRasterizer.cs`, `FreeTypeNative.cs`). Rest is safe C#. |
 | 7 | **FreeType memory** | Manual lifecycle via `IDisposable` | Pin font data with `GCHandle`. Do NOT use `FreeTypeFaceFacade`. See [done/plan-rasterization.md](done/plan-rasterization.md). |

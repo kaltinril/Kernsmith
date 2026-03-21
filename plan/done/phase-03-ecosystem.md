@@ -26,7 +26,7 @@ Goal: WOFF support, channel packing, color fonts, CLI tool, benchmarks, NuGet pu
 
 | ID  | Task                        | Depends On                       | Status | Description                                                                                          | Docs to Read                 |
 |-----|-----------------------------|----------------------------------|--------|------------------------------------------------------------------------------------------------------|------------------------------|
-| 15A | **Reference CLI tool**      | Phase 2 complete                 | DONE | Simple CLI wrapper: `bmfontier generate -f font.ttf -s 32 -o output/`                                | New plan doc needed          |
+| 15A | **Reference CLI tool**      | Phase 2 complete                 | DONE | Simple CLI wrapper: `KernSmith generate -f font.ttf -s 32 -o output/`                                | New plan doc needed          |
 | 15B | **Performance benchmarks**  | Phase 2 complete                 | DONE | Benchmark suite: measure time/memory for ASCII set at various sizes, compare MaxRects vs Skyline      | New plan doc needed          |
 | 15C | **NuGet publishing**        | Phase 2 complete, license decided | MOVED | Configure CI for NuGet pack + push, README, package icon                                             | Moved to [plan-phase-future.md](plan-phase-future.md)    |
 

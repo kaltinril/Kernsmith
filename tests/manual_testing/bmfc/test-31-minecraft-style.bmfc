@@ -21,7 +21,7 @@ textureFormat=dds
 # selected chars
 chars=32-126
 
-# bmfontier extensions
+# kernsmith extensions
 autofit=1
 powerOfTwo=1
 outputPath=../../output/comparison-batch/test-31

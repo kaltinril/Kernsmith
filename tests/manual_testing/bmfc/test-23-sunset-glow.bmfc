@@ -23,7 +23,7 @@ outlineThickness=3
 # selected chars
 chars=32-126
 
-# bmfontier extensions
+# kernsmith extensions
 autofit=1
 superSample=4
 outlineColor=2B0040

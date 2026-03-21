@@ -24,7 +24,7 @@ outlineThickness=5
 # selected chars
 chars=32-255
 
-# bmfontier extensions
+# kernsmith extensions
 autofit=1
 packer=skyline
 superSample=4

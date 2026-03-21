@@ -69,7 +69,7 @@ well-documented** by the .NET platform:
   pixel metrics matching, no variable font axis control, no color palette
   selection). Glyph metrics may differ from FreeType output. Async JS interop
   adds latency per glyph.
-- **Verdict:** Viable for basic use cases but cannot replicate bmfontier's full
+- **Verdict:** Viable for basic use cases but cannot replicate KernSmith's full
   feature set (SDF, effects, color fonts, variable axes).
 
 #### Fontdue (Rust, compilable to WASM)
@@ -88,7 +88,7 @@ well-documented** by the .NET platform:
   shaping/layout only.
 - Rustybuzz (Rust port of HarfBuzz shaping) can be compiled to WASM.
 - **Verdict:** Not a replacement for font rasterization. Relevant only if
-  bmfontier adds text shaping in the future.
+  KernSmith adds text shaping in the future.
 
 #### FontKit (JS/WASM)
 - JavaScript/WASM library backed by FreeType and HarfBuzz.
@@ -165,13 +165,13 @@ runs the existing pipeline, and returns the BMFont result.
 If a fully client-side experience is required, implement a `SkiaSharpRasterizer :
 IRasterizer` that uses SkiaSharp's Blazor WASM support. SkiaSharp already solves
 the Emscripten build problem and provides font rasterization, though some
-bmfontier features (SDF, layered effects) would need to be reimplemented using
+KernSmith features (SDF, layered effects) would need to be reimplemented using
 Skia's drawing API.
 
 **Not recommended:**
 - DIY Emscripten builds of libfreetype — high maintenance burden for marginal
   benefit over SkiaSharp.
-- Browser Canvas JS interop — too limited for bmfontier's feature set.
+- Browser Canvas JS interop — too limited for KernSmith's feature set.
 - Fontdue/Rust WASM — integration complexity not justified given SkiaSharp
   exists.
 

@@ -1,4 +1,4 @@
-# bmfontier -- Future Phase Plan
+# KernSmith -- Future Phase Plan
 
 > Incomplete items collected from Phase 3 and Phase 4, plus planned future phases.
 > These features are deferred until dependencies are resolved or prioritized.
@@ -16,7 +16,7 @@ Items that were not completed during Phase 3 (Ecosystem).
 | ~~13B~~ | ~~**Color font support**~~ | ~~COLRv0/CPAL, sbix, CBDT via FT_LOAD_COLOR + RGBA atlas~~ | **DONE** — Phases A-C implemented. 20 tests + 4 skip-ready. Plan: [plan-color-fonts.md](plan-color-fonts.md). |
 | ~~13C~~ | ~~**Font subsetting**~~ | ~~Logical subsetting — filter cmap/kern/GPOS during parsing~~ | **DONE** — 22 tests. Plan: [plan-font-subsetting.md](plan-font-subsetting.md). |
 | ~~15C~~ | ~~**NuGet publishing CI**~~ | ~~Configure CI for NuGet pack + push, README, package icon~~ | **DONE** — publish.yml updated, .csproj metadata added, README created. |
-| ~~16C~~ | ~~**Tests: CLI**~~ | ~~End-to-end CLI invocation tests~~ | **DONE** — 20 tests in `tests/Bmfontier.Tests/Cli/CliTests.cs`. |
+| ~~16C~~ | ~~**Tests: CLI**~~ | ~~End-to-end CLI invocation tests~~ | **DONE** — 20 tests in `tests/KernSmith.Tests/Cli/CliTests.cs`. |
 
 ---
 
@@ -49,6 +49,6 @@ See **[plan-bmfont-parity.md](plan-bmfont-parity.md)** for full feature list.
 
 ## Phase 7 -- Extended Metadata (COMPLETE)
 
-bmfontier-specific metadata (SDF spread, gradient, shadow, outline, variable axes) stored inline in .fnt output across all three formats (text, XML, binary). Existing BMFont readers safely ignore the additions.
+KernSmith-specific metadata (SDF spread, gradient, shadow, outline, variable axes) stored inline in .fnt output across all three formats (text, XML, binary). Existing BMFont readers safely ignore the additions.
 
 See **[plan-extended-metadata.md](plan-extended-metadata.md)** for specification.

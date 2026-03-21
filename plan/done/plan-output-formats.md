@@ -1,4 +1,4 @@
-# bmfontier -- Output Formats
+# KernSmith -- Output Formats
 
 > Part of the [Master Plan](master-plan.md).
 > Related: [API Design](plan-api-design.md), [Texture Packing](plan-texture-packing.md)

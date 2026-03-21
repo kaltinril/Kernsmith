@@ -1,6 +1,6 @@
-# bmfontier -- Extended Metadata Format
+# KernSmith -- Extended Metadata Format
 
-> How bmfontier stores metadata that doesn't fit in the standard BMFont .fnt format.
+> How KernSmith stores metadata that doesn't fit in the standard BMFont .fnt format.
 > Research-backed approach: follow Hiero's precedent of adding custom fields to the existing format.
 
 ---
@@ -38,42 +38,42 @@ We need a way to store this metadata without breaking compatibility with existin
 
 ### Strategy
 
-Add custom fields directly to the .fnt output in all three formats (text, XML, binary). Use a `bmfontier` tag/element/block for our extended metadata.
+Add custom fields directly to the .fnt output in all three formats (text, XML, binary). Use a `KernSmith` tag/element/block for our extended metadata.
 
 ### Text Format
 
-Add custom key-value pairs to existing lines where appropriate, plus a dedicated `bmfontier` line:
+Add custom key-value pairs to existing lines where appropriate, plus a dedicated `KernSmith` line:
 
 ```
 info face="Arial" size=64 bold=0 italic=0 charset="" unicode=1 stretchH=100 smooth=1 aa=1 padding=4,4,4,4 spacing=1,1 outline=2 spread=4
 common lineHeight=76 base=60 scaleW=512 scaleH=512 pages=1 packed=0 alphaChnl=0 redChnl=0 greenChnl=0 blueChnl=0
-bmfontier version=1 generator="bmfontier/0.1.0" sdf=1 spread=4 gradient_angle=45 gradient_midpoint=0.3 gradient_start=FFD700 gradient_end=DC143C shadow_x=2 shadow_y=2 shadow_blur=4 shadow_color=000000 shadow_opacity=0.5 outline=2 supersampling=2
+KernSmith version=1 generator="KernSmith/0.1.0" sdf=1 spread=4 gradient_angle=45 gradient_midpoint=0.3 gradient_start=FFD700 gradient_end=DC143C shadow_x=2 shadow_y=2 shadow_blur=4 shadow_color=000000 shadow_opacity=0.5 outline=2 supersampling=2
 page id=0 file="Arial_0.png"
 chars count=95
 char id=65 ...
 ```
 
 - `spread=N` on the `info` line — matches Hiero convention for maximum compatibility
-- `bmfontier` tag line — contains all extended metadata in one place
-- Existing BMFont readers ignore both the unknown `spread` key and the unknown `bmfontier` tag
+- `KernSmith` tag line — contains all extended metadata in one place
+- Existing BMFont readers ignore both the unknown `spread` key and the unknown `KernSmith` tag
 
 ### XML Format
 
-Add a custom `<bmfontier>` element inside `<font>`:
+Add a custom `<KernSmith>` element inside `<font>`:
 
 ```xml
 <?xml version="1.0"?>
 <font>
   <info face="Arial" size="64" spread="4" ... />
   <common ... />
-  <bmfontier version="1" generator="bmfontier/0.1.0">
+  <KernSmith version="1" generator="KernSmith/0.1.0">
     <sdf spread="4" />
     <gradient angle="45" midpoint="0.3" startColor="FFD700" endColor="DC143C" />
     <shadow offsetX="2" offsetY="2" blur="4" color="000000" opacity="0.5" />
     <outline width="2" />
     <supersampling level="2" />
     <variableAxes wght="700" wdth="75" />
-  </bmfontier>
+  </KernSmith>
   <pages>...</pages>
   <chars>...</chars>
 </font>
@@ -88,12 +88,12 @@ Block type: 6
 Content: UTF-8 JSON string (null-terminated)
 ```
 
-The JSON contains the same data as the XML `<bmfontier>` element:
+The JSON contains the same data as the XML `<KernSmith>` element:
 
 ```json
 {
   "version": 1,
-  "generator": "bmfontier/0.1.0",
+  "generator": "KernSmith/0.1.0",
   "sdf": { "spread": 4 },
   "gradient": { "angle": 45, "midpoint": 0.3, "startColor": "FFD700", "endColor": "DC143C" },
   "shadow": { "offsetX": 2, "offsetY": 2, "blur": 4, "color": "000000", "opacity": 0.5 },
@@ -111,26 +111,26 @@ Existing binary readers skip unknown block types (they read the block size and s
 
 | Field | Type | Where Used | Description |
 |-------|------|-----------|-------------|
-| `version` | int | bmfontier block | Metadata format version (currently 1) |
-| `generator` | string | bmfontier block | Tool name and version |
-| `sdf` | bool | info line + bmfontier | Whether SDF rendering was used |
-| `spread` | int | info line + bmfontier | SDF spread/distance range in pixels |
-| `gradient_angle` | float | bmfontier | Gradient direction in degrees |
-| `gradient_midpoint` | float | bmfontier | Gradient bias (0.0-1.0) |
-| `gradient_start` | hex RGB | bmfontier | Gradient start color |
-| `gradient_end` | hex RGB | bmfontier | Gradient end color |
-| `shadow_x` | int | bmfontier | Shadow X offset |
-| `shadow_y` | int | bmfontier | Shadow Y offset |
-| `shadow_blur` | int | bmfontier | Shadow blur radius |
-| `shadow_color` | hex RGB | bmfontier | Shadow color |
-| `shadow_opacity` | float | bmfontier | Shadow opacity (0.0-1.0) |
-| `shadow_mode` | string | bmfontier | "drop" or "directional" |
-| `shadow_angle` | float | bmfontier | Directional shadow angle |
-| `shadow_length` | int | bmfontier | Directional shadow length |
-| `shadow_fade` | bool | bmfontier | Directional shadow fade |
-| `outline` | int | bmfontier | Outline width used |
-| `supersampling` | int | bmfontier | Super sampling level |
-| `variable_axes` | dict | bmfontier | Variable font axis values (tag=value pairs) |
+| `version` | int | KernSmith block | Metadata format version (currently 1) |
+| `generator` | string | KernSmith block | Tool name and version |
+| `sdf` | bool | info line + KernSmith | Whether SDF rendering was used |
+| `spread` | int | info line + KernSmith | SDF spread/distance range in pixels |
+| `gradient_angle` | float | KernSmith | Gradient direction in degrees |
+| `gradient_midpoint` | float | KernSmith | Gradient bias (0.0-1.0) |
+| `gradient_start` | hex RGB | KernSmith | Gradient start color |
+| `gradient_end` | hex RGB | KernSmith | Gradient end color |
+| `shadow_x` | int | KernSmith | Shadow X offset |
+| `shadow_y` | int | KernSmith | Shadow Y offset |
+| `shadow_blur` | int | KernSmith | Shadow blur radius |
+| `shadow_color` | hex RGB | KernSmith | Shadow color |
+| `shadow_opacity` | float | KernSmith | Shadow opacity (0.0-1.0) |
+| `shadow_mode` | string | KernSmith | "drop" or "directional" |
+| `shadow_angle` | float | KernSmith | Directional shadow angle |
+| `shadow_length` | int | KernSmith | Directional shadow length |
+| `shadow_fade` | bool | KernSmith | Directional shadow fade |
+| `outline` | int | KernSmith | Outline width used |
+| `supersampling` | int | KernSmith | Super sampling level |
+| `variable_axes` | dict | KernSmith | Variable font axis values (tag=value pairs) |
 
 ---
 
@@ -140,11 +140,11 @@ Existing binary readers skip unknown block types (they read the block size and s
 
 1. Update `TextFormatter` to:
    - Add `spread=N` to the info line when SDF is enabled
-   - Emit a `bmfontier` line when any extended metadata is present
+   - Emit a `KernSmith` line when any extended metadata is present
 
 2. Update `XmlFormatter` to:
    - Add `spread` attribute to `<info>` when SDF is enabled
-   - Add `<bmfontier>` element when extended metadata is present
+   - Add `<KernSmith>` element when extended metadata is present
 
 3. Update `BmFontBinaryFormatter` to:
    - Write block type 6 with JSON payload when extended metadata is present
@@ -168,9 +168,9 @@ Existing binary readers skip unknown block types (they read the block size and s
 
 6. Update `BmFontReader.ReadText` to:
    - Parse `spread=N` from the info line
-   - Parse the `bmfontier` line if present
+   - Parse the `KernSmith` line if present
 
-7. Update `BmFontReader.ReadXml` to parse `<bmfontier>` element
+7. Update `BmFontReader.ReadXml` to parse `<KernSmith>` element
 
 8. Update `BmFontReader.ReadBinary` to parse block type 6
 
@@ -185,7 +185,7 @@ Existing binary readers skip unknown block types (they read the block size and s
 
 | Reader | Behavior with our extensions |
 |--------|------------------------------|
-| MonoGame.Extended BitmapFont | Ignores unknown `spread` key and `bmfontier` line — works fine |
+| MonoGame.Extended BitmapFont | Ignores unknown `spread` key and `KernSmith` line — works fine |
 | LibGDX BitmapFont | Ignores unknown tags — works fine. Reads `spread` if using DistanceFieldFont. |
 | Godot BMFont | Ignores unknown lines — works fine |
 | Cocos2d | Ignores unknown lines — works fine |

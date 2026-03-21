@@ -25,7 +25,7 @@ outlineThickness=4
 # selected chars
 chars=32-126
 
-# bmfontier extensions
+# kernsmith extensions
 autofit=1
 outlineColor=0A001A
 gradientTop=FF1493

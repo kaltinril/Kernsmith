@@ -19,5 +19,5 @@ jobs:
       - run: dotnet restore
       - run: dotnet build --configuration Release --no-restore
       - run: dotnet test --configuration Release --no-build
-      - run: dotnet pack src/Bmfontier/Bmfontier.csproj --configuration Release --no-build --output ./nupkg
+      - run: dotnet pack src/KernSmith/KernSmith.csproj --configuration Release --no-build --output ./nupkg
       - run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate

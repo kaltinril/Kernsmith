@@ -11,7 +11,7 @@
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
-# Generated output (root-level only, not src/Bmfontier/Output/)
+# Generated output (root-level only, not src/KernSmith/Output/)
 /output/
 /samples/output/
 /tests/output/

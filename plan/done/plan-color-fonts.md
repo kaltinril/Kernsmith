@@ -1,4 +1,4 @@
-# bmfontier -- Color Font Support Plan (Task 13B)
+# KernSmith -- Color Font Support Plan (Task 13B)
 
 > FreeType handles COLRv0, sbix, and CBDT transparently with `FT_LOAD_COLOR`.
 > No custom table parsing needed. Main work is RGBA atlas support and byte order fix.
@@ -68,7 +68,7 @@
 
 | # | Task | Description |
 |---|------|-------------|
-| D1 | Extended metadata | Add `color_font=1` to bmfontier output line per `plan-extended-metadata.md` |
+| D1 | Extended metadata | Add `color_font=1` to KernSmith output line per `plan-extended-metadata.md` |
 | D2 | Tests | Noto Color Emoji (CBDT), Twemoji (COLRv0). Both freely available |
 | D3 | Auto-detect mode | Optional: auto-enable `ColorFont` when `FontInfo.HasColorGlyphs` is true |
 

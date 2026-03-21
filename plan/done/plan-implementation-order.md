@@ -1,4 +1,4 @@
-# bmfontier -- Implementation Order
+# KernSmith -- Implementation Order
 
 > Detailed task breakdown for all phases. Tasks are ordered by dependencies to maximize parallel execution.
 > Each task lists the plan doc(s) a coder agent needs and which tasks must complete first.
@@ -22,7 +22,7 @@ Goal: End-to-end pipeline that loads a TTF, parses required tables, rasterizes g
 
 | ID | Task                         | Description                                                                                                                                      | Docs to Read                                                                                         |
 |----|------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
-| 1A | **Exception types**          | Implement `BmfontierException`, `FontParsingException`, `RasterizationException`, `AtlasPackingException` with constructors and message formatting | plan-data-types.md (Error Handling section only)                                                     |
+| 1A | **Exception types**          | Implement `KernSmithException`, `FontParsingException`, `RasterizationException`, `AtlasPackingException` with constructors and message formatting | plan-data-types.md (Error Handling section only)                                                     |
 | 1B | **Config types**             | Implement `Padding`, `Spacing` (with convenience constructors), `PixelFormat`, `AntiAliasMode`, `PackingAlgorithm`, `OutputFormat` enums, `FontGeneratorOptions`, `RasterOptions` | plan-data-types.md (Configuration Types section), plan-api-design.md (FontGeneratorOptions, CharacterSet sections) |
 | 1C | **CharacterSet**             | Implement `CharacterSet` with `Ascii`, `ExtendedAscii`, `Latin` statics, `FromRanges`, `FromChars`, `Union`, `GetCodepoints`, `Resolve`          | plan-api-design.md (CharacterSet section)                                                            |
 | 1D | **BMFont model classes**     | Implement `BmFontModel`, `InfoBlock`, `CommonBlock`, `PageEntry`, `CharEntry`, `KerningEntry` as immutable records                                | plan-output-formats.md (BmFontModel section only)                                                    |
@@ -192,7 +192,7 @@ Goal: WOFF support, channel packing, color fonts, CLI tool, benchmarks, NuGet pu
 
 | ID  | Task                        | Depends On                       | Status | Description                                                                                          | Docs to Read                 |
 |-----|-----------------------------|----------------------------------|--------|------------------------------------------------------------------------------------------------------|------------------------------|
-| 15A | **Reference CLI tool**      | Phase 2 complete                 | DONE | Simple CLI wrapper: `bmfontier generate -f font.ttf -s 32 -o output/`                                | New plan doc needed          |
+| 15A | **Reference CLI tool**      | Phase 2 complete                 | DONE | Simple CLI wrapper: `KernSmith generate -f font.ttf -s 32 -o output/`                                | New plan doc needed          |
 | 15B | **Performance benchmarks**  | Phase 2 complete                 | DONE | Benchmark suite: measure time/memory for ASCII set at various sizes, compare MaxRects vs Skyline      | New plan doc needed          |
 | 15C | **NuGet publishing**        | Phase 2 complete, license decided | MOVED | Configure CI for NuGet pack + push, README, package icon                                             | Moved to [plan-phase-future.md](plan-phase-future.md)    |
 
@@ -275,7 +275,7 @@ See **[plan-bmfont-parity.md](plan-bmfont-parity.md)** for prioritized feature l
 
 ### Phase 7 — Extended Metadata
 
-Store bmfontier-specific metadata (SDF spread, gradient, shadow settings) inline in .fnt output using custom fields that existing BMFont readers safely ignore. Follows Hiero's precedent.
+Store KernSmith-specific metadata (SDF spread, gradient, shadow settings) inline in .fnt output using custom fields that existing BMFont readers safely ignore. Follows Hiero's precedent.
 
 See **[plan-extended-metadata.md](plan-extended-metadata.md)** for full specification, compatibility analysis, and implementation plan.
 

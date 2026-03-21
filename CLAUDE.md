@@ -1,4 +1,4 @@
-# bmfontier
+# KernSmith
 
 ## Project Purpose
 
@@ -8,11 +8,11 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 
 | Folder | Purpose |
 |--------|---------|
-| `src/Bmfontier/` | **Main library** — the NuGet package |
-| `tests/Bmfontier.Tests/` | **xUnit + FluentAssertions test suite** |
-| `tools/Bmfontier.Cli/` | **CLI tool** for bitmap font generation |
-| `samples/Bmfontier.Samples/` | **Usage examples** |
-| `benchmarks/Bmfontier.Benchmarks/` | **BenchmarkDotNet performance benchmarks** |
+| `src/KernSmith/` | **Main library** — the NuGet package |
+| `tests/KernSmith.Tests/` | **xUnit + FluentAssertions test suite** |
+| `tools/KernSmith.Cli/` | **CLI tool** for bitmap font generation |
+| `samples/KernSmith.Samples/` | **Usage examples** |
+| `benchmarks/KernSmith.Benchmarks/` | **BenchmarkDotNet performance benchmarks** |
 | `apps/` | **Future app projects** — Ui, Web, Mobile (placeholders) |
 | `plan/` | **Technical plan docs** — active plans; completed plans archived in `plan/done/` |
 | `reference/` | **Reference docs** — TTF spec, BMFont format, algorithm research |
@@ -31,7 +31,7 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 1. **Read plan docs first** — `plan/done/plan-data-types.md` is the single source of truth for types and interfaces
 2. **Follow existing patterns** — check 2-3 nearby files before writing new code
 3. **Never hardcode credentials** — use environment variables or `.env` + appropriate library
-4. **Test with real data** — test font is at `tests/Bmfontier.Tests/Fixtures/Roboto-Regular.ttf`
+4. **Test with real data** — test font is at `tests/KernSmith.Tests/Fixtures/Roboto-Regular.ttf`
 
 ### Key Conventions
 
@@ -44,23 +44,23 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 
 ### Namespace Rules
 
-- `Bmfontier` (root): entry point, config types, exceptions, enums
-- `Bmfontier.Font`: font reading, TTF parsing
-- `Bmfontier.Font.Models`: FontInfo, KerningPair, GlyphMetrics
-- `Bmfontier.Font.Tables`: HeadTable, HheaTable, Os2Metrics, NameInfo
-- `Bmfontier.Rasterizer`: IRasterizer, FreeTypeRasterizer, post-processors, effects (IGlyphEffect), GlyphCompositor
-- `Bmfontier.Atlas`: IAtlasPacker, packers, encoders (PNG/TGA/DDS), AtlasBuilder, AtlasSizeEstimator, ChannelCompositor
-- `Bmfontier.Output`: formatters, FileWriter, BmFontResult, BmFontReader, BmFontModelBuilder
-- `Bmfontier.Output.Model`: BmFontModel, InfoBlock, CommonBlock, ExtendedMetadata, etc.
-- Files in `Config/` and `Exceptions/` use the ROOT `Bmfontier` namespace
+- `KernSmith` (root): entry point, config types, exceptions, enums
+- `KernSmith.Font`: font reading, TTF parsing
+- `KernSmith.Font.Models`: FontInfo, KerningPair, GlyphMetrics
+- `KernSmith.Font.Tables`: HeadTable, HheaTable, Os2Metrics, NameInfo
+- `KernSmith.Rasterizer`: IRasterizer, FreeTypeRasterizer, post-processors, effects (IGlyphEffect), GlyphCompositor
+- `KernSmith.Atlas`: IAtlasPacker, packers, encoders (PNG/TGA/DDS), AtlasBuilder, AtlasSizeEstimator, ChannelCompositor
+- `KernSmith.Output`: formatters, FileWriter, BmFontResult, BmFontReader, BmFontModelBuilder
+- `KernSmith.Output.Model`: BmFontModel, InfoBlock, CommonBlock, ExtendedMetadata, etc.
+- Files in `Config/` and `Exceptions/` use the ROOT `KernSmith` namespace
 
 ### Project File References
 
 | What | Location |
 |------|----------|
-| Entry point | `src/Bmfontier/BmFont.cs` |
+| Entry point | `src/KernSmith/KernSmith.cs` |
 | Plan docs | `plan/` (start with `master-plan.md`) |
 | Data types (source of truth) | `plan/done/plan-data-types.md` |
 | Implementation order | `plan/done/plan-implementation-order.md` |
-| Tests | `tests/Bmfontier.Tests/` |
+| Tests | `tests/KernSmith.Tests/` |
 | CI/CD | `.github/workflows/` |

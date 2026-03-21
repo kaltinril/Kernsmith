@@ -220,7 +220,7 @@ This is the difficult part. Converting glyph outlines to bitmaps requires:
    - **Analytic AA:** Compute exact pixel coverage from edge geometry. Best quality/performance ratio but significantly harder to implement. This is what FreeType and Skia use.
    - **Signed Distance Fields (SDF):** Common in games. Render once, scale freely via shader. Could be a great fit but still needs initial rasterization.
 
-4. **Hinting (optional but important):** TrueType hinting involves a bytecode VM. CFF hinting is simpler but still complex. Without hinting, small sizes look poor on low-DPI displays. For bitmap font generation (the bmfontier use case), hinting at the target size matters.
+4. **Hinting (optional but important):** TrueType hinting involves a bytecode VM. CFF hinting is simpler but still complex. Without hinting, small sizes look poor on low-DPI displays. For bitmap font generation (the KernSmith use case), hinting at the target size matters.
 
 **Effort estimate for rasterization:**
 - Basic scanline rasterizer with supersampled AA: 1,000-2,000 lines, 1-2 weeks
@@ -270,7 +270,7 @@ This is ~200-400 lines of code and has zero dependencies. Most game/tool applica
 
 ```
 ┌─────────────────────────────────────────────┐
-│              bmfontier                       │
+│              KernSmith                       │
 ├─────────────────────────────────────────────┤
 │  Custom Pure-C# TTF/OTF Parser              │
 │  ├── Table reading (cmap, glyf, head, etc.) │
@@ -307,7 +307,7 @@ This is ~200-400 lines of code and has zero dependencies. Most game/tool applica
 3. **Optional SkiaSharp backend:**
    - For users who already have SkiaSharp in their project
    - Avoids adding FreeType when Skia is already present
-   - Could be a separate NuGet package (e.g., `bmfontier.SkiaSharp`)
+   - Could be a separate NuGet package (e.g., `KernSmith.SkiaSharp`)
 
 ### License Cleanliness
 - Custom parser: Your own code, your license
@@ -357,7 +357,7 @@ This is ~200-400 lines of code and has zero dependencies. Most game/tool applica
 
 ### Primary: Hybrid with FreeTypeSharp for Rasterization
 
-**For bmfontier, the recommended approach is:**
+**For KernSmith, the recommended approach is:**
 
 1. **Write a custom pure-C# TTF/OTF parser** for:
    - Font file discovery / system font enumeration

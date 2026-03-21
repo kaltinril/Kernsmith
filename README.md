@@ -1,4 +1,4 @@
-# bmfontier
+# KernSmith
 
 Cross-platform .NET library that generates BMFont-compatible bitmap font atlases from TTF/OTF/WOFF files. In-memory by default, no temp files required.
 
@@ -31,13 +31,13 @@ Cross-platform .NET library that generates BMFont-compatible bitmap font atlases
 ## Installation
 
 ```
-dotnet add package Bmfontier
+dotnet add package KernSmith
 ```
 
 Or via the NuGet Package Manager:
 
 ```
-Install-Package Bmfontier
+Install-Package KernSmith
 ```
 
 ## Quick Start
@@ -45,7 +45,7 @@ Install-Package Bmfontier
 Generate a bitmap font from a TTF file using `FontGeneratorOptions`:
 
 ```csharp
-using Bmfontier;
+using KernSmith;
 
 var result = BmFont.Generate("path/to/font.ttf", new FontGeneratorOptions
 {
@@ -318,7 +318,7 @@ var model2 = BmFont.LoadModel(fntTextContent);
 
 ## CLI Tool
 
-A reference command-line tool is included in `tools/Bmfontier.Cli/`. See the [CLI README](tools/Bmfontier.Cli/README.md) for usage.
+A reference command-line tool is included in `tools/KernSmith.Cli/`. See the [CLI README](tools/KernSmith.Cli/README.md) for usage.
 
 Available commands: `generate`, `batch`, `benchmark`, `inspect`, `convert`, `list-fonts`, `info`.
 

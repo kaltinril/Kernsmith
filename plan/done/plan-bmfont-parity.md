@@ -1,6 +1,6 @@
-# bmfontier -- BMFont Parity Features
+# KernSmith -- BMFont Parity Features
 
-> Features present in AngelCode's BMFont.exe that bmfontier does not yet support.
+> Features present in AngelCode's BMFont.exe that KernSmith does not yet support.
 > These are practical, useful features worth implementing to achieve full parity and beyond.
 
 ---

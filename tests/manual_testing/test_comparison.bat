@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 cd /d "%~dp0\..\.."
 
 REM ============================================================================
-REM BMFont vs bmfontier comparison tests
+REM BMFont vs KernSmith comparison tests
 REM
 REM These use only features available in the original AngelCode BMFont tool
 REM so you can generate equivalent output from both and compare side-by-side.
@@ -12,12 +12,12 @@ REM For each test, the equivalent BMFont settings are noted in comments.
 REM ============================================================================
 
 echo === Building CLI (Release) ===
-dotnet build tools\Bmfontier.Cli -c Release --nologo -v minimal
+dotnet build tools\KernSmith.Cli -c Release --nologo -v minimal
 if errorlevel 1 goto :fail
 
 if not exist output\comparison mkdir output\comparison
 
-set EXE=tools\Bmfontier.Cli\bin\Release\net10.0\Bmfontier.Cli.exe
+set EXE=tools\KernSmith.Cli\bin\Release\net10.0\KernSmith.Cli.exe
 
 REM Capture overall start time
 for /f "tokens=1-4 delims=:." %%a in ("%TIME: =0%") do set /a "TOTAL_START=(((%%a*60+1%%b%%100)*60+1%%c%%100)*100+1%%d%%100)"

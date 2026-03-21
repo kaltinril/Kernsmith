@@ -1,4 +1,4 @@
-# bmfontier -- Data Types
+# KernSmith -- Data Types
 
 > Defines all intermediate model types used across the pipeline. Each plan document references this file for type definitions.
 
@@ -401,22 +401,22 @@ Project-wide approach to errors:
 ### Custom Exception Hierarchy
 
 ```
-BmfontierException (base)
+KernSmithException (base)
 ├── FontParsingException
 ├── RasterizationException
 └── AtlasPackingException
 ```
 
 ```csharp
-public class BmfontierException : Exception
+public class KernSmithException : Exception
 {
-    public BmfontierException(string message) : base(message) { }
-    public BmfontierException(string message, Exception innerException) : base(message, innerException) { }
+    public KernSmithException(string message) : base(message) { }
+    public KernSmithException(string message, Exception innerException) : base(message, innerException) { }
 }
 
-public class FontParsingException : BmfontierException { /* ... */ }
-public class RasterizationException : BmfontierException { /* ... */ }
-public class AtlasPackingException : BmfontierException { /* ... */ }
+public class FontParsingException : KernSmithException { /* ... */ }
+public class RasterizationException : KernSmithException { /* ... */ }
+public class AtlasPackingException : KernSmithException { /* ... */ }
 ```
 
 ## Cross-Reference Index

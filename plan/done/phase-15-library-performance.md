@@ -69,7 +69,7 @@ This alone fixes the 800ms-per-call regression for any consumer.
 A managed font cache that consumers can use for explicit pre-loading:
 
 ```csharp
-namespace Bmfontier;
+namespace KernSmith;
 
 public sealed class FontCache
 {
@@ -169,16 +169,16 @@ After the library has `GenerateBatch`, the CLI's `BatchCommand` becomes:
 - [ ] This alone should drop repeated `GenerateFromSystem` calls from 800ms to <1ms
 
 ### Phase 2 — FontCache class
-- [ ] Create `src/Bmfontier/Config/FontCache.cs` (use root `Bmfontier` namespace per convention)
+- [ ] Create `src/KernSmith/Config/FontCache.cs` (use root `KernSmith` namespace per convention)
 - [ ] LoadFile, LoadSystemFont, Add, Get, Contains, Count, Clear
 - [ ] Use `ConcurrentDictionary<string, byte[]>` internally
 - [ ] Use the static `DefaultSystemFontProvider` for system font resolution
 - [ ] Thread-safe for parallel batch usage
 
 ### Phase 3 — Batch API types
-- [ ] Create `src/Bmfontier/Config/BatchJob.cs`
-- [ ] Create `src/Bmfontier/Config/BatchOptions.cs`
-- [ ] Create `src/Bmfontier/Output/BatchResult.cs` and `BatchJobResult.cs`
+- [ ] Create `src/KernSmith/Config/BatchJob.cs`
+- [ ] Create `src/KernSmith/Config/BatchOptions.cs`
+- [ ] Create `src/KernSmith/Output/BatchResult.cs` and `BatchJobResult.cs`
 - [ ] All types in appropriate namespaces per CLAUDE.md conventions
 
 ### Phase 4 — BmFont.GenerateBatch() implementation
@@ -206,8 +206,8 @@ After the library has `GenerateBatch`, the CLI's `BatchCommand` becomes:
 - Parallel batch is safe as long as jobs don't share mutable options objects
 
 ### Namespace Placement
-- `FontCache`, `BatchJob`, `BatchOptions` -> `Bmfontier` namespace (Config/ directory)
-- `BatchResult`, `BatchJobResult` -> `Bmfontier.Output` namespace (Output/ directory)
+- `FontCache`, `BatchJob`, `BatchOptions` -> `KernSmith` namespace (Config/ directory)
+- `BatchResult`, `BatchJobResult` -> `KernSmith.Output` namespace (Output/ directory)
 - `BmFont.GenerateBatch()` -> existing `BmFont` class
 
 ### API Design Principle

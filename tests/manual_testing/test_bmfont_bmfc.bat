@@ -4,7 +4,7 @@ cd /d "%~dp0\..\.."
 
 REM ============================================================================
 REM Run the original AngelCode BMFont64 tool with the same .bmfc files
-REM that bmfontier uses (tests 1-18, basic features only).
+REM that KernSmith uses (tests 1-18, basic features only).
 REM
 REM BMFont ignores our extension keys, so the same files work in both tools.
 REM
@@ -158,7 +158,7 @@ echo.
 echo --- --------------------------------- --------
 echo.
 echo Output in: output\bmfont\
-echo Compare with bmfontier output in: output\comparison\
+echo Compare with KernSmith output in: output\comparison\
 echo.
 echo === All 18 BMFont tests completed! ===
 exit /b 0

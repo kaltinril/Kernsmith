@@ -8,7 +8,7 @@
 
 ## Overview
 
-This phase consolidates everything that needs attention before shipping bmfontier as a production NuGet package. Items are organized into five tracks that can be worked in parallel. The FT_Stroker compositing fix (previously tracked as a standalone plan) is included here as an optional quality improvement.
+This phase consolidates everything that needs attention before shipping KernSmith as a production NuGet package. Items are organized into five tracks that can be worked in parallel. The FT_Stroker compositing fix (previously tracked as a standalone plan) is included here as an optional quality improvement.
 
 ---
 
@@ -89,10 +89,10 @@ Issues identified by security audit. Prioritized by severity.
 | # | Priority | Item | Details |
 |---|----------|------|---------|
 | C1 | Critical | **Add LICENSE file** | Create `LICENSE` at repo root with MIT text. csproj declares MIT but no file exists. |
-| C2 | Critical | **Fix placeholder URLs** | `PackageProjectUrl` and `RepositoryUrl` in csproj are `github.com/user/bmfontier` — replace with real URL |
+| C2 | Critical | **Fix placeholder URLs** | `PackageProjectUrl` and `RepositoryUrl` in csproj are `github.com/user/KernSmith` — replace with real URL |
 | C3 | Important | **Enable XML doc generation** | Add `<GenerateDocumentationFile>true</GenerateDocumentationFile>` — consumers get no IntelliSense without this |
 | C4 | Important | **Add SourceLink** | Add `Microsoft.SourceLink.GitHub` package + `<Deterministic>true</Deterministic>`, `<EmbedUntrackedSources>true</EmbedUntrackedSources>` |
-| C5 | Important | **Add Copyright** | `<Copyright>Copyright (c) 2024-2026 bmfontier contributors</Copyright>` |
+| C5 | Important | **Add Copyright** | `<Copyright>Copyright (c) 2024-2026 KernSmith contributors</Copyright>` |
 | C6 | Important | **Create CHANGELOG.md** | At minimum, entry for current version (0.8.0) |
 | C7 | Important | **Add package icon** | Create or source a package icon, set `<PackageIcon>` in csproj |
 | C8 | Important | **Add PackageReleaseNotes** | Either inline or point to CHANGELOG |
@@ -143,10 +143,10 @@ The FT_Stroker path (`CompositeWithFtStroker` in `BmFont.cs`) is implemented but
 
 | File | Role |
 |------|------|
-| `src/Bmfontier/BmFont.cs:144` | `useFtStroker = false` — the disable line |
-| `src/Bmfontier/BmFont.cs:548-646` | `CompositeWithFtStroker()` — compositing logic |
-| `src/Bmfontier/Rasterizer/FreeTypeRasterizer.cs:214-341` | `RasterizeOutline()` — stroker rasterization |
-| `src/Bmfontier/Rasterizer/FreeTypeNative.cs` | P/Invoke bindings for FT_Stroker |
+| `src/KernSmith/KernSmith.cs:144` | `useFtStroker = false` — the disable line |
+| `src/KernSmith/KernSmith.cs:548-646` | `CompositeWithFtStroker()` — compositing logic |
+| `src/KernSmith/Rasterizer/FreeTypeRasterizer.cs:214-341` | `RasterizeOutline()` — stroker rasterization |
+| `src/KernSmith/Rasterizer/FreeTypeNative.cs` | P/Invoke bindings for FT_Stroker |
 
 ---
 

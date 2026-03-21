@@ -20,33 +20,33 @@
 
 | Project | Path | Type | TFM | Solution Folder |
 |---------|------|------|-----|-----------------|
-| Bmfontier | `src/Bmfontier/` | Class Library (NuGet) | net8.0 | src |
-| Bmfontier.Tests | `tests/Bmfontier.Tests/` | xUnit Test Suite | net8.0 | tests |
-| Bmfontier.Cli | `samples/Bmfontier.Cli/` | Console Exe | net8.0 | samples |
-| Bmfontier.Samples | `samples/Bmfontier.Samples/` | Console Exe | net10.0 | samples |
-| Bmfontier.Benchmarks | `benchmarks/Bmfontier.Benchmarks/` | Console Exe | net8.0 | benchmarks |
+| KernSmith | `src/KernSmith/` | Class Library (NuGet) | net8.0 | src |
+| KernSmith.Tests | `tests/KernSmith.Tests/` | xUnit Test Suite | net8.0 | tests |
+| KernSmith.Cli | `samples/KernSmith.Cli/` | Console Exe | net8.0 | samples |
+| KernSmith.Samples | `samples/KernSmith.Samples/` | Console Exe | net10.0 | samples |
+| KernSmith.Benchmarks | `benchmarks/KernSmith.Benchmarks/` | Console Exe | net8.0 | benchmarks |
 
 ### Existing Dependencies
 
 ```
-Bmfontier (library) — THE PRIMARY ARTIFACT
+KernSmith (library) — THE PRIMARY ARTIFACT
   ├── FreeTypeSharp 3.1.0
   └── StbImageWriteSharp 1.16.7
 
-Bmfontier.Tests ──> Bmfontier (ProjectReference)
+KernSmith.Tests ──> KernSmith (ProjectReference)
   ├── xunit 2.9.3
   ├── FluentAssertions 8.9.0
   ├── coverlet.collector 6.0.4
   ├── Microsoft.NET.Test.Sdk 17.14.1
   └── xunit.runner.visualstudio 3.1.4
 
-Bmfontier.Cli ──> Bmfontier (ProjectReference)
+KernSmith.Cli ──> KernSmith (ProjectReference)
   (no extra packages)
 
-Bmfontier.Benchmarks ──> Bmfontier (ProjectReference)
+KernSmith.Benchmarks ──> KernSmith (ProjectReference)
   └── BenchmarkDotNet 0.14.0
 
-Bmfontier.Samples ──> Bmfontier (ProjectReference)
+KernSmith.Samples ──> KernSmith (ProjectReference)
   (no extra packages)
 ```
 
@@ -59,10 +59,10 @@ Bmfontier.Samples ──> Bmfontier (ProjectReference)
 5. **TFM inconsistency** — most projects on net8.0, Samples already on net10.0; all should be net10.0
 6. **CLI lives under `samples/`** — it's a first-class tool, not a sample
 7. **No centralized package management** — package versions could drift between projects
-8. **CI is .NET 8 only** — needs updating for net10.0 and future workloads; currently Bmfontier.Samples (net10.0) will **fail** in CI
+8. **CI is .NET 8 only** — needs updating for net10.0 and future workloads; currently KernSmith.Samples (net10.0) will **fail** in CI
 9. **FreeTypeSharp WASM gap** — no investigation done yet on alternatives for web target
 10. **LangVersion inconsistency** — only the library and benchmarks set `LangVersion=latest`; Tests, CLI, Samples rely on TFM default
-11. **CLAUDE.md is stale** — does not mention Bmfontier.Samples project; project organization table needs updating
+11. **CLAUDE.md is stale** — does not mention KernSmith.Samples project; project organization table needs updating
 12. **No `tools/` or `apps/` directories exist yet** — only `src/`, `tests/`, `samples/`, `benchmarks/`
 
 ---
@@ -72,8 +72,8 @@ Bmfontier.Samples ──> Bmfontier (ProjectReference)
 ### Proposed Directory Layout
 
 ```
-bmfontier/
-├── Bmfontier.sln
+KernSmith/
+├── KernSmith.sln
 ├── Directory.Build.props          (NEW — shared build settings)
 ├── Directory.Packages.props       (NEW — central package management)
 ├── global.json                    (NEW — pin SDK version)
@@ -81,25 +81,25 @@ bmfontier/
 ├── nuget.config                   (NEW — explicit feed config)
 │
 ├── src/
-│   └── Bmfontier/                 (existing — core NuGet library, THE PRIMARY ARTIFACT)
+│   └── KernSmith/                 (existing — core NuGet library, THE PRIMARY ARTIFACT)
 │
 ├── tools/
-│   ├── Bmfontier.Cli/             (MOVED from samples/ — first-class CLI tool)
+│   ├── KernSmith.Cli/             (MOVED from samples/ — first-class CLI tool)
 │   └── (future tools TBD)
 │
 ├── samples/
-│   └── Bmfontier.Samples/         (existing — usage examples)
+│   └── KernSmith.Samples/         (existing — usage examples)
 │
 ├── tests/
-│   └── Bmfontier.Tests/           (existing)
+│   └── KernSmith.Tests/           (existing)
 │
 ├── benchmarks/
-│   └── Bmfontier.Benchmarks/      (existing)
+│   └── KernSmith.Benchmarks/      (existing)
 │
 ├── apps/                          (NEW — future, placeholder scaffolds)
-│   ├── Bmfontier.Ui/              (GUM UI + MonoGame desktop)
-│   ├── Bmfontier.Web/             (KNI web target)
-│   └── Bmfontier.Mobile/          (Android, macOS, etc.)
+│   ├── KernSmith.Ui/              (GUM UI + MonoGame desktop)
+│   ├── KernSmith.Web/             (KNI web target)
+│   └── KernSmith.Mobile/          (Android, macOS, etc.)
 │
 ├── plan/                          (existing)
 └── reference/                     (existing)
@@ -108,21 +108,21 @@ bmfontier/
 ### Proposed Solution Folders
 
 ```
-Bmfontier.sln
+KernSmith.sln
 ├── src/
-│   └── Bmfontier
+│   └── KernSmith
 ├── tools/
-│   └── Bmfontier.Cli
+│   └── KernSmith.Cli
 ├── samples/
-│   └── Bmfontier.Samples
+│   └── KernSmith.Samples
 ├── tests/
-│   └── Bmfontier.Tests
+│   └── KernSmith.Tests
 ├── benchmarks/
-│   └── Bmfontier.Benchmarks
+│   └── KernSmith.Benchmarks
 └── apps/                          (added when projects are created)
-    ├── Bmfontier.Ui
-    ├── Bmfontier.Web
-    └── Bmfontier.Mobile
+    ├── KernSmith.Ui
+    ├── KernSmith.Web
+    └── KernSmith.Mobile
 ```
 
 ---
@@ -159,9 +159,9 @@ Add shared build files and unify all projects on net10.0.
 Move the CLI out of samples/ — it's a standalone tool, not an example.
 
 - [ ] Create `tools/` directory
-- [ ] Move `samples/Bmfontier.Cli/` to `tools/Bmfontier.Cli/`
+- [ ] Move `samples/KernSmith.Cli/` to `tools/KernSmith.Cli/`
 - [ ] Update project reference paths in the .csproj
-- [ ] Update `Bmfontier.sln` — move project to `tools` solution folder
+- [ ] Update `KernSmith.sln` — move project to `tools` solution folder
 - [ ] Update `InternalsVisibleTo` in the library .csproj (verify — assembly name unchanged, path irrelevant)
 - [ ] Update CI workflows if they reference the CLI path directly
 - [ ] Update CLAUDE.md project organization table
@@ -184,7 +184,7 @@ FreeTypeSharp ships native binaries for Windows, macOS, Linux, Android, iOS, tvO
 - [ ] **Research FreeTypeSharp WASM status** — has the project added WASM support? Any forks that have?
 - [ ] **Evaluate FreeType compiled to WASM** — can libfreetype be compiled to WASM via Emscripten and called from .NET WASM?
 - [ ] **Survey alternative WASM-compatible rasterizers** — are there font rasterization libraries that run natively in WASM? (e.g., fontdue-rs compiled to WASM, HarfBuzz WASM builds, browser Canvas API via JS interop)
-- [ ] **Evaluate server-side rasterization** — web UI sends font + options to a backend API that runs the full Bmfontier pipeline and returns results. Simplest option; no rasterizer porting needed.
+- [ ] **Evaluate server-side rasterization** — web UI sends font + options to a backend API that runs the full KernSmith pipeline and returns results. Simplest option; no rasterizer porting needed.
 - [ ] **Evaluate IRasterizer abstraction sufficiency** — does the current `IRasterizer` interface cleanly allow swapping in an alternative rasterizer, or does it leak FreeType assumptions?
 - [ ] **Document findings and recommendation** in a dedicated plan doc (`plan/phase-13-wasm-rasterization.md`)
 - [ ] **Decision gate**: based on findings, decide which approach to pursue before Phase 5 scaffolding of the web project
@@ -201,28 +201,28 @@ Create placeholder project structure for future UI/Web/Mobile projects. These ar
 
 **Tasks:**
 - [ ] Create `apps/` directory
-- [ ] Scaffold `apps/Bmfontier.Ui/Bmfontier.Ui.csproj`
+- [ ] Scaffold `apps/KernSmith.Ui/KernSmith.Ui.csproj`
   - MonoGame + GUM UI references (verify they support net10.0)
-  - `ProjectReference` to `../../src/Bmfontier/Bmfontier.csproj`
+  - `ProjectReference` to `../../src/KernSmith/KernSmith.csproj`
   - Target: net10.0 (cross-platform desktop — Windows, Linux, macOS)
   - Output type: Exe
   - Minimal Program.cs placeholder
-- [ ] Scaffold `apps/Bmfontier.Web/Bmfontier.Web.csproj`
+- [ ] Scaffold `apps/KernSmith.Web/KernSmith.Web.csproj`
   - KNI framework references (verify availability)
-  - `ProjectReference` to Bmfontier library
+  - `ProjectReference` to KernSmith library
   - Target: TBD (depends on Phase 4 investigation and KNI's WASM support)
   - Minimal Program.cs placeholder
   - **Blocked on Phase 4** — approach for rasterization must be decided first
-- [ ] Scaffold `apps/Bmfontier.Mobile/Bmfontier.Mobile.csproj`
+- [ ] Scaffold `apps/KernSmith.Mobile/KernSmith.Mobile.csproj`
   - Multi-target: net10.0-android, net10.0-maccatalyst, etc.
-  - `ProjectReference` to Bmfontier library
+  - `ProjectReference` to KernSmith library
   - May require `dotnet workload install` in CI
   - Minimal Program.cs placeholder
-- [ ] Add all new projects to `Bmfontier.sln` under `apps` solution folder
+- [ ] Add all new projects to `KernSmith.sln` under `apps` solution folder
 - [ ] Create `.slnf` solution filter files:
-  - `Bmfontier.Core.slnf` — library + tests + CLI + benchmarks (default dev)
-  - `Bmfontier.All.slnf` — everything including apps
-- [ ] Update CI to build using `Bmfontier.Core.slnf` by default; `Bmfontier.All.slnf` only when app workloads are available
+  - `KernSmith.Core.slnf` — library + tests + CLI + benchmarks (default dev)
+  - `KernSmith.All.slnf` — everything including apps
+- [ ] Update CI to build using `KernSmith.Core.slnf` by default; `KernSmith.All.slnf` only when app workloads are available
 - [ ] Create individual plan docs for each app project (separate from this phase doc)
 
 ---
@@ -231,11 +231,11 @@ Create placeholder project structure for future UI/Web/Mobile projects. These ar
 
 ### NuGet Library as the Single Source of Truth
 
-All projects consume the Bmfontier library via `ProjectReference`. No project should duplicate font parsing, rasterization, atlas packing, or output formatting logic. If a consuming project needs functionality that doesn't exist in the library, the library gets extended — not the consuming project.
+All projects consume the KernSmith library via `ProjectReference`. No project should duplicate font parsing, rasterization, atlas packing, or output formatting logic. If a consuming project needs functionality that doesn't exist in the library, the library gets extended — not the consuming project.
 
 ```
                     ┌─────────────────┐
-                    │   Bmfontier     │
+                    │   KernSmith     │
                     │  (NuGet pkg)    │
                     └───────┬─────────┘
           ┌─────────┬───────┼───────┬──────────┐
@@ -269,31 +269,31 @@ Both are available as NuGet packages. The UI project will need:
 ### Solution Filter Files (.slnf)
 
 Required to keep placeholder projects from blocking day-to-day development:
-- `Bmfontier.Core.slnf` — library + tests + CLI + benchmarks + samples (daily dev, CI default)
-- `Bmfontier.All.slnf` — everything including apps (only when workloads installed)
+- `KernSmith.Core.slnf` — library + tests + CLI + benchmarks + samples (daily dev, CI default)
+- `KernSmith.All.slnf` — everything including apps (only when workloads installed)
 
 ---
 
 ## Dependency Graph (Target State)
 
 ```
-Bmfontier (core library — net10.0, NuGet package)
+KernSmith (core library — net10.0, NuGet package)
 ├── FreeTypeSharp
 └── StbImageWriteSharp
 
-Bmfontier.Tests ──> Bmfontier (ProjectReference)
-Bmfontier.Cli ──> Bmfontier (ProjectReference)
-Bmfontier.Benchmarks ──> Bmfontier (ProjectReference)
-Bmfontier.Samples ──> Bmfontier (ProjectReference)
+KernSmith.Tests ──> KernSmith (ProjectReference)
+KernSmith.Cli ──> KernSmith (ProjectReference)
+KernSmith.Benchmarks ──> KernSmith (ProjectReference)
+KernSmith.Samples ──> KernSmith (ProjectReference)
 
-Bmfontier.Ui ──> Bmfontier (ProjectReference)
+KernSmith.Ui ──> KernSmith (ProjectReference)
 ├── MonoGame.Framework.DesktopGL
 └── Gum (+ related packages)
 
-Bmfontier.Web ──> Bmfontier (ProjectReference or via API — depends on Phase 4)
+KernSmith.Web ──> KernSmith (ProjectReference or via API — depends on Phase 4)
 └── KNI framework
 
-Bmfontier.Mobile ──> Bmfontier (ProjectReference)
+KernSmith.Mobile ──> KernSmith (ProjectReference)
 └── MonoGame or MAUI (TBD)
 ```
 
