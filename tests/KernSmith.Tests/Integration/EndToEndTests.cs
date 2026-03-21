@@ -404,12 +404,12 @@ public class EndToEndTests
     }
 
     [Fact]
-    public void Generate_WithOutlineProperty_ExpandsAdvance()
+    public void Generate_WithOutlineProperty_AdvanceIsUnchanged()
     {
-        // Arrange
+        // Arrange — outline expands the glyph bitmap and bearing but should NOT
+        // change the advance. The outline is allowed to overlap into adjacent space.
         var fontData = LoadTestFont();
         var chars = CharacterSet.FromChars("A");
-        var outlineWidth = 4;
 
         // Act
         var resultWithout = BmFont.Generate(fontData, new FontGeneratorOptions
@@ -422,24 +422,23 @@ public class EndToEndTests
         {
             Size = 32,
             Characters = chars,
-            Outline = outlineWidth
+            Outline = 4
         });
 
-        // Assert — advance must grow to avoid clipping the outline on the right side
+        // Assert
         var charWithout = resultWithout.Model.Characters.First(c => c.Id == 65);
         var charWith = resultWith.Model.Characters.First(c => c.Id == 65);
 
-        charWith.XAdvance.Should().BeGreaterThan(charWithout.XAdvance,
-            "outlined glyph advance must be larger to prevent right-side clipping");
+        charWith.XAdvance.Should().Be(charWithout.XAdvance,
+            "outline should not change the advance — outlines overlap into adjacent glyph space");
     }
 
     [Fact]
-    public void Generate_WithOutlinePostProcessor_ExpandsAdvance()
+    public void Generate_WithOutlinePostProcessor_AdvanceIsUnchanged()
     {
         // Arrange
         var fontData = LoadTestFont();
         var chars = CharacterSet.FromChars("A");
-        var outlineWidth = 4;
 
         // Act
         var resultWithout = BmFont.Generate(fontData, new FontGeneratorOptions
@@ -452,15 +451,15 @@ public class EndToEndTests
         {
             Size = 32,
             Characters = chars,
-            PostProcessors = new[] { new OutlinePostProcessor(outlineWidth) }
+            PostProcessors = new[] { new OutlinePostProcessor(4) }
         });
 
-        // Assert — advance must grow to avoid clipping the outline on the right side
+        // Assert
         var charWithout = resultWithout.Model.Characters.First(c => c.Id == 65);
         var charWith = resultWith.Model.Characters.First(c => c.Id == 65);
 
-        charWith.XAdvance.Should().BeGreaterThan(charWithout.XAdvance,
-            "outlined glyph advance must be larger to prevent right-side clipping");
+        charWith.XAdvance.Should().Be(charWithout.XAdvance,
+            "outline should not change the advance — outlines overlap into adjacent glyph space");
     }
 
     [Fact]
@@ -504,8 +503,8 @@ public class EndToEndTests
             "outlined glyph should be wider when using custom channel config");
         charWith.Height.Should().BeGreaterThan(charWithout.Height,
             "outlined glyph should be taller when using custom channel config");
-        charWith.XAdvance.Should().BeGreaterThan(charWithout.XAdvance,
-            "outlined glyph advance must grow to prevent clipping");
+        charWith.XAdvance.Should().Be(charWithout.XAdvance,
+            "outline should not change the advance — outlines overlap into adjacent glyph space");
     }
 
     [Fact]

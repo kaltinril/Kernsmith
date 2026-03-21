@@ -173,14 +173,11 @@ internal static class GlyphCompositor
 
         // 6. Adjust metrics based on composite canvas offset.
         // minX/minY represent how much the canvas extended beyond the original origin.
-        // The advance must grow by the full horizontal canvas expansion so the next
-        // character doesn't overlap the effect pixels (e.g., outline, shadow).
         var metrics = sourceGlyph.Metrics;
-        var horizontalExpansion = canvasW - srcW;
         var newMetrics = new GlyphMetrics(
             BearingX: metrics.BearingX + minX,   // minX is negative when canvas extends left
             BearingY: metrics.BearingY - minY,    // minY is negative when canvas extends up
-            Advance: metrics.Advance + horizontalExpansion,
+            Advance: metrics.Advance,
             Width: canvasW,
             Height: canvasH);
 
