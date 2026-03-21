@@ -103,7 +103,7 @@ Output Layer
 | 14 | [Benchmarking & Profiling](done/phase-14-benchmarking-profiling.md) | 50+ benchmarks, PipelineMetrics, CLI --time/--profile, benchmark command |
 | 15 | [Library Performance](done/phase-15-library-performance.md) | FontCache, GenerateBatch API, static SystemFontProvider -- 18 fonts in 196ms |
 | 16 | [BMFont .bmfc Compatibility](done/phase-16-bmfc-compatibility.md) | Standard BMFont key=value format, drop legacy INI, same files work in both tools |
-| 17 | [Rebrand to KernSmith](phase-17-rebrand-kernsmith.md) | Full project rename from KernSmith to KernSmith |
+| 17 | [Rebrand to KernSmith](done/phase-17-rebrand-kernsmith.md) | Full project rename from bmfontier to KernSmith |
 
 ### Topical Plan Docs (archived in `done/`)
 
@@ -170,7 +170,7 @@ Multi-project foundation: Directory.Build.props, central package management, glo
 Security hardening (10 items), test coverage gaps (~30 new tests), NuGet package readiness (LICENSE, URLs, SourceLink, XML docs, CHANGELOG), API documentation polish, optional FT_Stroker compositing fix.
 
 ### Phase 17 -- Rebrand to KernSmith (COMPLETE)
-Full project rename from KernSmith to KernSmith -- namespaces, assemblies, directories, project files, docs, CLI commands, NuGet package, and all references.
+Full project rename from bmfontier to KernSmith -- namespaces, assemblies, directories, project files, docs, CLI commands, NuGet package, and all references.
 
 ### Phase 30 -- WASM Rasterization (PLANNING)
 Live investigation of WASM-compatible font rasterizers. Prior preliminary research suggested server-side rasterization or SkiaSharp, but findings were not validated with actual testing. Requires checking current FreeTypeSharp WASM status, testing Emscripten builds, evaluating SkiaSharp.Views.Blazor, and verifying IRasterizer swappability.
