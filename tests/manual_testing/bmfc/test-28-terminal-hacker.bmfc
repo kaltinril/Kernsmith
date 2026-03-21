@@ -1,0 +1,23 @@
+# Test 28: Courier New 28px, terminal hacker style
+fileVersion=1
+
+# font settings
+fontName=Courier New
+fontSize=28
+useSmoothing=0
+
+# character alignment
+spacingHoriz=1
+spacingVert=1
+
+# output file
+textureFormat=tga
+
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+autofit=1
+gradientTop=00FF41
+gradientBottom=00CC33
+outputPath=../../output/comparison-batch/test-28

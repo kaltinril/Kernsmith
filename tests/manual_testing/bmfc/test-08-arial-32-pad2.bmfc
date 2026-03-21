@@ -1,17 +1,26 @@
 # Test 08: Arial 32px padding=2, max-tex 512
-[font]
-system-font = Arial
+fileVersion=1
 
-[rendering]
-size = 32
+# font settings
+fontName=Arial
+fontSize=32
 
-[characters]
-preset = ascii
+# character alignment
+paddingUp=2
+paddingDown=2
+paddingRight=2
+paddingLeft=2
+spacingHoriz=1
+spacingVert=1
 
-[atlas]
-max-texture-size = 512
-padding = 2
+# output file
+outWidth=512
+outHeight=512
+fontDescFormat=0
+textureFormat=png
 
-[output]
-format = text
-path = ../../output/comparison-batch/test-08
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+outputPath=../../output/comparison-batch/test-08

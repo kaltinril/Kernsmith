@@ -1,0 +1,29 @@
+# Test 30: Verdana 36px, pastel dream style
+fileVersion=1
+
+# font settings
+fontName=Verdana
+fontSize=36
+scaleH=110
+
+# character alignment
+spacingHoriz=1
+spacingVert=1
+
+# output file
+textureFormat=png
+
+# outline
+outlineThickness=1
+
+# selected chars
+chars=32-126,160-383
+
+# bmfontier extensions
+autofit=1
+superSample=2
+outlineColor=E8D5E0
+gradientTop=FFB6C1
+gradientBottom=E6E6FA
+gradientAngle=45
+outputPath=../../output/comparison-batch/test-30

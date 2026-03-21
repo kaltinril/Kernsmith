@@ -1,0 +1,37 @@
+# Test 25: Impact 60px bold, toxic slime style
+fileVersion=1
+
+# font settings
+fontName=Impact
+fontSize=60
+isBold=1
+
+# character alignment
+paddingUp=4
+paddingDown=4
+paddingRight=4
+paddingLeft=4
+spacingHoriz=3
+spacingVert=3
+
+# output file
+textureFormat=png
+
+# outline
+outlineThickness=6
+
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+autofit=1
+packer=skyline
+outlineColor=1B0030
+gradientTop=76FF03
+gradientBottom=FFFF00
+gradientAngle=45
+shadowOffsetX=4
+shadowOffsetY=4
+shadowColor=000000
+shadowBlur=4
+outputPath=../../output/comparison-batch/test-25

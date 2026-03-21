@@ -1,0 +1,34 @@
+# Test 23: Arial 52px bold, sunset glow style
+fileVersion=1
+
+# font settings
+fontName=Arial
+fontSize=52
+isBold=1
+
+# character alignment
+paddingUp=4
+paddingDown=4
+paddingRight=4
+paddingLeft=4
+spacingHoriz=1
+spacingVert=1
+
+# output file
+textureFormat=png
+
+# outline
+outlineThickness=3
+
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+autofit=1
+superSample=4
+outlineColor=2B0040
+gradientTop=FF6B35
+gradientBottom=9B59B6
+gradientAngle=135
+gradientMidpoint=0.4
+outputPath=../../output/comparison-batch/test-23

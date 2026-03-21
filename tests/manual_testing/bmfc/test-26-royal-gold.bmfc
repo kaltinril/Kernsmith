@@ -1,0 +1,31 @@
+# Test 26: Georgia 44px bold, royal gold style
+fileVersion=1
+
+# font settings
+fontName=Georgia
+fontSize=44
+isBold=1
+
+# character alignment
+spacingHoriz=1
+spacingVert=1
+
+# output file
+fontDescFormat=1
+textureFormat=png
+
+# outline
+outlineThickness=3
+
+# selected chars
+chars=32-255
+
+# bmfontier extensions
+autofit=1
+superSample=2
+outlineColor=2C1810
+gradientTop=FFD700
+gradientBottom=CD853F
+gradientAngle=0
+gradientMidpoint=0.6
+outputPath=../../output/comparison-batch/test-26

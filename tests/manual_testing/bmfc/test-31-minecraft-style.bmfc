@@ -1,0 +1,27 @@
+# Test 31: Consolas 16px, minecraft style
+fileVersion=1
+
+# font settings
+fontName=Consolas
+fontSize=16
+useHinting=0
+
+# character alignment
+paddingUp=1
+paddingDown=1
+paddingRight=1
+paddingLeft=1
+spacingHoriz=1
+spacingVert=1
+useFixedHeight=1
+
+# output file
+textureFormat=dds
+
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+autofit=1
+powerOfTwo=1
+outputPath=../../output/comparison-batch/test-31

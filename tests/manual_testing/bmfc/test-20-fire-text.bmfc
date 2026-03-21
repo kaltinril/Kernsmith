@@ -1,0 +1,32 @@
+# Test 20: Georgia 56px bold, fire text style
+fileVersion=1
+
+# font settings
+fontName=Georgia
+fontSize=56
+isBold=1
+
+# character alignment
+spacingHoriz=1
+spacingVert=1
+
+# output file
+textureFormat=png
+
+# outline
+outlineThickness=4
+
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+autofit=1
+outlineColor=1A0500
+gradientTop=FF0000
+gradientBottom=FFD700
+gradientAngle=0
+shadowOffsetX=3
+shadowOffsetY=3
+shadowColor=000000
+shadowBlur=3
+outputPath=../../output/comparison-batch/test-20

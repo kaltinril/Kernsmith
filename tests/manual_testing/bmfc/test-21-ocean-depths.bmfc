@@ -1,0 +1,34 @@
+# Test 21: Times New Roman 48px bold italic, ocean depths style
+fileVersion=1
+
+# font settings
+fontName=Times New Roman
+fontSize=48
+isBold=1
+isItalic=1
+
+# character alignment
+paddingUp=3
+paddingDown=3
+paddingRight=3
+paddingLeft=3
+spacingHoriz=1
+spacingVert=1
+
+# output file
+textureFormat=png
+
+# outline
+outlineThickness=5
+
+# selected chars
+chars=32-126,160-383
+
+# bmfontier extensions
+autofit=1
+superSample=2
+outlineColor=001122
+gradientTop=00CED1
+gradientBottom=000080
+gradientAngle=180
+outputPath=../../output/comparison-batch/test-21

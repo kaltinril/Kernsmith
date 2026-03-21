@@ -1,17 +1,22 @@
 # Test 13: Arial 32px DDS texture, max-tex 512
-[font]
-system-font = Arial
+fileVersion=1
 
-[rendering]
-size = 32
+# font settings
+fontName=Arial
+fontSize=32
 
-[characters]
-preset = ascii
+# character alignment
+spacingHoriz=1
+spacingVert=1
 
-[atlas]
-max-texture-size = 512
-texture-format = dds
+# output file
+outWidth=512
+outHeight=512
+fontDescFormat=0
+textureFormat=dds
 
-[output]
-format = text
-path = ../../output/comparison-batch/test-13
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+outputPath=../../output/comparison-batch/test-13

@@ -1,0 +1,22 @@
+# Test 22: Consolas 32px, retro arcade style
+fileVersion=1
+
+# font settings
+fontName=Consolas
+fontSize=32
+useHinting=0
+
+# character alignment
+spacingHoriz=2
+spacingVert=2
+
+# output file
+textureFormat=png
+fourChnlPacked=1
+
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+autofit=1
+outputPath=../../output/comparison-batch/test-22

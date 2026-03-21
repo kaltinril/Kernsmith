@@ -1,0 +1,38 @@
+# Test 27: Arial 50px bold italic, synthwave style
+fileVersion=1
+
+# font settings
+fontName=Arial
+fontSize=50
+isBold=1
+isItalic=1
+
+# character alignment
+paddingUp=3
+paddingDown=3
+paddingRight=3
+paddingLeft=3
+spacingHoriz=1
+spacingVert=1
+
+# output file
+fontDescFormat=2
+textureFormat=png
+
+# outline
+outlineThickness=4
+
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+autofit=1
+outlineColor=0A001A
+gradientTop=FF1493
+gradientBottom=8A2BE2
+gradientAngle=90
+shadowOffsetX=2
+shadowOffsetY=2
+shadowColor=330033
+shadowBlur=2
+outputPath=../../output/comparison-batch/test-27

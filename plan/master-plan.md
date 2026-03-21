@@ -1,6 +1,6 @@
 # bmfontier -- Master Plan
 
-> **Status**: Phases 1-11, 13-15 complete. Phase 12 (Pre-Ship Polish) and Phase 30 (WASM) are active.
+> **Status**: Phases 1-11, 13-16 complete. Phase 12 (Pre-Ship Polish) and Phase 30 (WASM) are active.
 > **Date**: 2026-03-20
 
 ---
@@ -102,6 +102,7 @@ Output Layer
 | 13 | [Batch CLI](done/phase-13-batch-cli.md) | Batch command, .bmfc multi-file processing, collision detection |
 | 14 | [Benchmarking & Profiling](done/phase-14-benchmarking-profiling.md) | 50+ benchmarks, PipelineMetrics, CLI --time/--profile, benchmark command |
 | 15 | [Library Performance](done/phase-15-library-performance.md) | FontCache, GenerateBatch API, static SystemFontProvider — 18 fonts in 196ms |
+| 16 | [BMFont .bmfc Compatibility](done/phase-16-bmfc-compatibility.md) | Standard BMFont key=value format, drop legacy INI, same files work in both tools |
 
 ### Topical Plan Docs (archived in `done/`)
 
@@ -178,6 +179,9 @@ Batch command for multi-file .bmfc processing with output collision detection, p
 
 ### Phase 15 — Library Performance & Batch API (COMPLETE)
 Moved font caching and batch execution from CLI into NuGet library. Static SystemFontProvider singleton eliminates 800ms/call overhead. FontCache class, BmFont.GenerateBatch() with parallelism. 18 fonts in 196ms via library API.
+
+### Phase 16 — BMFont .bmfc Compatibility (COMPLETE)
+Replaced custom INI-style .bmfc format with standard AngelCode BMFont flat key=value format. Same .bmfc files work in both BMFont and bmfontier — BMFont ignores extension keys. Legacy INI parser removed. All 32 test .bmfc files converted.
 
 ---
 

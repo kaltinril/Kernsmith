@@ -1,16 +1,22 @@
 # Test 14: Arial 32px extended charset, max-tex 1024
-[font]
-system-font = Arial
+fileVersion=1
 
-[rendering]
-size = 32
+# font settings
+fontName=Arial
+fontSize=32
 
-[characters]
-preset = extended
+# character alignment
+spacingHoriz=1
+spacingVert=1
 
-[atlas]
-max-texture-size = 1024
+# output file
+outWidth=1024
+outHeight=1024
+fontDescFormat=0
+textureFormat=png
 
-[output]
-format = text
-path = ../../output/comparison-batch/test-14
+# selected chars
+chars=32-255
+
+# bmfontier extensions
+outputPath=../../output/comparison-batch/test-14

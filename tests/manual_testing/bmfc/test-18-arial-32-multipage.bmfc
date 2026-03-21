@@ -1,16 +1,22 @@
 # Test 18: Arial 32px max-tex 128 (multi-page)
-[font]
-system-font = Arial
+fileVersion=1
 
-[rendering]
-size = 32
+# font settings
+fontName=Arial
+fontSize=32
 
-[characters]
-preset = ascii
+# character alignment
+spacingHoriz=1
+spacingVert=1
 
-[atlas]
-max-texture-size = 128
+# output file
+outWidth=128
+outHeight=128
+fontDescFormat=0
+textureFormat=png
 
-[output]
-format = text
-path = ../../output/comparison-batch/test-18
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+outputPath=../../output/comparison-batch/test-18

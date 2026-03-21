@@ -1,16 +1,22 @@
 # Test 04: Arial 48px, max-tex 1024
-[font]
-system-font = Arial
+fileVersion=1
 
-[rendering]
-size = 48
+# font settings
+fontName=Arial
+fontSize=48
 
-[characters]
-preset = ascii
+# character alignment
+spacingHoriz=1
+spacingVert=1
 
-[atlas]
-max-texture-size = 1024
+# output file
+outWidth=1024
+outHeight=1024
+fontDescFormat=0
+textureFormat=png
 
-[output]
-format = text
-path = ../../output/comparison-batch/test-04
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+outputPath=../../output/comparison-batch/test-04

@@ -1,16 +1,22 @@
 # Test 11: Arial 32px binary format, max-tex 512
-[font]
-system-font = Arial
+fileVersion=1
 
-[rendering]
-size = 32
+# font settings
+fontName=Arial
+fontSize=32
 
-[characters]
-preset = ascii
+# character alignment
+spacingHoriz=1
+spacingVert=1
 
-[atlas]
-max-texture-size = 512
+# output file
+outWidth=512
+outHeight=512
+fontDescFormat=2
+textureFormat=png
 
-[output]
-format = binary
-path = ../../output/comparison-batch/test-11
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+outputPath=../../output/comparison-batch/test-11

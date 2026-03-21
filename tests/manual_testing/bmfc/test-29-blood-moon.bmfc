@@ -1,0 +1,37 @@
+# Test 29: Times New Roman 40px bold, blood moon style
+fileVersion=1
+
+# font settings
+fontName=Times New Roman
+fontSize=40
+isBold=1
+
+# character alignment
+paddingUp=2
+paddingDown=2
+paddingRight=2
+paddingLeft=2
+spacingHoriz=1
+spacingVert=1
+
+# output file
+outWidth=256
+outHeight=256
+textureFormat=png
+
+# outline
+outlineThickness=3
+
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+outlineColor=0A0000
+gradientTop=8B0000
+gradientBottom=DC143C
+gradientAngle=180
+shadowOffsetX=5
+shadowOffsetY=5
+shadowColor=000000
+shadowBlur=5
+outputPath=../../output/comparison-batch/test-29

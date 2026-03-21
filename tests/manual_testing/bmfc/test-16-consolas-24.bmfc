@@ -1,16 +1,22 @@
 # Test 16: Consolas 24px, max-tex 256
-[font]
-system-font = Consolas
+fileVersion=1
 
-[rendering]
-size = 24
+# font settings
+fontName=Consolas
+fontSize=24
 
-[characters]
-preset = ascii
+# character alignment
+spacingHoriz=1
+spacingVert=1
 
-[atlas]
-max-texture-size = 256
+# output file
+outWidth=256
+outHeight=256
+fontDescFormat=0
+textureFormat=png
 
-[output]
-format = text
-path = ../../output/comparison-batch/test-16
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+outputPath=../../output/comparison-batch/test-16

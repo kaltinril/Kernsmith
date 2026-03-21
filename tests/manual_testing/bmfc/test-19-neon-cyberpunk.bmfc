@@ -1,0 +1,32 @@
+# Test 19: Impact 64px bold, neon cyberpunk style
+fileVersion=1
+
+# font settings
+fontName=Impact
+fontSize=64
+isBold=1
+
+# character alignment
+paddingUp=2
+paddingDown=2
+paddingRight=2
+paddingLeft=2
+spacingHoriz=1
+spacingVert=1
+
+# output file
+textureFormat=png
+
+# outline
+outlineThickness=3
+
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+autofit=1
+outlineColor=0D0D0D
+gradientTop=FF00FF
+gradientBottom=00FFFF
+gradientAngle=90
+outputPath=../../output/comparison-batch/test-19

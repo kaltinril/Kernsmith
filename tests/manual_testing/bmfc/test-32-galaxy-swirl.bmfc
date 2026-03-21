@@ -1,0 +1,41 @@
+# Test 32: Georgia 64px bold italic, galaxy swirl style
+fileVersion=1
+
+# font settings
+fontName=Georgia
+fontSize=64
+isBold=1
+isItalic=1
+
+# character alignment
+paddingUp=5
+paddingDown=5
+paddingRight=5
+paddingLeft=5
+spacingHoriz=3
+spacingVert=3
+
+# output file
+textureFormat=png
+
+# outline
+outlineThickness=5
+
+# selected chars
+chars=32-255
+
+# bmfontier extensions
+autofit=1
+packer=skyline
+superSample=4
+fallbackChar=?
+outlineColor=0D001A
+gradientTop=4169E1
+gradientBottom=FF00FF
+gradientAngle=120
+gradientMidpoint=0.3
+shadowOffsetX=4
+shadowOffsetY=4
+shadowColor=000000
+shadowBlur=3
+outputPath=../../output/comparison-batch/test-32

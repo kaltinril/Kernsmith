@@ -1,17 +1,22 @@
 # Test 09: Arial 32px spacing=4, max-tex 512
-[font]
-system-font = Arial
+fileVersion=1
 
-[rendering]
-size = 32
+# font settings
+fontName=Arial
+fontSize=32
 
-[characters]
-preset = ascii
+# character alignment
+spacingHoriz=4
+spacingVert=4
 
-[atlas]
-max-texture-size = 512
-spacing = 4
+# output file
+outWidth=512
+outHeight=512
+fontDescFormat=0
+textureFormat=png
 
-[output]
-format = text
-path = ../../output/comparison-batch/test-09
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+outputPath=../../output/comparison-batch/test-09

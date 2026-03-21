@@ -1,0 +1,32 @@
+# Test 24: Verdana 72px, ice crystal style with SDF
+fileVersion=1
+
+# font settings
+fontName=Verdana
+fontSize=72
+
+# character alignment
+paddingUp=6
+paddingDown=6
+paddingRight=6
+paddingLeft=6
+spacingHoriz=1
+spacingVert=1
+
+# output file
+textureFormat=png
+
+# outline
+outlineThickness=2
+
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+autofit=1
+useSdf=1
+outlineColor=1A237E
+gradientTop=FFFFFF
+gradientBottom=42A5F5
+gradientAngle=0
+outputPath=../../output/comparison-batch/test-24

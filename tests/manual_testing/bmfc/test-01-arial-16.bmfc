@@ -1,16 +1,22 @@
 # Test 01: Arial 16px, max-tex 256
-[font]
-system-font = Arial
+fileVersion=1
 
-[rendering]
-size = 16
+# font settings
+fontName=Arial
+fontSize=16
 
-[characters]
-preset = ascii
+# character alignment
+spacingHoriz=1
+spacingVert=1
 
-[atlas]
-max-texture-size = 256
+# output file
+outWidth=256
+outHeight=256
+fontDescFormat=0
+textureFormat=png
 
-[output]
-format = text
-path = ../../output/comparison-batch/test-01
+# selected chars
+chars=32-126
+
+# bmfontier extensions
+outputPath=../../output/comparison-batch/test-01
