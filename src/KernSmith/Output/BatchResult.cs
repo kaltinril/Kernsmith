@@ -1,3 +1,5 @@
+using KernSmith.Atlas;
+
 namespace KernSmith.Output;
 
 /// <summary>
@@ -7,6 +9,9 @@ public sealed class BatchResult
 {
     /// <summary>Per-job results in the same order as the input jobs.</summary>
     public IReadOnlyList<BatchJobResult> Results { get; init; } = Array.Empty<BatchJobResult>();
+
+    /// <summary>Shared atlas pages when using <see cref="BatchAtlasMode.Combined"/>. Null for Separate mode.</summary>
+    public IReadOnlyList<AtlasPage>? SharedPages { get; init; }
 
     /// <summary>Number of jobs that completed successfully.</summary>
     public int Succeeded => Results.Count(r => r.Success);

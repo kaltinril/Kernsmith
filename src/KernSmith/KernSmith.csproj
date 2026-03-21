@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <PackageReference Include="FreeTypeSharp" />
+    <PackageReference Include="StbImageSharp" />
     <PackageReference Include="StbImageWriteSharp" />
   </ItemGroup>
 

@@ -17,7 +17,12 @@ internal static class BmFontModelBuilder
         PackResult packResult,
         FontGeneratorOptions options,
         IReadOnlyDictionary<int, int>? glyphChannels = null,
-        string? outputBaseName = null)
+        string? outputBaseName = null,
+        IReadOnlyDictionary<int, GlyphPlacement>? placementOverride = null,
+        int charOffsetX = 0,
+        int charOffsetY = 0,
+        int? overrideScaleW = null,
+        int? overrideScaleH = null)
     {
         var info = new InfoBlock(
             Face: fontInfo.FamilyName,
@@ -53,8 +58,8 @@ internal static class BmFontModelBuilder
         var common = new CommonBlock(
             LineHeight: lineHeight,
             Base: baseLine,
-            ScaleW: packResult.PageWidth,
-            ScaleH: packResult.PageHeight,
+            ScaleW: overrideScaleW ?? packResult.PageWidth,
+            ScaleH: overrideScaleH ?? packResult.PageHeight,
             Pages: packResult.PageCount,
             Packed: packed,
             AlphaChnl: alphaChnl,
@@ -76,9 +81,18 @@ internal static class BmFontModelBuilder
         }
 
         // Build a lookup from glyph Id to placement.
-        var placementById = new Dictionary<int, GlyphPlacement>();
-        foreach (var p in packResult.Placements)
-            placementById[p.Id] = p;
+        IReadOnlyDictionary<int, GlyphPlacement> placementById;
+        if (placementOverride != null)
+        {
+            placementById = placementOverride;
+        }
+        else
+        {
+            var dict = new Dictionary<int, GlyphPlacement>();
+            foreach (var p in packResult.Placements)
+                dict[p.Id] = p;
+            placementById = dict;
+        }
 
         var characters = new List<CharEntry>();
         foreach (var glyph in glyphs)
@@ -93,8 +107,8 @@ internal static class BmFontModelBuilder
 
             characters.Add(new CharEntry(
                 Id: glyph.Codepoint,
-                X: placement.X,
-                Y: placement.Y,
+                X: placement.X + charOffsetX,
+                Y: placement.Y + charOffsetY,
                 Width: glyph.Width,
                 Height: glyph.Height,
                 XOffset: xOffset,
