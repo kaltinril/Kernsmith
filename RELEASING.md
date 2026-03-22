@@ -10,22 +10,20 @@ All projects (library, CLI, UI) inherit it automatically.
 ### Feature Development
 1. Create a feature branch from `main`
 2. Make changes, commit, push, create PR
-3. **Do NOT bump the version in feature PRs**
+3. **Do NOT bump the version in feature PRs** (unless this PR is the release)
 4. Merge PR after review/CI passes
 
 ### Cutting a Release
-1. On `main`, run the publish script: `scripts\publish.bat 0.9.2`
-2. This bumps the version in `Directory.Build.props`, commits, tags, and pushes
-3. The `publish.yml` GitHub Actions workflow triggers automatically and:
+1. Create a PR that bumps `<Version>` in `Directory.Build.props` and updates `CHANGELOG.md`
+2. Merge the PR to main
+3. Go to **GitHub Actions → Publish Release → Run workflow**
+4. Enter the version number (e.g., `0.9.2`) and click **Run workflow**
+5. The workflow automatically:
+   - Validates the version matches `Directory.Build.props`
    - Builds CLI and UI binaries for all platforms (win-x64, win-arm64, linux-x64, osx-arm64, osx-x64)
    - Publishes the NuGet package
+   - Creates a git tag (`v0.9.2`)
    - Creates a GitHub Release page with downloadable binaries (.zip for Windows, .tar.gz for Linux/macOS)
-
-### Manual Steps (alternative to publish script)
-1. Bump `<Version>` in `Directory.Build.props`
-2. Commit: `git commit -am "Bump version to 0.9.2"`
-3. Tag: `git tag v0.9.2`
-4. Push: `git push && git push origin v0.9.2`
 
 ## Version Scheme
 
@@ -36,7 +34,10 @@ All projects (library, CLI, UI) inherit it automatically.
 
 ## Checklist
 
-- [ ] Run `scripts\publish.bat <version>` (or bump, commit, tag, push manually)
-- [ ] Verify publish workflow completed on GitHub Actions
+- [ ] Version bumped in `Directory.Build.props`
+- [ ] `CHANGELOG.md` updated
+- [ ] PR merged to main
+- [ ] Run "Publish Release" workflow from GitHub Actions
+- [ ] Verify workflow completed successfully
 - [ ] Verify package appears on nuget.org
 - [ ] Verify GitHub Release page has binaries for all platforms
