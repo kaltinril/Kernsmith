@@ -389,7 +389,9 @@ public class EffectsPanel : Panel
             padColCenter.Spacing = 2;
             var padUpBox = CreateSmallIntBox(_atlasConfig.PaddingUp, v => { if (!_updatingFromVm) _atlasConfig.PaddingUp = Math.Clamp(v, 0, 32); });
             padColCenter.AddChild(padUpBox);
-            var padCenterLabel = new Label(); padCenterLabel.Text = "Aa";
+            var padCenterLabel = new Label(); padCenterLabel.Text = "Aa"; padCenterLabel.Width = 36;
+            padCenterLabel.Visual.XUnits = Gum.Converters.GeneralUnitType.PixelsFromMiddle;
+            padCenterLabel.Visual.XOrigin = RenderingLibrary.Graphics.HorizontalAlignment.Center;
             padColCenter.AddChild(padCenterLabel);
             var padDownBox = CreateSmallIntBox(_atlasConfig.PaddingDown, v => { if (!_updatingFromVm) _atlasConfig.PaddingDown = Math.Clamp(v, 0, 32); });
             padColCenter.AddChild(padDownBox);
@@ -686,19 +688,30 @@ public class EffectsPanel : Panel
 
     private static void AddSectionHeader(Gum.Wireframe.GraphicalUiElement parent, string text)
     {
-        // Top spacer for consistent section separation
-        var spacer = new ColoredRectangleRuntime();
-        spacer.Width = 0;
-        spacer.WidthUnits = DimensionUnitType.RelativeToParent;
-        spacer.Height = 4;
-        spacer.Color = Microsoft.Xna.Framework.Color.Transparent;
-        parent.Children.Add(spacer);
+        // Container with background bar
+        var container = new ContainerRuntime();
+        container.Width = 0;
+        container.WidthUnits = DimensionUnitType.RelativeToParent;
+        container.Height = 22;
+        container.HeightUnits = DimensionUnitType.Absolute;
+        parent.Children.Add(container);
 
-        // Use TextRuntime directly so we can set color for section headers
+        // Background bar
+        var bg = new ColoredRectangleRuntime();
+        bg.Width = 0;
+        bg.WidthUnits = DimensionUnitType.RelativeToParent;
+        bg.Height = 0;
+        bg.HeightUnits = DimensionUnitType.RelativeToParent;
+        bg.Color = new Microsoft.Xna.Framework.Color(50, 50, 55);
+        container.Children.Add(bg);
+
+        // Header text
         var header = new TextRuntime();
         header.Text = text;
         header.Color = Theme.Accent;
-        parent.Children.Add(header);
+        header.X = 6;
+        header.Y = 2;
+        container.Children.Add(header);
     }
 
     private static void AddDivider(Gum.Wireframe.GraphicalUiElement parent)

@@ -364,19 +364,27 @@ public class FontConfigPanel : Panel
 
     private static void AddSectionHeader(Gum.Wireframe.GraphicalUiElement parent, string text)
     {
-        // Top spacer for consistent section separation
-        var spacer = new ColoredRectangleRuntime();
-        spacer.Width = 0;
-        spacer.WidthUnits = DimensionUnitType.RelativeToParent;
-        spacer.Height = 4;
-        spacer.Color = Microsoft.Xna.Framework.Color.Transparent;
-        parent.Children.Add(spacer);
+        var container = new ContainerRuntime();
+        container.Width = 0;
+        container.WidthUnits = DimensionUnitType.RelativeToParent;
+        container.Height = 22;
+        container.HeightUnits = DimensionUnitType.Absolute;
+        parent.Children.Add(container);
 
-        // Use TextRuntime directly so we can set color for section headers
+        var bg = new ColoredRectangleRuntime();
+        bg.Width = 0;
+        bg.WidthUnits = DimensionUnitType.RelativeToParent;
+        bg.Height = 0;
+        bg.HeightUnits = DimensionUnitType.RelativeToParent;
+        bg.Color = new Microsoft.Xna.Framework.Color(50, 50, 55);
+        container.Children.Add(bg);
+
         var header = new TextRuntime();
         header.Text = text;
         header.Color = Theme.Accent;
-        parent.Children.Add(header);
+        header.X = 6;
+        header.Y = 2;
+        container.Children.Add(header);
     }
 
     private static void AddDivider(Gum.Wireframe.GraphicalUiElement parent)
