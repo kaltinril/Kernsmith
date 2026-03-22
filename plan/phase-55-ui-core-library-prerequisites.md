@@ -1,6 +1,6 @@
 # Phase 55 — Core Library Prerequisites for UI
 
-> **Status**: Planning
+> **Status**: Partial — High/Medium priority items complete. CancellationToken, progress reporting, and Nice-to-Have items deferred.
 > **Created**: 2026-03-21
 > **Goal**: Add missing API surface, builder methods, and data exposure needed by the KernSmith UI application (Phases 60-69).
 

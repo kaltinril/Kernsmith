@@ -82,7 +82,7 @@ Output Layer
 | 21 | [Atlas Output Modes](phase-21-atlas-output-modes.md) | Combined batch atlas, render-to-existing-PNG, atlas size query & constraints | Planning |
 | 30 | [WASM Rasterization](phase-30-wasm-rasterization.md) | Live investigation of WASM-compatible rasterizers (prior research was preliminary) | Future |
 | 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
-| 55 | [UI Core Library Prerequisites](phase-55-ui-core-library-prerequisites.md) | API additions needed by the UI: public font reader, missing builder methods, FontInfo expansion, CancellationToken, progress reporting | Planning |
+| 55 | [UI Core Library Prerequisites](phase-55-ui-core-library-prerequisites.md) | API additions needed by the UI: public font reader, missing builder methods, FontInfo expansion, CancellationToken, progress reporting | Partial |
 | 60 | [UI MVP](phase-60-ui-mvp.md) | MonoGame + GUM UI app: project scaffold, three-panel layout, font loading, basic generation | Planning |
 | 61 | [Font Loading & Character Selection](phase-61-ui-font-character-selection.md) | System font browser, BMFont-style character grid, Unicode block sidebar, text-based selection | Planning |
 | 62 | [Effects System UI](phase-62-ui-effects-system.md) | Outline, shadow, gradient controls with interactive angle/offset pads, channel config | Planning |
@@ -216,8 +216,8 @@ Replaced custom INI-style .bmfc format with standard AngelCode BMFont flat key=v
 
 ---
 
-### Phase 55 -- UI Core Library Prerequisites (PLANNING)
-API additions to the KernSmith NuGet library needed by the UI application. 21 items across 5 categories: (1) internal types needing public exposure (`TtfFontReader`, `AtlasSizeEstimator`), (2) missing builder methods (`WithCollectMetrics`, `WithSdfSpread`, `WithOutputFormat`, `WithAdaptivePaddingFactor`, `WithBitDepth`, compression options), (3) FontInfo data expansion (Os2Metrics, NameInfo, HheaTable, HeadTable additional fields, CPAL palette data, .ttc face enumeration), (4) cancellation and progress (`CancellationToken` on `Build()`/`GenerateBatch()`, `IProgress<T>` callbacks), (5) API refinements (`WithFallbackCharacter` supplementary plane support, `ToBmfc()` without prior generation, raw pixel documentation). HIGH priority items must complete before Phase 60.
+### Phase 55 -- UI Core Library Prerequisites (PARTIAL)
+API additions to the KernSmith NuGet library needed by the UI application. 21 items across 5 categories. **Completed**: BmFont.ReadFontInfo() public wrapper, WithCollectMetrics builder method, WithFallbackCodepoint(int) with surrogate rejection, BmfcConfig.FromOptions() factory, Os2Metrics/NameInfo/HheaTable/HeadTable expanded with additional parsed fields, AtlasPage.PixelData and PipelineMetrics documented, BmfcConfigReader round-trip fix. **Deferred**: CancellationToken on Build()/GenerateBatch(), IProgress<T> progress reporting, WithSdfSpread, WithOutputFormat, WithAdaptivePaddingFactor, WithBitDepth, compression options, CPAL palette data, .ttc face enumeration. AtlasSizeEstimator already resolved via existing QueryAtlasSize() API.
 
 ### UI Application Phases (60-69)
 
