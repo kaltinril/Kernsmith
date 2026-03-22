@@ -73,19 +73,27 @@ public class KernSmithGame : Game
     {
         GumService.Default.Initialize(this, DefaultVisualsVersion.V3);
 
-        // Build a dark theme style and set it as active BEFORE creating any controls
-        var darkStyle = new Gum.Forms.DefaultVisuals.V3.Styling(null);
-        darkStyle.Colors.Primary = Theme.Accent;
-        darkStyle.Colors.InputBackground = new Color(45, 45, 48);
-        darkStyle.Colors.TextPrimary = Theme.Text;
-        darkStyle.Colors.TextMuted = Theme.TextMuted;
-        darkStyle.Colors.Accent = Theme.Accent;
-        darkStyle.Colors.SurfaceVariant = Theme.PanelBorder;
-        darkStyle.Colors.DarkGray = Theme.Panel;
-        darkStyle.Colors.Gray = Theme.PanelBorder;
-        darkStyle.Colors.LightGray = Theme.TextMuted;
-        darkStyle.Colors.Black = Theme.Background;
-        darkStyle.Colors.White = Theme.Text;
+        // Build a dark theme using the existing sprite sheet, then set as active
+        var defaultSpriteSheet = Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle.SpriteSheet;
+        var darkStyle = new Gum.Forms.DefaultVisuals.V3.Styling(defaultSpriteSheet, useDefaults: true);
+
+        // VS Code / dark IDE inspired palette
+        darkStyle.Colors.Primary = new Color(0, 122, 204);       // blue buttons/accents
+        darkStyle.Colors.Accent = new Color(0, 122, 204);        // selection highlights
+        darkStyle.Colors.InputBackground = new Color(60, 60, 60); // input fields
+        darkStyle.Colors.SurfaceVariant = new Color(50, 50, 50);  // scrollbar tracks
+        darkStyle.Colors.TextPrimary = new Color(212, 212, 212);  // main text
+        darkStyle.Colors.TextMuted = new Color(128, 128, 128);    // placeholder/muted
+        darkStyle.Colors.IconDefault = new Color(200, 200, 200);  // icons
+        darkStyle.Colors.Black = new Color(30, 30, 30);           // deep background
+        darkStyle.Colors.DarkGray = new Color(45, 45, 48);        // panel fills
+        darkStyle.Colors.Gray = new Color(70, 70, 74);            // borders/dividers
+        darkStyle.Colors.LightGray = new Color(150, 150, 150);    // secondary text
+        darkStyle.Colors.White = new Color(230, 230, 230);        // bright text/icons
+        darkStyle.Colors.Success = new Color(78, 201, 176);       // success green
+        darkStyle.Colors.Warning = new Color(220, 170, 50);       // warning amber
+        darkStyle.Colors.Danger = new Color(244, 71, 71);         // error red
+
         Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle = darkStyle;
 
         var fileDialogService = new FileDialogService();
