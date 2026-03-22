@@ -1,6 +1,6 @@
 # Phase 71 — UI Stabilization & Visual Quality
 
-> **Status**: Planning
+> **Status**: In Progress
 > **Created**: 2026-03-21
 > **Goal**: Fix remaining bugs, improve visual quality, and prepare the UI for release. The app is feature-complete — this phase is about making it solid and presentable.
 

@@ -2,6 +2,7 @@ using Gum.Converters;
 using Gum.DataTypes;
 using Gum.Forms.Controls;
 using KernSmith.Ui.Models;
+using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -52,28 +53,24 @@ public class PreviewPanel : Panel
         _characterGrid = characterGrid;
         _graphicsDevice = graphicsDevice;
 
-        _checkerTexture = CreateCheckerTexture();
-
         BuildContent();
     }
 
-    private Texture2D CreateCheckerTexture()
+    private Texture2D CreateCheckerTexture(int width, int height)
     {
-        // Create a checkered transparency background pattern (16x16 tiles)
         const int tileSize = 8;
-        const int texSize = tileSize * 2;
-        var texture = new Texture2D(_graphicsDevice, texSize, texSize);
-        var pixels = new Color[texSize * texSize];
+        var texture = new Texture2D(_graphicsDevice, width, height);
+        var pixels = new Color[width * height];
 
-        var light = new Color(200, 200, 200);
-        var dark = new Color(160, 160, 160);
+        var light = Theme.CheckerLight;
+        var dark = Theme.CheckerDark;
 
-        for (int y = 0; y < texSize; y++)
+        for (int y = 0; y < height; y++)
         {
-            for (int x = 0; x < texSize; x++)
+            for (int x = 0; x < width; x++)
             {
                 bool isLight = ((x / tileSize) + (y / tileSize)) % 2 == 0;
-                pixels[y * texSize + x] = isLight ? light : dark;
+                pixels[y * width + x] = isLight ? light : dark;
             }
         }
 
@@ -276,8 +273,6 @@ public class PreviewPanel : Panel
         _checkerSprite.Visible = false;
         _checkerSprite.X = 10;
         _checkerSprite.Y = AtlasContentY;
-        if (_checkerTexture != null)
-            _checkerSprite.Texture = _checkerTexture;
         _previewContent.AddChild(_checkerSprite);
 
         // Atlas sprite (hidden initially)
@@ -386,9 +381,11 @@ public class PreviewPanel : Panel
         var scaledWidth = (int)(texture.Width * zoom);
         var scaledHeight = (int)(texture.Height * zoom);
 
-        // Show checkered background behind atlas
-        if (_checkerSprite != null && _checkerTexture != null)
+        // Show checkered background behind atlas (sized to match)
+        if (_checkerSprite != null)
         {
+            _checkerTexture?.Dispose();
+            _checkerTexture = CreateCheckerTexture(texture.Width, texture.Height);
             _checkerSprite.Texture = _checkerTexture;
             _checkerSprite.Width = scaledWidth;
             _checkerSprite.Height = scaledHeight;

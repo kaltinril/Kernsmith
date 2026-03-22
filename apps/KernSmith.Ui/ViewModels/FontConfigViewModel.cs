@@ -57,6 +57,12 @@ public class FontConfigViewModel : ViewModel
     public IReadOnlyList<SystemFontGroup>? SystemFonts { get => Get<IReadOnlyList<SystemFontGroup>?>(); set => Set(value); }
     public string? SelectedFontFamily { get => Get<string?>(); set => Set(value); }
     public SystemFontInfo? SelectedSystemFont { get => Get<SystemFontInfo?>(); set => Set(value); }
+    public SystemFontGroup? CurrentFontGroup { get => Get<SystemFontGroup?>(); set => Set(value); }
+
+    /// <summary>True if the current font file already has bold (loaded from a Bold variant file).</summary>
+    public bool LoadedAsBold { get => Get<bool>(); set => Set(value); }
+    /// <summary>True if the current font file already has italic (loaded from an Italic variant file).</summary>
+    public bool LoadedAsItalic { get => Get<bool>(); set => Set(value); }
 
     public FontConfigViewModel()
     {
@@ -121,6 +127,58 @@ public class FontConfigViewModel : ViewModel
         FontSourceDescription = $"{systemFont.FamilyName} (System)";
         FontSourceKind = FontSourceKind.System;
         IsFontLoaded = true;
+    }
+
+    /// <summary>
+    /// Tries to load the best matching font file for the requested bold/italic style.
+    /// Returns true if a real variant was found and loaded, false if synthetic should be used.
+    /// </summary>
+    public bool TryLoadStyleVariant(bool bold, bool italic)
+    {
+        if (CurrentFontGroup == null || FontSourceKind != FontSourceKind.System)
+            return false;
+
+        // Build the target style name to search for
+        string targetStyle;
+        if (bold && italic) targetStyle = "Bold Italic";
+        else if (bold) targetStyle = "Bold";
+        else if (italic) targetStyle = "Italic";
+        else targetStyle = "Regular";
+
+        // Search for exact match first, then partial match
+        var match = CurrentFontGroup.Styles.FirstOrDefault(s =>
+            s.StyleName.Equals(targetStyle, StringComparison.OrdinalIgnoreCase));
+
+        // Try alternate names
+        if (match == null && bold && !italic)
+            match = CurrentFontGroup.Styles.FirstOrDefault(s =>
+                s.StyleName.Contains("Bold", StringComparison.OrdinalIgnoreCase) &&
+                !s.StyleName.Contains("Italic", StringComparison.OrdinalIgnoreCase));
+
+        if (match == null && italic && !bold)
+            match = CurrentFontGroup.Styles.FirstOrDefault(s =>
+                s.StyleName.Contains("Italic", StringComparison.OrdinalIgnoreCase) &&
+                !s.StyleName.Contains("Bold", StringComparison.OrdinalIgnoreCase));
+
+        if (match == null && bold && italic)
+            match = CurrentFontGroup.Styles.FirstOrDefault(s =>
+                s.StyleName.Contains("Bold", StringComparison.OrdinalIgnoreCase) &&
+                s.StyleName.Contains("Italic", StringComparison.OrdinalIgnoreCase));
+
+        if (match == null)
+            return false; // no matching file, use synthetic
+
+        try
+        {
+            LoadFromSystem(match);
+            LoadedAsBold = bold && match.StyleName.Contains("Bold", StringComparison.OrdinalIgnoreCase);
+            LoadedAsItalic = italic && match.StyleName.Contains("Italic", StringComparison.OrdinalIgnoreCase);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public CharacterSet GetCharacterSet()

@@ -19,5 +19,5 @@ public static class EnginePresets
     public static readonly EnginePreset Phaser = new("Phaser", "PH", 512, 512, true, true, 1, 1, "Xml", false, "Phaser.js bitmap font compatible");
     public static readonly EnginePreset Custom = new("Custom", "CU", 1024, 1024, true, true, 1, 1, "Text", true, "Custom configuration");
 
-    public static readonly IReadOnlyList<EnginePreset> All = new[] { Unity, Godot, MonoGame, Unreal, Phaser, Custom };
+    public static readonly IReadOnlyList<EnginePreset> All = new[] { MonoGame, Unity, Godot, Unreal, Phaser, Custom };
 }

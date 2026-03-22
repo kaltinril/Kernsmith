@@ -13,4 +13,8 @@ public static class Theme
     public static readonly Color AccentHover = new(26, 138, 212);
     public static readonly Color Error = new(244, 71, 71);
     public static readonly Color Success = new(78, 201, 176);
+
+    // Checker transparency background (used behind atlas preview)
+    public static Color CheckerLight = new(60, 60, 60);
+    public static Color CheckerDark = new(45, 45, 45);
 }

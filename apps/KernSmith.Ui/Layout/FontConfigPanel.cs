@@ -24,9 +24,13 @@ public class FontConfigPanel : Panel
 
     private void BuildContent()
     {
-        // Inner container — no scroll viewer needed; all content fits
+        // Inner container with padding from panel edges
         var inner = new ContainerRuntime();
-        inner.Dock(Gum.Wireframe.Dock.Fill);
+        inner.WidthUnits = DimensionUnitType.RelativeToParent;
+        inner.HeightUnits = DimensionUnitType.RelativeToParent;
+        inner.Width = -16; // 8px padding each side
+        inner.Height = 0;
+        inner.X = 8;
         inner.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
         inner.StackSpacing = 6;
         this.AddChild(inner);
@@ -76,6 +80,18 @@ public class FontConfigPanel : Panel
         }
 
         stack.Children.Add(presetDescLabel.Visual);
+
+        // Default to XNA preset
+        _atlasConfig.ApplyPreset(EnginePresets.MonoGame);
+        presetDescLabel.Text = EnginePresets.MonoGame.Description;
+        presetDescLabel.IsVisible = true;
+        foreach (var (b, p) in presetButtons)
+        {
+            var isSelected = p == EnginePresets.MonoGame;
+            b.Text = isSelected ? p.Name : p.ShortName;
+            b.Width = isSelected ? 80 : 40;
+            b.IsEnabled = !isSelected;
+        }
 
         AddDivider(stack);
 
@@ -152,15 +168,7 @@ public class FontConfigPanel : Panel
         familyCombo.Width = 260;
         stack.Children.Add(familyCombo.Visual);
 
-        var styleLabel = new Label();
-        styleLabel.Text = "Style:";
-        stack.Children.Add(styleLabel.Visual);
-
-        var styleCombo = new ComboBox();
-        styleCombo.Width = 260;
-        stack.Children.Add(styleCombo.Visual);
-
-        // Wire system font combos
+        // Wire system font combo
         _fontConfig.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(FontConfigViewModel.SystemFonts) && _fontConfig.SystemFonts != null)
@@ -177,31 +185,19 @@ public class FontConfigPanel : Panel
             {
                 var group = _fontConfig.SystemFonts[familyCombo.SelectedIndex];
                 _fontConfig.SelectedFontFamily = group.FamilyName;
-                styleCombo.Items.Clear();
-                foreach (var style in group.Styles)
-                    styleCombo.Items.Add(style.StyleName);
+                _fontConfig.CurrentFontGroup = group;
+                _fontConfig.LoadedAsBold = false;
+                _fontConfig.LoadedAsItalic = false;
 
-                // Auto-select first style (typically "Regular") and trigger font load
-                if (styleCombo.Items.Count > 0)
-                    styleCombo.SelectedIndex = 0;
-            }
-        };
-
-        styleCombo.SelectionChanged += (_, _) =>
-        {
-            if (styleCombo.SelectedIndex >= 0 && _fontConfig.SystemFonts != null
-                && familyCombo.SelectedIndex >= 0)
-            {
-                var group = _fontConfig.SystemFonts[familyCombo.SelectedIndex];
-                var font = group.Styles[styleCombo.SelectedIndex];
-                _fontConfig.SelectedSystemFont = font;
-                try
+                // Auto-load Regular, falling back to first available
+                if (group.Styles.Count > 0)
                 {
-                    _fontConfig.LoadFromSystem(font);
-                }
-                catch (Exception)
-                {
-                    // Will be handled by status bar
+                    var font = group.Styles.FirstOrDefault(s =>
+                        s.StyleName.Equals("Regular", StringComparison.OrdinalIgnoreCase))
+                        ?? group.Styles[0];
+                    _fontConfig.SelectedSystemFont = font;
+                    try { _fontConfig.LoadFromSystem(font); }
+                    catch (Exception) { }
                 }
             }
         };

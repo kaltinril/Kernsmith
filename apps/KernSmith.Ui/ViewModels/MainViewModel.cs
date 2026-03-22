@@ -80,7 +80,25 @@ public class MainViewModel : ViewModel
         };
 
         AtlasConfig.PropertyChanged += (_, _) => MarkDirty();
-        Effects.PropertyChanged += (_, _) => { MarkDirty(); RequestAutoRegenerate(); };
+        Effects.PropertyChanged += (_, e) =>
+        {
+            MarkDirty();
+
+            // When Bold/Italic changes, try to load the real font variant file
+            if (e.PropertyName is nameof(EffectsViewModel.Bold) or nameof(EffectsViewModel.Italic))
+            {
+                if (FontConfig.FontSourceKind == Models.FontSourceKind.System && FontConfig.CurrentFontGroup != null)
+                {
+                    var loaded = FontConfig.TryLoadStyleVariant(Effects.Bold, Effects.Italic);
+                    if (loaded)
+                    {
+                        StatusBar.StatusText = $"Loaded {FontConfig.FamilyName} {FontConfig.StyleName}";
+                    }
+                }
+            }
+
+            RequestAutoRegenerate();
+        };
     }
 
     public void OpenFont()
@@ -158,10 +176,12 @@ public class MainViewModel : ViewModel
             {
                 FontData = FontConfig.FontData,
                 FontFilePath = FontConfig.FontFilePath,
-                SystemFontFamily = FontConfig.FontSourceKind == FontSourceKind.System
-                    ? FontConfig.FontSourceDescription?.Replace(" (System)", "")
-                    : null,
-                SourceKind = FontConfig.FontSourceKind,
+                // When we've loaded a specific style variant file, use it directly
+                // instead of letting the library pick via family name
+                SystemFontFamily = null,
+                SourceKind = FontConfig.FontFilePath != null
+                    ? FontSourceKind.File
+                    : FontConfig.FontSourceKind,
                 FontSize = FontConfig.FontSize,
                 Characters = CharacterGrid.ToCharacterSet(),
                 MaxWidth = AtlasConfig.MaxWidth,
@@ -175,8 +195,9 @@ public class MainViewModel : ViewModel
                 SpacingH = AtlasConfig.SpacingH,
                 SpacingV = AtlasConfig.SpacingV,
                 IncludeKerning = AtlasConfig.IncludeKerning,
-                Bold = Effects.Bold,
-                Italic = Effects.Italic,
+                // Only apply synthetic bold/italic if the font file doesn't already have it
+                Bold = Effects.Bold && !FontConfig.LoadedAsBold,
+                Italic = Effects.Italic && !FontConfig.LoadedAsItalic,
                 AntiAlias = Effects.AntiAlias,
                 Hinting = Effects.Hinting,
                 SuperSampleLevel = Effects.SuperSampleLevel,
