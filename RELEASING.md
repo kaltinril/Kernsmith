@@ -16,13 +16,15 @@ All projects (library, CLI, UI) inherit it automatically.
 ### Cutting a Release
 1. Create a PR that bumps `<Version>` in `Directory.Build.props` and updates `CHANGELOG.md`
 2. Merge the PR to main
-3. Go to **GitHub Actions → Publish Release → Run workflow**
-4. Enter the version number (e.g., `0.9.2`) and click **Run workflow**
-5. The workflow automatically:
+3. Trigger the publish — pick **one**:
+   - **GitHub UI (recommended):** Actions → Publish Release → Run workflow → enter version → click Run
+   - **Command line:** `git tag v0.9.3 && git push origin v0.9.3`
+   - **Local script:** `scripts\publish.bat 0.9.3`
+4. The workflow automatically:
    - Validates the version matches `Directory.Build.props`
    - Builds CLI and UI binaries for all platforms (win-x64, win-arm64, linux-x64, osx-arm64, osx-x64)
    - Publishes the NuGet package
-   - Creates a git tag (`v0.9.2`)
+   - Creates a git tag (manual dispatch only — tag push already has one)
    - Creates a GitHub Release page with downloadable binaries (.zip for Windows, .tar.gz for Linux/macOS)
 
 ## Version Scheme
