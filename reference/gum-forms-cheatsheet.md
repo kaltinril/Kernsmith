@@ -530,17 +530,91 @@ dialog.Anchor(Gum.Wireframe.Anchor.Center);
 
 ---
 
-## Styling
+## Styling (V3)
+
+The V3 styling system uses `Gum.Forms.DefaultVisuals.V3.Styling`. Create a new instance, customize colors, set as `ActiveStyle` BEFORE creating controls.
 
 ```csharp
-// Access active style:
-Styling.ActiveStyle.SpriteSheet       // Texture2D for default visuals
-Styling.ActiveStyle.NineSlice.Panel   // state for panel background
+using Gum.Forms.DefaultVisuals.V3;
 
-// Apply to a NineSliceRuntime:
+// In Initialize(), AFTER GumService.Default.Initialize() but BEFORE creating any controls:
+
+// Create a new style using the existing sprite sheet
+var darkStyle = new Styling(Styling.ActiveStyle.SpriteSheet, useDefaults: true);
+darkStyle.Colors.Primary = new Color(0, 120, 212);     // accent/button color
+darkStyle.Colors.InputBackground = new Color(45, 45, 48);
+darkStyle.Colors.TextPrimary = new Color(204, 204, 204);
+darkStyle.Colors.TextMuted = new Color(136, 136, 136);
+darkStyle.Colors.Accent = new Color(0, 120, 212);
+darkStyle.Colors.SurfaceVariant = new Color(60, 60, 60);
+darkStyle.Colors.DarkGray = new Color(37, 37, 38);
+darkStyle.Colors.Gray = new Color(60, 60, 60);
+darkStyle.Colors.LightGray = new Color(136, 136, 136);
+darkStyle.Colors.Black = new Color(30, 30, 30);
+darkStyle.Colors.White = new Color(204, 204, 204);
+Styling.ActiveStyle = darkStyle;
+
+// Now create controls — they inherit the dark style
+var button = new Button(); // uses darkStyle.Colors.Primary, etc.
+```
+
+### Available Colors properties
+```csharp
+Colors.Black           // background-level dark
+Colors.DarkGray        // panel backgrounds
+Colors.Gray            // borders, muted elements
+Colors.LightGray       // secondary text
+Colors.White           // primary text, icons
+
+Colors.Primary         // buttons, active states, accent elements
+Colors.Success         // success indicators
+Colors.Warning         // warnings, focus indicators
+Colors.Danger          // error states
+Colors.Accent          // highlights, selections
+Colors.InputBackground // TextBox, ComboBox, ListBox backgrounds
+Colors.SurfaceVariant  // ScrollBar tracks
+Colors.IconDefault     // icon tint color
+Colors.TextPrimary     // primary text color
+Colors.TextMuted       // placeholder, muted text
+
+// Shading percentages (used by V3 controls for hover/press states)
+Colors.PercentDarken         // default: -15f
+Colors.PercentLighten        // default: 15f
+Colors.PercentGreyScaleDarken    // default: -35f
+Colors.PercentGreyScaleLighten   // default: 20f
+Colors.PercentGreyScaleSuperDarken // default: -50f
+```
+
+### Per-control styling (override for specific controls)
+```csharp
+// Save current style, apply custom, create controls, restore
+var savedStyle = Styling.ActiveStyle;
+var customStyle = new Styling(Styling.ActiveStyle.SpriteSheet, true);
+customStyle.Colors.Primary = Color.Red;
+Styling.ActiveStyle = customStyle;
+
+var redButton = new Button(); // uses red primary
+Styling.ActiveStyle = savedStyle; // restore for subsequent controls
+```
+
+### Using NineSlice backgrounds from the style
+```csharp
 var bg = new NineSliceRuntime();
 bg.Texture = Styling.ActiveStyle.SpriteSheet;
-bg.ApplyState(Styling.ActiveStyle.NineSlice.Panel);
+bg.ApplyState(Styling.ActiveStyle.NineSlice.Panel);    // panel background
+bg.ApplyState(Styling.ActiveStyle.NineSlice.Bordered);  // bordered rectangle
+bg.ApplyState(Styling.ActiveStyle.NineSlice.Solid);     // solid fill
+bg.Dock(Gum.Wireframe.Dock.Fill);
+```
+
+### Using Icons from the style
+```csharp
+var icon = new SpriteRuntime();
+icon.Texture = Styling.ActiveStyle.SpriteSheet;
+icon.ApplyState(Styling.ActiveStyle.Icons.Gear);    // gear icon
+icon.ApplyState(Styling.ActiveStyle.Icons.Check);   // checkmark
+icon.ApplyState(Styling.ActiveStyle.Icons.Close);   // X close
+// ... many more (Arrow1, Heart, Star, Trash, Warning, etc.)
 ```
 
 ---
