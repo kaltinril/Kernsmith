@@ -78,8 +78,22 @@ public static class TooltipService
         if (_isVisible)
         {
             var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
-            _tooltipContainer.X = mouseState.X + 12;
-            _tooltipContainer.Y = mouseState.Y + 16;
+            var tipWidth = _tooltipContainer.GetAbsoluteWidth();
+            var tipHeight = _tooltipContainer.GetAbsoluteHeight();
+            var screenWidth = GraphicalUiElement.CanvasWidth;
+            var screenHeight = GraphicalUiElement.CanvasHeight;
+
+            float x = mouseState.X + 12;
+            float y = mouseState.Y + 16;
+
+            // Clamp to stay within window bounds
+            if (x + tipWidth > screenWidth)
+                x = mouseState.X - tipWidth - 4;
+            if (y + tipHeight > screenHeight)
+                y = mouseState.Y - tipHeight - 4;
+
+            _tooltipContainer.X = Math.Max(0, x);
+            _tooltipContainer.Y = Math.Max(0, y);
         }
     }
 

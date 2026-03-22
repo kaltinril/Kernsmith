@@ -110,10 +110,22 @@ public class FontConfigPanel : Panel
         TooltipService.SetTooltip(browseBtn, "Open a file browser to select a .ttf, .otf, or .woff font file");
 
         var sourceLabel = new Label();
-        sourceLabel.Text = "No font loaded";
-        sourceLabel.SetBinding(nameof(Label.Text), nameof(FontConfigViewModel.FontSourceDescription));
-        sourceLabel.Visual.BindingContext = _fontConfig;
+        sourceLabel.Text = "";
+        sourceLabel.IsVisible = false;
         stack.Children.Add(sourceLabel.Visual);
+
+        // Only show source label for file-loaded fonts (system font is visible in dropdown)
+        _fontConfig.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(FontConfigViewModel.FontSourceKind) ||
+                e.PropertyName == nameof(FontConfigViewModel.FontSourceDescription))
+            {
+                var isFile = _fontConfig.FontSourceKind == Models.FontSourceKind.File;
+                sourceLabel.IsVisible = isFile;
+                if (isFile)
+                    sourceLabel.Text = _fontConfig.FontSourceDescription;
+            }
+        };
 
         // --- TTC Face Selection (hidden unless a .ttc font collection is loaded) ---
         var faceSelectionRow = new StackPanel();

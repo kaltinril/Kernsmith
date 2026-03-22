@@ -37,30 +37,8 @@ public class KernSmithGame : Game
         Window.AllowUserResizing = true;
         IsMouseVisible = true;
 
-        // Enforce minimum window size on resize
-        Window.ClientSizeChanged += (_, _) =>
-        {
-            try
-            {
-                var width = Window.ClientBounds.Width;
-                var height = Window.ClientBounds.Height;
-
-                // Guard against zero or negative dimensions during rapid resize or minimize
-                if (width <= 0 || height <= 0)
-                    return;
-
-                if (width < MinWindowWidth || height < MinWindowHeight)
-                {
-                    _graphics.PreferredBackBufferWidth = Math.Max(MinWindowWidth, width);
-                    _graphics.PreferredBackBufferHeight = Math.Max(MinWindowHeight, height);
-                    _graphics.ApplyChanges();
-                }
-            }
-            catch (Exception)
-            {
-                // Swallow resize errors — the window will settle on the next frame
-            }
-        };
+        // Handle window resize — update GUM canvas and enforce minimum size
+        Window.ClientSizeChanged += HandleClientSizeChanged;
     }
 
     /// <summary>
@@ -190,6 +168,36 @@ public class KernSmithGame : Game
         GraphicsDevice.Clear(new Color(30, 30, 30));
         GumService.Default.Draw();
         base.Draw(gameTime);
+    }
+
+    private void HandleClientSizeChanged(object? sender, EventArgs e)
+    {
+        try
+        {
+            var width = Window.ClientBounds.Width;
+            var height = Window.ClientBounds.Height;
+
+            if (width <= 0 || height <= 0)
+                return;
+
+            // Enforce minimum window size
+            if (width < MinWindowWidth || height < MinWindowHeight)
+            {
+                _graphics.PreferredBackBufferWidth = Math.Max(MinWindowWidth, width);
+                _graphics.PreferredBackBufferHeight = Math.Max(MinWindowHeight, height);
+                _graphics.ApplyChanges();
+            }
+
+            // Update GUM canvas to match new window size so layout reflows
+            var gumUI = GumService.Default;
+            gumUI.CanvasWidth = _graphics.GraphicsDevice.Viewport.Width;
+            gumUI.CanvasHeight = _graphics.GraphicsDevice.Viewport.Height;
+            gumUI.Root.UpdateLayout();
+        }
+        catch (Exception)
+        {
+            // Swallow resize errors
+        }
     }
 
     protected override void OnExiting(object sender, ExitingEventArgs args)
