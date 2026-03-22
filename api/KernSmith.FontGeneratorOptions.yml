@@ -1,0 +1,3085 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.FontGeneratorOptions
+  commentId: T:KernSmith.FontGeneratorOptions
+  id: FontGeneratorOptions
+  parent: KernSmith
+  children:
+  - KernSmith.FontGeneratorOptions.AntiAlias
+  - KernSmith.FontGeneratorOptions.AtlasEncoder
+  - KernSmith.FontGeneratorOptions.AutofitTexture
+  - KernSmith.FontGeneratorOptions.Bold
+  - KernSmith.FontGeneratorOptions.ChannelPacking
+  - KernSmith.FontGeneratorOptions.Channels
+  - KernSmith.FontGeneratorOptions.Characters
+  - KernSmith.FontGeneratorOptions.CollectMetrics
+  - KernSmith.FontGeneratorOptions.ColorFont
+  - KernSmith.FontGeneratorOptions.ColorPaletteIndex
+  - KernSmith.FontGeneratorOptions.CustomGlyphs
+  - KernSmith.FontGeneratorOptions.Dpi
+  - KernSmith.FontGeneratorOptions.EnableHinting
+  - KernSmith.FontGeneratorOptions.EqualizeCellHeights
+  - KernSmith.FontGeneratorOptions.FaceIndex
+  - KernSmith.FontGeneratorOptions.FallbackCharacter
+  - KernSmith.FontGeneratorOptions.FallbackCodepoint
+  - KernSmith.FontGeneratorOptions.FontReader
+  - KernSmith.FontGeneratorOptions.ForceOffsetsToZero
+  - KernSmith.FontGeneratorOptions.GradientAngle
+  - KernSmith.FontGeneratorOptions.GradientEndB
+  - KernSmith.FontGeneratorOptions.GradientEndG
+  - KernSmith.FontGeneratorOptions.GradientEndR
+  - KernSmith.FontGeneratorOptions.GradientMidpoint
+  - KernSmith.FontGeneratorOptions.GradientStartB
+  - KernSmith.FontGeneratorOptions.GradientStartG
+  - KernSmith.FontGeneratorOptions.GradientStartR
+  - KernSmith.FontGeneratorOptions.HeightPercent
+  - KernSmith.FontGeneratorOptions.Italic
+  - KernSmith.FontGeneratorOptions.Kerning
+  - KernSmith.FontGeneratorOptions.MatchCharHeight
+  - KernSmith.FontGeneratorOptions.MaxTextureHeight
+  - KernSmith.FontGeneratorOptions.MaxTextureSize
+  - KernSmith.FontGeneratorOptions.MaxTextureWidth
+  - KernSmith.FontGeneratorOptions.Outline
+  - KernSmith.FontGeneratorOptions.OutlineB
+  - KernSmith.FontGeneratorOptions.OutlineG
+  - KernSmith.FontGeneratorOptions.OutlineR
+  - KernSmith.FontGeneratorOptions.Packer
+  - KernSmith.FontGeneratorOptions.PackingAlgorithm
+  - KernSmith.FontGeneratorOptions.Padding
+  - KernSmith.FontGeneratorOptions.PostProcessors
+  - KernSmith.FontGeneratorOptions.PowerOfTwo
+  - KernSmith.FontGeneratorOptions.Rasterizer
+  - KernSmith.FontGeneratorOptions.Sdf
+  - KernSmith.FontGeneratorOptions.ShadowB
+  - KernSmith.FontGeneratorOptions.ShadowBlur
+  - KernSmith.FontGeneratorOptions.ShadowG
+  - KernSmith.FontGeneratorOptions.ShadowOffsetX
+  - KernSmith.FontGeneratorOptions.ShadowOffsetY
+  - KernSmith.FontGeneratorOptions.ShadowOpacity
+  - KernSmith.FontGeneratorOptions.ShadowR
+  - KernSmith.FontGeneratorOptions.Size
+  - KernSmith.FontGeneratorOptions.SizeConstraints
+  - KernSmith.FontGeneratorOptions.Spacing
+  - KernSmith.FontGeneratorOptions.SuperSampleLevel
+  - KernSmith.FontGeneratorOptions.TargetRegion
+  - KernSmith.FontGeneratorOptions.TextureFormat
+  - KernSmith.FontGeneratorOptions.VariationAxes
+  langs:
+  - csharp
+  - vb
+  name: FontGeneratorOptions
+  nameWithType: FontGeneratorOptions
+  fullName: KernSmith.FontGeneratorOptions
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FontGeneratorOptions
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 10
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: All the settings for generating a BMFont. Sensible defaults are provided.
+  example: []
+  syntax:
+    content: public class FontGeneratorOptions
+    content.vb: Public Class FontGeneratorOptions
+  inheritance:
+  - System.Object
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.MemberwiseClone
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.FontGeneratorOptions.Size
+  commentId: P:KernSmith.FontGeneratorOptions.Size
+  id: Size
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: Size
+  nameWithType: FontGeneratorOptions.Size
+  fullName: KernSmith.FontGeneratorOptions.Size
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Size
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 13
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Font size in pixels (default 32).
+  example: []
+  syntax:
+    content: public int Size { get; set; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Size As Integer
+  overload: KernSmith.FontGeneratorOptions.Size*
+- uid: KernSmith.FontGeneratorOptions.Characters
+  commentId: P:KernSmith.FontGeneratorOptions.Characters
+  id: Characters
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: Characters
+  nameWithType: FontGeneratorOptions.Characters
+  fullName: KernSmith.FontGeneratorOptions.Characters
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Characters
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 16
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Character set to include in the generated font.
+  example: []
+  syntax:
+    content: public CharacterSet Characters { get; set; }
+    parameters: []
+    return:
+      type: KernSmith.CharacterSet
+    content.vb: Public Property Characters As CharacterSet
+  overload: KernSmith.FontGeneratorOptions.Characters*
+- uid: KernSmith.FontGeneratorOptions.Bold
+  commentId: P:KernSmith.FontGeneratorOptions.Bold
+  id: Bold
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: Bold
+  nameWithType: FontGeneratorOptions.Bold
+  fullName: KernSmith.FontGeneratorOptions.Bold
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Bold
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 19
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, applies synthetic bold.
+  example: []
+  syntax:
+    content: public bool Bold { get; set; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property Bold As Boolean
+  overload: KernSmith.FontGeneratorOptions.Bold*
+- uid: KernSmith.FontGeneratorOptions.Italic
+  commentId: P:KernSmith.FontGeneratorOptions.Italic
+  id: Italic
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: Italic
+  nameWithType: FontGeneratorOptions.Italic
+  fullName: KernSmith.FontGeneratorOptions.Italic
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Italic
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 22
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, applies synthetic italic.
+  example: []
+  syntax:
+    content: public bool Italic { get; set; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property Italic As Boolean
+  overload: KernSmith.FontGeneratorOptions.Italic*
+- uid: KernSmith.FontGeneratorOptions.AntiAlias
+  commentId: P:KernSmith.FontGeneratorOptions.AntiAlias
+  id: AntiAlias
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: AntiAlias
+  nameWithType: FontGeneratorOptions.AntiAlias
+  fullName: KernSmith.FontGeneratorOptions.AntiAlias
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: AntiAlias
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 25
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Anti-aliasing mode. Default is grayscale.
+  example: []
+  syntax:
+    content: public AntiAliasMode AntiAlias { get; set; }
+    parameters: []
+    return:
+      type: KernSmith.AntiAliasMode
+    content.vb: Public Property AntiAlias As AntiAliasMode
+  overload: KernSmith.FontGeneratorOptions.AntiAlias*
+- uid: KernSmith.FontGeneratorOptions.MaxTextureSize
+  commentId: P:KernSmith.FontGeneratorOptions.MaxTextureSize
+  id: MaxTextureSize
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: MaxTextureSize
+  nameWithType: FontGeneratorOptions.MaxTextureSize
+  fullName: KernSmith.FontGeneratorOptions.MaxTextureSize
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: MaxTextureSize
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 31
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: >-
+    Shortcut to set both MaxTextureWidth and MaxTextureHeight at once.
+
+    Reading returns MaxTextureWidth.
+  example: []
+  syntax:
+    content: public int MaxTextureSize { get; set; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property MaxTextureSize As Integer
+  overload: KernSmith.FontGeneratorOptions.MaxTextureSize*
+- uid: KernSmith.FontGeneratorOptions.MaxTextureWidth
+  commentId: P:KernSmith.FontGeneratorOptions.MaxTextureWidth
+  id: MaxTextureWidth
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: MaxTextureWidth
+  nameWithType: FontGeneratorOptions.MaxTextureWidth
+  fullName: KernSmith.FontGeneratorOptions.MaxTextureWidth
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: MaxTextureWidth
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 38
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Maximum atlas texture width in pixels (default 1024).
+  example: []
+  syntax:
+    content: public int MaxTextureWidth { get; set; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property MaxTextureWidth As Integer
+  overload: KernSmith.FontGeneratorOptions.MaxTextureWidth*
+- uid: KernSmith.FontGeneratorOptions.MaxTextureHeight
+  commentId: P:KernSmith.FontGeneratorOptions.MaxTextureHeight
+  id: MaxTextureHeight
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: MaxTextureHeight
+  nameWithType: FontGeneratorOptions.MaxTextureHeight
+  fullName: KernSmith.FontGeneratorOptions.MaxTextureHeight
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: MaxTextureHeight
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 41
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Maximum atlas texture height in pixels (default 1024).
+  example: []
+  syntax:
+    content: public int MaxTextureHeight { get; set; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property MaxTextureHeight As Integer
+  overload: KernSmith.FontGeneratorOptions.MaxTextureHeight*
+- uid: KernSmith.FontGeneratorOptions.Padding
+  commentId: P:KernSmith.FontGeneratorOptions.Padding
+  id: Padding
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: Padding
+  nameWithType: FontGeneratorOptions.Padding
+  fullName: KernSmith.FontGeneratorOptions.Padding
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Padding
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 44
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Padding around each glyph in the atlas.
+  example: []
+  syntax:
+    content: public Padding Padding { get; set; }
+    parameters: []
+    return:
+      type: KernSmith.Padding
+    content.vb: Public Property Padding As Padding
+  overload: KernSmith.FontGeneratorOptions.Padding*
+- uid: KernSmith.FontGeneratorOptions.Spacing
+  commentId: P:KernSmith.FontGeneratorOptions.Spacing
+  id: Spacing
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: Spacing
+  nameWithType: FontGeneratorOptions.Spacing
+  fullName: KernSmith.FontGeneratorOptions.Spacing
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Spacing
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 47
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Spacing between glyphs in the atlas.
+  example: []
+  syntax:
+    content: public Spacing Spacing { get; set; }
+    parameters: []
+    return:
+      type: KernSmith.Spacing
+    content.vb: Public Property Spacing As Spacing
+  overload: KernSmith.FontGeneratorOptions.Spacing*
+- uid: KernSmith.FontGeneratorOptions.PackingAlgorithm
+  commentId: P:KernSmith.FontGeneratorOptions.PackingAlgorithm
+  id: PackingAlgorithm
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: PackingAlgorithm
+  nameWithType: FontGeneratorOptions.PackingAlgorithm
+  fullName: KernSmith.FontGeneratorOptions.PackingAlgorithm
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: PackingAlgorithm
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 50
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Algorithm used for packing glyphs into atlas pages.
+  example: []
+  syntax:
+    content: public PackingAlgorithm PackingAlgorithm { get; set; }
+    parameters: []
+    return:
+      type: KernSmith.PackingAlgorithm
+    content.vb: Public Property PackingAlgorithm As PackingAlgorithm
+  overload: KernSmith.FontGeneratorOptions.PackingAlgorithm*
+- uid: KernSmith.FontGeneratorOptions.Kerning
+  commentId: P:KernSmith.FontGeneratorOptions.Kerning
+  id: Kerning
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: Kerning
+  nameWithType: FontGeneratorOptions.Kerning
+  fullName: KernSmith.FontGeneratorOptions.Kerning
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Kerning
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 53
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, includes kerning pairs in the output (default true).
+  example: []
+  syntax:
+    content: public bool Kerning { get; set; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property Kerning As Boolean
+  overload: KernSmith.FontGeneratorOptions.Kerning*
+- uid: KernSmith.FontGeneratorOptions.Outline
+  commentId: P:KernSmith.FontGeneratorOptions.Outline
+  id: Outline
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: Outline
+  nameWithType: FontGeneratorOptions.Outline
+  fullName: KernSmith.FontGeneratorOptions.Outline
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Outline
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 56
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Outline thickness in pixels. 0 = no outline.
+  example: []
+  syntax:
+    content: public int Outline { get; set; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Outline As Integer
+  overload: KernSmith.FontGeneratorOptions.Outline*
+- uid: KernSmith.FontGeneratorOptions.OutlineR
+  commentId: P:KernSmith.FontGeneratorOptions.OutlineR
+  id: OutlineR
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: OutlineR
+  nameWithType: FontGeneratorOptions.OutlineR
+  fullName: KernSmith.FontGeneratorOptions.OutlineR
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: OutlineR
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 59
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Outline color red channel (default 0 = black).
+  example: []
+  syntax:
+    content: public byte OutlineR { get; set; }
+    parameters: []
+    return:
+      type: System.Byte
+    content.vb: Public Property OutlineR As Byte
+  overload: KernSmith.FontGeneratorOptions.OutlineR*
+- uid: KernSmith.FontGeneratorOptions.OutlineG
+  commentId: P:KernSmith.FontGeneratorOptions.OutlineG
+  id: OutlineG
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: OutlineG
+  nameWithType: FontGeneratorOptions.OutlineG
+  fullName: KernSmith.FontGeneratorOptions.OutlineG
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: OutlineG
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 62
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Outline color green channel (default 0 = black).
+  example: []
+  syntax:
+    content: public byte OutlineG { get; set; }
+    parameters: []
+    return:
+      type: System.Byte
+    content.vb: Public Property OutlineG As Byte
+  overload: KernSmith.FontGeneratorOptions.OutlineG*
+- uid: KernSmith.FontGeneratorOptions.OutlineB
+  commentId: P:KernSmith.FontGeneratorOptions.OutlineB
+  id: OutlineB
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: OutlineB
+  nameWithType: FontGeneratorOptions.OutlineB
+  fullName: KernSmith.FontGeneratorOptions.OutlineB
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: OutlineB
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 65
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Outline color blue channel (default 0 = black).
+  example: []
+  syntax:
+    content: public byte OutlineB { get; set; }
+    parameters: []
+    return:
+      type: System.Byte
+    content.vb: Public Property OutlineB As Byte
+  overload: KernSmith.FontGeneratorOptions.OutlineB*
+- uid: KernSmith.FontGeneratorOptions.Sdf
+  commentId: P:KernSmith.FontGeneratorOptions.Sdf
+  id: Sdf
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: Sdf
+  nameWithType: FontGeneratorOptions.Sdf
+  fullName: KernSmith.FontGeneratorOptions.Sdf
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Sdf
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 68
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, generates a signed distance field (SDF) font.
+  example: []
+  syntax:
+    content: public bool Sdf { get; set; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property Sdf As Boolean
+  overload: KernSmith.FontGeneratorOptions.Sdf*
+- uid: KernSmith.FontGeneratorOptions.PowerOfTwo
+  commentId: P:KernSmith.FontGeneratorOptions.PowerOfTwo
+  id: PowerOfTwo
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: PowerOfTwo
+  nameWithType: FontGeneratorOptions.PowerOfTwo
+  fullName: KernSmith.FontGeneratorOptions.PowerOfTwo
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: PowerOfTwo
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 71
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, atlas dimensions are rounded up to powers of two (default true).
+  example: []
+  syntax:
+    content: public bool PowerOfTwo { get; set; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property PowerOfTwo As Boolean
+  overload: KernSmith.FontGeneratorOptions.PowerOfTwo*
+- uid: KernSmith.FontGeneratorOptions.Dpi
+  commentId: P:KernSmith.FontGeneratorOptions.Dpi
+  id: Dpi
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: Dpi
+  nameWithType: FontGeneratorOptions.Dpi
+  fullName: KernSmith.FontGeneratorOptions.Dpi
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Dpi
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 74
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Rendering DPI (default 72). 72 DPI is standard for screen rendering.
+  example: []
+  syntax:
+    content: public int Dpi { get; set; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Dpi As Integer
+  overload: KernSmith.FontGeneratorOptions.Dpi*
+- uid: KernSmith.FontGeneratorOptions.FaceIndex
+  commentId: P:KernSmith.FontGeneratorOptions.FaceIndex
+  id: FaceIndex
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: FaceIndex
+  nameWithType: FontGeneratorOptions.FaceIndex
+  fullName: KernSmith.FontGeneratorOptions.FaceIndex
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FaceIndex
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 77
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Face index for font collections (TTC/OTC). 0 = first face.
+  example: []
+  syntax:
+    content: public int FaceIndex { get; set; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property FaceIndex As Integer
+  overload: KernSmith.FontGeneratorOptions.FaceIndex*
+- uid: KernSmith.FontGeneratorOptions.ChannelPacking
+  commentId: P:KernSmith.FontGeneratorOptions.ChannelPacking
+  id: ChannelPacking
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: ChannelPacking
+  nameWithType: FontGeneratorOptions.ChannelPacking
+  fullName: KernSmith.FontGeneratorOptions.ChannelPacking
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ChannelPacking
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 80
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, packs multiple glyphs into separate RGBA channels for smaller textures.
+  example: []
+  syntax:
+    content: public bool ChannelPacking { get; set; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property ChannelPacking As Boolean
+  overload: KernSmith.FontGeneratorOptions.ChannelPacking*
+- uid: KernSmith.FontGeneratorOptions.ColorFont
+  commentId: P:KernSmith.FontGeneratorOptions.ColorFont
+  id: ColorFont
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: ColorFont
+  nameWithType: FontGeneratorOptions.ColorFont
+  fullName: KernSmith.FontGeneratorOptions.ColorFont
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ColorFont
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 83
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, renders color font glyphs (COLR/CPAL tables, like emoji fonts).
+  example: []
+  syntax:
+    content: public bool ColorFont { get; set; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property ColorFont As Boolean
+  overload: KernSmith.FontGeneratorOptions.ColorFont*
+- uid: KernSmith.FontGeneratorOptions.ColorPaletteIndex
+  commentId: P:KernSmith.FontGeneratorOptions.ColorPaletteIndex
+  id: ColorPaletteIndex
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: ColorPaletteIndex
+  nameWithType: FontGeneratorOptions.ColorPaletteIndex
+  fullName: KernSmith.FontGeneratorOptions.ColorPaletteIndex
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ColorPaletteIndex
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 86
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Which CPAL color palette to use for color fonts. 0 = default palette.
+  example: []
+  syntax:
+    content: public int ColorPaletteIndex { get; set; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property ColorPaletteIndex As Integer
+  overload: KernSmith.FontGeneratorOptions.ColorPaletteIndex*
+- uid: KernSmith.FontGeneratorOptions.VariationAxes
+  commentId: P:KernSmith.FontGeneratorOptions.VariationAxes
+  id: VariationAxes
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: VariationAxes
+  nameWithType: FontGeneratorOptions.VariationAxes
+  fullName: KernSmith.FontGeneratorOptions.VariationAxes
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: VariationAxes
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 89
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: 'Variable font axis values, keyed by tag. For example: { "wght", 700 } for bold weight.'
+  example: []
+  syntax:
+    content: public Dictionary<string, float>? VariationAxes { get; set; }
+    parameters: []
+    return:
+      type: System.Collections.Generic.Dictionary{System.String,System.Single}
+    content.vb: Public Property VariationAxes As Dictionary(Of String, Single)
+  overload: KernSmith.FontGeneratorOptions.VariationAxes*
+- uid: KernSmith.FontGeneratorOptions.SuperSampleLevel
+  commentId: P:KernSmith.FontGeneratorOptions.SuperSampleLevel
+  id: SuperSampleLevel
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: SuperSampleLevel
+  nameWithType: FontGeneratorOptions.SuperSampleLevel
+  fullName: KernSmith.FontGeneratorOptions.SuperSampleLevel
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: SuperSampleLevel
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 95
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: >-
+    Super sampling level (1-4). Higher values render at Nx size then
+
+    downscale for smoother edges. 1 = no super sampling.
+  example: []
+  syntax:
+    content: public int SuperSampleLevel { get; set; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property SuperSampleLevel As Integer
+  overload: KernSmith.FontGeneratorOptions.SuperSampleLevel*
+- uid: KernSmith.FontGeneratorOptions.FallbackCharacter
+  commentId: P:KernSmith.FontGeneratorOptions.FallbackCharacter
+  id: FallbackCharacter
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: FallbackCharacter
+  nameWithType: FontGeneratorOptions.FallbackCharacter
+  fullName: KernSmith.FontGeneratorOptions.FallbackCharacter
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FallbackCharacter
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 101
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: >-
+    Character to show for missing glyphs. Common choices: '?' or '\uFFFD'.
+
+    For supplementary plane characters (above U+FFFF), use <xref href="KernSmith.FontGeneratorOptions.FallbackCodepoint" data-throw-if-not-resolved="false"></xref> instead.
+  example: []
+  syntax:
+    content: public char? FallbackCharacter { get; set; }
+    parameters: []
+    return:
+      type: System.Nullable{System.Char}
+    content.vb: Public Property FallbackCharacter As Char?
+  overload: KernSmith.FontGeneratorOptions.FallbackCharacter*
+- uid: KernSmith.FontGeneratorOptions.FallbackCodepoint
+  commentId: P:KernSmith.FontGeneratorOptions.FallbackCodepoint
+  id: FallbackCodepoint
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: FallbackCodepoint
+  nameWithType: FontGeneratorOptions.FallbackCodepoint
+  fullName: KernSmith.FontGeneratorOptions.FallbackCodepoint
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FallbackCodepoint
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 109
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: >-
+    Unicode codepoint to show for missing glyphs. Supports the full Unicode range (U+0000 to U+10FFFF),
+
+    including supplementary plane characters that cannot be represented by <xref href="KernSmith.FontGeneratorOptions.FallbackCharacter" data-throw-if-not-resolved="false"></xref>.
+
+    When both <xref href="KernSmith.FontGeneratorOptions.FallbackCodepoint" data-throw-if-not-resolved="false"></xref> and <xref href="KernSmith.FontGeneratorOptions.FallbackCharacter" data-throw-if-not-resolved="false"></xref> are set,
+
+    <xref href="KernSmith.FontGeneratorOptions.FallbackCodepoint" data-throw-if-not-resolved="false"></xref> takes precedence.
+  example: []
+  syntax:
+    content: public int? FallbackCodepoint { get; set; }
+    parameters: []
+    return:
+      type: System.Nullable{System.Int32}
+    content.vb: Public Property FallbackCodepoint As Integer?
+  overload: KernSmith.FontGeneratorOptions.FallbackCodepoint*
+- uid: KernSmith.FontGeneratorOptions.TextureFormat
+  commentId: P:KernSmith.FontGeneratorOptions.TextureFormat
+  id: TextureFormat
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: TextureFormat
+  nameWithType: FontGeneratorOptions.TextureFormat
+  fullName: KernSmith.FontGeneratorOptions.TextureFormat
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: TextureFormat
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 112
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Texture format for atlas output (PNG, TGA, or DDS). Default is PNG.
+  example: []
+  syntax:
+    content: public TextureFormat TextureFormat { get; set; }
+    parameters: []
+    return:
+      type: KernSmith.TextureFormat
+    content.vb: Public Property TextureFormat As TextureFormat
+  overload: KernSmith.FontGeneratorOptions.TextureFormat*
+- uid: KernSmith.FontGeneratorOptions.EnableHinting
+  commentId: P:KernSmith.FontGeneratorOptions.EnableHinting
+  id: EnableHinting
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: EnableHinting
+  nameWithType: FontGeneratorOptions.EnableHinting
+  fullName: KernSmith.FontGeneratorOptions.EnableHinting
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: EnableHinting
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 118
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: >-
+    If true, enables FreeType hinting for crisp small text.
+
+    If false, renders without hinting for smoother curves.
+  example: []
+  syntax:
+    content: public bool EnableHinting { get; set; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property EnableHinting As Boolean
+  overload: KernSmith.FontGeneratorOptions.EnableHinting*
+- uid: KernSmith.FontGeneratorOptions.AutofitTexture
+  commentId: P:KernSmith.FontGeneratorOptions.AutofitTexture
+  id: AutofitTexture
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: AutofitTexture
+  nameWithType: FontGeneratorOptions.AutofitTexture
+  fullName: KernSmith.FontGeneratorOptions.AutofitTexture
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: AutofitTexture
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 124
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: >-
+    If true, picks the smallest power-of-two texture that fits all glyphs.
+
+    Overrides MaxTextureWidth/MaxTextureHeight.
+  example: []
+  syntax:
+    content: public bool AutofitTexture { get; set; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property AutofitTexture As Boolean
+  overload: KernSmith.FontGeneratorOptions.AutofitTexture*
+- uid: KernSmith.FontGeneratorOptions.EqualizeCellHeights
+  commentId: P:KernSmith.FontGeneratorOptions.EqualizeCellHeights
+  id: EqualizeCellHeights
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: EqualizeCellHeights
+  nameWithType: FontGeneratorOptions.EqualizeCellHeights
+  fullName: KernSmith.FontGeneratorOptions.EqualizeCellHeights
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: EqualizeCellHeights
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 129
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, pads all glyph cells to the same height and aligns them to a common baseline.
+  example: []
+  syntax:
+    content: public bool EqualizeCellHeights { get; set; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property EqualizeCellHeights As Boolean
+  overload: KernSmith.FontGeneratorOptions.EqualizeCellHeights*
+- uid: KernSmith.FontGeneratorOptions.ForceOffsetsToZero
+  commentId: P:KernSmith.FontGeneratorOptions.ForceOffsetsToZero
+  id: ForceOffsetsToZero
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: ForceOffsetsToZero
+  nameWithType: FontGeneratorOptions.ForceOffsetsToZero
+  fullName: KernSmith.FontGeneratorOptions.ForceOffsetsToZero
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ForceOffsetsToZero
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 134
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, zeroes out all xoffset/yoffset values. Useful for monospace or grid-based rendering.
+  example: []
+  syntax:
+    content: public bool ForceOffsetsToZero { get; set; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property ForceOffsetsToZero As Boolean
+  overload: KernSmith.FontGeneratorOptions.ForceOffsetsToZero*
+- uid: KernSmith.FontGeneratorOptions.Channels
+  commentId: P:KernSmith.FontGeneratorOptions.Channels
+  id: Channels
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: Channels
+  nameWithType: FontGeneratorOptions.Channels
+  fullName: KernSmith.FontGeneratorOptions.Channels
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Channels
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 139
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Per-channel control over what goes into each RGBA channel (glyph, outline, both, zero, or one).
+  example: []
+  syntax:
+    content: public ChannelConfig? Channels { get; set; }
+    parameters: []
+    return:
+      type: KernSmith.ChannelConfig
+    content.vb: Public Property Channels As ChannelConfig
+  overload: KernSmith.FontGeneratorOptions.Channels*
+- uid: KernSmith.FontGeneratorOptions.HeightPercent
+  commentId: P:KernSmith.FontGeneratorOptions.HeightPercent
+  id: HeightPercent
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: HeightPercent
+  nameWithType: FontGeneratorOptions.HeightPercent
+  fullName: KernSmith.FontGeneratorOptions.HeightPercent
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: HeightPercent
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 144
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Vertical height scaling. 100 = normal, 150 = 50% taller, 75 = 25% shorter.
+  example: []
+  syntax:
+    content: public int HeightPercent { get; set; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property HeightPercent As Integer
+  overload: KernSmith.FontGeneratorOptions.HeightPercent*
+- uid: KernSmith.FontGeneratorOptions.CustomGlyphs
+  commentId: P:KernSmith.FontGeneratorOptions.CustomGlyphs
+  id: CustomGlyphs
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: CustomGlyphs
+  nameWithType: FontGeneratorOptions.CustomGlyphs
+  fullName: KernSmith.FontGeneratorOptions.CustomGlyphs
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: CustomGlyphs
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 150
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: >-
+    Custom glyph images keyed by character code. These replace or add glyphs.
+
+    You must supply raw pixel data (not encoded PNG/etc).
+  example: []
+  syntax:
+    content: public Dictionary<int, CustomGlyph>? CustomGlyphs { get; set; }
+    parameters: []
+    return:
+      type: System.Collections.Generic.Dictionary{System.Int32,KernSmith.CustomGlyph}
+    content.vb: Public Property CustomGlyphs As Dictionary(Of Integer, CustomGlyph)
+  overload: KernSmith.FontGeneratorOptions.CustomGlyphs*
+- uid: KernSmith.FontGeneratorOptions.MatchCharHeight
+  commentId: P:KernSmith.FontGeneratorOptions.MatchCharHeight
+  id: MatchCharHeight
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: MatchCharHeight
+  nameWithType: FontGeneratorOptions.MatchCharHeight
+  fullName: KernSmith.FontGeneratorOptions.MatchCharHeight
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: MatchCharHeight
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 155
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, scales the font so the tallest character exactly matches the requested pixel size.
+  example: []
+  syntax:
+    content: public bool MatchCharHeight { get; set; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property MatchCharHeight As Boolean
+  overload: KernSmith.FontGeneratorOptions.MatchCharHeight*
+- uid: KernSmith.FontGeneratorOptions.GradientStartR
+  commentId: P:KernSmith.FontGeneratorOptions.GradientStartR
+  id: GradientStartR
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: GradientStartR
+  nameWithType: FontGeneratorOptions.GradientStartR
+  fullName: KernSmith.FontGeneratorOptions.GradientStartR
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GradientStartR
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 158
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Gradient start (top) color red channel.
+  example: []
+  syntax:
+    content: public byte? GradientStartR { get; set; }
+    parameters: []
+    return:
+      type: System.Nullable{System.Byte}
+    content.vb: Public Property GradientStartR As Byte?
+  overload: KernSmith.FontGeneratorOptions.GradientStartR*
+- uid: KernSmith.FontGeneratorOptions.GradientStartG
+  commentId: P:KernSmith.FontGeneratorOptions.GradientStartG
+  id: GradientStartG
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: GradientStartG
+  nameWithType: FontGeneratorOptions.GradientStartG
+  fullName: KernSmith.FontGeneratorOptions.GradientStartG
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GradientStartG
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 161
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Gradient start (top) color green channel.
+  example: []
+  syntax:
+    content: public byte? GradientStartG { get; set; }
+    parameters: []
+    return:
+      type: System.Nullable{System.Byte}
+    content.vb: Public Property GradientStartG As Byte?
+  overload: KernSmith.FontGeneratorOptions.GradientStartG*
+- uid: KernSmith.FontGeneratorOptions.GradientStartB
+  commentId: P:KernSmith.FontGeneratorOptions.GradientStartB
+  id: GradientStartB
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: GradientStartB
+  nameWithType: FontGeneratorOptions.GradientStartB
+  fullName: KernSmith.FontGeneratorOptions.GradientStartB
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GradientStartB
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 164
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Gradient start (top) color blue channel.
+  example: []
+  syntax:
+    content: public byte? GradientStartB { get; set; }
+    parameters: []
+    return:
+      type: System.Nullable{System.Byte}
+    content.vb: Public Property GradientStartB As Byte?
+  overload: KernSmith.FontGeneratorOptions.GradientStartB*
+- uid: KernSmith.FontGeneratorOptions.GradientEndR
+  commentId: P:KernSmith.FontGeneratorOptions.GradientEndR
+  id: GradientEndR
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: GradientEndR
+  nameWithType: FontGeneratorOptions.GradientEndR
+  fullName: KernSmith.FontGeneratorOptions.GradientEndR
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GradientEndR
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 167
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Gradient end (bottom) color red channel.
+  example: []
+  syntax:
+    content: public byte? GradientEndR { get; set; }
+    parameters: []
+    return:
+      type: System.Nullable{System.Byte}
+    content.vb: Public Property GradientEndR As Byte?
+  overload: KernSmith.FontGeneratorOptions.GradientEndR*
+- uid: KernSmith.FontGeneratorOptions.GradientEndG
+  commentId: P:KernSmith.FontGeneratorOptions.GradientEndG
+  id: GradientEndG
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: GradientEndG
+  nameWithType: FontGeneratorOptions.GradientEndG
+  fullName: KernSmith.FontGeneratorOptions.GradientEndG
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GradientEndG
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 170
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Gradient end (bottom) color green channel.
+  example: []
+  syntax:
+    content: public byte? GradientEndG { get; set; }
+    parameters: []
+    return:
+      type: System.Nullable{System.Byte}
+    content.vb: Public Property GradientEndG As Byte?
+  overload: KernSmith.FontGeneratorOptions.GradientEndG*
+- uid: KernSmith.FontGeneratorOptions.GradientEndB
+  commentId: P:KernSmith.FontGeneratorOptions.GradientEndB
+  id: GradientEndB
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: GradientEndB
+  nameWithType: FontGeneratorOptions.GradientEndB
+  fullName: KernSmith.FontGeneratorOptions.GradientEndB
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GradientEndB
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 173
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Gradient end (bottom) color blue channel.
+  example: []
+  syntax:
+    content: public byte? GradientEndB { get; set; }
+    parameters: []
+    return:
+      type: System.Nullable{System.Byte}
+    content.vb: Public Property GradientEndB As Byte?
+  overload: KernSmith.FontGeneratorOptions.GradientEndB*
+- uid: KernSmith.FontGeneratorOptions.GradientAngle
+  commentId: P:KernSmith.FontGeneratorOptions.GradientAngle
+  id: GradientAngle
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: GradientAngle
+  nameWithType: FontGeneratorOptions.GradientAngle
+  fullName: KernSmith.FontGeneratorOptions.GradientAngle
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GradientAngle
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 176
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Gradient angle in degrees (default 90 = top-to-bottom).
+  example: []
+  syntax:
+    content: public float GradientAngle { get; set; }
+    parameters: []
+    return:
+      type: System.Single
+    content.vb: Public Property GradientAngle As Single
+  overload: KernSmith.FontGeneratorOptions.GradientAngle*
+- uid: KernSmith.FontGeneratorOptions.GradientMidpoint
+  commentId: P:KernSmith.FontGeneratorOptions.GradientMidpoint
+  id: GradientMidpoint
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: GradientMidpoint
+  nameWithType: FontGeneratorOptions.GradientMidpoint
+  fullName: KernSmith.FontGeneratorOptions.GradientMidpoint
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GradientMidpoint
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 179
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Gradient midpoint bias (0.0 to 1.0, default 0.5).
+  example: []
+  syntax:
+    content: public float GradientMidpoint { get; set; }
+    parameters: []
+    return:
+      type: System.Single
+    content.vb: Public Property GradientMidpoint As Single
+  overload: KernSmith.FontGeneratorOptions.GradientMidpoint*
+- uid: KernSmith.FontGeneratorOptions.ShadowOffsetX
+  commentId: P:KernSmith.FontGeneratorOptions.ShadowOffsetX
+  id: ShadowOffsetX
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: ShadowOffsetX
+  nameWithType: FontGeneratorOptions.ShadowOffsetX
+  fullName: KernSmith.FontGeneratorOptions.ShadowOffsetX
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ShadowOffsetX
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 185
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Shadow horizontal offset in pixels (positive = right).
+  example: []
+  syntax:
+    content: public int ShadowOffsetX { get; set; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property ShadowOffsetX As Integer
+  overload: KernSmith.FontGeneratorOptions.ShadowOffsetX*
+- uid: KernSmith.FontGeneratorOptions.ShadowOffsetY
+  commentId: P:KernSmith.FontGeneratorOptions.ShadowOffsetY
+  id: ShadowOffsetY
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: ShadowOffsetY
+  nameWithType: FontGeneratorOptions.ShadowOffsetY
+  fullName: KernSmith.FontGeneratorOptions.ShadowOffsetY
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ShadowOffsetY
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 188
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Shadow vertical offset in pixels (positive = down).
+  example: []
+  syntax:
+    content: public int ShadowOffsetY { get; set; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property ShadowOffsetY As Integer
+  overload: KernSmith.FontGeneratorOptions.ShadowOffsetY*
+- uid: KernSmith.FontGeneratorOptions.ShadowR
+  commentId: P:KernSmith.FontGeneratorOptions.ShadowR
+  id: ShadowR
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: ShadowR
+  nameWithType: FontGeneratorOptions.ShadowR
+  fullName: KernSmith.FontGeneratorOptions.ShadowR
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ShadowR
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 191
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Shadow color red channel.
+  example: []
+  syntax:
+    content: public byte ShadowR { get; set; }
+    parameters: []
+    return:
+      type: System.Byte
+    content.vb: Public Property ShadowR As Byte
+  overload: KernSmith.FontGeneratorOptions.ShadowR*
+- uid: KernSmith.FontGeneratorOptions.ShadowG
+  commentId: P:KernSmith.FontGeneratorOptions.ShadowG
+  id: ShadowG
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: ShadowG
+  nameWithType: FontGeneratorOptions.ShadowG
+  fullName: KernSmith.FontGeneratorOptions.ShadowG
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ShadowG
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 194
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Shadow color green channel.
+  example: []
+  syntax:
+    content: public byte ShadowG { get; set; }
+    parameters: []
+    return:
+      type: System.Byte
+    content.vb: Public Property ShadowG As Byte
+  overload: KernSmith.FontGeneratorOptions.ShadowG*
+- uid: KernSmith.FontGeneratorOptions.ShadowB
+  commentId: P:KernSmith.FontGeneratorOptions.ShadowB
+  id: ShadowB
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: ShadowB
+  nameWithType: FontGeneratorOptions.ShadowB
+  fullName: KernSmith.FontGeneratorOptions.ShadowB
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ShadowB
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 197
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Shadow color blue channel.
+  example: []
+  syntax:
+    content: public byte ShadowB { get; set; }
+    parameters: []
+    return:
+      type: System.Byte
+    content.vb: Public Property ShadowB As Byte
+  overload: KernSmith.FontGeneratorOptions.ShadowB*
+- uid: KernSmith.FontGeneratorOptions.ShadowOpacity
+  commentId: P:KernSmith.FontGeneratorOptions.ShadowOpacity
+  id: ShadowOpacity
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: ShadowOpacity
+  nameWithType: FontGeneratorOptions.ShadowOpacity
+  fullName: KernSmith.FontGeneratorOptions.ShadowOpacity
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ShadowOpacity
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 200
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Shadow opacity (0.0 to 1.0, default 1.0).
+  example: []
+  syntax:
+    content: public float ShadowOpacity { get; set; }
+    parameters: []
+    return:
+      type: System.Single
+    content.vb: Public Property ShadowOpacity As Single
+  overload: KernSmith.FontGeneratorOptions.ShadowOpacity*
+- uid: KernSmith.FontGeneratorOptions.ShadowBlur
+  commentId: P:KernSmith.FontGeneratorOptions.ShadowBlur
+  id: ShadowBlur
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: ShadowBlur
+  nameWithType: FontGeneratorOptions.ShadowBlur
+  fullName: KernSmith.FontGeneratorOptions.ShadowBlur
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ShadowBlur
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 203
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Shadow blur radius. 0 = hard shadow.
+  example: []
+  syntax:
+    content: public int ShadowBlur { get; set; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property ShadowBlur As Integer
+  overload: KernSmith.FontGeneratorOptions.ShadowBlur*
+- uid: KernSmith.FontGeneratorOptions.FontReader
+  commentId: P:KernSmith.FontGeneratorOptions.FontReader
+  id: FontReader
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: FontReader
+  nameWithType: FontGeneratorOptions.FontReader
+  fullName: KernSmith.FontGeneratorOptions.FontReader
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FontReader
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 215
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Custom font reader. When null, uses the built-in TTF parser.
+  example: []
+  syntax:
+    content: public IFontReader? FontReader { get; set; }
+    parameters: []
+    return:
+      type: KernSmith.Font.IFontReader
+    content.vb: Public Property FontReader As IFontReader
+  overload: KernSmith.FontGeneratorOptions.FontReader*
+- uid: KernSmith.FontGeneratorOptions.Rasterizer
+  commentId: P:KernSmith.FontGeneratorOptions.Rasterizer
+  id: Rasterizer
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: Rasterizer
+  nameWithType: FontGeneratorOptions.Rasterizer
+  fullName: KernSmith.FontGeneratorOptions.Rasterizer
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Rasterizer
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 218
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Custom rasterizer. When null, uses FreeType.
+  example: []
+  syntax:
+    content: public IRasterizer? Rasterizer { get; set; }
+    parameters: []
+    return:
+      type: KernSmith.Rasterizer.IRasterizer
+    content.vb: Public Property Rasterizer As IRasterizer
+  overload: KernSmith.FontGeneratorOptions.Rasterizer*
+- uid: KernSmith.FontGeneratorOptions.Packer
+  commentId: P:KernSmith.FontGeneratorOptions.Packer
+  id: Packer
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: Packer
+  nameWithType: FontGeneratorOptions.Packer
+  fullName: KernSmith.FontGeneratorOptions.Packer
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Packer
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 221
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Custom atlas packer. When null, uses the PackingAlgorithm setting.
+  example: []
+  syntax:
+    content: public IAtlasPacker? Packer { get; set; }
+    parameters: []
+    return:
+      type: KernSmith.Atlas.IAtlasPacker
+    content.vb: Public Property Packer As IAtlasPacker
+  overload: KernSmith.FontGeneratorOptions.Packer*
+- uid: KernSmith.FontGeneratorOptions.AtlasEncoder
+  commentId: P:KernSmith.FontGeneratorOptions.AtlasEncoder
+  id: AtlasEncoder
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: AtlasEncoder
+  nameWithType: FontGeneratorOptions.AtlasEncoder
+  fullName: KernSmith.FontGeneratorOptions.AtlasEncoder
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: AtlasEncoder
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 224
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Custom atlas encoder. When null, uses the TextureFormat setting.
+  example: []
+  syntax:
+    content: public IAtlasEncoder? AtlasEncoder { get; set; }
+    parameters: []
+    return:
+      type: KernSmith.Atlas.IAtlasEncoder
+    content.vb: Public Property AtlasEncoder As IAtlasEncoder
+  overload: KernSmith.FontGeneratorOptions.AtlasEncoder*
+- uid: KernSmith.FontGeneratorOptions.PostProcessors
+  commentId: P:KernSmith.FontGeneratorOptions.PostProcessors
+  id: PostProcessors
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: PostProcessors
+  nameWithType: FontGeneratorOptions.PostProcessors
+  fullName: KernSmith.FontGeneratorOptions.PostProcessors
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: PostProcessors
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 227
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Extra post-processors to run on each glyph after rasterization.
+  example: []
+  syntax:
+    content: public IReadOnlyList<IGlyphPostProcessor>? PostProcessors { get; set; }
+    parameters: []
+    return:
+      type: System.Collections.Generic.IReadOnlyList{KernSmith.Rasterizer.IGlyphPostProcessor}
+    content.vb: Public Property PostProcessors As IReadOnlyList(Of IGlyphPostProcessor)
+  overload: KernSmith.FontGeneratorOptions.PostProcessors*
+- uid: KernSmith.FontGeneratorOptions.CollectMetrics
+  commentId: P:KernSmith.FontGeneratorOptions.CollectMetrics
+  id: CollectMetrics
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: CollectMetrics
+  nameWithType: FontGeneratorOptions.CollectMetrics
+  fullName: KernSmith.FontGeneratorOptions.CollectMetrics
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: CollectMetrics
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 230
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, records how long each pipeline stage takes. Check BmFontResult.Metrics for results.
+  example: []
+  syntax:
+    content: public bool CollectMetrics { get; set; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property CollectMetrics As Boolean
+  overload: KernSmith.FontGeneratorOptions.CollectMetrics*
+- uid: KernSmith.FontGeneratorOptions.SizeConstraints
+  commentId: P:KernSmith.FontGeneratorOptions.SizeConstraints
+  id: SizeConstraints
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: SizeConstraints
+  nameWithType: FontGeneratorOptions.SizeConstraints
+  fullName: KernSmith.FontGeneratorOptions.SizeConstraints
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: SizeConstraints
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 233
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Atlas size constraints (force square, force power-of-two, fixed width).
+  example: []
+  syntax:
+    content: public AtlasSizeConstraints? SizeConstraints { get; set; }
+    parameters: []
+    return:
+      type: KernSmith.AtlasSizeConstraints
+    content.vb: Public Property SizeConstraints As AtlasSizeConstraints
+  overload: KernSmith.FontGeneratorOptions.SizeConstraints*
+- uid: KernSmith.FontGeneratorOptions.TargetRegion
+  commentId: P:KernSmith.FontGeneratorOptions.TargetRegion
+  id: TargetRegion
+  parent: KernSmith.FontGeneratorOptions
+  langs:
+  - csharp
+  - vb
+  name: TargetRegion
+  nameWithType: FontGeneratorOptions.TargetRegion
+  fullName: KernSmith.FontGeneratorOptions.TargetRegion
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontGeneratorOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: TargetRegion
+    path: src/KernSmith/Config/FontGeneratorOptions.cs
+    startLine: 236
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: When set, renders glyphs into a region of an existing PNG image.
+  example: []
+  syntax:
+    content: public AtlasTargetRegion? TargetRegion { get; set; }
+    parameters: []
+    return:
+      type: KernSmith.AtlasTargetRegion
+    content.vb: Public Property TargetRegion As AtlasTargetRegion
+  overload: KernSmith.FontGeneratorOptions.TargetRegion*
+references:
+- uid: KernSmith
+  commentId: N:KernSmith
+  href: KernSmith.html
+  name: KernSmith
+  nameWithType: KernSmith
+  fullName: KernSmith
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.MemberwiseClone
+  commentId: M:System.Object.MemberwiseClone
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.memberwiseclone
+  name: MemberwiseClone()
+  nameWithType: object.MemberwiseClone()
+  fullName: object.MemberwiseClone()
+  nameWithType.vb: Object.MemberwiseClone()
+  fullName.vb: Object.MemberwiseClone()
+  spec.csharp:
+  - uid: System.Object.MemberwiseClone
+    name: MemberwiseClone
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.memberwiseclone
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.MemberwiseClone
+    name: MemberwiseClone
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.memberwiseclone
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: KernSmith.FontGeneratorOptions.Size*
+  commentId: Overload:KernSmith.FontGeneratorOptions.Size
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_Size
+  name: Size
+  nameWithType: FontGeneratorOptions.Size
+  fullName: KernSmith.FontGeneratorOptions.Size
+- uid: System.Int32
+  commentId: T:System.Int32
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int
+  nameWithType: int
+  fullName: int
+  nameWithType.vb: Integer
+  fullName.vb: Integer
+  name.vb: Integer
+- uid: KernSmith.FontGeneratorOptions.Characters*
+  commentId: Overload:KernSmith.FontGeneratorOptions.Characters
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_Characters
+  name: Characters
+  nameWithType: FontGeneratorOptions.Characters
+  fullName: KernSmith.FontGeneratorOptions.Characters
+- uid: KernSmith.CharacterSet
+  commentId: T:KernSmith.CharacterSet
+  parent: KernSmith
+  href: KernSmith.CharacterSet.html
+  name: CharacterSet
+  nameWithType: CharacterSet
+  fullName: KernSmith.CharacterSet
+- uid: KernSmith.FontGeneratorOptions.Bold*
+  commentId: Overload:KernSmith.FontGeneratorOptions.Bold
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_Bold
+  name: Bold
+  nameWithType: FontGeneratorOptions.Bold
+  fullName: KernSmith.FontGeneratorOptions.Bold
+- uid: System.Boolean
+  commentId: T:System.Boolean
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.boolean
+  name: bool
+  nameWithType: bool
+  fullName: bool
+  nameWithType.vb: Boolean
+  fullName.vb: Boolean
+  name.vb: Boolean
+- uid: KernSmith.FontGeneratorOptions.Italic*
+  commentId: Overload:KernSmith.FontGeneratorOptions.Italic
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_Italic
+  name: Italic
+  nameWithType: FontGeneratorOptions.Italic
+  fullName: KernSmith.FontGeneratorOptions.Italic
+- uid: KernSmith.FontGeneratorOptions.AntiAlias*
+  commentId: Overload:KernSmith.FontGeneratorOptions.AntiAlias
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_AntiAlias
+  name: AntiAlias
+  nameWithType: FontGeneratorOptions.AntiAlias
+  fullName: KernSmith.FontGeneratorOptions.AntiAlias
+- uid: KernSmith.AntiAliasMode
+  commentId: T:KernSmith.AntiAliasMode
+  parent: KernSmith
+  href: KernSmith.AntiAliasMode.html
+  name: AntiAliasMode
+  nameWithType: AntiAliasMode
+  fullName: KernSmith.AntiAliasMode
+- uid: KernSmith.FontGeneratorOptions.MaxTextureSize*
+  commentId: Overload:KernSmith.FontGeneratorOptions.MaxTextureSize
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_MaxTextureSize
+  name: MaxTextureSize
+  nameWithType: FontGeneratorOptions.MaxTextureSize
+  fullName: KernSmith.FontGeneratorOptions.MaxTextureSize
+- uid: KernSmith.FontGeneratorOptions.MaxTextureWidth*
+  commentId: Overload:KernSmith.FontGeneratorOptions.MaxTextureWidth
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_MaxTextureWidth
+  name: MaxTextureWidth
+  nameWithType: FontGeneratorOptions.MaxTextureWidth
+  fullName: KernSmith.FontGeneratorOptions.MaxTextureWidth
+- uid: KernSmith.FontGeneratorOptions.MaxTextureHeight*
+  commentId: Overload:KernSmith.FontGeneratorOptions.MaxTextureHeight
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_MaxTextureHeight
+  name: MaxTextureHeight
+  nameWithType: FontGeneratorOptions.MaxTextureHeight
+  fullName: KernSmith.FontGeneratorOptions.MaxTextureHeight
+- uid: KernSmith.FontGeneratorOptions.Padding*
+  commentId: Overload:KernSmith.FontGeneratorOptions.Padding
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_Padding
+  name: Padding
+  nameWithType: FontGeneratorOptions.Padding
+  fullName: KernSmith.FontGeneratorOptions.Padding
+- uid: KernSmith.Padding
+  commentId: T:KernSmith.Padding
+  parent: KernSmith
+  href: KernSmith.Padding.html
+  name: Padding
+  nameWithType: Padding
+  fullName: KernSmith.Padding
+- uid: KernSmith.FontGeneratorOptions.Spacing*
+  commentId: Overload:KernSmith.FontGeneratorOptions.Spacing
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_Spacing
+  name: Spacing
+  nameWithType: FontGeneratorOptions.Spacing
+  fullName: KernSmith.FontGeneratorOptions.Spacing
+- uid: KernSmith.Spacing
+  commentId: T:KernSmith.Spacing
+  parent: KernSmith
+  href: KernSmith.Spacing.html
+  name: Spacing
+  nameWithType: Spacing
+  fullName: KernSmith.Spacing
+- uid: KernSmith.FontGeneratorOptions.PackingAlgorithm*
+  commentId: Overload:KernSmith.FontGeneratorOptions.PackingAlgorithm
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_PackingAlgorithm
+  name: PackingAlgorithm
+  nameWithType: FontGeneratorOptions.PackingAlgorithm
+  fullName: KernSmith.FontGeneratorOptions.PackingAlgorithm
+- uid: KernSmith.PackingAlgorithm
+  commentId: T:KernSmith.PackingAlgorithm
+  parent: KernSmith
+  href: KernSmith.PackingAlgorithm.html
+  name: PackingAlgorithm
+  nameWithType: PackingAlgorithm
+  fullName: KernSmith.PackingAlgorithm
+- uid: KernSmith.FontGeneratorOptions.Kerning*
+  commentId: Overload:KernSmith.FontGeneratorOptions.Kerning
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_Kerning
+  name: Kerning
+  nameWithType: FontGeneratorOptions.Kerning
+  fullName: KernSmith.FontGeneratorOptions.Kerning
+- uid: KernSmith.FontGeneratorOptions.Outline*
+  commentId: Overload:KernSmith.FontGeneratorOptions.Outline
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_Outline
+  name: Outline
+  nameWithType: FontGeneratorOptions.Outline
+  fullName: KernSmith.FontGeneratorOptions.Outline
+- uid: KernSmith.FontGeneratorOptions.OutlineR*
+  commentId: Overload:KernSmith.FontGeneratorOptions.OutlineR
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_OutlineR
+  name: OutlineR
+  nameWithType: FontGeneratorOptions.OutlineR
+  fullName: KernSmith.FontGeneratorOptions.OutlineR
+- uid: System.Byte
+  commentId: T:System.Byte
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.byte
+  name: byte
+  nameWithType: byte
+  fullName: byte
+  nameWithType.vb: Byte
+  fullName.vb: Byte
+  name.vb: Byte
+- uid: KernSmith.FontGeneratorOptions.OutlineG*
+  commentId: Overload:KernSmith.FontGeneratorOptions.OutlineG
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_OutlineG
+  name: OutlineG
+  nameWithType: FontGeneratorOptions.OutlineG
+  fullName: KernSmith.FontGeneratorOptions.OutlineG
+- uid: KernSmith.FontGeneratorOptions.OutlineB*
+  commentId: Overload:KernSmith.FontGeneratorOptions.OutlineB
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_OutlineB
+  name: OutlineB
+  nameWithType: FontGeneratorOptions.OutlineB
+  fullName: KernSmith.FontGeneratorOptions.OutlineB
+- uid: KernSmith.FontGeneratorOptions.Sdf*
+  commentId: Overload:KernSmith.FontGeneratorOptions.Sdf
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_Sdf
+  name: Sdf
+  nameWithType: FontGeneratorOptions.Sdf
+  fullName: KernSmith.FontGeneratorOptions.Sdf
+- uid: KernSmith.FontGeneratorOptions.PowerOfTwo*
+  commentId: Overload:KernSmith.FontGeneratorOptions.PowerOfTwo
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_PowerOfTwo
+  name: PowerOfTwo
+  nameWithType: FontGeneratorOptions.PowerOfTwo
+  fullName: KernSmith.FontGeneratorOptions.PowerOfTwo
+- uid: KernSmith.FontGeneratorOptions.Dpi*
+  commentId: Overload:KernSmith.FontGeneratorOptions.Dpi
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_Dpi
+  name: Dpi
+  nameWithType: FontGeneratorOptions.Dpi
+  fullName: KernSmith.FontGeneratorOptions.Dpi
+- uid: KernSmith.FontGeneratorOptions.FaceIndex*
+  commentId: Overload:KernSmith.FontGeneratorOptions.FaceIndex
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_FaceIndex
+  name: FaceIndex
+  nameWithType: FontGeneratorOptions.FaceIndex
+  fullName: KernSmith.FontGeneratorOptions.FaceIndex
+- uid: KernSmith.FontGeneratorOptions.ChannelPacking*
+  commentId: Overload:KernSmith.FontGeneratorOptions.ChannelPacking
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_ChannelPacking
+  name: ChannelPacking
+  nameWithType: FontGeneratorOptions.ChannelPacking
+  fullName: KernSmith.FontGeneratorOptions.ChannelPacking
+- uid: KernSmith.FontGeneratorOptions.ColorFont*
+  commentId: Overload:KernSmith.FontGeneratorOptions.ColorFont
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_ColorFont
+  name: ColorFont
+  nameWithType: FontGeneratorOptions.ColorFont
+  fullName: KernSmith.FontGeneratorOptions.ColorFont
+- uid: KernSmith.FontGeneratorOptions.ColorPaletteIndex*
+  commentId: Overload:KernSmith.FontGeneratorOptions.ColorPaletteIndex
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_ColorPaletteIndex
+  name: ColorPaletteIndex
+  nameWithType: FontGeneratorOptions.ColorPaletteIndex
+  fullName: KernSmith.FontGeneratorOptions.ColorPaletteIndex
+- uid: KernSmith.FontGeneratorOptions.VariationAxes*
+  commentId: Overload:KernSmith.FontGeneratorOptions.VariationAxes
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_VariationAxes
+  name: VariationAxes
+  nameWithType: FontGeneratorOptions.VariationAxes
+  fullName: KernSmith.FontGeneratorOptions.VariationAxes
+- uid: System.Collections.Generic.Dictionary{System.String,System.Single}
+  commentId: T:System.Collections.Generic.Dictionary{System.String,System.Single}
+  parent: System.Collections.Generic
+  definition: System.Collections.Generic.Dictionary`2
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2
+  name: Dictionary<string, float>
+  nameWithType: Dictionary<string, float>
+  fullName: System.Collections.Generic.Dictionary<string, float>
+  nameWithType.vb: Dictionary(Of String, Single)
+  fullName.vb: System.Collections.Generic.Dictionary(Of String, Single)
+  name.vb: Dictionary(Of String, Single)
+  spec.csharp:
+  - uid: System.Collections.Generic.Dictionary`2
+    name: Dictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2
+  - name: <
+  - uid: System.String
+    name: string
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.string
+  - name: ','
+  - name: " "
+  - uid: System.Single
+    name: float
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.single
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.Dictionary`2
+    name: Dictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: System.String
+    name: String
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.string
+  - name: ','
+  - name: " "
+  - uid: System.Single
+    name: Single
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.single
+  - name: )
+- uid: System.Collections.Generic.Dictionary`2
+  commentId: T:System.Collections.Generic.Dictionary`2
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2
+  name: Dictionary<TKey, TValue>
+  nameWithType: Dictionary<TKey, TValue>
+  fullName: System.Collections.Generic.Dictionary<TKey, TValue>
+  nameWithType.vb: Dictionary(Of TKey, TValue)
+  fullName.vb: System.Collections.Generic.Dictionary(Of TKey, TValue)
+  name.vb: Dictionary(Of TKey, TValue)
+  spec.csharp:
+  - uid: System.Collections.Generic.Dictionary`2
+    name: Dictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2
+  - name: <
+  - name: TKey
+  - name: ','
+  - name: " "
+  - name: TValue
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.Dictionary`2
+    name: Dictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2
+  - name: (
+  - name: Of
+  - name: " "
+  - name: TKey
+  - name: ','
+  - name: " "
+  - name: TValue
+  - name: )
+- uid: System.Collections.Generic
+  commentId: N:System.Collections.Generic
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System.Collections.Generic
+  nameWithType: System.Collections.Generic
+  fullName: System.Collections.Generic
+  spec.csharp:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic
+  spec.vb:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic
+- uid: KernSmith.FontGeneratorOptions.SuperSampleLevel*
+  commentId: Overload:KernSmith.FontGeneratorOptions.SuperSampleLevel
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_SuperSampleLevel
+  name: SuperSampleLevel
+  nameWithType: FontGeneratorOptions.SuperSampleLevel
+  fullName: KernSmith.FontGeneratorOptions.SuperSampleLevel
+- uid: KernSmith.FontGeneratorOptions.FallbackCodepoint
+  commentId: P:KernSmith.FontGeneratorOptions.FallbackCodepoint
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_FallbackCodepoint
+  name: FallbackCodepoint
+  nameWithType: FontGeneratorOptions.FallbackCodepoint
+  fullName: KernSmith.FontGeneratorOptions.FallbackCodepoint
+- uid: KernSmith.FontGeneratorOptions.FallbackCharacter*
+  commentId: Overload:KernSmith.FontGeneratorOptions.FallbackCharacter
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_FallbackCharacter
+  name: FallbackCharacter
+  nameWithType: FontGeneratorOptions.FallbackCharacter
+  fullName: KernSmith.FontGeneratorOptions.FallbackCharacter
+- uid: System.Nullable{System.Char}
+  commentId: T:System.Nullable{System.Char}
+  parent: System
+  definition: System.Nullable`1
+  href: https://learn.microsoft.com/dotnet/api/system.char
+  name: char?
+  nameWithType: char?
+  fullName: char?
+  nameWithType.vb: Char?
+  fullName.vb: Char?
+  name.vb: Char?
+  spec.csharp:
+  - uid: System.Char
+    name: char
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.char
+  - name: '?'
+  spec.vb:
+  - uid: System.Char
+    name: Char
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.char
+  - name: '?'
+- uid: System.Nullable`1
+  commentId: T:System.Nullable`1
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.nullable-1
+  name: Nullable<T>
+  nameWithType: Nullable<T>
+  fullName: System.Nullable<T>
+  nameWithType.vb: Nullable(Of T)
+  fullName.vb: System.Nullable(Of T)
+  name.vb: Nullable(Of T)
+  spec.csharp:
+  - uid: System.Nullable`1
+    name: Nullable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.nullable-1
+  - name: <
+  - name: T
+  - name: '>'
+  spec.vb:
+  - uid: System.Nullable`1
+    name: Nullable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.nullable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - name: T
+  - name: )
+- uid: KernSmith.FontGeneratorOptions.FallbackCharacter
+  commentId: P:KernSmith.FontGeneratorOptions.FallbackCharacter
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_FallbackCharacter
+  name: FallbackCharacter
+  nameWithType: FontGeneratorOptions.FallbackCharacter
+  fullName: KernSmith.FontGeneratorOptions.FallbackCharacter
+- uid: KernSmith.FontGeneratorOptions.FallbackCodepoint*
+  commentId: Overload:KernSmith.FontGeneratorOptions.FallbackCodepoint
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_FallbackCodepoint
+  name: FallbackCodepoint
+  nameWithType: FontGeneratorOptions.FallbackCodepoint
+  fullName: KernSmith.FontGeneratorOptions.FallbackCodepoint
+- uid: System.Nullable{System.Int32}
+  commentId: T:System.Nullable{System.Int32}
+  parent: System
+  definition: System.Nullable`1
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int?
+  nameWithType: int?
+  fullName: int?
+  nameWithType.vb: Integer?
+  fullName.vb: Integer?
+  name.vb: Integer?
+  spec.csharp:
+  - uid: System.Int32
+    name: int
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.int32
+  - name: '?'
+  spec.vb:
+  - uid: System.Int32
+    name: Integer
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.int32
+  - name: '?'
+- uid: KernSmith.FontGeneratorOptions.TextureFormat*
+  commentId: Overload:KernSmith.FontGeneratorOptions.TextureFormat
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_TextureFormat
+  name: TextureFormat
+  nameWithType: FontGeneratorOptions.TextureFormat
+  fullName: KernSmith.FontGeneratorOptions.TextureFormat
+- uid: KernSmith.TextureFormat
+  commentId: T:KernSmith.TextureFormat
+  parent: KernSmith
+  href: KernSmith.TextureFormat.html
+  name: TextureFormat
+  nameWithType: TextureFormat
+  fullName: KernSmith.TextureFormat
+- uid: KernSmith.FontGeneratorOptions.EnableHinting*
+  commentId: Overload:KernSmith.FontGeneratorOptions.EnableHinting
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_EnableHinting
+  name: EnableHinting
+  nameWithType: FontGeneratorOptions.EnableHinting
+  fullName: KernSmith.FontGeneratorOptions.EnableHinting
+- uid: KernSmith.FontGeneratorOptions.AutofitTexture*
+  commentId: Overload:KernSmith.FontGeneratorOptions.AutofitTexture
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_AutofitTexture
+  name: AutofitTexture
+  nameWithType: FontGeneratorOptions.AutofitTexture
+  fullName: KernSmith.FontGeneratorOptions.AutofitTexture
+- uid: KernSmith.FontGeneratorOptions.EqualizeCellHeights*
+  commentId: Overload:KernSmith.FontGeneratorOptions.EqualizeCellHeights
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_EqualizeCellHeights
+  name: EqualizeCellHeights
+  nameWithType: FontGeneratorOptions.EqualizeCellHeights
+  fullName: KernSmith.FontGeneratorOptions.EqualizeCellHeights
+- uid: KernSmith.FontGeneratorOptions.ForceOffsetsToZero*
+  commentId: Overload:KernSmith.FontGeneratorOptions.ForceOffsetsToZero
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_ForceOffsetsToZero
+  name: ForceOffsetsToZero
+  nameWithType: FontGeneratorOptions.ForceOffsetsToZero
+  fullName: KernSmith.FontGeneratorOptions.ForceOffsetsToZero
+- uid: KernSmith.FontGeneratorOptions.Channels*
+  commentId: Overload:KernSmith.FontGeneratorOptions.Channels
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_Channels
+  name: Channels
+  nameWithType: FontGeneratorOptions.Channels
+  fullName: KernSmith.FontGeneratorOptions.Channels
+- uid: KernSmith.ChannelConfig
+  commentId: T:KernSmith.ChannelConfig
+  parent: KernSmith
+  href: KernSmith.ChannelConfig.html
+  name: ChannelConfig
+  nameWithType: ChannelConfig
+  fullName: KernSmith.ChannelConfig
+- uid: KernSmith.FontGeneratorOptions.HeightPercent*
+  commentId: Overload:KernSmith.FontGeneratorOptions.HeightPercent
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_HeightPercent
+  name: HeightPercent
+  nameWithType: FontGeneratorOptions.HeightPercent
+  fullName: KernSmith.FontGeneratorOptions.HeightPercent
+- uid: KernSmith.FontGeneratorOptions.CustomGlyphs*
+  commentId: Overload:KernSmith.FontGeneratorOptions.CustomGlyphs
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_CustomGlyphs
+  name: CustomGlyphs
+  nameWithType: FontGeneratorOptions.CustomGlyphs
+  fullName: KernSmith.FontGeneratorOptions.CustomGlyphs
+- uid: System.Collections.Generic.Dictionary{System.Int32,KernSmith.CustomGlyph}
+  commentId: T:System.Collections.Generic.Dictionary{System.Int32,KernSmith.CustomGlyph}
+  parent: System.Collections.Generic
+  definition: System.Collections.Generic.Dictionary`2
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2
+  name: Dictionary<int, CustomGlyph>
+  nameWithType: Dictionary<int, CustomGlyph>
+  fullName: System.Collections.Generic.Dictionary<int, KernSmith.CustomGlyph>
+  nameWithType.vb: Dictionary(Of Integer, CustomGlyph)
+  fullName.vb: System.Collections.Generic.Dictionary(Of Integer, KernSmith.CustomGlyph)
+  name.vb: Dictionary(Of Integer, CustomGlyph)
+  spec.csharp:
+  - uid: System.Collections.Generic.Dictionary`2
+    name: Dictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2
+  - name: <
+  - uid: System.Int32
+    name: int
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.int32
+  - name: ','
+  - name: " "
+  - uid: KernSmith.CustomGlyph
+    name: CustomGlyph
+    href: KernSmith.CustomGlyph.html
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.Dictionary`2
+    name: Dictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: System.Int32
+    name: Integer
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.int32
+  - name: ','
+  - name: " "
+  - uid: KernSmith.CustomGlyph
+    name: CustomGlyph
+    href: KernSmith.CustomGlyph.html
+  - name: )
+- uid: KernSmith.FontGeneratorOptions.MatchCharHeight*
+  commentId: Overload:KernSmith.FontGeneratorOptions.MatchCharHeight
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_MatchCharHeight
+  name: MatchCharHeight
+  nameWithType: FontGeneratorOptions.MatchCharHeight
+  fullName: KernSmith.FontGeneratorOptions.MatchCharHeight
+- uid: KernSmith.FontGeneratorOptions.GradientStartR*
+  commentId: Overload:KernSmith.FontGeneratorOptions.GradientStartR
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_GradientStartR
+  name: GradientStartR
+  nameWithType: FontGeneratorOptions.GradientStartR
+  fullName: KernSmith.FontGeneratorOptions.GradientStartR
+- uid: System.Nullable{System.Byte}
+  commentId: T:System.Nullable{System.Byte}
+  parent: System
+  definition: System.Nullable`1
+  href: https://learn.microsoft.com/dotnet/api/system.byte
+  name: byte?
+  nameWithType: byte?
+  fullName: byte?
+  nameWithType.vb: Byte?
+  fullName.vb: Byte?
+  name.vb: Byte?
+  spec.csharp:
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: '?'
+  spec.vb:
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: '?'
+- uid: KernSmith.FontGeneratorOptions.GradientStartG*
+  commentId: Overload:KernSmith.FontGeneratorOptions.GradientStartG
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_GradientStartG
+  name: GradientStartG
+  nameWithType: FontGeneratorOptions.GradientStartG
+  fullName: KernSmith.FontGeneratorOptions.GradientStartG
+- uid: KernSmith.FontGeneratorOptions.GradientStartB*
+  commentId: Overload:KernSmith.FontGeneratorOptions.GradientStartB
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_GradientStartB
+  name: GradientStartB
+  nameWithType: FontGeneratorOptions.GradientStartB
+  fullName: KernSmith.FontGeneratorOptions.GradientStartB
+- uid: KernSmith.FontGeneratorOptions.GradientEndR*
+  commentId: Overload:KernSmith.FontGeneratorOptions.GradientEndR
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_GradientEndR
+  name: GradientEndR
+  nameWithType: FontGeneratorOptions.GradientEndR
+  fullName: KernSmith.FontGeneratorOptions.GradientEndR
+- uid: KernSmith.FontGeneratorOptions.GradientEndG*
+  commentId: Overload:KernSmith.FontGeneratorOptions.GradientEndG
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_GradientEndG
+  name: GradientEndG
+  nameWithType: FontGeneratorOptions.GradientEndG
+  fullName: KernSmith.FontGeneratorOptions.GradientEndG
+- uid: KernSmith.FontGeneratorOptions.GradientEndB*
+  commentId: Overload:KernSmith.FontGeneratorOptions.GradientEndB
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_GradientEndB
+  name: GradientEndB
+  nameWithType: FontGeneratorOptions.GradientEndB
+  fullName: KernSmith.FontGeneratorOptions.GradientEndB
+- uid: KernSmith.FontGeneratorOptions.GradientAngle*
+  commentId: Overload:KernSmith.FontGeneratorOptions.GradientAngle
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_GradientAngle
+  name: GradientAngle
+  nameWithType: FontGeneratorOptions.GradientAngle
+  fullName: KernSmith.FontGeneratorOptions.GradientAngle
+- uid: System.Single
+  commentId: T:System.Single
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.single
+  name: float
+  nameWithType: float
+  fullName: float
+  nameWithType.vb: Single
+  fullName.vb: Single
+  name.vb: Single
+- uid: KernSmith.FontGeneratorOptions.GradientMidpoint*
+  commentId: Overload:KernSmith.FontGeneratorOptions.GradientMidpoint
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_GradientMidpoint
+  name: GradientMidpoint
+  nameWithType: FontGeneratorOptions.GradientMidpoint
+  fullName: KernSmith.FontGeneratorOptions.GradientMidpoint
+- uid: KernSmith.FontGeneratorOptions.ShadowOffsetX*
+  commentId: Overload:KernSmith.FontGeneratorOptions.ShadowOffsetX
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_ShadowOffsetX
+  name: ShadowOffsetX
+  nameWithType: FontGeneratorOptions.ShadowOffsetX
+  fullName: KernSmith.FontGeneratorOptions.ShadowOffsetX
+- uid: KernSmith.FontGeneratorOptions.ShadowOffsetY*
+  commentId: Overload:KernSmith.FontGeneratorOptions.ShadowOffsetY
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_ShadowOffsetY
+  name: ShadowOffsetY
+  nameWithType: FontGeneratorOptions.ShadowOffsetY
+  fullName: KernSmith.FontGeneratorOptions.ShadowOffsetY
+- uid: KernSmith.FontGeneratorOptions.ShadowR*
+  commentId: Overload:KernSmith.FontGeneratorOptions.ShadowR
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_ShadowR
+  name: ShadowR
+  nameWithType: FontGeneratorOptions.ShadowR
+  fullName: KernSmith.FontGeneratorOptions.ShadowR
+- uid: KernSmith.FontGeneratorOptions.ShadowG*
+  commentId: Overload:KernSmith.FontGeneratorOptions.ShadowG
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_ShadowG
+  name: ShadowG
+  nameWithType: FontGeneratorOptions.ShadowG
+  fullName: KernSmith.FontGeneratorOptions.ShadowG
+- uid: KernSmith.FontGeneratorOptions.ShadowB*
+  commentId: Overload:KernSmith.FontGeneratorOptions.ShadowB
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_ShadowB
+  name: ShadowB
+  nameWithType: FontGeneratorOptions.ShadowB
+  fullName: KernSmith.FontGeneratorOptions.ShadowB
+- uid: KernSmith.FontGeneratorOptions.ShadowOpacity*
+  commentId: Overload:KernSmith.FontGeneratorOptions.ShadowOpacity
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_ShadowOpacity
+  name: ShadowOpacity
+  nameWithType: FontGeneratorOptions.ShadowOpacity
+  fullName: KernSmith.FontGeneratorOptions.ShadowOpacity
+- uid: KernSmith.FontGeneratorOptions.ShadowBlur*
+  commentId: Overload:KernSmith.FontGeneratorOptions.ShadowBlur
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_ShadowBlur
+  name: ShadowBlur
+  nameWithType: FontGeneratorOptions.ShadowBlur
+  fullName: KernSmith.FontGeneratorOptions.ShadowBlur
+- uid: KernSmith.FontGeneratorOptions.FontReader*
+  commentId: Overload:KernSmith.FontGeneratorOptions.FontReader
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_FontReader
+  name: FontReader
+  nameWithType: FontGeneratorOptions.FontReader
+  fullName: KernSmith.FontGeneratorOptions.FontReader
+- uid: KernSmith.Font.IFontReader
+  commentId: T:KernSmith.Font.IFontReader
+  parent: KernSmith.Font
+  href: KernSmith.Font.IFontReader.html
+  name: IFontReader
+  nameWithType: IFontReader
+  fullName: KernSmith.Font.IFontReader
+- uid: KernSmith.Font
+  commentId: N:KernSmith.Font
+  href: KernSmith.html
+  name: KernSmith.Font
+  nameWithType: KernSmith.Font
+  fullName: KernSmith.Font
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+- uid: KernSmith.FontGeneratorOptions.Rasterizer*
+  commentId: Overload:KernSmith.FontGeneratorOptions.Rasterizer
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_Rasterizer
+  name: Rasterizer
+  nameWithType: FontGeneratorOptions.Rasterizer
+  fullName: KernSmith.FontGeneratorOptions.Rasterizer
+- uid: KernSmith.Rasterizer.IRasterizer
+  commentId: T:KernSmith.Rasterizer.IRasterizer
+  parent: KernSmith.Rasterizer
+  href: KernSmith.Rasterizer.IRasterizer.html
+  name: IRasterizer
+  nameWithType: IRasterizer
+  fullName: KernSmith.Rasterizer.IRasterizer
+- uid: KernSmith.Rasterizer
+  commentId: N:KernSmith.Rasterizer
+  href: KernSmith.html
+  name: KernSmith.Rasterizer
+  nameWithType: KernSmith.Rasterizer
+  fullName: KernSmith.Rasterizer
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Rasterizer
+    name: Rasterizer
+    href: KernSmith.Rasterizer.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Rasterizer
+    name: Rasterizer
+    href: KernSmith.Rasterizer.html
+- uid: KernSmith.FontGeneratorOptions.Packer*
+  commentId: Overload:KernSmith.FontGeneratorOptions.Packer
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_Packer
+  name: Packer
+  nameWithType: FontGeneratorOptions.Packer
+  fullName: KernSmith.FontGeneratorOptions.Packer
+- uid: KernSmith.Atlas.IAtlasPacker
+  commentId: T:KernSmith.Atlas.IAtlasPacker
+  parent: KernSmith.Atlas
+  href: KernSmith.Atlas.IAtlasPacker.html
+  name: IAtlasPacker
+  nameWithType: IAtlasPacker
+  fullName: KernSmith.Atlas.IAtlasPacker
+- uid: KernSmith.Atlas
+  commentId: N:KernSmith.Atlas
+  href: KernSmith.html
+  name: KernSmith.Atlas
+  nameWithType: KernSmith.Atlas
+  fullName: KernSmith.Atlas
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Atlas
+    name: Atlas
+    href: KernSmith.Atlas.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Atlas
+    name: Atlas
+    href: KernSmith.Atlas.html
+- uid: KernSmith.FontGeneratorOptions.AtlasEncoder*
+  commentId: Overload:KernSmith.FontGeneratorOptions.AtlasEncoder
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_AtlasEncoder
+  name: AtlasEncoder
+  nameWithType: FontGeneratorOptions.AtlasEncoder
+  fullName: KernSmith.FontGeneratorOptions.AtlasEncoder
+- uid: KernSmith.Atlas.IAtlasEncoder
+  commentId: T:KernSmith.Atlas.IAtlasEncoder
+  parent: KernSmith.Atlas
+  href: KernSmith.Atlas.IAtlasEncoder.html
+  name: IAtlasEncoder
+  nameWithType: IAtlasEncoder
+  fullName: KernSmith.Atlas.IAtlasEncoder
+- uid: KernSmith.FontGeneratorOptions.PostProcessors*
+  commentId: Overload:KernSmith.FontGeneratorOptions.PostProcessors
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_PostProcessors
+  name: PostProcessors
+  nameWithType: FontGeneratorOptions.PostProcessors
+  fullName: KernSmith.FontGeneratorOptions.PostProcessors
+- uid: System.Collections.Generic.IReadOnlyList{KernSmith.Rasterizer.IGlyphPostProcessor}
+  commentId: T:System.Collections.Generic.IReadOnlyList{KernSmith.Rasterizer.IGlyphPostProcessor}
+  parent: System.Collections.Generic
+  definition: System.Collections.Generic.IReadOnlyList`1
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  name: IReadOnlyList<IGlyphPostProcessor>
+  nameWithType: IReadOnlyList<IGlyphPostProcessor>
+  fullName: System.Collections.Generic.IReadOnlyList<KernSmith.Rasterizer.IGlyphPostProcessor>
+  nameWithType.vb: IReadOnlyList(Of IGlyphPostProcessor)
+  fullName.vb: System.Collections.Generic.IReadOnlyList(Of KernSmith.Rasterizer.IGlyphPostProcessor)
+  name.vb: IReadOnlyList(Of IGlyphPostProcessor)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: <
+  - uid: KernSmith.Rasterizer.IGlyphPostProcessor
+    name: IGlyphPostProcessor
+    href: KernSmith.Rasterizer.IGlyphPostProcessor.html
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: KernSmith.Rasterizer.IGlyphPostProcessor
+    name: IGlyphPostProcessor
+    href: KernSmith.Rasterizer.IGlyphPostProcessor.html
+  - name: )
+- uid: System.Collections.Generic.IReadOnlyList`1
+  commentId: T:System.Collections.Generic.IReadOnlyList`1
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  name: IReadOnlyList<T>
+  nameWithType: IReadOnlyList<T>
+  fullName: System.Collections.Generic.IReadOnlyList<T>
+  nameWithType.vb: IReadOnlyList(Of T)
+  fullName.vb: System.Collections.Generic.IReadOnlyList(Of T)
+  name.vb: IReadOnlyList(Of T)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: <
+  - name: T
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: (
+  - name: Of
+  - name: " "
+  - name: T
+  - name: )
+- uid: KernSmith.FontGeneratorOptions.CollectMetrics*
+  commentId: Overload:KernSmith.FontGeneratorOptions.CollectMetrics
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_CollectMetrics
+  name: CollectMetrics
+  nameWithType: FontGeneratorOptions.CollectMetrics
+  fullName: KernSmith.FontGeneratorOptions.CollectMetrics
+- uid: KernSmith.FontGeneratorOptions.SizeConstraints*
+  commentId: Overload:KernSmith.FontGeneratorOptions.SizeConstraints
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_SizeConstraints
+  name: SizeConstraints
+  nameWithType: FontGeneratorOptions.SizeConstraints
+  fullName: KernSmith.FontGeneratorOptions.SizeConstraints
+- uid: KernSmith.AtlasSizeConstraints
+  commentId: T:KernSmith.AtlasSizeConstraints
+  parent: KernSmith
+  href: KernSmith.AtlasSizeConstraints.html
+  name: AtlasSizeConstraints
+  nameWithType: AtlasSizeConstraints
+  fullName: KernSmith.AtlasSizeConstraints
+- uid: KernSmith.FontGeneratorOptions.TargetRegion*
+  commentId: Overload:KernSmith.FontGeneratorOptions.TargetRegion
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_TargetRegion
+  name: TargetRegion
+  nameWithType: FontGeneratorOptions.TargetRegion
+  fullName: KernSmith.FontGeneratorOptions.TargetRegion
+- uid: KernSmith.AtlasTargetRegion
+  commentId: T:KernSmith.AtlasTargetRegion
+  parent: KernSmith
+  href: KernSmith.AtlasTargetRegion.html
+  name: AtlasTargetRegion
+  nameWithType: AtlasTargetRegion
+  fullName: KernSmith.AtlasTargetRegion

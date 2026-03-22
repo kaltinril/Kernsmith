@@ -1,0 +1,779 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Output.Model.CharEntry
+  commentId: T:KernSmith.Output.Model.CharEntry
+  id: CharEntry
+  parent: KernSmith.Output.Model
+  children:
+  - KernSmith.Output.Model.CharEntry.#ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)
+  - KernSmith.Output.Model.CharEntry.Channel
+  - KernSmith.Output.Model.CharEntry.Height
+  - KernSmith.Output.Model.CharEntry.Id
+  - KernSmith.Output.Model.CharEntry.Page
+  - KernSmith.Output.Model.CharEntry.Width
+  - KernSmith.Output.Model.CharEntry.X
+  - KernSmith.Output.Model.CharEntry.XAdvance
+  - KernSmith.Output.Model.CharEntry.XOffset
+  - KernSmith.Output.Model.CharEntry.Y
+  - KernSmith.Output.Model.CharEntry.YOffset
+  langs:
+  - csharp
+  - vb
+  name: CharEntry
+  nameWithType: CharEntry
+  fullName: KernSmith.Output.Model.CharEntry
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/CharEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: CharEntry
+    path: src/KernSmith/Output/Model/CharEntry.cs
+    startLine: 5
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: BMFont char entry — a single glyph's atlas position and rendering metrics.
+  example: []
+  syntax:
+    content: 'public sealed record CharEntry : IEquatable<CharEntry>'
+    content.vb: Public NotInheritable Class CharEntry Implements IEquatable(Of CharEntry)
+  inheritance:
+  - System.Object
+  implements:
+  - System.IEquatable{KernSmith.Output.Model.CharEntry}
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.Output.Model.CharEntry.#ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)
+  commentId: M:KernSmith.Output.Model.CharEntry.#ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)
+  id: '#ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)'
+  parent: KernSmith.Output.Model.CharEntry
+  langs:
+  - csharp
+  - vb
+  name: CharEntry(int, int, int, int, int, int, int, int, int, int)
+  nameWithType: CharEntry.CharEntry(int, int, int, int, int, int, int, int, int, int)
+  fullName: KernSmith.Output.Model.CharEntry.CharEntry(int, int, int, int, int, int, int, int, int, int)
+  type: Constructor
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/CharEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: .ctor
+    path: src/KernSmith/Output/Model/CharEntry.cs
+    startLine: 5
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: BMFont char entry — a single glyph's atlas position and rendering metrics.
+  example: []
+  syntax:
+    content: public CharEntry(int Id, int X, int Y, int Width, int Height, int XOffset, int YOffset, int XAdvance, int Page, int Channel = 15)
+    parameters:
+    - id: Id
+      type: System.Int32
+    - id: X
+      type: System.Int32
+    - id: Y
+      type: System.Int32
+    - id: Width
+      type: System.Int32
+    - id: Height
+      type: System.Int32
+    - id: XOffset
+      type: System.Int32
+    - id: YOffset
+      type: System.Int32
+    - id: XAdvance
+      type: System.Int32
+    - id: Page
+      type: System.Int32
+    - id: Channel
+      type: System.Int32
+    content.vb: Public Sub New(Id As Integer, X As Integer, Y As Integer, Width As Integer, Height As Integer, XOffset As Integer, YOffset As Integer, XAdvance As Integer, Page As Integer, Channel As Integer = 15)
+  overload: KernSmith.Output.Model.CharEntry.#ctor*
+  nameWithType.vb: CharEntry.New(Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer)
+  fullName.vb: KernSmith.Output.Model.CharEntry.New(Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer)
+  name.vb: New(Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer)
+- uid: KernSmith.Output.Model.CharEntry.Id
+  commentId: P:KernSmith.Output.Model.CharEntry.Id
+  id: Id
+  parent: KernSmith.Output.Model.CharEntry
+  langs:
+  - csharp
+  - vb
+  name: Id
+  nameWithType: CharEntry.Id
+  fullName: KernSmith.Output.Model.CharEntry.Id
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/CharEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Id
+    path: src/KernSmith/Output/Model/CharEntry.cs
+    startLine: 6
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  syntax:
+    content: public int Id { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Id As Integer
+  overload: KernSmith.Output.Model.CharEntry.Id*
+- uid: KernSmith.Output.Model.CharEntry.X
+  commentId: P:KernSmith.Output.Model.CharEntry.X
+  id: X
+  parent: KernSmith.Output.Model.CharEntry
+  langs:
+  - csharp
+  - vb
+  name: X
+  nameWithType: CharEntry.X
+  fullName: KernSmith.Output.Model.CharEntry.X
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/CharEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: X
+    path: src/KernSmith/Output/Model/CharEntry.cs
+    startLine: 7
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  syntax:
+    content: public int X { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property X As Integer
+  overload: KernSmith.Output.Model.CharEntry.X*
+- uid: KernSmith.Output.Model.CharEntry.Y
+  commentId: P:KernSmith.Output.Model.CharEntry.Y
+  id: Y
+  parent: KernSmith.Output.Model.CharEntry
+  langs:
+  - csharp
+  - vb
+  name: Y
+  nameWithType: CharEntry.Y
+  fullName: KernSmith.Output.Model.CharEntry.Y
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/CharEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Y
+    path: src/KernSmith/Output/Model/CharEntry.cs
+    startLine: 8
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  syntax:
+    content: public int Y { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Y As Integer
+  overload: KernSmith.Output.Model.CharEntry.Y*
+- uid: KernSmith.Output.Model.CharEntry.Width
+  commentId: P:KernSmith.Output.Model.CharEntry.Width
+  id: Width
+  parent: KernSmith.Output.Model.CharEntry
+  langs:
+  - csharp
+  - vb
+  name: Width
+  nameWithType: CharEntry.Width
+  fullName: KernSmith.Output.Model.CharEntry.Width
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/CharEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Width
+    path: src/KernSmith/Output/Model/CharEntry.cs
+    startLine: 9
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  syntax:
+    content: public int Width { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Width As Integer
+  overload: KernSmith.Output.Model.CharEntry.Width*
+- uid: KernSmith.Output.Model.CharEntry.Height
+  commentId: P:KernSmith.Output.Model.CharEntry.Height
+  id: Height
+  parent: KernSmith.Output.Model.CharEntry
+  langs:
+  - csharp
+  - vb
+  name: Height
+  nameWithType: CharEntry.Height
+  fullName: KernSmith.Output.Model.CharEntry.Height
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/CharEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Height
+    path: src/KernSmith/Output/Model/CharEntry.cs
+    startLine: 10
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  syntax:
+    content: public int Height { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Height As Integer
+  overload: KernSmith.Output.Model.CharEntry.Height*
+- uid: KernSmith.Output.Model.CharEntry.XOffset
+  commentId: P:KernSmith.Output.Model.CharEntry.XOffset
+  id: XOffset
+  parent: KernSmith.Output.Model.CharEntry
+  langs:
+  - csharp
+  - vb
+  name: XOffset
+  nameWithType: CharEntry.XOffset
+  fullName: KernSmith.Output.Model.CharEntry.XOffset
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/CharEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: XOffset
+    path: src/KernSmith/Output/Model/CharEntry.cs
+    startLine: 11
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  syntax:
+    content: public int XOffset { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property XOffset As Integer
+  overload: KernSmith.Output.Model.CharEntry.XOffset*
+- uid: KernSmith.Output.Model.CharEntry.YOffset
+  commentId: P:KernSmith.Output.Model.CharEntry.YOffset
+  id: YOffset
+  parent: KernSmith.Output.Model.CharEntry
+  langs:
+  - csharp
+  - vb
+  name: YOffset
+  nameWithType: CharEntry.YOffset
+  fullName: KernSmith.Output.Model.CharEntry.YOffset
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/CharEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: YOffset
+    path: src/KernSmith/Output/Model/CharEntry.cs
+    startLine: 12
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  syntax:
+    content: public int YOffset { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property YOffset As Integer
+  overload: KernSmith.Output.Model.CharEntry.YOffset*
+- uid: KernSmith.Output.Model.CharEntry.XAdvance
+  commentId: P:KernSmith.Output.Model.CharEntry.XAdvance
+  id: XAdvance
+  parent: KernSmith.Output.Model.CharEntry
+  langs:
+  - csharp
+  - vb
+  name: XAdvance
+  nameWithType: CharEntry.XAdvance
+  fullName: KernSmith.Output.Model.CharEntry.XAdvance
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/CharEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: XAdvance
+    path: src/KernSmith/Output/Model/CharEntry.cs
+    startLine: 13
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  syntax:
+    content: public int XAdvance { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property XAdvance As Integer
+  overload: KernSmith.Output.Model.CharEntry.XAdvance*
+- uid: KernSmith.Output.Model.CharEntry.Page
+  commentId: P:KernSmith.Output.Model.CharEntry.Page
+  id: Page
+  parent: KernSmith.Output.Model.CharEntry
+  langs:
+  - csharp
+  - vb
+  name: Page
+  nameWithType: CharEntry.Page
+  fullName: KernSmith.Output.Model.CharEntry.Page
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/CharEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Page
+    path: src/KernSmith/Output/Model/CharEntry.cs
+    startLine: 14
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  syntax:
+    content: public int Page { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Page As Integer
+  overload: KernSmith.Output.Model.CharEntry.Page*
+- uid: KernSmith.Output.Model.CharEntry.Channel
+  commentId: P:KernSmith.Output.Model.CharEntry.Channel
+  id: Channel
+  parent: KernSmith.Output.Model.CharEntry
+  langs:
+  - csharp
+  - vb
+  name: Channel
+  nameWithType: CharEntry.Channel
+  fullName: KernSmith.Output.Model.CharEntry.Channel
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/CharEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Channel
+    path: src/KernSmith/Output/Model/CharEntry.cs
+    startLine: 15
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  syntax:
+    content: public int Channel { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Channel As Integer
+  overload: KernSmith.Output.Model.CharEntry.Channel*
+references:
+- uid: KernSmith.Output.Model
+  commentId: N:KernSmith.Output.Model
+  href: KernSmith.html
+  name: KernSmith.Output.Model
+  nameWithType: KernSmith.Output.Model
+  fullName: KernSmith.Output.Model
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  - name: .
+  - uid: KernSmith.Output.Model
+    name: Model
+    href: KernSmith.Output.Model.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  - name: .
+  - uid: KernSmith.Output.Model
+    name: Model
+    href: KernSmith.Output.Model.html
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: System.IEquatable{KernSmith.Output.Model.CharEntry}
+  commentId: T:System.IEquatable{KernSmith.Output.Model.CharEntry}
+  parent: System
+  definition: System.IEquatable`1
+  href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  name: IEquatable<CharEntry>
+  nameWithType: IEquatable<CharEntry>
+  fullName: System.IEquatable<KernSmith.Output.Model.CharEntry>
+  nameWithType.vb: IEquatable(Of CharEntry)
+  fullName.vb: System.IEquatable(Of KernSmith.Output.Model.CharEntry)
+  name.vb: IEquatable(Of CharEntry)
+  spec.csharp:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: <
+  - uid: KernSmith.Output.Model.CharEntry
+    name: CharEntry
+    href: KernSmith.Output.Model.CharEntry.html
+  - name: '>'
+  spec.vb:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: KernSmith.Output.Model.CharEntry
+    name: CharEntry
+    href: KernSmith.Output.Model.CharEntry.html
+  - name: )
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: System.IEquatable`1
+  commentId: T:System.IEquatable`1
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  name: IEquatable<T>
+  nameWithType: IEquatable<T>
+  fullName: System.IEquatable<T>
+  nameWithType.vb: IEquatable(Of T)
+  fullName.vb: System.IEquatable(Of T)
+  name.vb: IEquatable(Of T)
+  spec.csharp:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: <
+  - name: T
+  - name: '>'
+  spec.vb:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - name: T
+  - name: )
+- uid: KernSmith.Output.Model.CharEntry.#ctor*
+  commentId: Overload:KernSmith.Output.Model.CharEntry.#ctor
+  href: KernSmith.Output.Model.CharEntry.html#KernSmith_Output_Model_CharEntry__ctor_System_Int32_System_Int32_System_Int32_System_Int32_System_Int32_System_Int32_System_Int32_System_Int32_System_Int32_System_Int32_
+  name: CharEntry
+  nameWithType: CharEntry.CharEntry
+  fullName: KernSmith.Output.Model.CharEntry.CharEntry
+  nameWithType.vb: CharEntry.New
+  fullName.vb: KernSmith.Output.Model.CharEntry.New
+  name.vb: New
+- uid: System.Int32
+  commentId: T:System.Int32
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int
+  nameWithType: int
+  fullName: int
+  nameWithType.vb: Integer
+  fullName.vb: Integer
+  name.vb: Integer
+- uid: KernSmith.Output.Model.CharEntry.Id*
+  commentId: Overload:KernSmith.Output.Model.CharEntry.Id
+  href: KernSmith.Output.Model.CharEntry.html#KernSmith_Output_Model_CharEntry_Id
+  name: Id
+  nameWithType: CharEntry.Id
+  fullName: KernSmith.Output.Model.CharEntry.Id
+- uid: KernSmith.Output.Model.CharEntry.X*
+  commentId: Overload:KernSmith.Output.Model.CharEntry.X
+  href: KernSmith.Output.Model.CharEntry.html#KernSmith_Output_Model_CharEntry_X
+  name: X
+  nameWithType: CharEntry.X
+  fullName: KernSmith.Output.Model.CharEntry.X
+- uid: KernSmith.Output.Model.CharEntry.Y*
+  commentId: Overload:KernSmith.Output.Model.CharEntry.Y
+  href: KernSmith.Output.Model.CharEntry.html#KernSmith_Output_Model_CharEntry_Y
+  name: Y
+  nameWithType: CharEntry.Y
+  fullName: KernSmith.Output.Model.CharEntry.Y
+- uid: KernSmith.Output.Model.CharEntry.Width*
+  commentId: Overload:KernSmith.Output.Model.CharEntry.Width
+  href: KernSmith.Output.Model.CharEntry.html#KernSmith_Output_Model_CharEntry_Width
+  name: Width
+  nameWithType: CharEntry.Width
+  fullName: KernSmith.Output.Model.CharEntry.Width
+- uid: KernSmith.Output.Model.CharEntry.Height*
+  commentId: Overload:KernSmith.Output.Model.CharEntry.Height
+  href: KernSmith.Output.Model.CharEntry.html#KernSmith_Output_Model_CharEntry_Height
+  name: Height
+  nameWithType: CharEntry.Height
+  fullName: KernSmith.Output.Model.CharEntry.Height
+- uid: KernSmith.Output.Model.CharEntry.XOffset*
+  commentId: Overload:KernSmith.Output.Model.CharEntry.XOffset
+  href: KernSmith.Output.Model.CharEntry.html#KernSmith_Output_Model_CharEntry_XOffset
+  name: XOffset
+  nameWithType: CharEntry.XOffset
+  fullName: KernSmith.Output.Model.CharEntry.XOffset
+- uid: KernSmith.Output.Model.CharEntry.YOffset*
+  commentId: Overload:KernSmith.Output.Model.CharEntry.YOffset
+  href: KernSmith.Output.Model.CharEntry.html#KernSmith_Output_Model_CharEntry_YOffset
+  name: YOffset
+  nameWithType: CharEntry.YOffset
+  fullName: KernSmith.Output.Model.CharEntry.YOffset
+- uid: KernSmith.Output.Model.CharEntry.XAdvance*
+  commentId: Overload:KernSmith.Output.Model.CharEntry.XAdvance
+  href: KernSmith.Output.Model.CharEntry.html#KernSmith_Output_Model_CharEntry_XAdvance
+  name: XAdvance
+  nameWithType: CharEntry.XAdvance
+  fullName: KernSmith.Output.Model.CharEntry.XAdvance
+- uid: KernSmith.Output.Model.CharEntry.Page*
+  commentId: Overload:KernSmith.Output.Model.CharEntry.Page
+  href: KernSmith.Output.Model.CharEntry.html#KernSmith_Output_Model_CharEntry_Page
+  name: Page
+  nameWithType: CharEntry.Page
+  fullName: KernSmith.Output.Model.CharEntry.Page
+- uid: KernSmith.Output.Model.CharEntry.Channel*
+  commentId: Overload:KernSmith.Output.Model.CharEntry.Channel
+  href: KernSmith.Output.Model.CharEntry.html#KernSmith_Output_Model_CharEntry_Channel
+  name: Channel
+  nameWithType: CharEntry.Channel
+  fullName: KernSmith.Output.Model.CharEntry.Channel

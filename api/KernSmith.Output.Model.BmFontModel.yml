@@ -1,0 +1,696 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Output.Model.BmFontModel
+  commentId: T:KernSmith.Output.Model.BmFontModel
+  id: BmFontModel
+  parent: KernSmith.Output.Model
+  children:
+  - KernSmith.Output.Model.BmFontModel.Characters
+  - KernSmith.Output.Model.BmFontModel.Common
+  - KernSmith.Output.Model.BmFontModel.Extended
+  - KernSmith.Output.Model.BmFontModel.Info
+  - KernSmith.Output.Model.BmFontModel.KerningPairs
+  - KernSmith.Output.Model.BmFontModel.Pages
+  langs:
+  - csharp
+  - vb
+  name: BmFontModel
+  nameWithType: BmFontModel
+  fullName: KernSmith.Output.Model.BmFontModel
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/BmFontModel.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: BmFontModel
+    path: src/KernSmith/Output/Model/BmFontModel.cs
+    startLine: 5
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: In-memory representation of a BMFont descriptor file.
+  example: []
+  syntax:
+    content: public sealed class BmFontModel
+    content.vb: Public NotInheritable Class BmFontModel
+  inheritance:
+  - System.Object
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.Output.Model.BmFontModel.Info
+  commentId: P:KernSmith.Output.Model.BmFontModel.Info
+  id: Info
+  parent: KernSmith.Output.Model.BmFontModel
+  langs:
+  - csharp
+  - vb
+  name: Info
+  nameWithType: BmFontModel.Info
+  fullName: KernSmith.Output.Model.BmFontModel.Info
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/BmFontModel.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Info
+    path: src/KernSmith/Output/Model/BmFontModel.cs
+    startLine: 8
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: Font metadata and generation settings.
+  example: []
+  syntax:
+    content: public required InfoBlock Info { get; init; }
+    parameters: []
+    return:
+      type: KernSmith.Output.Model.InfoBlock
+    content.vb: Public Property Info As InfoBlock
+  overload: KernSmith.Output.Model.BmFontModel.Info*
+- uid: KernSmith.Output.Model.BmFontModel.Common
+  commentId: P:KernSmith.Output.Model.BmFontModel.Common
+  id: Common
+  parent: KernSmith.Output.Model.BmFontModel
+  langs:
+  - csharp
+  - vb
+  name: Common
+  nameWithType: BmFontModel.Common
+  fullName: KernSmith.Output.Model.BmFontModel.Common
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/BmFontModel.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Common
+    path: src/KernSmith/Output/Model/BmFontModel.cs
+    startLine: 11
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: Common metrics shared across all glyphs.
+  example: []
+  syntax:
+    content: public required CommonBlock Common { get; init; }
+    parameters: []
+    return:
+      type: KernSmith.Output.Model.CommonBlock
+    content.vb: Public Property Common As CommonBlock
+  overload: KernSmith.Output.Model.BmFontModel.Common*
+- uid: KernSmith.Output.Model.BmFontModel.Pages
+  commentId: P:KernSmith.Output.Model.BmFontModel.Pages
+  id: Pages
+  parent: KernSmith.Output.Model.BmFontModel
+  langs:
+  - csharp
+  - vb
+  name: Pages
+  nameWithType: BmFontModel.Pages
+  fullName: KernSmith.Output.Model.BmFontModel.Pages
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/BmFontModel.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Pages
+    path: src/KernSmith/Output/Model/BmFontModel.cs
+    startLine: 14
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: Atlas texture page entries with filenames.
+  example: []
+  syntax:
+    content: public required IReadOnlyList<PageEntry> Pages { get; init; }
+    parameters: []
+    return:
+      type: System.Collections.Generic.IReadOnlyList{KernSmith.Output.Model.PageEntry}
+    content.vb: Public Property Pages As IReadOnlyList(Of PageEntry)
+  overload: KernSmith.Output.Model.BmFontModel.Pages*
+- uid: KernSmith.Output.Model.BmFontModel.Characters
+  commentId: P:KernSmith.Output.Model.BmFontModel.Characters
+  id: Characters
+  parent: KernSmith.Output.Model.BmFontModel
+  langs:
+  - csharp
+  - vb
+  name: Characters
+  nameWithType: BmFontModel.Characters
+  fullName: KernSmith.Output.Model.BmFontModel.Characters
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/BmFontModel.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Characters
+    path: src/KernSmith/Output/Model/BmFontModel.cs
+    startLine: 17
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: Per-character glyph entries.
+  example: []
+  syntax:
+    content: public required IReadOnlyList<CharEntry> Characters { get; init; }
+    parameters: []
+    return:
+      type: System.Collections.Generic.IReadOnlyList{KernSmith.Output.Model.CharEntry}
+    content.vb: Public Property Characters As IReadOnlyList(Of CharEntry)
+  overload: KernSmith.Output.Model.BmFontModel.Characters*
+- uid: KernSmith.Output.Model.BmFontModel.KerningPairs
+  commentId: P:KernSmith.Output.Model.BmFontModel.KerningPairs
+  id: KerningPairs
+  parent: KernSmith.Output.Model.BmFontModel
+  langs:
+  - csharp
+  - vb
+  name: KerningPairs
+  nameWithType: BmFontModel.KerningPairs
+  fullName: KernSmith.Output.Model.BmFontModel.KerningPairs
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/BmFontModel.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: KerningPairs
+    path: src/KernSmith/Output/Model/BmFontModel.cs
+    startLine: 20
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: Kerning pair adjustments.
+  example: []
+  syntax:
+    content: public IReadOnlyList<KerningEntry> KerningPairs { get; init; }
+    parameters: []
+    return:
+      type: System.Collections.Generic.IReadOnlyList{KernSmith.Output.Model.KerningEntry}
+    content.vb: Public Property KerningPairs As IReadOnlyList(Of KerningEntry)
+  overload: KernSmith.Output.Model.BmFontModel.KerningPairs*
+- uid: KernSmith.Output.Model.BmFontModel.Extended
+  commentId: P:KernSmith.Output.Model.BmFontModel.Extended
+  id: Extended
+  parent: KernSmith.Output.Model.BmFontModel
+  langs:
+  - csharp
+  - vb
+  name: Extended
+  nameWithType: BmFontModel.Extended
+  fullName: KernSmith.Output.Model.BmFontModel.Extended
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/BmFontModel.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Extended
+    path: src/KernSmith/Output/Model/BmFontModel.cs
+    startLine: 23
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: KernSmith-specific extended metadata, or null if not present.
+  example: []
+  syntax:
+    content: public ExtendedMetadata? Extended { get; init; }
+    parameters: []
+    return:
+      type: KernSmith.Output.Model.ExtendedMetadata
+    content.vb: Public Property Extended As ExtendedMetadata
+  overload: KernSmith.Output.Model.BmFontModel.Extended*
+references:
+- uid: KernSmith.Output.Model
+  commentId: N:KernSmith.Output.Model
+  href: KernSmith.html
+  name: KernSmith.Output.Model
+  nameWithType: KernSmith.Output.Model
+  fullName: KernSmith.Output.Model
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  - name: .
+  - uid: KernSmith.Output.Model
+    name: Model
+    href: KernSmith.Output.Model.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  - name: .
+  - uid: KernSmith.Output.Model
+    name: Model
+    href: KernSmith.Output.Model.html
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: KernSmith.Output.Model.BmFontModel.Info*
+  commentId: Overload:KernSmith.Output.Model.BmFontModel.Info
+  href: KernSmith.Output.Model.BmFontModel.html#KernSmith_Output_Model_BmFontModel_Info
+  name: Info
+  nameWithType: BmFontModel.Info
+  fullName: KernSmith.Output.Model.BmFontModel.Info
+- uid: KernSmith.Output.Model.InfoBlock
+  commentId: T:KernSmith.Output.Model.InfoBlock
+  parent: KernSmith.Output.Model
+  href: KernSmith.Output.Model.InfoBlock.html
+  name: InfoBlock
+  nameWithType: InfoBlock
+  fullName: KernSmith.Output.Model.InfoBlock
+- uid: KernSmith.Output.Model.BmFontModel.Common*
+  commentId: Overload:KernSmith.Output.Model.BmFontModel.Common
+  href: KernSmith.Output.Model.BmFontModel.html#KernSmith_Output_Model_BmFontModel_Common
+  name: Common
+  nameWithType: BmFontModel.Common
+  fullName: KernSmith.Output.Model.BmFontModel.Common
+- uid: KernSmith.Output.Model.CommonBlock
+  commentId: T:KernSmith.Output.Model.CommonBlock
+  parent: KernSmith.Output.Model
+  href: KernSmith.Output.Model.CommonBlock.html
+  name: CommonBlock
+  nameWithType: CommonBlock
+  fullName: KernSmith.Output.Model.CommonBlock
+- uid: KernSmith.Output.Model.BmFontModel.Pages*
+  commentId: Overload:KernSmith.Output.Model.BmFontModel.Pages
+  href: KernSmith.Output.Model.BmFontModel.html#KernSmith_Output_Model_BmFontModel_Pages
+  name: Pages
+  nameWithType: BmFontModel.Pages
+  fullName: KernSmith.Output.Model.BmFontModel.Pages
+- uid: System.Collections.Generic.IReadOnlyList{KernSmith.Output.Model.PageEntry}
+  commentId: T:System.Collections.Generic.IReadOnlyList{KernSmith.Output.Model.PageEntry}
+  parent: System.Collections.Generic
+  definition: System.Collections.Generic.IReadOnlyList`1
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  name: IReadOnlyList<PageEntry>
+  nameWithType: IReadOnlyList<PageEntry>
+  fullName: System.Collections.Generic.IReadOnlyList<KernSmith.Output.Model.PageEntry>
+  nameWithType.vb: IReadOnlyList(Of PageEntry)
+  fullName.vb: System.Collections.Generic.IReadOnlyList(Of KernSmith.Output.Model.PageEntry)
+  name.vb: IReadOnlyList(Of PageEntry)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: <
+  - uid: KernSmith.Output.Model.PageEntry
+    name: PageEntry
+    href: KernSmith.Output.Model.PageEntry.html
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: KernSmith.Output.Model.PageEntry
+    name: PageEntry
+    href: KernSmith.Output.Model.PageEntry.html
+  - name: )
+- uid: System.Collections.Generic.IReadOnlyList`1
+  commentId: T:System.Collections.Generic.IReadOnlyList`1
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  name: IReadOnlyList<T>
+  nameWithType: IReadOnlyList<T>
+  fullName: System.Collections.Generic.IReadOnlyList<T>
+  nameWithType.vb: IReadOnlyList(Of T)
+  fullName.vb: System.Collections.Generic.IReadOnlyList(Of T)
+  name.vb: IReadOnlyList(Of T)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: <
+  - name: T
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: (
+  - name: Of
+  - name: " "
+  - name: T
+  - name: )
+- uid: System.Collections.Generic
+  commentId: N:System.Collections.Generic
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System.Collections.Generic
+  nameWithType: System.Collections.Generic
+  fullName: System.Collections.Generic
+  spec.csharp:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic
+  spec.vb:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic
+- uid: KernSmith.Output.Model.BmFontModel.Characters*
+  commentId: Overload:KernSmith.Output.Model.BmFontModel.Characters
+  href: KernSmith.Output.Model.BmFontModel.html#KernSmith_Output_Model_BmFontModel_Characters
+  name: Characters
+  nameWithType: BmFontModel.Characters
+  fullName: KernSmith.Output.Model.BmFontModel.Characters
+- uid: System.Collections.Generic.IReadOnlyList{KernSmith.Output.Model.CharEntry}
+  commentId: T:System.Collections.Generic.IReadOnlyList{KernSmith.Output.Model.CharEntry}
+  parent: System.Collections.Generic
+  definition: System.Collections.Generic.IReadOnlyList`1
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  name: IReadOnlyList<CharEntry>
+  nameWithType: IReadOnlyList<CharEntry>
+  fullName: System.Collections.Generic.IReadOnlyList<KernSmith.Output.Model.CharEntry>
+  nameWithType.vb: IReadOnlyList(Of CharEntry)
+  fullName.vb: System.Collections.Generic.IReadOnlyList(Of KernSmith.Output.Model.CharEntry)
+  name.vb: IReadOnlyList(Of CharEntry)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: <
+  - uid: KernSmith.Output.Model.CharEntry
+    name: CharEntry
+    href: KernSmith.Output.Model.CharEntry.html
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: KernSmith.Output.Model.CharEntry
+    name: CharEntry
+    href: KernSmith.Output.Model.CharEntry.html
+  - name: )
+- uid: KernSmith.Output.Model.BmFontModel.KerningPairs*
+  commentId: Overload:KernSmith.Output.Model.BmFontModel.KerningPairs
+  href: KernSmith.Output.Model.BmFontModel.html#KernSmith_Output_Model_BmFontModel_KerningPairs
+  name: KerningPairs
+  nameWithType: BmFontModel.KerningPairs
+  fullName: KernSmith.Output.Model.BmFontModel.KerningPairs
+- uid: System.Collections.Generic.IReadOnlyList{KernSmith.Output.Model.KerningEntry}
+  commentId: T:System.Collections.Generic.IReadOnlyList{KernSmith.Output.Model.KerningEntry}
+  parent: System.Collections.Generic
+  definition: System.Collections.Generic.IReadOnlyList`1
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  name: IReadOnlyList<KerningEntry>
+  nameWithType: IReadOnlyList<KerningEntry>
+  fullName: System.Collections.Generic.IReadOnlyList<KernSmith.Output.Model.KerningEntry>
+  nameWithType.vb: IReadOnlyList(Of KerningEntry)
+  fullName.vb: System.Collections.Generic.IReadOnlyList(Of KernSmith.Output.Model.KerningEntry)
+  name.vb: IReadOnlyList(Of KerningEntry)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: <
+  - uid: KernSmith.Output.Model.KerningEntry
+    name: KerningEntry
+    href: KernSmith.Output.Model.KerningEntry.html
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: KernSmith.Output.Model.KerningEntry
+    name: KerningEntry
+    href: KernSmith.Output.Model.KerningEntry.html
+  - name: )
+- uid: KernSmith.Output.Model.BmFontModel.Extended*
+  commentId: Overload:KernSmith.Output.Model.BmFontModel.Extended
+  href: KernSmith.Output.Model.BmFontModel.html#KernSmith_Output_Model_BmFontModel_Extended
+  name: Extended
+  nameWithType: BmFontModel.Extended
+  fullName: KernSmith.Output.Model.BmFontModel.Extended
+- uid: KernSmith.Output.Model.ExtendedMetadata
+  commentId: T:KernSmith.Output.Model.ExtendedMetadata
+  parent: KernSmith.Output.Model
+  href: KernSmith.Output.Model.ExtendedMetadata.html
+  name: ExtendedMetadata
+  nameWithType: ExtendedMetadata
+  fullName: KernSmith.Output.Model.ExtendedMetadata

@@ -1,0 +1,210 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Atlas.IAtlasEncoder
+  commentId: T:KernSmith.Atlas.IAtlasEncoder
+  id: IAtlasEncoder
+  parent: KernSmith.Atlas
+  children:
+  - KernSmith.Atlas.IAtlasEncoder.Encode(System.Byte[],System.Int32,System.Int32,KernSmith.PixelFormat)
+  - KernSmith.Atlas.IAtlasEncoder.FileExtension
+  langs:
+  - csharp
+  - vb
+  name: IAtlasEncoder
+  nameWithType: IAtlasEncoder
+  fullName: KernSmith.Atlas.IAtlasEncoder
+  type: Interface
+  source:
+    remote:
+      path: src/KernSmith/Atlas/IAtlasEncoder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: IAtlasEncoder
+    path: src/KernSmith/Atlas/IAtlasEncoder.cs
+    startLine: 5
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Atlas
+  summary: Encodes atlas pixel data to an image format such as PNG, TGA, or DDS.
+  example: []
+  syntax:
+    content: public interface IAtlasEncoder
+    content.vb: Public Interface IAtlasEncoder
+- uid: KernSmith.Atlas.IAtlasEncoder.Encode(System.Byte[],System.Int32,System.Int32,KernSmith.PixelFormat)
+  commentId: M:KernSmith.Atlas.IAtlasEncoder.Encode(System.Byte[],System.Int32,System.Int32,KernSmith.PixelFormat)
+  id: Encode(System.Byte[],System.Int32,System.Int32,KernSmith.PixelFormat)
+  parent: KernSmith.Atlas.IAtlasEncoder
+  langs:
+  - csharp
+  - vb
+  name: Encode(byte[], int, int, PixelFormat)
+  nameWithType: IAtlasEncoder.Encode(byte[], int, int, PixelFormat)
+  fullName: KernSmith.Atlas.IAtlasEncoder.Encode(byte[], int, int, KernSmith.PixelFormat)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Atlas/IAtlasEncoder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Encode
+    path: src/KernSmith/Atlas/IAtlasEncoder.cs
+    startLine: 15
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Atlas
+  summary: Encodes raw pixel data into an image file format (PNG, TGA, or DDS).
+  example: []
+  syntax:
+    content: byte[] Encode(byte[] pixelData, int width, int height, PixelFormat format)
+    parameters:
+    - id: pixelData
+      type: System.Byte[]
+      description: Raw pixel buffer.
+    - id: width
+      type: System.Int32
+      description: Image width in pixels.
+    - id: height
+      type: System.Int32
+      description: Image height in pixels.
+    - id: format
+      type: KernSmith.PixelFormat
+      description: Pixel format of the input data.
+    return:
+      type: System.Byte[]
+      description: The encoded image file bytes.
+    content.vb: Function Encode(pixelData As Byte(), width As Integer, height As Integer, format As PixelFormat) As Byte()
+  overload: KernSmith.Atlas.IAtlasEncoder.Encode*
+  nameWithType.vb: IAtlasEncoder.Encode(Byte(), Integer, Integer, PixelFormat)
+  fullName.vb: KernSmith.Atlas.IAtlasEncoder.Encode(Byte(), Integer, Integer, KernSmith.PixelFormat)
+  name.vb: Encode(Byte(), Integer, Integer, PixelFormat)
+- uid: KernSmith.Atlas.IAtlasEncoder.FileExtension
+  commentId: P:KernSmith.Atlas.IAtlasEncoder.FileExtension
+  id: FileExtension
+  parent: KernSmith.Atlas.IAtlasEncoder
+  langs:
+  - csharp
+  - vb
+  name: FileExtension
+  nameWithType: IAtlasEncoder.FileExtension
+  fullName: KernSmith.Atlas.IAtlasEncoder.FileExtension
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Atlas/IAtlasEncoder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FileExtension
+    path: src/KernSmith/Atlas/IAtlasEncoder.cs
+    startLine: 20
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Atlas
+  summary: File extension including the leading dot (e.g., ".png", ".tga", ".dds").
+  example: []
+  syntax:
+    content: string FileExtension { get; }
+    parameters: []
+    return:
+      type: System.String
+    content.vb: ReadOnly Property FileExtension As String
+  overload: KernSmith.Atlas.IAtlasEncoder.FileExtension*
+references:
+- uid: KernSmith.Atlas
+  commentId: N:KernSmith.Atlas
+  href: KernSmith.html
+  name: KernSmith.Atlas
+  nameWithType: KernSmith.Atlas
+  fullName: KernSmith.Atlas
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Atlas
+    name: Atlas
+    href: KernSmith.Atlas.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Atlas
+    name: Atlas
+    href: KernSmith.Atlas.html
+- uid: KernSmith.Atlas.IAtlasEncoder.Encode*
+  commentId: Overload:KernSmith.Atlas.IAtlasEncoder.Encode
+  href: KernSmith.Atlas.IAtlasEncoder.html#KernSmith_Atlas_IAtlasEncoder_Encode_System_Byte___System_Int32_System_Int32_KernSmith_PixelFormat_
+  name: Encode
+  nameWithType: IAtlasEncoder.Encode
+  fullName: KernSmith.Atlas.IAtlasEncoder.Encode
+- uid: System.Byte[]
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.byte
+  name: byte[]
+  nameWithType: byte[]
+  fullName: byte[]
+  nameWithType.vb: Byte()
+  fullName.vb: Byte()
+  name.vb: Byte()
+  spec.csharp:
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: '['
+  - name: ']'
+  spec.vb:
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: (
+  - name: )
+- uid: System.Int32
+  commentId: T:System.Int32
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int
+  nameWithType: int
+  fullName: int
+  nameWithType.vb: Integer
+  fullName.vb: Integer
+  name.vb: Integer
+- uid: KernSmith.PixelFormat
+  commentId: T:KernSmith.PixelFormat
+  parent: KernSmith
+  href: KernSmith.PixelFormat.html
+  name: PixelFormat
+  nameWithType: PixelFormat
+  fullName: KernSmith.PixelFormat
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: KernSmith
+  commentId: N:KernSmith
+  href: KernSmith.html
+  name: KernSmith
+  nameWithType: KernSmith
+  fullName: KernSmith
+- uid: KernSmith.Atlas.IAtlasEncoder.FileExtension*
+  commentId: Overload:KernSmith.Atlas.IAtlasEncoder.FileExtension
+  href: KernSmith.Atlas.IAtlasEncoder.html#KernSmith_Atlas_IAtlasEncoder_FileExtension
+  name: FileExtension
+  nameWithType: IAtlasEncoder.FileExtension
+  fullName: KernSmith.Atlas.IAtlasEncoder.FileExtension
+- uid: System.String
+  commentId: T:System.String
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.string
+  name: string
+  nameWithType: string
+  fullName: string
+  nameWithType.vb: String
+  fullName.vb: String
+  name.vb: String

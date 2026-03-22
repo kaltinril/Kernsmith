@@ -1,0 +1,76 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Font.Models
+  commentId: N:KernSmith.Font.Models
+  id: KernSmith.Font.Models
+  children:
+  - KernSmith.Font.Models.FontInfo
+  - KernSmith.Font.Models.GlyphMetrics
+  - KernSmith.Font.Models.KerningPair
+  - KernSmith.Font.Models.SystemFontInfo
+  langs:
+  - csharp
+  - vb
+  name: KernSmith.Font.Models
+  nameWithType: KernSmith.Font.Models
+  fullName: KernSmith.Font.Models
+  type: Namespace
+  assemblies:
+  - KernSmith
+references:
+- uid: KernSmith.Font.Models.FontInfo
+  commentId: T:KernSmith.Font.Models.FontInfo
+  parent: KernSmith.Font.Models
+  href: KernSmith.Font.Models.FontInfo.html
+  name: FontInfo
+  nameWithType: FontInfo
+  fullName: KernSmith.Font.Models.FontInfo
+- uid: KernSmith.Font.Models.GlyphMetrics
+  commentId: T:KernSmith.Font.Models.GlyphMetrics
+  parent: KernSmith.Font.Models
+  href: KernSmith.Font.Models.GlyphMetrics.html
+  name: GlyphMetrics
+  nameWithType: GlyphMetrics
+  fullName: KernSmith.Font.Models.GlyphMetrics
+- uid: KernSmith.Font.Models.KerningPair
+  commentId: T:KernSmith.Font.Models.KerningPair
+  href: KernSmith.Font.Models.KerningPair.html
+  name: KerningPair
+  nameWithType: KerningPair
+  fullName: KernSmith.Font.Models.KerningPair
+- uid: KernSmith.Font.Models.SystemFontInfo
+  commentId: T:KernSmith.Font.Models.SystemFontInfo
+  href: KernSmith.Font.Models.SystemFontInfo.html
+  name: SystemFontInfo
+  nameWithType: SystemFontInfo
+  fullName: KernSmith.Font.Models.SystemFontInfo
+- uid: KernSmith.Font.Models
+  commentId: N:KernSmith.Font.Models
+  href: KernSmith.html
+  name: KernSmith.Font.Models
+  nameWithType: KernSmith.Font.Models
+  fullName: KernSmith.Font.Models
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+  - name: .
+  - uid: KernSmith.Font.Models
+    name: Models
+    href: KernSmith.Font.Models.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+  - name: .
+  - uid: KernSmith.Font.Models
+    name: Models
+    href: KernSmith.Font.Models.html

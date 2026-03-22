@@ -1,0 +1,965 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Output.Model.ExtendedMetadata
+  commentId: T:KernSmith.Output.Model.ExtendedMetadata
+  id: ExtendedMetadata
+  parent: KernSmith.Output.Model
+  children:
+  - KernSmith.Output.Model.ExtendedMetadata.ColorFont
+  - KernSmith.Output.Model.ExtendedMetadata.FallbackCharacter
+  - KernSmith.Output.Model.ExtendedMetadata.GeneratorVersion
+  - KernSmith.Output.Model.ExtendedMetadata.GradientBottomColor
+  - KernSmith.Output.Model.ExtendedMetadata.GradientTopColor
+  - KernSmith.Output.Model.ExtendedMetadata.OutlineThickness
+  - KernSmith.Output.Model.ExtendedMetadata.SdfSpread
+  - KernSmith.Output.Model.ExtendedMetadata.ShadowColor
+  - KernSmith.Output.Model.ExtendedMetadata.ShadowOffsetX
+  - KernSmith.Output.Model.ExtendedMetadata.ShadowOffsetY
+  - KernSmith.Output.Model.ExtendedMetadata.SuperSampleLevel
+  - KernSmith.Output.Model.ExtendedMetadata.VariationAxes
+  langs:
+  - csharp
+  - vb
+  name: ExtendedMetadata
+  nameWithType: ExtendedMetadata
+  fullName: KernSmith.Output.Model.ExtendedMetadata
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ExtendedMetadata
+    path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+    startLine: 5
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: KernSmith-specific metadata for generation settings that are not part of the standard BMFont format.
+  example: []
+  syntax:
+    content: public sealed class ExtendedMetadata
+    content.vb: Public NotInheritable Class ExtendedMetadata
+  inheritance:
+  - System.Object
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.Output.Model.ExtendedMetadata.GeneratorVersion
+  commentId: P:KernSmith.Output.Model.ExtendedMetadata.GeneratorVersion
+  id: GeneratorVersion
+  parent: KernSmith.Output.Model.ExtendedMetadata
+  langs:
+  - csharp
+  - vb
+  name: GeneratorVersion
+  nameWithType: ExtendedMetadata.GeneratorVersion
+  fullName: KernSmith.Output.Model.ExtendedMetadata.GeneratorVersion
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GeneratorVersion
+    path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+    startLine: 8
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: KernSmith library version that generated this font.
+  example: []
+  syntax:
+    content: public required string GeneratorVersion { get; init; }
+    parameters: []
+    return:
+      type: System.String
+    content.vb: Public Property GeneratorVersion As String
+  overload: KernSmith.Output.Model.ExtendedMetadata.GeneratorVersion*
+- uid: KernSmith.Output.Model.ExtendedMetadata.SdfSpread
+  commentId: P:KernSmith.Output.Model.ExtendedMetadata.SdfSpread
+  id: SdfSpread
+  parent: KernSmith.Output.Model.ExtendedMetadata
+  langs:
+  - csharp
+  - vb
+  name: SdfSpread
+  nameWithType: ExtendedMetadata.SdfSpread
+  fullName: KernSmith.Output.Model.ExtendedMetadata.SdfSpread
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: SdfSpread
+    path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+    startLine: 11
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: SDF spread value, if SDF mode was used.
+  example: []
+  syntax:
+    content: public int? SdfSpread { get; init; }
+    parameters: []
+    return:
+      type: System.Nullable{System.Int32}
+    content.vb: Public Property SdfSpread As Integer?
+  overload: KernSmith.Output.Model.ExtendedMetadata.SdfSpread*
+- uid: KernSmith.Output.Model.ExtendedMetadata.OutlineThickness
+  commentId: P:KernSmith.Output.Model.ExtendedMetadata.OutlineThickness
+  id: OutlineThickness
+  parent: KernSmith.Output.Model.ExtendedMetadata
+  langs:
+  - csharp
+  - vb
+  name: OutlineThickness
+  nameWithType: ExtendedMetadata.OutlineThickness
+  fullName: KernSmith.Output.Model.ExtendedMetadata.OutlineThickness
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: OutlineThickness
+    path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+    startLine: 14
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: Outline thickness, if outline post-processor was used.
+  example: []
+  syntax:
+    content: public float? OutlineThickness { get; init; }
+    parameters: []
+    return:
+      type: System.Nullable{System.Single}
+    content.vb: Public Property OutlineThickness As Single?
+  overload: KernSmith.Output.Model.ExtendedMetadata.OutlineThickness*
+- uid: KernSmith.Output.Model.ExtendedMetadata.GradientTopColor
+  commentId: P:KernSmith.Output.Model.ExtendedMetadata.GradientTopColor
+  id: GradientTopColor
+  parent: KernSmith.Output.Model.ExtendedMetadata
+  langs:
+  - csharp
+  - vb
+  name: GradientTopColor
+  nameWithType: ExtendedMetadata.GradientTopColor
+  fullName: KernSmith.Output.Model.ExtendedMetadata.GradientTopColor
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GradientTopColor
+    path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+    startLine: 17
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: Gradient top/start color as hex RGB (e.g. "FFD700"), if gradient was used.
+  example: []
+  syntax:
+    content: public string? GradientTopColor { get; init; }
+    parameters: []
+    return:
+      type: System.String
+    content.vb: Public Property GradientTopColor As String
+  overload: KernSmith.Output.Model.ExtendedMetadata.GradientTopColor*
+- uid: KernSmith.Output.Model.ExtendedMetadata.GradientBottomColor
+  commentId: P:KernSmith.Output.Model.ExtendedMetadata.GradientBottomColor
+  id: GradientBottomColor
+  parent: KernSmith.Output.Model.ExtendedMetadata
+  langs:
+  - csharp
+  - vb
+  name: GradientBottomColor
+  nameWithType: ExtendedMetadata.GradientBottomColor
+  fullName: KernSmith.Output.Model.ExtendedMetadata.GradientBottomColor
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GradientBottomColor
+    path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+    startLine: 20
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: Gradient bottom/end color as hex RGB (e.g. "DC143C"), if gradient was used.
+  example: []
+  syntax:
+    content: public string? GradientBottomColor { get; init; }
+    parameters: []
+    return:
+      type: System.String
+    content.vb: Public Property GradientBottomColor As String
+  overload: KernSmith.Output.Model.ExtendedMetadata.GradientBottomColor*
+- uid: KernSmith.Output.Model.ExtendedMetadata.ShadowOffsetX
+  commentId: P:KernSmith.Output.Model.ExtendedMetadata.ShadowOffsetX
+  id: ShadowOffsetX
+  parent: KernSmith.Output.Model.ExtendedMetadata
+  langs:
+  - csharp
+  - vb
+  name: ShadowOffsetX
+  nameWithType: ExtendedMetadata.ShadowOffsetX
+  fullName: KernSmith.Output.Model.ExtendedMetadata.ShadowOffsetX
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ShadowOffsetX
+    path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+    startLine: 23
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: Shadow X offset, if shadow post-processor was used.
+  example: []
+  syntax:
+    content: public int? ShadowOffsetX { get; init; }
+    parameters: []
+    return:
+      type: System.Nullable{System.Int32}
+    content.vb: Public Property ShadowOffsetX As Integer?
+  overload: KernSmith.Output.Model.ExtendedMetadata.ShadowOffsetX*
+- uid: KernSmith.Output.Model.ExtendedMetadata.ShadowOffsetY
+  commentId: P:KernSmith.Output.Model.ExtendedMetadata.ShadowOffsetY
+  id: ShadowOffsetY
+  parent: KernSmith.Output.Model.ExtendedMetadata
+  langs:
+  - csharp
+  - vb
+  name: ShadowOffsetY
+  nameWithType: ExtendedMetadata.ShadowOffsetY
+  fullName: KernSmith.Output.Model.ExtendedMetadata.ShadowOffsetY
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ShadowOffsetY
+    path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+    startLine: 26
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: Shadow Y offset, if shadow post-processor was used.
+  example: []
+  syntax:
+    content: public int? ShadowOffsetY { get; init; }
+    parameters: []
+    return:
+      type: System.Nullable{System.Int32}
+    content.vb: Public Property ShadowOffsetY As Integer?
+  overload: KernSmith.Output.Model.ExtendedMetadata.ShadowOffsetY*
+- uid: KernSmith.Output.Model.ExtendedMetadata.ShadowColor
+  commentId: P:KernSmith.Output.Model.ExtendedMetadata.ShadowColor
+  id: ShadowColor
+  parent: KernSmith.Output.Model.ExtendedMetadata
+  langs:
+  - csharp
+  - vb
+  name: ShadowColor
+  nameWithType: ExtendedMetadata.ShadowColor
+  fullName: KernSmith.Output.Model.ExtendedMetadata.ShadowColor
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ShadowColor
+    path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+    startLine: 29
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: Shadow color as hex RGB (e.g. "000000"), if shadow was used.
+  example: []
+  syntax:
+    content: public string? ShadowColor { get; init; }
+    parameters: []
+    return:
+      type: System.String
+    content.vb: Public Property ShadowColor As String
+  overload: KernSmith.Output.Model.ExtendedMetadata.ShadowColor*
+- uid: KernSmith.Output.Model.ExtendedMetadata.SuperSampleLevel
+  commentId: P:KernSmith.Output.Model.ExtendedMetadata.SuperSampleLevel
+  id: SuperSampleLevel
+  parent: KernSmith.Output.Model.ExtendedMetadata
+  langs:
+  - csharp
+  - vb
+  name: SuperSampleLevel
+  nameWithType: ExtendedMetadata.SuperSampleLevel
+  fullName: KernSmith.Output.Model.ExtendedMetadata.SuperSampleLevel
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: SuperSampleLevel
+    path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+    startLine: 32
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: Super sampling level, if super sampling was used.
+  example: []
+  syntax:
+    content: public int? SuperSampleLevel { get; init; }
+    parameters: []
+    return:
+      type: System.Nullable{System.Int32}
+    content.vb: Public Property SuperSampleLevel As Integer?
+  overload: KernSmith.Output.Model.ExtendedMetadata.SuperSampleLevel*
+- uid: KernSmith.Output.Model.ExtendedMetadata.VariationAxes
+  commentId: P:KernSmith.Output.Model.ExtendedMetadata.VariationAxes
+  id: VariationAxes
+  parent: KernSmith.Output.Model.ExtendedMetadata
+  langs:
+  - csharp
+  - vb
+  name: VariationAxes
+  nameWithType: ExtendedMetadata.VariationAxes
+  fullName: KernSmith.Output.Model.ExtendedMetadata.VariationAxes
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: VariationAxes
+    path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+    startLine: 35
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: Variable font axis values used during generation.
+  example: []
+  syntax:
+    content: public IReadOnlyDictionary<string, float>? VariationAxes { get; init; }
+    parameters: []
+    return:
+      type: System.Collections.Generic.IReadOnlyDictionary{System.String,System.Single}
+    content.vb: Public Property VariationAxes As IReadOnlyDictionary(Of String, Single)
+  overload: KernSmith.Output.Model.ExtendedMetadata.VariationAxes*
+- uid: KernSmith.Output.Model.ExtendedMetadata.ColorFont
+  commentId: P:KernSmith.Output.Model.ExtendedMetadata.ColorFont
+  id: ColorFont
+  parent: KernSmith.Output.Model.ExtendedMetadata
+  langs:
+  - csharp
+  - vb
+  name: ColorFont
+  nameWithType: ExtendedMetadata.ColorFont
+  fullName: KernSmith.Output.Model.ExtendedMetadata.ColorFont
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ColorFont
+    path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+    startLine: 38
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: True if color font rendering (COLR/CPAL) was enabled during generation.
+  example: []
+  syntax:
+    content: public bool? ColorFont { get; init; }
+    parameters: []
+    return:
+      type: System.Nullable{System.Boolean}
+    content.vb: Public Property ColorFont As Boolean?
+  overload: KernSmith.Output.Model.ExtendedMetadata.ColorFont*
+- uid: KernSmith.Output.Model.ExtendedMetadata.FallbackCharacter
+  commentId: P:KernSmith.Output.Model.ExtendedMetadata.FallbackCharacter
+  id: FallbackCharacter
+  parent: KernSmith.Output.Model.ExtendedMetadata
+  langs:
+  - csharp
+  - vb
+  name: FallbackCharacter
+  nameWithType: ExtendedMetadata.FallbackCharacter
+  fullName: KernSmith.Output.Model.ExtendedMetadata.FallbackCharacter
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FallbackCharacter
+    path: src/KernSmith/Output/Model/ExtendedMetadata.cs
+    startLine: 41
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: Unicode codepoint of the fallback character for missing glyphs, if configured.
+  example: []
+  syntax:
+    content: public int? FallbackCharacter { get; init; }
+    parameters: []
+    return:
+      type: System.Nullable{System.Int32}
+    content.vb: Public Property FallbackCharacter As Integer?
+  overload: KernSmith.Output.Model.ExtendedMetadata.FallbackCharacter*
+references:
+- uid: KernSmith.Output.Model
+  commentId: N:KernSmith.Output.Model
+  href: KernSmith.html
+  name: KernSmith.Output.Model
+  nameWithType: KernSmith.Output.Model
+  fullName: KernSmith.Output.Model
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  - name: .
+  - uid: KernSmith.Output.Model
+    name: Model
+    href: KernSmith.Output.Model.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  - name: .
+  - uid: KernSmith.Output.Model
+    name: Model
+    href: KernSmith.Output.Model.html
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: KernSmith.Output.Model.ExtendedMetadata.GeneratorVersion*
+  commentId: Overload:KernSmith.Output.Model.ExtendedMetadata.GeneratorVersion
+  href: KernSmith.Output.Model.ExtendedMetadata.html#KernSmith_Output_Model_ExtendedMetadata_GeneratorVersion
+  name: GeneratorVersion
+  nameWithType: ExtendedMetadata.GeneratorVersion
+  fullName: KernSmith.Output.Model.ExtendedMetadata.GeneratorVersion
+- uid: System.String
+  commentId: T:System.String
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.string
+  name: string
+  nameWithType: string
+  fullName: string
+  nameWithType.vb: String
+  fullName.vb: String
+  name.vb: String
+- uid: KernSmith.Output.Model.ExtendedMetadata.SdfSpread*
+  commentId: Overload:KernSmith.Output.Model.ExtendedMetadata.SdfSpread
+  href: KernSmith.Output.Model.ExtendedMetadata.html#KernSmith_Output_Model_ExtendedMetadata_SdfSpread
+  name: SdfSpread
+  nameWithType: ExtendedMetadata.SdfSpread
+  fullName: KernSmith.Output.Model.ExtendedMetadata.SdfSpread
+- uid: System.Nullable{System.Int32}
+  commentId: T:System.Nullable{System.Int32}
+  parent: System
+  definition: System.Nullable`1
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int?
+  nameWithType: int?
+  fullName: int?
+  nameWithType.vb: Integer?
+  fullName.vb: Integer?
+  name.vb: Integer?
+  spec.csharp:
+  - uid: System.Int32
+    name: int
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.int32
+  - name: '?'
+  spec.vb:
+  - uid: System.Int32
+    name: Integer
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.int32
+  - name: '?'
+- uid: System.Nullable`1
+  commentId: T:System.Nullable`1
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.nullable-1
+  name: Nullable<T>
+  nameWithType: Nullable<T>
+  fullName: System.Nullable<T>
+  nameWithType.vb: Nullable(Of T)
+  fullName.vb: System.Nullable(Of T)
+  name.vb: Nullable(Of T)
+  spec.csharp:
+  - uid: System.Nullable`1
+    name: Nullable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.nullable-1
+  - name: <
+  - name: T
+  - name: '>'
+  spec.vb:
+  - uid: System.Nullable`1
+    name: Nullable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.nullable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - name: T
+  - name: )
+- uid: KernSmith.Output.Model.ExtendedMetadata.OutlineThickness*
+  commentId: Overload:KernSmith.Output.Model.ExtendedMetadata.OutlineThickness
+  href: KernSmith.Output.Model.ExtendedMetadata.html#KernSmith_Output_Model_ExtendedMetadata_OutlineThickness
+  name: OutlineThickness
+  nameWithType: ExtendedMetadata.OutlineThickness
+  fullName: KernSmith.Output.Model.ExtendedMetadata.OutlineThickness
+- uid: System.Nullable{System.Single}
+  commentId: T:System.Nullable{System.Single}
+  parent: System
+  definition: System.Nullable`1
+  href: https://learn.microsoft.com/dotnet/api/system.single
+  name: float?
+  nameWithType: float?
+  fullName: float?
+  nameWithType.vb: Single?
+  fullName.vb: Single?
+  name.vb: Single?
+  spec.csharp:
+  - uid: System.Single
+    name: float
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.single
+  - name: '?'
+  spec.vb:
+  - uid: System.Single
+    name: Single
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.single
+  - name: '?'
+- uid: KernSmith.Output.Model.ExtendedMetadata.GradientTopColor*
+  commentId: Overload:KernSmith.Output.Model.ExtendedMetadata.GradientTopColor
+  href: KernSmith.Output.Model.ExtendedMetadata.html#KernSmith_Output_Model_ExtendedMetadata_GradientTopColor
+  name: GradientTopColor
+  nameWithType: ExtendedMetadata.GradientTopColor
+  fullName: KernSmith.Output.Model.ExtendedMetadata.GradientTopColor
+- uid: KernSmith.Output.Model.ExtendedMetadata.GradientBottomColor*
+  commentId: Overload:KernSmith.Output.Model.ExtendedMetadata.GradientBottomColor
+  href: KernSmith.Output.Model.ExtendedMetadata.html#KernSmith_Output_Model_ExtendedMetadata_GradientBottomColor
+  name: GradientBottomColor
+  nameWithType: ExtendedMetadata.GradientBottomColor
+  fullName: KernSmith.Output.Model.ExtendedMetadata.GradientBottomColor
+- uid: KernSmith.Output.Model.ExtendedMetadata.ShadowOffsetX*
+  commentId: Overload:KernSmith.Output.Model.ExtendedMetadata.ShadowOffsetX
+  href: KernSmith.Output.Model.ExtendedMetadata.html#KernSmith_Output_Model_ExtendedMetadata_ShadowOffsetX
+  name: ShadowOffsetX
+  nameWithType: ExtendedMetadata.ShadowOffsetX
+  fullName: KernSmith.Output.Model.ExtendedMetadata.ShadowOffsetX
+- uid: KernSmith.Output.Model.ExtendedMetadata.ShadowOffsetY*
+  commentId: Overload:KernSmith.Output.Model.ExtendedMetadata.ShadowOffsetY
+  href: KernSmith.Output.Model.ExtendedMetadata.html#KernSmith_Output_Model_ExtendedMetadata_ShadowOffsetY
+  name: ShadowOffsetY
+  nameWithType: ExtendedMetadata.ShadowOffsetY
+  fullName: KernSmith.Output.Model.ExtendedMetadata.ShadowOffsetY
+- uid: KernSmith.Output.Model.ExtendedMetadata.ShadowColor*
+  commentId: Overload:KernSmith.Output.Model.ExtendedMetadata.ShadowColor
+  href: KernSmith.Output.Model.ExtendedMetadata.html#KernSmith_Output_Model_ExtendedMetadata_ShadowColor
+  name: ShadowColor
+  nameWithType: ExtendedMetadata.ShadowColor
+  fullName: KernSmith.Output.Model.ExtendedMetadata.ShadowColor
+- uid: KernSmith.Output.Model.ExtendedMetadata.SuperSampleLevel*
+  commentId: Overload:KernSmith.Output.Model.ExtendedMetadata.SuperSampleLevel
+  href: KernSmith.Output.Model.ExtendedMetadata.html#KernSmith_Output_Model_ExtendedMetadata_SuperSampleLevel
+  name: SuperSampleLevel
+  nameWithType: ExtendedMetadata.SuperSampleLevel
+  fullName: KernSmith.Output.Model.ExtendedMetadata.SuperSampleLevel
+- uid: KernSmith.Output.Model.ExtendedMetadata.VariationAxes*
+  commentId: Overload:KernSmith.Output.Model.ExtendedMetadata.VariationAxes
+  href: KernSmith.Output.Model.ExtendedMetadata.html#KernSmith_Output_Model_ExtendedMetadata_VariationAxes
+  name: VariationAxes
+  nameWithType: ExtendedMetadata.VariationAxes
+  fullName: KernSmith.Output.Model.ExtendedMetadata.VariationAxes
+- uid: System.Collections.Generic.IReadOnlyDictionary{System.String,System.Single}
+  commentId: T:System.Collections.Generic.IReadOnlyDictionary{System.String,System.Single}
+  parent: System.Collections.Generic
+  definition: System.Collections.Generic.IReadOnlyDictionary`2
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2
+  name: IReadOnlyDictionary<string, float>
+  nameWithType: IReadOnlyDictionary<string, float>
+  fullName: System.Collections.Generic.IReadOnlyDictionary<string, float>
+  nameWithType.vb: IReadOnlyDictionary(Of String, Single)
+  fullName.vb: System.Collections.Generic.IReadOnlyDictionary(Of String, Single)
+  name.vb: IReadOnlyDictionary(Of String, Single)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyDictionary`2
+    name: IReadOnlyDictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2
+  - name: <
+  - uid: System.String
+    name: string
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.string
+  - name: ','
+  - name: " "
+  - uid: System.Single
+    name: float
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.single
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyDictionary`2
+    name: IReadOnlyDictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: System.String
+    name: String
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.string
+  - name: ','
+  - name: " "
+  - uid: System.Single
+    name: Single
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.single
+  - name: )
+- uid: System.Collections.Generic.IReadOnlyDictionary`2
+  commentId: T:System.Collections.Generic.IReadOnlyDictionary`2
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2
+  name: IReadOnlyDictionary<TKey, TValue>
+  nameWithType: IReadOnlyDictionary<TKey, TValue>
+  fullName: System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>
+  nameWithType.vb: IReadOnlyDictionary(Of TKey, TValue)
+  fullName.vb: System.Collections.Generic.IReadOnlyDictionary(Of TKey, TValue)
+  name.vb: IReadOnlyDictionary(Of TKey, TValue)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyDictionary`2
+    name: IReadOnlyDictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2
+  - name: <
+  - name: TKey
+  - name: ','
+  - name: " "
+  - name: TValue
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyDictionary`2
+    name: IReadOnlyDictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2
+  - name: (
+  - name: Of
+  - name: " "
+  - name: TKey
+  - name: ','
+  - name: " "
+  - name: TValue
+  - name: )
+- uid: System.Collections.Generic
+  commentId: N:System.Collections.Generic
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System.Collections.Generic
+  nameWithType: System.Collections.Generic
+  fullName: System.Collections.Generic
+  spec.csharp:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic
+  spec.vb:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic
+- uid: KernSmith.Output.Model.ExtendedMetadata.ColorFont*
+  commentId: Overload:KernSmith.Output.Model.ExtendedMetadata.ColorFont
+  href: KernSmith.Output.Model.ExtendedMetadata.html#KernSmith_Output_Model_ExtendedMetadata_ColorFont
+  name: ColorFont
+  nameWithType: ExtendedMetadata.ColorFont
+  fullName: KernSmith.Output.Model.ExtendedMetadata.ColorFont
+- uid: System.Nullable{System.Boolean}
+  commentId: T:System.Nullable{System.Boolean}
+  parent: System
+  definition: System.Nullable`1
+  href: https://learn.microsoft.com/dotnet/api/system.boolean
+  name: bool?
+  nameWithType: bool?
+  fullName: bool?
+  nameWithType.vb: Boolean?
+  fullName.vb: Boolean?
+  name.vb: Boolean?
+  spec.csharp:
+  - uid: System.Boolean
+    name: bool
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.boolean
+  - name: '?'
+  spec.vb:
+  - uid: System.Boolean
+    name: Boolean
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.boolean
+  - name: '?'
+- uid: KernSmith.Output.Model.ExtendedMetadata.FallbackCharacter*
+  commentId: Overload:KernSmith.Output.Model.ExtendedMetadata.FallbackCharacter
+  href: KernSmith.Output.Model.ExtendedMetadata.html#KernSmith_Output_Model_ExtendedMetadata_FallbackCharacter
+  name: FallbackCharacter
+  nameWithType: ExtendedMetadata.FallbackCharacter
+  fullName: KernSmith.Output.Model.ExtendedMetadata.FallbackCharacter

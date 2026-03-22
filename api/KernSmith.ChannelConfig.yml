@@ -1,0 +1,730 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.ChannelConfig
+  commentId: T:KernSmith.ChannelConfig
+  id: ChannelConfig
+  parent: KernSmith
+  children:
+  - KernSmith.ChannelConfig.#ctor(KernSmith.ChannelContent,KernSmith.ChannelContent,KernSmith.ChannelContent,KernSmith.ChannelContent,System.Boolean,System.Boolean,System.Boolean,System.Boolean)
+  - KernSmith.ChannelConfig.Alpha
+  - KernSmith.ChannelConfig.Blue
+  - KernSmith.ChannelConfig.Green
+  - KernSmith.ChannelConfig.InvertAlpha
+  - KernSmith.ChannelConfig.InvertBlue
+  - KernSmith.ChannelConfig.InvertGreen
+  - KernSmith.ChannelConfig.InvertRed
+  - KernSmith.ChannelConfig.IsDefault
+  - KernSmith.ChannelConfig.Red
+  langs:
+  - csharp
+  - vb
+  name: ChannelConfig
+  nameWithType: ChannelConfig
+  fullName: KernSmith.ChannelConfig
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/Config/ChannelConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ChannelConfig
+    path: src/KernSmith/Config/ChannelConfig.cs
+    startLine: 6
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: >-
+    Configures what each RGBA channel contains in the atlas texture.
+
+    Matches BMFont.exe's per-channel export settings.
+  example: []
+  syntax:
+    content: 'public sealed record ChannelConfig : IEquatable<ChannelConfig>'
+    content.vb: Public NotInheritable Class ChannelConfig Implements IEquatable(Of ChannelConfig)
+  inheritance:
+  - System.Object
+  implements:
+  - System.IEquatable{KernSmith.ChannelConfig}
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.ChannelConfig.#ctor(KernSmith.ChannelContent,KernSmith.ChannelContent,KernSmith.ChannelContent,KernSmith.ChannelContent,System.Boolean,System.Boolean,System.Boolean,System.Boolean)
+  commentId: M:KernSmith.ChannelConfig.#ctor(KernSmith.ChannelContent,KernSmith.ChannelContent,KernSmith.ChannelContent,KernSmith.ChannelContent,System.Boolean,System.Boolean,System.Boolean,System.Boolean)
+  id: '#ctor(KernSmith.ChannelContent,KernSmith.ChannelContent,KernSmith.ChannelContent,KernSmith.ChannelContent,System.Boolean,System.Boolean,System.Boolean,System.Boolean)'
+  parent: KernSmith.ChannelConfig
+  langs:
+  - csharp
+  - vb
+  name: ChannelConfig(ChannelContent, ChannelContent, ChannelContent, ChannelContent, bool, bool, bool, bool)
+  nameWithType: ChannelConfig.ChannelConfig(ChannelContent, ChannelContent, ChannelContent, ChannelContent, bool, bool, bool, bool)
+  fullName: KernSmith.ChannelConfig.ChannelConfig(KernSmith.ChannelContent, KernSmith.ChannelContent, KernSmith.ChannelContent, KernSmith.ChannelContent, bool, bool, bool, bool)
+  type: Constructor
+  source:
+    remote:
+      path: src/KernSmith/Config/ChannelConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: .ctor
+    path: src/KernSmith/Config/ChannelConfig.cs
+    startLine: 6
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: >-
+    Configures what each RGBA channel contains in the atlas texture.
+
+    Matches BMFont.exe's per-channel export settings.
+  example: []
+  syntax:
+    content: public ChannelConfig(ChannelContent Alpha = ChannelContent.Glyph, ChannelContent Red = ChannelContent.Glyph, ChannelContent Green = ChannelContent.Glyph, ChannelContent Blue = ChannelContent.Glyph, bool InvertAlpha = false, bool InvertRed = false, bool InvertGreen = false, bool InvertBlue = false)
+    parameters:
+    - id: Alpha
+      type: KernSmith.ChannelContent
+    - id: Red
+      type: KernSmith.ChannelContent
+    - id: Green
+      type: KernSmith.ChannelContent
+    - id: Blue
+      type: KernSmith.ChannelContent
+    - id: InvertAlpha
+      type: System.Boolean
+    - id: InvertRed
+      type: System.Boolean
+    - id: InvertGreen
+      type: System.Boolean
+    - id: InvertBlue
+      type: System.Boolean
+    content.vb: Public Sub New(Alpha As ChannelContent = ChannelContent.Glyph, Red As ChannelContent = ChannelContent.Glyph, Green As ChannelContent = ChannelContent.Glyph, Blue As ChannelContent = ChannelContent.Glyph, InvertAlpha As Boolean = False, InvertRed As Boolean = False, InvertGreen As Boolean = False, InvertBlue As Boolean = False)
+  overload: KernSmith.ChannelConfig.#ctor*
+  nameWithType.vb: ChannelConfig.New(ChannelContent, ChannelContent, ChannelContent, ChannelContent, Boolean, Boolean, Boolean, Boolean)
+  fullName.vb: KernSmith.ChannelConfig.New(KernSmith.ChannelContent, KernSmith.ChannelContent, KernSmith.ChannelContent, KernSmith.ChannelContent, Boolean, Boolean, Boolean, Boolean)
+  name.vb: New(ChannelContent, ChannelContent, ChannelContent, ChannelContent, Boolean, Boolean, Boolean, Boolean)
+- uid: KernSmith.ChannelConfig.Alpha
+  commentId: P:KernSmith.ChannelConfig.Alpha
+  id: Alpha
+  parent: KernSmith.ChannelConfig
+  langs:
+  - csharp
+  - vb
+  name: Alpha
+  nameWithType: ChannelConfig.Alpha
+  fullName: KernSmith.ChannelConfig.Alpha
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/ChannelConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Alpha
+    path: src/KernSmith/Config/ChannelConfig.cs
+    startLine: 7
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  syntax:
+    content: public ChannelContent Alpha { get; init; }
+    parameters: []
+    return:
+      type: KernSmith.ChannelContent
+    content.vb: Public Property Alpha As ChannelContent
+  overload: KernSmith.ChannelConfig.Alpha*
+- uid: KernSmith.ChannelConfig.Red
+  commentId: P:KernSmith.ChannelConfig.Red
+  id: Red
+  parent: KernSmith.ChannelConfig
+  langs:
+  - csharp
+  - vb
+  name: Red
+  nameWithType: ChannelConfig.Red
+  fullName: KernSmith.ChannelConfig.Red
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/ChannelConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Red
+    path: src/KernSmith/Config/ChannelConfig.cs
+    startLine: 8
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  syntax:
+    content: public ChannelContent Red { get; init; }
+    parameters: []
+    return:
+      type: KernSmith.ChannelContent
+    content.vb: Public Property Red As ChannelContent
+  overload: KernSmith.ChannelConfig.Red*
+- uid: KernSmith.ChannelConfig.Green
+  commentId: P:KernSmith.ChannelConfig.Green
+  id: Green
+  parent: KernSmith.ChannelConfig
+  langs:
+  - csharp
+  - vb
+  name: Green
+  nameWithType: ChannelConfig.Green
+  fullName: KernSmith.ChannelConfig.Green
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/ChannelConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Green
+    path: src/KernSmith/Config/ChannelConfig.cs
+    startLine: 9
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  syntax:
+    content: public ChannelContent Green { get; init; }
+    parameters: []
+    return:
+      type: KernSmith.ChannelContent
+    content.vb: Public Property Green As ChannelContent
+  overload: KernSmith.ChannelConfig.Green*
+- uid: KernSmith.ChannelConfig.Blue
+  commentId: P:KernSmith.ChannelConfig.Blue
+  id: Blue
+  parent: KernSmith.ChannelConfig
+  langs:
+  - csharp
+  - vb
+  name: Blue
+  nameWithType: ChannelConfig.Blue
+  fullName: KernSmith.ChannelConfig.Blue
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/ChannelConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Blue
+    path: src/KernSmith/Config/ChannelConfig.cs
+    startLine: 10
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  syntax:
+    content: public ChannelContent Blue { get; init; }
+    parameters: []
+    return:
+      type: KernSmith.ChannelContent
+    content.vb: Public Property Blue As ChannelContent
+  overload: KernSmith.ChannelConfig.Blue*
+- uid: KernSmith.ChannelConfig.InvertAlpha
+  commentId: P:KernSmith.ChannelConfig.InvertAlpha
+  id: InvertAlpha
+  parent: KernSmith.ChannelConfig
+  langs:
+  - csharp
+  - vb
+  name: InvertAlpha
+  nameWithType: ChannelConfig.InvertAlpha
+  fullName: KernSmith.ChannelConfig.InvertAlpha
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/ChannelConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: InvertAlpha
+    path: src/KernSmith/Config/ChannelConfig.cs
+    startLine: 11
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  syntax:
+    content: public bool InvertAlpha { get; init; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property InvertAlpha As Boolean
+  overload: KernSmith.ChannelConfig.InvertAlpha*
+- uid: KernSmith.ChannelConfig.InvertRed
+  commentId: P:KernSmith.ChannelConfig.InvertRed
+  id: InvertRed
+  parent: KernSmith.ChannelConfig
+  langs:
+  - csharp
+  - vb
+  name: InvertRed
+  nameWithType: ChannelConfig.InvertRed
+  fullName: KernSmith.ChannelConfig.InvertRed
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/ChannelConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: InvertRed
+    path: src/KernSmith/Config/ChannelConfig.cs
+    startLine: 12
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  syntax:
+    content: public bool InvertRed { get; init; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property InvertRed As Boolean
+  overload: KernSmith.ChannelConfig.InvertRed*
+- uid: KernSmith.ChannelConfig.InvertGreen
+  commentId: P:KernSmith.ChannelConfig.InvertGreen
+  id: InvertGreen
+  parent: KernSmith.ChannelConfig
+  langs:
+  - csharp
+  - vb
+  name: InvertGreen
+  nameWithType: ChannelConfig.InvertGreen
+  fullName: KernSmith.ChannelConfig.InvertGreen
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/ChannelConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: InvertGreen
+    path: src/KernSmith/Config/ChannelConfig.cs
+    startLine: 13
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  syntax:
+    content: public bool InvertGreen { get; init; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property InvertGreen As Boolean
+  overload: KernSmith.ChannelConfig.InvertGreen*
+- uid: KernSmith.ChannelConfig.InvertBlue
+  commentId: P:KernSmith.ChannelConfig.InvertBlue
+  id: InvertBlue
+  parent: KernSmith.ChannelConfig
+  langs:
+  - csharp
+  - vb
+  name: InvertBlue
+  nameWithType: ChannelConfig.InvertBlue
+  fullName: KernSmith.ChannelConfig.InvertBlue
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/ChannelConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: InvertBlue
+    path: src/KernSmith/Config/ChannelConfig.cs
+    startLine: 14
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  syntax:
+    content: public bool InvertBlue { get; init; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property InvertBlue As Boolean
+  overload: KernSmith.ChannelConfig.InvertBlue*
+- uid: KernSmith.ChannelConfig.IsDefault
+  commentId: P:KernSmith.ChannelConfig.IsDefault
+  id: IsDefault
+  parent: KernSmith.ChannelConfig
+  langs:
+  - csharp
+  - vb
+  name: IsDefault
+  nameWithType: ChannelConfig.IsDefault
+  fullName: KernSmith.ChannelConfig.IsDefault
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/ChannelConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: IsDefault
+    path: src/KernSmith/Config/ChannelConfig.cs
+    startLine: 19
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: True when all channels hold glyph data with no inversion (the default configuration).
+  example: []
+  syntax:
+    content: public bool IsDefault { get; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public ReadOnly Property IsDefault As Boolean
+  overload: KernSmith.ChannelConfig.IsDefault*
+references:
+- uid: KernSmith
+  commentId: N:KernSmith
+  href: KernSmith.html
+  name: KernSmith
+  nameWithType: KernSmith
+  fullName: KernSmith
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: System.IEquatable{KernSmith.ChannelConfig}
+  commentId: T:System.IEquatable{KernSmith.ChannelConfig}
+  parent: System
+  definition: System.IEquatable`1
+  href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  name: IEquatable<ChannelConfig>
+  nameWithType: IEquatable<ChannelConfig>
+  fullName: System.IEquatable<KernSmith.ChannelConfig>
+  nameWithType.vb: IEquatable(Of ChannelConfig)
+  fullName.vb: System.IEquatable(Of KernSmith.ChannelConfig)
+  name.vb: IEquatable(Of ChannelConfig)
+  spec.csharp:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: <
+  - uid: KernSmith.ChannelConfig
+    name: ChannelConfig
+    href: KernSmith.ChannelConfig.html
+  - name: '>'
+  spec.vb:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: KernSmith.ChannelConfig
+    name: ChannelConfig
+    href: KernSmith.ChannelConfig.html
+  - name: )
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: System.IEquatable`1
+  commentId: T:System.IEquatable`1
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  name: IEquatable<T>
+  nameWithType: IEquatable<T>
+  fullName: System.IEquatable<T>
+  nameWithType.vb: IEquatable(Of T)
+  fullName.vb: System.IEquatable(Of T)
+  name.vb: IEquatable(Of T)
+  spec.csharp:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: <
+  - name: T
+  - name: '>'
+  spec.vb:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - name: T
+  - name: )
+- uid: KernSmith.ChannelConfig.#ctor*
+  commentId: Overload:KernSmith.ChannelConfig.#ctor
+  href: KernSmith.ChannelConfig.html#KernSmith_ChannelConfig__ctor_KernSmith_ChannelContent_KernSmith_ChannelContent_KernSmith_ChannelContent_KernSmith_ChannelContent_System_Boolean_System_Boolean_System_Boolean_System_Boolean_
+  name: ChannelConfig
+  nameWithType: ChannelConfig.ChannelConfig
+  fullName: KernSmith.ChannelConfig.ChannelConfig
+  nameWithType.vb: ChannelConfig.New
+  fullName.vb: KernSmith.ChannelConfig.New
+  name.vb: New
+- uid: KernSmith.ChannelContent
+  commentId: T:KernSmith.ChannelContent
+  parent: KernSmith
+  href: KernSmith.ChannelContent.html
+  name: ChannelContent
+  nameWithType: ChannelContent
+  fullName: KernSmith.ChannelContent
+- uid: System.Boolean
+  commentId: T:System.Boolean
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.boolean
+  name: bool
+  nameWithType: bool
+  fullName: bool
+  nameWithType.vb: Boolean
+  fullName.vb: Boolean
+  name.vb: Boolean
+- uid: KernSmith.ChannelConfig.Alpha*
+  commentId: Overload:KernSmith.ChannelConfig.Alpha
+  href: KernSmith.ChannelConfig.html#KernSmith_ChannelConfig_Alpha
+  name: Alpha
+  nameWithType: ChannelConfig.Alpha
+  fullName: KernSmith.ChannelConfig.Alpha
+- uid: KernSmith.ChannelConfig.Red*
+  commentId: Overload:KernSmith.ChannelConfig.Red
+  href: KernSmith.ChannelConfig.html#KernSmith_ChannelConfig_Red
+  name: Red
+  nameWithType: ChannelConfig.Red
+  fullName: KernSmith.ChannelConfig.Red
+- uid: KernSmith.ChannelConfig.Green*
+  commentId: Overload:KernSmith.ChannelConfig.Green
+  href: KernSmith.ChannelConfig.html#KernSmith_ChannelConfig_Green
+  name: Green
+  nameWithType: ChannelConfig.Green
+  fullName: KernSmith.ChannelConfig.Green
+- uid: KernSmith.ChannelConfig.Blue*
+  commentId: Overload:KernSmith.ChannelConfig.Blue
+  href: KernSmith.ChannelConfig.html#KernSmith_ChannelConfig_Blue
+  name: Blue
+  nameWithType: ChannelConfig.Blue
+  fullName: KernSmith.ChannelConfig.Blue
+- uid: KernSmith.ChannelConfig.InvertAlpha*
+  commentId: Overload:KernSmith.ChannelConfig.InvertAlpha
+  href: KernSmith.ChannelConfig.html#KernSmith_ChannelConfig_InvertAlpha
+  name: InvertAlpha
+  nameWithType: ChannelConfig.InvertAlpha
+  fullName: KernSmith.ChannelConfig.InvertAlpha
+- uid: KernSmith.ChannelConfig.InvertRed*
+  commentId: Overload:KernSmith.ChannelConfig.InvertRed
+  href: KernSmith.ChannelConfig.html#KernSmith_ChannelConfig_InvertRed
+  name: InvertRed
+  nameWithType: ChannelConfig.InvertRed
+  fullName: KernSmith.ChannelConfig.InvertRed
+- uid: KernSmith.ChannelConfig.InvertGreen*
+  commentId: Overload:KernSmith.ChannelConfig.InvertGreen
+  href: KernSmith.ChannelConfig.html#KernSmith_ChannelConfig_InvertGreen
+  name: InvertGreen
+  nameWithType: ChannelConfig.InvertGreen
+  fullName: KernSmith.ChannelConfig.InvertGreen
+- uid: KernSmith.ChannelConfig.InvertBlue*
+  commentId: Overload:KernSmith.ChannelConfig.InvertBlue
+  href: KernSmith.ChannelConfig.html#KernSmith_ChannelConfig_InvertBlue
+  name: InvertBlue
+  nameWithType: ChannelConfig.InvertBlue
+  fullName: KernSmith.ChannelConfig.InvertBlue
+- uid: KernSmith.ChannelConfig.IsDefault*
+  commentId: Overload:KernSmith.ChannelConfig.IsDefault
+  href: KernSmith.ChannelConfig.html#KernSmith_ChannelConfig_IsDefault
+  name: IsDefault
+  nameWithType: ChannelConfig.IsDefault
+  fullName: KernSmith.ChannelConfig.IsDefault

@@ -1,0 +1,650 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Atlas.AtlasPage
+  commentId: T:KernSmith.Atlas.AtlasPage
+  id: AtlasPage
+  parent: KernSmith.Atlas
+  children:
+  - KernSmith.Atlas.AtlasPage.Format
+  - KernSmith.Atlas.AtlasPage.Height
+  - KernSmith.Atlas.AtlasPage.PageIndex
+  - KernSmith.Atlas.AtlasPage.PixelData
+  - KernSmith.Atlas.AtlasPage.ToDds
+  - KernSmith.Atlas.AtlasPage.ToPng
+  - KernSmith.Atlas.AtlasPage.ToTga
+  - KernSmith.Atlas.AtlasPage.Width
+  langs:
+  - csharp
+  - vb
+  name: AtlasPage
+  nameWithType: AtlasPage
+  fullName: KernSmith.Atlas.AtlasPage
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/Atlas/AtlasPage.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: AtlasPage
+    path: src/KernSmith/Atlas/AtlasPage.cs
+    startLine: 7
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Atlas
+  summary: A single texture page in the atlas containing packed glyph pixel data.
+  example: []
+  syntax:
+    content: public sealed class AtlasPage
+    content.vb: Public NotInheritable Class AtlasPage
+  inheritance:
+  - System.Object
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.Atlas.AtlasPage.PageIndex
+  commentId: P:KernSmith.Atlas.AtlasPage.PageIndex
+  id: PageIndex
+  parent: KernSmith.Atlas.AtlasPage
+  langs:
+  - csharp
+  - vb
+  name: PageIndex
+  nameWithType: AtlasPage.PageIndex
+  fullName: KernSmith.Atlas.AtlasPage.PageIndex
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Atlas/AtlasPage.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: PageIndex
+    path: src/KernSmith/Atlas/AtlasPage.cs
+    startLine: 10
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Atlas
+  summary: Page number (zero-based).
+  example: []
+  syntax:
+    content: public required int PageIndex { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property PageIndex As Integer
+  overload: KernSmith.Atlas.AtlasPage.PageIndex*
+- uid: KernSmith.Atlas.AtlasPage.Width
+  commentId: P:KernSmith.Atlas.AtlasPage.Width
+  id: Width
+  parent: KernSmith.Atlas.AtlasPage
+  langs:
+  - csharp
+  - vb
+  name: Width
+  nameWithType: AtlasPage.Width
+  fullName: KernSmith.Atlas.AtlasPage.Width
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Atlas/AtlasPage.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Width
+    path: src/KernSmith/Atlas/AtlasPage.cs
+    startLine: 13
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Atlas
+  summary: Width in pixels.
+  example: []
+  syntax:
+    content: public required int Width { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Width As Integer
+  overload: KernSmith.Atlas.AtlasPage.Width*
+- uid: KernSmith.Atlas.AtlasPage.Height
+  commentId: P:KernSmith.Atlas.AtlasPage.Height
+  id: Height
+  parent: KernSmith.Atlas.AtlasPage
+  langs:
+  - csharp
+  - vb
+  name: Height
+  nameWithType: AtlasPage.Height
+  fullName: KernSmith.Atlas.AtlasPage.Height
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Atlas/AtlasPage.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Height
+    path: src/KernSmith/Atlas/AtlasPage.cs
+    startLine: 16
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Atlas
+  summary: Height in pixels.
+  example: []
+  syntax:
+    content: public required int Height { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Height As Integer
+  overload: KernSmith.Atlas.AtlasPage.Height*
+- uid: KernSmith.Atlas.AtlasPage.PixelData
+  commentId: P:KernSmith.Atlas.AtlasPage.PixelData
+  id: PixelData
+  parent: KernSmith.Atlas.AtlasPage
+  langs:
+  - csharp
+  - vb
+  name: PixelData
+  nameWithType: AtlasPage.PixelData
+  fullName: KernSmith.Atlas.AtlasPage.PixelData
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Atlas/AtlasPage.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: PixelData
+    path: src/KernSmith/Atlas/AtlasPage.cs
+    startLine: 26
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Atlas
+  summary: >-
+    Raw pixel data in row-major order, top-to-bottom.
+        Format depends on <xref href="KernSmith.Atlas.AtlasPage.Format" data-throw-if-not-resolved="false"></xref>:
+
+        <ul><li><xref href="KernSmith.PixelFormat.Rgba32" data-throw-if-not-resolved="false"></xref>: 4 bytes per pixel (R, G, B, A), width * height * 4 bytes total.</li><li><xref href="KernSmith.PixelFormat.Grayscale8" data-throw-if-not-resolved="false"></xref>: 1 byte per pixel (alpha/luminance), width * height bytes total.</li></ul>
+
+        Suitable for direct upload to GPU textures (e.g., MonoGame Texture2D.SetData).
+  example: []
+  syntax:
+    content: public required byte[] PixelData { get; init; }
+    parameters: []
+    return:
+      type: System.Byte[]
+    content.vb: Public Property PixelData As Byte()
+  overload: KernSmith.Atlas.AtlasPage.PixelData*
+- uid: KernSmith.Atlas.AtlasPage.Format
+  commentId: P:KernSmith.Atlas.AtlasPage.Format
+  id: Format
+  parent: KernSmith.Atlas.AtlasPage
+  langs:
+  - csharp
+  - vb
+  name: Format
+  nameWithType: AtlasPage.Format
+  fullName: KernSmith.Atlas.AtlasPage.Format
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Atlas/AtlasPage.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Format
+    path: src/KernSmith/Atlas/AtlasPage.cs
+    startLine: 29
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Atlas
+  summary: Whether the pixel data is grayscale, RGBA, etc.
+  example: []
+  syntax:
+    content: public required PixelFormat Format { get; init; }
+    parameters: []
+    return:
+      type: KernSmith.PixelFormat
+    content.vb: Public Property Format As PixelFormat
+  overload: KernSmith.Atlas.AtlasPage.Format*
+- uid: KernSmith.Atlas.AtlasPage.ToPng
+  commentId: M:KernSmith.Atlas.AtlasPage.ToPng
+  id: ToPng
+  parent: KernSmith.Atlas.AtlasPage
+  langs:
+  - csharp
+  - vb
+  name: ToPng()
+  nameWithType: AtlasPage.ToPng()
+  fullName: KernSmith.Atlas.AtlasPage.ToPng()
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Atlas/AtlasPage.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ToPng
+    path: src/KernSmith/Atlas/AtlasPage.cs
+    startLine: 39
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Atlas
+  summary: Encodes this page to PNG bytes. Throws if no encoder is configured.
+  example: []
+  syntax:
+    content: public byte[] ToPng()
+    return:
+      type: System.Byte[]
+      description: PNG-encoded byte array.
+    content.vb: Public Function ToPng() As Byte()
+  overload: KernSmith.Atlas.AtlasPage.ToPng*
+- uid: KernSmith.Atlas.AtlasPage.ToTga
+  commentId: M:KernSmith.Atlas.AtlasPage.ToTga
+  id: ToTga
+  parent: KernSmith.Atlas.AtlasPage
+  langs:
+  - csharp
+  - vb
+  name: ToTga()
+  nameWithType: AtlasPage.ToTga()
+  fullName: KernSmith.Atlas.AtlasPage.ToTga()
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Atlas/AtlasPage.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ToTga
+    path: src/KernSmith/Atlas/AtlasPage.cs
+    startLine: 45
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Atlas
+  summary: Encodes this atlas page as a TGA image.
+  example: []
+  syntax:
+    content: public byte[] ToTga()
+    return:
+      type: System.Byte[]
+      description: The TGA file bytes.
+    content.vb: Public Function ToTga() As Byte()
+  overload: KernSmith.Atlas.AtlasPage.ToTga*
+- uid: KernSmith.Atlas.AtlasPage.ToDds
+  commentId: M:KernSmith.Atlas.AtlasPage.ToDds
+  id: ToDds
+  parent: KernSmith.Atlas.AtlasPage
+  langs:
+  - csharp
+  - vb
+  name: ToDds()
+  nameWithType: AtlasPage.ToDds()
+  fullName: KernSmith.Atlas.AtlasPage.ToDds()
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Atlas/AtlasPage.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ToDds
+    path: src/KernSmith/Atlas/AtlasPage.cs
+    startLine: 50
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Atlas
+  summary: Encodes this atlas page as a DDS image.
+  example: []
+  syntax:
+    content: public byte[] ToDds()
+    return:
+      type: System.Byte[]
+      description: The DDS file bytes.
+    content.vb: Public Function ToDds() As Byte()
+  overload: KernSmith.Atlas.AtlasPage.ToDds*
+references:
+- uid: KernSmith.Atlas
+  commentId: N:KernSmith.Atlas
+  href: KernSmith.html
+  name: KernSmith.Atlas
+  nameWithType: KernSmith.Atlas
+  fullName: KernSmith.Atlas
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Atlas
+    name: Atlas
+    href: KernSmith.Atlas.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Atlas
+    name: Atlas
+    href: KernSmith.Atlas.html
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: KernSmith.Atlas.AtlasPage.PageIndex*
+  commentId: Overload:KernSmith.Atlas.AtlasPage.PageIndex
+  href: KernSmith.Atlas.AtlasPage.html#KernSmith_Atlas_AtlasPage_PageIndex
+  name: PageIndex
+  nameWithType: AtlasPage.PageIndex
+  fullName: KernSmith.Atlas.AtlasPage.PageIndex
+- uid: System.Int32
+  commentId: T:System.Int32
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int
+  nameWithType: int
+  fullName: int
+  nameWithType.vb: Integer
+  fullName.vb: Integer
+  name.vb: Integer
+- uid: KernSmith.Atlas.AtlasPage.Width*
+  commentId: Overload:KernSmith.Atlas.AtlasPage.Width
+  href: KernSmith.Atlas.AtlasPage.html#KernSmith_Atlas_AtlasPage_Width
+  name: Width
+  nameWithType: AtlasPage.Width
+  fullName: KernSmith.Atlas.AtlasPage.Width
+- uid: KernSmith.Atlas.AtlasPage.Height*
+  commentId: Overload:KernSmith.Atlas.AtlasPage.Height
+  href: KernSmith.Atlas.AtlasPage.html#KernSmith_Atlas_AtlasPage_Height
+  name: Height
+  nameWithType: AtlasPage.Height
+  fullName: KernSmith.Atlas.AtlasPage.Height
+- uid: KernSmith.Atlas.AtlasPage.Format
+  commentId: P:KernSmith.Atlas.AtlasPage.Format
+  href: KernSmith.Atlas.AtlasPage.html#KernSmith_Atlas_AtlasPage_Format
+  name: Format
+  nameWithType: AtlasPage.Format
+  fullName: KernSmith.Atlas.AtlasPage.Format
+- uid: KernSmith.PixelFormat.Rgba32
+  commentId: F:KernSmith.PixelFormat.Rgba32
+  href: KernSmith.PixelFormat.html#KernSmith_PixelFormat_Rgba32
+  name: Rgba32
+  nameWithType: PixelFormat.Rgba32
+  fullName: KernSmith.PixelFormat.Rgba32
+- uid: KernSmith.PixelFormat.Grayscale8
+  commentId: F:KernSmith.PixelFormat.Grayscale8
+  href: KernSmith.PixelFormat.html#KernSmith_PixelFormat_Grayscale8
+  name: Grayscale8
+  nameWithType: PixelFormat.Grayscale8
+  fullName: KernSmith.PixelFormat.Grayscale8
+- uid: KernSmith.Atlas.AtlasPage.PixelData*
+  commentId: Overload:KernSmith.Atlas.AtlasPage.PixelData
+  href: KernSmith.Atlas.AtlasPage.html#KernSmith_Atlas_AtlasPage_PixelData
+  name: PixelData
+  nameWithType: AtlasPage.PixelData
+  fullName: KernSmith.Atlas.AtlasPage.PixelData
+- uid: System.Byte[]
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.byte
+  name: byte[]
+  nameWithType: byte[]
+  fullName: byte[]
+  nameWithType.vb: Byte()
+  fullName.vb: Byte()
+  name.vb: Byte()
+  spec.csharp:
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: '['
+  - name: ']'
+  spec.vb:
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: (
+  - name: )
+- uid: KernSmith.Atlas.AtlasPage.Format*
+  commentId: Overload:KernSmith.Atlas.AtlasPage.Format
+  href: KernSmith.Atlas.AtlasPage.html#KernSmith_Atlas_AtlasPage_Format
+  name: Format
+  nameWithType: AtlasPage.Format
+  fullName: KernSmith.Atlas.AtlasPage.Format
+- uid: KernSmith.PixelFormat
+  commentId: T:KernSmith.PixelFormat
+  parent: KernSmith
+  href: KernSmith.PixelFormat.html
+  name: PixelFormat
+  nameWithType: PixelFormat
+  fullName: KernSmith.PixelFormat
+- uid: KernSmith
+  commentId: N:KernSmith
+  href: KernSmith.html
+  name: KernSmith
+  nameWithType: KernSmith
+  fullName: KernSmith
+- uid: KernSmith.Atlas.AtlasPage.ToPng*
+  commentId: Overload:KernSmith.Atlas.AtlasPage.ToPng
+  href: KernSmith.Atlas.AtlasPage.html#KernSmith_Atlas_AtlasPage_ToPng
+  name: ToPng
+  nameWithType: AtlasPage.ToPng
+  fullName: KernSmith.Atlas.AtlasPage.ToPng
+- uid: KernSmith.Atlas.AtlasPage.ToTga*
+  commentId: Overload:KernSmith.Atlas.AtlasPage.ToTga
+  href: KernSmith.Atlas.AtlasPage.html#KernSmith_Atlas_AtlasPage_ToTga
+  name: ToTga
+  nameWithType: AtlasPage.ToTga
+  fullName: KernSmith.Atlas.AtlasPage.ToTga
+- uid: KernSmith.Atlas.AtlasPage.ToDds*
+  commentId: Overload:KernSmith.Atlas.AtlasPage.ToDds
+  href: KernSmith.Atlas.AtlasPage.html#KernSmith_Atlas_AtlasPage_ToDds
+  name: ToDds
+  nameWithType: AtlasPage.ToDds
+  fullName: KernSmith.Atlas.AtlasPage.ToDds

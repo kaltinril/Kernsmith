@@ -1,0 +1,98 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Output
+  commentId: N:KernSmith.Output
+  id: KernSmith.Output
+  children:
+  - KernSmith.Output.AtlasSizeInfo
+  - KernSmith.Output.BatchJobResult
+  - KernSmith.Output.BatchResult
+  - KernSmith.Output.BmFontReader
+  - KernSmith.Output.BmFontResult
+  - KernSmith.Output.IBmFontBinaryFormatter
+  - KernSmith.Output.IBmFontFormatter
+  - KernSmith.Output.IBmFontTextFormatter
+  langs:
+  - csharp
+  - vb
+  name: KernSmith.Output
+  nameWithType: KernSmith.Output
+  fullName: KernSmith.Output
+  type: Namespace
+  assemblies:
+  - KernSmith
+references:
+- uid: KernSmith.Output.AtlasSizeInfo
+  commentId: T:KernSmith.Output.AtlasSizeInfo
+  parent: KernSmith.Output
+  href: KernSmith.Output.AtlasSizeInfo.html
+  name: AtlasSizeInfo
+  nameWithType: AtlasSizeInfo
+  fullName: KernSmith.Output.AtlasSizeInfo
+- uid: KernSmith.Output.BatchResult
+  commentId: T:KernSmith.Output.BatchResult
+  parent: KernSmith.Output
+  href: KernSmith.Output.BatchResult.html
+  name: BatchResult
+  nameWithType: BatchResult
+  fullName: KernSmith.Output.BatchResult
+- uid: KernSmith.Output.BatchJobResult
+  commentId: T:KernSmith.Output.BatchJobResult
+  href: KernSmith.Output.BatchJobResult.html
+  name: BatchJobResult
+  nameWithType: BatchJobResult
+  fullName: KernSmith.Output.BatchJobResult
+- uid: KernSmith.Output.BmFontReader
+  commentId: T:KernSmith.Output.BmFontReader
+  href: KernSmith.Output.BmFontReader.html
+  name: BmFontReader
+  nameWithType: BmFontReader
+  fullName: KernSmith.Output.BmFontReader
+- uid: KernSmith.Output.BmFontResult
+  commentId: T:KernSmith.Output.BmFontResult
+  parent: KernSmith.Output
+  href: KernSmith.Output.BmFontResult.html
+  name: BmFontResult
+  nameWithType: BmFontResult
+  fullName: KernSmith.Output.BmFontResult
+- uid: KernSmith.Output.IBmFontFormatter
+  commentId: T:KernSmith.Output.IBmFontFormatter
+  parent: KernSmith.Output
+  href: KernSmith.Output.IBmFontFormatter.html
+  name: IBmFontFormatter
+  nameWithType: IBmFontFormatter
+  fullName: KernSmith.Output.IBmFontFormatter
+- uid: KernSmith.Output.IBmFontTextFormatter
+  commentId: T:KernSmith.Output.IBmFontTextFormatter
+  href: KernSmith.Output.IBmFontTextFormatter.html
+  name: IBmFontTextFormatter
+  nameWithType: IBmFontTextFormatter
+  fullName: KernSmith.Output.IBmFontTextFormatter
+- uid: KernSmith.Output.IBmFontBinaryFormatter
+  commentId: T:KernSmith.Output.IBmFontBinaryFormatter
+  href: KernSmith.Output.IBmFontBinaryFormatter.html
+  name: IBmFontBinaryFormatter
+  nameWithType: IBmFontBinaryFormatter
+  fullName: KernSmith.Output.IBmFontBinaryFormatter
+- uid: KernSmith.Output
+  commentId: N:KernSmith.Output
+  href: KernSmith.html
+  name: KernSmith.Output
+  nameWithType: KernSmith.Output
+  fullName: KernSmith.Output
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html

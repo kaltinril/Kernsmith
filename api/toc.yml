@@ -1,0 +1,245 @@
+### YamlMime:TableOfContent
+items:
+- uid: KernSmith
+  name: KernSmith
+  type: Namespace
+  items:
+  - uid: KernSmith.AntiAliasMode
+    name: AntiAliasMode
+    type: Enum
+  - uid: KernSmith.AtlasPackingException
+    name: AtlasPackingException
+    type: Class
+  - uid: KernSmith.AtlasSizeConstraints
+    name: AtlasSizeConstraints
+    type: Class
+  - uid: KernSmith.AtlasTargetRegion
+    name: AtlasTargetRegion
+    type: Class
+  - uid: KernSmith.BatchAtlasMode
+    name: BatchAtlasMode
+    type: Enum
+  - uid: KernSmith.BatchJob
+    name: BatchJob
+    type: Class
+  - uid: KernSmith.BatchOptions
+    name: BatchOptions
+    type: Class
+  - uid: KernSmith.BmFont
+    name: BmFont
+    type: Class
+  - uid: KernSmith.BmFontBuilder
+    name: BmFontBuilder
+    type: Class
+  - uid: KernSmith.BmFontException
+    name: BmFontException
+    type: Class
+  - uid: KernSmith.BmfcConfig
+    name: BmfcConfig
+    type: Class
+  - uid: KernSmith.BmfcConfigReader
+    name: BmfcConfigReader
+    type: Class
+  - uid: KernSmith.BmfcConfigWriter
+    name: BmfcConfigWriter
+    type: Class
+  - uid: KernSmith.ChannelConfig
+    name: ChannelConfig
+    type: Class
+  - uid: KernSmith.ChannelContent
+    name: ChannelContent
+    type: Enum
+  - uid: KernSmith.CharacterSet
+    name: CharacterSet
+    type: Class
+  - uid: KernSmith.CustomGlyph
+    name: CustomGlyph
+    type: Class
+  - uid: KernSmith.FontCache
+    name: FontCache
+    type: Class
+  - uid: KernSmith.FontGeneratorOptions
+    name: FontGeneratorOptions
+    type: Class
+  - uid: KernSmith.FontParsingException
+    name: FontParsingException
+    type: Class
+  - uid: KernSmith.OutputFormat
+    name: OutputFormat
+    type: Enum
+  - uid: KernSmith.PackingAlgorithm
+    name: PackingAlgorithm
+    type: Enum
+  - uid: KernSmith.Padding
+    name: Padding
+    type: Struct
+  - uid: KernSmith.PipelineMetrics
+    name: PipelineMetrics
+    type: Class
+  - uid: KernSmith.PixelFormat
+    name: PixelFormat
+    type: Enum
+  - uid: KernSmith.RasterizationException
+    name: RasterizationException
+    type: Class
+  - uid: KernSmith.Spacing
+    name: Spacing
+    type: Struct
+  - uid: KernSmith.TextureFormat
+    name: TextureFormat
+    type: Enum
+- uid: KernSmith.Atlas
+  name: KernSmith.Atlas
+  type: Namespace
+  items:
+  - uid: KernSmith.Atlas.AtlasPage
+    name: AtlasPage
+    type: Class
+  - uid: KernSmith.Atlas.GlyphPlacement
+    name: GlyphPlacement
+    type: Struct
+  - uid: KernSmith.Atlas.GlyphRect
+    name: GlyphRect
+    type: Struct
+  - uid: KernSmith.Atlas.IAtlasEncoder
+    name: IAtlasEncoder
+    type: Interface
+  - uid: KernSmith.Atlas.IAtlasPacker
+    name: IAtlasPacker
+    type: Interface
+  - uid: KernSmith.Atlas.PackResult
+    name: PackResult
+    type: Class
+- uid: KernSmith.Font
+  name: KernSmith.Font
+  type: Namespace
+  items:
+  - uid: KernSmith.Font.DefaultSystemFontProvider
+    name: DefaultSystemFontProvider
+    type: Class
+  - uid: KernSmith.Font.IFontReader
+    name: IFontReader
+    type: Interface
+  - uid: KernSmith.Font.ISystemFontProvider
+    name: ISystemFontProvider
+    type: Interface
+- uid: KernSmith.Font.Models
+  name: KernSmith.Font.Models
+  type: Namespace
+  items:
+  - uid: KernSmith.Font.Models.FontInfo
+    name: FontInfo
+    type: Class
+  - uid: KernSmith.Font.Models.GlyphMetrics
+    name: GlyphMetrics
+    type: Struct
+  - uid: KernSmith.Font.Models.KerningPair
+    name: KerningPair
+    type: Struct
+  - uid: KernSmith.Font.Models.SystemFontInfo
+    name: SystemFontInfo
+    type: Class
+- uid: KernSmith.Font.Tables
+  name: KernSmith.Font.Tables
+  type: Namespace
+  items:
+  - uid: KernSmith.Font.Tables.HeadTable
+    name: HeadTable
+    type: Class
+  - uid: KernSmith.Font.Tables.HheaTable
+    name: HheaTable
+    type: Class
+  - uid: KernSmith.Font.Tables.NameInfo
+    name: NameInfo
+    type: Class
+  - uid: KernSmith.Font.Tables.NamedInstance
+    name: NamedInstance
+    type: Class
+  - uid: KernSmith.Font.Tables.Os2Metrics
+    name: Os2Metrics
+    type: Class
+  - uid: KernSmith.Font.Tables.VariationAxis
+    name: VariationAxis
+    type: Class
+- uid: KernSmith.Output
+  name: KernSmith.Output
+  type: Namespace
+  items:
+  - uid: KernSmith.Output.AtlasSizeInfo
+    name: AtlasSizeInfo
+    type: Class
+  - uid: KernSmith.Output.BatchJobResult
+    name: BatchJobResult
+    type: Class
+  - uid: KernSmith.Output.BatchResult
+    name: BatchResult
+    type: Class
+  - uid: KernSmith.Output.BmFontReader
+    name: BmFontReader
+    type: Class
+  - uid: KernSmith.Output.BmFontResult
+    name: BmFontResult
+    type: Class
+  - uid: KernSmith.Output.IBmFontBinaryFormatter
+    name: IBmFontBinaryFormatter
+    type: Interface
+  - uid: KernSmith.Output.IBmFontFormatter
+    name: IBmFontFormatter
+    type: Interface
+  - uid: KernSmith.Output.IBmFontTextFormatter
+    name: IBmFontTextFormatter
+    type: Interface
+- uid: KernSmith.Output.Model
+  name: KernSmith.Output.Model
+  type: Namespace
+  items:
+  - uid: KernSmith.Output.Model.BmFontModel
+    name: BmFontModel
+    type: Class
+  - uid: KernSmith.Output.Model.CharEntry
+    name: CharEntry
+    type: Class
+  - uid: KernSmith.Output.Model.CommonBlock
+    name: CommonBlock
+    type: Class
+  - uid: KernSmith.Output.Model.ExtendedMetadata
+    name: ExtendedMetadata
+    type: Class
+  - uid: KernSmith.Output.Model.InfoBlock
+    name: InfoBlock
+    type: Class
+  - uid: KernSmith.Output.Model.KerningEntry
+    name: KerningEntry
+    type: Class
+  - uid: KernSmith.Output.Model.PageEntry
+    name: PageEntry
+    type: Class
+- uid: KernSmith.Rasterizer
+  name: KernSmith.Rasterizer
+  type: Namespace
+  items:
+  - uid: KernSmith.Rasterizer.GradientPostProcessor
+    name: GradientPostProcessor
+    type: Class
+  - uid: KernSmith.Rasterizer.HeightStretchPostProcessor
+    name: HeightStretchPostProcessor
+    type: Class
+  - uid: KernSmith.Rasterizer.IGlyphPostProcessor
+    name: IGlyphPostProcessor
+    type: Interface
+  - uid: KernSmith.Rasterizer.IRasterizer
+    name: IRasterizer
+    type: Interface
+  - uid: KernSmith.Rasterizer.OutlinePostProcessor
+    name: OutlinePostProcessor
+    type: Class
+  - uid: KernSmith.Rasterizer.RasterOptions
+    name: RasterOptions
+    type: Class
+  - uid: KernSmith.Rasterizer.RasterizedGlyph
+    name: RasterizedGlyph
+    type: Class
+  - uid: KernSmith.Rasterizer.ShadowPostProcessor
+    name: ShadowPostProcessor
+    type: Class
+memberLayout: SamePage

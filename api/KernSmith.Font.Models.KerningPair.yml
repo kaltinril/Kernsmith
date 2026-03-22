@@ -1,0 +1,521 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Font.Models.KerningPair
+  commentId: T:KernSmith.Font.Models.KerningPair
+  id: KerningPair
+  parent: KernSmith.Font.Models
+  children:
+  - KernSmith.Font.Models.KerningPair.#ctor(System.Int32,System.Int32,System.Int32)
+  - KernSmith.Font.Models.KerningPair.LeftCodepoint
+  - KernSmith.Font.Models.KerningPair.RightCodepoint
+  - KernSmith.Font.Models.KerningPair.XAdvanceAdjustment
+  langs:
+  - csharp
+  - vb
+  name: KerningPair
+  nameWithType: KerningPair
+  fullName: KernSmith.Font.Models.KerningPair
+  type: Struct
+  source:
+    remote:
+      path: src/KernSmith/Font/Models/KerningPair.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: KerningPair
+    path: src/KernSmith/Font/Models/KerningPair.cs
+    startLine: 6
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font.Models
+  summary: >-
+    A kerning pair adjustment in font units.
+
+    Callers scale: <code>XAdvanceAdjustment * targetSize / unitsPerEm</code>.
+  example: []
+  syntax:
+    content: 'public readonly record struct KerningPair : IEquatable<KerningPair>'
+    content.vb: Public Structure KerningPair Implements IEquatable(Of KerningPair)
+  implements:
+  - System.IEquatable{KernSmith.Font.Models.KerningPair}
+  inheritedMembers:
+  - System.ValueType.Equals(System.Object)
+  - System.ValueType.GetHashCode
+  - System.ValueType.ToString
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+- uid: KernSmith.Font.Models.KerningPair.#ctor(System.Int32,System.Int32,System.Int32)
+  commentId: M:KernSmith.Font.Models.KerningPair.#ctor(System.Int32,System.Int32,System.Int32)
+  id: '#ctor(System.Int32,System.Int32,System.Int32)'
+  parent: KernSmith.Font.Models.KerningPair
+  langs:
+  - csharp
+  - vb
+  name: KerningPair(int, int, int)
+  nameWithType: KerningPair.KerningPair(int, int, int)
+  fullName: KernSmith.Font.Models.KerningPair.KerningPair(int, int, int)
+  type: Constructor
+  source:
+    remote:
+      path: src/KernSmith/Font/Models/KerningPair.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: .ctor
+    path: src/KernSmith/Font/Models/KerningPair.cs
+    startLine: 6
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font.Models
+  summary: >-
+    A kerning pair adjustment in font units.
+
+    Callers scale: <code>XAdvanceAdjustment * targetSize / unitsPerEm</code>.
+  example: []
+  syntax:
+    content: public KerningPair(int LeftCodepoint, int RightCodepoint, int XAdvanceAdjustment)
+    parameters:
+    - id: LeftCodepoint
+      type: System.Int32
+    - id: RightCodepoint
+      type: System.Int32
+    - id: XAdvanceAdjustment
+      type: System.Int32
+    content.vb: Public Sub New(LeftCodepoint As Integer, RightCodepoint As Integer, XAdvanceAdjustment As Integer)
+  overload: KernSmith.Font.Models.KerningPair.#ctor*
+  nameWithType.vb: KerningPair.New(Integer, Integer, Integer)
+  fullName.vb: KernSmith.Font.Models.KerningPair.New(Integer, Integer, Integer)
+  name.vb: New(Integer, Integer, Integer)
+- uid: KernSmith.Font.Models.KerningPair.LeftCodepoint
+  commentId: P:KernSmith.Font.Models.KerningPair.LeftCodepoint
+  id: LeftCodepoint
+  parent: KernSmith.Font.Models.KerningPair
+  langs:
+  - csharp
+  - vb
+  name: LeftCodepoint
+  nameWithType: KerningPair.LeftCodepoint
+  fullName: KernSmith.Font.Models.KerningPair.LeftCodepoint
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Font/Models/KerningPair.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: LeftCodepoint
+    path: src/KernSmith/Font/Models/KerningPair.cs
+    startLine: 6
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font.Models
+  syntax:
+    content: public int LeftCodepoint { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property LeftCodepoint As Integer
+  overload: KernSmith.Font.Models.KerningPair.LeftCodepoint*
+- uid: KernSmith.Font.Models.KerningPair.RightCodepoint
+  commentId: P:KernSmith.Font.Models.KerningPair.RightCodepoint
+  id: RightCodepoint
+  parent: KernSmith.Font.Models.KerningPair
+  langs:
+  - csharp
+  - vb
+  name: RightCodepoint
+  nameWithType: KerningPair.RightCodepoint
+  fullName: KernSmith.Font.Models.KerningPair.RightCodepoint
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Font/Models/KerningPair.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: RightCodepoint
+    path: src/KernSmith/Font/Models/KerningPair.cs
+    startLine: 6
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font.Models
+  syntax:
+    content: public int RightCodepoint { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property RightCodepoint As Integer
+  overload: KernSmith.Font.Models.KerningPair.RightCodepoint*
+- uid: KernSmith.Font.Models.KerningPair.XAdvanceAdjustment
+  commentId: P:KernSmith.Font.Models.KerningPair.XAdvanceAdjustment
+  id: XAdvanceAdjustment
+  parent: KernSmith.Font.Models.KerningPair
+  langs:
+  - csharp
+  - vb
+  name: XAdvanceAdjustment
+  nameWithType: KerningPair.XAdvanceAdjustment
+  fullName: KernSmith.Font.Models.KerningPair.XAdvanceAdjustment
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Font/Models/KerningPair.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: XAdvanceAdjustment
+    path: src/KernSmith/Font/Models/KerningPair.cs
+    startLine: 6
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font.Models
+  syntax:
+    content: public int XAdvanceAdjustment { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property XAdvanceAdjustment As Integer
+  overload: KernSmith.Font.Models.KerningPair.XAdvanceAdjustment*
+references:
+- uid: KernSmith.Font.Models
+  commentId: N:KernSmith.Font.Models
+  href: KernSmith.html
+  name: KernSmith.Font.Models
+  nameWithType: KernSmith.Font.Models
+  fullName: KernSmith.Font.Models
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+  - name: .
+  - uid: KernSmith.Font.Models
+    name: Models
+    href: KernSmith.Font.Models.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+  - name: .
+  - uid: KernSmith.Font.Models
+    name: Models
+    href: KernSmith.Font.Models.html
+- uid: System.IEquatable{KernSmith.Font.Models.KerningPair}
+  commentId: T:System.IEquatable{KernSmith.Font.Models.KerningPair}
+  parent: System
+  definition: System.IEquatable`1
+  href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  name: IEquatable<KerningPair>
+  nameWithType: IEquatable<KerningPair>
+  fullName: System.IEquatable<KernSmith.Font.Models.KerningPair>
+  nameWithType.vb: IEquatable(Of KerningPair)
+  fullName.vb: System.IEquatable(Of KernSmith.Font.Models.KerningPair)
+  name.vb: IEquatable(Of KerningPair)
+  spec.csharp:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: <
+  - uid: KernSmith.Font.Models.KerningPair
+    name: KerningPair
+    href: KernSmith.Font.Models.KerningPair.html
+  - name: '>'
+  spec.vb:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: KernSmith.Font.Models.KerningPair
+    name: KerningPair
+    href: KernSmith.Font.Models.KerningPair.html
+  - name: )
+- uid: System.ValueType.Equals(System.Object)
+  commentId: M:System.ValueType.Equals(System.Object)
+  parent: System.ValueType
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.valuetype.equals
+  name: Equals(object)
+  nameWithType: ValueType.Equals(object)
+  fullName: System.ValueType.Equals(object)
+  nameWithType.vb: ValueType.Equals(Object)
+  fullName.vb: System.ValueType.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.ValueType.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.valuetype.equals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.ValueType.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.valuetype.equals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.ValueType.GetHashCode
+  commentId: M:System.ValueType.GetHashCode
+  parent: System.ValueType
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.valuetype.gethashcode
+  name: GetHashCode()
+  nameWithType: ValueType.GetHashCode()
+  fullName: System.ValueType.GetHashCode()
+  spec.csharp:
+  - uid: System.ValueType.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.valuetype.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.ValueType.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.valuetype.gethashcode
+  - name: (
+  - name: )
+- uid: System.ValueType.ToString
+  commentId: M:System.ValueType.ToString
+  parent: System.ValueType
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.valuetype.tostring
+  name: ToString()
+  nameWithType: ValueType.ToString()
+  fullName: System.ValueType.ToString()
+  spec.csharp:
+  - uid: System.ValueType.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.valuetype.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.ValueType.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.valuetype.tostring
+  - name: (
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.IEquatable`1
+  commentId: T:System.IEquatable`1
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  name: IEquatable<T>
+  nameWithType: IEquatable<T>
+  fullName: System.IEquatable<T>
+  nameWithType.vb: IEquatable(Of T)
+  fullName.vb: System.IEquatable(Of T)
+  name.vb: IEquatable(Of T)
+  spec.csharp:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: <
+  - name: T
+  - name: '>'
+  spec.vb:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - name: T
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: System.ValueType
+  commentId: T:System.ValueType
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.valuetype
+  name: ValueType
+  nameWithType: ValueType
+  fullName: System.ValueType
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: KernSmith.Font.Models.KerningPair.#ctor*
+  commentId: Overload:KernSmith.Font.Models.KerningPair.#ctor
+  href: KernSmith.Font.Models.KerningPair.html#KernSmith_Font_Models_KerningPair__ctor_System_Int32_System_Int32_System_Int32_
+  name: KerningPair
+  nameWithType: KerningPair.KerningPair
+  fullName: KernSmith.Font.Models.KerningPair.KerningPair
+  nameWithType.vb: KerningPair.New
+  fullName.vb: KernSmith.Font.Models.KerningPair.New
+  name.vb: New
+- uid: System.Int32
+  commentId: T:System.Int32
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int
+  nameWithType: int
+  fullName: int
+  nameWithType.vb: Integer
+  fullName.vb: Integer
+  name.vb: Integer
+- uid: KernSmith.Font.Models.KerningPair.LeftCodepoint*
+  commentId: Overload:KernSmith.Font.Models.KerningPair.LeftCodepoint
+  href: KernSmith.Font.Models.KerningPair.html#KernSmith_Font_Models_KerningPair_LeftCodepoint
+  name: LeftCodepoint
+  nameWithType: KerningPair.LeftCodepoint
+  fullName: KernSmith.Font.Models.KerningPair.LeftCodepoint
+- uid: KernSmith.Font.Models.KerningPair.RightCodepoint*
+  commentId: Overload:KernSmith.Font.Models.KerningPair.RightCodepoint
+  href: KernSmith.Font.Models.KerningPair.html#KernSmith_Font_Models_KerningPair_RightCodepoint
+  name: RightCodepoint
+  nameWithType: KerningPair.RightCodepoint
+  fullName: KernSmith.Font.Models.KerningPair.RightCodepoint
+- uid: KernSmith.Font.Models.KerningPair.XAdvanceAdjustment*
+  commentId: Overload:KernSmith.Font.Models.KerningPair.XAdvanceAdjustment
+  href: KernSmith.Font.Models.KerningPair.html#KernSmith_Font_Models_KerningPair_XAdvanceAdjustment
+  name: XAdvanceAdjustment
+  nameWithType: KerningPair.XAdvanceAdjustment
+  fullName: KernSmith.Font.Models.KerningPair.XAdvanceAdjustment

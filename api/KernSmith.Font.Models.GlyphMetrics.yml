@@ -1,0 +1,591 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Font.Models.GlyphMetrics
+  commentId: T:KernSmith.Font.Models.GlyphMetrics
+  id: GlyphMetrics
+  parent: KernSmith.Font.Models
+  children:
+  - KernSmith.Font.Models.GlyphMetrics.#ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)
+  - KernSmith.Font.Models.GlyphMetrics.Advance
+  - KernSmith.Font.Models.GlyphMetrics.BearingX
+  - KernSmith.Font.Models.GlyphMetrics.BearingY
+  - KernSmith.Font.Models.GlyphMetrics.Height
+  - KernSmith.Font.Models.GlyphMetrics.Width
+  langs:
+  - csharp
+  - vb
+  name: GlyphMetrics
+  nameWithType: GlyphMetrics
+  fullName: KernSmith.Font.Models.GlyphMetrics
+  type: Struct
+  source:
+    remote:
+      path: src/KernSmith/Font/Models/GlyphMetrics.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GlyphMetrics
+    path: src/KernSmith/Font/Models/GlyphMetrics.cs
+    startLine: 5
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font.Models
+  summary: Per-glyph positioning metrics in pixels, computed during rasterization.
+  example: []
+  syntax:
+    content: 'public readonly record struct GlyphMetrics : IEquatable<GlyphMetrics>'
+    content.vb: Public Structure GlyphMetrics Implements IEquatable(Of GlyphMetrics)
+  implements:
+  - System.IEquatable{KernSmith.Font.Models.GlyphMetrics}
+  inheritedMembers:
+  - System.ValueType.Equals(System.Object)
+  - System.ValueType.GetHashCode
+  - System.ValueType.ToString
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+- uid: KernSmith.Font.Models.GlyphMetrics.#ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)
+  commentId: M:KernSmith.Font.Models.GlyphMetrics.#ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)
+  id: '#ctor(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)'
+  parent: KernSmith.Font.Models.GlyphMetrics
+  langs:
+  - csharp
+  - vb
+  name: GlyphMetrics(int, int, int, int, int)
+  nameWithType: GlyphMetrics.GlyphMetrics(int, int, int, int, int)
+  fullName: KernSmith.Font.Models.GlyphMetrics.GlyphMetrics(int, int, int, int, int)
+  type: Constructor
+  source:
+    remote:
+      path: src/KernSmith/Font/Models/GlyphMetrics.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: .ctor
+    path: src/KernSmith/Font/Models/GlyphMetrics.cs
+    startLine: 5
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font.Models
+  summary: Per-glyph positioning metrics in pixels, computed during rasterization.
+  example: []
+  syntax:
+    content: public GlyphMetrics(int BearingX, int BearingY, int Advance, int Width, int Height)
+    parameters:
+    - id: BearingX
+      type: System.Int32
+    - id: BearingY
+      type: System.Int32
+    - id: Advance
+      type: System.Int32
+    - id: Width
+      type: System.Int32
+    - id: Height
+      type: System.Int32
+    content.vb: Public Sub New(BearingX As Integer, BearingY As Integer, Advance As Integer, Width As Integer, Height As Integer)
+  overload: KernSmith.Font.Models.GlyphMetrics.#ctor*
+  nameWithType.vb: GlyphMetrics.New(Integer, Integer, Integer, Integer, Integer)
+  fullName.vb: KernSmith.Font.Models.GlyphMetrics.New(Integer, Integer, Integer, Integer, Integer)
+  name.vb: New(Integer, Integer, Integer, Integer, Integer)
+- uid: KernSmith.Font.Models.GlyphMetrics.BearingX
+  commentId: P:KernSmith.Font.Models.GlyphMetrics.BearingX
+  id: BearingX
+  parent: KernSmith.Font.Models.GlyphMetrics
+  langs:
+  - csharp
+  - vb
+  name: BearingX
+  nameWithType: GlyphMetrics.BearingX
+  fullName: KernSmith.Font.Models.GlyphMetrics.BearingX
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Font/Models/GlyphMetrics.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: BearingX
+    path: src/KernSmith/Font/Models/GlyphMetrics.cs
+    startLine: 6
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font.Models
+  syntax:
+    content: public int BearingX { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property BearingX As Integer
+  overload: KernSmith.Font.Models.GlyphMetrics.BearingX*
+- uid: KernSmith.Font.Models.GlyphMetrics.BearingY
+  commentId: P:KernSmith.Font.Models.GlyphMetrics.BearingY
+  id: BearingY
+  parent: KernSmith.Font.Models.GlyphMetrics
+  langs:
+  - csharp
+  - vb
+  name: BearingY
+  nameWithType: GlyphMetrics.BearingY
+  fullName: KernSmith.Font.Models.GlyphMetrics.BearingY
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Font/Models/GlyphMetrics.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: BearingY
+    path: src/KernSmith/Font/Models/GlyphMetrics.cs
+    startLine: 7
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font.Models
+  syntax:
+    content: public int BearingY { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property BearingY As Integer
+  overload: KernSmith.Font.Models.GlyphMetrics.BearingY*
+- uid: KernSmith.Font.Models.GlyphMetrics.Advance
+  commentId: P:KernSmith.Font.Models.GlyphMetrics.Advance
+  id: Advance
+  parent: KernSmith.Font.Models.GlyphMetrics
+  langs:
+  - csharp
+  - vb
+  name: Advance
+  nameWithType: GlyphMetrics.Advance
+  fullName: KernSmith.Font.Models.GlyphMetrics.Advance
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Font/Models/GlyphMetrics.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Advance
+    path: src/KernSmith/Font/Models/GlyphMetrics.cs
+    startLine: 8
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font.Models
+  syntax:
+    content: public int Advance { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Advance As Integer
+  overload: KernSmith.Font.Models.GlyphMetrics.Advance*
+- uid: KernSmith.Font.Models.GlyphMetrics.Width
+  commentId: P:KernSmith.Font.Models.GlyphMetrics.Width
+  id: Width
+  parent: KernSmith.Font.Models.GlyphMetrics
+  langs:
+  - csharp
+  - vb
+  name: Width
+  nameWithType: GlyphMetrics.Width
+  fullName: KernSmith.Font.Models.GlyphMetrics.Width
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Font/Models/GlyphMetrics.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Width
+    path: src/KernSmith/Font/Models/GlyphMetrics.cs
+    startLine: 9
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font.Models
+  syntax:
+    content: public int Width { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Width As Integer
+  overload: KernSmith.Font.Models.GlyphMetrics.Width*
+- uid: KernSmith.Font.Models.GlyphMetrics.Height
+  commentId: P:KernSmith.Font.Models.GlyphMetrics.Height
+  id: Height
+  parent: KernSmith.Font.Models.GlyphMetrics
+  langs:
+  - csharp
+  - vb
+  name: Height
+  nameWithType: GlyphMetrics.Height
+  fullName: KernSmith.Font.Models.GlyphMetrics.Height
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Font/Models/GlyphMetrics.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Height
+    path: src/KernSmith/Font/Models/GlyphMetrics.cs
+    startLine: 10
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font.Models
+  syntax:
+    content: public int Height { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Height As Integer
+  overload: KernSmith.Font.Models.GlyphMetrics.Height*
+references:
+- uid: KernSmith.Font.Models
+  commentId: N:KernSmith.Font.Models
+  href: KernSmith.html
+  name: KernSmith.Font.Models
+  nameWithType: KernSmith.Font.Models
+  fullName: KernSmith.Font.Models
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+  - name: .
+  - uid: KernSmith.Font.Models
+    name: Models
+    href: KernSmith.Font.Models.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+  - name: .
+  - uid: KernSmith.Font.Models
+    name: Models
+    href: KernSmith.Font.Models.html
+- uid: System.IEquatable{KernSmith.Font.Models.GlyphMetrics}
+  commentId: T:System.IEquatable{KernSmith.Font.Models.GlyphMetrics}
+  parent: System
+  definition: System.IEquatable`1
+  href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  name: IEquatable<GlyphMetrics>
+  nameWithType: IEquatable<GlyphMetrics>
+  fullName: System.IEquatable<KernSmith.Font.Models.GlyphMetrics>
+  nameWithType.vb: IEquatable(Of GlyphMetrics)
+  fullName.vb: System.IEquatable(Of KernSmith.Font.Models.GlyphMetrics)
+  name.vb: IEquatable(Of GlyphMetrics)
+  spec.csharp:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: <
+  - uid: KernSmith.Font.Models.GlyphMetrics
+    name: GlyphMetrics
+    href: KernSmith.Font.Models.GlyphMetrics.html
+  - name: '>'
+  spec.vb:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: KernSmith.Font.Models.GlyphMetrics
+    name: GlyphMetrics
+    href: KernSmith.Font.Models.GlyphMetrics.html
+  - name: )
+- uid: System.ValueType.Equals(System.Object)
+  commentId: M:System.ValueType.Equals(System.Object)
+  parent: System.ValueType
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.valuetype.equals
+  name: Equals(object)
+  nameWithType: ValueType.Equals(object)
+  fullName: System.ValueType.Equals(object)
+  nameWithType.vb: ValueType.Equals(Object)
+  fullName.vb: System.ValueType.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.ValueType.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.valuetype.equals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.ValueType.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.valuetype.equals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.ValueType.GetHashCode
+  commentId: M:System.ValueType.GetHashCode
+  parent: System.ValueType
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.valuetype.gethashcode
+  name: GetHashCode()
+  nameWithType: ValueType.GetHashCode()
+  fullName: System.ValueType.GetHashCode()
+  spec.csharp:
+  - uid: System.ValueType.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.valuetype.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.ValueType.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.valuetype.gethashcode
+  - name: (
+  - name: )
+- uid: System.ValueType.ToString
+  commentId: M:System.ValueType.ToString
+  parent: System.ValueType
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.valuetype.tostring
+  name: ToString()
+  nameWithType: ValueType.ToString()
+  fullName: System.ValueType.ToString()
+  spec.csharp:
+  - uid: System.ValueType.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.valuetype.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.ValueType.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.valuetype.tostring
+  - name: (
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.IEquatable`1
+  commentId: T:System.IEquatable`1
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  name: IEquatable<T>
+  nameWithType: IEquatable<T>
+  fullName: System.IEquatable<T>
+  nameWithType.vb: IEquatable(Of T)
+  fullName.vb: System.IEquatable(Of T)
+  name.vb: IEquatable(Of T)
+  spec.csharp:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: <
+  - name: T
+  - name: '>'
+  spec.vb:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - name: T
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: System.ValueType
+  commentId: T:System.ValueType
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.valuetype
+  name: ValueType
+  nameWithType: ValueType
+  fullName: System.ValueType
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: KernSmith.Font.Models.GlyphMetrics.#ctor*
+  commentId: Overload:KernSmith.Font.Models.GlyphMetrics.#ctor
+  href: KernSmith.Font.Models.GlyphMetrics.html#KernSmith_Font_Models_GlyphMetrics__ctor_System_Int32_System_Int32_System_Int32_System_Int32_System_Int32_
+  name: GlyphMetrics
+  nameWithType: GlyphMetrics.GlyphMetrics
+  fullName: KernSmith.Font.Models.GlyphMetrics.GlyphMetrics
+  nameWithType.vb: GlyphMetrics.New
+  fullName.vb: KernSmith.Font.Models.GlyphMetrics.New
+  name.vb: New
+- uid: System.Int32
+  commentId: T:System.Int32
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int
+  nameWithType: int
+  fullName: int
+  nameWithType.vb: Integer
+  fullName.vb: Integer
+  name.vb: Integer
+- uid: KernSmith.Font.Models.GlyphMetrics.BearingX*
+  commentId: Overload:KernSmith.Font.Models.GlyphMetrics.BearingX
+  href: KernSmith.Font.Models.GlyphMetrics.html#KernSmith_Font_Models_GlyphMetrics_BearingX
+  name: BearingX
+  nameWithType: GlyphMetrics.BearingX
+  fullName: KernSmith.Font.Models.GlyphMetrics.BearingX
+- uid: KernSmith.Font.Models.GlyphMetrics.BearingY*
+  commentId: Overload:KernSmith.Font.Models.GlyphMetrics.BearingY
+  href: KernSmith.Font.Models.GlyphMetrics.html#KernSmith_Font_Models_GlyphMetrics_BearingY
+  name: BearingY
+  nameWithType: GlyphMetrics.BearingY
+  fullName: KernSmith.Font.Models.GlyphMetrics.BearingY
+- uid: KernSmith.Font.Models.GlyphMetrics.Advance*
+  commentId: Overload:KernSmith.Font.Models.GlyphMetrics.Advance
+  href: KernSmith.Font.Models.GlyphMetrics.html#KernSmith_Font_Models_GlyphMetrics_Advance
+  name: Advance
+  nameWithType: GlyphMetrics.Advance
+  fullName: KernSmith.Font.Models.GlyphMetrics.Advance
+- uid: KernSmith.Font.Models.GlyphMetrics.Width*
+  commentId: Overload:KernSmith.Font.Models.GlyphMetrics.Width
+  href: KernSmith.Font.Models.GlyphMetrics.html#KernSmith_Font_Models_GlyphMetrics_Width
+  name: Width
+  nameWithType: GlyphMetrics.Width
+  fullName: KernSmith.Font.Models.GlyphMetrics.Width
+- uid: KernSmith.Font.Models.GlyphMetrics.Height*
+  commentId: Overload:KernSmith.Font.Models.GlyphMetrics.Height
+  href: KernSmith.Font.Models.GlyphMetrics.html#KernSmith_Font_Models_GlyphMetrics_Height
+  name: Height
+  nameWithType: GlyphMetrics.Height
+  fullName: KernSmith.Font.Models.GlyphMetrics.Height

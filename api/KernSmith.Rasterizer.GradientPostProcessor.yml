@@ -1,0 +1,921 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Rasterizer.GradientPostProcessor
+  commentId: T:KernSmith.Rasterizer.GradientPostProcessor
+  id: GradientPostProcessor
+  parent: KernSmith.Rasterizer
+  children:
+  - KernSmith.Rasterizer.GradientPostProcessor.#ctor(System.Byte,System.Byte,System.Byte,System.Byte,System.Byte,System.Byte,System.Single,System.Single)
+  - KernSmith.Rasterizer.GradientPostProcessor.AngleDegrees
+  - KernSmith.Rasterizer.GradientPostProcessor.Create(System.ValueTuple{System.Byte,System.Byte,System.Byte},System.ValueTuple{System.Byte,System.Byte,System.Byte},System.Single,System.Single)
+  - KernSmith.Rasterizer.GradientPostProcessor.EndB
+  - KernSmith.Rasterizer.GradientPostProcessor.EndG
+  - KernSmith.Rasterizer.GradientPostProcessor.EndR
+  - KernSmith.Rasterizer.GradientPostProcessor.Midpoint
+  - KernSmith.Rasterizer.GradientPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+  - KernSmith.Rasterizer.GradientPostProcessor.StartB
+  - KernSmith.Rasterizer.GradientPostProcessor.StartG
+  - KernSmith.Rasterizer.GradientPostProcessor.StartR
+  langs:
+  - csharp
+  - vb
+  name: GradientPostProcessor
+  nameWithType: GradientPostProcessor
+  fullName: KernSmith.Rasterizer.GradientPostProcessor
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GradientPostProcessor
+    path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+    startLine: 5
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Applies a two-color linear gradient across each glyph at a configurable angle. Converts grayscale glyphs to RGBA.
+  example: []
+  syntax:
+    content: 'public sealed class GradientPostProcessor : IGlyphPostProcessor'
+    content.vb: Public NotInheritable Class GradientPostProcessor Implements IGlyphPostProcessor
+  inheritance:
+  - System.Object
+  implements:
+  - KernSmith.Rasterizer.IGlyphPostProcessor
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.Rasterizer.GradientPostProcessor.StartR
+  commentId: P:KernSmith.Rasterizer.GradientPostProcessor.StartR
+  id: StartR
+  parent: KernSmith.Rasterizer.GradientPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: StartR
+  nameWithType: GradientPostProcessor.StartR
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.StartR
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: StartR
+    path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+    startLine: 8
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Start color red (0-255).
+  example: []
+  syntax:
+    content: public byte StartR { get; }
+    parameters: []
+    return:
+      type: System.Byte
+    content.vb: Public ReadOnly Property StartR As Byte
+  overload: KernSmith.Rasterizer.GradientPostProcessor.StartR*
+- uid: KernSmith.Rasterizer.GradientPostProcessor.StartG
+  commentId: P:KernSmith.Rasterizer.GradientPostProcessor.StartG
+  id: StartG
+  parent: KernSmith.Rasterizer.GradientPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: StartG
+  nameWithType: GradientPostProcessor.StartG
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.StartG
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: StartG
+    path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+    startLine: 11
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Start color green (0-255).
+  example: []
+  syntax:
+    content: public byte StartG { get; }
+    parameters: []
+    return:
+      type: System.Byte
+    content.vb: Public ReadOnly Property StartG As Byte
+  overload: KernSmith.Rasterizer.GradientPostProcessor.StartG*
+- uid: KernSmith.Rasterizer.GradientPostProcessor.StartB
+  commentId: P:KernSmith.Rasterizer.GradientPostProcessor.StartB
+  id: StartB
+  parent: KernSmith.Rasterizer.GradientPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: StartB
+  nameWithType: GradientPostProcessor.StartB
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.StartB
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: StartB
+    path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+    startLine: 14
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Start color blue (0-255).
+  example: []
+  syntax:
+    content: public byte StartB { get; }
+    parameters: []
+    return:
+      type: System.Byte
+    content.vb: Public ReadOnly Property StartB As Byte
+  overload: KernSmith.Rasterizer.GradientPostProcessor.StartB*
+- uid: KernSmith.Rasterizer.GradientPostProcessor.EndR
+  commentId: P:KernSmith.Rasterizer.GradientPostProcessor.EndR
+  id: EndR
+  parent: KernSmith.Rasterizer.GradientPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: EndR
+  nameWithType: GradientPostProcessor.EndR
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.EndR
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: EndR
+    path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+    startLine: 17
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: End color red (0-255).
+  example: []
+  syntax:
+    content: public byte EndR { get; }
+    parameters: []
+    return:
+      type: System.Byte
+    content.vb: Public ReadOnly Property EndR As Byte
+  overload: KernSmith.Rasterizer.GradientPostProcessor.EndR*
+- uid: KernSmith.Rasterizer.GradientPostProcessor.EndG
+  commentId: P:KernSmith.Rasterizer.GradientPostProcessor.EndG
+  id: EndG
+  parent: KernSmith.Rasterizer.GradientPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: EndG
+  nameWithType: GradientPostProcessor.EndG
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.EndG
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: EndG
+    path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+    startLine: 20
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: End color green (0-255).
+  example: []
+  syntax:
+    content: public byte EndG { get; }
+    parameters: []
+    return:
+      type: System.Byte
+    content.vb: Public ReadOnly Property EndG As Byte
+  overload: KernSmith.Rasterizer.GradientPostProcessor.EndG*
+- uid: KernSmith.Rasterizer.GradientPostProcessor.EndB
+  commentId: P:KernSmith.Rasterizer.GradientPostProcessor.EndB
+  id: EndB
+  parent: KernSmith.Rasterizer.GradientPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: EndB
+  nameWithType: GradientPostProcessor.EndB
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.EndB
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: EndB
+    path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+    startLine: 23
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: End color blue (0-255).
+  example: []
+  syntax:
+    content: public byte EndB { get; }
+    parameters: []
+    return:
+      type: System.Byte
+    content.vb: Public ReadOnly Property EndB As Byte
+  overload: KernSmith.Rasterizer.GradientPostProcessor.EndB*
+- uid: KernSmith.Rasterizer.GradientPostProcessor.AngleDegrees
+  commentId: P:KernSmith.Rasterizer.GradientPostProcessor.AngleDegrees
+  id: AngleDegrees
+  parent: KernSmith.Rasterizer.GradientPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: AngleDegrees
+  nameWithType: GradientPostProcessor.AngleDegrees
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.AngleDegrees
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: AngleDegrees
+    path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+    startLine: 29
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: >-
+    Angle of the gradient in degrees. 0 = left-to-right, 90 = top-to-bottom,
+
+    180 = right-to-left, 270 = bottom-to-top.
+  example: []
+  syntax:
+    content: public float AngleDegrees { get; }
+    parameters: []
+    return:
+      type: System.Single
+    content.vb: Public ReadOnly Property AngleDegrees As Single
+  overload: KernSmith.Rasterizer.GradientPostProcessor.AngleDegrees*
+- uid: KernSmith.Rasterizer.GradientPostProcessor.Midpoint
+  commentId: P:KernSmith.Rasterizer.GradientPostProcessor.Midpoint
+  id: Midpoint
+  parent: KernSmith.Rasterizer.GradientPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: Midpoint
+  nameWithType: GradientPostProcessor.Midpoint
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.Midpoint
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Midpoint
+    path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+    startLine: 35
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: >-
+    Position of the 50% blend point along the gradient, from 0.0 to 1.0. Default 0.5.
+
+    Lower values shift the blend toward the start color; higher values toward the end color.
+  example: []
+  syntax:
+    content: public float Midpoint { get; }
+    parameters: []
+    return:
+      type: System.Single
+    content.vb: Public ReadOnly Property Midpoint As Single
+  overload: KernSmith.Rasterizer.GradientPostProcessor.Midpoint*
+- uid: KernSmith.Rasterizer.GradientPostProcessor.#ctor(System.Byte,System.Byte,System.Byte,System.Byte,System.Byte,System.Byte,System.Single,System.Single)
+  commentId: M:KernSmith.Rasterizer.GradientPostProcessor.#ctor(System.Byte,System.Byte,System.Byte,System.Byte,System.Byte,System.Byte,System.Single,System.Single)
+  id: '#ctor(System.Byte,System.Byte,System.Byte,System.Byte,System.Byte,System.Byte,System.Single,System.Single)'
+  parent: KernSmith.Rasterizer.GradientPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: GradientPostProcessor(byte, byte, byte, byte, byte, byte, float, float)
+  nameWithType: GradientPostProcessor.GradientPostProcessor(byte, byte, byte, byte, byte, byte, float, float)
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.GradientPostProcessor(byte, byte, byte, byte, byte, byte, float, float)
+  type: Constructor
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: .ctor
+    path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+    startLine: 48
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Creates a gradient effect with the given colors, angle, and midpoint.
+  example: []
+  syntax:
+    content: public GradientPostProcessor(byte startR, byte startG, byte startB, byte endR, byte endG, byte endB, float angleDegrees = 90, float midpoint = 0.5)
+    parameters:
+    - id: startR
+      type: System.Byte
+      description: Start color red.
+    - id: startG
+      type: System.Byte
+      description: Start color green.
+    - id: startB
+      type: System.Byte
+      description: Start color blue.
+    - id: endR
+      type: System.Byte
+      description: End color red.
+    - id: endG
+      type: System.Byte
+      description: End color green.
+    - id: endB
+      type: System.Byte
+      description: End color blue.
+    - id: angleDegrees
+      type: System.Single
+      description: Angle in degrees. Default 90 = top-to-bottom.
+    - id: midpoint
+      type: System.Single
+      description: Blend midpoint, 0.0 to 1.0. Default 0.5.
+    content.vb: Public Sub New(startR As Byte, startG As Byte, startB As Byte, endR As Byte, endG As Byte, endB As Byte, angleDegrees As Single = 90, midpoint As Single = 0.5)
+  overload: KernSmith.Rasterizer.GradientPostProcessor.#ctor*
+  nameWithType.vb: GradientPostProcessor.New(Byte, Byte, Byte, Byte, Byte, Byte, Single, Single)
+  fullName.vb: KernSmith.Rasterizer.GradientPostProcessor.New(Byte, Byte, Byte, Byte, Byte, Byte, Single, Single)
+  name.vb: New(Byte, Byte, Byte, Byte, Byte, Byte, Single, Single)
+- uid: KernSmith.Rasterizer.GradientPostProcessor.Create(System.ValueTuple{System.Byte,System.Byte,System.Byte},System.ValueTuple{System.Byte,System.Byte,System.Byte},System.Single,System.Single)
+  commentId: M:KernSmith.Rasterizer.GradientPostProcessor.Create(System.ValueTuple{System.Byte,System.Byte,System.Byte},System.ValueTuple{System.Byte,System.Byte,System.Byte},System.Single,System.Single)
+  id: Create(System.ValueTuple{System.Byte,System.Byte,System.Byte},System.ValueTuple{System.Byte,System.Byte,System.Byte},System.Single,System.Single)
+  parent: KernSmith.Rasterizer.GradientPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: Create((byte R, byte G, byte B), (byte R, byte G, byte B), float, float)
+  nameWithType: GradientPostProcessor.Create((byte R, byte G, byte B), (byte R, byte G, byte B), float, float)
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.Create((byte R, byte G, byte B), (byte R, byte G, byte B), float, float)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Create
+    path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+    startLine: 67
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Creates a gradient post-processor from two RGB color tuples.
+  example: []
+  syntax:
+    content: public static GradientPostProcessor Create((byte R, byte G, byte B) startColor, (byte R, byte G, byte B) endColor, float angleDegrees = 90, float midpoint = 0.5)
+    parameters:
+    - id: startColor
+      type: System.ValueTuple{System.Byte,System.Byte,System.Byte}
+      description: Start color as (R, G, B).
+    - id: endColor
+      type: System.ValueTuple{System.Byte,System.Byte,System.Byte}
+      description: End color as (R, G, B).
+    - id: angleDegrees
+      type: System.Single
+      description: Angle in degrees. Default 90 = top-to-bottom.
+    - id: midpoint
+      type: System.Single
+      description: Blend midpoint, 0.0 to 1.0. Default 0.5.
+    return:
+      type: KernSmith.Rasterizer.GradientPostProcessor
+    content.vb: Public Shared Function Create(startColor As (R As Byte, G As Byte, B As Byte), endColor As (R As Byte, G As Byte, B As Byte), angleDegrees As Single = 90, midpoint As Single = 0.5) As GradientPostProcessor
+  overload: KernSmith.Rasterizer.GradientPostProcessor.Create*
+  nameWithType.vb: GradientPostProcessor.Create((R As Byte, G As Byte, B As Byte), (R As Byte, G As Byte, B As Byte), Single, Single)
+  fullName.vb: KernSmith.Rasterizer.GradientPostProcessor.Create((R As Byte, G As Byte, B As Byte), (R As Byte, G As Byte, B As Byte), Single, Single)
+  name.vb: Create((R As Byte, G As Byte, B As Byte), (R As Byte, G As Byte, B As Byte), Single, Single)
+- uid: KernSmith.Rasterizer.GradientPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+  commentId: M:KernSmith.Rasterizer.GradientPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+  id: Process(KernSmith.Rasterizer.RasterizedGlyph)
+  parent: KernSmith.Rasterizer.GradientPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: Process(RasterizedGlyph)
+  nameWithType: GradientPostProcessor.Process(RasterizedGlyph)
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Process
+    path: src/KernSmith/Rasterizer/GradientPostProcessor.cs
+    startLine: 77
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Takes a rendered glyph and returns a new one with the effect applied.
+  example: []
+  syntax:
+    content: public RasterizedGlyph Process(RasterizedGlyph glyph)
+    parameters:
+    - id: glyph
+      type: KernSmith.Rasterizer.RasterizedGlyph
+      description: The glyph to modify.
+    return:
+      type: KernSmith.Rasterizer.RasterizedGlyph
+    content.vb: Public Function Process(glyph As RasterizedGlyph) As RasterizedGlyph
+  overload: KernSmith.Rasterizer.GradientPostProcessor.Process*
+  implements:
+  - KernSmith.Rasterizer.IGlyphPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+references:
+- uid: KernSmith.Rasterizer
+  commentId: N:KernSmith.Rasterizer
+  href: KernSmith.html
+  name: KernSmith.Rasterizer
+  nameWithType: KernSmith.Rasterizer
+  fullName: KernSmith.Rasterizer
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Rasterizer
+    name: Rasterizer
+    href: KernSmith.Rasterizer.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Rasterizer
+    name: Rasterizer
+    href: KernSmith.Rasterizer.html
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: KernSmith.Rasterizer.IGlyphPostProcessor
+  commentId: T:KernSmith.Rasterizer.IGlyphPostProcessor
+  parent: KernSmith.Rasterizer
+  href: KernSmith.Rasterizer.IGlyphPostProcessor.html
+  name: IGlyphPostProcessor
+  nameWithType: IGlyphPostProcessor
+  fullName: KernSmith.Rasterizer.IGlyphPostProcessor
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: KernSmith.Rasterizer.GradientPostProcessor.StartR*
+  commentId: Overload:KernSmith.Rasterizer.GradientPostProcessor.StartR
+  href: KernSmith.Rasterizer.GradientPostProcessor.html#KernSmith_Rasterizer_GradientPostProcessor_StartR
+  name: StartR
+  nameWithType: GradientPostProcessor.StartR
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.StartR
+- uid: System.Byte
+  commentId: T:System.Byte
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.byte
+  name: byte
+  nameWithType: byte
+  fullName: byte
+  nameWithType.vb: Byte
+  fullName.vb: Byte
+  name.vb: Byte
+- uid: KernSmith.Rasterizer.GradientPostProcessor.StartG*
+  commentId: Overload:KernSmith.Rasterizer.GradientPostProcessor.StartG
+  href: KernSmith.Rasterizer.GradientPostProcessor.html#KernSmith_Rasterizer_GradientPostProcessor_StartG
+  name: StartG
+  nameWithType: GradientPostProcessor.StartG
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.StartG
+- uid: KernSmith.Rasterizer.GradientPostProcessor.StartB*
+  commentId: Overload:KernSmith.Rasterizer.GradientPostProcessor.StartB
+  href: KernSmith.Rasterizer.GradientPostProcessor.html#KernSmith_Rasterizer_GradientPostProcessor_StartB
+  name: StartB
+  nameWithType: GradientPostProcessor.StartB
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.StartB
+- uid: KernSmith.Rasterizer.GradientPostProcessor.EndR*
+  commentId: Overload:KernSmith.Rasterizer.GradientPostProcessor.EndR
+  href: KernSmith.Rasterizer.GradientPostProcessor.html#KernSmith_Rasterizer_GradientPostProcessor_EndR
+  name: EndR
+  nameWithType: GradientPostProcessor.EndR
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.EndR
+- uid: KernSmith.Rasterizer.GradientPostProcessor.EndG*
+  commentId: Overload:KernSmith.Rasterizer.GradientPostProcessor.EndG
+  href: KernSmith.Rasterizer.GradientPostProcessor.html#KernSmith_Rasterizer_GradientPostProcessor_EndG
+  name: EndG
+  nameWithType: GradientPostProcessor.EndG
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.EndG
+- uid: KernSmith.Rasterizer.GradientPostProcessor.EndB*
+  commentId: Overload:KernSmith.Rasterizer.GradientPostProcessor.EndB
+  href: KernSmith.Rasterizer.GradientPostProcessor.html#KernSmith_Rasterizer_GradientPostProcessor_EndB
+  name: EndB
+  nameWithType: GradientPostProcessor.EndB
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.EndB
+- uid: KernSmith.Rasterizer.GradientPostProcessor.AngleDegrees*
+  commentId: Overload:KernSmith.Rasterizer.GradientPostProcessor.AngleDegrees
+  href: KernSmith.Rasterizer.GradientPostProcessor.html#KernSmith_Rasterizer_GradientPostProcessor_AngleDegrees
+  name: AngleDegrees
+  nameWithType: GradientPostProcessor.AngleDegrees
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.AngleDegrees
+- uid: System.Single
+  commentId: T:System.Single
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.single
+  name: float
+  nameWithType: float
+  fullName: float
+  nameWithType.vb: Single
+  fullName.vb: Single
+  name.vb: Single
+- uid: KernSmith.Rasterizer.GradientPostProcessor.Midpoint*
+  commentId: Overload:KernSmith.Rasterizer.GradientPostProcessor.Midpoint
+  href: KernSmith.Rasterizer.GradientPostProcessor.html#KernSmith_Rasterizer_GradientPostProcessor_Midpoint
+  name: Midpoint
+  nameWithType: GradientPostProcessor.Midpoint
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.Midpoint
+- uid: KernSmith.Rasterizer.GradientPostProcessor.#ctor*
+  commentId: Overload:KernSmith.Rasterizer.GradientPostProcessor.#ctor
+  href: KernSmith.Rasterizer.GradientPostProcessor.html#KernSmith_Rasterizer_GradientPostProcessor__ctor_System_Byte_System_Byte_System_Byte_System_Byte_System_Byte_System_Byte_System_Single_System_Single_
+  name: GradientPostProcessor
+  nameWithType: GradientPostProcessor.GradientPostProcessor
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.GradientPostProcessor
+  nameWithType.vb: GradientPostProcessor.New
+  fullName.vb: KernSmith.Rasterizer.GradientPostProcessor.New
+  name.vb: New
+- uid: KernSmith.Rasterizer.GradientPostProcessor.Create*
+  commentId: Overload:KernSmith.Rasterizer.GradientPostProcessor.Create
+  href: KernSmith.Rasterizer.GradientPostProcessor.html#KernSmith_Rasterizer_GradientPostProcessor_Create_System_ValueTuple_System_Byte_System_Byte_System_Byte__System_ValueTuple_System_Byte_System_Byte_System_Byte__System_Single_System_Single_
+  name: Create
+  nameWithType: GradientPostProcessor.Create
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.Create
+- uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}
+  commentId: T:System.ValueTuple{System.Byte,System.Byte,System.Byte}
+  parent: System
+  definition: System.ValueTuple`3
+  href: https://learn.microsoft.com/dotnet/api/system.byte
+  name: (byte R, byte G, byte B)
+  nameWithType: (byte R, byte G, byte B)
+  fullName: (byte R, byte G, byte B)
+  nameWithType.vb: (R As Byte, G As Byte, B As Byte)
+  fullName.vb: (R As Byte, G As Byte, B As Byte)
+  name.vb: (R As Byte, G As Byte, B As Byte)
+  spec.csharp:
+  - name: (
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: " "
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.R
+    name: R
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.r
+  - name: ','
+  - name: " "
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: " "
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.G
+    name: G
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.g
+  - name: ','
+  - name: " "
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: " "
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.B
+    name: B
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.b
+  - name: )
+  spec.vb:
+  - name: (
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.R
+    name: R
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.r
+  - name: " "
+  - name: As
+  - name: " "
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: ','
+  - name: " "
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.G
+    name: G
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.g
+  - name: " "
+  - name: As
+  - name: " "
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: ','
+  - name: " "
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.B
+    name: B
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.b
+  - name: " "
+  - name: As
+  - name: " "
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: )
+- uid: KernSmith.Rasterizer.GradientPostProcessor
+  commentId: T:KernSmith.Rasterizer.GradientPostProcessor
+  parent: KernSmith.Rasterizer
+  href: KernSmith.Rasterizer.GradientPostProcessor.html
+  name: GradientPostProcessor
+  nameWithType: GradientPostProcessor
+  fullName: KernSmith.Rasterizer.GradientPostProcessor
+- uid: System.ValueTuple`3
+  commentId: T:System.ValueTuple`3
+  name: (T1, T2, T3)
+  nameWithType: (T1, T2, T3)
+  fullName: (T1, T2, T3)
+  spec.csharp:
+  - name: (
+  - name: T1
+  - name: ','
+  - name: " "
+  - name: T2
+  - name: ','
+  - name: " "
+  - name: T3
+  - name: )
+  spec.vb:
+  - name: (
+  - name: T1
+  - name: ','
+  - name: " "
+  - name: T2
+  - name: ','
+  - name: " "
+  - name: T3
+  - name: )
+- uid: KernSmith.Rasterizer.GradientPostProcessor.Process*
+  commentId: Overload:KernSmith.Rasterizer.GradientPostProcessor.Process
+  href: KernSmith.Rasterizer.GradientPostProcessor.html#KernSmith_Rasterizer_GradientPostProcessor_Process_KernSmith_Rasterizer_RasterizedGlyph_
+  name: Process
+  nameWithType: GradientPostProcessor.Process
+  fullName: KernSmith.Rasterizer.GradientPostProcessor.Process
+- uid: KernSmith.Rasterizer.IGlyphPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+  commentId: M:KernSmith.Rasterizer.IGlyphPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+  parent: KernSmith.Rasterizer.IGlyphPostProcessor
+  href: KernSmith.Rasterizer.IGlyphPostProcessor.html#KernSmith_Rasterizer_IGlyphPostProcessor_Process_KernSmith_Rasterizer_RasterizedGlyph_
+  name: Process(RasterizedGlyph)
+  nameWithType: IGlyphPostProcessor.Process(RasterizedGlyph)
+  fullName: KernSmith.Rasterizer.IGlyphPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+  spec.csharp:
+  - uid: KernSmith.Rasterizer.IGlyphPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+    name: Process
+    href: KernSmith.Rasterizer.IGlyphPostProcessor.html#KernSmith_Rasterizer_IGlyphPostProcessor_Process_KernSmith_Rasterizer_RasterizedGlyph_
+  - name: (
+  - uid: KernSmith.Rasterizer.RasterizedGlyph
+    name: RasterizedGlyph
+    href: KernSmith.Rasterizer.RasterizedGlyph.html
+  - name: )
+  spec.vb:
+  - uid: KernSmith.Rasterizer.IGlyphPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+    name: Process
+    href: KernSmith.Rasterizer.IGlyphPostProcessor.html#KernSmith_Rasterizer_IGlyphPostProcessor_Process_KernSmith_Rasterizer_RasterizedGlyph_
+  - name: (
+  - uid: KernSmith.Rasterizer.RasterizedGlyph
+    name: RasterizedGlyph
+    href: KernSmith.Rasterizer.RasterizedGlyph.html
+  - name: )
+- uid: KernSmith.Rasterizer.RasterizedGlyph
+  commentId: T:KernSmith.Rasterizer.RasterizedGlyph
+  parent: KernSmith.Rasterizer
+  href: KernSmith.Rasterizer.RasterizedGlyph.html
+  name: RasterizedGlyph
+  nameWithType: RasterizedGlyph
+  fullName: KernSmith.Rasterizer.RasterizedGlyph

@@ -1,0 +1,621 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Output.BatchResult
+  commentId: T:KernSmith.Output.BatchResult
+  id: BatchResult
+  parent: KernSmith.Output
+  children:
+  - KernSmith.Output.BatchResult.Failed
+  - KernSmith.Output.BatchResult.Results
+  - KernSmith.Output.BatchResult.SharedPages
+  - KernSmith.Output.BatchResult.Succeeded
+  - KernSmith.Output.BatchResult.TotalElapsed
+  langs:
+  - csharp
+  - vb
+  name: BatchResult
+  nameWithType: BatchResult
+  fullName: KernSmith.Output.BatchResult
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/Output/BatchResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: BatchResult
+    path: src/KernSmith/Output/BatchResult.cs
+    startLine: 7
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Aggregated result of a batch font generation run.
+  example: []
+  syntax:
+    content: public sealed class BatchResult
+    content.vb: Public NotInheritable Class BatchResult
+  inheritance:
+  - System.Object
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.Output.BatchResult.Results
+  commentId: P:KernSmith.Output.BatchResult.Results
+  id: Results
+  parent: KernSmith.Output.BatchResult
+  langs:
+  - csharp
+  - vb
+  name: Results
+  nameWithType: BatchResult.Results
+  fullName: KernSmith.Output.BatchResult.Results
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/BatchResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Results
+    path: src/KernSmith/Output/BatchResult.cs
+    startLine: 10
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Per-job results in the same order as the input jobs.
+  example: []
+  syntax:
+    content: public IReadOnlyList<BatchJobResult> Results { get; init; }
+    parameters: []
+    return:
+      type: System.Collections.Generic.IReadOnlyList{KernSmith.Output.BatchJobResult}
+    content.vb: Public Property Results As IReadOnlyList(Of BatchJobResult)
+  overload: KernSmith.Output.BatchResult.Results*
+- uid: KernSmith.Output.BatchResult.SharedPages
+  commentId: P:KernSmith.Output.BatchResult.SharedPages
+  id: SharedPages
+  parent: KernSmith.Output.BatchResult
+  langs:
+  - csharp
+  - vb
+  name: SharedPages
+  nameWithType: BatchResult.SharedPages
+  fullName: KernSmith.Output.BatchResult.SharedPages
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/BatchResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: SharedPages
+    path: src/KernSmith/Output/BatchResult.cs
+    startLine: 13
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Shared atlas pages when using <xref href="KernSmith.BatchAtlasMode.Combined" data-throw-if-not-resolved="false"></xref>. Null for Separate mode.
+  example: []
+  syntax:
+    content: public IReadOnlyList<AtlasPage>? SharedPages { get; init; }
+    parameters: []
+    return:
+      type: System.Collections.Generic.IReadOnlyList{KernSmith.Atlas.AtlasPage}
+    content.vb: Public Property SharedPages As IReadOnlyList(Of AtlasPage)
+  overload: KernSmith.Output.BatchResult.SharedPages*
+- uid: KernSmith.Output.BatchResult.Succeeded
+  commentId: P:KernSmith.Output.BatchResult.Succeeded
+  id: Succeeded
+  parent: KernSmith.Output.BatchResult
+  langs:
+  - csharp
+  - vb
+  name: Succeeded
+  nameWithType: BatchResult.Succeeded
+  fullName: KernSmith.Output.BatchResult.Succeeded
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/BatchResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Succeeded
+    path: src/KernSmith/Output/BatchResult.cs
+    startLine: 16
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Number of jobs that completed successfully.
+  example: []
+  syntax:
+    content: public int Succeeded { get; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public ReadOnly Property Succeeded As Integer
+  overload: KernSmith.Output.BatchResult.Succeeded*
+- uid: KernSmith.Output.BatchResult.Failed
+  commentId: P:KernSmith.Output.BatchResult.Failed
+  id: Failed
+  parent: KernSmith.Output.BatchResult
+  langs:
+  - csharp
+  - vb
+  name: Failed
+  nameWithType: BatchResult.Failed
+  fullName: KernSmith.Output.BatchResult.Failed
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/BatchResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Failed
+    path: src/KernSmith/Output/BatchResult.cs
+    startLine: 19
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Number of jobs that failed.
+  example: []
+  syntax:
+    content: public int Failed { get; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public ReadOnly Property Failed As Integer
+  overload: KernSmith.Output.BatchResult.Failed*
+- uid: KernSmith.Output.BatchResult.TotalElapsed
+  commentId: P:KernSmith.Output.BatchResult.TotalElapsed
+  id: TotalElapsed
+  parent: KernSmith.Output.BatchResult
+  langs:
+  - csharp
+  - vb
+  name: TotalElapsed
+  nameWithType: BatchResult.TotalElapsed
+  fullName: KernSmith.Output.BatchResult.TotalElapsed
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/BatchResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: TotalElapsed
+    path: src/KernSmith/Output/BatchResult.cs
+    startLine: 22
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Total wall-clock time for the entire batch.
+  example: []
+  syntax:
+    content: public TimeSpan TotalElapsed { get; init; }
+    parameters: []
+    return:
+      type: System.TimeSpan
+    content.vb: Public Property TotalElapsed As TimeSpan
+  overload: KernSmith.Output.BatchResult.TotalElapsed*
+references:
+- uid: KernSmith.Output
+  commentId: N:KernSmith.Output
+  href: KernSmith.html
+  name: KernSmith.Output
+  nameWithType: KernSmith.Output
+  fullName: KernSmith.Output
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: KernSmith.Output.BatchResult.Results*
+  commentId: Overload:KernSmith.Output.BatchResult.Results
+  href: KernSmith.Output.BatchResult.html#KernSmith_Output_BatchResult_Results
+  name: Results
+  nameWithType: BatchResult.Results
+  fullName: KernSmith.Output.BatchResult.Results
+- uid: System.Collections.Generic.IReadOnlyList{KernSmith.Output.BatchJobResult}
+  commentId: T:System.Collections.Generic.IReadOnlyList{KernSmith.Output.BatchJobResult}
+  parent: System.Collections.Generic
+  definition: System.Collections.Generic.IReadOnlyList`1
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  name: IReadOnlyList<BatchJobResult>
+  nameWithType: IReadOnlyList<BatchJobResult>
+  fullName: System.Collections.Generic.IReadOnlyList<KernSmith.Output.BatchJobResult>
+  nameWithType.vb: IReadOnlyList(Of BatchJobResult)
+  fullName.vb: System.Collections.Generic.IReadOnlyList(Of KernSmith.Output.BatchJobResult)
+  name.vb: IReadOnlyList(Of BatchJobResult)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: <
+  - uid: KernSmith.Output.BatchJobResult
+    name: BatchJobResult
+    href: KernSmith.Output.BatchJobResult.html
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: KernSmith.Output.BatchJobResult
+    name: BatchJobResult
+    href: KernSmith.Output.BatchJobResult.html
+  - name: )
+- uid: System.Collections.Generic.IReadOnlyList`1
+  commentId: T:System.Collections.Generic.IReadOnlyList`1
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  name: IReadOnlyList<T>
+  nameWithType: IReadOnlyList<T>
+  fullName: System.Collections.Generic.IReadOnlyList<T>
+  nameWithType.vb: IReadOnlyList(Of T)
+  fullName.vb: System.Collections.Generic.IReadOnlyList(Of T)
+  name.vb: IReadOnlyList(Of T)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: <
+  - name: T
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: (
+  - name: Of
+  - name: " "
+  - name: T
+  - name: )
+- uid: System.Collections.Generic
+  commentId: N:System.Collections.Generic
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System.Collections.Generic
+  nameWithType: System.Collections.Generic
+  fullName: System.Collections.Generic
+  spec.csharp:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic
+  spec.vb:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic
+- uid: KernSmith.BatchAtlasMode.Combined
+  commentId: F:KernSmith.BatchAtlasMode.Combined
+  href: KernSmith.BatchAtlasMode.html#KernSmith_BatchAtlasMode_Combined
+  name: Combined
+  nameWithType: BatchAtlasMode.Combined
+  fullName: KernSmith.BatchAtlasMode.Combined
+- uid: KernSmith.Output.BatchResult.SharedPages*
+  commentId: Overload:KernSmith.Output.BatchResult.SharedPages
+  href: KernSmith.Output.BatchResult.html#KernSmith_Output_BatchResult_SharedPages
+  name: SharedPages
+  nameWithType: BatchResult.SharedPages
+  fullName: KernSmith.Output.BatchResult.SharedPages
+- uid: System.Collections.Generic.IReadOnlyList{KernSmith.Atlas.AtlasPage}
+  commentId: T:System.Collections.Generic.IReadOnlyList{KernSmith.Atlas.AtlasPage}
+  parent: System.Collections.Generic
+  definition: System.Collections.Generic.IReadOnlyList`1
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  name: IReadOnlyList<AtlasPage>
+  nameWithType: IReadOnlyList<AtlasPage>
+  fullName: System.Collections.Generic.IReadOnlyList<KernSmith.Atlas.AtlasPage>
+  nameWithType.vb: IReadOnlyList(Of AtlasPage)
+  fullName.vb: System.Collections.Generic.IReadOnlyList(Of KernSmith.Atlas.AtlasPage)
+  name.vb: IReadOnlyList(Of AtlasPage)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: <
+  - uid: KernSmith.Atlas.AtlasPage
+    name: AtlasPage
+    href: KernSmith.Atlas.AtlasPage.html
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: KernSmith.Atlas.AtlasPage
+    name: AtlasPage
+    href: KernSmith.Atlas.AtlasPage.html
+  - name: )
+- uid: KernSmith.Output.BatchResult.Succeeded*
+  commentId: Overload:KernSmith.Output.BatchResult.Succeeded
+  href: KernSmith.Output.BatchResult.html#KernSmith_Output_BatchResult_Succeeded
+  name: Succeeded
+  nameWithType: BatchResult.Succeeded
+  fullName: KernSmith.Output.BatchResult.Succeeded
+- uid: System.Int32
+  commentId: T:System.Int32
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int
+  nameWithType: int
+  fullName: int
+  nameWithType.vb: Integer
+  fullName.vb: Integer
+  name.vb: Integer
+- uid: KernSmith.Output.BatchResult.Failed*
+  commentId: Overload:KernSmith.Output.BatchResult.Failed
+  href: KernSmith.Output.BatchResult.html#KernSmith_Output_BatchResult_Failed
+  name: Failed
+  nameWithType: BatchResult.Failed
+  fullName: KernSmith.Output.BatchResult.Failed
+- uid: KernSmith.Output.BatchResult.TotalElapsed*
+  commentId: Overload:KernSmith.Output.BatchResult.TotalElapsed
+  href: KernSmith.Output.BatchResult.html#KernSmith_Output_BatchResult_TotalElapsed
+  name: TotalElapsed
+  nameWithType: BatchResult.TotalElapsed
+  fullName: KernSmith.Output.BatchResult.TotalElapsed
+- uid: System.TimeSpan
+  commentId: T:System.TimeSpan
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.timespan
+  name: TimeSpan
+  nameWithType: TimeSpan
+  fullName: System.TimeSpan

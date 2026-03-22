@@ -1,0 +1,6 @@
+- name: Core Library
+  href: core/
+- name: CLI Tool
+  href: cli/
+- name: UI Application
+  href: ui/

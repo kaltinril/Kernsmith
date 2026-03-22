@@ -1,0 +1,578 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.BmfcConfig
+  commentId: T:KernSmith.BmfcConfig
+  id: BmfcConfig
+  parent: KernSmith
+  children:
+  - KernSmith.BmfcConfig.FontFile
+  - KernSmith.BmfcConfig.FontName
+  - KernSmith.BmfcConfig.FromOptions(KernSmith.FontGeneratorOptions,System.String,System.String,System.String,KernSmith.OutputFormat)
+  - KernSmith.BmfcConfig.Options
+  - KernSmith.BmfcConfig.OutputFormat
+  - KernSmith.BmfcConfig.OutputPath
+  langs:
+  - csharp
+  - vb
+  name: BmfcConfig
+  nameWithType: BmfcConfig
+  fullName: KernSmith.BmfcConfig
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/Config/BmfcConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: BmfcConfig
+    path: src/KernSmith/Config/BmfcConfig.cs
+    startLine: 7
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: >-
+    Holds the result of reading a .bmfc configuration file.
+
+    Combines <xref href="KernSmith.FontGeneratorOptions" data-throw-if-not-resolved="false"></xref> with font source and output path
+
+    information that lives outside the options type.
+  example: []
+  syntax:
+    content: public sealed class BmfcConfig
+    content.vb: Public NotInheritable Class BmfcConfig
+  inheritance:
+  - System.Object
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.BmfcConfig.Options
+  commentId: P:KernSmith.BmfcConfig.Options
+  id: Options
+  parent: KernSmith.BmfcConfig
+  langs:
+  - csharp
+  - vb
+  name: Options
+  nameWithType: BmfcConfig.Options
+  fullName: KernSmith.BmfcConfig.Options
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/BmfcConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Options
+    path: src/KernSmith/Config/BmfcConfig.cs
+    startLine: 10
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Font generation options parsed from the .bmfc file.
+  example: []
+  syntax:
+    content: public FontGeneratorOptions Options { get; set; }
+    parameters: []
+    return:
+      type: KernSmith.FontGeneratorOptions
+    content.vb: Public Property Options As FontGeneratorOptions
+  overload: KernSmith.BmfcConfig.Options*
+- uid: KernSmith.BmfcConfig.FontFile
+  commentId: P:KernSmith.BmfcConfig.FontFile
+  id: FontFile
+  parent: KernSmith.BmfcConfig
+  langs:
+  - csharp
+  - vb
+  name: FontFile
+  nameWithType: BmfcConfig.FontFile
+  fullName: KernSmith.BmfcConfig.FontFile
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/BmfcConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FontFile
+    path: src/KernSmith/Config/BmfcConfig.cs
+    startLine: 13
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Path to a font file (TTF/OTF/WOFF), if specified in the config.
+  example: []
+  syntax:
+    content: public string? FontFile { get; set; }
+    parameters: []
+    return:
+      type: System.String
+    content.vb: Public Property FontFile As String
+  overload: KernSmith.BmfcConfig.FontFile*
+- uid: KernSmith.BmfcConfig.FontName
+  commentId: P:KernSmith.BmfcConfig.FontName
+  id: FontName
+  parent: KernSmith.BmfcConfig
+  langs:
+  - csharp
+  - vb
+  name: FontName
+  nameWithType: BmfcConfig.FontName
+  fullName: KernSmith.BmfcConfig.FontName
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/BmfcConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FontName
+    path: src/KernSmith/Config/BmfcConfig.cs
+    startLine: 16
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: System font family name, if specified in the config.
+  example: []
+  syntax:
+    content: public string? FontName { get; set; }
+    parameters: []
+    return:
+      type: System.String
+    content.vb: Public Property FontName As String
+  overload: KernSmith.BmfcConfig.FontName*
+- uid: KernSmith.BmfcConfig.OutputPath
+  commentId: P:KernSmith.BmfcConfig.OutputPath
+  id: OutputPath
+  parent: KernSmith.BmfcConfig
+  langs:
+  - csharp
+  - vb
+  name: OutputPath
+  nameWithType: BmfcConfig.OutputPath
+  fullName: KernSmith.BmfcConfig.OutputPath
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/BmfcConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: OutputPath
+    path: src/KernSmith/Config/BmfcConfig.cs
+    startLine: 19
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Output file path, if specified in the config.
+  example: []
+  syntax:
+    content: public string? OutputPath { get; set; }
+    parameters: []
+    return:
+      type: System.String
+    content.vb: Public Property OutputPath As String
+  overload: KernSmith.BmfcConfig.OutputPath*
+- uid: KernSmith.BmfcConfig.OutputFormat
+  commentId: P:KernSmith.BmfcConfig.OutputFormat
+  id: OutputFormat
+  parent: KernSmith.BmfcConfig
+  langs:
+  - csharp
+  - vb
+  name: OutputFormat
+  nameWithType: BmfcConfig.OutputFormat
+  fullName: KernSmith.BmfcConfig.OutputFormat
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/BmfcConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: OutputFormat
+    path: src/KernSmith/Config/BmfcConfig.cs
+    startLine: 22
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Output format for the font descriptor file (Text, Xml, or Binary). Default is Text.
+  example: []
+  syntax:
+    content: public OutputFormat OutputFormat { get; set; }
+    parameters: []
+    return:
+      type: KernSmith.OutputFormat
+    content.vb: Public Property OutputFormat As OutputFormat
+  overload: KernSmith.BmfcConfig.OutputFormat*
+- uid: KernSmith.BmfcConfig.FromOptions(KernSmith.FontGeneratorOptions,System.String,System.String,System.String,KernSmith.OutputFormat)
+  commentId: M:KernSmith.BmfcConfig.FromOptions(KernSmith.FontGeneratorOptions,System.String,System.String,System.String,KernSmith.OutputFormat)
+  id: FromOptions(KernSmith.FontGeneratorOptions,System.String,System.String,System.String,KernSmith.OutputFormat)
+  parent: KernSmith.BmfcConfig
+  langs:
+  - csharp
+  - vb
+  name: FromOptions(FontGeneratorOptions, string?, string?, string?, OutputFormat)
+  nameWithType: BmfcConfig.FromOptions(FontGeneratorOptions, string?, string?, string?, OutputFormat)
+  fullName: KernSmith.BmfcConfig.FromOptions(KernSmith.FontGeneratorOptions, string?, string?, string?, KernSmith.OutputFormat)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Config/BmfcConfig.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FromOptions
+    path: src/KernSmith/Config/BmfcConfig.cs
+    startLine: 35
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: >-
+    Creates a <xref href="KernSmith.BmfcConfig" data-throw-if-not-resolved="false"></xref> from existing <xref href="KernSmith.FontGeneratorOptions" data-throw-if-not-resolved="false"></xref>
+
+    with optional font source and output path. Useful for standalone .bmfc export
+
+    via <xref href="KernSmith.BmfcConfigWriter.Write(KernSmith.BmfcConfig)" data-throw-if-not-resolved="false"></xref> without parsing an existing file.
+  example: []
+  syntax:
+    content: public static BmfcConfig FromOptions(FontGeneratorOptions options, string? fontFile = null, string? fontName = null, string? outputPath = null, OutputFormat outputFormat = OutputFormat.Text)
+    parameters:
+    - id: options
+      type: KernSmith.FontGeneratorOptions
+      description: Font generation options to wrap.
+    - id: fontFile
+      type: System.String
+      description: Path to the font file, or null.
+    - id: fontName
+      type: System.String
+      description: System font family name, or null.
+    - id: outputPath
+      type: System.String
+      description: Output path, or null.
+    - id: outputFormat
+      type: KernSmith.OutputFormat
+      description: Output format (default <xref href="KernSmith.OutputFormat.Text" data-throw-if-not-resolved="false"></xref>).
+    return:
+      type: KernSmith.BmfcConfig
+      description: A new <xref href="KernSmith.BmfcConfig" data-throw-if-not-resolved="false"></xref> wrapping the given options.
+    content.vb: Public Shared Function FromOptions(options As FontGeneratorOptions, fontFile As String = Nothing, fontName As String = Nothing, outputPath As String = Nothing, outputFormat As OutputFormat = OutputFormat.Text) As BmfcConfig
+  overload: KernSmith.BmfcConfig.FromOptions*
+  nameWithType.vb: BmfcConfig.FromOptions(FontGeneratorOptions, String, String, String, OutputFormat)
+  fullName.vb: KernSmith.BmfcConfig.FromOptions(KernSmith.FontGeneratorOptions, String, String, String, KernSmith.OutputFormat)
+  name.vb: FromOptions(FontGeneratorOptions, String, String, String, OutputFormat)
+references:
+- uid: KernSmith.FontGeneratorOptions
+  commentId: T:KernSmith.FontGeneratorOptions
+  parent: KernSmith
+  href: KernSmith.FontGeneratorOptions.html
+  name: FontGeneratorOptions
+  nameWithType: FontGeneratorOptions
+  fullName: KernSmith.FontGeneratorOptions
+- uid: KernSmith
+  commentId: N:KernSmith
+  href: KernSmith.html
+  name: KernSmith
+  nameWithType: KernSmith
+  fullName: KernSmith
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: KernSmith.BmfcConfig.Options*
+  commentId: Overload:KernSmith.BmfcConfig.Options
+  href: KernSmith.BmfcConfig.html#KernSmith_BmfcConfig_Options
+  name: Options
+  nameWithType: BmfcConfig.Options
+  fullName: KernSmith.BmfcConfig.Options
+- uid: KernSmith.BmfcConfig.FontFile*
+  commentId: Overload:KernSmith.BmfcConfig.FontFile
+  href: KernSmith.BmfcConfig.html#KernSmith_BmfcConfig_FontFile
+  name: FontFile
+  nameWithType: BmfcConfig.FontFile
+  fullName: KernSmith.BmfcConfig.FontFile
+- uid: System.String
+  commentId: T:System.String
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.string
+  name: string
+  nameWithType: string
+  fullName: string
+  nameWithType.vb: String
+  fullName.vb: String
+  name.vb: String
+- uid: KernSmith.BmfcConfig.FontName*
+  commentId: Overload:KernSmith.BmfcConfig.FontName
+  href: KernSmith.BmfcConfig.html#KernSmith_BmfcConfig_FontName
+  name: FontName
+  nameWithType: BmfcConfig.FontName
+  fullName: KernSmith.BmfcConfig.FontName
+- uid: KernSmith.BmfcConfig.OutputPath*
+  commentId: Overload:KernSmith.BmfcConfig.OutputPath
+  href: KernSmith.BmfcConfig.html#KernSmith_BmfcConfig_OutputPath
+  name: OutputPath
+  nameWithType: BmfcConfig.OutputPath
+  fullName: KernSmith.BmfcConfig.OutputPath
+- uid: KernSmith.BmfcConfig.OutputFormat*
+  commentId: Overload:KernSmith.BmfcConfig.OutputFormat
+  href: KernSmith.BmfcConfig.html#KernSmith_BmfcConfig_OutputFormat
+  name: OutputFormat
+  nameWithType: BmfcConfig.OutputFormat
+  fullName: KernSmith.BmfcConfig.OutputFormat
+- uid: KernSmith.OutputFormat
+  commentId: T:KernSmith.OutputFormat
+  parent: KernSmith
+  href: KernSmith.OutputFormat.html
+  name: OutputFormat
+  nameWithType: OutputFormat
+  fullName: KernSmith.OutputFormat
+- uid: KernSmith.BmfcConfig
+  commentId: T:KernSmith.BmfcConfig
+  parent: KernSmith
+  href: KernSmith.BmfcConfig.html
+  name: BmfcConfig
+  nameWithType: BmfcConfig
+  fullName: KernSmith.BmfcConfig
+- uid: KernSmith.BmfcConfigWriter.Write(KernSmith.BmfcConfig)
+  commentId: M:KernSmith.BmfcConfigWriter.Write(KernSmith.BmfcConfig)
+  href: KernSmith.BmfcConfigWriter.html#KernSmith_BmfcConfigWriter_Write_KernSmith_BmfcConfig_
+  name: Write(BmfcConfig)
+  nameWithType: BmfcConfigWriter.Write(BmfcConfig)
+  fullName: KernSmith.BmfcConfigWriter.Write(KernSmith.BmfcConfig)
+  spec.csharp:
+  - uid: KernSmith.BmfcConfigWriter.Write(KernSmith.BmfcConfig)
+    name: Write
+    href: KernSmith.BmfcConfigWriter.html#KernSmith_BmfcConfigWriter_Write_KernSmith_BmfcConfig_
+  - name: (
+  - uid: KernSmith.BmfcConfig
+    name: BmfcConfig
+    href: KernSmith.BmfcConfig.html
+  - name: )
+  spec.vb:
+  - uid: KernSmith.BmfcConfigWriter.Write(KernSmith.BmfcConfig)
+    name: Write
+    href: KernSmith.BmfcConfigWriter.html#KernSmith_BmfcConfigWriter_Write_KernSmith_BmfcConfig_
+  - name: (
+  - uid: KernSmith.BmfcConfig
+    name: BmfcConfig
+    href: KernSmith.BmfcConfig.html
+  - name: )
+- uid: KernSmith.OutputFormat.Text
+  commentId: F:KernSmith.OutputFormat.Text
+  href: KernSmith.OutputFormat.html#KernSmith_OutputFormat_Text
+  name: Text
+  nameWithType: OutputFormat.Text
+  fullName: KernSmith.OutputFormat.Text
+- uid: KernSmith.BmfcConfig.FromOptions*
+  commentId: Overload:KernSmith.BmfcConfig.FromOptions
+  href: KernSmith.BmfcConfig.html#KernSmith_BmfcConfig_FromOptions_KernSmith_FontGeneratorOptions_System_String_System_String_System_String_KernSmith_OutputFormat_
+  name: FromOptions
+  nameWithType: BmfcConfig.FromOptions
+  fullName: KernSmith.BmfcConfig.FromOptions

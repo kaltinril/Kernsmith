@@ -1,0 +1,599 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Font.Tables.NamedInstance
+  commentId: T:KernSmith.Font.Tables.NamedInstance
+  id: NamedInstance
+  parent: KernSmith.Font.Tables
+  children:
+  - KernSmith.Font.Tables.NamedInstance.#ctor(System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Single})
+  - KernSmith.Font.Tables.NamedInstance.Coordinates
+  - KernSmith.Font.Tables.NamedInstance.Name
+  langs:
+  - csharp
+  - vb
+  name: NamedInstance
+  nameWithType: NamedInstance
+  fullName: KernSmith.Font.Tables.NamedInstance
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/Font/Tables/NamedInstance.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: NamedInstance
+    path: src/KernSmith/Font/Tables/NamedInstance.cs
+    startLine: 7
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font.Tables
+  summary: A preset style in a variable font, like "Bold" or "Light Condensed".
+  example: []
+  syntax:
+    content: 'public sealed record NamedInstance : IEquatable<NamedInstance>'
+    content.vb: Public NotInheritable Class NamedInstance Implements IEquatable(Of NamedInstance)
+  inheritance:
+  - System.Object
+  implements:
+  - System.IEquatable{KernSmith.Font.Tables.NamedInstance}
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.Font.Tables.NamedInstance.#ctor(System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Single})
+  commentId: M:KernSmith.Font.Tables.NamedInstance.#ctor(System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Single})
+  id: '#ctor(System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Single})'
+  parent: KernSmith.Font.Tables.NamedInstance
+  langs:
+  - csharp
+  - vb
+  name: NamedInstance(string?, IReadOnlyDictionary<string, float>)
+  nameWithType: NamedInstance.NamedInstance(string?, IReadOnlyDictionary<string, float>)
+  fullName: KernSmith.Font.Tables.NamedInstance.NamedInstance(string?, System.Collections.Generic.IReadOnlyDictionary<string, float>)
+  type: Constructor
+  source:
+    remote:
+      path: src/KernSmith/Font/Tables/NamedInstance.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: .ctor
+    path: src/KernSmith/Font/Tables/NamedInstance.cs
+    startLine: 7
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font.Tables
+  summary: A preset style in a variable font, like "Bold" or "Light Condensed".
+  example: []
+  syntax:
+    content: public NamedInstance(string? Name, IReadOnlyDictionary<string, float> Coordinates)
+    parameters:
+    - id: Name
+      type: System.String
+      description: Display name, like "Bold" or "Light".
+    - id: Coordinates
+      type: System.Collections.Generic.IReadOnlyDictionary{System.String,System.Single}
+      description: Axis values for this preset. For example, "wght" = 700 for bold.
+    content.vb: Public Sub New(Name As String, Coordinates As IReadOnlyDictionary(Of String, Single))
+  overload: KernSmith.Font.Tables.NamedInstance.#ctor*
+  nameWithType.vb: NamedInstance.New(String, IReadOnlyDictionary(Of String, Single))
+  fullName.vb: KernSmith.Font.Tables.NamedInstance.New(String, System.Collections.Generic.IReadOnlyDictionary(Of String, Single))
+  name.vb: New(String, IReadOnlyDictionary(Of String, Single))
+- uid: KernSmith.Font.Tables.NamedInstance.Name
+  commentId: P:KernSmith.Font.Tables.NamedInstance.Name
+  id: Name
+  parent: KernSmith.Font.Tables.NamedInstance
+  langs:
+  - csharp
+  - vb
+  name: Name
+  nameWithType: NamedInstance.Name
+  fullName: KernSmith.Font.Tables.NamedInstance.Name
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Font/Tables/NamedInstance.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Name
+    path: src/KernSmith/Font/Tables/NamedInstance.cs
+    startLine: 8
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font.Tables
+  summary: Display name, like "Bold" or "Light".
+  example: []
+  syntax:
+    content: public string? Name { get; init; }
+    parameters: []
+    return:
+      type: System.String
+    content.vb: Public Property Name As String
+  overload: KernSmith.Font.Tables.NamedInstance.Name*
+- uid: KernSmith.Font.Tables.NamedInstance.Coordinates
+  commentId: P:KernSmith.Font.Tables.NamedInstance.Coordinates
+  id: Coordinates
+  parent: KernSmith.Font.Tables.NamedInstance
+  langs:
+  - csharp
+  - vb
+  name: Coordinates
+  nameWithType: NamedInstance.Coordinates
+  fullName: KernSmith.Font.Tables.NamedInstance.Coordinates
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Font/Tables/NamedInstance.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Coordinates
+    path: src/KernSmith/Font/Tables/NamedInstance.cs
+    startLine: 9
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font.Tables
+  summary: Axis values for this preset. For example, "wght" = 700 for bold.
+  example: []
+  syntax:
+    content: public IReadOnlyDictionary<string, float> Coordinates { get; init; }
+    parameters: []
+    return:
+      type: System.Collections.Generic.IReadOnlyDictionary{System.String,System.Single}
+    content.vb: Public Property Coordinates As IReadOnlyDictionary(Of String, Single)
+  overload: KernSmith.Font.Tables.NamedInstance.Coordinates*
+references:
+- uid: KernSmith.Font.Tables
+  commentId: N:KernSmith.Font.Tables
+  href: KernSmith.html
+  name: KernSmith.Font.Tables
+  nameWithType: KernSmith.Font.Tables
+  fullName: KernSmith.Font.Tables
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+  - name: .
+  - uid: KernSmith.Font.Tables
+    name: Tables
+    href: KernSmith.Font.Tables.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+  - name: .
+  - uid: KernSmith.Font.Tables
+    name: Tables
+    href: KernSmith.Font.Tables.html
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: System.IEquatable{KernSmith.Font.Tables.NamedInstance}
+  commentId: T:System.IEquatable{KernSmith.Font.Tables.NamedInstance}
+  parent: System
+  definition: System.IEquatable`1
+  href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  name: IEquatable<NamedInstance>
+  nameWithType: IEquatable<NamedInstance>
+  fullName: System.IEquatable<KernSmith.Font.Tables.NamedInstance>
+  nameWithType.vb: IEquatable(Of NamedInstance)
+  fullName.vb: System.IEquatable(Of KernSmith.Font.Tables.NamedInstance)
+  name.vb: IEquatable(Of NamedInstance)
+  spec.csharp:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: <
+  - uid: KernSmith.Font.Tables.NamedInstance
+    name: NamedInstance
+    href: KernSmith.Font.Tables.NamedInstance.html
+  - name: '>'
+  spec.vb:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: KernSmith.Font.Tables.NamedInstance
+    name: NamedInstance
+    href: KernSmith.Font.Tables.NamedInstance.html
+  - name: )
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: System.IEquatable`1
+  commentId: T:System.IEquatable`1
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  name: IEquatable<T>
+  nameWithType: IEquatable<T>
+  fullName: System.IEquatable<T>
+  nameWithType.vb: IEquatable(Of T)
+  fullName.vb: System.IEquatable(Of T)
+  name.vb: IEquatable(Of T)
+  spec.csharp:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: <
+  - name: T
+  - name: '>'
+  spec.vb:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - name: T
+  - name: )
+- uid: KernSmith.Font.Tables.NamedInstance.#ctor*
+  commentId: Overload:KernSmith.Font.Tables.NamedInstance.#ctor
+  href: KernSmith.Font.Tables.NamedInstance.html#KernSmith_Font_Tables_NamedInstance__ctor_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_Single__
+  name: NamedInstance
+  nameWithType: NamedInstance.NamedInstance
+  fullName: KernSmith.Font.Tables.NamedInstance.NamedInstance
+  nameWithType.vb: NamedInstance.New
+  fullName.vb: KernSmith.Font.Tables.NamedInstance.New
+  name.vb: New
+- uid: System.String
+  commentId: T:System.String
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.string
+  name: string
+  nameWithType: string
+  fullName: string
+  nameWithType.vb: String
+  fullName.vb: String
+  name.vb: String
+- uid: System.Collections.Generic.IReadOnlyDictionary{System.String,System.Single}
+  commentId: T:System.Collections.Generic.IReadOnlyDictionary{System.String,System.Single}
+  parent: System.Collections.Generic
+  definition: System.Collections.Generic.IReadOnlyDictionary`2
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2
+  name: IReadOnlyDictionary<string, float>
+  nameWithType: IReadOnlyDictionary<string, float>
+  fullName: System.Collections.Generic.IReadOnlyDictionary<string, float>
+  nameWithType.vb: IReadOnlyDictionary(Of String, Single)
+  fullName.vb: System.Collections.Generic.IReadOnlyDictionary(Of String, Single)
+  name.vb: IReadOnlyDictionary(Of String, Single)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyDictionary`2
+    name: IReadOnlyDictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2
+  - name: <
+  - uid: System.String
+    name: string
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.string
+  - name: ','
+  - name: " "
+  - uid: System.Single
+    name: float
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.single
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyDictionary`2
+    name: IReadOnlyDictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: System.String
+    name: String
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.string
+  - name: ','
+  - name: " "
+  - uid: System.Single
+    name: Single
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.single
+  - name: )
+- uid: System.Collections.Generic.IReadOnlyDictionary`2
+  commentId: T:System.Collections.Generic.IReadOnlyDictionary`2
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2
+  name: IReadOnlyDictionary<TKey, TValue>
+  nameWithType: IReadOnlyDictionary<TKey, TValue>
+  fullName: System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>
+  nameWithType.vb: IReadOnlyDictionary(Of TKey, TValue)
+  fullName.vb: System.Collections.Generic.IReadOnlyDictionary(Of TKey, TValue)
+  name.vb: IReadOnlyDictionary(Of TKey, TValue)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyDictionary`2
+    name: IReadOnlyDictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2
+  - name: <
+  - name: TKey
+  - name: ','
+  - name: " "
+  - name: TValue
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyDictionary`2
+    name: IReadOnlyDictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2
+  - name: (
+  - name: Of
+  - name: " "
+  - name: TKey
+  - name: ','
+  - name: " "
+  - name: TValue
+  - name: )
+- uid: System.Collections.Generic
+  commentId: N:System.Collections.Generic
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System.Collections.Generic
+  nameWithType: System.Collections.Generic
+  fullName: System.Collections.Generic
+  spec.csharp:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic
+  spec.vb:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic
+- uid: KernSmith.Font.Tables.NamedInstance.Name*
+  commentId: Overload:KernSmith.Font.Tables.NamedInstance.Name
+  href: KernSmith.Font.Tables.NamedInstance.html#KernSmith_Font_Tables_NamedInstance_Name
+  name: Name
+  nameWithType: NamedInstance.Name
+  fullName: KernSmith.Font.Tables.NamedInstance.Name
+- uid: KernSmith.Font.Tables.NamedInstance.Coordinates*
+  commentId: Overload:KernSmith.Font.Tables.NamedInstance.Coordinates
+  href: KernSmith.Font.Tables.NamedInstance.html#KernSmith_Font_Tables_NamedInstance_Coordinates
+  name: Coordinates
+  nameWithType: NamedInstance.Coordinates
+  fullName: KernSmith.Font.Tables.NamedInstance.Coordinates

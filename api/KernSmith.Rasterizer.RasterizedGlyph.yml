@@ -1,0 +1,675 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Rasterizer.RasterizedGlyph
+  commentId: T:KernSmith.Rasterizer.RasterizedGlyph
+  id: RasterizedGlyph
+  parent: KernSmith.Rasterizer
+  children:
+  - KernSmith.Rasterizer.RasterizedGlyph.BitmapData
+  - KernSmith.Rasterizer.RasterizedGlyph.Codepoint
+  - KernSmith.Rasterizer.RasterizedGlyph.Format
+  - KernSmith.Rasterizer.RasterizedGlyph.GlyphIndex
+  - KernSmith.Rasterizer.RasterizedGlyph.Height
+  - KernSmith.Rasterizer.RasterizedGlyph.Metrics
+  - KernSmith.Rasterizer.RasterizedGlyph.Pitch
+  - KernSmith.Rasterizer.RasterizedGlyph.Width
+  langs:
+  - csharp
+  - vb
+  name: RasterizedGlyph
+  nameWithType: RasterizedGlyph
+  fullName: KernSmith.Rasterizer.RasterizedGlyph
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: RasterizedGlyph
+    path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+    startLine: 7
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: 'A rasterized glyph: bitmap pixel data with positioning metrics.'
+  example: []
+  syntax:
+    content: public sealed class RasterizedGlyph
+    content.vb: Public NotInheritable Class RasterizedGlyph
+  inheritance:
+  - System.Object
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.Rasterizer.RasterizedGlyph.Codepoint
+  commentId: P:KernSmith.Rasterizer.RasterizedGlyph.Codepoint
+  id: Codepoint
+  parent: KernSmith.Rasterizer.RasterizedGlyph
+  langs:
+  - csharp
+  - vb
+  name: Codepoint
+  nameWithType: RasterizedGlyph.Codepoint
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.Codepoint
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Codepoint
+    path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+    startLine: 10
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: The Unicode character code this glyph represents.
+  example: []
+  syntax:
+    content: public required int Codepoint { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Codepoint As Integer
+  overload: KernSmith.Rasterizer.RasterizedGlyph.Codepoint*
+- uid: KernSmith.Rasterizer.RasterizedGlyph.GlyphIndex
+  commentId: P:KernSmith.Rasterizer.RasterizedGlyph.GlyphIndex
+  id: GlyphIndex
+  parent: KernSmith.Rasterizer.RasterizedGlyph
+  langs:
+  - csharp
+  - vb
+  name: GlyphIndex
+  nameWithType: RasterizedGlyph.GlyphIndex
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.GlyphIndex
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GlyphIndex
+    path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+    startLine: 13
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Internal glyph index inside the font file.
+  example: []
+  syntax:
+    content: public required int GlyphIndex { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property GlyphIndex As Integer
+  overload: KernSmith.Rasterizer.RasterizedGlyph.GlyphIndex*
+- uid: KernSmith.Rasterizer.RasterizedGlyph.BitmapData
+  commentId: P:KernSmith.Rasterizer.RasterizedGlyph.BitmapData
+  id: BitmapData
+  parent: KernSmith.Rasterizer.RasterizedGlyph
+  langs:
+  - csharp
+  - vb
+  name: BitmapData
+  nameWithType: RasterizedGlyph.BitmapData
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.BitmapData
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: BitmapData
+    path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+    startLine: 16
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: The pixel data. Grayscale (1 byte/pixel) or RGBA (4 bytes/pixel) depending on <xref href="KernSmith.Rasterizer.RasterizedGlyph.Format" data-throw-if-not-resolved="false"></xref>.
+  example: []
+  syntax:
+    content: public required byte[] BitmapData { get; init; }
+    parameters: []
+    return:
+      type: System.Byte[]
+    content.vb: Public Property BitmapData As Byte()
+  overload: KernSmith.Rasterizer.RasterizedGlyph.BitmapData*
+- uid: KernSmith.Rasterizer.RasterizedGlyph.Width
+  commentId: P:KernSmith.Rasterizer.RasterizedGlyph.Width
+  id: Width
+  parent: KernSmith.Rasterizer.RasterizedGlyph
+  langs:
+  - csharp
+  - vb
+  name: Width
+  nameWithType: RasterizedGlyph.Width
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.Width
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Width
+    path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+    startLine: 19
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Width in pixels.
+  example: []
+  syntax:
+    content: public required int Width { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Width As Integer
+  overload: KernSmith.Rasterizer.RasterizedGlyph.Width*
+- uid: KernSmith.Rasterizer.RasterizedGlyph.Height
+  commentId: P:KernSmith.Rasterizer.RasterizedGlyph.Height
+  id: Height
+  parent: KernSmith.Rasterizer.RasterizedGlyph
+  langs:
+  - csharp
+  - vb
+  name: Height
+  nameWithType: RasterizedGlyph.Height
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.Height
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Height
+    path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+    startLine: 22
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Height in pixels.
+  example: []
+  syntax:
+    content: public required int Height { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Height As Integer
+  overload: KernSmith.Rasterizer.RasterizedGlyph.Height*
+- uid: KernSmith.Rasterizer.RasterizedGlyph.Pitch
+  commentId: P:KernSmith.Rasterizer.RasterizedGlyph.Pitch
+  id: Pitch
+  parent: KernSmith.Rasterizer.RasterizedGlyph
+  langs:
+  - csharp
+  - vb
+  name: Pitch
+  nameWithType: RasterizedGlyph.Pitch
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.Pitch
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Pitch
+    path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+    startLine: 25
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Bytes per row in <xref href="KernSmith.Rasterizer.RasterizedGlyph.BitmapData" data-throw-if-not-resolved="false"></xref> (may include padding).
+  example: []
+  syntax:
+    content: public required int Pitch { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Pitch As Integer
+  overload: KernSmith.Rasterizer.RasterizedGlyph.Pitch*
+- uid: KernSmith.Rasterizer.RasterizedGlyph.Metrics
+  commentId: P:KernSmith.Rasterizer.RasterizedGlyph.Metrics
+  id: Metrics
+  parent: KernSmith.Rasterizer.RasterizedGlyph
+  langs:
+  - csharp
+  - vb
+  name: Metrics
+  nameWithType: RasterizedGlyph.Metrics
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.Metrics
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Metrics
+    path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+    startLine: 28
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: 'Glyph positioning metrics: bearing offsets, advance width, and rendered dimensions.'
+  example: []
+  syntax:
+    content: public required GlyphMetrics Metrics { get; init; }
+    parameters: []
+    return:
+      type: KernSmith.Font.Models.GlyphMetrics
+    content.vb: Public Property Metrics As GlyphMetrics
+  overload: KernSmith.Rasterizer.RasterizedGlyph.Metrics*
+- uid: KernSmith.Rasterizer.RasterizedGlyph.Format
+  commentId: P:KernSmith.Rasterizer.RasterizedGlyph.Format
+  id: Format
+  parent: KernSmith.Rasterizer.RasterizedGlyph
+  langs:
+  - csharp
+  - vb
+  name: Format
+  nameWithType: RasterizedGlyph.Format
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.Format
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Format
+    path: src/KernSmith/Rasterizer/RasterizedGlyph.cs
+    startLine: 31
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Whether the pixel data is grayscale or RGBA.
+  example: []
+  syntax:
+    content: public required PixelFormat Format { get; init; }
+    parameters: []
+    return:
+      type: KernSmith.PixelFormat
+    content.vb: Public Property Format As PixelFormat
+  overload: KernSmith.Rasterizer.RasterizedGlyph.Format*
+references:
+- uid: KernSmith.Rasterizer
+  commentId: N:KernSmith.Rasterizer
+  href: KernSmith.html
+  name: KernSmith.Rasterizer
+  nameWithType: KernSmith.Rasterizer
+  fullName: KernSmith.Rasterizer
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Rasterizer
+    name: Rasterizer
+    href: KernSmith.Rasterizer.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Rasterizer
+    name: Rasterizer
+    href: KernSmith.Rasterizer.html
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: KernSmith.Rasterizer.RasterizedGlyph.Codepoint*
+  commentId: Overload:KernSmith.Rasterizer.RasterizedGlyph.Codepoint
+  href: KernSmith.Rasterizer.RasterizedGlyph.html#KernSmith_Rasterizer_RasterizedGlyph_Codepoint
+  name: Codepoint
+  nameWithType: RasterizedGlyph.Codepoint
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.Codepoint
+- uid: System.Int32
+  commentId: T:System.Int32
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int
+  nameWithType: int
+  fullName: int
+  nameWithType.vb: Integer
+  fullName.vb: Integer
+  name.vb: Integer
+- uid: KernSmith.Rasterizer.RasterizedGlyph.GlyphIndex*
+  commentId: Overload:KernSmith.Rasterizer.RasterizedGlyph.GlyphIndex
+  href: KernSmith.Rasterizer.RasterizedGlyph.html#KernSmith_Rasterizer_RasterizedGlyph_GlyphIndex
+  name: GlyphIndex
+  nameWithType: RasterizedGlyph.GlyphIndex
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.GlyphIndex
+- uid: KernSmith.Rasterizer.RasterizedGlyph.Format
+  commentId: P:KernSmith.Rasterizer.RasterizedGlyph.Format
+  href: KernSmith.Rasterizer.RasterizedGlyph.html#KernSmith_Rasterizer_RasterizedGlyph_Format
+  name: Format
+  nameWithType: RasterizedGlyph.Format
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.Format
+- uid: KernSmith.Rasterizer.RasterizedGlyph.BitmapData*
+  commentId: Overload:KernSmith.Rasterizer.RasterizedGlyph.BitmapData
+  href: KernSmith.Rasterizer.RasterizedGlyph.html#KernSmith_Rasterizer_RasterizedGlyph_BitmapData
+  name: BitmapData
+  nameWithType: RasterizedGlyph.BitmapData
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.BitmapData
+- uid: System.Byte[]
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.byte
+  name: byte[]
+  nameWithType: byte[]
+  fullName: byte[]
+  nameWithType.vb: Byte()
+  fullName.vb: Byte()
+  name.vb: Byte()
+  spec.csharp:
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: '['
+  - name: ']'
+  spec.vb:
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: (
+  - name: )
+- uid: KernSmith.Rasterizer.RasterizedGlyph.Width*
+  commentId: Overload:KernSmith.Rasterizer.RasterizedGlyph.Width
+  href: KernSmith.Rasterizer.RasterizedGlyph.html#KernSmith_Rasterizer_RasterizedGlyph_Width
+  name: Width
+  nameWithType: RasterizedGlyph.Width
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.Width
+- uid: KernSmith.Rasterizer.RasterizedGlyph.Height*
+  commentId: Overload:KernSmith.Rasterizer.RasterizedGlyph.Height
+  href: KernSmith.Rasterizer.RasterizedGlyph.html#KernSmith_Rasterizer_RasterizedGlyph_Height
+  name: Height
+  nameWithType: RasterizedGlyph.Height
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.Height
+- uid: KernSmith.Rasterizer.RasterizedGlyph.BitmapData
+  commentId: P:KernSmith.Rasterizer.RasterizedGlyph.BitmapData
+  href: KernSmith.Rasterizer.RasterizedGlyph.html#KernSmith_Rasterizer_RasterizedGlyph_BitmapData
+  name: BitmapData
+  nameWithType: RasterizedGlyph.BitmapData
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.BitmapData
+- uid: KernSmith.Rasterizer.RasterizedGlyph.Pitch*
+  commentId: Overload:KernSmith.Rasterizer.RasterizedGlyph.Pitch
+  href: KernSmith.Rasterizer.RasterizedGlyph.html#KernSmith_Rasterizer_RasterizedGlyph_Pitch
+  name: Pitch
+  nameWithType: RasterizedGlyph.Pitch
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.Pitch
+- uid: KernSmith.Rasterizer.RasterizedGlyph.Metrics*
+  commentId: Overload:KernSmith.Rasterizer.RasterizedGlyph.Metrics
+  href: KernSmith.Rasterizer.RasterizedGlyph.html#KernSmith_Rasterizer_RasterizedGlyph_Metrics
+  name: Metrics
+  nameWithType: RasterizedGlyph.Metrics
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.Metrics
+- uid: KernSmith.Font.Models.GlyphMetrics
+  commentId: T:KernSmith.Font.Models.GlyphMetrics
+  parent: KernSmith.Font.Models
+  href: KernSmith.Font.Models.GlyphMetrics.html
+  name: GlyphMetrics
+  nameWithType: GlyphMetrics
+  fullName: KernSmith.Font.Models.GlyphMetrics
+- uid: KernSmith.Font.Models
+  commentId: N:KernSmith.Font.Models
+  href: KernSmith.html
+  name: KernSmith.Font.Models
+  nameWithType: KernSmith.Font.Models
+  fullName: KernSmith.Font.Models
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+  - name: .
+  - uid: KernSmith.Font.Models
+    name: Models
+    href: KernSmith.Font.Models.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+  - name: .
+  - uid: KernSmith.Font.Models
+    name: Models
+    href: KernSmith.Font.Models.html
+- uid: KernSmith.Rasterizer.RasterizedGlyph.Format*
+  commentId: Overload:KernSmith.Rasterizer.RasterizedGlyph.Format
+  href: KernSmith.Rasterizer.RasterizedGlyph.html#KernSmith_Rasterizer_RasterizedGlyph_Format
+  name: Format
+  nameWithType: RasterizedGlyph.Format
+  fullName: KernSmith.Rasterizer.RasterizedGlyph.Format
+- uid: KernSmith.PixelFormat
+  commentId: T:KernSmith.PixelFormat
+  parent: KernSmith
+  href: KernSmith.PixelFormat.html
+  name: PixelFormat
+  nameWithType: PixelFormat
+  fullName: KernSmith.PixelFormat
+- uid: KernSmith
+  commentId: N:KernSmith
+  href: KernSmith.html
+  name: KernSmith
+  nameWithType: KernSmith
+  fullName: KernSmith

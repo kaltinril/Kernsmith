@@ -1,0 +1,925 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Rasterizer.RasterOptions
+  commentId: T:KernSmith.Rasterizer.RasterOptions
+  id: RasterOptions
+  parent: KernSmith.Rasterizer
+  children:
+  - KernSmith.Rasterizer.RasterOptions.AntiAlias
+  - KernSmith.Rasterizer.RasterOptions.Bold
+  - KernSmith.Rasterizer.RasterOptions.ColorFont
+  - KernSmith.Rasterizer.RasterOptions.ColorPaletteIndex
+  - KernSmith.Rasterizer.RasterOptions.Dpi
+  - KernSmith.Rasterizer.RasterOptions.EnableHinting
+  - KernSmith.Rasterizer.RasterOptions.FromGeneratorOptions(KernSmith.FontGeneratorOptions)
+  - KernSmith.Rasterizer.RasterOptions.Italic
+  - KernSmith.Rasterizer.RasterOptions.Sdf
+  - KernSmith.Rasterizer.RasterOptions.Size
+  - KernSmith.Rasterizer.RasterOptions.VariationAxes
+  langs:
+  - csharp
+  - vb
+  name: RasterOptions
+  nameWithType: RasterOptions
+  fullName: KernSmith.Rasterizer.RasterOptions
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: RasterOptions
+    path: src/KernSmith/Rasterizer/RasterOptions.cs
+    startLine: 5
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: 'Settings for rendering characters: size, DPI, effects, and variable font axes.'
+  example: []
+  syntax:
+    content: 'public sealed record RasterOptions : IEquatable<RasterOptions>'
+    content.vb: Public NotInheritable Class RasterOptions Implements IEquatable(Of RasterOptions)
+  inheritance:
+  - System.Object
+  implements:
+  - System.IEquatable{KernSmith.Rasterizer.RasterOptions}
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.Rasterizer.RasterOptions.Size
+  commentId: P:KernSmith.Rasterizer.RasterOptions.Size
+  id: Size
+  parent: KernSmith.Rasterizer.RasterOptions
+  langs:
+  - csharp
+  - vb
+  name: Size
+  nameWithType: RasterOptions.Size
+  fullName: KernSmith.Rasterizer.RasterOptions.Size
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Size
+    path: src/KernSmith/Rasterizer/RasterOptions.cs
+    startLine: 8
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Font size in points.
+  example: []
+  syntax:
+    content: public required int Size { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Size As Integer
+  overload: KernSmith.Rasterizer.RasterOptions.Size*
+- uid: KernSmith.Rasterizer.RasterOptions.Dpi
+  commentId: P:KernSmith.Rasterizer.RasterOptions.Dpi
+  id: Dpi
+  parent: KernSmith.Rasterizer.RasterOptions
+  langs:
+  - csharp
+  - vb
+  name: Dpi
+  nameWithType: RasterOptions.Dpi
+  fullName: KernSmith.Rasterizer.RasterOptions.Dpi
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Dpi
+    path: src/KernSmith/Rasterizer/RasterOptions.cs
+    startLine: 11
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: DPI for converting points to pixels. Default is 72 (1 point = 1 pixel).
+  example: []
+  syntax:
+    content: public int Dpi { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Dpi As Integer
+  overload: KernSmith.Rasterizer.RasterOptions.Dpi*
+- uid: KernSmith.Rasterizer.RasterOptions.AntiAlias
+  commentId: P:KernSmith.Rasterizer.RasterOptions.AntiAlias
+  id: AntiAlias
+  parent: KernSmith.Rasterizer.RasterOptions
+  langs:
+  - csharp
+  - vb
+  name: AntiAlias
+  nameWithType: RasterOptions.AntiAlias
+  fullName: KernSmith.Rasterizer.RasterOptions.AntiAlias
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: AntiAlias
+    path: src/KernSmith/Rasterizer/RasterOptions.cs
+    startLine: 14
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Anti-aliasing mode. Default is grayscale.
+  example: []
+  syntax:
+    content: public AntiAliasMode AntiAlias { get; init; }
+    parameters: []
+    return:
+      type: KernSmith.AntiAliasMode
+    content.vb: Public Property AntiAlias As AntiAliasMode
+  overload: KernSmith.Rasterizer.RasterOptions.AntiAlias*
+- uid: KernSmith.Rasterizer.RasterOptions.Bold
+  commentId: P:KernSmith.Rasterizer.RasterOptions.Bold
+  id: Bold
+  parent: KernSmith.Rasterizer.RasterOptions
+  langs:
+  - csharp
+  - vb
+  name: Bold
+  nameWithType: RasterOptions.Bold
+  fullName: KernSmith.Rasterizer.RasterOptions.Bold
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Bold
+    path: src/KernSmith/Rasterizer/RasterOptions.cs
+    startLine: 17
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: If true, applies synthetic bold by thickening glyph strokes.
+  example: []
+  syntax:
+    content: public bool Bold { get; init; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property Bold As Boolean
+  overload: KernSmith.Rasterizer.RasterOptions.Bold*
+- uid: KernSmith.Rasterizer.RasterOptions.Italic
+  commentId: P:KernSmith.Rasterizer.RasterOptions.Italic
+  id: Italic
+  parent: KernSmith.Rasterizer.RasterOptions
+  langs:
+  - csharp
+  - vb
+  name: Italic
+  nameWithType: RasterOptions.Italic
+  fullName: KernSmith.Rasterizer.RasterOptions.Italic
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Italic
+    path: src/KernSmith/Rasterizer/RasterOptions.cs
+    startLine: 20
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: If true, applies synthetic italic by slanting glyph outlines.
+  example: []
+  syntax:
+    content: public bool Italic { get; init; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property Italic As Boolean
+  overload: KernSmith.Rasterizer.RasterOptions.Italic*
+- uid: KernSmith.Rasterizer.RasterOptions.Sdf
+  commentId: P:KernSmith.Rasterizer.RasterOptions.Sdf
+  id: Sdf
+  parent: KernSmith.Rasterizer.RasterOptions
+  langs:
+  - csharp
+  - vb
+  name: Sdf
+  nameWithType: RasterOptions.Sdf
+  fullName: KernSmith.Rasterizer.RasterOptions.Sdf
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Sdf
+    path: src/KernSmith/Rasterizer/RasterOptions.cs
+    startLine: 23
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: If true, render as signed distance fields instead of regular bitmaps.
+  example: []
+  syntax:
+    content: public bool Sdf { get; init; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property Sdf As Boolean
+  overload: KernSmith.Rasterizer.RasterOptions.Sdf*
+- uid: KernSmith.Rasterizer.RasterOptions.ColorFont
+  commentId: P:KernSmith.Rasterizer.RasterOptions.ColorFont
+  id: ColorFont
+  parent: KernSmith.Rasterizer.RasterOptions
+  langs:
+  - csharp
+  - vb
+  name: ColorFont
+  nameWithType: RasterOptions.ColorFont
+  fullName: KernSmith.Rasterizer.RasterOptions.ColorFont
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ColorFont
+    path: src/KernSmith/Rasterizer/RasterOptions.cs
+    startLine: 26
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: If true, render color glyphs (emoji and other multi-color characters).
+  example: []
+  syntax:
+    content: public bool ColorFont { get; init; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property ColorFont As Boolean
+  overload: KernSmith.Rasterizer.RasterOptions.ColorFont*
+- uid: KernSmith.Rasterizer.RasterOptions.ColorPaletteIndex
+  commentId: P:KernSmith.Rasterizer.RasterOptions.ColorPaletteIndex
+  id: ColorPaletteIndex
+  parent: KernSmith.Rasterizer.RasterOptions
+  langs:
+  - csharp
+  - vb
+  name: ColorPaletteIndex
+  nameWithType: RasterOptions.ColorPaletteIndex
+  fullName: KernSmith.Rasterizer.RasterOptions.ColorPaletteIndex
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ColorPaletteIndex
+    path: src/KernSmith/Rasterizer/RasterOptions.cs
+    startLine: 29
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Zero-based CPAL color palette index for color fonts. Default is 0.
+  example: []
+  syntax:
+    content: public int ColorPaletteIndex { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property ColorPaletteIndex As Integer
+  overload: KernSmith.Rasterizer.RasterOptions.ColorPaletteIndex*
+- uid: KernSmith.Rasterizer.RasterOptions.VariationAxes
+  commentId: P:KernSmith.Rasterizer.RasterOptions.VariationAxes
+  id: VariationAxes
+  parent: KernSmith.Rasterizer.RasterOptions
+  langs:
+  - csharp
+  - vb
+  name: VariationAxes
+  nameWithType: RasterOptions.VariationAxes
+  fullName: KernSmith.Rasterizer.RasterOptions.VariationAxes
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: VariationAxes
+    path: src/KernSmith/Rasterizer/RasterOptions.cs
+    startLine: 32
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Variable font axis overrides. For example, {"wght", 700} for bold weight.
+  example: []
+  syntax:
+    content: public Dictionary<string, float>? VariationAxes { get; init; }
+    parameters: []
+    return:
+      type: System.Collections.Generic.Dictionary{System.String,System.Single}
+    content.vb: Public Property VariationAxes As Dictionary(Of String, Single)
+  overload: KernSmith.Rasterizer.RasterOptions.VariationAxes*
+- uid: KernSmith.Rasterizer.RasterOptions.EnableHinting
+  commentId: P:KernSmith.Rasterizer.RasterOptions.EnableHinting
+  id: EnableHinting
+  parent: KernSmith.Rasterizer.RasterOptions
+  langs:
+  - csharp
+  - vb
+  name: EnableHinting
+  nameWithType: RasterOptions.EnableHinting
+  fullName: KernSmith.Rasterizer.RasterOptions.EnableHinting
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: EnableHinting
+    path: src/KernSmith/Rasterizer/RasterOptions.cs
+    startLine: 35
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: If true, enables font hinting for sharper rendering at small sizes. Default is true.
+  example: []
+  syntax:
+    content: public bool EnableHinting { get; init; }
+    parameters: []
+    return:
+      type: System.Boolean
+    content.vb: Public Property EnableHinting As Boolean
+  overload: KernSmith.Rasterizer.RasterOptions.EnableHinting*
+- uid: KernSmith.Rasterizer.RasterOptions.FromGeneratorOptions(KernSmith.FontGeneratorOptions)
+  commentId: M:KernSmith.Rasterizer.RasterOptions.FromGeneratorOptions(KernSmith.FontGeneratorOptions)
+  id: FromGeneratorOptions(KernSmith.FontGeneratorOptions)
+  parent: KernSmith.Rasterizer.RasterOptions
+  langs:
+  - csharp
+  - vb
+  name: FromGeneratorOptions(FontGeneratorOptions)
+  nameWithType: RasterOptions.FromGeneratorOptions(FontGeneratorOptions)
+  fullName: KernSmith.Rasterizer.RasterOptions.FromGeneratorOptions(KernSmith.FontGeneratorOptions)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/RasterOptions.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FromGeneratorOptions
+    path: src/KernSmith/Rasterizer/RasterOptions.cs
+    startLine: 40
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Creates a <xref href="KernSmith.Rasterizer.RasterOptions" data-throw-if-not-resolved="false"></xref> from a <xref href="KernSmith.FontGeneratorOptions" data-throw-if-not-resolved="false"></xref>.
+  example: []
+  syntax:
+    content: public static RasterOptions FromGeneratorOptions(FontGeneratorOptions options)
+    parameters:
+    - id: options
+      type: KernSmith.FontGeneratorOptions
+    return:
+      type: KernSmith.Rasterizer.RasterOptions
+    content.vb: Public Shared Function FromGeneratorOptions(options As FontGeneratorOptions) As RasterOptions
+  overload: KernSmith.Rasterizer.RasterOptions.FromGeneratorOptions*
+references:
+- uid: KernSmith.Rasterizer
+  commentId: N:KernSmith.Rasterizer
+  href: KernSmith.html
+  name: KernSmith.Rasterizer
+  nameWithType: KernSmith.Rasterizer
+  fullName: KernSmith.Rasterizer
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Rasterizer
+    name: Rasterizer
+    href: KernSmith.Rasterizer.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Rasterizer
+    name: Rasterizer
+    href: KernSmith.Rasterizer.html
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: System.IEquatable{KernSmith.Rasterizer.RasterOptions}
+  commentId: T:System.IEquatable{KernSmith.Rasterizer.RasterOptions}
+  parent: System
+  definition: System.IEquatable`1
+  href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  name: IEquatable<RasterOptions>
+  nameWithType: IEquatable<RasterOptions>
+  fullName: System.IEquatable<KernSmith.Rasterizer.RasterOptions>
+  nameWithType.vb: IEquatable(Of RasterOptions)
+  fullName.vb: System.IEquatable(Of KernSmith.Rasterizer.RasterOptions)
+  name.vb: IEquatable(Of RasterOptions)
+  spec.csharp:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: <
+  - uid: KernSmith.Rasterizer.RasterOptions
+    name: RasterOptions
+    href: KernSmith.Rasterizer.RasterOptions.html
+  - name: '>'
+  spec.vb:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: KernSmith.Rasterizer.RasterOptions
+    name: RasterOptions
+    href: KernSmith.Rasterizer.RasterOptions.html
+  - name: )
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: System.IEquatable`1
+  commentId: T:System.IEquatable`1
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  name: IEquatable<T>
+  nameWithType: IEquatable<T>
+  fullName: System.IEquatable<T>
+  nameWithType.vb: IEquatable(Of T)
+  fullName.vb: System.IEquatable(Of T)
+  name.vb: IEquatable(Of T)
+  spec.csharp:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: <
+  - name: T
+  - name: '>'
+  spec.vb:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - name: T
+  - name: )
+- uid: KernSmith.Rasterizer.RasterOptions.Size*
+  commentId: Overload:KernSmith.Rasterizer.RasterOptions.Size
+  href: KernSmith.Rasterizer.RasterOptions.html#KernSmith_Rasterizer_RasterOptions_Size
+  name: Size
+  nameWithType: RasterOptions.Size
+  fullName: KernSmith.Rasterizer.RasterOptions.Size
+- uid: System.Int32
+  commentId: T:System.Int32
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int
+  nameWithType: int
+  fullName: int
+  nameWithType.vb: Integer
+  fullName.vb: Integer
+  name.vb: Integer
+- uid: KernSmith.Rasterizer.RasterOptions.Dpi*
+  commentId: Overload:KernSmith.Rasterizer.RasterOptions.Dpi
+  href: KernSmith.Rasterizer.RasterOptions.html#KernSmith_Rasterizer_RasterOptions_Dpi
+  name: Dpi
+  nameWithType: RasterOptions.Dpi
+  fullName: KernSmith.Rasterizer.RasterOptions.Dpi
+- uid: KernSmith.Rasterizer.RasterOptions.AntiAlias*
+  commentId: Overload:KernSmith.Rasterizer.RasterOptions.AntiAlias
+  href: KernSmith.Rasterizer.RasterOptions.html#KernSmith_Rasterizer_RasterOptions_AntiAlias
+  name: AntiAlias
+  nameWithType: RasterOptions.AntiAlias
+  fullName: KernSmith.Rasterizer.RasterOptions.AntiAlias
+- uid: KernSmith.AntiAliasMode
+  commentId: T:KernSmith.AntiAliasMode
+  parent: KernSmith
+  href: KernSmith.AntiAliasMode.html
+  name: AntiAliasMode
+  nameWithType: AntiAliasMode
+  fullName: KernSmith.AntiAliasMode
+- uid: KernSmith
+  commentId: N:KernSmith
+  href: KernSmith.html
+  name: KernSmith
+  nameWithType: KernSmith
+  fullName: KernSmith
+- uid: KernSmith.Rasterizer.RasterOptions.Bold*
+  commentId: Overload:KernSmith.Rasterizer.RasterOptions.Bold
+  href: KernSmith.Rasterizer.RasterOptions.html#KernSmith_Rasterizer_RasterOptions_Bold
+  name: Bold
+  nameWithType: RasterOptions.Bold
+  fullName: KernSmith.Rasterizer.RasterOptions.Bold
+- uid: System.Boolean
+  commentId: T:System.Boolean
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.boolean
+  name: bool
+  nameWithType: bool
+  fullName: bool
+  nameWithType.vb: Boolean
+  fullName.vb: Boolean
+  name.vb: Boolean
+- uid: KernSmith.Rasterizer.RasterOptions.Italic*
+  commentId: Overload:KernSmith.Rasterizer.RasterOptions.Italic
+  href: KernSmith.Rasterizer.RasterOptions.html#KernSmith_Rasterizer_RasterOptions_Italic
+  name: Italic
+  nameWithType: RasterOptions.Italic
+  fullName: KernSmith.Rasterizer.RasterOptions.Italic
+- uid: KernSmith.Rasterizer.RasterOptions.Sdf*
+  commentId: Overload:KernSmith.Rasterizer.RasterOptions.Sdf
+  href: KernSmith.Rasterizer.RasterOptions.html#KernSmith_Rasterizer_RasterOptions_Sdf
+  name: Sdf
+  nameWithType: RasterOptions.Sdf
+  fullName: KernSmith.Rasterizer.RasterOptions.Sdf
+- uid: KernSmith.Rasterizer.RasterOptions.ColorFont*
+  commentId: Overload:KernSmith.Rasterizer.RasterOptions.ColorFont
+  href: KernSmith.Rasterizer.RasterOptions.html#KernSmith_Rasterizer_RasterOptions_ColorFont
+  name: ColorFont
+  nameWithType: RasterOptions.ColorFont
+  fullName: KernSmith.Rasterizer.RasterOptions.ColorFont
+- uid: KernSmith.Rasterizer.RasterOptions.ColorPaletteIndex*
+  commentId: Overload:KernSmith.Rasterizer.RasterOptions.ColorPaletteIndex
+  href: KernSmith.Rasterizer.RasterOptions.html#KernSmith_Rasterizer_RasterOptions_ColorPaletteIndex
+  name: ColorPaletteIndex
+  nameWithType: RasterOptions.ColorPaletteIndex
+  fullName: KernSmith.Rasterizer.RasterOptions.ColorPaletteIndex
+- uid: KernSmith.Rasterizer.RasterOptions.VariationAxes*
+  commentId: Overload:KernSmith.Rasterizer.RasterOptions.VariationAxes
+  href: KernSmith.Rasterizer.RasterOptions.html#KernSmith_Rasterizer_RasterOptions_VariationAxes
+  name: VariationAxes
+  nameWithType: RasterOptions.VariationAxes
+  fullName: KernSmith.Rasterizer.RasterOptions.VariationAxes
+- uid: System.Collections.Generic.Dictionary{System.String,System.Single}
+  commentId: T:System.Collections.Generic.Dictionary{System.String,System.Single}
+  parent: System.Collections.Generic
+  definition: System.Collections.Generic.Dictionary`2
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2
+  name: Dictionary<string, float>
+  nameWithType: Dictionary<string, float>
+  fullName: System.Collections.Generic.Dictionary<string, float>
+  nameWithType.vb: Dictionary(Of String, Single)
+  fullName.vb: System.Collections.Generic.Dictionary(Of String, Single)
+  name.vb: Dictionary(Of String, Single)
+  spec.csharp:
+  - uid: System.Collections.Generic.Dictionary`2
+    name: Dictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2
+  - name: <
+  - uid: System.String
+    name: string
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.string
+  - name: ','
+  - name: " "
+  - uid: System.Single
+    name: float
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.single
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.Dictionary`2
+    name: Dictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: System.String
+    name: String
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.string
+  - name: ','
+  - name: " "
+  - uid: System.Single
+    name: Single
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.single
+  - name: )
+- uid: System.Collections.Generic.Dictionary`2
+  commentId: T:System.Collections.Generic.Dictionary`2
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2
+  name: Dictionary<TKey, TValue>
+  nameWithType: Dictionary<TKey, TValue>
+  fullName: System.Collections.Generic.Dictionary<TKey, TValue>
+  nameWithType.vb: Dictionary(Of TKey, TValue)
+  fullName.vb: System.Collections.Generic.Dictionary(Of TKey, TValue)
+  name.vb: Dictionary(Of TKey, TValue)
+  spec.csharp:
+  - uid: System.Collections.Generic.Dictionary`2
+    name: Dictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2
+  - name: <
+  - name: TKey
+  - name: ','
+  - name: " "
+  - name: TValue
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.Dictionary`2
+    name: Dictionary
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2
+  - name: (
+  - name: Of
+  - name: " "
+  - name: TKey
+  - name: ','
+  - name: " "
+  - name: TValue
+  - name: )
+- uid: System.Collections.Generic
+  commentId: N:System.Collections.Generic
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System.Collections.Generic
+  nameWithType: System.Collections.Generic
+  fullName: System.Collections.Generic
+  spec.csharp:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic
+  spec.vb:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic
+- uid: KernSmith.Rasterizer.RasterOptions.EnableHinting*
+  commentId: Overload:KernSmith.Rasterizer.RasterOptions.EnableHinting
+  href: KernSmith.Rasterizer.RasterOptions.html#KernSmith_Rasterizer_RasterOptions_EnableHinting
+  name: EnableHinting
+  nameWithType: RasterOptions.EnableHinting
+  fullName: KernSmith.Rasterizer.RasterOptions.EnableHinting
+- uid: KernSmith.Rasterizer.RasterOptions
+  commentId: T:KernSmith.Rasterizer.RasterOptions
+  parent: KernSmith.Rasterizer
+  href: KernSmith.Rasterizer.RasterOptions.html
+  name: RasterOptions
+  nameWithType: RasterOptions
+  fullName: KernSmith.Rasterizer.RasterOptions
+- uid: KernSmith.FontGeneratorOptions
+  commentId: T:KernSmith.FontGeneratorOptions
+  parent: KernSmith
+  href: KernSmith.FontGeneratorOptions.html
+  name: FontGeneratorOptions
+  nameWithType: FontGeneratorOptions
+  fullName: KernSmith.FontGeneratorOptions
+- uid: KernSmith.Rasterizer.RasterOptions.FromGeneratorOptions*
+  commentId: Overload:KernSmith.Rasterizer.RasterOptions.FromGeneratorOptions
+  href: KernSmith.Rasterizer.RasterOptions.html#KernSmith_Rasterizer_RasterOptions_FromGeneratorOptions_KernSmith_FontGeneratorOptions_
+  name: FromGeneratorOptions
+  nameWithType: RasterOptions.FromGeneratorOptions
+  fullName: KernSmith.Rasterizer.RasterOptions.FromGeneratorOptions

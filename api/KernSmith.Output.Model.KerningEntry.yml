@@ -1,0 +1,513 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Output.Model.KerningEntry
+  commentId: T:KernSmith.Output.Model.KerningEntry
+  id: KerningEntry
+  parent: KernSmith.Output.Model
+  children:
+  - KernSmith.Output.Model.KerningEntry.#ctor(System.Int32,System.Int32,System.Int32)
+  - KernSmith.Output.Model.KerningEntry.Amount
+  - KernSmith.Output.Model.KerningEntry.First
+  - KernSmith.Output.Model.KerningEntry.Second
+  langs:
+  - csharp
+  - vb
+  name: KerningEntry
+  nameWithType: KerningEntry
+  fullName: KernSmith.Output.Model.KerningEntry
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/KerningEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: KerningEntry
+    path: src/KernSmith/Output/Model/KerningEntry.cs
+    startLine: 5
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: BMFont kerning entry — adjustment between a pair of characters.
+  example: []
+  syntax:
+    content: 'public sealed record KerningEntry : IEquatable<KerningEntry>'
+    content.vb: Public NotInheritable Class KerningEntry Implements IEquatable(Of KerningEntry)
+  inheritance:
+  - System.Object
+  implements:
+  - System.IEquatable{KernSmith.Output.Model.KerningEntry}
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.Output.Model.KerningEntry.#ctor(System.Int32,System.Int32,System.Int32)
+  commentId: M:KernSmith.Output.Model.KerningEntry.#ctor(System.Int32,System.Int32,System.Int32)
+  id: '#ctor(System.Int32,System.Int32,System.Int32)'
+  parent: KernSmith.Output.Model.KerningEntry
+  langs:
+  - csharp
+  - vb
+  name: KerningEntry(int, int, int)
+  nameWithType: KerningEntry.KerningEntry(int, int, int)
+  fullName: KernSmith.Output.Model.KerningEntry.KerningEntry(int, int, int)
+  type: Constructor
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/KerningEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: .ctor
+    path: src/KernSmith/Output/Model/KerningEntry.cs
+    startLine: 5
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: BMFont kerning entry — adjustment between a pair of characters.
+  example: []
+  syntax:
+    content: public KerningEntry(int First, int Second, int Amount)
+    parameters:
+    - id: First
+      type: System.Int32
+    - id: Second
+      type: System.Int32
+    - id: Amount
+      type: System.Int32
+    content.vb: Public Sub New(First As Integer, Second As Integer, Amount As Integer)
+  overload: KernSmith.Output.Model.KerningEntry.#ctor*
+  nameWithType.vb: KerningEntry.New(Integer, Integer, Integer)
+  fullName.vb: KernSmith.Output.Model.KerningEntry.New(Integer, Integer, Integer)
+  name.vb: New(Integer, Integer, Integer)
+- uid: KernSmith.Output.Model.KerningEntry.First
+  commentId: P:KernSmith.Output.Model.KerningEntry.First
+  id: First
+  parent: KernSmith.Output.Model.KerningEntry
+  langs:
+  - csharp
+  - vb
+  name: First
+  nameWithType: KerningEntry.First
+  fullName: KernSmith.Output.Model.KerningEntry.First
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/KerningEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: First
+    path: src/KernSmith/Output/Model/KerningEntry.cs
+    startLine: 6
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  syntax:
+    content: public int First { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property First As Integer
+  overload: KernSmith.Output.Model.KerningEntry.First*
+- uid: KernSmith.Output.Model.KerningEntry.Second
+  commentId: P:KernSmith.Output.Model.KerningEntry.Second
+  id: Second
+  parent: KernSmith.Output.Model.KerningEntry
+  langs:
+  - csharp
+  - vb
+  name: Second
+  nameWithType: KerningEntry.Second
+  fullName: KernSmith.Output.Model.KerningEntry.Second
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/KerningEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Second
+    path: src/KernSmith/Output/Model/KerningEntry.cs
+    startLine: 7
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  syntax:
+    content: public int Second { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Second As Integer
+  overload: KernSmith.Output.Model.KerningEntry.Second*
+- uid: KernSmith.Output.Model.KerningEntry.Amount
+  commentId: P:KernSmith.Output.Model.KerningEntry.Amount
+  id: Amount
+  parent: KernSmith.Output.Model.KerningEntry
+  langs:
+  - csharp
+  - vb
+  name: Amount
+  nameWithType: KerningEntry.Amount
+  fullName: KernSmith.Output.Model.KerningEntry.Amount
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/KerningEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Amount
+    path: src/KernSmith/Output/Model/KerningEntry.cs
+    startLine: 8
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  syntax:
+    content: public int Amount { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Amount As Integer
+  overload: KernSmith.Output.Model.KerningEntry.Amount*
+references:
+- uid: KernSmith.Output.Model
+  commentId: N:KernSmith.Output.Model
+  href: KernSmith.html
+  name: KernSmith.Output.Model
+  nameWithType: KernSmith.Output.Model
+  fullName: KernSmith.Output.Model
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  - name: .
+  - uid: KernSmith.Output.Model
+    name: Model
+    href: KernSmith.Output.Model.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  - name: .
+  - uid: KernSmith.Output.Model
+    name: Model
+    href: KernSmith.Output.Model.html
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: System.IEquatable{KernSmith.Output.Model.KerningEntry}
+  commentId: T:System.IEquatable{KernSmith.Output.Model.KerningEntry}
+  parent: System
+  definition: System.IEquatable`1
+  href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  name: IEquatable<KerningEntry>
+  nameWithType: IEquatable<KerningEntry>
+  fullName: System.IEquatable<KernSmith.Output.Model.KerningEntry>
+  nameWithType.vb: IEquatable(Of KerningEntry)
+  fullName.vb: System.IEquatable(Of KernSmith.Output.Model.KerningEntry)
+  name.vb: IEquatable(Of KerningEntry)
+  spec.csharp:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: <
+  - uid: KernSmith.Output.Model.KerningEntry
+    name: KerningEntry
+    href: KernSmith.Output.Model.KerningEntry.html
+  - name: '>'
+  spec.vb:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: KernSmith.Output.Model.KerningEntry
+    name: KerningEntry
+    href: KernSmith.Output.Model.KerningEntry.html
+  - name: )
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: System.IEquatable`1
+  commentId: T:System.IEquatable`1
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  name: IEquatable<T>
+  nameWithType: IEquatable<T>
+  fullName: System.IEquatable<T>
+  nameWithType.vb: IEquatable(Of T)
+  fullName.vb: System.IEquatable(Of T)
+  name.vb: IEquatable(Of T)
+  spec.csharp:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: <
+  - name: T
+  - name: '>'
+  spec.vb:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - name: T
+  - name: )
+- uid: KernSmith.Output.Model.KerningEntry.#ctor*
+  commentId: Overload:KernSmith.Output.Model.KerningEntry.#ctor
+  href: KernSmith.Output.Model.KerningEntry.html#KernSmith_Output_Model_KerningEntry__ctor_System_Int32_System_Int32_System_Int32_
+  name: KerningEntry
+  nameWithType: KerningEntry.KerningEntry
+  fullName: KernSmith.Output.Model.KerningEntry.KerningEntry
+  nameWithType.vb: KerningEntry.New
+  fullName.vb: KernSmith.Output.Model.KerningEntry.New
+  name.vb: New
+- uid: System.Int32
+  commentId: T:System.Int32
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int
+  nameWithType: int
+  fullName: int
+  nameWithType.vb: Integer
+  fullName.vb: Integer
+  name.vb: Integer
+- uid: KernSmith.Output.Model.KerningEntry.First*
+  commentId: Overload:KernSmith.Output.Model.KerningEntry.First
+  href: KernSmith.Output.Model.KerningEntry.html#KernSmith_Output_Model_KerningEntry_First
+  name: First
+  nameWithType: KerningEntry.First
+  fullName: KernSmith.Output.Model.KerningEntry.First
+- uid: KernSmith.Output.Model.KerningEntry.Second*
+  commentId: Overload:KernSmith.Output.Model.KerningEntry.Second
+  href: KernSmith.Output.Model.KerningEntry.html#KernSmith_Output_Model_KerningEntry_Second
+  name: Second
+  nameWithType: KerningEntry.Second
+  fullName: KernSmith.Output.Model.KerningEntry.Second
+- uid: KernSmith.Output.Model.KerningEntry.Amount*
+  commentId: Overload:KernSmith.Output.Model.KerningEntry.Amount
+  href: KernSmith.Output.Model.KerningEntry.html#KernSmith_Output_Model_KerningEntry_Amount
+  name: Amount
+  nameWithType: KerningEntry.Amount
+  fullName: KernSmith.Output.Model.KerningEntry.Amount

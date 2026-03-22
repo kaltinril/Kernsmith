@@ -1,0 +1,714 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Rasterizer.ShadowPostProcessor
+  commentId: T:KernSmith.Rasterizer.ShadowPostProcessor
+  id: ShadowPostProcessor
+  parent: KernSmith.Rasterizer
+  children:
+  - KernSmith.Rasterizer.ShadowPostProcessor.#ctor(System.Int32,System.Int32,System.Int32,System.Byte,System.Byte,System.Byte,System.Single)
+  - KernSmith.Rasterizer.ShadowPostProcessor.BlurRadius
+  - KernSmith.Rasterizer.ShadowPostProcessor.OffsetX
+  - KernSmith.Rasterizer.ShadowPostProcessor.OffsetY
+  - KernSmith.Rasterizer.ShadowPostProcessor.Opacity
+  - KernSmith.Rasterizer.ShadowPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+  - KernSmith.Rasterizer.ShadowPostProcessor.ShadowB
+  - KernSmith.Rasterizer.ShadowPostProcessor.ShadowG
+  - KernSmith.Rasterizer.ShadowPostProcessor.ShadowR
+  langs:
+  - csharp
+  - vb
+  name: ShadowPostProcessor
+  nameWithType: ShadowPostProcessor
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ShadowPostProcessor
+    path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+    startLine: 7
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Adds a drop shadow behind each glyph with configurable offset, color, blur radius, and opacity.
+  example: []
+  syntax:
+    content: 'public sealed class ShadowPostProcessor : IGlyphPostProcessor'
+    content.vb: Public NotInheritable Class ShadowPostProcessor Implements IGlyphPostProcessor
+  inheritance:
+  - System.Object
+  implements:
+  - KernSmith.Rasterizer.IGlyphPostProcessor
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.OffsetX
+  commentId: P:KernSmith.Rasterizer.ShadowPostProcessor.OffsetX
+  id: OffsetX
+  parent: KernSmith.Rasterizer.ShadowPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: OffsetX
+  nameWithType: ShadowPostProcessor.OffsetX
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.OffsetX
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: OffsetX
+    path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+    startLine: 10
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Pixels to shift the shadow right. Negative goes left.
+  example: []
+  syntax:
+    content: public int OffsetX { get; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public ReadOnly Property OffsetX As Integer
+  overload: KernSmith.Rasterizer.ShadowPostProcessor.OffsetX*
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.OffsetY
+  commentId: P:KernSmith.Rasterizer.ShadowPostProcessor.OffsetY
+  id: OffsetY
+  parent: KernSmith.Rasterizer.ShadowPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: OffsetY
+  nameWithType: ShadowPostProcessor.OffsetY
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.OffsetY
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: OffsetY
+    path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+    startLine: 13
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Pixels to shift the shadow down. Negative goes up.
+  example: []
+  syntax:
+    content: public int OffsetY { get; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public ReadOnly Property OffsetY As Integer
+  overload: KernSmith.Rasterizer.ShadowPostProcessor.OffsetY*
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.BlurRadius
+  commentId: P:KernSmith.Rasterizer.ShadowPostProcessor.BlurRadius
+  id: BlurRadius
+  parent: KernSmith.Rasterizer.ShadowPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: BlurRadius
+  nameWithType: ShadowPostProcessor.BlurRadius
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.BlurRadius
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: BlurRadius
+    path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+    startLine: 16
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Blur radius in pixels. 0 = hard shadow, higher values produce a softer edge.
+  example: []
+  syntax:
+    content: public int BlurRadius { get; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public ReadOnly Property BlurRadius As Integer
+  overload: KernSmith.Rasterizer.ShadowPostProcessor.BlurRadius*
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.ShadowR
+  commentId: P:KernSmith.Rasterizer.ShadowPostProcessor.ShadowR
+  id: ShadowR
+  parent: KernSmith.Rasterizer.ShadowPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: ShadowR
+  nameWithType: ShadowPostProcessor.ShadowR
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.ShadowR
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ShadowR
+    path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+    startLine: 19
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Shadow color red (0-255).
+  example: []
+  syntax:
+    content: public byte ShadowR { get; }
+    parameters: []
+    return:
+      type: System.Byte
+    content.vb: Public ReadOnly Property ShadowR As Byte
+  overload: KernSmith.Rasterizer.ShadowPostProcessor.ShadowR*
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.ShadowG
+  commentId: P:KernSmith.Rasterizer.ShadowPostProcessor.ShadowG
+  id: ShadowG
+  parent: KernSmith.Rasterizer.ShadowPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: ShadowG
+  nameWithType: ShadowPostProcessor.ShadowG
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.ShadowG
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ShadowG
+    path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+    startLine: 22
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Shadow color green (0-255).
+  example: []
+  syntax:
+    content: public byte ShadowG { get; }
+    parameters: []
+    return:
+      type: System.Byte
+    content.vb: Public ReadOnly Property ShadowG As Byte
+  overload: KernSmith.Rasterizer.ShadowPostProcessor.ShadowG*
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.ShadowB
+  commentId: P:KernSmith.Rasterizer.ShadowPostProcessor.ShadowB
+  id: ShadowB
+  parent: KernSmith.Rasterizer.ShadowPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: ShadowB
+  nameWithType: ShadowPostProcessor.ShadowB
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.ShadowB
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ShadowB
+    path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+    startLine: 25
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Shadow color blue (0-255).
+  example: []
+  syntax:
+    content: public byte ShadowB { get; }
+    parameters: []
+    return:
+      type: System.Byte
+    content.vb: Public ReadOnly Property ShadowB As Byte
+  overload: KernSmith.Rasterizer.ShadowPostProcessor.ShadowB*
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.Opacity
+  commentId: P:KernSmith.Rasterizer.ShadowPostProcessor.Opacity
+  id: Opacity
+  parent: KernSmith.Rasterizer.ShadowPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: Opacity
+  nameWithType: ShadowPostProcessor.Opacity
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.Opacity
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Opacity
+    path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+    startLine: 28
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Shadow opacity from 0.0 (invisible) to 1.0 (fully opaque).
+  example: []
+  syntax:
+    content: public float Opacity { get; }
+    parameters: []
+    return:
+      type: System.Single
+    content.vb: Public ReadOnly Property Opacity As Single
+  overload: KernSmith.Rasterizer.ShadowPostProcessor.Opacity*
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.#ctor(System.Int32,System.Int32,System.Int32,System.Byte,System.Byte,System.Byte,System.Single)
+  commentId: M:KernSmith.Rasterizer.ShadowPostProcessor.#ctor(System.Int32,System.Int32,System.Int32,System.Byte,System.Byte,System.Byte,System.Single)
+  id: '#ctor(System.Int32,System.Int32,System.Int32,System.Byte,System.Byte,System.Byte,System.Single)'
+  parent: KernSmith.Rasterizer.ShadowPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: ShadowPostProcessor(int, int, int, byte, byte, byte, float)
+  nameWithType: ShadowPostProcessor.ShadowPostProcessor(int, int, int, byte, byte, byte, float)
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.ShadowPostProcessor(int, int, int, byte, byte, byte, float)
+  type: Constructor
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: .ctor
+    path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+    startLine: 33
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Creates a drop shadow effect.
+  example: []
+  syntax:
+    content: public ShadowPostProcessor(int offsetX = 2, int offsetY = 2, int blurRadius = 0, byte shadowR = 0, byte shadowG = 0, byte shadowB = 0, float opacity = 1)
+    parameters:
+    - id: offsetX
+      type: System.Int32
+    - id: offsetY
+      type: System.Int32
+    - id: blurRadius
+      type: System.Int32
+    - id: shadowR
+      type: System.Byte
+    - id: shadowG
+      type: System.Byte
+    - id: shadowB
+      type: System.Byte
+    - id: opacity
+      type: System.Single
+    content.vb: Public Sub New(offsetX As Integer = 2, offsetY As Integer = 2, blurRadius As Integer = 0, shadowR As Byte = 0, shadowG As Byte = 0, shadowB As Byte = 0, opacity As Single = 1)
+  overload: KernSmith.Rasterizer.ShadowPostProcessor.#ctor*
+  nameWithType.vb: ShadowPostProcessor.New(Integer, Integer, Integer, Byte, Byte, Byte, Single)
+  fullName.vb: KernSmith.Rasterizer.ShadowPostProcessor.New(Integer, Integer, Integer, Byte, Byte, Byte, Single)
+  name.vb: New(Integer, Integer, Integer, Byte, Byte, Byte, Single)
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+  commentId: M:KernSmith.Rasterizer.ShadowPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+  id: Process(KernSmith.Rasterizer.RasterizedGlyph)
+  parent: KernSmith.Rasterizer.ShadowPostProcessor
+  langs:
+  - csharp
+  - vb
+  name: Process(RasterizedGlyph)
+  nameWithType: ShadowPostProcessor.Process(RasterizedGlyph)
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Process
+    path: src/KernSmith/Rasterizer/ShadowPostProcessor.cs
+    startLine: 52
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Rasterizer
+  summary: Takes a rendered glyph and returns a new one with the effect applied.
+  example: []
+  syntax:
+    content: public RasterizedGlyph Process(RasterizedGlyph glyph)
+    parameters:
+    - id: glyph
+      type: KernSmith.Rasterizer.RasterizedGlyph
+      description: The glyph to modify.
+    return:
+      type: KernSmith.Rasterizer.RasterizedGlyph
+    content.vb: Public Function Process(glyph As RasterizedGlyph) As RasterizedGlyph
+  overload: KernSmith.Rasterizer.ShadowPostProcessor.Process*
+  implements:
+  - KernSmith.Rasterizer.IGlyphPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+references:
+- uid: KernSmith.Rasterizer
+  commentId: N:KernSmith.Rasterizer
+  href: KernSmith.html
+  name: KernSmith.Rasterizer
+  nameWithType: KernSmith.Rasterizer
+  fullName: KernSmith.Rasterizer
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Rasterizer
+    name: Rasterizer
+    href: KernSmith.Rasterizer.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Rasterizer
+    name: Rasterizer
+    href: KernSmith.Rasterizer.html
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: KernSmith.Rasterizer.IGlyphPostProcessor
+  commentId: T:KernSmith.Rasterizer.IGlyphPostProcessor
+  parent: KernSmith.Rasterizer
+  href: KernSmith.Rasterizer.IGlyphPostProcessor.html
+  name: IGlyphPostProcessor
+  nameWithType: IGlyphPostProcessor
+  fullName: KernSmith.Rasterizer.IGlyphPostProcessor
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.OffsetX*
+  commentId: Overload:KernSmith.Rasterizer.ShadowPostProcessor.OffsetX
+  href: KernSmith.Rasterizer.ShadowPostProcessor.html#KernSmith_Rasterizer_ShadowPostProcessor_OffsetX
+  name: OffsetX
+  nameWithType: ShadowPostProcessor.OffsetX
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.OffsetX
+- uid: System.Int32
+  commentId: T:System.Int32
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int
+  nameWithType: int
+  fullName: int
+  nameWithType.vb: Integer
+  fullName.vb: Integer
+  name.vb: Integer
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.OffsetY*
+  commentId: Overload:KernSmith.Rasterizer.ShadowPostProcessor.OffsetY
+  href: KernSmith.Rasterizer.ShadowPostProcessor.html#KernSmith_Rasterizer_ShadowPostProcessor_OffsetY
+  name: OffsetY
+  nameWithType: ShadowPostProcessor.OffsetY
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.OffsetY
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.BlurRadius*
+  commentId: Overload:KernSmith.Rasterizer.ShadowPostProcessor.BlurRadius
+  href: KernSmith.Rasterizer.ShadowPostProcessor.html#KernSmith_Rasterizer_ShadowPostProcessor_BlurRadius
+  name: BlurRadius
+  nameWithType: ShadowPostProcessor.BlurRadius
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.BlurRadius
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.ShadowR*
+  commentId: Overload:KernSmith.Rasterizer.ShadowPostProcessor.ShadowR
+  href: KernSmith.Rasterizer.ShadowPostProcessor.html#KernSmith_Rasterizer_ShadowPostProcessor_ShadowR
+  name: ShadowR
+  nameWithType: ShadowPostProcessor.ShadowR
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.ShadowR
+- uid: System.Byte
+  commentId: T:System.Byte
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.byte
+  name: byte
+  nameWithType: byte
+  fullName: byte
+  nameWithType.vb: Byte
+  fullName.vb: Byte
+  name.vb: Byte
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.ShadowG*
+  commentId: Overload:KernSmith.Rasterizer.ShadowPostProcessor.ShadowG
+  href: KernSmith.Rasterizer.ShadowPostProcessor.html#KernSmith_Rasterizer_ShadowPostProcessor_ShadowG
+  name: ShadowG
+  nameWithType: ShadowPostProcessor.ShadowG
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.ShadowG
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.ShadowB*
+  commentId: Overload:KernSmith.Rasterizer.ShadowPostProcessor.ShadowB
+  href: KernSmith.Rasterizer.ShadowPostProcessor.html#KernSmith_Rasterizer_ShadowPostProcessor_ShadowB
+  name: ShadowB
+  nameWithType: ShadowPostProcessor.ShadowB
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.ShadowB
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.Opacity*
+  commentId: Overload:KernSmith.Rasterizer.ShadowPostProcessor.Opacity
+  href: KernSmith.Rasterizer.ShadowPostProcessor.html#KernSmith_Rasterizer_ShadowPostProcessor_Opacity
+  name: Opacity
+  nameWithType: ShadowPostProcessor.Opacity
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.Opacity
+- uid: System.Single
+  commentId: T:System.Single
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.single
+  name: float
+  nameWithType: float
+  fullName: float
+  nameWithType.vb: Single
+  fullName.vb: Single
+  name.vb: Single
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.#ctor*
+  commentId: Overload:KernSmith.Rasterizer.ShadowPostProcessor.#ctor
+  href: KernSmith.Rasterizer.ShadowPostProcessor.html#KernSmith_Rasterizer_ShadowPostProcessor__ctor_System_Int32_System_Int32_System_Int32_System_Byte_System_Byte_System_Byte_System_Single_
+  name: ShadowPostProcessor
+  nameWithType: ShadowPostProcessor.ShadowPostProcessor
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.ShadowPostProcessor
+  nameWithType.vb: ShadowPostProcessor.New
+  fullName.vb: KernSmith.Rasterizer.ShadowPostProcessor.New
+  name.vb: New
+- uid: KernSmith.Rasterizer.ShadowPostProcessor.Process*
+  commentId: Overload:KernSmith.Rasterizer.ShadowPostProcessor.Process
+  href: KernSmith.Rasterizer.ShadowPostProcessor.html#KernSmith_Rasterizer_ShadowPostProcessor_Process_KernSmith_Rasterizer_RasterizedGlyph_
+  name: Process
+  nameWithType: ShadowPostProcessor.Process
+  fullName: KernSmith.Rasterizer.ShadowPostProcessor.Process
+- uid: KernSmith.Rasterizer.IGlyphPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+  commentId: M:KernSmith.Rasterizer.IGlyphPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+  parent: KernSmith.Rasterizer.IGlyphPostProcessor
+  href: KernSmith.Rasterizer.IGlyphPostProcessor.html#KernSmith_Rasterizer_IGlyphPostProcessor_Process_KernSmith_Rasterizer_RasterizedGlyph_
+  name: Process(RasterizedGlyph)
+  nameWithType: IGlyphPostProcessor.Process(RasterizedGlyph)
+  fullName: KernSmith.Rasterizer.IGlyphPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+  spec.csharp:
+  - uid: KernSmith.Rasterizer.IGlyphPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+    name: Process
+    href: KernSmith.Rasterizer.IGlyphPostProcessor.html#KernSmith_Rasterizer_IGlyphPostProcessor_Process_KernSmith_Rasterizer_RasterizedGlyph_
+  - name: (
+  - uid: KernSmith.Rasterizer.RasterizedGlyph
+    name: RasterizedGlyph
+    href: KernSmith.Rasterizer.RasterizedGlyph.html
+  - name: )
+  spec.vb:
+  - uid: KernSmith.Rasterizer.IGlyphPostProcessor.Process(KernSmith.Rasterizer.RasterizedGlyph)
+    name: Process
+    href: KernSmith.Rasterizer.IGlyphPostProcessor.html#KernSmith_Rasterizer_IGlyphPostProcessor_Process_KernSmith_Rasterizer_RasterizedGlyph_
+  - name: (
+  - uid: KernSmith.Rasterizer.RasterizedGlyph
+    name: RasterizedGlyph
+    href: KernSmith.Rasterizer.RasterizedGlyph.html
+  - name: )
+- uid: KernSmith.Rasterizer.RasterizedGlyph
+  commentId: T:KernSmith.Rasterizer.RasterizedGlyph
+  parent: KernSmith.Rasterizer
+  href: KernSmith.Rasterizer.RasterizedGlyph.html
+  name: RasterizedGlyph
+  nameWithType: RasterizedGlyph
+  fullName: KernSmith.Rasterizer.RasterizedGlyph

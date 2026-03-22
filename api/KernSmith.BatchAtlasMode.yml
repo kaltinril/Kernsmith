@@ -1,0 +1,102 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.BatchAtlasMode
+  commentId: T:KernSmith.BatchAtlasMode
+  id: BatchAtlasMode
+  parent: KernSmith
+  children:
+  - KernSmith.BatchAtlasMode.Combined
+  - KernSmith.BatchAtlasMode.Separate
+  langs:
+  - csharp
+  - vb
+  name: BatchAtlasMode
+  nameWithType: BatchAtlasMode
+  fullName: KernSmith.BatchAtlasMode
+  type: Enum
+  source:
+    remote:
+      path: src/KernSmith/Config/BatchAtlasMode.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: BatchAtlasMode
+    path: src/KernSmith/Config/BatchAtlasMode.cs
+    startLine: 5
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Controls how atlas textures are generated during batch font generation.
+  example: []
+  syntax:
+    content: public enum BatchAtlasMode
+    content.vb: Public Enum BatchAtlasMode
+- uid: KernSmith.BatchAtlasMode.Separate
+  commentId: F:KernSmith.BatchAtlasMode.Separate
+  id: Separate
+  parent: KernSmith.BatchAtlasMode
+  langs:
+  - csharp
+  - vb
+  name: Separate
+  nameWithType: BatchAtlasMode.Separate
+  fullName: KernSmith.BatchAtlasMode.Separate
+  type: Field
+  source:
+    remote:
+      path: src/KernSmith/Config/BatchAtlasMode.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Separate
+    path: src/KernSmith/Config/BatchAtlasMode.cs
+    startLine: 8
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Each font gets its own independent atlas texture(s).
+  example: []
+  syntax:
+    content: Separate = 0
+    return:
+      type: KernSmith.BatchAtlasMode
+- uid: KernSmith.BatchAtlasMode.Combined
+  commentId: F:KernSmith.BatchAtlasMode.Combined
+  id: Combined
+  parent: KernSmith.BatchAtlasMode
+  langs:
+  - csharp
+  - vb
+  name: Combined
+  nameWithType: BatchAtlasMode.Combined
+  fullName: KernSmith.BatchAtlasMode.Combined
+  type: Field
+  source:
+    remote:
+      path: src/KernSmith/Config/BatchAtlasMode.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Combined
+    path: src/KernSmith/Config/BatchAtlasMode.cs
+    startLine: 11
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: All fonts share a single combined atlas texture.
+  example: []
+  syntax:
+    content: Combined = 1
+    return:
+      type: KernSmith.BatchAtlasMode
+references:
+- uid: KernSmith
+  commentId: N:KernSmith
+  href: KernSmith.html
+  name: KernSmith
+  nameWithType: KernSmith
+  fullName: KernSmith
+- uid: KernSmith.BatchAtlasMode
+  commentId: T:KernSmith.BatchAtlasMode
+  parent: KernSmith
+  href: KernSmith.BatchAtlasMode.html
+  name: BatchAtlasMode
+  nameWithType: BatchAtlasMode
+  fullName: KernSmith.BatchAtlasMode

@@ -1,0 +1,279 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Font.ISystemFontProvider
+  commentId: T:KernSmith.Font.ISystemFontProvider
+  id: ISystemFontProvider
+  parent: KernSmith.Font
+  children:
+  - KernSmith.Font.ISystemFontProvider.GetInstalledFonts
+  - KernSmith.Font.ISystemFontProvider.LoadFont(System.String,System.String)
+  langs:
+  - csharp
+  - vb
+  name: ISystemFontProvider
+  nameWithType: ISystemFontProvider
+  fullName: KernSmith.Font.ISystemFontProvider
+  type: Interface
+  source:
+    remote:
+      path: src/KernSmith/Font/ISystemFontProvider.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ISystemFontProvider
+    path: src/KernSmith/Font/ISystemFontProvider.cs
+    startLine: 7
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font
+  summary: Provides discovery and loading of fonts installed on the system.
+  example: []
+  syntax:
+    content: public interface ISystemFontProvider
+    content.vb: Public Interface ISystemFontProvider
+  derivedClasses:
+  - KernSmith.Font.DefaultSystemFontProvider
+- uid: KernSmith.Font.ISystemFontProvider.GetInstalledFonts
+  commentId: M:KernSmith.Font.ISystemFontProvider.GetInstalledFonts
+  id: GetInstalledFonts
+  parent: KernSmith.Font.ISystemFontProvider
+  langs:
+  - csharp
+  - vb
+  name: GetInstalledFonts()
+  nameWithType: ISystemFontProvider.GetInstalledFonts()
+  fullName: KernSmith.Font.ISystemFontProvider.GetInstalledFonts()
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Font/ISystemFontProvider.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GetInstalledFonts
+    path: src/KernSmith/Font/ISystemFontProvider.cs
+    startLine: 12
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font
+  summary: Returns a list of all installed fonts discovered on the system.
+  example: []
+  syntax:
+    content: IReadOnlyList<SystemFontInfo> GetInstalledFonts()
+    return:
+      type: System.Collections.Generic.IReadOnlyList{KernSmith.Font.Models.SystemFontInfo}
+    content.vb: Function GetInstalledFonts() As IReadOnlyList(Of SystemFontInfo)
+  overload: KernSmith.Font.ISystemFontProvider.GetInstalledFonts*
+- uid: KernSmith.Font.ISystemFontProvider.LoadFont(System.String,System.String)
+  commentId: M:KernSmith.Font.ISystemFontProvider.LoadFont(System.String,System.String)
+  id: LoadFont(System.String,System.String)
+  parent: KernSmith.Font.ISystemFontProvider
+  langs:
+  - csharp
+  - vb
+  name: LoadFont(string, string?)
+  nameWithType: ISystemFontProvider.LoadFont(string, string?)
+  fullName: KernSmith.Font.ISystemFontProvider.LoadFont(string, string?)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Font/ISystemFontProvider.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: LoadFont
+    path: src/KernSmith/Font/ISystemFontProvider.cs
+    startLine: 22
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Font
+  summary: Loads the raw font file bytes for the specified font family.
+  example: []
+  syntax:
+    content: byte[]? LoadFont(string familyName, string? styleName = null)
+    parameters:
+    - id: familyName
+      type: System.String
+      description: The font family name to search for (case-insensitive).
+    - id: styleName
+      type: System.String
+      description: Optional style name to match (e.g., "Bold"). If null, prefers "Regular".
+    return:
+      type: System.Byte[]
+      description: The raw font file bytes, or null if no matching font was found.
+    content.vb: Function LoadFont(familyName As String, styleName As String = Nothing) As Byte()
+  overload: KernSmith.Font.ISystemFontProvider.LoadFont*
+  nameWithType.vb: ISystemFontProvider.LoadFont(String, String)
+  fullName.vb: KernSmith.Font.ISystemFontProvider.LoadFont(String, String)
+  name.vb: LoadFont(String, String)
+references:
+- uid: KernSmith.Font
+  commentId: N:KernSmith.Font
+  href: KernSmith.html
+  name: KernSmith.Font
+  nameWithType: KernSmith.Font
+  fullName: KernSmith.Font
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+- uid: KernSmith.Font.ISystemFontProvider.GetInstalledFonts*
+  commentId: Overload:KernSmith.Font.ISystemFontProvider.GetInstalledFonts
+  href: KernSmith.Font.ISystemFontProvider.html#KernSmith_Font_ISystemFontProvider_GetInstalledFonts
+  name: GetInstalledFonts
+  nameWithType: ISystemFontProvider.GetInstalledFonts
+  fullName: KernSmith.Font.ISystemFontProvider.GetInstalledFonts
+- uid: System.Collections.Generic.IReadOnlyList{KernSmith.Font.Models.SystemFontInfo}
+  commentId: T:System.Collections.Generic.IReadOnlyList{KernSmith.Font.Models.SystemFontInfo}
+  parent: System.Collections.Generic
+  definition: System.Collections.Generic.IReadOnlyList`1
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  name: IReadOnlyList<SystemFontInfo>
+  nameWithType: IReadOnlyList<SystemFontInfo>
+  fullName: System.Collections.Generic.IReadOnlyList<KernSmith.Font.Models.SystemFontInfo>
+  nameWithType.vb: IReadOnlyList(Of SystemFontInfo)
+  fullName.vb: System.Collections.Generic.IReadOnlyList(Of KernSmith.Font.Models.SystemFontInfo)
+  name.vb: IReadOnlyList(Of SystemFontInfo)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: <
+  - uid: KernSmith.Font.Models.SystemFontInfo
+    name: SystemFontInfo
+    href: KernSmith.Font.Models.SystemFontInfo.html
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: KernSmith.Font.Models.SystemFontInfo
+    name: SystemFontInfo
+    href: KernSmith.Font.Models.SystemFontInfo.html
+  - name: )
+- uid: System.Collections.Generic.IReadOnlyList`1
+  commentId: T:System.Collections.Generic.IReadOnlyList`1
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  name: IReadOnlyList<T>
+  nameWithType: IReadOnlyList<T>
+  fullName: System.Collections.Generic.IReadOnlyList<T>
+  nameWithType.vb: IReadOnlyList(Of T)
+  fullName.vb: System.Collections.Generic.IReadOnlyList(Of T)
+  name.vb: IReadOnlyList(Of T)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: <
+  - name: T
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: (
+  - name: Of
+  - name: " "
+  - name: T
+  - name: )
+- uid: System.Collections.Generic
+  commentId: N:System.Collections.Generic
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System.Collections.Generic
+  nameWithType: System.Collections.Generic
+  fullName: System.Collections.Generic
+  spec.csharp:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic
+  spec.vb:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic
+- uid: KernSmith.Font.ISystemFontProvider.LoadFont*
+  commentId: Overload:KernSmith.Font.ISystemFontProvider.LoadFont
+  href: KernSmith.Font.ISystemFontProvider.html#KernSmith_Font_ISystemFontProvider_LoadFont_System_String_System_String_
+  name: LoadFont
+  nameWithType: ISystemFontProvider.LoadFont
+  fullName: KernSmith.Font.ISystemFontProvider.LoadFont
+- uid: System.String
+  commentId: T:System.String
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.string
+  name: string
+  nameWithType: string
+  fullName: string
+  nameWithType.vb: String
+  fullName.vb: String
+  name.vb: String
+- uid: System.Byte[]
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.byte
+  name: byte[]
+  nameWithType: byte[]
+  fullName: byte[]
+  nameWithType.vb: Byte()
+  fullName.vb: Byte()
+  name.vb: Byte()
+  spec.csharp:
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: '['
+  - name: ']'
+  spec.vb:
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System

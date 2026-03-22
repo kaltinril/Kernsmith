@@ -1,0 +1,1248 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Output.BmFontResult
+  commentId: T:KernSmith.Output.BmFontResult
+  id: BmFontResult
+  parent: KernSmith.Output
+  children:
+  - KernSmith.Output.BmFontResult.FailedCodepoints
+  - KernSmith.Output.BmFontResult.FntBinary
+  - KernSmith.Output.BmFontResult.FntText
+  - KernSmith.Output.BmFontResult.FntXml
+  - KernSmith.Output.BmFontResult.GetDdsData
+  - KernSmith.Output.BmFontResult.GetDdsData(System.Int32)
+  - KernSmith.Output.BmFontResult.GetPngData
+  - KernSmith.Output.BmFontResult.GetPngData(System.Int32)
+  - KernSmith.Output.BmFontResult.GetTgaData
+  - KernSmith.Output.BmFontResult.GetTgaData(System.Int32)
+  - KernSmith.Output.BmFontResult.Metrics
+  - KernSmith.Output.BmFontResult.Model
+  - KernSmith.Output.BmFontResult.Pages
+  - KernSmith.Output.BmFontResult.ToBinary
+  - KernSmith.Output.BmFontResult.ToBmfc
+  - KernSmith.Output.BmFontResult.ToFile(System.String,KernSmith.OutputFormat)
+  - KernSmith.Output.BmFontResult.ToString
+  - KernSmith.Output.BmFontResult.ToXml
+  langs:
+  - csharp
+  - vb
+  name: BmFontResult
+  nameWithType: BmFontResult
+  fullName: KernSmith.Output.BmFontResult
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: BmFontResult
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 8
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: The result of a BMFont generation pipeline, containing the font model and atlas pages.
+  example: []
+  syntax:
+    content: public sealed class BmFontResult
+    content.vb: Public NotInheritable Class BmFontResult
+  inheritance:
+  - System.Object
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+- uid: KernSmith.Output.BmFontResult.Model
+  commentId: P:KernSmith.Output.BmFontResult.Model
+  id: Model
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: Model
+  nameWithType: BmFontResult.Model
+  fullName: KernSmith.Output.BmFontResult.Model
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Model
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 11
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: The BMFont descriptor model.
+  example: []
+  syntax:
+    content: public BmFontModel Model { get; }
+    parameters: []
+    return:
+      type: KernSmith.Output.Model.BmFontModel
+    content.vb: Public ReadOnly Property Model As BmFontModel
+  overload: KernSmith.Output.BmFontResult.Model*
+- uid: KernSmith.Output.BmFontResult.Pages
+  commentId: P:KernSmith.Output.BmFontResult.Pages
+  id: Pages
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: Pages
+  nameWithType: BmFontResult.Pages
+  fullName: KernSmith.Output.BmFontResult.Pages
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Pages
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 14
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: The rendered atlas pages.
+  example: []
+  syntax:
+    content: public IReadOnlyList<AtlasPage> Pages { get; }
+    parameters: []
+    return:
+      type: System.Collections.Generic.IReadOnlyList{KernSmith.Atlas.AtlasPage}
+    content.vb: Public ReadOnly Property Pages As IReadOnlyList(Of AtlasPage)
+  overload: KernSmith.Output.BmFontResult.Pages*
+- uid: KernSmith.Output.BmFontResult.FailedCodepoints
+  commentId: P:KernSmith.Output.BmFontResult.FailedCodepoints
+  id: FailedCodepoints
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: FailedCodepoints
+  nameWithType: BmFontResult.FailedCodepoints
+  fullName: KernSmith.Output.BmFontResult.FailedCodepoints
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FailedCodepoints
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 19
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Codepoints that were requested but could not be rasterized (missing from the font).
+  example: []
+  syntax:
+    content: public IReadOnlyList<int> FailedCodepoints { get; }
+    parameters: []
+    return:
+      type: System.Collections.Generic.IReadOnlyList{System.Int32}
+    content.vb: Public ReadOnly Property FailedCodepoints As IReadOnlyList(Of Integer)
+  overload: KernSmith.Output.BmFontResult.FailedCodepoints*
+- uid: KernSmith.Output.BmFontResult.Metrics
+  commentId: P:KernSmith.Output.BmFontResult.Metrics
+  id: Metrics
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: Metrics
+  nameWithType: BmFontResult.Metrics
+  fullName: KernSmith.Output.BmFontResult.Metrics
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Metrics
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 24
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Pipeline timing metrics. Only populated when <xref href="KernSmith.FontGeneratorOptions.CollectMetrics" data-throw-if-not-resolved="false"></xref> is enabled.
+  example: []
+  syntax:
+    content: public PipelineMetrics? Metrics { get; }
+    parameters: []
+    return:
+      type: KernSmith.PipelineMetrics
+    content.vb: Public ReadOnly Property Metrics As PipelineMetrics
+  overload: KernSmith.Output.BmFontResult.Metrics*
+- uid: KernSmith.Output.BmFontResult.ToString
+  commentId: M:KernSmith.Output.BmFontResult.ToString
+  id: ToString
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: ToString()
+  nameWithType: BmFontResult.ToString()
+  fullName: KernSmith.Output.BmFontResult.ToString()
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ToString
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 56
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Returns the BMFont descriptor in text format.
+  example: []
+  syntax:
+    content: public override string ToString()
+    return:
+      type: System.String
+    content.vb: Public Overrides Function ToString() As String
+  overridden: System.Object.ToString
+  overload: KernSmith.Output.BmFontResult.ToString*
+- uid: KernSmith.Output.BmFontResult.ToXml
+  commentId: M:KernSmith.Output.BmFontResult.ToXml
+  id: ToXml
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: ToXml()
+  nameWithType: BmFontResult.ToXml()
+  fullName: KernSmith.Output.BmFontResult.ToXml()
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ToXml
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 61
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Returns the BMFont descriptor in XML format.
+  example: []
+  syntax:
+    content: public string ToXml()
+    return:
+      type: System.String
+    content.vb: Public Function ToXml() As String
+  overload: KernSmith.Output.BmFontResult.ToXml*
+- uid: KernSmith.Output.BmFontResult.ToBinary
+  commentId: M:KernSmith.Output.BmFontResult.ToBinary
+  id: ToBinary
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: ToBinary()
+  nameWithType: BmFontResult.ToBinary()
+  fullName: KernSmith.Output.BmFontResult.ToBinary()
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ToBinary
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 66
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Returns the BMFont descriptor in binary format.
+  example: []
+  syntax:
+    content: public byte[] ToBinary()
+    return:
+      type: System.Byte[]
+    content.vb: Public Function ToBinary() As Byte()
+  overload: KernSmith.Output.BmFontResult.ToBinary*
+- uid: KernSmith.Output.BmFontResult.FntText
+  commentId: P:KernSmith.Output.BmFontResult.FntText
+  id: FntText
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: FntText
+  nameWithType: BmFontResult.FntText
+  fullName: KernSmith.Output.BmFontResult.FntText
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FntText
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 71
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Returns the BMFont descriptor in text format.
+  example: []
+  syntax:
+    content: public string FntText { get; }
+    parameters: []
+    return:
+      type: System.String
+    content.vb: Public ReadOnly Property FntText As String
+  overload: KernSmith.Output.BmFontResult.FntText*
+- uid: KernSmith.Output.BmFontResult.FntXml
+  commentId: P:KernSmith.Output.BmFontResult.FntXml
+  id: FntXml
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: FntXml
+  nameWithType: BmFontResult.FntXml
+  fullName: KernSmith.Output.BmFontResult.FntXml
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FntXml
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 76
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Returns the BMFont descriptor in XML format.
+  example: []
+  syntax:
+    content: public string FntXml { get; }
+    parameters: []
+    return:
+      type: System.String
+    content.vb: Public ReadOnly Property FntXml As String
+  overload: KernSmith.Output.BmFontResult.FntXml*
+- uid: KernSmith.Output.BmFontResult.FntBinary
+  commentId: P:KernSmith.Output.BmFontResult.FntBinary
+  id: FntBinary
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: FntBinary
+  nameWithType: BmFontResult.FntBinary
+  fullName: KernSmith.Output.BmFontResult.FntBinary
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FntBinary
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 81
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Returns the BMFont descriptor in binary format.
+  example: []
+  syntax:
+    content: public byte[] FntBinary { get; }
+    parameters: []
+    return:
+      type: System.Byte[]
+    content.vb: Public ReadOnly Property FntBinary As Byte()
+  overload: KernSmith.Output.BmFontResult.FntBinary*
+- uid: KernSmith.Output.BmFontResult.GetPngData
+  commentId: M:KernSmith.Output.BmFontResult.GetPngData
+  id: GetPngData
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: GetPngData()
+  nameWithType: BmFontResult.GetPngData()
+  fullName: KernSmith.Output.BmFontResult.GetPngData()
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GetPngData
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 87
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Encodes all atlas pages as PNG byte arrays.
+  example: []
+  syntax:
+    content: public byte[][] GetPngData()
+    return:
+      type: System.Byte[][]
+      description: An array of PNG-encoded byte arrays, one per page.
+    content.vb: Public Function GetPngData() As Byte()()
+  overload: KernSmith.Output.BmFontResult.GetPngData*
+- uid: KernSmith.Output.BmFontResult.GetPngData(System.Int32)
+  commentId: M:KernSmith.Output.BmFontResult.GetPngData(System.Int32)
+  id: GetPngData(System.Int32)
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: GetPngData(int)
+  nameWithType: BmFontResult.GetPngData(int)
+  fullName: KernSmith.Output.BmFontResult.GetPngData(int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GetPngData
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 98
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Encodes a single atlas page as PNG bytes.
+  example: []
+  syntax:
+    content: public byte[] GetPngData(int pageIndex)
+    parameters:
+    - id: pageIndex
+      type: System.Int32
+      description: Zero-based page index.
+    return:
+      type: System.Byte[]
+      description: PNG-encoded byte array for the specified page.
+    content.vb: Public Function GetPngData(pageIndex As Integer) As Byte()
+  overload: KernSmith.Output.BmFontResult.GetPngData*
+  nameWithType.vb: BmFontResult.GetPngData(Integer)
+  fullName.vb: KernSmith.Output.BmFontResult.GetPngData(Integer)
+  name.vb: GetPngData(Integer)
+- uid: KernSmith.Output.BmFontResult.GetTgaData
+  commentId: M:KernSmith.Output.BmFontResult.GetTgaData
+  id: GetTgaData
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: GetTgaData()
+  nameWithType: BmFontResult.GetTgaData()
+  fullName: KernSmith.Output.BmFontResult.GetTgaData()
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GetTgaData
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 108
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Encodes all atlas pages as TGA byte arrays.
+  example: []
+  syntax:
+    content: public byte[][] GetTgaData()
+    return:
+      type: System.Byte[][]
+      description: An array of TGA-encoded byte arrays, one per page.
+    content.vb: Public Function GetTgaData() As Byte()()
+  overload: KernSmith.Output.BmFontResult.GetTgaData*
+- uid: KernSmith.Output.BmFontResult.GetTgaData(System.Int32)
+  commentId: M:KernSmith.Output.BmFontResult.GetTgaData(System.Int32)
+  id: GetTgaData(System.Int32)
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: GetTgaData(int)
+  nameWithType: BmFontResult.GetTgaData(int)
+  fullName: KernSmith.Output.BmFontResult.GetTgaData(int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GetTgaData
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 119
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Encodes a single atlas page as TGA bytes.
+  example: []
+  syntax:
+    content: public byte[] GetTgaData(int pageIndex)
+    parameters:
+    - id: pageIndex
+      type: System.Int32
+      description: Zero-based page index.
+    return:
+      type: System.Byte[]
+      description: TGA-encoded byte array for the specified page.
+    content.vb: Public Function GetTgaData(pageIndex As Integer) As Byte()
+  overload: KernSmith.Output.BmFontResult.GetTgaData*
+  nameWithType.vb: BmFontResult.GetTgaData(Integer)
+  fullName.vb: KernSmith.Output.BmFontResult.GetTgaData(Integer)
+  name.vb: GetTgaData(Integer)
+- uid: KernSmith.Output.BmFontResult.GetDdsData
+  commentId: M:KernSmith.Output.BmFontResult.GetDdsData
+  id: GetDdsData
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: GetDdsData()
+  nameWithType: BmFontResult.GetDdsData()
+  fullName: KernSmith.Output.BmFontResult.GetDdsData()
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GetDdsData
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 129
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Encodes all atlas pages as DDS byte arrays.
+  example: []
+  syntax:
+    content: public byte[][] GetDdsData()
+    return:
+      type: System.Byte[][]
+      description: An array of DDS-encoded byte arrays, one per page.
+    content.vb: Public Function GetDdsData() As Byte()()
+  overload: KernSmith.Output.BmFontResult.GetDdsData*
+- uid: KernSmith.Output.BmFontResult.GetDdsData(System.Int32)
+  commentId: M:KernSmith.Output.BmFontResult.GetDdsData(System.Int32)
+  id: GetDdsData(System.Int32)
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: GetDdsData(int)
+  nameWithType: BmFontResult.GetDdsData(int)
+  fullName: KernSmith.Output.BmFontResult.GetDdsData(int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GetDdsData
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 140
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Encodes a single atlas page as DDS bytes.
+  example: []
+  syntax:
+    content: public byte[] GetDdsData(int pageIndex)
+    parameters:
+    - id: pageIndex
+      type: System.Int32
+      description: Zero-based page index.
+    return:
+      type: System.Byte[]
+      description: DDS-encoded byte array for the specified page.
+    content.vb: Public Function GetDdsData(pageIndex As Integer) As Byte()
+  overload: KernSmith.Output.BmFontResult.GetDdsData*
+  nameWithType.vb: BmFontResult.GetDdsData(Integer)
+  fullName.vb: KernSmith.Output.BmFontResult.GetDdsData(Integer)
+  name.vb: GetDdsData(Integer)
+- uid: KernSmith.Output.BmFontResult.ToBmfc
+  commentId: M:KernSmith.Output.BmFontResult.ToBmfc
+  id: ToBmfc
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: ToBmfc()
+  nameWithType: BmFontResult.ToBmfc()
+  fullName: KernSmith.Output.BmFontResult.ToBmfc()
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ToBmfc
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 152
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: >-
+    Returns the .bmfc configuration file content as a string.
+
+    Requires that this result was produced by a generation call (not loaded from disk).
+  example: []
+  syntax:
+    content: public string ToBmfc()
+    return:
+      type: System.String
+      description: The .bmfc file content.
+    content.vb: Public Function ToBmfc() As String
+  overload: KernSmith.Output.BmFontResult.ToBmfc*
+  exceptions:
+  - type: System.InvalidOperationException
+    commentId: T:System.InvalidOperationException
+    description: Thrown when no source options are available.
+- uid: KernSmith.Output.BmFontResult.ToFile(System.String,KernSmith.OutputFormat)
+  commentId: M:KernSmith.Output.BmFontResult.ToFile(System.String,KernSmith.OutputFormat)
+  id: ToFile(System.String,KernSmith.OutputFormat)
+  parent: KernSmith.Output.BmFontResult
+  langs:
+  - csharp
+  - vb
+  name: ToFile(string, OutputFormat)
+  nameWithType: BmFontResult.ToFile(string, OutputFormat)
+  fullName: KernSmith.Output.BmFontResult.ToFile(string, KernSmith.OutputFormat)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Output/BmFontResult.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ToFile
+    path: src/KernSmith/Output/BmFontResult.cs
+    startLine: 174
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output
+  summary: Writes the BMFont descriptor and atlas page images to disk.
+  example: []
+  syntax:
+    content: public void ToFile(string outputPath, OutputFormat format = OutputFormat.Text)
+    parameters:
+    - id: outputPath
+      type: System.String
+      description: Base path without extension (e.g., "output/myfont").
+    - id: format
+      type: KernSmith.OutputFormat
+      description: The output format for the .fnt file.
+    content.vb: Public Sub ToFile(outputPath As String, format As OutputFormat = OutputFormat.Text)
+  overload: KernSmith.Output.BmFontResult.ToFile*
+  nameWithType.vb: BmFontResult.ToFile(String, OutputFormat)
+  fullName.vb: KernSmith.Output.BmFontResult.ToFile(String, KernSmith.OutputFormat)
+  name.vb: ToFile(String, OutputFormat)
+references:
+- uid: KernSmith.Output
+  commentId: N:KernSmith.Output
+  href: KernSmith.html
+  name: KernSmith.Output
+  nameWithType: KernSmith.Output
+  fullName: KernSmith.Output
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: KernSmith.Output.BmFontResult.Model*
+  commentId: Overload:KernSmith.Output.BmFontResult.Model
+  href: KernSmith.Output.BmFontResult.html#KernSmith_Output_BmFontResult_Model
+  name: Model
+  nameWithType: BmFontResult.Model
+  fullName: KernSmith.Output.BmFontResult.Model
+- uid: KernSmith.Output.Model.BmFontModel
+  commentId: T:KernSmith.Output.Model.BmFontModel
+  parent: KernSmith.Output.Model
+  href: KernSmith.Output.Model.BmFontModel.html
+  name: BmFontModel
+  nameWithType: BmFontModel
+  fullName: KernSmith.Output.Model.BmFontModel
+- uid: KernSmith.Output.Model
+  commentId: N:KernSmith.Output.Model
+  href: KernSmith.html
+  name: KernSmith.Output.Model
+  nameWithType: KernSmith.Output.Model
+  fullName: KernSmith.Output.Model
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  - name: .
+  - uid: KernSmith.Output.Model
+    name: Model
+    href: KernSmith.Output.Model.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  - name: .
+  - uid: KernSmith.Output.Model
+    name: Model
+    href: KernSmith.Output.Model.html
+- uid: KernSmith.Output.BmFontResult.Pages*
+  commentId: Overload:KernSmith.Output.BmFontResult.Pages
+  href: KernSmith.Output.BmFontResult.html#KernSmith_Output_BmFontResult_Pages
+  name: Pages
+  nameWithType: BmFontResult.Pages
+  fullName: KernSmith.Output.BmFontResult.Pages
+- uid: System.Collections.Generic.IReadOnlyList{KernSmith.Atlas.AtlasPage}
+  commentId: T:System.Collections.Generic.IReadOnlyList{KernSmith.Atlas.AtlasPage}
+  parent: System.Collections.Generic
+  definition: System.Collections.Generic.IReadOnlyList`1
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  name: IReadOnlyList<AtlasPage>
+  nameWithType: IReadOnlyList<AtlasPage>
+  fullName: System.Collections.Generic.IReadOnlyList<KernSmith.Atlas.AtlasPage>
+  nameWithType.vb: IReadOnlyList(Of AtlasPage)
+  fullName.vb: System.Collections.Generic.IReadOnlyList(Of KernSmith.Atlas.AtlasPage)
+  name.vb: IReadOnlyList(Of AtlasPage)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: <
+  - uid: KernSmith.Atlas.AtlasPage
+    name: AtlasPage
+    href: KernSmith.Atlas.AtlasPage.html
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: KernSmith.Atlas.AtlasPage
+    name: AtlasPage
+    href: KernSmith.Atlas.AtlasPage.html
+  - name: )
+- uid: System.Collections.Generic.IReadOnlyList`1
+  commentId: T:System.Collections.Generic.IReadOnlyList`1
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  name: IReadOnlyList<T>
+  nameWithType: IReadOnlyList<T>
+  fullName: System.Collections.Generic.IReadOnlyList<T>
+  nameWithType.vb: IReadOnlyList(Of T)
+  fullName.vb: System.Collections.Generic.IReadOnlyList(Of T)
+  name.vb: IReadOnlyList(Of T)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: <
+  - name: T
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: (
+  - name: Of
+  - name: " "
+  - name: T
+  - name: )
+- uid: System.Collections.Generic
+  commentId: N:System.Collections.Generic
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System.Collections.Generic
+  nameWithType: System.Collections.Generic
+  fullName: System.Collections.Generic
+  spec.csharp:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic
+  spec.vb:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic
+- uid: KernSmith.Output.BmFontResult.FailedCodepoints*
+  commentId: Overload:KernSmith.Output.BmFontResult.FailedCodepoints
+  href: KernSmith.Output.BmFontResult.html#KernSmith_Output_BmFontResult_FailedCodepoints
+  name: FailedCodepoints
+  nameWithType: BmFontResult.FailedCodepoints
+  fullName: KernSmith.Output.BmFontResult.FailedCodepoints
+- uid: System.Collections.Generic.IReadOnlyList{System.Int32}
+  commentId: T:System.Collections.Generic.IReadOnlyList{System.Int32}
+  parent: System.Collections.Generic
+  definition: System.Collections.Generic.IReadOnlyList`1
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  name: IReadOnlyList<int>
+  nameWithType: IReadOnlyList<int>
+  fullName: System.Collections.Generic.IReadOnlyList<int>
+  nameWithType.vb: IReadOnlyList(Of Integer)
+  fullName.vb: System.Collections.Generic.IReadOnlyList(Of Integer)
+  name.vb: IReadOnlyList(Of Integer)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: <
+  - uid: System.Int32
+    name: int
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.int32
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: System.Int32
+    name: Integer
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.int32
+  - name: )
+- uid: KernSmith.FontGeneratorOptions.CollectMetrics
+  commentId: P:KernSmith.FontGeneratorOptions.CollectMetrics
+  href: KernSmith.FontGeneratorOptions.html#KernSmith_FontGeneratorOptions_CollectMetrics
+  name: CollectMetrics
+  nameWithType: FontGeneratorOptions.CollectMetrics
+  fullName: KernSmith.FontGeneratorOptions.CollectMetrics
+- uid: KernSmith.Output.BmFontResult.Metrics*
+  commentId: Overload:KernSmith.Output.BmFontResult.Metrics
+  href: KernSmith.Output.BmFontResult.html#KernSmith_Output_BmFontResult_Metrics
+  name: Metrics
+  nameWithType: BmFontResult.Metrics
+  fullName: KernSmith.Output.BmFontResult.Metrics
+- uid: KernSmith.PipelineMetrics
+  commentId: T:KernSmith.PipelineMetrics
+  parent: KernSmith
+  href: KernSmith.PipelineMetrics.html
+  name: PipelineMetrics
+  nameWithType: PipelineMetrics
+  fullName: KernSmith.PipelineMetrics
+- uid: KernSmith
+  commentId: N:KernSmith
+  href: KernSmith.html
+  name: KernSmith
+  nameWithType: KernSmith
+  fullName: KernSmith
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: KernSmith.Output.BmFontResult.ToString*
+  commentId: Overload:KernSmith.Output.BmFontResult.ToString
+  href: KernSmith.Output.BmFontResult.html#KernSmith_Output_BmFontResult_ToString
+  name: ToString
+  nameWithType: BmFontResult.ToString
+  fullName: KernSmith.Output.BmFontResult.ToString
+- uid: System.String
+  commentId: T:System.String
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.string
+  name: string
+  nameWithType: string
+  fullName: string
+  nameWithType.vb: String
+  fullName.vb: String
+  name.vb: String
+- uid: KernSmith.Output.BmFontResult.ToXml*
+  commentId: Overload:KernSmith.Output.BmFontResult.ToXml
+  href: KernSmith.Output.BmFontResult.html#KernSmith_Output_BmFontResult_ToXml
+  name: ToXml
+  nameWithType: BmFontResult.ToXml
+  fullName: KernSmith.Output.BmFontResult.ToXml
+- uid: KernSmith.Output.BmFontResult.ToBinary*
+  commentId: Overload:KernSmith.Output.BmFontResult.ToBinary
+  href: KernSmith.Output.BmFontResult.html#KernSmith_Output_BmFontResult_ToBinary
+  name: ToBinary
+  nameWithType: BmFontResult.ToBinary
+  fullName: KernSmith.Output.BmFontResult.ToBinary
+- uid: System.Byte[]
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.byte
+  name: byte[]
+  nameWithType: byte[]
+  fullName: byte[]
+  nameWithType.vb: Byte()
+  fullName.vb: Byte()
+  name.vb: Byte()
+  spec.csharp:
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: '['
+  - name: ']'
+  spec.vb:
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: (
+  - name: )
+- uid: KernSmith.Output.BmFontResult.FntText*
+  commentId: Overload:KernSmith.Output.BmFontResult.FntText
+  href: KernSmith.Output.BmFontResult.html#KernSmith_Output_BmFontResult_FntText
+  name: FntText
+  nameWithType: BmFontResult.FntText
+  fullName: KernSmith.Output.BmFontResult.FntText
+- uid: KernSmith.Output.BmFontResult.FntXml*
+  commentId: Overload:KernSmith.Output.BmFontResult.FntXml
+  href: KernSmith.Output.BmFontResult.html#KernSmith_Output_BmFontResult_FntXml
+  name: FntXml
+  nameWithType: BmFontResult.FntXml
+  fullName: KernSmith.Output.BmFontResult.FntXml
+- uid: KernSmith.Output.BmFontResult.FntBinary*
+  commentId: Overload:KernSmith.Output.BmFontResult.FntBinary
+  href: KernSmith.Output.BmFontResult.html#KernSmith_Output_BmFontResult_FntBinary
+  name: FntBinary
+  nameWithType: BmFontResult.FntBinary
+  fullName: KernSmith.Output.BmFontResult.FntBinary
+- uid: KernSmith.Output.BmFontResult.GetPngData*
+  commentId: Overload:KernSmith.Output.BmFontResult.GetPngData
+  href: KernSmith.Output.BmFontResult.html#KernSmith_Output_BmFontResult_GetPngData
+  name: GetPngData
+  nameWithType: BmFontResult.GetPngData
+  fullName: KernSmith.Output.BmFontResult.GetPngData
+- uid: System.Byte[][]
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.byte
+  name: byte[][]
+  nameWithType: byte[][]
+  fullName: byte[][]
+  nameWithType.vb: Byte()()
+  fullName.vb: Byte()()
+  name.vb: Byte()()
+  spec.csharp:
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: '['
+  - name: ']'
+  - name: '['
+  - name: ']'
+  spec.vb:
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: (
+  - name: )
+  - name: (
+  - name: )
+- uid: System.Int32
+  commentId: T:System.Int32
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int
+  nameWithType: int
+  fullName: int
+  nameWithType.vb: Integer
+  fullName.vb: Integer
+  name.vb: Integer
+- uid: KernSmith.Output.BmFontResult.GetTgaData*
+  commentId: Overload:KernSmith.Output.BmFontResult.GetTgaData
+  href: KernSmith.Output.BmFontResult.html#KernSmith_Output_BmFontResult_GetTgaData
+  name: GetTgaData
+  nameWithType: BmFontResult.GetTgaData
+  fullName: KernSmith.Output.BmFontResult.GetTgaData
+- uid: KernSmith.Output.BmFontResult.GetDdsData*
+  commentId: Overload:KernSmith.Output.BmFontResult.GetDdsData
+  href: KernSmith.Output.BmFontResult.html#KernSmith_Output_BmFontResult_GetDdsData
+  name: GetDdsData
+  nameWithType: BmFontResult.GetDdsData
+  fullName: KernSmith.Output.BmFontResult.GetDdsData
+- uid: System.InvalidOperationException
+  commentId: T:System.InvalidOperationException
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.invalidoperationexception
+  name: InvalidOperationException
+  nameWithType: InvalidOperationException
+  fullName: System.InvalidOperationException
+- uid: KernSmith.Output.BmFontResult.ToBmfc*
+  commentId: Overload:KernSmith.Output.BmFontResult.ToBmfc
+  href: KernSmith.Output.BmFontResult.html#KernSmith_Output_BmFontResult_ToBmfc
+  name: ToBmfc
+  nameWithType: BmFontResult.ToBmfc
+  fullName: KernSmith.Output.BmFontResult.ToBmfc
+- uid: KernSmith.Output.BmFontResult.ToFile*
+  commentId: Overload:KernSmith.Output.BmFontResult.ToFile
+  href: KernSmith.Output.BmFontResult.html#KernSmith_Output_BmFontResult_ToFile_System_String_KernSmith_OutputFormat_
+  name: ToFile
+  nameWithType: BmFontResult.ToFile
+  fullName: KernSmith.Output.BmFontResult.ToFile
+- uid: KernSmith.OutputFormat
+  commentId: T:KernSmith.OutputFormat
+  parent: KernSmith
+  href: KernSmith.OutputFormat.html
+  name: OutputFormat
+  nameWithType: OutputFormat
+  fullName: KernSmith.OutputFormat

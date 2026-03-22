@@ -1,0 +1,486 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.Output.Model.PageEntry
+  commentId: T:KernSmith.Output.Model.PageEntry
+  id: PageEntry
+  parent: KernSmith.Output.Model
+  children:
+  - KernSmith.Output.Model.PageEntry.#ctor(System.Int32,System.String)
+  - KernSmith.Output.Model.PageEntry.File
+  - KernSmith.Output.Model.PageEntry.Id
+  langs:
+  - csharp
+  - vb
+  name: PageEntry
+  nameWithType: PageEntry
+  fullName: KernSmith.Output.Model.PageEntry
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/PageEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: PageEntry
+    path: src/KernSmith/Output/Model/PageEntry.cs
+    startLine: 5
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: BMFont page entry — maps a page id to an atlas image filename.
+  example: []
+  syntax:
+    content: 'public sealed record PageEntry : IEquatable<PageEntry>'
+    content.vb: Public NotInheritable Class PageEntry Implements IEquatable(Of PageEntry)
+  inheritance:
+  - System.Object
+  implements:
+  - System.IEquatable{KernSmith.Output.Model.PageEntry}
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.Output.Model.PageEntry.#ctor(System.Int32,System.String)
+  commentId: M:KernSmith.Output.Model.PageEntry.#ctor(System.Int32,System.String)
+  id: '#ctor(System.Int32,System.String)'
+  parent: KernSmith.Output.Model.PageEntry
+  langs:
+  - csharp
+  - vb
+  name: PageEntry(int, string)
+  nameWithType: PageEntry.PageEntry(int, string)
+  fullName: KernSmith.Output.Model.PageEntry.PageEntry(int, string)
+  type: Constructor
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/PageEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: .ctor
+    path: src/KernSmith/Output/Model/PageEntry.cs
+    startLine: 5
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  summary: BMFont page entry — maps a page id to an atlas image filename.
+  example: []
+  syntax:
+    content: public PageEntry(int Id, string File)
+    parameters:
+    - id: Id
+      type: System.Int32
+    - id: File
+      type: System.String
+    content.vb: Public Sub New(Id As Integer, File As String)
+  overload: KernSmith.Output.Model.PageEntry.#ctor*
+  nameWithType.vb: PageEntry.New(Integer, String)
+  fullName.vb: KernSmith.Output.Model.PageEntry.New(Integer, String)
+  name.vb: New(Integer, String)
+- uid: KernSmith.Output.Model.PageEntry.Id
+  commentId: P:KernSmith.Output.Model.PageEntry.Id
+  id: Id
+  parent: KernSmith.Output.Model.PageEntry
+  langs:
+  - csharp
+  - vb
+  name: Id
+  nameWithType: PageEntry.Id
+  fullName: KernSmith.Output.Model.PageEntry.Id
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/PageEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Id
+    path: src/KernSmith/Output/Model/PageEntry.cs
+    startLine: 6
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  syntax:
+    content: public int Id { get; init; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public Property Id As Integer
+  overload: KernSmith.Output.Model.PageEntry.Id*
+- uid: KernSmith.Output.Model.PageEntry.File
+  commentId: P:KernSmith.Output.Model.PageEntry.File
+  id: File
+  parent: KernSmith.Output.Model.PageEntry
+  langs:
+  - csharp
+  - vb
+  name: File
+  nameWithType: PageEntry.File
+  fullName: KernSmith.Output.Model.PageEntry.File
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Output/Model/PageEntry.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: File
+    path: src/KernSmith/Output/Model/PageEntry.cs
+    startLine: 7
+  assemblies:
+  - KernSmith
+  namespace: KernSmith.Output.Model
+  syntax:
+    content: public string File { get; init; }
+    parameters: []
+    return:
+      type: System.String
+    content.vb: Public Property File As String
+  overload: KernSmith.Output.Model.PageEntry.File*
+references:
+- uid: KernSmith.Output.Model
+  commentId: N:KernSmith.Output.Model
+  href: KernSmith.html
+  name: KernSmith.Output.Model
+  nameWithType: KernSmith.Output.Model
+  fullName: KernSmith.Output.Model
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  - name: .
+  - uid: KernSmith.Output.Model
+    name: Model
+    href: KernSmith.Output.Model.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  - name: .
+  - uid: KernSmith.Output.Model
+    name: Model
+    href: KernSmith.Output.Model.html
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: System.IEquatable{KernSmith.Output.Model.PageEntry}
+  commentId: T:System.IEquatable{KernSmith.Output.Model.PageEntry}
+  parent: System
+  definition: System.IEquatable`1
+  href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  name: IEquatable<PageEntry>
+  nameWithType: IEquatable<PageEntry>
+  fullName: System.IEquatable<KernSmith.Output.Model.PageEntry>
+  nameWithType.vb: IEquatable(Of PageEntry)
+  fullName.vb: System.IEquatable(Of KernSmith.Output.Model.PageEntry)
+  name.vb: IEquatable(Of PageEntry)
+  spec.csharp:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: <
+  - uid: KernSmith.Output.Model.PageEntry
+    name: PageEntry
+    href: KernSmith.Output.Model.PageEntry.html
+  - name: '>'
+  spec.vb:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: KernSmith.Output.Model.PageEntry
+    name: PageEntry
+    href: KernSmith.Output.Model.PageEntry.html
+  - name: )
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: System.IEquatable`1
+  commentId: T:System.IEquatable`1
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  name: IEquatable<T>
+  nameWithType: IEquatable<T>
+  fullName: System.IEquatable<T>
+  nameWithType.vb: IEquatable(Of T)
+  fullName.vb: System.IEquatable(Of T)
+  name.vb: IEquatable(Of T)
+  spec.csharp:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: <
+  - name: T
+  - name: '>'
+  spec.vb:
+  - uid: System.IEquatable`1
+    name: IEquatable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.iequatable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - name: T
+  - name: )
+- uid: KernSmith.Output.Model.PageEntry.#ctor*
+  commentId: Overload:KernSmith.Output.Model.PageEntry.#ctor
+  href: KernSmith.Output.Model.PageEntry.html#KernSmith_Output_Model_PageEntry__ctor_System_Int32_System_String_
+  name: PageEntry
+  nameWithType: PageEntry.PageEntry
+  fullName: KernSmith.Output.Model.PageEntry.PageEntry
+  nameWithType.vb: PageEntry.New
+  fullName.vb: KernSmith.Output.Model.PageEntry.New
+  name.vb: New
+- uid: System.Int32
+  commentId: T:System.Int32
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int
+  nameWithType: int
+  fullName: int
+  nameWithType.vb: Integer
+  fullName.vb: Integer
+  name.vb: Integer
+- uid: System.String
+  commentId: T:System.String
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.string
+  name: string
+  nameWithType: string
+  fullName: string
+  nameWithType.vb: String
+  fullName.vb: String
+  name.vb: String
+- uid: KernSmith.Output.Model.PageEntry.Id*
+  commentId: Overload:KernSmith.Output.Model.PageEntry.Id
+  href: KernSmith.Output.Model.PageEntry.html#KernSmith_Output_Model_PageEntry_Id
+  name: Id
+  nameWithType: PageEntry.Id
+  fullName: KernSmith.Output.Model.PageEntry.Id
+- uid: KernSmith.Output.Model.PageEntry.File*
+  commentId: Overload:KernSmith.Output.Model.PageEntry.File
+  href: KernSmith.Output.Model.PageEntry.html#KernSmith_Output_Model_PageEntry_File
+  name: File
+  nameWithType: PageEntry.File
+  fullName: KernSmith.Output.Model.PageEntry.File

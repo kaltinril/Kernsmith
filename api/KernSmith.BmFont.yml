@@ -1,0 +1,1373 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.BmFont
+  commentId: T:KernSmith.BmFont
+  id: BmFont
+  parent: KernSmith
+  children:
+  - KernSmith.BmFont.Builder
+  - KernSmith.BmFont.FromConfig(KernSmith.BmfcConfig)
+  - KernSmith.BmFont.FromConfig(System.String)
+  - KernSmith.BmFont.Generate(System.Byte[],KernSmith.FontGeneratorOptions)
+  - KernSmith.BmFont.Generate(System.Byte[],System.Int32)
+  - KernSmith.BmFont.Generate(System.String,KernSmith.FontGeneratorOptions)
+  - KernSmith.BmFont.Generate(System.String,System.Int32)
+  - KernSmith.BmFont.GenerateBatch(System.Collections.Generic.IReadOnlyList{KernSmith.BatchJob},KernSmith.BatchOptions)
+  - KernSmith.BmFont.GenerateFromSystem(System.String,KernSmith.FontGeneratorOptions)
+  - KernSmith.BmFont.GenerateFromSystem(System.String,System.Int32)
+  - KernSmith.BmFont.Load(System.String)
+  - KernSmith.BmFont.LoadModel(System.Byte[])
+  - KernSmith.BmFont.LoadModel(System.String)
+  - KernSmith.BmFont.QueryAtlasSize(System.Byte[],KernSmith.FontGeneratorOptions)
+  - KernSmith.BmFont.QueryAtlasSize(System.String,KernSmith.FontGeneratorOptions)
+  - KernSmith.BmFont.QueryAtlasSizeFromSystem(System.String,KernSmith.FontGeneratorOptions)
+  - KernSmith.BmFont.ReadFontInfo(System.Byte[],System.Int32)
+  - KernSmith.BmFont.ReadFontInfo(System.String,System.Int32)
+  langs:
+  - csharp
+  - vb
+  name: BmFont
+  nameWithType: BmFont
+  fullName: KernSmith.BmFont
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: BmFont
+    path: src/KernSmith/BmFont.cs
+    startLine: 11
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: The main API for generating and loading BMFont bitmap fonts.
+  example: []
+  syntax:
+    content: public static class BmFont
+    content.vb: Public Module BmFont
+  inheritance:
+  - System.Object
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.MemberwiseClone
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.BmFont.Generate(System.Byte[],KernSmith.FontGeneratorOptions)
+  commentId: M:KernSmith.BmFont.Generate(System.Byte[],KernSmith.FontGeneratorOptions)
+  id: Generate(System.Byte[],KernSmith.FontGeneratorOptions)
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: Generate(byte[], FontGeneratorOptions?)
+  nameWithType: BmFont.Generate(byte[], FontGeneratorOptions?)
+  fullName: KernSmith.BmFont.Generate(byte[], KernSmith.FontGeneratorOptions?)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Generate
+    path: src/KernSmith/BmFont.cs
+    startLine: 22
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Generates a BMFont from raw font bytes.
+  example: []
+  syntax:
+    content: public static BmFontResult Generate(byte[] fontData, FontGeneratorOptions? options = null)
+    parameters:
+    - id: fontData
+      type: System.Byte[]
+      description: Raw TTF/OTF/WOFF file bytes.
+    - id: options
+      type: KernSmith.FontGeneratorOptions
+      description: Generation options, or null for defaults.
+    return:
+      type: KernSmith.Output.BmFontResult
+      description: The generated bitmap font result containing the .fnt descriptor and atlas pages.
+    content.vb: Public Shared Function Generate(fontData As Byte(), options As FontGeneratorOptions = Nothing) As BmFontResult
+  overload: KernSmith.BmFont.Generate*
+  nameWithType.vb: BmFont.Generate(Byte(), FontGeneratorOptions)
+  fullName.vb: KernSmith.BmFont.Generate(Byte(), KernSmith.FontGeneratorOptions)
+  name.vb: Generate(Byte(), FontGeneratorOptions)
+- uid: KernSmith.BmFont.Generate(System.Byte[],System.Int32)
+  commentId: M:KernSmith.BmFont.Generate(System.Byte[],System.Int32)
+  id: Generate(System.Byte[],System.Int32)
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: Generate(byte[], int)
+  nameWithType: BmFont.Generate(byte[], int)
+  fullName: KernSmith.BmFont.Generate(byte[], int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Generate
+    path: src/KernSmith/BmFont.cs
+    startLine: 427
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Generates a BMFont from raw font bytes at the given size.
+  example: []
+  syntax:
+    content: public static BmFontResult Generate(byte[] fontData, int size)
+    parameters:
+    - id: fontData
+      type: System.Byte[]
+      description: Raw TTF/OTF/WOFF file bytes.
+    - id: size
+      type: System.Int32
+      description: Font size in pixels.
+    return:
+      type: KernSmith.Output.BmFontResult
+      description: The generated bitmap font result containing the .fnt descriptor and atlas pages.
+    content.vb: Public Shared Function Generate(fontData As Byte(), size As Integer) As BmFontResult
+  overload: KernSmith.BmFont.Generate*
+  nameWithType.vb: BmFont.Generate(Byte(), Integer)
+  fullName.vb: KernSmith.BmFont.Generate(Byte(), Integer)
+  name.vb: Generate(Byte(), Integer)
+- uid: KernSmith.BmFont.Generate(System.String,KernSmith.FontGeneratorOptions)
+  commentId: M:KernSmith.BmFont.Generate(System.String,KernSmith.FontGeneratorOptions)
+  id: Generate(System.String,KernSmith.FontGeneratorOptions)
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: Generate(string, FontGeneratorOptions?)
+  nameWithType: BmFont.Generate(string, FontGeneratorOptions?)
+  fullName: KernSmith.BmFont.Generate(string, KernSmith.FontGeneratorOptions?)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Generate
+    path: src/KernSmith/BmFont.cs
+    startLine: 434
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Generates a BMFont from a font file on disk.
+  example: []
+  syntax:
+    content: public static BmFontResult Generate(string fontPath, FontGeneratorOptions? options = null)
+    parameters:
+    - id: fontPath
+      type: System.String
+      description: Path to a TTF/OTF/WOFF file.
+    - id: options
+      type: KernSmith.FontGeneratorOptions
+      description: Generation options, or null for defaults.
+    return:
+      type: KernSmith.Output.BmFontResult
+      description: The generated bitmap font result containing the .fnt descriptor and atlas pages.
+    content.vb: Public Shared Function Generate(fontPath As String, options As FontGeneratorOptions = Nothing) As BmFontResult
+  overload: KernSmith.BmFont.Generate*
+  nameWithType.vb: BmFont.Generate(String, FontGeneratorOptions)
+  fullName.vb: KernSmith.BmFont.Generate(String, KernSmith.FontGeneratorOptions)
+  name.vb: Generate(String, FontGeneratorOptions)
+- uid: KernSmith.BmFont.Generate(System.String,System.Int32)
+  commentId: M:KernSmith.BmFont.Generate(System.String,System.Int32)
+  id: Generate(System.String,System.Int32)
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: Generate(string, int)
+  nameWithType: BmFont.Generate(string, int)
+  fullName: KernSmith.BmFont.Generate(string, int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Generate
+    path: src/KernSmith/BmFont.cs
+    startLine: 444
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Generates a BMFont from a font file on disk at the given size.
+  example: []
+  syntax:
+    content: public static BmFontResult Generate(string fontPath, int size)
+    parameters:
+    - id: fontPath
+      type: System.String
+      description: Path to a TTF/OTF/WOFF file.
+    - id: size
+      type: System.Int32
+      description: Font size in pixels.
+    return:
+      type: KernSmith.Output.BmFontResult
+      description: The generated bitmap font result containing the .fnt descriptor and atlas pages.
+    content.vb: Public Shared Function Generate(fontPath As String, size As Integer) As BmFontResult
+  overload: KernSmith.BmFont.Generate*
+  nameWithType.vb: BmFont.Generate(String, Integer)
+  fullName.vb: KernSmith.BmFont.Generate(String, Integer)
+  name.vb: Generate(String, Integer)
+- uid: KernSmith.BmFont.GenerateFromSystem(System.String,KernSmith.FontGeneratorOptions)
+  commentId: M:KernSmith.BmFont.GenerateFromSystem(System.String,KernSmith.FontGeneratorOptions)
+  id: GenerateFromSystem(System.String,KernSmith.FontGeneratorOptions)
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: GenerateFromSystem(string, FontGeneratorOptions?)
+  nameWithType: BmFont.GenerateFromSystem(string, FontGeneratorOptions?)
+  fullName: KernSmith.BmFont.GenerateFromSystem(string, KernSmith.FontGeneratorOptions?)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GenerateFromSystem
+    path: src/KernSmith/BmFont.cs
+    startLine: 455
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Generates a BMFont from a system-installed font, looked up by family name (e.g., "Arial").
+  example: []
+  syntax:
+    content: public static BmFontResult GenerateFromSystem(string fontFamily, FontGeneratorOptions? options = null)
+    parameters:
+    - id: fontFamily
+      type: System.String
+      description: Font family name, like "Arial" or "Times New Roman".
+    - id: options
+      type: KernSmith.FontGeneratorOptions
+      description: Generation options, or null for defaults.
+    return:
+      type: KernSmith.Output.BmFontResult
+      description: The generated bitmap font result containing the .fnt descriptor and atlas pages.
+    content.vb: Public Shared Function GenerateFromSystem(fontFamily As String, options As FontGeneratorOptions = Nothing) As BmFontResult
+  overload: KernSmith.BmFont.GenerateFromSystem*
+  exceptions:
+  - type: KernSmith.FontParsingException
+    commentId: T:KernSmith.FontParsingException
+    description: Thrown if the font family is not installed.
+  nameWithType.vb: BmFont.GenerateFromSystem(String, FontGeneratorOptions)
+  fullName.vb: KernSmith.BmFont.GenerateFromSystem(String, KernSmith.FontGeneratorOptions)
+  name.vb: GenerateFromSystem(String, FontGeneratorOptions)
+- uid: KernSmith.BmFont.GenerateFromSystem(System.String,System.Int32)
+  commentId: M:KernSmith.BmFont.GenerateFromSystem(System.String,System.Int32)
+  id: GenerateFromSystem(System.String,System.Int32)
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: GenerateFromSystem(string, int)
+  nameWithType: BmFont.GenerateFromSystem(string, int)
+  fullName: KernSmith.BmFont.GenerateFromSystem(string, int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GenerateFromSystem
+    path: src/KernSmith/BmFont.cs
+    startLine: 503
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Generates a BMFont from a system-installed font at the given size.
+  example: []
+  syntax:
+    content: public static BmFontResult GenerateFromSystem(string fontFamily, int size)
+    parameters:
+    - id: fontFamily
+      type: System.String
+      description: Font family name, like "Arial".
+    - id: size
+      type: System.Int32
+      description: Font size in pixels.
+    return:
+      type: KernSmith.Output.BmFontResult
+      description: The generated bitmap font result containing the .fnt descriptor and atlas pages.
+    content.vb: Public Shared Function GenerateFromSystem(fontFamily As String, size As Integer) As BmFontResult
+  overload: KernSmith.BmFont.GenerateFromSystem*
+  nameWithType.vb: BmFont.GenerateFromSystem(String, Integer)
+  fullName.vb: KernSmith.BmFont.GenerateFromSystem(String, Integer)
+  name.vb: GenerateFromSystem(String, Integer)
+- uid: KernSmith.BmFont.QueryAtlasSize(System.Byte[],KernSmith.FontGeneratorOptions)
+  commentId: M:KernSmith.BmFont.QueryAtlasSize(System.Byte[],KernSmith.FontGeneratorOptions)
+  id: QueryAtlasSize(System.Byte[],KernSmith.FontGeneratorOptions)
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: QueryAtlasSize(byte[], FontGeneratorOptions?)
+  nameWithType: BmFont.QueryAtlasSize(byte[], FontGeneratorOptions?)
+  fullName: KernSmith.BmFont.QueryAtlasSize(byte[], KernSmith.FontGeneratorOptions?)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: QueryAtlasSize
+    path: src/KernSmith/BmFont.cs
+    startLine: 513
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Queries the estimated atlas size from raw font bytes without rasterizing.
+  example: []
+  syntax:
+    content: public static AtlasSizeInfo QueryAtlasSize(byte[] fontData, FontGeneratorOptions? options = null)
+    parameters:
+    - id: fontData
+      type: System.Byte[]
+      description: Raw TTF/OTF/WOFF file bytes.
+    - id: options
+      type: KernSmith.FontGeneratorOptions
+      description: Generation options, or null for defaults.
+    return:
+      type: KernSmith.Output.AtlasSizeInfo
+      description: Estimated atlas dimensions and page count.
+    content.vb: Public Shared Function QueryAtlasSize(fontData As Byte(), options As FontGeneratorOptions = Nothing) As AtlasSizeInfo
+  overload: KernSmith.BmFont.QueryAtlasSize*
+  nameWithType.vb: BmFont.QueryAtlasSize(Byte(), FontGeneratorOptions)
+  fullName.vb: KernSmith.BmFont.QueryAtlasSize(Byte(), KernSmith.FontGeneratorOptions)
+  name.vb: QueryAtlasSize(Byte(), FontGeneratorOptions)
+- uid: KernSmith.BmFont.QueryAtlasSize(System.String,KernSmith.FontGeneratorOptions)
+  commentId: M:KernSmith.BmFont.QueryAtlasSize(System.String,KernSmith.FontGeneratorOptions)
+  id: QueryAtlasSize(System.String,KernSmith.FontGeneratorOptions)
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: QueryAtlasSize(string, FontGeneratorOptions?)
+  nameWithType: BmFont.QueryAtlasSize(string, FontGeneratorOptions?)
+  fullName: KernSmith.BmFont.QueryAtlasSize(string, KernSmith.FontGeneratorOptions?)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: QueryAtlasSize
+    path: src/KernSmith/BmFont.cs
+    startLine: 523
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Queries the estimated atlas size from a font file on disk without rasterizing.
+  example: []
+  syntax:
+    content: public static AtlasSizeInfo QueryAtlasSize(string fontPath, FontGeneratorOptions? options = null)
+    parameters:
+    - id: fontPath
+      type: System.String
+      description: Path to a TTF/OTF/WOFF file.
+    - id: options
+      type: KernSmith.FontGeneratorOptions
+      description: Generation options, or null for defaults.
+    return:
+      type: KernSmith.Output.AtlasSizeInfo
+      description: Estimated atlas dimensions and page count.
+    content.vb: Public Shared Function QueryAtlasSize(fontPath As String, options As FontGeneratorOptions = Nothing) As AtlasSizeInfo
+  overload: KernSmith.BmFont.QueryAtlasSize*
+  nameWithType.vb: BmFont.QueryAtlasSize(String, FontGeneratorOptions)
+  fullName.vb: KernSmith.BmFont.QueryAtlasSize(String, KernSmith.FontGeneratorOptions)
+  name.vb: QueryAtlasSize(String, FontGeneratorOptions)
+- uid: KernSmith.BmFont.QueryAtlasSizeFromSystem(System.String,KernSmith.FontGeneratorOptions)
+  commentId: M:KernSmith.BmFont.QueryAtlasSizeFromSystem(System.String,KernSmith.FontGeneratorOptions)
+  id: QueryAtlasSizeFromSystem(System.String,KernSmith.FontGeneratorOptions)
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: QueryAtlasSizeFromSystem(string, FontGeneratorOptions?)
+  nameWithType: BmFont.QueryAtlasSizeFromSystem(string, FontGeneratorOptions?)
+  fullName: KernSmith.BmFont.QueryAtlasSizeFromSystem(string, KernSmith.FontGeneratorOptions?)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: QueryAtlasSizeFromSystem
+    path: src/KernSmith/BmFont.cs
+    startLine: 533
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Queries the estimated atlas size from a system-installed font without rasterizing.
+  example: []
+  syntax:
+    content: public static AtlasSizeInfo QueryAtlasSizeFromSystem(string fontFamily, FontGeneratorOptions? options = null)
+    parameters:
+    - id: fontFamily
+      type: System.String
+      description: Font family name, like "Arial".
+    - id: options
+      type: KernSmith.FontGeneratorOptions
+      description: Generation options, or null for defaults.
+    return:
+      type: KernSmith.Output.AtlasSizeInfo
+      description: Estimated atlas dimensions and page count.
+    content.vb: Public Shared Function QueryAtlasSizeFromSystem(fontFamily As String, options As FontGeneratorOptions = Nothing) As AtlasSizeInfo
+  overload: KernSmith.BmFont.QueryAtlasSizeFromSystem*
+  nameWithType.vb: BmFont.QueryAtlasSizeFromSystem(String, FontGeneratorOptions)
+  fullName.vb: KernSmith.BmFont.QueryAtlasSizeFromSystem(String, KernSmith.FontGeneratorOptions)
+  name.vb: QueryAtlasSizeFromSystem(String, FontGeneratorOptions)
+- uid: KernSmith.BmFont.ReadFontInfo(System.Byte[],System.Int32)
+  commentId: M:KernSmith.BmFont.ReadFontInfo(System.Byte[],System.Int32)
+  id: ReadFontInfo(System.Byte[],System.Int32)
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: ReadFontInfo(byte[], int)
+  nameWithType: BmFont.ReadFontInfo(byte[], int)
+  fullName: KernSmith.BmFont.ReadFontInfo(byte[], int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ReadFontInfo
+    path: src/KernSmith/BmFont.cs
+    startLine: 545
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Reads font metadata from raw font file bytes without generating a bitmap font.
+  example: []
+  syntax:
+    content: public static FontInfo ReadFontInfo(byte[] fontData, int faceIndex = 0)
+    parameters:
+    - id: fontData
+      type: System.Byte[]
+      description: Raw TTF/OTF/WOFF font file bytes.
+    - id: faceIndex
+      type: System.Int32
+      description: Face index for .ttc font collections (default 0).
+    return:
+      type: KernSmith.Font.Models.FontInfo
+      description: Font metadata including family name, metrics, available codepoints, and kerning pairs.
+    content.vb: Public Shared Function ReadFontInfo(fontData As Byte(), faceIndex As Integer = 0) As FontInfo
+  overload: KernSmith.BmFont.ReadFontInfo*
+  nameWithType.vb: BmFont.ReadFontInfo(Byte(), Integer)
+  fullName.vb: KernSmith.BmFont.ReadFontInfo(Byte(), Integer)
+  name.vb: ReadFontInfo(Byte(), Integer)
+- uid: KernSmith.BmFont.ReadFontInfo(System.String,System.Int32)
+  commentId: M:KernSmith.BmFont.ReadFontInfo(System.String,System.Int32)
+  id: ReadFontInfo(System.String,System.Int32)
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: ReadFontInfo(string, int)
+  nameWithType: BmFont.ReadFontInfo(string, int)
+  fullName: KernSmith.BmFont.ReadFontInfo(string, int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: ReadFontInfo
+    path: src/KernSmith/BmFont.cs
+    startLine: 561
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Reads font metadata from a font file on disk without generating a bitmap font.
+  example: []
+  syntax:
+    content: public static FontInfo ReadFontInfo(string fontPath, int faceIndex = 0)
+    parameters:
+    - id: fontPath
+      type: System.String
+      description: Path to a TTF/OTF/WOFF font file.
+    - id: faceIndex
+      type: System.Int32
+      description: Face index for .ttc font collections (default 0).
+    return:
+      type: KernSmith.Font.Models.FontInfo
+      description: Font metadata including family name, metrics, available codepoints, and kerning pairs.
+    content.vb: Public Shared Function ReadFontInfo(fontPath As String, faceIndex As Integer = 0) As FontInfo
+  overload: KernSmith.BmFont.ReadFontInfo*
+  nameWithType.vb: BmFont.ReadFontInfo(String, Integer)
+  fullName.vb: KernSmith.BmFont.ReadFontInfo(String, Integer)
+  name.vb: ReadFontInfo(String, Integer)
+- uid: KernSmith.BmFont.FromConfig(System.String)
+  commentId: M:KernSmith.BmFont.FromConfig(System.String)
+  id: FromConfig(System.String)
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: FromConfig(string)
+  nameWithType: BmFont.FromConfig(string)
+  fullName: KernSmith.BmFont.FromConfig(string)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FromConfig
+    path: src/KernSmith/BmFont.cs
+    startLine: 686
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Generates a bitmap font from a .bmfc config file.
+  example: []
+  syntax:
+    content: public static BmFontResult FromConfig(string bmfcPath)
+    parameters:
+    - id: bmfcPath
+      type: System.String
+      description: Path to the .bmfc configuration file.
+    return:
+      type: KernSmith.Output.BmFontResult
+      description: The generated bitmap font result.
+    content.vb: Public Shared Function FromConfig(bmfcPath As String) As BmFontResult
+  overload: KernSmith.BmFont.FromConfig*
+  nameWithType.vb: BmFont.FromConfig(String)
+  fullName.vb: KernSmith.BmFont.FromConfig(String)
+  name.vb: FromConfig(String)
+- uid: KernSmith.BmFont.FromConfig(KernSmith.BmfcConfig)
+  commentId: M:KernSmith.BmFont.FromConfig(KernSmith.BmfcConfig)
+  id: FromConfig(KernSmith.BmfcConfig)
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: FromConfig(BmfcConfig)
+  nameWithType: BmFont.FromConfig(BmfcConfig)
+  fullName: KernSmith.BmFont.FromConfig(KernSmith.BmfcConfig)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FromConfig
+    path: src/KernSmith/BmFont.cs
+    startLine: 696
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Generates a bitmap font from a parsed .bmfc config.
+  example: []
+  syntax:
+    content: public static BmFontResult FromConfig(BmfcConfig config)
+    parameters:
+    - id: config
+      type: KernSmith.BmfcConfig
+      description: The parsed .bmfc configuration.
+    return:
+      type: KernSmith.Output.BmFontResult
+      description: The generated bitmap font result.
+    content.vb: Public Shared Function FromConfig(config As BmfcConfig) As BmFontResult
+  overload: KernSmith.BmFont.FromConfig*
+- uid: KernSmith.BmFont.Load(System.String)
+  commentId: M:KernSmith.BmFont.Load(System.String)
+  id: Load(System.String)
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: Load(string)
+  nameWithType: BmFont.Load(string)
+  fullName: KernSmith.BmFont.Load(string)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Load
+    path: src/KernSmith/BmFont.cs
+    startLine: 726
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: >-
+    Loads a BMFont from a .fnt file, auto-detecting text/XML/binary format.
+
+    Also loads atlas images (.png) from the same directory.
+  example: []
+  syntax:
+    content: public static BmFontResult Load(string fntPath)
+    parameters:
+    - id: fntPath
+      type: System.String
+      description: Path to the .fnt file.
+    return:
+      type: KernSmith.Output.BmFontResult
+      description: The loaded bitmap font result with descriptor model and atlas pages.
+    content.vb: Public Shared Function Load(fntPath As String) As BmFontResult
+  overload: KernSmith.BmFont.Load*
+  nameWithType.vb: BmFont.Load(String)
+  fullName.vb: KernSmith.BmFont.Load(String)
+  name.vb: Load(String)
+- uid: KernSmith.BmFont.LoadModel(System.Byte[])
+  commentId: M:KernSmith.BmFont.LoadModel(System.Byte[])
+  id: LoadModel(System.Byte[])
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: LoadModel(byte[])
+  nameWithType: BmFont.LoadModel(byte[])
+  fullName: KernSmith.BmFont.LoadModel(byte[])
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: LoadModel
+    path: src/KernSmith/BmFont.cs
+    startLine: 758
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Loads a BMFont model from raw .fnt bytes. Does not load atlas images.
+  example: []
+  syntax:
+    content: public static BmFontModel LoadModel(byte[] fntData)
+    parameters:
+    - id: fntData
+      type: System.Byte[]
+      description: Raw .fnt file bytes.
+    return:
+      type: KernSmith.Output.Model.BmFontModel
+      description: The parsed BMFont descriptor model.
+    content.vb: Public Shared Function LoadModel(fntData As Byte()) As BmFontModel
+  overload: KernSmith.BmFont.LoadModel*
+  nameWithType.vb: BmFont.LoadModel(Byte())
+  fullName.vb: KernSmith.BmFont.LoadModel(Byte())
+  name.vb: LoadModel(Byte())
+- uid: KernSmith.BmFont.LoadModel(System.String)
+  commentId: M:KernSmith.BmFont.LoadModel(System.String)
+  id: LoadModel(System.String)
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: LoadModel(string)
+  nameWithType: BmFont.LoadModel(string)
+  fullName: KernSmith.BmFont.LoadModel(string)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: LoadModel
+    path: src/KernSmith/BmFont.cs
+    startLine: 767
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Loads a BMFont model from a text-format .fnt string. Does not load atlas images.
+  example: []
+  syntax:
+    content: public static BmFontModel LoadModel(string fntContent)
+    parameters:
+    - id: fntContent
+      type: System.String
+      description: Text-format .fnt content.
+    return:
+      type: KernSmith.Output.Model.BmFontModel
+      description: The parsed BMFont descriptor model.
+    content.vb: Public Shared Function LoadModel(fntContent As String) As BmFontModel
+  overload: KernSmith.BmFont.LoadModel*
+  nameWithType.vb: BmFont.LoadModel(String)
+  fullName.vb: KernSmith.BmFont.LoadModel(String)
+  name.vb: LoadModel(String)
+- uid: KernSmith.BmFont.Builder
+  commentId: M:KernSmith.BmFont.Builder
+  id: Builder
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: Builder()
+  nameWithType: BmFont.Builder()
+  fullName: KernSmith.BmFont.Builder()
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Builder
+    path: src/KernSmith/BmFont.cs
+    startLine: 775
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Creates a fluent builder for BMFont generation.
+  example: []
+  syntax:
+    content: public static BmFontBuilder Builder()
+    return:
+      type: KernSmith.BmFontBuilder
+      description: A new fluent builder instance.
+    content.vb: Public Shared Function Builder() As BmFontBuilder
+  overload: KernSmith.BmFont.Builder*
+- uid: KernSmith.BmFont.GenerateBatch(System.Collections.Generic.IReadOnlyList{KernSmith.BatchJob},KernSmith.BatchOptions)
+  commentId: M:KernSmith.BmFont.GenerateBatch(System.Collections.Generic.IReadOnlyList{KernSmith.BatchJob},KernSmith.BatchOptions)
+  id: GenerateBatch(System.Collections.Generic.IReadOnlyList{KernSmith.BatchJob},KernSmith.BatchOptions)
+  parent: KernSmith.BmFont
+  langs:
+  - csharp
+  - vb
+  name: GenerateBatch(IReadOnlyList<BatchJob>, BatchOptions?)
+  nameWithType: BmFont.GenerateBatch(IReadOnlyList<BatchJob>, BatchOptions?)
+  fullName: KernSmith.BmFont.GenerateBatch(System.Collections.Generic.IReadOnlyList<KernSmith.BatchJob>, KernSmith.BatchOptions?)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFont.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: GenerateBatch
+    path: src/KernSmith/BmFont.cs
+    startLine: 1150
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Generates multiple BMFonts in batch, with optional parallelism and font caching.
+  example: []
+  syntax:
+    content: public static BatchResult GenerateBatch(IReadOnlyList<BatchJob> jobs, BatchOptions? options = null)
+    parameters:
+    - id: jobs
+      type: System.Collections.Generic.IReadOnlyList{KernSmith.BatchJob}
+      description: The batch jobs to run.
+    - id: options
+      type: KernSmith.BatchOptions
+      description: Batch options, or null for sequential execution.
+    return:
+      type: KernSmith.Output.BatchResult
+      description: Batch results with per-job outcomes and timing.
+    content.vb: Public Shared Function GenerateBatch(jobs As IReadOnlyList(Of BatchJob), options As BatchOptions = Nothing) As BatchResult
+  overload: KernSmith.BmFont.GenerateBatch*
+  nameWithType.vb: BmFont.GenerateBatch(IReadOnlyList(Of BatchJob), BatchOptions)
+  fullName.vb: KernSmith.BmFont.GenerateBatch(System.Collections.Generic.IReadOnlyList(Of KernSmith.BatchJob), KernSmith.BatchOptions)
+  name.vb: GenerateBatch(IReadOnlyList(Of BatchJob), BatchOptions)
+references:
+- uid: KernSmith
+  commentId: N:KernSmith
+  href: KernSmith.html
+  name: KernSmith
+  nameWithType: KernSmith
+  fullName: KernSmith
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.MemberwiseClone
+  commentId: M:System.Object.MemberwiseClone
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.memberwiseclone
+  name: MemberwiseClone()
+  nameWithType: object.MemberwiseClone()
+  fullName: object.MemberwiseClone()
+  nameWithType.vb: Object.MemberwiseClone()
+  fullName.vb: Object.MemberwiseClone()
+  spec.csharp:
+  - uid: System.Object.MemberwiseClone
+    name: MemberwiseClone
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.memberwiseclone
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.MemberwiseClone
+    name: MemberwiseClone
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.memberwiseclone
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: KernSmith.BmFont.Generate*
+  commentId: Overload:KernSmith.BmFont.Generate
+  href: KernSmith.BmFont.html#KernSmith_BmFont_Generate_System_Byte___KernSmith_FontGeneratorOptions_
+  name: Generate
+  nameWithType: BmFont.Generate
+  fullName: KernSmith.BmFont.Generate
+- uid: System.Byte[]
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.byte
+  name: byte[]
+  nameWithType: byte[]
+  fullName: byte[]
+  nameWithType.vb: Byte()
+  fullName.vb: Byte()
+  name.vb: Byte()
+  spec.csharp:
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: '['
+  - name: ']'
+  spec.vb:
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: (
+  - name: )
+- uid: KernSmith.FontGeneratorOptions
+  commentId: T:KernSmith.FontGeneratorOptions
+  parent: KernSmith
+  href: KernSmith.FontGeneratorOptions.html
+  name: FontGeneratorOptions
+  nameWithType: FontGeneratorOptions
+  fullName: KernSmith.FontGeneratorOptions
+- uid: KernSmith.Output.BmFontResult
+  commentId: T:KernSmith.Output.BmFontResult
+  parent: KernSmith.Output
+  href: KernSmith.Output.BmFontResult.html
+  name: BmFontResult
+  nameWithType: BmFontResult
+  fullName: KernSmith.Output.BmFontResult
+- uid: KernSmith.Output
+  commentId: N:KernSmith.Output
+  href: KernSmith.html
+  name: KernSmith.Output
+  nameWithType: KernSmith.Output
+  fullName: KernSmith.Output
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+- uid: System.Int32
+  commentId: T:System.Int32
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int
+  nameWithType: int
+  fullName: int
+  nameWithType.vb: Integer
+  fullName.vb: Integer
+  name.vb: Integer
+- uid: System.String
+  commentId: T:System.String
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.string
+  name: string
+  nameWithType: string
+  fullName: string
+  nameWithType.vb: String
+  fullName.vb: String
+  name.vb: String
+- uid: KernSmith.FontParsingException
+  commentId: T:KernSmith.FontParsingException
+  href: KernSmith.FontParsingException.html
+  name: FontParsingException
+  nameWithType: FontParsingException
+  fullName: KernSmith.FontParsingException
+- uid: KernSmith.BmFont.GenerateFromSystem*
+  commentId: Overload:KernSmith.BmFont.GenerateFromSystem
+  href: KernSmith.BmFont.html#KernSmith_BmFont_GenerateFromSystem_System_String_KernSmith_FontGeneratorOptions_
+  name: GenerateFromSystem
+  nameWithType: BmFont.GenerateFromSystem
+  fullName: KernSmith.BmFont.GenerateFromSystem
+- uid: KernSmith.BmFont.QueryAtlasSize*
+  commentId: Overload:KernSmith.BmFont.QueryAtlasSize
+  href: KernSmith.BmFont.html#KernSmith_BmFont_QueryAtlasSize_System_Byte___KernSmith_FontGeneratorOptions_
+  name: QueryAtlasSize
+  nameWithType: BmFont.QueryAtlasSize
+  fullName: KernSmith.BmFont.QueryAtlasSize
+- uid: KernSmith.Output.AtlasSizeInfo
+  commentId: T:KernSmith.Output.AtlasSizeInfo
+  parent: KernSmith.Output
+  href: KernSmith.Output.AtlasSizeInfo.html
+  name: AtlasSizeInfo
+  nameWithType: AtlasSizeInfo
+  fullName: KernSmith.Output.AtlasSizeInfo
+- uid: KernSmith.BmFont.QueryAtlasSizeFromSystem*
+  commentId: Overload:KernSmith.BmFont.QueryAtlasSizeFromSystem
+  href: KernSmith.BmFont.html#KernSmith_BmFont_QueryAtlasSizeFromSystem_System_String_KernSmith_FontGeneratorOptions_
+  name: QueryAtlasSizeFromSystem
+  nameWithType: BmFont.QueryAtlasSizeFromSystem
+  fullName: KernSmith.BmFont.QueryAtlasSizeFromSystem
+- uid: KernSmith.BmFont.ReadFontInfo*
+  commentId: Overload:KernSmith.BmFont.ReadFontInfo
+  href: KernSmith.BmFont.html#KernSmith_BmFont_ReadFontInfo_System_Byte___System_Int32_
+  name: ReadFontInfo
+  nameWithType: BmFont.ReadFontInfo
+  fullName: KernSmith.BmFont.ReadFontInfo
+- uid: KernSmith.Font.Models.FontInfo
+  commentId: T:KernSmith.Font.Models.FontInfo
+  parent: KernSmith.Font.Models
+  href: KernSmith.Font.Models.FontInfo.html
+  name: FontInfo
+  nameWithType: FontInfo
+  fullName: KernSmith.Font.Models.FontInfo
+- uid: KernSmith.Font.Models
+  commentId: N:KernSmith.Font.Models
+  href: KernSmith.html
+  name: KernSmith.Font.Models
+  nameWithType: KernSmith.Font.Models
+  fullName: KernSmith.Font.Models
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+  - name: .
+  - uid: KernSmith.Font.Models
+    name: Models
+    href: KernSmith.Font.Models.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+  - name: .
+  - uid: KernSmith.Font.Models
+    name: Models
+    href: KernSmith.Font.Models.html
+- uid: KernSmith.BmFont.FromConfig*
+  commentId: Overload:KernSmith.BmFont.FromConfig
+  href: KernSmith.BmFont.html#KernSmith_BmFont_FromConfig_System_String_
+  name: FromConfig
+  nameWithType: BmFont.FromConfig
+  fullName: KernSmith.BmFont.FromConfig
+- uid: KernSmith.BmfcConfig
+  commentId: T:KernSmith.BmfcConfig
+  parent: KernSmith
+  href: KernSmith.BmfcConfig.html
+  name: BmfcConfig
+  nameWithType: BmfcConfig
+  fullName: KernSmith.BmfcConfig
+- uid: KernSmith.BmFont.Load*
+  commentId: Overload:KernSmith.BmFont.Load
+  href: KernSmith.BmFont.html#KernSmith_BmFont_Load_System_String_
+  name: Load
+  nameWithType: BmFont.Load
+  fullName: KernSmith.BmFont.Load
+- uid: KernSmith.BmFont.LoadModel*
+  commentId: Overload:KernSmith.BmFont.LoadModel
+  href: KernSmith.BmFont.html#KernSmith_BmFont_LoadModel_System_Byte___
+  name: LoadModel
+  nameWithType: BmFont.LoadModel
+  fullName: KernSmith.BmFont.LoadModel
+- uid: KernSmith.Output.Model.BmFontModel
+  commentId: T:KernSmith.Output.Model.BmFontModel
+  parent: KernSmith.Output.Model
+  href: KernSmith.Output.Model.BmFontModel.html
+  name: BmFontModel
+  nameWithType: BmFontModel
+  fullName: KernSmith.Output.Model.BmFontModel
+- uid: KernSmith.Output.Model
+  commentId: N:KernSmith.Output.Model
+  href: KernSmith.html
+  name: KernSmith.Output.Model
+  nameWithType: KernSmith.Output.Model
+  fullName: KernSmith.Output.Model
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  - name: .
+  - uid: KernSmith.Output.Model
+    name: Model
+    href: KernSmith.Output.Model.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  - name: .
+  - uid: KernSmith.Output.Model
+    name: Model
+    href: KernSmith.Output.Model.html
+- uid: KernSmith.BmFont.Builder*
+  commentId: Overload:KernSmith.BmFont.Builder
+  href: KernSmith.BmFont.html#KernSmith_BmFont_Builder
+  name: Builder
+  nameWithType: BmFont.Builder
+  fullName: KernSmith.BmFont.Builder
+- uid: KernSmith.BmFontBuilder
+  commentId: T:KernSmith.BmFontBuilder
+  parent: KernSmith
+  href: KernSmith.BmFontBuilder.html
+  name: BmFontBuilder
+  nameWithType: BmFontBuilder
+  fullName: KernSmith.BmFontBuilder
+- uid: KernSmith.BmFont.GenerateBatch*
+  commentId: Overload:KernSmith.BmFont.GenerateBatch
+  href: KernSmith.BmFont.html#KernSmith_BmFont_GenerateBatch_System_Collections_Generic_IReadOnlyList_KernSmith_BatchJob__KernSmith_BatchOptions_
+  name: GenerateBatch
+  nameWithType: BmFont.GenerateBatch
+  fullName: KernSmith.BmFont.GenerateBatch
+- uid: System.Collections.Generic.IReadOnlyList{KernSmith.BatchJob}
+  commentId: T:System.Collections.Generic.IReadOnlyList{KernSmith.BatchJob}
+  parent: System.Collections.Generic
+  definition: System.Collections.Generic.IReadOnlyList`1
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  name: IReadOnlyList<BatchJob>
+  nameWithType: IReadOnlyList<BatchJob>
+  fullName: System.Collections.Generic.IReadOnlyList<KernSmith.BatchJob>
+  nameWithType.vb: IReadOnlyList(Of BatchJob)
+  fullName.vb: System.Collections.Generic.IReadOnlyList(Of KernSmith.BatchJob)
+  name.vb: IReadOnlyList(Of BatchJob)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: <
+  - uid: KernSmith.BatchJob
+    name: BatchJob
+    href: KernSmith.BatchJob.html
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: (
+  - name: Of
+  - name: " "
+  - uid: KernSmith.BatchJob
+    name: BatchJob
+    href: KernSmith.BatchJob.html
+  - name: )
+- uid: KernSmith.BatchOptions
+  commentId: T:KernSmith.BatchOptions
+  parent: KernSmith
+  href: KernSmith.BatchOptions.html
+  name: BatchOptions
+  nameWithType: BatchOptions
+  fullName: KernSmith.BatchOptions
+- uid: KernSmith.Output.BatchResult
+  commentId: T:KernSmith.Output.BatchResult
+  parent: KernSmith.Output
+  href: KernSmith.Output.BatchResult.html
+  name: BatchResult
+  nameWithType: BatchResult
+  fullName: KernSmith.Output.BatchResult
+- uid: System.Collections.Generic.IReadOnlyList`1
+  commentId: T:System.Collections.Generic.IReadOnlyList`1
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  name: IReadOnlyList<T>
+  nameWithType: IReadOnlyList<T>
+  fullName: System.Collections.Generic.IReadOnlyList<T>
+  nameWithType.vb: IReadOnlyList(Of T)
+  fullName.vb: System.Collections.Generic.IReadOnlyList(Of T)
+  name.vb: IReadOnlyList(Of T)
+  spec.csharp:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: <
+  - name: T
+  - name: '>'
+  spec.vb:
+  - uid: System.Collections.Generic.IReadOnlyList`1
+    name: IReadOnlyList
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1
+  - name: (
+  - name: Of
+  - name: " "
+  - name: T
+  - name: )
+- uid: System.Collections.Generic
+  commentId: N:System.Collections.Generic
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System.Collections.Generic
+  nameWithType: System.Collections.Generic
+  fullName: System.Collections.Generic
+  spec.csharp:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic
+  spec.vb:
+  - uid: System
+    name: System
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system
+  - name: .
+  - uid: System.Collections
+    name: Collections
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections
+  - name: .
+  - uid: System.Collections.Generic
+    name: Generic
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.collections.generic

@@ -1,0 +1,644 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.FontCache
+  commentId: T:KernSmith.FontCache
+  id: FontCache
+  parent: KernSmith
+  children:
+  - KernSmith.FontCache.Add(System.String,System.Byte[])
+  - KernSmith.FontCache.Clear
+  - KernSmith.FontCache.Contains(System.String)
+  - KernSmith.FontCache.Count
+  - KernSmith.FontCache.Get(System.String)
+  - KernSmith.FontCache.LoadFile(System.String)
+  - KernSmith.FontCache.LoadSystemFont(System.String)
+  - KernSmith.FontCache.TryGet(System.String,System.Byte[]@)
+  langs:
+  - csharp
+  - vb
+  name: FontCache
+  nameWithType: FontCache
+  fullName: KernSmith.FontCache
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/Config/FontCache.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FontCache
+    path: src/KernSmith/Config/FontCache.cs
+    startLine: 7
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Thread-safe cache for font data bytes, supporting file paths, system fonts, and raw data.
+  example: []
+  syntax:
+    content: public sealed class FontCache
+    content.vb: Public NotInheritable Class FontCache
+  inheritance:
+  - System.Object
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.FontCache.LoadFile(System.String)
+  commentId: M:KernSmith.FontCache.LoadFile(System.String)
+  id: LoadFile(System.String)
+  parent: KernSmith.FontCache
+  langs:
+  - csharp
+  - vb
+  name: LoadFile(string)
+  nameWithType: FontCache.LoadFile(string)
+  fullName: KernSmith.FontCache.LoadFile(string)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Config/FontCache.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: LoadFile
+    path: src/KernSmith/Config/FontCache.cs
+    startLine: 12
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Loads a font file from disk and caches it by its full file path.
+  example: []
+  syntax:
+    content: public void LoadFile(string path)
+    parameters:
+    - id: path
+      type: System.String
+    content.vb: Public Sub LoadFile(path As String)
+  overload: KernSmith.FontCache.LoadFile*
+  nameWithType.vb: FontCache.LoadFile(String)
+  fullName.vb: KernSmith.FontCache.LoadFile(String)
+  name.vb: LoadFile(String)
+- uid: KernSmith.FontCache.LoadSystemFont(System.String)
+  commentId: M:KernSmith.FontCache.LoadSystemFont(System.String)
+  id: LoadSystemFont(System.String)
+  parent: KernSmith.FontCache
+  langs:
+  - csharp
+  - vb
+  name: LoadSystemFont(string)
+  nameWithType: FontCache.LoadSystemFont(string)
+  fullName: KernSmith.FontCache.LoadSystemFont(string)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Config/FontCache.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: LoadSystemFont
+    path: src/KernSmith/Config/FontCache.cs
+    startLine: 19
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Resolves a system font by family name and caches the font data.
+  example: []
+  syntax:
+    content: public void LoadSystemFont(string fontFamily)
+    parameters:
+    - id: fontFamily
+      type: System.String
+    content.vb: Public Sub LoadSystemFont(fontFamily As String)
+  overload: KernSmith.FontCache.LoadSystemFont*
+  nameWithType.vb: FontCache.LoadSystemFont(String)
+  fullName.vb: KernSmith.FontCache.LoadSystemFont(String)
+  name.vb: LoadSystemFont(String)
+- uid: KernSmith.FontCache.Add(System.String,System.Byte[])
+  commentId: M:KernSmith.FontCache.Add(System.String,System.Byte[])
+  id: Add(System.String,System.Byte[])
+  parent: KernSmith.FontCache
+  langs:
+  - csharp
+  - vb
+  name: Add(string, byte[])
+  nameWithType: FontCache.Add(string, byte[])
+  fullName: KernSmith.FontCache.Add(string, byte[])
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Config/FontCache.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Add
+    path: src/KernSmith/Config/FontCache.cs
+    startLine: 30
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Adds raw font data bytes to the cache under the specified key.
+  example: []
+  syntax:
+    content: public void Add(string key, byte[] fontData)
+    parameters:
+    - id: key
+      type: System.String
+    - id: fontData
+      type: System.Byte[]
+    content.vb: Public Sub Add(key As String, fontData As Byte())
+  overload: KernSmith.FontCache.Add*
+  nameWithType.vb: FontCache.Add(String, Byte())
+  fullName.vb: KernSmith.FontCache.Add(String, Byte())
+  name.vb: Add(String, Byte())
+- uid: KernSmith.FontCache.Get(System.String)
+  commentId: M:KernSmith.FontCache.Get(System.String)
+  id: Get(System.String)
+  parent: KernSmith.FontCache
+  langs:
+  - csharp
+  - vb
+  name: Get(string)
+  nameWithType: FontCache.Get(string)
+  fullName: KernSmith.FontCache.Get(string)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Config/FontCache.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Get
+    path: src/KernSmith/Config/FontCache.cs
+    startLine: 36
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Retrieves cached font data by key. Throws if the key is not cached.
+  example: []
+  syntax:
+    content: public byte[] Get(string key)
+    parameters:
+    - id: key
+      type: System.String
+    return:
+      type: System.Byte[]
+    content.vb: Public Function [Get](key As String) As Byte()
+  overload: KernSmith.FontCache.Get*
+  nameWithType.vb: FontCache.Get(String)
+  fullName.vb: KernSmith.FontCache.Get(String)
+  name.vb: Get(String)
+- uid: KernSmith.FontCache.Contains(System.String)
+  commentId: M:KernSmith.FontCache.Contains(System.String)
+  id: Contains(System.String)
+  parent: KernSmith.FontCache
+  langs:
+  - csharp
+  - vb
+  name: Contains(string)
+  nameWithType: FontCache.Contains(string)
+  fullName: KernSmith.FontCache.Contains(string)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Config/FontCache.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Contains
+    path: src/KernSmith/Config/FontCache.cs
+    startLine: 42
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Returns true if the specified key exists in the cache.
+  example: []
+  syntax:
+    content: public bool Contains(string key)
+    parameters:
+    - id: key
+      type: System.String
+    return:
+      type: System.Boolean
+    content.vb: Public Function Contains(key As String) As Boolean
+  overload: KernSmith.FontCache.Contains*
+  nameWithType.vb: FontCache.Contains(String)
+  fullName.vb: KernSmith.FontCache.Contains(String)
+  name.vb: Contains(String)
+- uid: KernSmith.FontCache.Count
+  commentId: P:KernSmith.FontCache.Count
+  id: Count
+  parent: KernSmith.FontCache
+  langs:
+  - csharp
+  - vb
+  name: Count
+  nameWithType: FontCache.Count
+  fullName: KernSmith.FontCache.Count
+  type: Property
+  source:
+    remote:
+      path: src/KernSmith/Config/FontCache.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Count
+    path: src/KernSmith/Config/FontCache.cs
+    startLine: 45
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Number of fonts currently in the cache.
+  example: []
+  syntax:
+    content: public int Count { get; }
+    parameters: []
+    return:
+      type: System.Int32
+    content.vb: Public ReadOnly Property Count As Integer
+  overload: KernSmith.FontCache.Count*
+- uid: KernSmith.FontCache.Clear
+  commentId: M:KernSmith.FontCache.Clear
+  id: Clear
+  parent: KernSmith.FontCache
+  langs:
+  - csharp
+  - vb
+  name: Clear()
+  nameWithType: FontCache.Clear()
+  fullName: KernSmith.FontCache.Clear()
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Config/FontCache.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Clear
+    path: src/KernSmith/Config/FontCache.cs
+    startLine: 48
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Removes all entries from the cache.
+  example: []
+  syntax:
+    content: public void Clear()
+    content.vb: Public Sub Clear()
+  overload: KernSmith.FontCache.Clear*
+- uid: KernSmith.FontCache.TryGet(System.String,System.Byte[]@)
+  commentId: M:KernSmith.FontCache.TryGet(System.String,System.Byte[]@)
+  id: TryGet(System.String,System.Byte[]@)
+  parent: KernSmith.FontCache
+  langs:
+  - csharp
+  - vb
+  name: TryGet(string, out byte[])
+  nameWithType: FontCache.TryGet(string, out byte[])
+  fullName: KernSmith.FontCache.TryGet(string, out byte[])
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/Config/FontCache.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: TryGet
+    path: src/KernSmith/Config/FontCache.cs
+    startLine: 51
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Attempts to retrieve cached font data. Returns true if found.
+  example: []
+  syntax:
+    content: public bool TryGet(string key, out byte[] fontData)
+    parameters:
+    - id: key
+      type: System.String
+    - id: fontData
+      type: System.Byte[]
+    return:
+      type: System.Boolean
+    content.vb: Public Function TryGet(key As String, fontData As Byte()) As Boolean
+  overload: KernSmith.FontCache.TryGet*
+  nameWithType.vb: FontCache.TryGet(String, Byte())
+  fullName.vb: KernSmith.FontCache.TryGet(String, Byte())
+  name.vb: TryGet(String, Byte())
+references:
+- uid: KernSmith
+  commentId: N:KernSmith
+  href: KernSmith.html
+  name: KernSmith
+  nameWithType: KernSmith
+  fullName: KernSmith
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: KernSmith.FontCache.LoadFile*
+  commentId: Overload:KernSmith.FontCache.LoadFile
+  href: KernSmith.FontCache.html#KernSmith_FontCache_LoadFile_System_String_
+  name: LoadFile
+  nameWithType: FontCache.LoadFile
+  fullName: KernSmith.FontCache.LoadFile
+- uid: System.String
+  commentId: T:System.String
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.string
+  name: string
+  nameWithType: string
+  fullName: string
+  nameWithType.vb: String
+  fullName.vb: String
+  name.vb: String
+- uid: KernSmith.FontCache.LoadSystemFont*
+  commentId: Overload:KernSmith.FontCache.LoadSystemFont
+  href: KernSmith.FontCache.html#KernSmith_FontCache_LoadSystemFont_System_String_
+  name: LoadSystemFont
+  nameWithType: FontCache.LoadSystemFont
+  fullName: KernSmith.FontCache.LoadSystemFont
+- uid: KernSmith.FontCache.Add*
+  commentId: Overload:KernSmith.FontCache.Add
+  href: KernSmith.FontCache.html#KernSmith_FontCache_Add_System_String_System_Byte___
+  name: Add
+  nameWithType: FontCache.Add
+  fullName: KernSmith.FontCache.Add
+- uid: System.Byte[]
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.byte
+  name: byte[]
+  nameWithType: byte[]
+  fullName: byte[]
+  nameWithType.vb: Byte()
+  fullName.vb: Byte()
+  name.vb: Byte()
+  spec.csharp:
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: '['
+  - name: ']'
+  spec.vb:
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: (
+  - name: )
+- uid: KernSmith.FontCache.Get*
+  commentId: Overload:KernSmith.FontCache.Get
+  href: KernSmith.FontCache.html#KernSmith_FontCache_Get_System_String_
+  name: Get
+  nameWithType: FontCache.Get
+  fullName: KernSmith.FontCache.Get
+- uid: KernSmith.FontCache.Contains*
+  commentId: Overload:KernSmith.FontCache.Contains
+  href: KernSmith.FontCache.html#KernSmith_FontCache_Contains_System_String_
+  name: Contains
+  nameWithType: FontCache.Contains
+  fullName: KernSmith.FontCache.Contains
+- uid: System.Boolean
+  commentId: T:System.Boolean
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.boolean
+  name: bool
+  nameWithType: bool
+  fullName: bool
+  nameWithType.vb: Boolean
+  fullName.vb: Boolean
+  name.vb: Boolean
+- uid: KernSmith.FontCache.Count*
+  commentId: Overload:KernSmith.FontCache.Count
+  href: KernSmith.FontCache.html#KernSmith_FontCache_Count
+  name: Count
+  nameWithType: FontCache.Count
+  fullName: KernSmith.FontCache.Count
+- uid: System.Int32
+  commentId: T:System.Int32
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int
+  nameWithType: int
+  fullName: int
+  nameWithType.vb: Integer
+  fullName.vb: Integer
+  name.vb: Integer
+- uid: KernSmith.FontCache.Clear*
+  commentId: Overload:KernSmith.FontCache.Clear
+  href: KernSmith.FontCache.html#KernSmith_FontCache_Clear
+  name: Clear
+  nameWithType: FontCache.Clear
+  fullName: KernSmith.FontCache.Clear
+- uid: KernSmith.FontCache.TryGet*
+  commentId: Overload:KernSmith.FontCache.TryGet
+  href: KernSmith.FontCache.html#KernSmith_FontCache_TryGet_System_String_System_Byte____
+  name: TryGet
+  nameWithType: FontCache.TryGet
+  fullName: KernSmith.FontCache.TryGet

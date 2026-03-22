@@ -1,0 +1,44 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "files": ["src/KernSmith/KernSmith.csproj"],
+          "src": "."
+        }
+      ],
+      "dest": "api",
+      "properties": {
+        "TargetFramework": "net10.0"
+      }
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": ["api/**.yml", "api/index.md"]
+      },
+      {
+        "files": [
+          "docs/**/toc.yml",
+          "docs/**/*.md"
+        ]
+      },
+      {
+        "files": ["toc.yml", "index.md"]
+      }
+    ],
+    "resource": [
+      {
+        "files": ["assets/**"]
+      }
+    ],
+    "output": "_site",
+    "globalMetadata": {
+      "_appTitle": "KernSmith Documentation",
+      "_appFooter": "KernSmith &mdash; Bitmap Font Generator for .NET",
+      "_enableSearch": true
+    },
+    "template": ["default", "modern"]
+  }
+}

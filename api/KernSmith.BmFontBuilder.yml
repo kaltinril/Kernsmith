@@ -1,0 +1,3155 @@
+### YamlMime:ManagedReference
+items:
+- uid: KernSmith.BmFontBuilder
+  commentId: T:KernSmith.BmFontBuilder
+  id: BmFontBuilder
+  parent: KernSmith
+  children:
+  - KernSmith.BmFontBuilder.Build
+  - KernSmith.BmFontBuilder.FromConfig(KernSmith.BmfcConfig)
+  - KernSmith.BmFontBuilder.FromConfig(System.String)
+  - KernSmith.BmFontBuilder.WithAntiAlias(KernSmith.AntiAliasMode)
+  - KernSmith.BmFontBuilder.WithAutofitTexture(System.Boolean)
+  - KernSmith.BmFontBuilder.WithBold(System.Boolean)
+  - KernSmith.BmFontBuilder.WithChannelPacking(System.Boolean)
+  - KernSmith.BmFontBuilder.WithChannels(KernSmith.ChannelConfig)
+  - KernSmith.BmFontBuilder.WithChannels(KernSmith.ChannelContent,KernSmith.ChannelContent,KernSmith.ChannelContent,KernSmith.ChannelContent,System.Boolean,System.Boolean,System.Boolean,System.Boolean)
+  - KernSmith.BmFontBuilder.WithCharacters(KernSmith.CharacterSet)
+  - KernSmith.BmFontBuilder.WithCollectMetrics(System.Boolean)
+  - KernSmith.BmFontBuilder.WithColorFont(System.Boolean)
+  - KernSmith.BmFontBuilder.WithColorPaletteIndex(System.Int32)
+  - KernSmith.BmFontBuilder.WithCustomGlyph(System.Int32,KernSmith.CustomGlyph)
+  - KernSmith.BmFontBuilder.WithCustomGlyph(System.Int32,System.Int32,System.Int32,System.Byte[],KernSmith.PixelFormat,System.Nullable{System.Int32})
+  - KernSmith.BmFontBuilder.WithDpi(System.Int32)
+  - KernSmith.BmFontBuilder.WithEncoder(KernSmith.Atlas.IAtlasEncoder)
+  - KernSmith.BmFontBuilder.WithEqualizeCellHeights(System.Boolean)
+  - KernSmith.BmFontBuilder.WithFaceIndex(System.Int32)
+  - KernSmith.BmFontBuilder.WithFallbackCharacter(System.Char)
+  - KernSmith.BmFontBuilder.WithFallbackCodepoint(System.Int32)
+  - KernSmith.BmFontBuilder.WithFont(System.Byte[])
+  - KernSmith.BmFontBuilder.WithFont(System.String)
+  - KernSmith.BmFontBuilder.WithFontReader(KernSmith.Font.IFontReader)
+  - KernSmith.BmFontBuilder.WithForceOffsetsToZero(System.Boolean)
+  - KernSmith.BmFontBuilder.WithGradient(System.ValueTuple{System.Byte,System.Byte,System.Byte},System.ValueTuple{System.Byte,System.Byte,System.Byte},System.Single,System.Single)
+  - KernSmith.BmFontBuilder.WithHeightPercent(System.Int32)
+  - KernSmith.BmFontBuilder.WithHinting(System.Boolean)
+  - KernSmith.BmFontBuilder.WithItalic(System.Boolean)
+  - KernSmith.BmFontBuilder.WithKerning(System.Boolean)
+  - KernSmith.BmFontBuilder.WithMatchCharHeight(System.Boolean)
+  - KernSmith.BmFontBuilder.WithMaxTextureSize(System.Int32)
+  - KernSmith.BmFontBuilder.WithMaxTextureSize(System.Int32,System.Int32)
+  - KernSmith.BmFontBuilder.WithOutline(System.Int32)
+  - KernSmith.BmFontBuilder.WithOutline(System.Int32,System.Byte,System.Byte,System.Byte)
+  - KernSmith.BmFontBuilder.WithPacker(KernSmith.Atlas.IAtlasPacker)
+  - KernSmith.BmFontBuilder.WithPackingAlgorithm(KernSmith.PackingAlgorithm)
+  - KernSmith.BmFontBuilder.WithPackingEfficiency(System.Single)
+  - KernSmith.BmFontBuilder.WithPadding(System.Int32)
+  - KernSmith.BmFontBuilder.WithPadding(System.Int32,System.Int32,System.Int32,System.Int32)
+  - KernSmith.BmFontBuilder.WithPostProcessor(KernSmith.Rasterizer.IGlyphPostProcessor)
+  - KernSmith.BmFontBuilder.WithPowerOfTwo(System.Boolean)
+  - KernSmith.BmFontBuilder.WithRasterizer(KernSmith.Rasterizer.IRasterizer)
+  - KernSmith.BmFontBuilder.WithSdf(System.Boolean)
+  - KernSmith.BmFontBuilder.WithShadow(System.Int32,System.Int32,System.Int32,System.Nullable{System.ValueTuple{System.Byte,System.Byte,System.Byte}},System.Single)
+  - KernSmith.BmFontBuilder.WithSize(System.Int32)
+  - KernSmith.BmFontBuilder.WithSpacing(System.Int32)
+  - KernSmith.BmFontBuilder.WithSpacing(System.Int32,System.Int32)
+  - KernSmith.BmFontBuilder.WithSuperSampling(System.Int32)
+  - KernSmith.BmFontBuilder.WithSystemFont(System.String)
+  - KernSmith.BmFontBuilder.WithTextureFormat(KernSmith.TextureFormat)
+  - KernSmith.BmFontBuilder.WithVariationAxis(System.String,System.Single)
+  langs:
+  - csharp
+  - vb
+  name: BmFontBuilder
+  nameWithType: BmFontBuilder
+  fullName: KernSmith.BmFontBuilder
+  type: Class
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: BmFontBuilder
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 10
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Fluent builder for configuring and generating bitmap fonts.
+  example: []
+  syntax:
+    content: public sealed class BmFontBuilder
+    content.vb: Public NotInheritable Class BmFontBuilder
+  inheritance:
+  - System.Object
+  inheritedMembers:
+  - System.Object.Equals(System.Object)
+  - System.Object.Equals(System.Object,System.Object)
+  - System.Object.GetHashCode
+  - System.Object.GetType
+  - System.Object.ReferenceEquals(System.Object,System.Object)
+  - System.Object.ToString
+- uid: KernSmith.BmFontBuilder.FromConfig(System.String)
+  commentId: M:KernSmith.BmFontBuilder.FromConfig(System.String)
+  id: FromConfig(System.String)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: FromConfig(string)
+  nameWithType: BmFontBuilder.FromConfig(string)
+  fullName: KernSmith.BmFontBuilder.FromConfig(string)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FromConfig
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 22
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Loads settings from a .bmfc config file as a starting point.
+  example: []
+  syntax:
+    content: public BmFontBuilder FromConfig(string bmfcPath)
+    parameters:
+    - id: bmfcPath
+      type: System.String
+      description: Path to the .bmfc configuration file.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function FromConfig(bmfcPath As String) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.FromConfig*
+  nameWithType.vb: BmFontBuilder.FromConfig(String)
+  fullName.vb: KernSmith.BmFontBuilder.FromConfig(String)
+  name.vb: FromConfig(String)
+- uid: KernSmith.BmFontBuilder.FromConfig(KernSmith.BmfcConfig)
+  commentId: M:KernSmith.BmFontBuilder.FromConfig(KernSmith.BmfcConfig)
+  id: FromConfig(KernSmith.BmfcConfig)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: FromConfig(BmfcConfig)
+  nameWithType: BmFontBuilder.FromConfig(BmfcConfig)
+  fullName: KernSmith.BmFontBuilder.FromConfig(KernSmith.BmfcConfig)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: FromConfig
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 31
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Loads settings from a parsed .bmfc config as a starting point.
+  example: []
+  syntax:
+    content: public BmFontBuilder FromConfig(BmfcConfig config)
+    parameters:
+    - id: config
+      type: KernSmith.BmfcConfig
+      description: The parsed .bmfc configuration.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function FromConfig(config As BmfcConfig) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.FromConfig*
+- uid: KernSmith.BmFontBuilder.WithFont(System.Byte[])
+  commentId: M:KernSmith.BmFontBuilder.WithFont(System.Byte[])
+  id: WithFont(System.Byte[])
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithFont(byte[])
+  nameWithType: BmFontBuilder.WithFont(byte[])
+  fullName: KernSmith.BmFontBuilder.WithFont(byte[])
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithFont
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 58
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Loads a font from raw byte data.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithFont(byte[] fontData)
+    parameters:
+    - id: fontData
+      type: System.Byte[]
+      description: The font file bytes.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithFont(fontData As Byte()) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithFont*
+  nameWithType.vb: BmFontBuilder.WithFont(Byte())
+  fullName.vb: KernSmith.BmFontBuilder.WithFont(Byte())
+  name.vb: WithFont(Byte())
+- uid: KernSmith.BmFontBuilder.WithFont(System.String)
+  commentId: M:KernSmith.BmFontBuilder.WithFont(System.String)
+  id: WithFont(System.String)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithFont(string)
+  nameWithType: BmFontBuilder.WithFont(string)
+  fullName: KernSmith.BmFontBuilder.WithFont(string)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithFont
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 69
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Loads a font from a file path.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithFont(string fontPath)
+    parameters:
+    - id: fontPath
+      type: System.String
+      description: Path to a .ttf, .otf, or .woff file.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithFont(fontPath As String) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithFont*
+  nameWithType.vb: BmFontBuilder.WithFont(String)
+  fullName.vb: KernSmith.BmFontBuilder.WithFont(String)
+  name.vb: WithFont(String)
+- uid: KernSmith.BmFontBuilder.WithSystemFont(System.String)
+  commentId: M:KernSmith.BmFontBuilder.WithSystemFont(System.String)
+  id: WithSystemFont(System.String)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithSystemFont(string)
+  nameWithType: BmFontBuilder.WithSystemFont(string)
+  fullName: KernSmith.BmFontBuilder.WithSystemFont(string)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithSystemFont
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 80
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Uses a system-installed font by family name (e.g., "Arial").
+  example: []
+  syntax:
+    content: public BmFontBuilder WithSystemFont(string familyName)
+    parameters:
+    - id: familyName
+      type: System.String
+      description: Font family name.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithSystemFont(familyName As String) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithSystemFont*
+  nameWithType.vb: BmFontBuilder.WithSystemFont(String)
+  fullName.vb: KernSmith.BmFontBuilder.WithSystemFont(String)
+  name.vb: WithSystemFont(String)
+- uid: KernSmith.BmFontBuilder.WithSize(System.Int32)
+  commentId: M:KernSmith.BmFontBuilder.WithSize(System.Int32)
+  id: WithSize(System.Int32)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithSize(int)
+  nameWithType: BmFontBuilder.WithSize(int)
+  fullName: KernSmith.BmFontBuilder.WithSize(int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithSize
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 91
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets the font size in points.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithSize(int size)
+    parameters:
+    - id: size
+      type: System.Int32
+      description: Font size in points.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithSize(size As Integer) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithSize*
+  nameWithType.vb: BmFontBuilder.WithSize(Integer)
+  fullName.vb: KernSmith.BmFontBuilder.WithSize(Integer)
+  name.vb: WithSize(Integer)
+- uid: KernSmith.BmFontBuilder.WithCharacters(KernSmith.CharacterSet)
+  commentId: M:KernSmith.BmFontBuilder.WithCharacters(KernSmith.CharacterSet)
+  id: WithCharacters(KernSmith.CharacterSet)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithCharacters(CharacterSet)
+  nameWithType: BmFontBuilder.WithCharacters(CharacterSet)
+  fullName: KernSmith.BmFontBuilder.WithCharacters(KernSmith.CharacterSet)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithCharacters
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 96
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets which characters to include in the output.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithCharacters(CharacterSet characters)
+    parameters:
+    - id: characters
+      type: KernSmith.CharacterSet
+      description: The character set to render.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithCharacters(characters As CharacterSet) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithCharacters*
+- uid: KernSmith.BmFontBuilder.WithBold(System.Boolean)
+  commentId: M:KernSmith.BmFontBuilder.WithBold(System.Boolean)
+  id: WithBold(System.Boolean)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithBold(bool)
+  nameWithType: BmFontBuilder.WithBold(bool)
+  fullName: KernSmith.BmFontBuilder.WithBold(bool)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithBold
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 101
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, applies synthetic bold.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithBold(bool bold = true)
+    parameters:
+    - id: bold
+      type: System.Boolean
+      description: Enable bold.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithBold(bold As Boolean = True) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithBold*
+  nameWithType.vb: BmFontBuilder.WithBold(Boolean)
+  fullName.vb: KernSmith.BmFontBuilder.WithBold(Boolean)
+  name.vb: WithBold(Boolean)
+- uid: KernSmith.BmFontBuilder.WithItalic(System.Boolean)
+  commentId: M:KernSmith.BmFontBuilder.WithItalic(System.Boolean)
+  id: WithItalic(System.Boolean)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithItalic(bool)
+  nameWithType: BmFontBuilder.WithItalic(bool)
+  fullName: KernSmith.BmFontBuilder.WithItalic(bool)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithItalic
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 106
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, applies synthetic italic.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithItalic(bool italic = true)
+    parameters:
+    - id: italic
+      type: System.Boolean
+      description: Enable italic.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithItalic(italic As Boolean = True) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithItalic*
+  nameWithType.vb: BmFontBuilder.WithItalic(Boolean)
+  fullName.vb: KernSmith.BmFontBuilder.WithItalic(Boolean)
+  name.vb: WithItalic(Boolean)
+- uid: KernSmith.BmFontBuilder.WithAntiAlias(KernSmith.AntiAliasMode)
+  commentId: M:KernSmith.BmFontBuilder.WithAntiAlias(KernSmith.AntiAliasMode)
+  id: WithAntiAlias(KernSmith.AntiAliasMode)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithAntiAlias(AntiAliasMode)
+  nameWithType: BmFontBuilder.WithAntiAlias(AntiAliasMode)
+  fullName: KernSmith.BmFontBuilder.WithAntiAlias(KernSmith.AntiAliasMode)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithAntiAlias
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 111
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets the anti-aliasing mode.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithAntiAlias(AntiAliasMode mode)
+    parameters:
+    - id: mode
+      type: KernSmith.AntiAliasMode
+      description: Anti-aliasing mode.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithAntiAlias(mode As AntiAliasMode) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithAntiAlias*
+- uid: KernSmith.BmFontBuilder.WithMaxTextureSize(System.Int32)
+  commentId: M:KernSmith.BmFontBuilder.WithMaxTextureSize(System.Int32)
+  id: WithMaxTextureSize(System.Int32)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithMaxTextureSize(int)
+  nameWithType: BmFontBuilder.WithMaxTextureSize(int)
+  fullName: KernSmith.BmFontBuilder.WithMaxTextureSize(int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithMaxTextureSize
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 116
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets the max texture size (both width and height) in pixels.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithMaxTextureSize(int size)
+    parameters:
+    - id: size
+      type: System.Int32
+      description: Max width and height in pixels.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithMaxTextureSize(size As Integer) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithMaxTextureSize*
+  nameWithType.vb: BmFontBuilder.WithMaxTextureSize(Integer)
+  fullName.vb: KernSmith.BmFontBuilder.WithMaxTextureSize(Integer)
+  name.vb: WithMaxTextureSize(Integer)
+- uid: KernSmith.BmFontBuilder.WithMaxTextureSize(System.Int32,System.Int32)
+  commentId: M:KernSmith.BmFontBuilder.WithMaxTextureSize(System.Int32,System.Int32)
+  id: WithMaxTextureSize(System.Int32,System.Int32)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithMaxTextureSize(int, int)
+  nameWithType: BmFontBuilder.WithMaxTextureSize(int, int)
+  fullName: KernSmith.BmFontBuilder.WithMaxTextureSize(int, int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithMaxTextureSize
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 122
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets the max texture width and height separately.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithMaxTextureSize(int width, int height)
+    parameters:
+    - id: width
+      type: System.Int32
+      description: Max texture width in pixels.
+    - id: height
+      type: System.Int32
+      description: Max texture height in pixels.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithMaxTextureSize(width As Integer, height As Integer) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithMaxTextureSize*
+  nameWithType.vb: BmFontBuilder.WithMaxTextureSize(Integer, Integer)
+  fullName.vb: KernSmith.BmFontBuilder.WithMaxTextureSize(Integer, Integer)
+  name.vb: WithMaxTextureSize(Integer, Integer)
+- uid: KernSmith.BmFontBuilder.WithPadding(System.Int32,System.Int32,System.Int32,System.Int32)
+  commentId: M:KernSmith.BmFontBuilder.WithPadding(System.Int32,System.Int32,System.Int32,System.Int32)
+  id: WithPadding(System.Int32,System.Int32,System.Int32,System.Int32)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithPadding(int, int, int, int)
+  nameWithType: BmFontBuilder.WithPadding(int, int, int, int)
+  fullName: KernSmith.BmFontBuilder.WithPadding(int, int, int, int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithPadding
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 130
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets per-side glyph padding in pixels.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithPadding(int up, int right, int down, int left)
+    parameters:
+    - id: up
+      type: System.Int32
+      description: Top padding.
+    - id: right
+      type: System.Int32
+      description: Right padding.
+    - id: down
+      type: System.Int32
+      description: Bottom padding.
+    - id: left
+      type: System.Int32
+      description: Left padding.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithPadding(up As Integer, right As Integer, down As Integer, left As Integer) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithPadding*
+  nameWithType.vb: BmFontBuilder.WithPadding(Integer, Integer, Integer, Integer)
+  fullName.vb: KernSmith.BmFontBuilder.WithPadding(Integer, Integer, Integer, Integer)
+  name.vb: WithPadding(Integer, Integer, Integer, Integer)
+- uid: KernSmith.BmFontBuilder.WithPadding(System.Int32)
+  commentId: M:KernSmith.BmFontBuilder.WithPadding(System.Int32)
+  id: WithPadding(System.Int32)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithPadding(int)
+  nameWithType: BmFontBuilder.WithPadding(int)
+  fullName: KernSmith.BmFontBuilder.WithPadding(int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithPadding
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 135
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets uniform glyph padding on all sides.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithPadding(int all)
+    parameters:
+    - id: all
+      type: System.Int32
+      description: Padding in pixels for every side.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithPadding(all As Integer) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithPadding*
+  nameWithType.vb: BmFontBuilder.WithPadding(Integer)
+  fullName.vb: KernSmith.BmFontBuilder.WithPadding(Integer)
+  name.vb: WithPadding(Integer)
+- uid: KernSmith.BmFontBuilder.WithSpacing(System.Int32,System.Int32)
+  commentId: M:KernSmith.BmFontBuilder.WithSpacing(System.Int32,System.Int32)
+  id: WithSpacing(System.Int32,System.Int32)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithSpacing(int, int)
+  nameWithType: BmFontBuilder.WithSpacing(int, int)
+  fullName: KernSmith.BmFontBuilder.WithSpacing(int, int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithSpacing
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 141
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets the gap between glyphs in the atlas.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithSpacing(int horizontal, int vertical)
+    parameters:
+    - id: horizontal
+      type: System.Int32
+      description: Horizontal gap in pixels.
+    - id: vertical
+      type: System.Int32
+      description: Vertical gap in pixels.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithSpacing(horizontal As Integer, vertical As Integer) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithSpacing*
+  nameWithType.vb: BmFontBuilder.WithSpacing(Integer, Integer)
+  fullName.vb: KernSmith.BmFontBuilder.WithSpacing(Integer, Integer)
+  name.vb: WithSpacing(Integer, Integer)
+- uid: KernSmith.BmFontBuilder.WithSpacing(System.Int32)
+  commentId: M:KernSmith.BmFontBuilder.WithSpacing(System.Int32)
+  id: WithSpacing(System.Int32)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithSpacing(int)
+  nameWithType: BmFontBuilder.WithSpacing(int)
+  fullName: KernSmith.BmFontBuilder.WithSpacing(int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithSpacing
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 146
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets uniform glyph spacing in the atlas.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithSpacing(int both)
+    parameters:
+    - id: both
+      type: System.Int32
+      description: Gap in pixels for both axes.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithSpacing(both As Integer) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithSpacing*
+  nameWithType.vb: BmFontBuilder.WithSpacing(Integer)
+  fullName.vb: KernSmith.BmFontBuilder.WithSpacing(Integer)
+  name.vb: WithSpacing(Integer)
+- uid: KernSmith.BmFontBuilder.WithPackingAlgorithm(KernSmith.PackingAlgorithm)
+  commentId: M:KernSmith.BmFontBuilder.WithPackingAlgorithm(KernSmith.PackingAlgorithm)
+  id: WithPackingAlgorithm(KernSmith.PackingAlgorithm)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithPackingAlgorithm(PackingAlgorithm)
+  nameWithType: BmFontBuilder.WithPackingAlgorithm(PackingAlgorithm)
+  fullName: KernSmith.BmFontBuilder.WithPackingAlgorithm(KernSmith.PackingAlgorithm)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithPackingAlgorithm
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 151
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets the atlas packing algorithm.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithPackingAlgorithm(PackingAlgorithm algorithm)
+    parameters:
+    - id: algorithm
+      type: KernSmith.PackingAlgorithm
+      description: Packing algorithm.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithPackingAlgorithm(algorithm As PackingAlgorithm) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithPackingAlgorithm*
+- uid: KernSmith.BmFontBuilder.WithKerning(System.Boolean)
+  commentId: M:KernSmith.BmFontBuilder.WithKerning(System.Boolean)
+  id: WithKerning(System.Boolean)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithKerning(bool)
+  nameWithType: BmFontBuilder.WithKerning(bool)
+  fullName: KernSmith.BmFontBuilder.WithKerning(bool)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithKerning
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 156
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, includes kerning pairs in the output.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithKerning(bool kerning = true)
+    parameters:
+    - id: kerning
+      type: System.Boolean
+      description: Enable kerning.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithKerning(kerning As Boolean = True) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithKerning*
+  nameWithType.vb: BmFontBuilder.WithKerning(Boolean)
+  fullName.vb: KernSmith.BmFontBuilder.WithKerning(Boolean)
+  name.vb: WithKerning(Boolean)
+- uid: KernSmith.BmFontBuilder.WithOutline(System.Int32)
+  commentId: M:KernSmith.BmFontBuilder.WithOutline(System.Int32)
+  id: WithOutline(System.Int32)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithOutline(int)
+  nameWithType: BmFontBuilder.WithOutline(int)
+  fullName: KernSmith.BmFontBuilder.WithOutline(int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithOutline
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 161
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Adds an outline around each glyph.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithOutline(int outline)
+    parameters:
+    - id: outline
+      type: System.Int32
+      description: Outline width in pixels.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithOutline(outline As Integer) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithOutline*
+  nameWithType.vb: BmFontBuilder.WithOutline(Integer)
+  fullName.vb: KernSmith.BmFontBuilder.WithOutline(Integer)
+  name.vb: WithOutline(Integer)
+- uid: KernSmith.BmFontBuilder.WithOutline(System.Int32,System.Byte,System.Byte,System.Byte)
+  commentId: M:KernSmith.BmFontBuilder.WithOutline(System.Int32,System.Byte,System.Byte,System.Byte)
+  id: WithOutline(System.Int32,System.Byte,System.Byte,System.Byte)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithOutline(int, byte, byte, byte)
+  nameWithType: BmFontBuilder.WithOutline(int, byte, byte, byte)
+  fullName: KernSmith.BmFontBuilder.WithOutline(int, byte, byte, byte)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithOutline
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 169
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Adds a colored outline around each glyph.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithOutline(int width, byte r, byte g = 0, byte b = 0)
+    parameters:
+    - id: width
+      type: System.Int32
+      description: Outline width in pixels.
+    - id: r
+      type: System.Byte
+      description: Red (0-255).
+    - id: g
+      type: System.Byte
+      description: Green (0-255).
+    - id: b
+      type: System.Byte
+      description: Blue (0-255).
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithOutline(width As Integer, r As Byte, g As Byte = 0, b As Byte = 0) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithOutline*
+  nameWithType.vb: BmFontBuilder.WithOutline(Integer, Byte, Byte, Byte)
+  fullName.vb: KernSmith.BmFontBuilder.WithOutline(Integer, Byte, Byte, Byte)
+  name.vb: WithOutline(Integer, Byte, Byte, Byte)
+- uid: KernSmith.BmFontBuilder.WithSdf(System.Boolean)
+  commentId: M:KernSmith.BmFontBuilder.WithSdf(System.Boolean)
+  id: WithSdf(System.Boolean)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithSdf(bool)
+  nameWithType: BmFontBuilder.WithSdf(bool)
+  fullName: KernSmith.BmFontBuilder.WithSdf(bool)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithSdf
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 181
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, generates signed distance field (SDF) output instead of bitmaps.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithSdf(bool sdf = true)
+    parameters:
+    - id: sdf
+      type: System.Boolean
+      description: Enable SDF.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithSdf(sdf As Boolean = True) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithSdf*
+  nameWithType.vb: BmFontBuilder.WithSdf(Boolean)
+  fullName.vb: KernSmith.BmFontBuilder.WithSdf(Boolean)
+  name.vb: WithSdf(Boolean)
+- uid: KernSmith.BmFontBuilder.WithPowerOfTwo(System.Boolean)
+  commentId: M:KernSmith.BmFontBuilder.WithPowerOfTwo(System.Boolean)
+  id: WithPowerOfTwo(System.Boolean)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithPowerOfTwo(bool)
+  nameWithType: BmFontBuilder.WithPowerOfTwo(bool)
+  fullName: KernSmith.BmFontBuilder.WithPowerOfTwo(bool)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithPowerOfTwo
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 186
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, rounds texture dimensions up to powers of two.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithPowerOfTwo(bool powerOfTwo = true)
+    parameters:
+    - id: powerOfTwo
+      type: System.Boolean
+      description: Enable power-of-two sizing.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithPowerOfTwo(powerOfTwo As Boolean = True) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithPowerOfTwo*
+  nameWithType.vb: BmFontBuilder.WithPowerOfTwo(Boolean)
+  fullName.vb: KernSmith.BmFontBuilder.WithPowerOfTwo(Boolean)
+  name.vb: WithPowerOfTwo(Boolean)
+- uid: KernSmith.BmFontBuilder.WithDpi(System.Int32)
+  commentId: M:KernSmith.BmFontBuilder.WithDpi(System.Int32)
+  id: WithDpi(System.Int32)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithDpi(int)
+  nameWithType: BmFontBuilder.WithDpi(int)
+  fullName: KernSmith.BmFontBuilder.WithDpi(int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithDpi
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 191
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets the DPI used for font size calculation.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithDpi(int dpi)
+    parameters:
+    - id: dpi
+      type: System.Int32
+      description: Dots per inch.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithDpi(dpi As Integer) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithDpi*
+  nameWithType.vb: BmFontBuilder.WithDpi(Integer)
+  fullName.vb: KernSmith.BmFontBuilder.WithDpi(Integer)
+  name.vb: WithDpi(Integer)
+- uid: KernSmith.BmFontBuilder.WithFaceIndex(System.Int32)
+  commentId: M:KernSmith.BmFontBuilder.WithFaceIndex(System.Int32)
+  id: WithFaceIndex(System.Int32)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithFaceIndex(int)
+  nameWithType: BmFontBuilder.WithFaceIndex(int)
+  fullName: KernSmith.BmFontBuilder.WithFaceIndex(int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithFaceIndex
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 196
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Selects which face to use in a font collection (.ttc) file.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithFaceIndex(int faceIndex)
+    parameters:
+    - id: faceIndex
+      type: System.Int32
+      description: Zero-based face index.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithFaceIndex(faceIndex As Integer) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithFaceIndex*
+  nameWithType.vb: BmFontBuilder.WithFaceIndex(Integer)
+  fullName.vb: KernSmith.BmFontBuilder.WithFaceIndex(Integer)
+  name.vb: WithFaceIndex(Integer)
+- uid: KernSmith.BmFontBuilder.WithChannelPacking(System.Boolean)
+  commentId: M:KernSmith.BmFontBuilder.WithChannelPacking(System.Boolean)
+  id: WithChannelPacking(System.Boolean)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithChannelPacking(bool)
+  nameWithType: BmFontBuilder.WithChannelPacking(bool)
+  fullName: KernSmith.BmFontBuilder.WithChannelPacking(bool)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithChannelPacking
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 201
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, packs multiple glyphs into separate RGBA channels to save space.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithChannelPacking(bool channelPacking = true)
+    parameters:
+    - id: channelPacking
+      type: System.Boolean
+      description: Enable channel packing.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithChannelPacking(channelPacking As Boolean = True) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithChannelPacking*
+  nameWithType.vb: BmFontBuilder.WithChannelPacking(Boolean)
+  fullName.vb: KernSmith.BmFontBuilder.WithChannelPacking(Boolean)
+  name.vb: WithChannelPacking(Boolean)
+- uid: KernSmith.BmFontBuilder.WithColorFont(System.Boolean)
+  commentId: M:KernSmith.BmFontBuilder.WithColorFont(System.Boolean)
+  id: WithColorFont(System.Boolean)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithColorFont(bool)
+  nameWithType: BmFontBuilder.WithColorFont(bool)
+  fullName: KernSmith.BmFontBuilder.WithColorFont(bool)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithColorFont
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 206
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, renders color font layers (emoji, etc.).
+  example: []
+  syntax:
+    content: public BmFontBuilder WithColorFont(bool colorFont = true)
+    parameters:
+    - id: colorFont
+      type: System.Boolean
+      description: Enable color font rendering.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithColorFont(colorFont As Boolean = True) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithColorFont*
+  nameWithType.vb: BmFontBuilder.WithColorFont(Boolean)
+  fullName.vb: KernSmith.BmFontBuilder.WithColorFont(Boolean)
+  name.vb: WithColorFont(Boolean)
+- uid: KernSmith.BmFontBuilder.WithColorPaletteIndex(System.Int32)
+  commentId: M:KernSmith.BmFontBuilder.WithColorPaletteIndex(System.Int32)
+  id: WithColorPaletteIndex(System.Int32)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithColorPaletteIndex(int)
+  nameWithType: BmFontBuilder.WithColorPaletteIndex(int)
+  fullName: KernSmith.BmFontBuilder.WithColorPaletteIndex(int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithColorPaletteIndex
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 211
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Selects which CPAL color palette to use for color fonts.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithColorPaletteIndex(int index)
+    parameters:
+    - id: index
+      type: System.Int32
+      description: Zero-based palette index.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithColorPaletteIndex(index As Integer) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithColorPaletteIndex*
+  nameWithType.vb: BmFontBuilder.WithColorPaletteIndex(Integer)
+  fullName.vb: KernSmith.BmFontBuilder.WithColorPaletteIndex(Integer)
+  name.vb: WithColorPaletteIndex(Integer)
+- uid: KernSmith.BmFontBuilder.WithVariationAxis(System.String,System.Single)
+  commentId: M:KernSmith.BmFontBuilder.WithVariationAxis(System.String,System.Single)
+  id: WithVariationAxis(System.String,System.Single)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithVariationAxis(string, float)
+  nameWithType: BmFontBuilder.WithVariationAxis(string, float)
+  fullName: KernSmith.BmFontBuilder.WithVariationAxis(string, float)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithVariationAxis
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 217
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets a variable font axis value (e.g., "wght" = 700 for bold weight).
+  example: []
+  syntax:
+    content: public BmFontBuilder WithVariationAxis(string tag, float value)
+    parameters:
+    - id: tag
+      type: System.String
+      description: Four-character axis tag like "wght" or "wdth".
+    - id: value
+      type: System.Single
+      description: Axis value.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithVariationAxis(tag As String, value As Single) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithVariationAxis*
+  nameWithType.vb: BmFontBuilder.WithVariationAxis(String, Single)
+  fullName.vb: KernSmith.BmFontBuilder.WithVariationAxis(String, Single)
+  name.vb: WithVariationAxis(String, Single)
+- uid: KernSmith.BmFontBuilder.WithRasterizer(KernSmith.Rasterizer.IRasterizer)
+  commentId: M:KernSmith.BmFontBuilder.WithRasterizer(KernSmith.Rasterizer.IRasterizer)
+  id: WithRasterizer(KernSmith.Rasterizer.IRasterizer)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithRasterizer(IRasterizer)
+  nameWithType: BmFontBuilder.WithRasterizer(IRasterizer)
+  fullName: KernSmith.BmFontBuilder.WithRasterizer(KernSmith.Rasterizer.IRasterizer)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithRasterizer
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 227
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Uses a custom rasterizer instead of the default FreeType one.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithRasterizer(IRasterizer rasterizer)
+    parameters:
+    - id: rasterizer
+      type: KernSmith.Rasterizer.IRasterizer
+      description: Rasterizer to use.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithRasterizer(rasterizer As IRasterizer) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithRasterizer*
+- uid: KernSmith.BmFontBuilder.WithPacker(KernSmith.Atlas.IAtlasPacker)
+  commentId: M:KernSmith.BmFontBuilder.WithPacker(KernSmith.Atlas.IAtlasPacker)
+  id: WithPacker(KernSmith.Atlas.IAtlasPacker)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithPacker(IAtlasPacker)
+  nameWithType: BmFontBuilder.WithPacker(IAtlasPacker)
+  fullName: KernSmith.BmFontBuilder.WithPacker(KernSmith.Atlas.IAtlasPacker)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithPacker
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 232
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Uses a custom atlas packer instead of the default.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithPacker(IAtlasPacker packer)
+    parameters:
+    - id: packer
+      type: KernSmith.Atlas.IAtlasPacker
+      description: Packer to use.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithPacker(packer As IAtlasPacker) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithPacker*
+- uid: KernSmith.BmFontBuilder.WithEncoder(KernSmith.Atlas.IAtlasEncoder)
+  commentId: M:KernSmith.BmFontBuilder.WithEncoder(KernSmith.Atlas.IAtlasEncoder)
+  id: WithEncoder(KernSmith.Atlas.IAtlasEncoder)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithEncoder(IAtlasEncoder)
+  nameWithType: BmFontBuilder.WithEncoder(IAtlasEncoder)
+  fullName: KernSmith.BmFontBuilder.WithEncoder(KernSmith.Atlas.IAtlasEncoder)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithEncoder
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 237
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Uses a custom atlas encoder instead of the default.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithEncoder(IAtlasEncoder encoder)
+    parameters:
+    - id: encoder
+      type: KernSmith.Atlas.IAtlasEncoder
+      description: Encoder to use.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithEncoder(encoder As IAtlasEncoder) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithEncoder*
+- uid: KernSmith.BmFontBuilder.WithFontReader(KernSmith.Font.IFontReader)
+  commentId: M:KernSmith.BmFontBuilder.WithFontReader(KernSmith.Font.IFontReader)
+  id: WithFontReader(KernSmith.Font.IFontReader)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithFontReader(IFontReader)
+  nameWithType: BmFontBuilder.WithFontReader(IFontReader)
+  fullName: KernSmith.BmFontBuilder.WithFontReader(KernSmith.Font.IFontReader)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithFontReader
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 242
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Uses a custom font reader instead of the default.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithFontReader(IFontReader reader)
+    parameters:
+    - id: reader
+      type: KernSmith.Font.IFontReader
+      description: Font reader to use.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithFontReader(reader As IFontReader) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithFontReader*
+- uid: KernSmith.BmFontBuilder.WithSuperSampling(System.Int32)
+  commentId: M:KernSmith.BmFontBuilder.WithSuperSampling(System.Int32)
+  id: WithSuperSampling(System.Int32)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithSuperSampling(int)
+  nameWithType: BmFontBuilder.WithSuperSampling(int)
+  fullName: KernSmith.BmFontBuilder.WithSuperSampling(int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithSuperSampling
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 247
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets the super-sampling level (1 = off, 2 = 2x, 4 = 4x). Higher values give smoother edges.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithSuperSampling(int level)
+    parameters:
+    - id: level
+      type: System.Int32
+      description: Super-sampling multiplier.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithSuperSampling(level As Integer) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithSuperSampling*
+  nameWithType.vb: BmFontBuilder.WithSuperSampling(Integer)
+  fullName.vb: KernSmith.BmFontBuilder.WithSuperSampling(Integer)
+  name.vb: WithSuperSampling(Integer)
+- uid: KernSmith.BmFontBuilder.WithFallbackCharacter(System.Char)
+  commentId: M:KernSmith.BmFontBuilder.WithFallbackCharacter(System.Char)
+  id: WithFallbackCharacter(System.Char)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithFallbackCharacter(char)
+  nameWithType: BmFontBuilder.WithFallbackCharacter(char)
+  fullName: KernSmith.BmFontBuilder.WithFallbackCharacter(char)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithFallbackCharacter
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 252
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets the character shown when a glyph is missing from the font.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithFallbackCharacter(char fallbackChar)
+    parameters:
+    - id: fallbackChar
+      type: System.Char
+      description: Fallback character.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithFallbackCharacter(fallbackChar As Char) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithFallbackCharacter*
+  nameWithType.vb: BmFontBuilder.WithFallbackCharacter(Char)
+  fullName.vb: KernSmith.BmFontBuilder.WithFallbackCharacter(Char)
+  name.vb: WithFallbackCharacter(Char)
+- uid: KernSmith.BmFontBuilder.WithFallbackCodepoint(System.Int32)
+  commentId: M:KernSmith.BmFontBuilder.WithFallbackCodepoint(System.Int32)
+  id: WithFallbackCodepoint(System.Int32)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithFallbackCodepoint(int)
+  nameWithType: BmFontBuilder.WithFallbackCodepoint(int)
+  fullName: KernSmith.BmFontBuilder.WithFallbackCodepoint(int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithFallbackCodepoint
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 258
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: >-
+    Sets the fallback codepoint used when a requested character is not available in the font.
+        Supports supplementary plane characters (above U+FFFF) unlike <xref href="KernSmith.BmFontBuilder.WithFallbackCharacter(System.Char)" data-throw-if-not-resolved="false"></xref>.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithFallbackCodepoint(int codepoint)
+    parameters:
+    - id: codepoint
+      type: System.Int32
+      description: Unicode codepoint to use as fallback (e.g., 0x25A1 for '□').
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithFallbackCodepoint(codepoint As Integer) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithFallbackCodepoint*
+  nameWithType.vb: BmFontBuilder.WithFallbackCodepoint(Integer)
+  fullName.vb: KernSmith.BmFontBuilder.WithFallbackCodepoint(Integer)
+  name.vb: WithFallbackCodepoint(Integer)
+- uid: KernSmith.BmFontBuilder.WithTextureFormat(KernSmith.TextureFormat)
+  commentId: M:KernSmith.BmFontBuilder.WithTextureFormat(KernSmith.TextureFormat)
+  id: WithTextureFormat(KernSmith.TextureFormat)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithTextureFormat(TextureFormat)
+  nameWithType: BmFontBuilder.WithTextureFormat(TextureFormat)
+  fullName: KernSmith.BmFontBuilder.WithTextureFormat(KernSmith.TextureFormat)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithTextureFormat
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 271
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets the output texture format (PNG, TGA, or DDS).
+  example: []
+  syntax:
+    content: public BmFontBuilder WithTextureFormat(TextureFormat format)
+    parameters:
+    - id: format
+      type: KernSmith.TextureFormat
+      description: Texture format.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithTextureFormat(format As TextureFormat) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithTextureFormat*
+- uid: KernSmith.BmFontBuilder.WithHinting(System.Boolean)
+  commentId: M:KernSmith.BmFontBuilder.WithHinting(System.Boolean)
+  id: WithHinting(System.Boolean)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithHinting(bool)
+  nameWithType: BmFontBuilder.WithHinting(bool)
+  fullName: KernSmith.BmFontBuilder.WithHinting(bool)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithHinting
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 276
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, enables font hinting for sharper small text.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithHinting(bool enable = true)
+    parameters:
+    - id: enable
+      type: System.Boolean
+      description: Enable hinting.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithHinting(enable As Boolean = True) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithHinting*
+  nameWithType.vb: BmFontBuilder.WithHinting(Boolean)
+  fullName.vb: KernSmith.BmFontBuilder.WithHinting(Boolean)
+  name.vb: WithHinting(Boolean)
+- uid: KernSmith.BmFontBuilder.WithAutofitTexture(System.Boolean)
+  commentId: M:KernSmith.BmFontBuilder.WithAutofitTexture(System.Boolean)
+  id: WithAutofitTexture(System.Boolean)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithAutofitTexture(bool)
+  nameWithType: BmFontBuilder.WithAutofitTexture(bool)
+  fullName: KernSmith.BmFontBuilder.WithAutofitTexture(bool)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithAutofitTexture
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 281
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, shrinks the texture to fit the glyphs tightly.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithAutofitTexture(bool autofit = true)
+    parameters:
+    - id: autofit
+      type: System.Boolean
+      description: Enable auto-fit.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithAutofitTexture(autofit As Boolean = True) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithAutofitTexture*
+  nameWithType.vb: BmFontBuilder.WithAutofitTexture(Boolean)
+  fullName.vb: KernSmith.BmFontBuilder.WithAutofitTexture(Boolean)
+  name.vb: WithAutofitTexture(Boolean)
+- uid: KernSmith.BmFontBuilder.WithEqualizeCellHeights(System.Boolean)
+  commentId: M:KernSmith.BmFontBuilder.WithEqualizeCellHeights(System.Boolean)
+  id: WithEqualizeCellHeights(System.Boolean)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithEqualizeCellHeights(bool)
+  nameWithType: BmFontBuilder.WithEqualizeCellHeights(bool)
+  fullName: KernSmith.BmFontBuilder.WithEqualizeCellHeights(bool)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithEqualizeCellHeights
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 286
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, makes all glyph cells the same height.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithEqualizeCellHeights(bool equalize = true)
+    parameters:
+    - id: equalize
+      type: System.Boolean
+      description: Enable equal cell heights.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithEqualizeCellHeights(equalize As Boolean = True) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithEqualizeCellHeights*
+  nameWithType.vb: BmFontBuilder.WithEqualizeCellHeights(Boolean)
+  fullName.vb: KernSmith.BmFontBuilder.WithEqualizeCellHeights(Boolean)
+  name.vb: WithEqualizeCellHeights(Boolean)
+- uid: KernSmith.BmFontBuilder.WithForceOffsetsToZero(System.Boolean)
+  commentId: M:KernSmith.BmFontBuilder.WithForceOffsetsToZero(System.Boolean)
+  id: WithForceOffsetsToZero(System.Boolean)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithForceOffsetsToZero(bool)
+  nameWithType: BmFontBuilder.WithForceOffsetsToZero(bool)
+  fullName: KernSmith.BmFontBuilder.WithForceOffsetsToZero(bool)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithForceOffsetsToZero
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 291
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, forces all glyph x/y offsets to zero.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithForceOffsetsToZero(bool force = true)
+    parameters:
+    - id: force
+      type: System.Boolean
+      description: Enable zeroed offsets.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithForceOffsetsToZero(force As Boolean = True) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithForceOffsetsToZero*
+  nameWithType.vb: BmFontBuilder.WithForceOffsetsToZero(Boolean)
+  fullName.vb: KernSmith.BmFontBuilder.WithForceOffsetsToZero(Boolean)
+  name.vb: WithForceOffsetsToZero(Boolean)
+- uid: KernSmith.BmFontBuilder.WithChannels(KernSmith.ChannelConfig)
+  commentId: M:KernSmith.BmFontBuilder.WithChannels(KernSmith.ChannelConfig)
+  id: WithChannels(KernSmith.ChannelConfig)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithChannels(ChannelConfig)
+  nameWithType: BmFontBuilder.WithChannels(ChannelConfig)
+  fullName: KernSmith.BmFontBuilder.WithChannels(KernSmith.ChannelConfig)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithChannels
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 296
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets how each RGBA channel is used in the output texture.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithChannels(ChannelConfig config)
+    parameters:
+    - id: config
+      type: KernSmith.ChannelConfig
+      description: Channel configuration.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithChannels(config As ChannelConfig) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithChannels*
+- uid: KernSmith.BmFontBuilder.WithChannels(KernSmith.ChannelContent,KernSmith.ChannelContent,KernSmith.ChannelContent,KernSmith.ChannelContent,System.Boolean,System.Boolean,System.Boolean,System.Boolean)
+  commentId: M:KernSmith.BmFontBuilder.WithChannels(KernSmith.ChannelContent,KernSmith.ChannelContent,KernSmith.ChannelContent,KernSmith.ChannelContent,System.Boolean,System.Boolean,System.Boolean,System.Boolean)
+  id: WithChannels(KernSmith.ChannelContent,KernSmith.ChannelContent,KernSmith.ChannelContent,KernSmith.ChannelContent,System.Boolean,System.Boolean,System.Boolean,System.Boolean)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithChannels(ChannelContent, ChannelContent, ChannelContent, ChannelContent, bool, bool, bool, bool)
+  nameWithType: BmFontBuilder.WithChannels(ChannelContent, ChannelContent, ChannelContent, ChannelContent, bool, bool, bool, bool)
+  fullName: KernSmith.BmFontBuilder.WithChannels(KernSmith.ChannelContent, KernSmith.ChannelContent, KernSmith.ChannelContent, KernSmith.ChannelContent, bool, bool, bool, bool)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithChannels
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 308
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets what each RGBA channel contains and whether to invert it.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithChannels(ChannelContent alpha = ChannelContent.Glyph, ChannelContent red = ChannelContent.Glyph, ChannelContent green = ChannelContent.Glyph, ChannelContent blue = ChannelContent.Glyph, bool invertAlpha = false, bool invertRed = false, bool invertGreen = false, bool invertBlue = false)
+    parameters:
+    - id: alpha
+      type: KernSmith.ChannelContent
+      description: What the alpha channel holds.
+    - id: red
+      type: KernSmith.ChannelContent
+      description: What the red channel holds.
+    - id: green
+      type: KernSmith.ChannelContent
+      description: What the green channel holds.
+    - id: blue
+      type: KernSmith.ChannelContent
+      description: What the blue channel holds.
+    - id: invertAlpha
+      type: System.Boolean
+      description: Invert alpha channel.
+    - id: invertRed
+      type: System.Boolean
+      description: Invert red channel.
+    - id: invertGreen
+      type: System.Boolean
+      description: Invert green channel.
+    - id: invertBlue
+      type: System.Boolean
+      description: Invert blue channel.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithChannels(alpha As ChannelContent = ChannelContent.Glyph, red As ChannelContent = ChannelContent.Glyph, green As ChannelContent = ChannelContent.Glyph, blue As ChannelContent = ChannelContent.Glyph, invertAlpha As Boolean = False, invertRed As Boolean = False, invertGreen As Boolean = False, invertBlue As Boolean = False) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithChannels*
+  nameWithType.vb: BmFontBuilder.WithChannels(ChannelContent, ChannelContent, ChannelContent, ChannelContent, Boolean, Boolean, Boolean, Boolean)
+  fullName.vb: KernSmith.BmFontBuilder.WithChannels(KernSmith.ChannelContent, KernSmith.ChannelContent, KernSmith.ChannelContent, KernSmith.ChannelContent, Boolean, Boolean, Boolean, Boolean)
+  name.vb: WithChannels(ChannelContent, ChannelContent, ChannelContent, ChannelContent, Boolean, Boolean, Boolean, Boolean)
+- uid: KernSmith.BmFontBuilder.WithHeightPercent(System.Int32)
+  commentId: M:KernSmith.BmFontBuilder.WithHeightPercent(System.Int32)
+  id: WithHeightPercent(System.Int32)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithHeightPercent(int)
+  nameWithType: BmFontBuilder.WithHeightPercent(int)
+  fullName: KernSmith.BmFontBuilder.WithHeightPercent(int)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithHeightPercent
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 325
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Scales glyph height as a percentage. 100 = normal, 200 = double height.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithHeightPercent(int percent)
+    parameters:
+    - id: percent
+      type: System.Int32
+      description: Height as a percentage.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithHeightPercent(percent As Integer) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithHeightPercent*
+  nameWithType.vb: BmFontBuilder.WithHeightPercent(Integer)
+  fullName.vb: KernSmith.BmFontBuilder.WithHeightPercent(Integer)
+  name.vb: WithHeightPercent(Integer)
+- uid: KernSmith.BmFontBuilder.WithCustomGlyph(System.Int32,KernSmith.CustomGlyph)
+  commentId: M:KernSmith.BmFontBuilder.WithCustomGlyph(System.Int32,KernSmith.CustomGlyph)
+  id: WithCustomGlyph(System.Int32,KernSmith.CustomGlyph)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithCustomGlyph(int, CustomGlyph)
+  nameWithType: BmFontBuilder.WithCustomGlyph(int, CustomGlyph)
+  fullName: KernSmith.BmFontBuilder.WithCustomGlyph(int, KernSmith.CustomGlyph)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithCustomGlyph
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 331
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Adds a custom bitmap for a specific character code.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithCustomGlyph(int codepoint, CustomGlyph glyph)
+    parameters:
+    - id: codepoint
+      type: System.Int32
+      description: Unicode character code to replace.
+    - id: glyph
+      type: KernSmith.CustomGlyph
+      description: The custom glyph data.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithCustomGlyph(codepoint As Integer, glyph As CustomGlyph) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithCustomGlyph*
+  nameWithType.vb: BmFontBuilder.WithCustomGlyph(Integer, CustomGlyph)
+  fullName.vb: KernSmith.BmFontBuilder.WithCustomGlyph(Integer, KernSmith.CustomGlyph)
+  name.vb: WithCustomGlyph(Integer, CustomGlyph)
+- uid: KernSmith.BmFontBuilder.WithCustomGlyph(System.Int32,System.Int32,System.Int32,System.Byte[],KernSmith.PixelFormat,System.Nullable{System.Int32})
+  commentId: M:KernSmith.BmFontBuilder.WithCustomGlyph(System.Int32,System.Int32,System.Int32,System.Byte[],KernSmith.PixelFormat,System.Nullable{System.Int32})
+  id: WithCustomGlyph(System.Int32,System.Int32,System.Int32,System.Byte[],KernSmith.PixelFormat,System.Nullable{System.Int32})
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithCustomGlyph(int, int, int, byte[], PixelFormat, int?)
+  nameWithType: BmFontBuilder.WithCustomGlyph(int, int, int, byte[], PixelFormat, int?)
+  fullName: KernSmith.BmFontBuilder.WithCustomGlyph(int, int, int, byte[], KernSmith.PixelFormat, int?)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithCustomGlyph
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 346
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Adds a custom bitmap for a specific character code from raw pixels.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithCustomGlyph(int codepoint, int width, int height, byte[] pixelData, PixelFormat format = PixelFormat.Rgba32, int? xAdvance = null)
+    parameters:
+    - id: codepoint
+      type: System.Int32
+      description: Unicode character code to replace.
+    - id: width
+      type: System.Int32
+      description: Glyph width in pixels.
+    - id: height
+      type: System.Int32
+      description: Glyph height in pixels.
+    - id: pixelData
+      type: System.Byte[]
+      description: Raw pixel data.
+    - id: format
+      type: KernSmith.PixelFormat
+      description: Pixel format of the data.
+    - id: xAdvance
+      type: System.Nullable{System.Int32}
+      description: Custom horizontal advance, or null to auto-calculate.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithCustomGlyph(codepoint As Integer, width As Integer, height As Integer, pixelData As Byte(), format As PixelFormat = PixelFormat.Rgba32, xAdvance As Integer? = Nothing) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithCustomGlyph*
+  nameWithType.vb: BmFontBuilder.WithCustomGlyph(Integer, Integer, Integer, Byte(), PixelFormat, Integer?)
+  fullName.vb: KernSmith.BmFontBuilder.WithCustomGlyph(Integer, Integer, Integer, Byte(), KernSmith.PixelFormat, Integer?)
+  name.vb: WithCustomGlyph(Integer, Integer, Integer, Byte(), PixelFormat, Integer?)
+- uid: KernSmith.BmFontBuilder.WithMatchCharHeight(System.Boolean)
+  commentId: M:KernSmith.BmFontBuilder.WithMatchCharHeight(System.Boolean)
+  id: WithMatchCharHeight(System.Boolean)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithMatchCharHeight(bool)
+  nameWithType: BmFontBuilder.WithMatchCharHeight(bool)
+  fullName: KernSmith.BmFontBuilder.WithMatchCharHeight(bool)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithMatchCharHeight
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 354
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: If true, scales custom glyph advances to match the font's character height.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithMatchCharHeight(bool match = true)
+    parameters:
+    - id: match
+      type: System.Boolean
+      description: Enable height matching.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithMatchCharHeight(match As Boolean = True) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithMatchCharHeight*
+  nameWithType.vb: BmFontBuilder.WithMatchCharHeight(Boolean)
+  fullName.vb: KernSmith.BmFontBuilder.WithMatchCharHeight(Boolean)
+  name.vb: WithMatchCharHeight(Boolean)
+- uid: KernSmith.BmFontBuilder.WithPackingEfficiency(System.Single)
+  commentId: M:KernSmith.BmFontBuilder.WithPackingEfficiency(System.Single)
+  id: WithPackingEfficiency(System.Single)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithPackingEfficiency(float)
+  nameWithType: BmFontBuilder.WithPackingEfficiency(float)
+  fullName: KernSmith.BmFontBuilder.WithPackingEfficiency(float)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithPackingEfficiency
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 359
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Sets the expected packing efficiency for atlas size estimation. 0.0 = worst, 1.0 = perfect.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithPackingEfficiency(float efficiency)
+    parameters:
+    - id: efficiency
+      type: System.Single
+      description: Packing efficiency between 0.0 and 1.0.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithPackingEfficiency(efficiency As Single) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithPackingEfficiency*
+  nameWithType.vb: BmFontBuilder.WithPackingEfficiency(Single)
+  fullName.vb: KernSmith.BmFontBuilder.WithPackingEfficiency(Single)
+  name.vb: WithPackingEfficiency(Single)
+- uid: KernSmith.BmFontBuilder.WithShadow(System.Int32,System.Int32,System.Int32,System.Nullable{System.ValueTuple{System.Byte,System.Byte,System.Byte}},System.Single)
+  commentId: M:KernSmith.BmFontBuilder.WithShadow(System.Int32,System.Int32,System.Int32,System.Nullable{System.ValueTuple{System.Byte,System.Byte,System.Byte}},System.Single)
+  id: WithShadow(System.Int32,System.Int32,System.Int32,System.Nullable{System.ValueTuple{System.Byte,System.Byte,System.Byte}},System.Single)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithShadow(int, int, int, (byte R, byte G, byte B)?, float)
+  nameWithType: BmFontBuilder.WithShadow(int, int, int, (byte R, byte G, byte B)?, float)
+  fullName: KernSmith.BmFontBuilder.WithShadow(int, int, int, (byte R, byte G, byte B)?, float)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithShadow
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 368
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Adds a drop shadow behind each glyph.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithShadow(int offsetX = 2, int offsetY = 2, int blur = 0, (byte R, byte G, byte B)? color = null, float opacity = 1)
+    parameters:
+    - id: offsetX
+      type: System.Int32
+      description: Horizontal offset in pixels.
+    - id: offsetY
+      type: System.Int32
+      description: Vertical offset in pixels.
+    - id: blur
+      type: System.Int32
+      description: Blur radius in pixels.
+    - id: color
+      type: System.Nullable{System.ValueTuple{System.Byte,System.Byte,System.Byte}}
+      description: Shadow color as (R, G, B); defaults to black.
+    - id: opacity
+      type: System.Single
+      description: Shadow opacity, 0.0 to 1.0.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithShadow(offsetX As Integer = 2, offsetY As Integer = 2, blur As Integer = 0, color As (R As Byte, G As Byte, B As Byte)? = Nothing, opacity As Single = 1) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithShadow*
+  nameWithType.vb: BmFontBuilder.WithShadow(Integer, Integer, Integer, (R As Byte, G As Byte, B As Byte)?, Single)
+  fullName.vb: KernSmith.BmFontBuilder.WithShadow(Integer, Integer, Integer, (R As Byte, G As Byte, B As Byte)?, Single)
+  name.vb: WithShadow(Integer, Integer, Integer, (R As Byte, G As Byte, B As Byte)?, Single)
+- uid: KernSmith.BmFontBuilder.WithGradient(System.ValueTuple{System.Byte,System.Byte,System.Byte},System.ValueTuple{System.Byte,System.Byte,System.Byte},System.Single,System.Single)
+  commentId: M:KernSmith.BmFontBuilder.WithGradient(System.ValueTuple{System.Byte,System.Byte,System.Byte},System.ValueTuple{System.Byte,System.Byte,System.Byte},System.Single,System.Single)
+  id: WithGradient(System.ValueTuple{System.Byte,System.Byte,System.Byte},System.ValueTuple{System.Byte,System.Byte,System.Byte},System.Single,System.Single)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithGradient((byte R, byte G, byte B), (byte R, byte G, byte B), float, float)
+  nameWithType: BmFontBuilder.WithGradient((byte R, byte G, byte B), (byte R, byte G, byte B), float, float)
+  fullName: KernSmith.BmFontBuilder.WithGradient((byte R, byte G, byte B), (byte R, byte G, byte B), float, float)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithGradient
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 388
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Applies a color gradient across all glyphs.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithGradient((byte R, byte G, byte B) startColor, (byte R, byte G, byte B) endColor, float angleDegrees = 90, float midpoint = 0.5)
+    parameters:
+    - id: startColor
+      type: System.ValueTuple{System.Byte,System.Byte,System.Byte}
+      description: Start color as (R, G, B).
+    - id: endColor
+      type: System.ValueTuple{System.Byte,System.Byte,System.Byte}
+      description: End color as (R, G, B).
+    - id: angleDegrees
+      type: System.Single
+      description: Angle in degrees. 0 = left-to-right, 90 = top-to-bottom.
+    - id: midpoint
+      type: System.Single
+      description: Where the midpoint falls, 0.0 to 1.0.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithGradient(startColor As (R As Byte, G As Byte, B As Byte), endColor As (R As Byte, G As Byte, B As Byte), angleDegrees As Single = 90, midpoint As Single = 0.5) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithGradient*
+  nameWithType.vb: BmFontBuilder.WithGradient((R As Byte, G As Byte, B As Byte), (R As Byte, G As Byte, B As Byte), Single, Single)
+  fullName.vb: KernSmith.BmFontBuilder.WithGradient((R As Byte, G As Byte, B As Byte), (R As Byte, G As Byte, B As Byte), Single, Single)
+  name.vb: WithGradient((R As Byte, G As Byte, B As Byte), (R As Byte, G As Byte, B As Byte), Single, Single)
+- uid: KernSmith.BmFontBuilder.WithPostProcessor(KernSmith.Rasterizer.IGlyphPostProcessor)
+  commentId: M:KernSmith.BmFontBuilder.WithPostProcessor(KernSmith.Rasterizer.IGlyphPostProcessor)
+  id: WithPostProcessor(KernSmith.Rasterizer.IGlyphPostProcessor)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithPostProcessor(IGlyphPostProcessor)
+  nameWithType: BmFontBuilder.WithPostProcessor(IGlyphPostProcessor)
+  fullName: KernSmith.BmFontBuilder.WithPostProcessor(KernSmith.Rasterizer.IGlyphPostProcessor)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithPostProcessor
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 404
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Adds a custom post-processing step that runs on each glyph after rasterization.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithPostProcessor(IGlyphPostProcessor processor)
+    parameters:
+    - id: processor
+      type: KernSmith.Rasterizer.IGlyphPostProcessor
+      description: The post-processor to add.
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithPostProcessor(processor As IGlyphPostProcessor) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithPostProcessor*
+- uid: KernSmith.BmFontBuilder.WithCollectMetrics(System.Boolean)
+  commentId: M:KernSmith.BmFontBuilder.WithCollectMetrics(System.Boolean)
+  id: WithCollectMetrics(System.Boolean)
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: WithCollectMetrics(bool)
+  nameWithType: BmFontBuilder.WithCollectMetrics(bool)
+  fullName: KernSmith.BmFontBuilder.WithCollectMetrics(bool)
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: WithCollectMetrics
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 415
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Enables collection of pipeline performance metrics on the result.
+  example: []
+  syntax:
+    content: public BmFontBuilder WithCollectMetrics(bool collect = true)
+    parameters:
+    - id: collect
+      type: System.Boolean
+      description: Whether to collect metrics (default true).
+    return:
+      type: KernSmith.BmFontBuilder
+      description: This builder.
+    content.vb: Public Function WithCollectMetrics(collect As Boolean = True) As BmFontBuilder
+  overload: KernSmith.BmFontBuilder.WithCollectMetrics*
+  nameWithType.vb: BmFontBuilder.WithCollectMetrics(Boolean)
+  fullName.vb: KernSmith.BmFontBuilder.WithCollectMetrics(Boolean)
+  name.vb: WithCollectMetrics(Boolean)
+- uid: KernSmith.BmFontBuilder.Build
+  commentId: M:KernSmith.BmFontBuilder.Build
+  id: Build
+  parent: KernSmith.BmFontBuilder
+  langs:
+  - csharp
+  - vb
+  name: Build()
+  nameWithType: BmFontBuilder.Build()
+  fullName: KernSmith.BmFontBuilder.Build()
+  type: Method
+  source:
+    remote:
+      path: src/KernSmith/BmFontBuilder.cs
+      branch: main
+      repo: https://github.com/kaltinril/Kernsmith.git
+    id: Build
+    path: src/KernSmith/BmFontBuilder.cs
+    startLine: 480
+  assemblies:
+  - KernSmith
+  namespace: KernSmith
+  summary: Generates the bitmap font, returning the descriptor model and atlas texture pages.
+  example: []
+  syntax:
+    content: public BmFontResult Build()
+    return:
+      type: KernSmith.Output.BmFontResult
+      description: The generated bitmap font result.
+    content.vb: Public Function Build() As BmFontResult
+  overload: KernSmith.BmFontBuilder.Build*
+references:
+- uid: KernSmith
+  commentId: N:KernSmith
+  href: KernSmith.html
+  name: KernSmith
+  nameWithType: KernSmith
+  fullName: KernSmith
+- uid: System.Object
+  commentId: T:System.Object
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object
+  name: object
+  nameWithType: object
+  fullName: object
+  nameWithType.vb: Object
+  fullName.vb: Object
+  name.vb: Object
+- uid: System.Object.Equals(System.Object)
+  commentId: M:System.Object.Equals(System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  name: Equals(object)
+  nameWithType: object.Equals(object)
+  fullName: object.Equals(object)
+  nameWithType.vb: Object.Equals(Object)
+  fullName.vb: Object.Equals(Object)
+  name.vb: Equals(Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.Equals(System.Object,System.Object)
+  commentId: M:System.Object.Equals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  name: Equals(object, object)
+  nameWithType: object.Equals(object, object)
+  fullName: object.Equals(object, object)
+  nameWithType.vb: Object.Equals(Object, Object)
+  fullName.vb: Object.Equals(Object, Object)
+  name.vb: Equals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.Equals(System.Object,System.Object)
+    name: Equals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.GetHashCode
+  commentId: M:System.Object.GetHashCode
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  name: GetHashCode()
+  nameWithType: object.GetHashCode()
+  fullName: object.GetHashCode()
+  nameWithType.vb: Object.GetHashCode()
+  fullName.vb: Object.GetHashCode()
+  spec.csharp:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetHashCode
+    name: GetHashCode
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gethashcode
+  - name: (
+  - name: )
+- uid: System.Object.GetType
+  commentId: M:System.Object.GetType
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  name: GetType()
+  nameWithType: object.GetType()
+  fullName: object.GetType()
+  nameWithType.vb: Object.GetType()
+  fullName.vb: Object.GetType()
+  spec.csharp:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.GetType
+    name: GetType
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.gettype
+  - name: (
+  - name: )
+- uid: System.Object.ReferenceEquals(System.Object,System.Object)
+  commentId: M:System.Object.ReferenceEquals(System.Object,System.Object)
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  name: ReferenceEquals(object, object)
+  nameWithType: object.ReferenceEquals(object, object)
+  fullName: object.ReferenceEquals(object, object)
+  nameWithType.vb: Object.ReferenceEquals(Object, Object)
+  fullName.vb: Object.ReferenceEquals(Object, Object)
+  name.vb: ReferenceEquals(Object, Object)
+  spec.csharp:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+  spec.vb:
+  - uid: System.Object.ReferenceEquals(System.Object,System.Object)
+    name: ReferenceEquals
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.referenceequals
+  - name: (
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: ','
+  - name: " "
+  - uid: System.Object
+    name: Object
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object
+  - name: )
+- uid: System.Object.ToString
+  commentId: M:System.Object.ToString
+  parent: System.Object
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  name: ToString()
+  nameWithType: object.ToString()
+  fullName: object.ToString()
+  nameWithType.vb: Object.ToString()
+  fullName.vb: Object.ToString()
+  spec.csharp:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+  spec.vb:
+  - uid: System.Object.ToString
+    name: ToString
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.object.tostring
+  - name: (
+  - name: )
+- uid: System
+  commentId: N:System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system
+  name: System
+  nameWithType: System
+  fullName: System
+- uid: KernSmith.BmFontBuilder.FromConfig*
+  commentId: Overload:KernSmith.BmFontBuilder.FromConfig
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_FromConfig_System_String_
+  name: FromConfig
+  nameWithType: BmFontBuilder.FromConfig
+  fullName: KernSmith.BmFontBuilder.FromConfig
+- uid: System.String
+  commentId: T:System.String
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.string
+  name: string
+  nameWithType: string
+  fullName: string
+  nameWithType.vb: String
+  fullName.vb: String
+  name.vb: String
+- uid: KernSmith.BmFontBuilder
+  commentId: T:KernSmith.BmFontBuilder
+  parent: KernSmith
+  href: KernSmith.BmFontBuilder.html
+  name: BmFontBuilder
+  nameWithType: BmFontBuilder
+  fullName: KernSmith.BmFontBuilder
+- uid: KernSmith.BmfcConfig
+  commentId: T:KernSmith.BmfcConfig
+  parent: KernSmith
+  href: KernSmith.BmfcConfig.html
+  name: BmfcConfig
+  nameWithType: BmfcConfig
+  fullName: KernSmith.BmfcConfig
+- uid: KernSmith.BmFontBuilder.WithFont*
+  commentId: Overload:KernSmith.BmFontBuilder.WithFont
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithFont_System_Byte___
+  name: WithFont
+  nameWithType: BmFontBuilder.WithFont
+  fullName: KernSmith.BmFontBuilder.WithFont
+- uid: System.Byte[]
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.byte
+  name: byte[]
+  nameWithType: byte[]
+  fullName: byte[]
+  nameWithType.vb: Byte()
+  fullName.vb: Byte()
+  name.vb: Byte()
+  spec.csharp:
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: '['
+  - name: ']'
+  spec.vb:
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: (
+  - name: )
+- uid: KernSmith.BmFontBuilder.WithSystemFont*
+  commentId: Overload:KernSmith.BmFontBuilder.WithSystemFont
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithSystemFont_System_String_
+  name: WithSystemFont
+  nameWithType: BmFontBuilder.WithSystemFont
+  fullName: KernSmith.BmFontBuilder.WithSystemFont
+- uid: KernSmith.BmFontBuilder.WithSize*
+  commentId: Overload:KernSmith.BmFontBuilder.WithSize
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithSize_System_Int32_
+  name: WithSize
+  nameWithType: BmFontBuilder.WithSize
+  fullName: KernSmith.BmFontBuilder.WithSize
+- uid: System.Int32
+  commentId: T:System.Int32
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int
+  nameWithType: int
+  fullName: int
+  nameWithType.vb: Integer
+  fullName.vb: Integer
+  name.vb: Integer
+- uid: KernSmith.BmFontBuilder.WithCharacters*
+  commentId: Overload:KernSmith.BmFontBuilder.WithCharacters
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithCharacters_KernSmith_CharacterSet_
+  name: WithCharacters
+  nameWithType: BmFontBuilder.WithCharacters
+  fullName: KernSmith.BmFontBuilder.WithCharacters
+- uid: KernSmith.CharacterSet
+  commentId: T:KernSmith.CharacterSet
+  parent: KernSmith
+  href: KernSmith.CharacterSet.html
+  name: CharacterSet
+  nameWithType: CharacterSet
+  fullName: KernSmith.CharacterSet
+- uid: KernSmith.BmFontBuilder.WithBold*
+  commentId: Overload:KernSmith.BmFontBuilder.WithBold
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithBold_System_Boolean_
+  name: WithBold
+  nameWithType: BmFontBuilder.WithBold
+  fullName: KernSmith.BmFontBuilder.WithBold
+- uid: System.Boolean
+  commentId: T:System.Boolean
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.boolean
+  name: bool
+  nameWithType: bool
+  fullName: bool
+  nameWithType.vb: Boolean
+  fullName.vb: Boolean
+  name.vb: Boolean
+- uid: KernSmith.BmFontBuilder.WithItalic*
+  commentId: Overload:KernSmith.BmFontBuilder.WithItalic
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithItalic_System_Boolean_
+  name: WithItalic
+  nameWithType: BmFontBuilder.WithItalic
+  fullName: KernSmith.BmFontBuilder.WithItalic
+- uid: KernSmith.BmFontBuilder.WithAntiAlias*
+  commentId: Overload:KernSmith.BmFontBuilder.WithAntiAlias
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithAntiAlias_KernSmith_AntiAliasMode_
+  name: WithAntiAlias
+  nameWithType: BmFontBuilder.WithAntiAlias
+  fullName: KernSmith.BmFontBuilder.WithAntiAlias
+- uid: KernSmith.AntiAliasMode
+  commentId: T:KernSmith.AntiAliasMode
+  parent: KernSmith
+  href: KernSmith.AntiAliasMode.html
+  name: AntiAliasMode
+  nameWithType: AntiAliasMode
+  fullName: KernSmith.AntiAliasMode
+- uid: KernSmith.BmFontBuilder.WithMaxTextureSize*
+  commentId: Overload:KernSmith.BmFontBuilder.WithMaxTextureSize
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithMaxTextureSize_System_Int32_
+  name: WithMaxTextureSize
+  nameWithType: BmFontBuilder.WithMaxTextureSize
+  fullName: KernSmith.BmFontBuilder.WithMaxTextureSize
+- uid: KernSmith.BmFontBuilder.WithPadding*
+  commentId: Overload:KernSmith.BmFontBuilder.WithPadding
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithPadding_System_Int32_System_Int32_System_Int32_System_Int32_
+  name: WithPadding
+  nameWithType: BmFontBuilder.WithPadding
+  fullName: KernSmith.BmFontBuilder.WithPadding
+- uid: KernSmith.BmFontBuilder.WithSpacing*
+  commentId: Overload:KernSmith.BmFontBuilder.WithSpacing
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithSpacing_System_Int32_System_Int32_
+  name: WithSpacing
+  nameWithType: BmFontBuilder.WithSpacing
+  fullName: KernSmith.BmFontBuilder.WithSpacing
+- uid: KernSmith.BmFontBuilder.WithPackingAlgorithm*
+  commentId: Overload:KernSmith.BmFontBuilder.WithPackingAlgorithm
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithPackingAlgorithm_KernSmith_PackingAlgorithm_
+  name: WithPackingAlgorithm
+  nameWithType: BmFontBuilder.WithPackingAlgorithm
+  fullName: KernSmith.BmFontBuilder.WithPackingAlgorithm
+- uid: KernSmith.PackingAlgorithm
+  commentId: T:KernSmith.PackingAlgorithm
+  parent: KernSmith
+  href: KernSmith.PackingAlgorithm.html
+  name: PackingAlgorithm
+  nameWithType: PackingAlgorithm
+  fullName: KernSmith.PackingAlgorithm
+- uid: KernSmith.BmFontBuilder.WithKerning*
+  commentId: Overload:KernSmith.BmFontBuilder.WithKerning
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithKerning_System_Boolean_
+  name: WithKerning
+  nameWithType: BmFontBuilder.WithKerning
+  fullName: KernSmith.BmFontBuilder.WithKerning
+- uid: KernSmith.BmFontBuilder.WithOutline*
+  commentId: Overload:KernSmith.BmFontBuilder.WithOutline
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithOutline_System_Int32_
+  name: WithOutline
+  nameWithType: BmFontBuilder.WithOutline
+  fullName: KernSmith.BmFontBuilder.WithOutline
+- uid: System.Byte
+  commentId: T:System.Byte
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.byte
+  name: byte
+  nameWithType: byte
+  fullName: byte
+  nameWithType.vb: Byte
+  fullName.vb: Byte
+  name.vb: Byte
+- uid: KernSmith.BmFontBuilder.WithSdf*
+  commentId: Overload:KernSmith.BmFontBuilder.WithSdf
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithSdf_System_Boolean_
+  name: WithSdf
+  nameWithType: BmFontBuilder.WithSdf
+  fullName: KernSmith.BmFontBuilder.WithSdf
+- uid: KernSmith.BmFontBuilder.WithPowerOfTwo*
+  commentId: Overload:KernSmith.BmFontBuilder.WithPowerOfTwo
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithPowerOfTwo_System_Boolean_
+  name: WithPowerOfTwo
+  nameWithType: BmFontBuilder.WithPowerOfTwo
+  fullName: KernSmith.BmFontBuilder.WithPowerOfTwo
+- uid: KernSmith.BmFontBuilder.WithDpi*
+  commentId: Overload:KernSmith.BmFontBuilder.WithDpi
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithDpi_System_Int32_
+  name: WithDpi
+  nameWithType: BmFontBuilder.WithDpi
+  fullName: KernSmith.BmFontBuilder.WithDpi
+- uid: KernSmith.BmFontBuilder.WithFaceIndex*
+  commentId: Overload:KernSmith.BmFontBuilder.WithFaceIndex
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithFaceIndex_System_Int32_
+  name: WithFaceIndex
+  nameWithType: BmFontBuilder.WithFaceIndex
+  fullName: KernSmith.BmFontBuilder.WithFaceIndex
+- uid: KernSmith.BmFontBuilder.WithChannelPacking*
+  commentId: Overload:KernSmith.BmFontBuilder.WithChannelPacking
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithChannelPacking_System_Boolean_
+  name: WithChannelPacking
+  nameWithType: BmFontBuilder.WithChannelPacking
+  fullName: KernSmith.BmFontBuilder.WithChannelPacking
+- uid: KernSmith.BmFontBuilder.WithColorFont*
+  commentId: Overload:KernSmith.BmFontBuilder.WithColorFont
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithColorFont_System_Boolean_
+  name: WithColorFont
+  nameWithType: BmFontBuilder.WithColorFont
+  fullName: KernSmith.BmFontBuilder.WithColorFont
+- uid: KernSmith.BmFontBuilder.WithColorPaletteIndex*
+  commentId: Overload:KernSmith.BmFontBuilder.WithColorPaletteIndex
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithColorPaletteIndex_System_Int32_
+  name: WithColorPaletteIndex
+  nameWithType: BmFontBuilder.WithColorPaletteIndex
+  fullName: KernSmith.BmFontBuilder.WithColorPaletteIndex
+- uid: KernSmith.BmFontBuilder.WithVariationAxis*
+  commentId: Overload:KernSmith.BmFontBuilder.WithVariationAxis
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithVariationAxis_System_String_System_Single_
+  name: WithVariationAxis
+  nameWithType: BmFontBuilder.WithVariationAxis
+  fullName: KernSmith.BmFontBuilder.WithVariationAxis
+- uid: System.Single
+  commentId: T:System.Single
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.single
+  name: float
+  nameWithType: float
+  fullName: float
+  nameWithType.vb: Single
+  fullName.vb: Single
+  name.vb: Single
+- uid: KernSmith.BmFontBuilder.WithRasterizer*
+  commentId: Overload:KernSmith.BmFontBuilder.WithRasterizer
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithRasterizer_KernSmith_Rasterizer_IRasterizer_
+  name: WithRasterizer
+  nameWithType: BmFontBuilder.WithRasterizer
+  fullName: KernSmith.BmFontBuilder.WithRasterizer
+- uid: KernSmith.Rasterizer.IRasterizer
+  commentId: T:KernSmith.Rasterizer.IRasterizer
+  parent: KernSmith.Rasterizer
+  href: KernSmith.Rasterizer.IRasterizer.html
+  name: IRasterizer
+  nameWithType: IRasterizer
+  fullName: KernSmith.Rasterizer.IRasterizer
+- uid: KernSmith.Rasterizer
+  commentId: N:KernSmith.Rasterizer
+  href: KernSmith.html
+  name: KernSmith.Rasterizer
+  nameWithType: KernSmith.Rasterizer
+  fullName: KernSmith.Rasterizer
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Rasterizer
+    name: Rasterizer
+    href: KernSmith.Rasterizer.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Rasterizer
+    name: Rasterizer
+    href: KernSmith.Rasterizer.html
+- uid: KernSmith.BmFontBuilder.WithPacker*
+  commentId: Overload:KernSmith.BmFontBuilder.WithPacker
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithPacker_KernSmith_Atlas_IAtlasPacker_
+  name: WithPacker
+  nameWithType: BmFontBuilder.WithPacker
+  fullName: KernSmith.BmFontBuilder.WithPacker
+- uid: KernSmith.Atlas.IAtlasPacker
+  commentId: T:KernSmith.Atlas.IAtlasPacker
+  parent: KernSmith.Atlas
+  href: KernSmith.Atlas.IAtlasPacker.html
+  name: IAtlasPacker
+  nameWithType: IAtlasPacker
+  fullName: KernSmith.Atlas.IAtlasPacker
+- uid: KernSmith.Atlas
+  commentId: N:KernSmith.Atlas
+  href: KernSmith.html
+  name: KernSmith.Atlas
+  nameWithType: KernSmith.Atlas
+  fullName: KernSmith.Atlas
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Atlas
+    name: Atlas
+    href: KernSmith.Atlas.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Atlas
+    name: Atlas
+    href: KernSmith.Atlas.html
+- uid: KernSmith.BmFontBuilder.WithEncoder*
+  commentId: Overload:KernSmith.BmFontBuilder.WithEncoder
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithEncoder_KernSmith_Atlas_IAtlasEncoder_
+  name: WithEncoder
+  nameWithType: BmFontBuilder.WithEncoder
+  fullName: KernSmith.BmFontBuilder.WithEncoder
+- uid: KernSmith.Atlas.IAtlasEncoder
+  commentId: T:KernSmith.Atlas.IAtlasEncoder
+  parent: KernSmith.Atlas
+  href: KernSmith.Atlas.IAtlasEncoder.html
+  name: IAtlasEncoder
+  nameWithType: IAtlasEncoder
+  fullName: KernSmith.Atlas.IAtlasEncoder
+- uid: KernSmith.BmFontBuilder.WithFontReader*
+  commentId: Overload:KernSmith.BmFontBuilder.WithFontReader
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithFontReader_KernSmith_Font_IFontReader_
+  name: WithFontReader
+  nameWithType: BmFontBuilder.WithFontReader
+  fullName: KernSmith.BmFontBuilder.WithFontReader
+- uid: KernSmith.Font.IFontReader
+  commentId: T:KernSmith.Font.IFontReader
+  parent: KernSmith.Font
+  href: KernSmith.Font.IFontReader.html
+  name: IFontReader
+  nameWithType: IFontReader
+  fullName: KernSmith.Font.IFontReader
+- uid: KernSmith.Font
+  commentId: N:KernSmith.Font
+  href: KernSmith.html
+  name: KernSmith.Font
+  nameWithType: KernSmith.Font
+  fullName: KernSmith.Font
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Font
+    name: Font
+    href: KernSmith.Font.html
+- uid: KernSmith.BmFontBuilder.WithSuperSampling*
+  commentId: Overload:KernSmith.BmFontBuilder.WithSuperSampling
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithSuperSampling_System_Int32_
+  name: WithSuperSampling
+  nameWithType: BmFontBuilder.WithSuperSampling
+  fullName: KernSmith.BmFontBuilder.WithSuperSampling
+- uid: KernSmith.BmFontBuilder.WithFallbackCharacter*
+  commentId: Overload:KernSmith.BmFontBuilder.WithFallbackCharacter
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithFallbackCharacter_System_Char_
+  name: WithFallbackCharacter
+  nameWithType: BmFontBuilder.WithFallbackCharacter
+  fullName: KernSmith.BmFontBuilder.WithFallbackCharacter
+- uid: System.Char
+  commentId: T:System.Char
+  parent: System
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.char
+  name: char
+  nameWithType: char
+  fullName: char
+  nameWithType.vb: Char
+  fullName.vb: Char
+  name.vb: Char
+- uid: KernSmith.BmFontBuilder.WithFallbackCharacter(System.Char)
+  commentId: M:KernSmith.BmFontBuilder.WithFallbackCharacter(System.Char)
+  isExternal: true
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithFallbackCharacter_System_Char_
+  name: WithFallbackCharacter(char)
+  nameWithType: BmFontBuilder.WithFallbackCharacter(char)
+  fullName: KernSmith.BmFontBuilder.WithFallbackCharacter(char)
+  nameWithType.vb: BmFontBuilder.WithFallbackCharacter(Char)
+  fullName.vb: KernSmith.BmFontBuilder.WithFallbackCharacter(Char)
+  name.vb: WithFallbackCharacter(Char)
+  spec.csharp:
+  - uid: KernSmith.BmFontBuilder.WithFallbackCharacter(System.Char)
+    name: WithFallbackCharacter
+    href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithFallbackCharacter_System_Char_
+  - name: (
+  - uid: System.Char
+    name: char
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.char
+  - name: )
+  spec.vb:
+  - uid: KernSmith.BmFontBuilder.WithFallbackCharacter(System.Char)
+    name: WithFallbackCharacter
+    href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithFallbackCharacter_System_Char_
+  - name: (
+  - uid: System.Char
+    name: Char
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.char
+  - name: )
+- uid: KernSmith.BmFontBuilder.WithFallbackCodepoint*
+  commentId: Overload:KernSmith.BmFontBuilder.WithFallbackCodepoint
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithFallbackCodepoint_System_Int32_
+  name: WithFallbackCodepoint
+  nameWithType: BmFontBuilder.WithFallbackCodepoint
+  fullName: KernSmith.BmFontBuilder.WithFallbackCodepoint
+- uid: KernSmith.BmFontBuilder.WithTextureFormat*
+  commentId: Overload:KernSmith.BmFontBuilder.WithTextureFormat
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithTextureFormat_KernSmith_TextureFormat_
+  name: WithTextureFormat
+  nameWithType: BmFontBuilder.WithTextureFormat
+  fullName: KernSmith.BmFontBuilder.WithTextureFormat
+- uid: KernSmith.TextureFormat
+  commentId: T:KernSmith.TextureFormat
+  parent: KernSmith
+  href: KernSmith.TextureFormat.html
+  name: TextureFormat
+  nameWithType: TextureFormat
+  fullName: KernSmith.TextureFormat
+- uid: KernSmith.BmFontBuilder.WithHinting*
+  commentId: Overload:KernSmith.BmFontBuilder.WithHinting
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithHinting_System_Boolean_
+  name: WithHinting
+  nameWithType: BmFontBuilder.WithHinting
+  fullName: KernSmith.BmFontBuilder.WithHinting
+- uid: KernSmith.BmFontBuilder.WithAutofitTexture*
+  commentId: Overload:KernSmith.BmFontBuilder.WithAutofitTexture
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithAutofitTexture_System_Boolean_
+  name: WithAutofitTexture
+  nameWithType: BmFontBuilder.WithAutofitTexture
+  fullName: KernSmith.BmFontBuilder.WithAutofitTexture
+- uid: KernSmith.BmFontBuilder.WithEqualizeCellHeights*
+  commentId: Overload:KernSmith.BmFontBuilder.WithEqualizeCellHeights
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithEqualizeCellHeights_System_Boolean_
+  name: WithEqualizeCellHeights
+  nameWithType: BmFontBuilder.WithEqualizeCellHeights
+  fullName: KernSmith.BmFontBuilder.WithEqualizeCellHeights
+- uid: KernSmith.BmFontBuilder.WithForceOffsetsToZero*
+  commentId: Overload:KernSmith.BmFontBuilder.WithForceOffsetsToZero
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithForceOffsetsToZero_System_Boolean_
+  name: WithForceOffsetsToZero
+  nameWithType: BmFontBuilder.WithForceOffsetsToZero
+  fullName: KernSmith.BmFontBuilder.WithForceOffsetsToZero
+- uid: KernSmith.BmFontBuilder.WithChannels*
+  commentId: Overload:KernSmith.BmFontBuilder.WithChannels
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithChannels_KernSmith_ChannelConfig_
+  name: WithChannels
+  nameWithType: BmFontBuilder.WithChannels
+  fullName: KernSmith.BmFontBuilder.WithChannels
+- uid: KernSmith.ChannelConfig
+  commentId: T:KernSmith.ChannelConfig
+  parent: KernSmith
+  href: KernSmith.ChannelConfig.html
+  name: ChannelConfig
+  nameWithType: ChannelConfig
+  fullName: KernSmith.ChannelConfig
+- uid: KernSmith.ChannelContent
+  commentId: T:KernSmith.ChannelContent
+  parent: KernSmith
+  href: KernSmith.ChannelContent.html
+  name: ChannelContent
+  nameWithType: ChannelContent
+  fullName: KernSmith.ChannelContent
+- uid: KernSmith.BmFontBuilder.WithHeightPercent*
+  commentId: Overload:KernSmith.BmFontBuilder.WithHeightPercent
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithHeightPercent_System_Int32_
+  name: WithHeightPercent
+  nameWithType: BmFontBuilder.WithHeightPercent
+  fullName: KernSmith.BmFontBuilder.WithHeightPercent
+- uid: KernSmith.BmFontBuilder.WithCustomGlyph*
+  commentId: Overload:KernSmith.BmFontBuilder.WithCustomGlyph
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithCustomGlyph_System_Int32_KernSmith_CustomGlyph_
+  name: WithCustomGlyph
+  nameWithType: BmFontBuilder.WithCustomGlyph
+  fullName: KernSmith.BmFontBuilder.WithCustomGlyph
+- uid: KernSmith.CustomGlyph
+  commentId: T:KernSmith.CustomGlyph
+  parent: KernSmith
+  href: KernSmith.CustomGlyph.html
+  name: CustomGlyph
+  nameWithType: CustomGlyph
+  fullName: KernSmith.CustomGlyph
+- uid: KernSmith.PixelFormat
+  commentId: T:KernSmith.PixelFormat
+  parent: KernSmith
+  href: KernSmith.PixelFormat.html
+  name: PixelFormat
+  nameWithType: PixelFormat
+  fullName: KernSmith.PixelFormat
+- uid: System.Nullable{System.Int32}
+  commentId: T:System.Nullable{System.Int32}
+  parent: System
+  definition: System.Nullable`1
+  href: https://learn.microsoft.com/dotnet/api/system.int32
+  name: int?
+  nameWithType: int?
+  fullName: int?
+  nameWithType.vb: Integer?
+  fullName.vb: Integer?
+  name.vb: Integer?
+  spec.csharp:
+  - uid: System.Int32
+    name: int
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.int32
+  - name: '?'
+  spec.vb:
+  - uid: System.Int32
+    name: Integer
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.int32
+  - name: '?'
+- uid: System.Nullable`1
+  commentId: T:System.Nullable`1
+  isExternal: true
+  href: https://learn.microsoft.com/dotnet/api/system.nullable-1
+  name: Nullable<T>
+  nameWithType: Nullable<T>
+  fullName: System.Nullable<T>
+  nameWithType.vb: Nullable(Of T)
+  fullName.vb: System.Nullable(Of T)
+  name.vb: Nullable(Of T)
+  spec.csharp:
+  - uid: System.Nullable`1
+    name: Nullable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.nullable-1
+  - name: <
+  - name: T
+  - name: '>'
+  spec.vb:
+  - uid: System.Nullable`1
+    name: Nullable
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.nullable-1
+  - name: (
+  - name: Of
+  - name: " "
+  - name: T
+  - name: )
+- uid: KernSmith.BmFontBuilder.WithMatchCharHeight*
+  commentId: Overload:KernSmith.BmFontBuilder.WithMatchCharHeight
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithMatchCharHeight_System_Boolean_
+  name: WithMatchCharHeight
+  nameWithType: BmFontBuilder.WithMatchCharHeight
+  fullName: KernSmith.BmFontBuilder.WithMatchCharHeight
+- uid: KernSmith.BmFontBuilder.WithPackingEfficiency*
+  commentId: Overload:KernSmith.BmFontBuilder.WithPackingEfficiency
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithPackingEfficiency_System_Single_
+  name: WithPackingEfficiency
+  nameWithType: BmFontBuilder.WithPackingEfficiency
+  fullName: KernSmith.BmFontBuilder.WithPackingEfficiency
+- uid: KernSmith.BmFontBuilder.WithShadow*
+  commentId: Overload:KernSmith.BmFontBuilder.WithShadow
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithShadow_System_Int32_System_Int32_System_Int32_System_Nullable_System_ValueTuple_System_Byte_System_Byte_System_Byte___System_Single_
+  name: WithShadow
+  nameWithType: BmFontBuilder.WithShadow
+  fullName: KernSmith.BmFontBuilder.WithShadow
+- uid: System.Nullable{System.ValueTuple{System.Byte,System.Byte,System.Byte}}
+  commentId: T:System.Nullable{System.ValueTuple{System.Byte,System.Byte,System.Byte}}
+  parent: System
+  definition: System.Nullable`1
+  href: https://learn.microsoft.com/dotnet/api/system.byte
+  name: (byte R, byte G, byte B)?
+  nameWithType: (byte R, byte G, byte B)?
+  fullName: (byte R, byte G, byte B)?
+  nameWithType.vb: (R As Byte, G As Byte, B As Byte)?
+  fullName.vb: (R As Byte, G As Byte, B As Byte)?
+  name.vb: (R As Byte, G As Byte, B As Byte)?
+  spec.csharp:
+  - name: (
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: " "
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.R
+    name: R
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.r
+  - name: ','
+  - name: " "
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: " "
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.G
+    name: G
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.g
+  - name: ','
+  - name: " "
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: " "
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.B
+    name: B
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.b
+  - name: )
+  - name: '?'
+  spec.vb:
+  - name: (
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.R
+    name: R
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.r
+  - name: " "
+  - name: As
+  - name: " "
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: ','
+  - name: " "
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.G
+    name: G
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.g
+  - name: " "
+  - name: As
+  - name: " "
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: ','
+  - name: " "
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.B
+    name: B
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.b
+  - name: " "
+  - name: As
+  - name: " "
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: )
+  - name: '?'
+- uid: KernSmith.BmFontBuilder.WithGradient*
+  commentId: Overload:KernSmith.BmFontBuilder.WithGradient
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithGradient_System_ValueTuple_System_Byte_System_Byte_System_Byte__System_ValueTuple_System_Byte_System_Byte_System_Byte__System_Single_System_Single_
+  name: WithGradient
+  nameWithType: BmFontBuilder.WithGradient
+  fullName: KernSmith.BmFontBuilder.WithGradient
+- uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}
+  commentId: T:System.ValueTuple{System.Byte,System.Byte,System.Byte}
+  parent: System
+  definition: System.ValueTuple`3
+  href: https://learn.microsoft.com/dotnet/api/system.byte
+  name: (byte R, byte G, byte B)
+  nameWithType: (byte R, byte G, byte B)
+  fullName: (byte R, byte G, byte B)
+  nameWithType.vb: (R As Byte, G As Byte, B As Byte)
+  fullName.vb: (R As Byte, G As Byte, B As Byte)
+  name.vb: (R As Byte, G As Byte, B As Byte)
+  spec.csharp:
+  - name: (
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: " "
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.R
+    name: R
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.r
+  - name: ','
+  - name: " "
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: " "
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.G
+    name: G
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.g
+  - name: ','
+  - name: " "
+  - uid: System.Byte
+    name: byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: " "
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.B
+    name: B
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.b
+  - name: )
+  spec.vb:
+  - name: (
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.R
+    name: R
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.r
+  - name: " "
+  - name: As
+  - name: " "
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: ','
+  - name: " "
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.G
+    name: G
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.g
+  - name: " "
+  - name: As
+  - name: " "
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: ','
+  - name: " "
+  - uid: System.ValueTuple{System.Byte,System.Byte,System.Byte}.B
+    name: B
+    href: https://learn.microsoft.com/dotnet/api/system.valuetuple-system.byte,system.byte,system.byte-.b
+  - name: " "
+  - name: As
+  - name: " "
+  - uid: System.Byte
+    name: Byte
+    isExternal: true
+    href: https://learn.microsoft.com/dotnet/api/system.byte
+  - name: )
+- uid: System.ValueTuple`3
+  commentId: T:System.ValueTuple`3
+  name: (T1, T2, T3)
+  nameWithType: (T1, T2, T3)
+  fullName: (T1, T2, T3)
+  spec.csharp:
+  - name: (
+  - name: T1
+  - name: ','
+  - name: " "
+  - name: T2
+  - name: ','
+  - name: " "
+  - name: T3
+  - name: )
+  spec.vb:
+  - name: (
+  - name: T1
+  - name: ','
+  - name: " "
+  - name: T2
+  - name: ','
+  - name: " "
+  - name: T3
+  - name: )
+- uid: KernSmith.BmFontBuilder.WithPostProcessor*
+  commentId: Overload:KernSmith.BmFontBuilder.WithPostProcessor
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithPostProcessor_KernSmith_Rasterizer_IGlyphPostProcessor_
+  name: WithPostProcessor
+  nameWithType: BmFontBuilder.WithPostProcessor
+  fullName: KernSmith.BmFontBuilder.WithPostProcessor
+- uid: KernSmith.Rasterizer.IGlyphPostProcessor
+  commentId: T:KernSmith.Rasterizer.IGlyphPostProcessor
+  parent: KernSmith.Rasterizer
+  href: KernSmith.Rasterizer.IGlyphPostProcessor.html
+  name: IGlyphPostProcessor
+  nameWithType: IGlyphPostProcessor
+  fullName: KernSmith.Rasterizer.IGlyphPostProcessor
+- uid: KernSmith.BmFontBuilder.WithCollectMetrics*
+  commentId: Overload:KernSmith.BmFontBuilder.WithCollectMetrics
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_WithCollectMetrics_System_Boolean_
+  name: WithCollectMetrics
+  nameWithType: BmFontBuilder.WithCollectMetrics
+  fullName: KernSmith.BmFontBuilder.WithCollectMetrics
+- uid: KernSmith.BmFontBuilder.Build*
+  commentId: Overload:KernSmith.BmFontBuilder.Build
+  href: KernSmith.BmFontBuilder.html#KernSmith_BmFontBuilder_Build
+  name: Build
+  nameWithType: BmFontBuilder.Build
+  fullName: KernSmith.BmFontBuilder.Build
+- uid: KernSmith.Output.BmFontResult
+  commentId: T:KernSmith.Output.BmFontResult
+  parent: KernSmith.Output
+  href: KernSmith.Output.BmFontResult.html
+  name: BmFontResult
+  nameWithType: BmFontResult
+  fullName: KernSmith.Output.BmFontResult
+- uid: KernSmith.Output
+  commentId: N:KernSmith.Output
+  href: KernSmith.html
+  name: KernSmith.Output
+  nameWithType: KernSmith.Output
+  fullName: KernSmith.Output
+  spec.csharp:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
+  spec.vb:
+  - uid: KernSmith
+    name: KernSmith
+    href: KernSmith.html
+  - name: .
+  - uid: KernSmith.Output
+    name: Output
+    href: KernSmith.Output.html
