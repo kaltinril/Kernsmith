@@ -365,19 +365,60 @@ public class EffectsPanel : Panel
             };
             contentPanel.Children.Add(packAlgoCombo.Visual);
 
-            // --- Padding ---
+            // --- Padding (cross layout) ---
             AddLabeledDivider(contentPanel, "Padding");
 
-            var padUpBox = AddLabeledIntBoxReturn(contentPanel, "Up:", _atlasConfig.PaddingUp, 40, v => { if (!_updatingFromVm) _atlasConfig.PaddingUp = Math.Clamp(v, 0, 32); });
-            var padRightBox = AddLabeledIntBoxReturn(contentPanel, "Right:", _atlasConfig.PaddingRight, 40, v => { if (!_updatingFromVm) _atlasConfig.PaddingRight = Math.Clamp(v, 0, 32); });
-            var padDownBox = AddLabeledIntBoxReturn(contentPanel, "Down:", _atlasConfig.PaddingDown, 40, v => { if (!_updatingFromVm) _atlasConfig.PaddingDown = Math.Clamp(v, 0, 32); });
-            var padLeftBox = AddLabeledIntBoxReturn(contentPanel, "Left:", _atlasConfig.PaddingLeft, 40, v => { if (!_updatingFromVm) _atlasConfig.PaddingLeft = Math.Clamp(v, 0, 32); });
+            // Row 1: centered Up
+            var padTopRow = new StackPanel();
+            padTopRow.Orientation = Orientation.Horizontal;
+            padTopRow.Spacing = 2;
+            contentPanel.Children.Add(padTopRow.Visual);
 
-            // --- Spacing ---
+            var padTopSpacer = new Label(); padTopSpacer.Text = ""; padTopSpacer.Width = 70;
+            padTopRow.AddChild(padTopSpacer);
+            var padUpBox = CreateSmallIntBox(_atlasConfig.PaddingUp, v => { if (!_updatingFromVm) _atlasConfig.PaddingUp = Math.Clamp(v, 0, 32); });
+            padTopRow.AddChild(padUpBox);
+
+            // Row 2: Left + label + Right
+            var padMidRow = new StackPanel();
+            padMidRow.Orientation = Orientation.Horizontal;
+            padMidRow.Spacing = 2;
+            contentPanel.Children.Add(padMidRow.Visual);
+
+            var padLeftBox = CreateSmallIntBox(_atlasConfig.PaddingLeft, v => { if (!_updatingFromVm) _atlasConfig.PaddingLeft = Math.Clamp(v, 0, 32); });
+            padMidRow.AddChild(padLeftBox);
+            var padCenterLabel = new Label(); padCenterLabel.Text = " pad "; padCenterLabel.Width = 40;
+            padMidRow.AddChild(padCenterLabel);
+            var padRightBox = CreateSmallIntBox(_atlasConfig.PaddingRight, v => { if (!_updatingFromVm) _atlasConfig.PaddingRight = Math.Clamp(v, 0, 32); });
+            padMidRow.AddChild(padRightBox);
+
+            // Row 3: centered Down
+            var padBotRow = new StackPanel();
+            padBotRow.Orientation = Orientation.Horizontal;
+            padBotRow.Spacing = 2;
+            contentPanel.Children.Add(padBotRow.Visual);
+
+            var padBotSpacer = new Label(); padBotSpacer.Text = ""; padBotSpacer.Width = 70;
+            padBotRow.AddChild(padBotSpacer);
+            var padDownBox = CreateSmallIntBox(_atlasConfig.PaddingDown, v => { if (!_updatingFromVm) _atlasConfig.PaddingDown = Math.Clamp(v, 0, 32); });
+            padBotRow.AddChild(padDownBox);
+
+            // --- Spacing (simple H x V row) ---
             AddLabeledDivider(contentPanel, "Spacing");
 
-            var spacingHBox = AddLabeledIntBoxReturn(contentPanel, "H:", _atlasConfig.SpacingH, 40, v => { if (!_updatingFromVm) _atlasConfig.SpacingH = Math.Clamp(v, 0, 32); });
-            var spacingVBox = AddLabeledIntBoxReturn(contentPanel, "V:", _atlasConfig.SpacingV, 40, v => { if (!_updatingFromVm) _atlasConfig.SpacingV = Math.Clamp(v, 0, 32); });
+            var spacingRow = new StackPanel();
+            spacingRow.Orientation = Orientation.Horizontal;
+            spacingRow.Spacing = 4;
+            contentPanel.Children.Add(spacingRow.Visual);
+
+            var spcHLabel = new Label(); spcHLabel.Text = "H:";
+            spacingRow.AddChild(spcHLabel);
+            var spacingHBox = CreateSmallIntBox(_atlasConfig.SpacingH, v => { if (!_updatingFromVm) _atlasConfig.SpacingH = Math.Clamp(v, 0, 32); });
+            spacingRow.AddChild(spacingHBox);
+            var spcVLabel = new Label(); spcVLabel.Text = "V:";
+            spacingRow.AddChild(spcVLabel);
+            var spacingVBox = CreateSmallIntBox(_atlasConfig.SpacingV, v => { if (!_updatingFromVm) _atlasConfig.SpacingV = Math.Clamp(v, 0, 32); });
+            spacingRow.AddChild(spacingVBox);
 
             // Sync UI from ViewModel when preset is applied
             _atlasConfig.PropertyChanged += (_, e) =>
@@ -615,6 +656,20 @@ public class EffectsPanel : Panel
                 onChanged(val);
         };
         row.AddChild(box);
+        return box;
+    }
+
+    private static TextBox CreateSmallIntBox(int initialValue, Action<int> onChanged)
+    {
+        var box = new TextBox();
+        box.Width = 36;
+        box.Height = 24;
+        box.Text = initialValue.ToString();
+        box.TextChanged += (_, _) =>
+        {
+            if (int.TryParse(box.Text, out var val))
+                onChanged(val);
+        };
         return box;
     }
 
