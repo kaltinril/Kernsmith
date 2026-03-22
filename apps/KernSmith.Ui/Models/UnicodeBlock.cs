@@ -1,7 +1,15 @@
 namespace KernSmith.Ui.Models;
 
+/// <summary>
+/// A contiguous range of Unicode codepoints (e.g., "Basic Latin" U+0020..U+007F).
+/// Used to populate the Unicode block checkboxes in the character selection panel.
+/// </summary>
+/// <param name="Name">Human-readable block name.</param>
+/// <param name="Start">First codepoint in the block (inclusive).</param>
+/// <param name="End">Last codepoint in the block (inclusive).</param>
 public record UnicodeBlock(string Name, int Start, int End)
 {
+    /// <summary>Number of codepoints in this block.</summary>
     public int Count => End - Start + 1;
 
     public static readonly IReadOnlyList<UnicodeBlock> StandardBlocks = new[]

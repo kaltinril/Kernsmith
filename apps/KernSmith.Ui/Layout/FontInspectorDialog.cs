@@ -5,6 +5,10 @@ using KernSmith.Ui.ViewModels;
 
 namespace KernSmith.Ui.Layout;
 
+/// <summary>
+/// Modal dialog that displays detailed font metadata: family name, style, glyph count,
+/// head/hhea/OS2 table values, and variation axes. Accessible via Help > Font Inspector.
+/// </summary>
 public class FontInspectorDialog
 {
     private readonly FontConfigViewModel _fontConfig;
@@ -14,6 +18,9 @@ public class FontInspectorDialog
         _fontConfig = fontConfig;
     }
 
+    /// <summary>
+    /// Opens the font inspector dialog if a font is loaded. Reads full font info from the current font data.
+    /// </summary>
     public void Show()
     {
         if (!_fontConfig.IsFontLoaded || _fontConfig.FontData == null)

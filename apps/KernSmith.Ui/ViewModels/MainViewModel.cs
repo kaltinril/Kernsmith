@@ -8,6 +8,11 @@ using Microsoft.Xna.Framework;
 
 namespace KernSmith.Ui.ViewModels;
 
+/// <summary>
+/// Central orchestrator for the UI. Owns all child ViewModels, coordinates font loading,
+/// bitmap font generation, project save/load, auto-regeneration, dirty tracking, and
+/// window title updates.
+/// </summary>
 public class MainViewModel : ViewModel
 {
     private const string AppVersion = "1.0.0";
@@ -101,6 +106,9 @@ public class MainViewModel : ViewModel
         };
     }
 
+    /// <summary>
+    /// Opens a font file using the pending path from <see cref="FileDialogService"/>.
+    /// </summary>
     public void OpenFont()
     {
         var path = _fileDialogService.OpenFontFile();
@@ -108,6 +116,9 @@ public class MainViewModel : ViewModel
         LoadFontFromPath(path);
     }
 
+    /// <summary>
+    /// Loads a font file from the given path, updates metadata, and adds it to recent fonts.
+    /// </summary>
     public void LoadFontFromPath(string path)
     {
         try
@@ -143,6 +154,9 @@ public class MainViewModel : ViewModel
         }
     }
 
+    /// <summary>
+    /// Returns a validation error message if generation cannot proceed, or null if ready.
+    /// </summary>
     public string? ValidateBeforeGenerate()
     {
         if (!FontConfig.IsFontLoaded)
@@ -154,6 +168,10 @@ public class MainViewModel : ViewModel
         return null;
     }
 
+    /// <summary>
+    /// Validates settings, builds a <see cref="GenerationRequest"/>, runs generation on a
+    /// background thread, and marshals the preview/status update back to the main thread.
+    /// </summary>
     public async Task GenerateAsync()
     {
         if (StatusBar.IsGenerating)
@@ -279,6 +297,9 @@ public class MainViewModel : ViewModel
         }
     }
 
+    /// <summary>
+    /// Opens a save dialog and exports the last generated result to the chosen path.
+    /// </summary>
     public void SaveAs()
     {
         if (_lastResult == null) return;
@@ -304,6 +325,9 @@ public class MainViewModel : ViewModel
         }, initialDir);
     }
 
+    /// <summary>
+    /// Saves the current project. Uses the existing path if available, otherwise opens a save dialog.
+    /// </summary>
     public void SaveProject()
     {
         var path = _projectService.CurrentProjectPath;
@@ -334,6 +358,9 @@ public class MainViewModel : ViewModel
         }
     }
 
+    /// <summary>
+    /// Opens a file dialog to select and load a .bmfc project file.
+    /// </summary>
     public void LoadProject()
     {
         var path = _fileDialogService.OpenFontFile();
@@ -341,6 +368,9 @@ public class MainViewModel : ViewModel
         LoadProjectFromPath(path);
     }
 
+    /// <summary>
+    /// Loads a .bmfc project file from the given path, populating all ViewModels.
+    /// </summary>
     public void LoadProjectFromPath(string path)
     {
         try
@@ -358,6 +388,10 @@ public class MainViewModel : ViewModel
         }
     }
 
+    /// <summary>
+    /// Debounces auto-regeneration: waits 500ms after the last change before generating.
+    /// Only triggers when <see cref="AutoRegenerate"/> is enabled and a font is loaded.
+    /// </summary>
     public void RequestAutoRegenerate()
     {
         if (!AutoRegenerate || !FontConfig.IsFontLoaded) return;
@@ -373,6 +407,9 @@ public class MainViewModel : ViewModel
         }, token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
     }
 
+    /// <summary>
+    /// Exits the application by calling <see cref="Game.Exit"/>.
+    /// </summary>
     public void Exit()
     {
         _game.Exit();

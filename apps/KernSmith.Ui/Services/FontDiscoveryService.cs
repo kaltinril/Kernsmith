@@ -4,10 +4,18 @@ using KernSmith.Ui.Models;
 
 namespace KernSmith.Ui.Services;
 
+/// <summary>
+/// Discovers system-installed fonts and groups them by family name.
+/// Results are cached after the first call for the lifetime of the service.
+/// </summary>
 public class FontDiscoveryService
 {
     private IReadOnlyList<SystemFontGroup>? _cachedFonts;
 
+    /// <summary>
+    /// Returns all system fonts grouped by family name and ordered alphabetically.
+    /// Caches the result on first call.
+    /// </summary>
     public IReadOnlyList<SystemFontGroup> GetSystemFonts()
     {
         if (_cachedFonts != null)

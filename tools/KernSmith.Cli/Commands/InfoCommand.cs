@@ -4,8 +4,17 @@ using KernSmith.Font;
 
 namespace KernSmith.Cli.Commands;
 
+/// <summary>
+/// Reads a TTF/OTF/WOFF font file and displays its metadata including family, style,
+/// glyph count, kerning pairs, variation axes, and Unicode coverage.
+/// </summary>
 internal sealed class InfoCommand
 {
+    /// <summary>
+    /// Parses arguments, reads font metadata, and prints it in human-readable or JSON format.
+    /// </summary>
+    /// <param name="args">Command-line arguments forwarded from the top-level dispatcher.</param>
+    /// <returns>An exit code indicating success or the category of failure.</returns>
     public static int Execute(string[] args)
     {
         if (args.Length == 0 || args is ["--help"])

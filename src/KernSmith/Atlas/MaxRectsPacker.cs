@@ -1,5 +1,9 @@
 namespace KernSmith.Atlas;
 
+/// <summary>
+/// Packs glyph rectangles into atlas pages using the MaxRects algorithm
+/// with Best Short Side Fit heuristic.
+/// </summary>
 internal sealed class MaxRectsPacker : IAtlasPacker
 {
     private record struct Rect(int X, int Y, int Width, int Height);

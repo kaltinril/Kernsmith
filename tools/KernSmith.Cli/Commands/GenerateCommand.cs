@@ -5,8 +5,17 @@ using KernSmith.Output;
 
 namespace KernSmith.Cli.Commands;
 
+/// <summary>
+/// Generates BMFont .fnt and texture atlas files from a TTF/OTF/WOFF font, driven by CLI flags
+/// or a .bmfc configuration file.
+/// </summary>
 internal sealed class GenerateCommand
 {
+    /// <summary>
+    /// Parses generate arguments, rasterizes glyphs, packs the atlas, and writes output files.
+    /// </summary>
+    /// <param name="args">Command-line arguments forwarded from the top-level dispatcher.</param>
+    /// <returns>An exit code indicating success or the category of failure.</returns>
     public static int Execute(string[] args)
     {
         if (args.Length == 0 || args is ["--help"])
@@ -124,6 +133,8 @@ internal sealed class GenerateCommand
     /// Resolves the output path from a <see cref="CliOptions"/> instance.
     /// Returns the normalized base path (without extension) where .fnt and texture files will be written.
     /// </summary>
+    /// <param name="options">The CLI options containing font path, system font name, and output path.</param>
+    /// <returns>The resolved base output path without file extension.</returns>
     internal static string ResolveOutputPath(CliOptions options)
     {
         string baseName;
@@ -149,6 +160,9 @@ internal sealed class GenerateCommand
     /// <summary>
     /// Builds a <see cref="FontGeneratorOptions"/> from CLI options.
     /// </summary>
+    /// <param name="options">The CLI options to convert.</param>
+    /// <param name="characters">Optional pre-built character set; built from <paramref name="options"/> if <c>null</c>.</param>
+    /// <returns>A fully configured <see cref="FontGeneratorOptions"/>.</returns>
     internal static FontGeneratorOptions BuildGenOptions(CliOptions options, CharacterSet? characters = null)
     {
         characters ??= BuildCharacterSet(options);
@@ -246,6 +260,10 @@ internal sealed class GenerateCommand
     /// <summary>
     /// Runs a single font generation job from fully-resolved options and character set.
     /// </summary>
+    /// <param name="options">The resolved CLI options for this job.</param>
+    /// <param name="characters">Optional pre-built character set; built from <paramref name="options"/> if <c>null</c>.</param>
+    /// <param name="fontData">Optional raw font bytes; when <c>null</c>, the font is loaded from disk or system.</param>
+    /// <returns>A <see cref="JobResult"/> containing the output path, elapsed time, and optional metrics.</returns>
     internal static JobResult RunJob(CliOptions options, CharacterSet? characters = null, byte[]? fontData = null)
     {
         // Validate
@@ -296,6 +314,11 @@ internal sealed class GenerateCommand
         };
     }
 
+    /// <summary>
+    /// Parses raw CLI arguments into a <see cref="CliOptions"/> instance.
+    /// </summary>
+    /// <param name="args">The command-line arguments to parse.</param>
+    /// <returns>A populated <see cref="CliOptions"/> with all recognized flags applied.</returns>
     internal static CliOptions ParseArgs(string[] args)
     {
         var options = new CliOptions();
@@ -545,6 +568,8 @@ internal sealed class GenerateCommand
     /// Merges CLI-provided options over config-loaded options.
     /// CLI flags that were explicitly set override config values.
     /// </summary>
+    /// <param name="config">The config-loaded options, modified in place with CLI overrides.</param>
+    /// <param name="cli">The CLI-parsed options whose non-default values take precedence.</param>
     private static void MergeConfigIntoOptions(CliOptions config, CliOptions cli)
     {
         // CLI values override config values (only override if explicitly set by CLI)
@@ -605,6 +630,11 @@ internal sealed class GenerateCommand
         if (cli.GradientMidpoint != 0.5f) config.GradientMidpoint = cli.GradientMidpoint;
     }
 
+    /// <summary>
+    /// Builds a <see cref="CharacterSet"/> by combining presets, explicit chars, file chars, and Unicode ranges.
+    /// </summary>
+    /// <param name="options">The CLI options containing character set configuration.</param>
+    /// <returns>A merged <see cref="CharacterSet"/>, defaulting to ASCII if no sources are specified.</returns>
     internal static CharacterSet BuildCharacterSet(CliOptions options)
     {
         var sets = new List<CharacterSet>();
@@ -646,6 +676,11 @@ internal sealed class GenerateCommand
         return sets.Count == 1 ? sets[0] : CharacterSet.Union(sets.ToArray());
     }
 
+    /// <summary>
+    /// Prints a summary of what would be generated without writing any files.
+    /// </summary>
+    /// <param name="options">The resolved CLI options.</param>
+    /// <param name="characters">The character set that would be rasterized.</param>
     private static void PrintDryRun(CliOptions options, CharacterSet characters)
     {
         var fontSource = options.FontPath ?? $"system:{options.SystemFontName}";
@@ -667,6 +702,11 @@ internal sealed class GenerateCommand
         Console.WriteLine("[dry-run] No files written.");
     }
 
+    /// <summary>
+    /// Parses a padding argument string in the form "n" (uniform) or "up,right,down,left" (per-side).
+    /// </summary>
+    /// <param name="value">The raw padding string from the CLI.</param>
+    /// <returns>A <see cref="Padding"/> instance.</returns>
     private static Padding ParsePaddingArg(string value)
     {
         var parts = value.Split(',', StringSplitOptions.TrimEntries);
@@ -675,6 +715,11 @@ internal sealed class GenerateCommand
         return new Padding(int.Parse(parts[0]));
     }
 
+    /// <summary>
+    /// Parses a spacing argument string in the form "n" (uniform) or "h,v" (horizontal, vertical).
+    /// </summary>
+    /// <param name="value">The raw spacing string from the CLI.</param>
+    /// <returns>A <see cref="Spacing"/> instance.</returns>
     private static Spacing ParseSpacingArg(string value)
     {
         var parts = value.Split(',', StringSplitOptions.TrimEntries);
@@ -686,6 +731,8 @@ internal sealed class GenerateCommand
     /// <summary>
     /// Parses a shadow argument string in the form "offsetX,offsetY[,color[,blur]]".
     /// </summary>
+    /// <param name="options">The CLI options to populate with parsed shadow values.</param>
+    /// <param name="arg">The raw shadow argument string.</param>
     private static void ParseShadowArg(CliOptions options, string arg)
     {
         var parts = arg.Split(',', StringSplitOptions.TrimEntries);
@@ -702,6 +749,13 @@ internal sealed class GenerateCommand
             options.ShadowBlur = int.Parse(parts[3]);
     }
 
+    /// <summary>
+    /// Advances the argument index and returns the next value, or throws if none remains.
+    /// </summary>
+    /// <param name="allArgs">The full argument array.</param>
+    /// <param name="i">The current index, advanced by one on return.</param>
+    /// <param name="flag">The flag name, used in the error message when the value is missing.</param>
+    /// <returns>The next argument value.</returns>
     private static string NextArg(string[] allArgs, ref int i, string flag)
     {
         i++;

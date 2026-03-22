@@ -3,8 +3,14 @@ using Gum.Forms.Controls;
 
 namespace KernSmith.Ui.Layout;
 
+/// <summary>
+/// Modal error dialog that displays a title and message with an OK button to dismiss.
+/// </summary>
 public static class ErrorDialog
 {
+    /// <summary>
+    /// Shows a centered modal window with the given title and error message.
+    /// </summary>
     public static void Show(string title, string message)
     {
         var window = new Window();

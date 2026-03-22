@@ -11,6 +11,11 @@ using KernSmith.Ui.Styling;
 
 namespace KernSmith.Ui;
 
+/// <summary>
+/// MonoGame <see cref="Game"/> subclass and application entry point. Initializes GUM with a dark theme,
+/// creates all services and the root <see cref="MainViewModel"/>, handles keyboard shortcuts
+/// (Ctrl+O/S/G, zoom), drag-and-drop font/project loading, UI scaling, and the game loop.
+/// </summary>
 public class KernSmithGame : Game
 {
     private const int MinWindowWidth = 800;

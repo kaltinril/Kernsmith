@@ -93,6 +93,7 @@ Output Layer
 | 67 | [Workflow & UX Polish](done/phase-67-ui-workflow-ux-polish.md) | Guided workflow, engine presets, contextual help, drag-and-drop, themes | Complete |
 | 68 | [Platform, Performance & Accessibility](done/phase-68-ui-platform-performance.md) | Background generation, cross-platform, keyboard accessibility, error handling, packaging | Complete |
 | 69 | [Final Polish & Release Prep](phase-69-ui-final-polish.md) | UI consistency, branding, testing, distribution, marketing assets, release checklist | Partial |
+| 73 | [Documentation Review](phase-73-documentation-review.md) | XML doc comments, class/method summaries, README gaps across library, CLI, and UI | Planning |
 
 ---
 

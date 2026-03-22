@@ -7,6 +7,10 @@ using KernSmith.Ui.Styling;
 
 namespace KernSmith.Ui.Layout;
 
+/// <summary>
+/// Modal dialog listing all keyboard shortcuts and mouse controls.
+/// Accessible via Help > Keyboard Shortcuts.
+/// </summary>
 public static class KeyboardShortcutsDialog
 {
     private static readonly (string Shortcut, string Description)[] Shortcuts =

@@ -1,5 +1,8 @@
 namespace KernSmith.Cli.Utilities;
 
+/// <summary>
+/// Defines process exit codes returned by CLI commands to indicate success or categorized failures.
+/// </summary>
 internal static class ExitCodes
 {
     public const int Success = 0;

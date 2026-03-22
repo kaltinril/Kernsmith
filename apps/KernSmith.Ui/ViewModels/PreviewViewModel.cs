@@ -4,6 +4,10 @@ using KernSmith.Ui.Models;
 
 namespace KernSmith.Ui.ViewModels;
 
+/// <summary>
+/// Holds the generated atlas preview state: pages, selected page, zoom level, glyph counts,
+/// and atlas summary text. Updated by <see cref="LoadResult"/> after each generation.
+/// </summary>
 public class PreviewViewModel : ViewModel
 {
     public IReadOnlyList<PreviewPage> Pages { get => Get<IReadOnlyList<PreviewPage>>(); set => Set(value); }
@@ -35,6 +39,9 @@ public class PreviewViewModel : ViewModel
         AtlasSummary = "";
     }
 
+    /// <summary>
+    /// Populates pages, glyph counts, and atlas summary from a completed generation result.
+    /// </summary>
     public void LoadResult(BmFontResult result)
     {
         var pages = new List<PreviewPage>();
@@ -76,6 +83,9 @@ public class PreviewViewModel : ViewModel
         HasResult = true;
     }
 
+    /// <summary>
+    /// Moves the selected page index by <paramref name="delta"/>, clamped to valid range.
+    /// </summary>
     public void NavigatePage(int delta)
     {
         if (Pages.Count == 0) return;
@@ -84,6 +94,9 @@ public class PreviewViewModel : ViewModel
         SelectedPage = Pages[newIndex];
     }
 
+    /// <summary>
+    /// Resets the preview to its initial empty state.
+    /// </summary>
     public void Clear()
     {
         Pages = Array.Empty<PreviewPage>();

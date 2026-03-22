@@ -8,12 +8,22 @@ namespace KernSmith.Cli.Config;
 /// </summary>
 internal static class BmfcParser
 {
+    /// <summary>
+    /// Reads a .bmfc configuration file and returns the equivalent CLI options.
+    /// </summary>
+    /// <param name="filePath">Absolute or relative path to the .bmfc file.</param>
+    /// <returns>A <see cref="CliOptions"/> populated from the configuration file.</returns>
     public static CliOptions Parse(string filePath)
     {
         var config = BmfcConfigReader.Read(filePath);
         return MapToCliOptions(config);
     }
 
+    /// <summary>
+    /// Maps a library-level <see cref="BmfcConfig"/> to CLI-level <see cref="CliOptions"/>.
+    /// </summary>
+    /// <param name="config">The parsed .bmfc configuration.</param>
+    /// <returns>A <see cref="CliOptions"/> with all fields mapped from the config.</returns>
     private static CliOptions MapToCliOptions(BmfcConfig config)
     {
         var gen = config.Options;
@@ -102,6 +112,11 @@ internal static class BmfcParser
         return options;
     }
 
+    /// <summary>
+    /// Groups sorted codepoints into contiguous Unicode ranges.
+    /// </summary>
+    /// <param name="sortedCodepoints">Codepoints in ascending order.</param>
+    /// <returns>A list of (Start, End) inclusive ranges.</returns>
     private static List<(int Start, int End)> ExtractRanges(int[] sortedCodepoints)
     {
         var ranges = new List<(int Start, int End)>();
@@ -125,5 +140,12 @@ internal static class BmfcParser
         return ranges;
     }
 
+    /// <summary>
+    /// Formats RGB bytes as an uppercase six-character hex string (e.g., "FF0000").
+    /// </summary>
+    /// <param name="r">Red channel value.</param>
+    /// <param name="g">Green channel value.</param>
+    /// <param name="b">Blue channel value.</param>
+    /// <returns>A six-character hex color string without a leading hash.</returns>
     private static string FormatColor(byte r, byte g, byte b) => $"{r:X2}{g:X2}{b:X2}";
 }

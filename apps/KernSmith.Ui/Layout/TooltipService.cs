@@ -6,6 +6,11 @@ using KernSmith.Ui.Styling;
 
 namespace KernSmith.Ui.Layout;
 
+/// <summary>
+/// Global tooltip service. Controls register via <see cref="SetTooltip"/> and the tooltip
+/// appears after a 500ms hover delay, following the cursor and clamped to window bounds.
+/// Must be initialized once and updated each frame.
+/// </summary>
 public static class TooltipService
 {
     private static ContainerRuntime? _tooltipContainer;
@@ -16,6 +21,9 @@ public static class TooltipService
     private static string _pendingText = "";
     private static readonly TimeSpan ShowDelay = TimeSpan.FromMilliseconds(500);
 
+    /// <summary>
+    /// Creates the tooltip container and text runtime, and adds them to the GUM popup root.
+    /// </summary>
     public static void Initialize()
     {
         _tooltipContainer = new ContainerRuntime();
@@ -43,6 +51,9 @@ public static class TooltipService
         Gum.Forms.Controls.FrameworkElement.PopupRoot.Children.Add(_tooltipContainer);
     }
 
+    /// <summary>
+    /// Registers a tooltip for the given control. Shows on hover after delay, hides on roll-off.
+    /// </summary>
     public static void SetTooltip(Gum.Forms.Controls.FrameworkElement control, string text)
     {
         control.Visual.RollOn += (_, _) =>

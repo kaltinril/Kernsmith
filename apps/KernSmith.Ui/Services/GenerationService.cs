@@ -3,8 +3,15 @@ using KernSmith.Output;
 
 namespace KernSmith.Ui.Services;
 
+/// <summary>
+/// Translates a <see cref="GenerationRequest"/> into a <see cref="BmFont.Builder"/> call chain
+/// and runs bitmap font generation on a background thread.
+/// </summary>
 public class GenerationService
 {
+    /// <summary>
+    /// Builds and executes a bitmap font generation from the given request on a background thread.
+    /// </summary>
     public async Task<BmFontResult> GenerateAsync(GenerationRequest request)
     {
         return await Task.Run(() =>

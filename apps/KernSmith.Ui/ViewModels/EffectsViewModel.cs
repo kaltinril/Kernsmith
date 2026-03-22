@@ -3,6 +3,11 @@ using KernSmith.Font.Tables;
 
 namespace KernSmith.Ui.ViewModels;
 
+/// <summary>
+/// Holds all glyph rendering effect settings: font style (bold/italic/AA/hinting/super-sample),
+/// outline, shadow, gradient, channel packing, SDF, color font, variable font axes, and
+/// the fallback character.
+/// </summary>
 public class EffectsViewModel : ViewModel
 {
     // Font Style (always active)

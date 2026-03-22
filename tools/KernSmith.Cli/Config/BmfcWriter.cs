@@ -8,12 +8,22 @@ namespace KernSmith.Cli.Config;
 /// </summary>
 internal static class BmfcWriter
 {
+    /// <summary>
+    /// Writes CLI options to a .bmfc configuration file.
+    /// </summary>
+    /// <param name="options">The CLI options to serialize.</param>
+    /// <param name="filePath">The output .bmfc file path.</param>
     public static void Write(CliOptions options, string filePath)
     {
         var config = MapToBmfcConfig(options);
         BmfcConfigWriter.WriteToFile(config, filePath);
     }
 
+    /// <summary>
+    /// Maps CLI options to a library-level <see cref="BmfcConfig"/> for serialization.
+    /// </summary>
+    /// <param name="options">The CLI options to convert.</param>
+    /// <returns>A <see cref="BmfcConfig"/> ready for file serialization.</returns>
     private static BmfcConfig MapToBmfcConfig(CliOptions options)
     {
         var genOptions = BuildFontGeneratorOptions(options);
@@ -32,6 +42,8 @@ internal static class BmfcWriter
     /// Builds a <see cref="FontGeneratorOptions"/> from CLI options for serialization.
     /// This mirrors GenerateCommand.BuildGenOptions but without requiring a validated Size.
     /// </summary>
+    /// <param name="options">The CLI options to convert.</param>
+    /// <returns>A <see cref="FontGeneratorOptions"/> suitable for .bmfc serialization.</returns>
     private static FontGeneratorOptions BuildFontGeneratorOptions(CliOptions options)
     {
         var genOptions = new FontGeneratorOptions

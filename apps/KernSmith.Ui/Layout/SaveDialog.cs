@@ -4,6 +4,10 @@ using Gum.Forms.Controls;
 
 namespace KernSmith.Ui.Layout;
 
+/// <summary>
+/// Modal save dialog with directory browser, file name input, and Save/Cancel buttons.
+/// Used for both .fnt export and .bmfc project saving.
+/// </summary>
 public class SaveDialog
 {
     private Window _window = null!;
@@ -22,6 +26,9 @@ public class SaveDialog
         _defaultExtension = defaultExtension;
     }
 
+    /// <summary>
+    /// Opens the save dialog. Calls <paramref name="onSave"/> with the full output path on confirmation.
+    /// </summary>
     public void Show(Action<string> onSave, string? initialDir = null)
     {
         _onSave = onSave;

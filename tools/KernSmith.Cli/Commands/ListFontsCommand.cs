@@ -4,8 +4,16 @@ using KernSmith.Font;
 
 namespace KernSmith.Cli.Commands;
 
+/// <summary>
+/// Lists system-installed fonts grouped by family name, with optional filtering and JSON output.
+/// </summary>
 internal sealed class ListFontsCommand
 {
+    /// <summary>
+    /// Scans system fonts and prints them to stdout, optionally filtered by a substring pattern.
+    /// </summary>
+    /// <param name="args">Command-line arguments forwarded from the top-level dispatcher.</param>
+    /// <returns>An exit code indicating success or the category of failure.</returns>
     public static int Execute(string[] args)
     {
         if (args is ["--help"])

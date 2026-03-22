@@ -2,6 +2,9 @@ using StbImageWriteSharp;
 
 namespace KernSmith.Atlas;
 
+/// <summary>
+/// Encodes atlas pixel data to PNG format using StbImageWriteSharp.
+/// </summary>
 internal sealed class StbPngEncoder : IAtlasEncoder
 {
     public string FileExtension => ".png";

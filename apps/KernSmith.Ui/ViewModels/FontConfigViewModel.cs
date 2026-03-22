@@ -4,6 +4,11 @@ using KernSmith.Ui.Models;
 
 namespace KernSmith.Ui.ViewModels;
 
+/// <summary>
+/// Manages the loaded font source (file or system), font metadata, TTC face selection,
+/// font size, character set preset, and the system font list. Supports loading from file path,
+/// system font selection, and style variant switching for bold/italic.
+/// </summary>
 public class FontConfigViewModel : ViewModel
 {
     // --- Font source ---
@@ -75,6 +80,9 @@ public class FontConfigViewModel : ViewModel
         SelectedPreset = CharacterSetPreset.Ascii;
     }
 
+    /// <summary>
+    /// Reads the font file from disk, detects TTC face count, and populates metadata properties.
+    /// </summary>
     public void LoadFromFile(string path)
     {
         var fontData = File.ReadAllBytes(path);
@@ -94,6 +102,9 @@ public class FontConfigViewModel : ViewModel
         IsFontLoaded = true;
     }
 
+    /// <summary>
+    /// Reloads font metadata for a different face index within a TTC font collection.
+    /// </summary>
     public void ReloadWithFaceIndex(int faceIndex)
     {
         if (FontData == null) return;
@@ -103,6 +114,9 @@ public class FontConfigViewModel : ViewModel
         PopulateFromFontInfo(fontInfo);
     }
 
+    /// <summary>
+    /// Loads a system-installed font by reading its file from the path in <paramref name="systemFont"/>.
+    /// </summary>
     public void LoadFromSystem(SystemFontInfo systemFont)
     {
         byte[] fontData;
@@ -181,6 +195,9 @@ public class FontConfigViewModel : ViewModel
         }
     }
 
+    /// <summary>
+    /// Returns the <see cref="CharacterSet"/> corresponding to the current preset or custom characters.
+    /// </summary>
     public CharacterSet GetCharacterSet()
     {
         return SelectedPreset switch

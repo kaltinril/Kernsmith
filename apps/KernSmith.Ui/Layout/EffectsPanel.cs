@@ -7,6 +7,11 @@ using MonoGameGum.GueDeriving;
 
 namespace KernSmith.Ui.Layout;
 
+/// <summary>
+/// Right-side panel containing all glyph effect controls (font style, outline, shadow, gradient,
+/// channels, SDF, color font, variable font axes, fallback character) and the atlas/output
+/// configuration sections.
+/// </summary>
 public class EffectsPanel : Panel
 {
     private readonly EffectsViewModel _effects;

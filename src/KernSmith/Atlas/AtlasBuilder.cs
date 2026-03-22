@@ -2,8 +2,20 @@ using KernSmith.Rasterizer;
 
 namespace KernSmith.Atlas;
 
+/// <summary>
+/// Composes rasterized glyph bitmaps into atlas page images using pack layout results.
+/// </summary>
 internal static class AtlasBuilder
 {
+    /// <summary>
+    /// Builds atlas pages by blitting rasterized glyphs onto page-sized pixel buffers
+    /// according to the placements determined by the packer.
+    /// </summary>
+    /// <param name="glyphs">Rasterized glyph bitmaps to compose.</param>
+    /// <param name="packResult">Packing layout specifying where each glyph is placed.</param>
+    /// <param name="padding">Padding applied around each glyph in the atlas.</param>
+    /// <param name="encoder">Encoder used to produce the final image format.</param>
+    /// <returns>A list of atlas pages containing the composed pixel data.</returns>
     public static IReadOnlyList<AtlasPage> Build(
         IReadOnlyList<RasterizedGlyph> glyphs,
         PackResult packResult,
@@ -127,6 +139,17 @@ internal static class AtlasBuilder
         return pages;
     }
 
+    /// <summary>
+    /// Composites RGBA source pixels onto a target RGBA buffer at the specified region,
+    /// skipping fully transparent pixels.
+    /// </summary>
+    /// <param name="targetPixels">Destination RGBA pixel buffer.</param>
+    /// <param name="targetWidth">Width of the destination buffer in pixels.</param>
+    /// <param name="regionX">X offset in the destination buffer.</param>
+    /// <param name="regionY">Y offset in the destination buffer.</param>
+    /// <param name="sourcePixels">Source RGBA pixel data to composite.</param>
+    /// <param name="sourceWidth">Width of the source image in pixels.</param>
+    /// <param name="sourceHeight">Height of the source image in pixels.</param>
     internal static void CompositeOnto(byte[] targetPixels, int targetWidth, int regionX, int regionY, byte[] sourcePixels, int sourceWidth, int sourceHeight)
     {
         for (var row = 0; row < sourceHeight; row++)

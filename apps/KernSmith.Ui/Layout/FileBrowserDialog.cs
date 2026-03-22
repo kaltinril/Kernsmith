@@ -3,6 +3,10 @@ using Gum.Forms.Controls;
 
 namespace KernSmith.Ui.Layout;
 
+/// <summary>
+/// Modal file browser dialog for selecting font files (.ttf/.otf/.woff/.ttc) or custom file types.
+/// Displays a path bar, directory/file listing, and Open/Cancel buttons.
+/// </summary>
 public class FileBrowserDialog
 {
     private Window _window = null!;
@@ -20,6 +24,9 @@ public class FileBrowserDialog
     /// </summary>
     public string[]? FileExtensionFilter { get; set; }
 
+    /// <summary>
+    /// Opens the file browser dialog. Calls <paramref name="onFileSelected"/> with the chosen path.
+    /// </summary>
     public void Show(Action<string> onFileSelected)
     {
         _onFileSelected = onFileSelected;

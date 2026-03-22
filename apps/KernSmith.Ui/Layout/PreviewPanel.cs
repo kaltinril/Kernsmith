@@ -9,6 +9,11 @@ using MonoGameGum.GueDeriving;
 
 namespace KernSmith.Ui.Layout;
 
+/// <summary>
+/// Center panel with Preview/Characters tab switching. The preview tab displays the generated
+/// atlas texture with zoom slider, page navigation, glyph info, and scroll-wheel zoom plus
+/// middle-click pan. The characters tab hosts <see cref="CharacterSelectionPanel"/>.
+/// </summary>
 public class PreviewPanel : Panel
 {
     private readonly PreviewViewModel _preview;
@@ -457,18 +462,21 @@ public class PreviewPanel : Panel
             _failedWarningLabel.IsVisible = false;
     }
 
+    /// <summary>Increases atlas zoom by 25%, clamped to slider range.</summary>
     public void ZoomIn()
     {
         if (_zoomSlider != null)
             _zoomSlider.Value = Math.Clamp(_zoomSlider.Value + 25, _zoomSlider.Minimum, _zoomSlider.Maximum);
     }
 
+    /// <summary>Decreases atlas zoom by 25%, clamped to slider range.</summary>
     public void ZoomOut()
     {
         if (_zoomSlider != null)
             _zoomSlider.Value = Math.Clamp(_zoomSlider.Value - 25, _zoomSlider.Minimum, _zoomSlider.Maximum);
     }
 
+    /// <summary>Updates the UI scale label in the tab bar to reflect the current scale percentage.</summary>
     public void UpdateUiScaleDisplay(float scale)
     {
         if (_uiScaleLabel != null)

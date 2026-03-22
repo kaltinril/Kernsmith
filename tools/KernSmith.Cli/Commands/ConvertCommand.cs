@@ -5,8 +5,17 @@ using KernSmith.Output.Model;
 
 namespace KernSmith.Cli.Commands;
 
+/// <summary>
+/// Converts an existing .fnt file between BMFont text, XML, and binary formats.
+/// Atlas page files are automatically copied to the output directory when it differs from the input.
+/// </summary>
 internal sealed class ConvertCommand
 {
+    /// <summary>
+    /// Parses conversion arguments, reads the input .fnt file, and writes it in the requested format.
+    /// </summary>
+    /// <param name="args">Command-line arguments forwarded from the top-level dispatcher.</param>
+    /// <returns>An exit code indicating success or the category of failure.</returns>
     public static int Execute(string[] args)
     {
         if (args.Length == 0 || args is ["--help"])

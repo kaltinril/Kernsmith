@@ -3,8 +3,16 @@ using KernSmith.Cli.Utilities;
 
 namespace KernSmith.Cli.Commands;
 
+/// <summary>
+/// Runs timed iterations of font generation and reports performance statistics (min, mean, max, stddev).
+/// </summary>
 internal sealed class BenchmarkCommand
 {
+    /// <summary>
+    /// Parses benchmark arguments, runs warmup + timed iterations, and prints timing statistics.
+    /// </summary>
+    /// <param name="args">Command-line arguments forwarded from the top-level dispatcher.</param>
+    /// <returns>An exit code indicating success or the category of failure.</returns>
     public static int Execute(string[] args)
     {
         if (args is ["--help"])

@@ -10,6 +10,11 @@ using MonoGameGum.GueDeriving;
 
 namespace KernSmith.Ui.Layout;
 
+/// <summary>
+/// Root GUM container that builds the application's three-column layout: font config (left),
+/// preview with tab switching (center), and effects/atlas config (right), separated by
+/// draggable splitters. Also creates the menu bar and status bar.
+/// </summary>
 public class MainLayout : ContainerRuntime
 {
     private const float DefaultPanelWidth = 280;

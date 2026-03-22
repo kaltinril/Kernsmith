@@ -3,6 +3,10 @@ using KernSmith.Ui.Models;
 
 namespace KernSmith.Ui.ViewModels;
 
+/// <summary>
+/// Holds atlas texture, padding, spacing, output format, and packing settings.
+/// Can be bulk-updated via <see cref="ApplyPreset"/> when the user selects an engine preset.
+/// </summary>
 public class AtlasConfigViewModel : ViewModel
 {
     // Atlas size
@@ -48,6 +52,9 @@ public class AtlasConfigViewModel : ViewModel
         SelectedPresetName = "";
     }
 
+    /// <summary>
+    /// Applies all settings from an <see cref="EnginePreset"/> to this view model.
+    /// </summary>
     public void ApplyPreset(EnginePreset preset)
     {
         MaxWidth = preset.MaxWidth;

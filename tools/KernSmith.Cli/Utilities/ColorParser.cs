@@ -5,6 +5,12 @@ namespace KernSmith.Cli.Utilities;
 /// </summary>
 internal static class ColorParser
 {
+    /// <summary>
+    /// Parses a hex color string (with or without leading #) into RGB bytes.
+    /// Supports 3, 4, 6, and 8 character formats; alpha channels are stripped.
+    /// </summary>
+    /// <param name="hex">The hex color string (e.g., "FF0000", "#F00", "FF0000FF").</param>
+    /// <returns>A tuple of (R, G, B) byte values.</returns>
     public static (byte R, byte G, byte B) Parse(string hex)
     {
         if (string.IsNullOrWhiteSpace(hex))

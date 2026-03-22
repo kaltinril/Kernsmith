@@ -6,6 +6,10 @@ using MonoGameGum.GueDeriving;
 
 namespace KernSmith.Ui.Layout;
 
+/// <summary>
+/// Character selection tab content. Provides preset radio buttons (ASCII/Extended/Latin/Custom),
+/// a text input area for pasting characters, Unicode block checkboxes, and summary/action buttons.
+/// </summary>
 public class CharacterSelectionPanel : Panel
 {
     private readonly CharacterGridViewModel _gridVm;

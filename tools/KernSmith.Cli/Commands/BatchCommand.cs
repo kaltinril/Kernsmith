@@ -4,8 +4,17 @@ using KernSmith.Output;
 
 namespace KernSmith.Cli.Commands;
 
+/// <summary>
+/// Processes multiple .bmfc configuration files in a single invocation, with optional parallelism.
+/// Detects output path collisions before generation and reports per-job success/failure.
+/// </summary>
 internal sealed class BatchCommand
 {
+    /// <summary>
+    /// Parses batch arguments, validates configs, checks for output collisions, and runs all generation jobs.
+    /// </summary>
+    /// <param name="args">Command-line arguments forwarded from the top-level dispatcher.</param>
+    /// <returns>An exit code indicating success or the category of failure.</returns>
     public static int Execute(string[] args)
     {
         if (args.Length == 0 || args is ["--help"])

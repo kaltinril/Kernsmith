@@ -3,6 +3,10 @@ using KernSmith.Ui.Models;
 
 namespace KernSmith.Ui.ViewModels;
 
+/// <summary>
+/// Manages the set of selected Unicode codepoints for bitmap font generation.
+/// Supports preset application, manual toggle, range select/deselect, and text import.
+/// </summary>
 public class CharacterGridViewModel : ViewModel
 {
     private readonly HashSet<int> _selectedCodepoints = new();
@@ -21,6 +25,9 @@ public class CharacterGridViewModel : ViewModel
         ApplyPreset(CharacterSetPreset.Ascii);
     }
 
+    /// <summary>
+    /// Replaces all selected codepoints with those defined by the given preset.
+    /// </summary>
     public void ApplyPreset(CharacterSetPreset preset)
     {
         _selectedCodepoints.Clear();
@@ -38,6 +45,9 @@ public class CharacterGridViewModel : ViewModel
         UpdateSummary();
     }
 
+    /// <summary>
+    /// Toggles a single codepoint in or out of the selection.
+    /// </summary>
     public void ToggleCodepoint(int codepoint)
     {
         if (!_selectedCodepoints.Remove(codepoint))
@@ -47,6 +57,9 @@ public class CharacterGridViewModel : ViewModel
 
     public bool IsSelected(int codepoint) => _selectedCodepoints.Contains(codepoint);
 
+    /// <summary>
+    /// Adds all codepoints in the inclusive range [start, end] to the selection.
+    /// </summary>
     public void SelectRange(int start, int end)
     {
         for (int cp = start; cp <= end; cp++)
@@ -54,6 +67,9 @@ public class CharacterGridViewModel : ViewModel
         UpdateSummary();
     }
 
+    /// <summary>
+    /// Removes all codepoints in the inclusive range [start, end] from the selection.
+    /// </summary>
     public void DeselectRange(int start, int end)
     {
         for (int cp = start; cp <= end; cp++)
@@ -61,6 +77,9 @@ public class CharacterGridViewModel : ViewModel
         UpdateSummary();
     }
 
+    /// <summary>
+    /// Adds every codepoint in the enumerable to the selection.
+    /// </summary>
     public void SelectAll(IEnumerable<int> codepoints)
     {
         foreach (var cp in codepoints)
@@ -68,12 +87,18 @@ public class CharacterGridViewModel : ViewModel
         UpdateSummary();
     }
 
+    /// <summary>
+    /// Removes all codepoints from the selection.
+    /// </summary>
     public void Clear()
     {
         _selectedCodepoints.Clear();
         UpdateSummary();
     }
 
+    /// <summary>
+    /// Adds every unique character in the string to the selection.
+    /// </summary>
     public void AddFromText(string text)
     {
         foreach (var ch in text)
@@ -81,11 +106,15 @@ public class CharacterGridViewModel : ViewModel
         UpdateSummary();
     }
 
+    /// <summary>
+    /// Converts the current selection into a <see cref="CharacterSet"/> for generation.
+    /// </summary>
     public CharacterSet ToCharacterSet()
     {
         return CharacterSet.FromChars(_selectedCodepoints);
     }
 
+    /// <summary>Returns a defensive copy of the selected codepoints set.</summary>
     public HashSet<int> GetSelectedCodepoints() => new(_selectedCodepoints);
 
     private void UpdateSummary()

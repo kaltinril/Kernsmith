@@ -6,6 +6,11 @@ using MonoGameGum.GueDeriving;
 
 namespace KernSmith.Ui.Layout;
 
+/// <summary>
+/// Bottom status bar panel showing status text, atlas dimensions, glyph count, glyph info,
+/// and generation time. Binds to <see cref="StatusBarViewModel"/> via GUM data binding.
+/// Error messages are highlighted in red.
+/// </summary>
 public class StatusBar : Panel
 {
     private readonly StatusBarViewModel _statusBar;

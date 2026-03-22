@@ -5,8 +5,17 @@ using KernSmith.Output.Model;
 
 namespace KernSmith.Cli.Commands;
 
+/// <summary>
+/// Reads an existing BMFont .fnt file (text, XML, or binary) and displays its contents
+/// including font face, size, character count, kerning pairs, and Unicode ranges.
+/// </summary>
 internal sealed class InspectCommand
 {
+    /// <summary>
+    /// Parses arguments, reads the .fnt file, and prints its contents in human-readable or JSON format.
+    /// </summary>
+    /// <param name="args">Command-line arguments forwarded from the top-level dispatcher.</param>
+    /// <returns>An exit code indicating success or the category of failure.</returns>
     public static int Execute(string[] args)
     {
         if (args.Length == 0 || args is ["--help"])

@@ -2,6 +2,10 @@ using System.Text.Json;
 
 namespace KernSmith.Ui.Services;
 
+/// <summary>
+/// Persisted application state: window size, recent file paths, and last used directories.
+/// Serialized to JSON in the user's AppData folder.
+/// </summary>
 public class SessionState
 {
     public int WindowWidth { get; set; } = 1280;
@@ -12,6 +16,10 @@ public class SessionState
     public List<string> RecentFonts { get; set; } = new();
 }
 
+/// <summary>
+/// Loads and saves <see cref="SessionState"/> to a JSON file in AppData/KernSmith/.
+/// Best-effort persistence: silently ignores read/write failures.
+/// </summary>
 public class SessionService
 {
     private static readonly string SessionPath = Path.Combine(
@@ -20,6 +28,9 @@ public class SessionService
 
     public SessionState State { get; private set; } = new();
 
+    /// <summary>
+    /// Loads session state from disk. Falls back to defaults if the file is missing or corrupt.
+    /// </summary>
     public void Load()
     {
         try
@@ -33,6 +44,9 @@ public class SessionService
         catch { State = new(); }
     }
 
+    /// <summary>
+    /// Writes the current session state to disk. Silently ignores write failures.
+    /// </summary>
     public void Save()
     {
         try
@@ -45,6 +59,9 @@ public class SessionService
         catch { /* Best-effort persistence */ }
     }
 
+    /// <summary>
+    /// Adds a font path to the recent fonts list (most recent first, max 10 entries).
+    /// </summary>
     public void AddRecentFont(string path)
     {
         State.RecentFonts.Remove(path);

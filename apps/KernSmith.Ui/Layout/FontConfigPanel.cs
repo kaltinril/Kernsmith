@@ -7,6 +7,11 @@ using MonoGameGum.GueDeriving;
 
 namespace KernSmith.Ui.Layout;
 
+/// <summary>
+/// Left-side panel containing engine preset buttons, font file browser, system font dropdown,
+/// TTC face selector, font metadata display, font size input, generate button, and
+/// auto-regenerate toggle.
+/// </summary>
 public class FontConfigPanel : Panel
 {
     private readonly MainViewModel _mainViewModel;
