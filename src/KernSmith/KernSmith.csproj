@@ -9,7 +9,6 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
     <Authors>Kaltinril (Jeremy Swartwood)</Authors>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReleaseNotes>See CHANGELOG.md</PackageReleaseNotes>
     <PackageTags>bmfont;bitmap-font;font;atlas;texture-packing;game-dev;sdf;signed-distance-field;freetype;ttf;otf;woff;outline;gradient;shadow;color-font;variable-font;font-subsetting;tga;dds</PackageTags>
   </PropertyGroup>
