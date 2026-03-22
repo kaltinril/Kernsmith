@@ -24,7 +24,31 @@ git log --oneline -5 # recent messages for style matching
 
 ### 2. Check for phase doc updates
 
-Before drafting the commit message, scan the diff for changes that should be reflected in project docs. If changes touch phase deliverables (new endpoints, schema changes, ETL fixes, etc.), check whether `thesolution/MASTER-PLAN.md` or the relevant `thesolution/phases/*.md` file needs updating. If so, make those edits and include them in the commit. Don't create a separate commit for doc updates — bundle them together.
+Before drafting the commit message, scan the diff for changes that should be reflected in project docs. If changes touch phase deliverables (new API methods, schema changes, parser updates, etc.), check whether `plan/master-plan.md` or the relevant `plan/phase-*.md` file needs updating. If so, make those edits and include them in the commit. Don't create a separate commit for doc updates — bundle them together.
+
+### 2b. Update phase document status
+
+If the changes being committed implement work from a specific phase, update the phase's status in both the phase document and the master plan. This keeps the project's planning docs in sync with reality.
+
+**How to determine which phase is affected:**
+- Look at the files being changed and match them to phase deliverables
+- Check commit message context (e.g., "Phase 55" in the message or branch name)
+- If unsure, skip this step — only update when you're confident
+
+**What to update in the phase doc** (`plan/phase-*.md`):
+- Update the `> **Status**:` line in the header (e.g., `Planning` → `In Progress`, `In Progress` → `Complete`, or `Planning` → `Partial` if only some items were done)
+
+**What to update in** `plan/master-plan.md`:
+- Update the status column in the **Active Plans** table to match
+- Update the phase heading in the **Phased Implementation** section (e.g., `(PLANNING)` → `(IN PROGRESS)` or `(COMPLETE)`)
+
+**Status values:**
+- `Planning` — no implementation started
+- `In Progress` — implementation underway
+- `Partial` — some deliverables complete, others deferred
+- `Complete` — all deliverables done
+
+Stage the updated plan files alongside the code changes so everything ships in one commit.
 
 ### 3. Analyze and draft the commit message
 
