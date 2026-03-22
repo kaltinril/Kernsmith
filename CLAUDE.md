@@ -1,5 +1,10 @@
 # KernSmith
 
+## Security
+
+- **NEVER read, open, or access any `.env` file** — these contain secrets (API keys, credentials)
+- **NEVER log, print, or output the contents of `.env` files**
+
 ## Project Purpose
 
 Cross-platform .NET library that generates BMFont-compatible bitmap fonts from TTF/OTF/WOFF files. Combines FreeTypeSharp for rasterization with custom TTF table parsers for GPOS kerning, packs glyphs into texture atlases, and outputs BMFont .fnt + .png/.tga/.dds pairs. Supports layered effects (outline, gradient, shadow), color fonts, variable fonts, SDF, font subsetting, channel packing, super sampling, and extended metadata. In-memory by default.

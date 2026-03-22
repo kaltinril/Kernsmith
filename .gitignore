@@ -389,3 +389,7 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 .idea/
+
+# Environment files
+.env
+**/.env

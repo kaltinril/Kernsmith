@@ -1,5 +1,12 @@
 {
   "permissions": {
+    "deny": [
+      "Read(**/.env)",
+      "Bash(cat */.env*)",
+      "Bash(cat *.env*)",
+      "Bash(type */.env*)",
+      "Bash(type *.env*)"
+    ],
     "allow": [],
     "additionalDirectories": []
   }
