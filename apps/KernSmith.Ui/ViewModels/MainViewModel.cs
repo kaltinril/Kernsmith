@@ -12,8 +12,11 @@ public class MainViewModel : ViewModel
     private readonly FileDialogService _fileDialogService;
     private readonly FontDiscoveryService _fontDiscoveryService;
     private readonly GenerationService _generationService;
+    private readonly ProjectService _projectService;
+    private readonly SessionService _sessionService;
     private readonly Game _game;
     private BmFontResult? _lastResult;
+    private CancellationTokenSource? _autoRegenCts;
 
     public FontConfigViewModel FontConfig { get => Get<FontConfigViewModel>(); set => Set(value); }
     public PreviewViewModel Preview { get => Get<PreviewViewModel>(); set => Set(value); }
@@ -21,16 +24,24 @@ public class MainViewModel : ViewModel
     public CharacterGridViewModel CharacterGrid { get => Get<CharacterGridViewModel>(); set => Set(value); }
     public AtlasConfigViewModel AtlasConfig { get => Get<AtlasConfigViewModel>(); set => Set(value); }
     public EffectsViewModel Effects { get => Get<EffectsViewModel>(); set => Set(value); }
+    public bool AutoRegenerate { get => Get<bool>(); set => Set(value); }
+
+    public ProjectService ProjectService => _projectService;
+    public SessionService SessionService => _sessionService;
 
     public MainViewModel(
         FileDialogService fileDialogService,
         FontDiscoveryService fontDiscoveryService,
         GenerationService generationService,
+        ProjectService projectService,
+        SessionService sessionService,
         Game game)
     {
         _fileDialogService = fileDialogService;
         _fontDiscoveryService = fontDiscoveryService;
         _generationService = generationService;
+        _projectService = projectService;
+        _sessionService = sessionService;
         _game = game;
 
         FontConfig = new FontConfigViewModel();
@@ -39,6 +50,23 @@ public class MainViewModel : ViewModel
         CharacterGrid = new CharacterGridViewModel();
         AtlasConfig = new AtlasConfigViewModel();
         Effects = new EffectsViewModel();
+
+        // Wire auto-regeneration from sub-viewmodels
+        FontConfig.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(FontConfigViewModel.FontSize)
+                or nameof(FontConfigViewModel.SelectedPreset)
+                or nameof(FontConfigViewModel.CustomCharacters))
+                RequestAutoRegenerate();
+        };
+
+        CharacterGrid.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(CharacterGridViewModel.SelectedCount))
+                RequestAutoRegenerate();
+        };
+
+        Effects.PropertyChanged += (_, _) => RequestAutoRegenerate();
     }
 
     public void OpenFont()
@@ -54,6 +82,7 @@ public class MainViewModel : ViewModel
         {
             FontConfig.LoadFromFile(path);
             StatusBar.StatusText = $"Loaded {FontConfig.FamilyName} {FontConfig.StyleName} ({FontConfig.NumGlyphs:N0} glyphs)";
+            _sessionService.AddRecentFont(path);
         }
         catch (FontParsingException ex)
         {
@@ -125,6 +154,8 @@ public class MainViewModel : ViewModel
                 scaleH: common.ScaleH,
                 glyphCount: _lastResult.Model.Characters.Count,
                 elapsed: sw.Elapsed);
+
+            StatusBar.GlyphInfoText = Preview.GlyphInfoText;
         }
         catch (Exception ex) when (ex is BmFontException or InvalidOperationException)
         {
@@ -146,7 +177,72 @@ public class MainViewModel : ViewModel
         if (path == null) return;
 
         _lastResult.ToFile(path);
+
+        var dir = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(dir))
+            _sessionService.State.LastOutputDir = dir;
+
         StatusBar.StatusText = $"Saved to {path}";
+    }
+
+    public void SaveProject()
+    {
+        var path = _projectService.CurrentProjectPath;
+        if (path == null)
+        {
+            path = _fileDialogService.SaveFile("myproject", "bmfc");
+            if (path == null) return;
+        }
+
+        try
+        {
+            _projectService.SaveProject(path, FontConfig, AtlasConfig, Effects, CharacterGrid);
+            _sessionService.State.LastProjectPath = path;
+            StatusBar.StatusText = $"Project saved to {path}";
+        }
+        catch (Exception ex)
+        {
+            StatusBar.SetError($"Save failed: {ex.Message}");
+        }
+    }
+
+    public void LoadProject()
+    {
+        var path = _fileDialogService.OpenFontFile();
+        if (path == null) return;
+        LoadProjectFromPath(path);
+    }
+
+    public void LoadProjectFromPath(string path)
+    {
+        try
+        {
+            _projectService.LoadProject(path, FontConfig, AtlasConfig, Effects, CharacterGrid);
+            _sessionService.State.LastProjectPath = path;
+            if (FontConfig.IsFontLoaded)
+                StatusBar.StatusText = $"Project loaded: {Path.GetFileName(path)} — {FontConfig.FamilyName}";
+            else
+                StatusBar.StatusText = $"Project loaded: {Path.GetFileName(path)} (no font file found)";
+        }
+        catch (Exception ex)
+        {
+            StatusBar.SetError($"Load failed: {ex.Message}");
+        }
+    }
+
+    public void RequestAutoRegenerate()
+    {
+        if (!AutoRegenerate || !FontConfig.IsFontLoaded) return;
+
+        _autoRegenCts?.Cancel();
+        _autoRegenCts = new CancellationTokenSource();
+        var token = _autoRegenCts.Token;
+
+        Task.Delay(500, token).ContinueWith(async _ =>
+        {
+            if (!token.IsCancellationRequested)
+                await GenerateAsync();
+        }, token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
     }
 
     public void Exit()

@@ -38,8 +38,24 @@ public class MainLayout : ContainerRuntime
         openFontItem.Clicked += (_, _) => _viewModel.OpenFont();
         fileItem.Items!.Add(openFontItem);
 
+        var loadProjectItem = new MenuItem();
+        loadProjectItem.Header = "Load Project...";
+        loadProjectItem.Clicked += (_, _) => _viewModel.LoadProject();
+        fileItem.Items!.Add(loadProjectItem);
+
+        // Recent Fonts submenu
+        var recentFontsItem = new MenuItem();
+        recentFontsItem.Header = "Recent Fonts";
+        PopulateRecentFonts(recentFontsItem);
+        fileItem.Items!.Add(recentFontsItem);
+
+        var saveProjectItem = new MenuItem();
+        saveProjectItem.Header = "Save Project";
+        saveProjectItem.Clicked += (_, _) => _viewModel.SaveProject();
+        fileItem.Items!.Add(saveProjectItem);
+
         var saveAsItem = new MenuItem();
-        saveAsItem.Header = "Save As...";
+        saveAsItem.Header = "Export As...";
         saveAsItem.Clicked += (_, _) => _viewModel.SaveAs();
         fileItem.Items!.Add(saveAsItem);
 
@@ -117,6 +133,27 @@ public class MainLayout : ContainerRuntime
         statusBar.Dock(Gum.Wireframe.Dock.Bottom);
         statusBar.Height = 24;
         this.AddChild(statusBar);
+    }
+
+    private void PopulateRecentFonts(MenuItem parent)
+    {
+        var recentFonts = _viewModel.SessionService.State.RecentFonts;
+        if (recentFonts.Count == 0)
+        {
+            var emptyItem = new MenuItem();
+            emptyItem.Header = "(none)";
+            parent.Items!.Add(emptyItem);
+            return;
+        }
+
+        foreach (var fontPath in recentFonts)
+        {
+            var item = new MenuItem();
+            item.Header = Path.GetFileName(fontPath);
+            var capturedPath = fontPath;
+            item.Clicked += (_, _) => _viewModel.LoadFontFromPath(capturedPath);
+            parent.Items!.Add(item);
+        }
     }
 
     private void ShowAboutDialog()

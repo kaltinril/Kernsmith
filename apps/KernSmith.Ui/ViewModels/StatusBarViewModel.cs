@@ -9,12 +9,14 @@ public class StatusBarViewModel : ViewModel
     public int GlyphCount { get => Get<int>(); set => Set(value); }
     public string GenerationTime { get => Get<string>(); set => Set(value); }
     public bool IsGenerating { get => Get<bool>(); set => Set(value); }
+    public string GlyphInfoText { get => Get<string>(); set => Set(value); }
 
     public StatusBarViewModel()
     {
         StatusText = "Ready";
         AtlasDimensions = "";
         GenerationTime = "";
+        GlyphInfoText = "";
     }
 
     public void SetIdle() { StatusText = "Ready"; IsGenerating = false; }

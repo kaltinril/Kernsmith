@@ -67,6 +67,13 @@ public class StatusBar : Panel
         };
         stack.AddChild(glyphLabel);
 
+        // Glyph info (rendered vs requested, failed codepoints)
+        var glyphInfoLabel = new Label();
+        glyphInfoLabel.Text = "";
+        glyphInfoLabel.SetBinding(nameof(Label.Text), nameof(StatusBarViewModel.GlyphInfoText));
+        glyphInfoLabel.Visual.BindingContext = _statusBar;
+        stack.AddChild(glyphInfoLabel);
+
         // Generation time
         var timeLabel = new Label();
         timeLabel.Text = "";

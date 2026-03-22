@@ -241,6 +241,14 @@ public class FontConfigPanel : Panel
         generateBtn.Click += async (_, _) => await _mainViewModel.GenerateAsync();
         stack.Children.Add(generateBtn.Visual);
 
+        // Auto-regenerate toggle
+        var autoRegenCb = new CheckBox();
+        autoRegenCb.Text = "Auto-regenerate";
+        autoRegenCb.Width = 260;
+        autoRegenCb.Checked += (_, _) => _mainViewModel.AutoRegenerate = true;
+        autoRegenCb.Unchecked += (_, _) => _mainViewModel.AutoRegenerate = false;
+        stack.Children.Add(autoRegenCb.Visual);
+
         AddDivider(stack);
 
         // --- ATLAS section ---

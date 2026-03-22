@@ -11,9 +11,24 @@ public class PreviewViewModel : ViewModel
     public PreviewPage? SelectedPage { get => Get<PreviewPage?>(); set => Set(value); }
     public bool HasResult { get => Get<bool>(); set => Set(value); }
 
+    // Zoom
+    public float ZoomLevel { get => Get<float>(); set => Set(value); }
+
+    // Sample text
+    public string SampleText { get => Get<string>(); set => Set(value); }
+
+    // Glyph generation info
+    public int RenderedGlyphCount { get => Get<int>(); set => Set(value); }
+    public int RequestedGlyphCount { get => Get<int>(); set => Set(value); }
+    public int FailedCodepointCount { get => Get<int>(); set => Set(value); }
+    public string GlyphInfoText { get => Get<string>(); set => Set(value); }
+
     public PreviewViewModel()
     {
         Pages = Array.Empty<PreviewPage>();
+        ZoomLevel = 1.0f;
+        SampleText = "Hello World";
+        GlyphInfoText = "";
     }
 
     public void LoadResult(BmFontResult result)
@@ -38,6 +53,16 @@ public class PreviewViewModel : ViewModel
         Pages = pages;
         SelectedPageIndex = 0;
         SelectedPage = pages.Count > 0 ? pages[0] : null;
+
+        // Glyph info
+        RenderedGlyphCount = result.Model.Characters.Count;
+        FailedCodepointCount = result.FailedCodepoints.Count;
+        RequestedGlyphCount = RenderedGlyphCount + FailedCodepointCount;
+
+        GlyphInfoText = FailedCodepointCount > 0
+            ? $"Rendered {RenderedGlyphCount}/{RequestedGlyphCount} glyphs ({FailedCodepointCount} failed)"
+            : $"Rendered {RenderedGlyphCount} glyphs";
+
         HasResult = true;
     }
 
@@ -55,5 +80,6 @@ public class PreviewViewModel : ViewModel
         SelectedPageIndex = 0;
         SelectedPage = null;
         HasResult = false;
+        GlyphInfoText = "";
     }
 }
