@@ -226,7 +226,7 @@ Desktop GUI for bitmap font generation using **MonoGame (DesktopGL) + GUM UI (co
 ### Phase 60 -- UI MVP (IN PROGRESS)
 MonoGame + GUM UI project scaffold in `apps/KernSmith.Ui/`. Three-panel layout (font config | preview | effects) using GUM StackPanel + Splitter. Font loading from file or system fonts via NativeFileDialogSharp. Basic generation with CharacterSet presets. Atlas display via SpriteRuntime + Texture2D. Save output to disk.
 
-### Phase 61 -- Font Loading & Character Selection (PLANNING)
+### Phase 61 -- Font Loading & Character Selection (PARTIAL)
 Full font loading experience: system font browser with search, drag-and-drop via MonoGame Window.FileDrop, .ttc face selection. BMFont-inspired interactive character grid (custom GUM component with ColoredRectangleRuntime cells), Unicode block sidebar with checkboxes. Hiero-inspired text-based character input. Character set presets and custom preset management.
 
 ### Phase 62 -- Effects System UI (PLANNING)

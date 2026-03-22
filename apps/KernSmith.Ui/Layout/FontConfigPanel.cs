@@ -32,27 +32,16 @@ public class FontConfigPanel : Panel
         // --- FONT SOURCE section ---
         AddSectionHeader(stack, "FONT FILE");
 
-        var pathLabel = new Label();
-        pathLabel.Text = "Path to .ttf/.otf/.woff:";
-        stack.Children.Add(pathLabel.Visual);
-
-        var pathTextBox = new TextBox();
-        pathTextBox.Width = 260;
-        pathTextBox.Height = 26;
-        pathTextBox.Placeholder = "C:\\Fonts\\MyFont.ttf";
-        stack.Children.Add(pathTextBox.Visual);
-
-        var loadBtn = new Button();
-        loadBtn.Text = "Load Font";
-        loadBtn.Width = 120;
-        loadBtn.Height = 26;
-        loadBtn.Click += (_, _) =>
+        var browseBtn = new Button();
+        browseBtn.Text = "Browse for Font...";
+        browseBtn.Width = 260;
+        browseBtn.Height = 28;
+        browseBtn.Click += (_, _) =>
         {
-            var path = pathTextBox.Text?.Trim();
-            if (!string.IsNullOrEmpty(path))
-                _mainViewModel.LoadFontFromPath(path);
+            var dialog = new FileBrowserDialog();
+            dialog.Show(path => _mainViewModel.LoadFontFromPath(path));
         };
-        stack.Children.Add(loadBtn.Visual);
+        stack.Children.Add(browseBtn.Visual);
 
         var sourceLabel = new Label();
         sourceLabel.Text = "No font loaded";
@@ -135,6 +124,32 @@ public class FontConfigPanel : Panel
         glyphCount.SetBinding(nameof(Label.Text), nameof(FontConfigViewModel.NumGlyphs));
         glyphCount.Visual.BindingContext = _fontConfig;
         glyphRow.AddChild(glyphCount);
+
+        // --- Conditional font info: color glyphs ---
+        var colorGlyphLabel = new Label();
+        colorGlyphLabel.Text = "Has color glyphs";
+        colorGlyphLabel.IsVisible = false;
+        stack.Children.Add(colorGlyphLabel.Visual);
+
+        // --- Conditional font info: variable font axes ---
+        var axesLabel = new Label();
+        axesLabel.Text = "";
+        axesLabel.IsVisible = false;
+        stack.Children.Add(axesLabel.Visual);
+
+        _fontConfig.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(FontConfigViewModel.HasColorGlyphs))
+                colorGlyphLabel.IsVisible = _fontConfig.HasColorGlyphs;
+
+            if (e.PropertyName is nameof(FontConfigViewModel.HasVariationAxes)
+                or nameof(FontConfigViewModel.VariationAxesSummary))
+            {
+                axesLabel.IsVisible = _fontConfig.HasVariationAxes;
+                if (_fontConfig.HasVariationAxes)
+                    axesLabel.Text = $"Variable axes: {_fontConfig.VariationAxesSummary}";
+            }
+        };
 
         AddDivider(stack);
 

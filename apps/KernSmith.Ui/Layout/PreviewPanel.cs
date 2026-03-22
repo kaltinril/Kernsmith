@@ -10,15 +10,24 @@ namespace KernSmith.Ui.Layout;
 public class PreviewPanel : Panel
 {
     private readonly PreviewViewModel _preview;
+    private readonly CharacterGridViewModel _characterGrid;
     private readonly GraphicsDevice _graphicsDevice;
     private SpriteRuntime? _atlasSprite;
     private Label? _placeholder;
     private Label? _pageLabel;
     private StackPanel? _navRow;
 
-    public PreviewPanel(PreviewViewModel preview, GraphicsDevice graphicsDevice)
+    // Tab switching
+    private Panel? _previewContent;
+    private CharacterSelectionPanel? _charactersContent;
+    private Button? _previewTabBtn;
+    private Button? _charactersTabBtn;
+    private bool _showingPreview = true;
+
+    public PreviewPanel(PreviewViewModel preview, CharacterGridViewModel characterGrid, GraphicsDevice graphicsDevice)
     {
         _preview = preview;
+        _characterGrid = characterGrid;
         _graphicsDevice = graphicsDevice;
 
         BuildContent();
@@ -26,18 +35,67 @@ public class PreviewPanel : Panel
 
     private void BuildContent()
     {
+        // Tab bar at top
+        var tabBar = new StackPanel();
+        tabBar.Orientation = Orientation.Horizontal;
+        tabBar.Spacing = 4;
+        tabBar.Dock(Gum.Wireframe.Dock.Top);
+        tabBar.Height = 28;
+        this.AddChild(tabBar);
+
+        _previewTabBtn = new Button();
+        _previewTabBtn.Text = "Preview";
+        _previewTabBtn.Width = 90;
+        _previewTabBtn.Height = 26;
+        _previewTabBtn.IsEnabled = false; // active tab shown as disabled
+        _previewTabBtn.Click += (_, _) => ShowTab(preview: true);
+        tabBar.AddChild(_previewTabBtn);
+
+        _charactersTabBtn = new Button();
+        _charactersTabBtn.Text = "Characters";
+        _charactersTabBtn.Width = 90;
+        _charactersTabBtn.Height = 26;
+        _charactersTabBtn.Click += (_, _) => ShowTab(preview: false);
+        tabBar.AddChild(_charactersTabBtn);
+
+        // Preview content area
+        _previewContent = new Panel();
+        _previewContent.Y = 30;
+        _previewContent.WidthUnits = DimensionUnitType.RelativeToParent;
+        _previewContent.Width = 0;
+        _previewContent.HeightUnits = DimensionUnitType.RelativeToParent;
+        _previewContent.Height = -30;
+        this.AddChild(_previewContent);
+
+        BuildPreviewContent();
+
+        // Characters content area
+        _charactersContent = new CharacterSelectionPanel(_characterGrid);
+        _charactersContent.Y = 30;
+        _charactersContent.WidthUnits = DimensionUnitType.RelativeToParent;
+        _charactersContent.Width = 0;
+        _charactersContent.HeightUnits = DimensionUnitType.RelativeToParent;
+        _charactersContent.Height = -30;
+        _charactersContent.IsVisible = false;
+        this.AddChild(_charactersContent);
+    }
+
+    private void BuildPreviewContent()
+    {
+        if (_previewContent == null) return;
+
         // Placeholder text centered
         _placeholder = new Label();
         _placeholder.Text = "No atlas generated";
         _placeholder.Anchor(Gum.Wireframe.Anchor.Center);
-        this.AddChild(_placeholder);
+        _previewContent.AddChild(_placeholder);
 
         // Atlas sprite (hidden initially)
         _atlasSprite = new SpriteRuntime();
         _atlasSprite.Visible = false;
         _atlasSprite.X = 10;
         _atlasSprite.Y = 30;
-        this.AddChild(_atlasSprite);
+        _previewContent.AddChild(_atlasSprite);
 
         // Page navigation row
         _navRow = new StackPanel();
@@ -46,7 +104,7 @@ public class PreviewPanel : Panel
         _navRow.Dock(Gum.Wireframe.Dock.Top);
         _navRow.Height = 28;
         _navRow.IsVisible = false;
-        this.AddChild(_navRow);
+        _previewContent.AddChild(_navRow);
 
         _pageLabel = new Label();
         _pageLabel.Text = "";
@@ -91,6 +149,22 @@ public class PreviewPanel : Panel
                 }
             }
         };
+    }
+
+    private void ShowTab(bool preview)
+    {
+        _showingPreview = preview;
+
+        if (_previewContent != null)
+            _previewContent.IsVisible = preview;
+        if (_charactersContent != null)
+            _charactersContent.IsVisible = !preview;
+
+        // Toggle button enabled state to indicate active tab
+        if (_previewTabBtn != null)
+            _previewTabBtn.IsEnabled = !preview;
+        if (_charactersTabBtn != null)
+            _charactersTabBtn.IsEnabled = preview;
     }
 
     private void UpdateDisplay()

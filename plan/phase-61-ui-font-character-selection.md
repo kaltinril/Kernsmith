@@ -1,6 +1,6 @@
 # Phase 61 — Font Loading & Character Selection
 
-> **Status**: Planning
+> **Status**: Partial
 > **Created**: 2026-03-21
 > **Goal**: Build comprehensive font loading and character selection capabilities inspired by BMFont's character grid and Hiero's text-based input, using GUM UI + MonoGame + MonoGame.Extended.
 

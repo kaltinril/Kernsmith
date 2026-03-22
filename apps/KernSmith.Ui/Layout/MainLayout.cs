@@ -90,7 +90,7 @@ public class MainLayout : ContainerRuntime
         body.AddChild(leftSplitter);
 
         // Center column: preview (fills remaining)
-        var previewPanel = new PreviewPanel(_viewModel.Preview, _graphicsDevice);
+        var previewPanel = new PreviewPanel(_viewModel.Preview, _viewModel.CharacterGrid, _graphicsDevice);
         previewPanel.WidthUnits = DimensionUnitType.Ratio;
         previewPanel.Width = 1;
         previewPanel.HeightUnits = DimensionUnitType.RelativeToParent;

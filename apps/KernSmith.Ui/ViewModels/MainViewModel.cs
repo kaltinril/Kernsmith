@@ -18,6 +18,7 @@ public class MainViewModel : ViewModel
     public FontConfigViewModel FontConfig { get => Get<FontConfigViewModel>(); set => Set(value); }
     public PreviewViewModel Preview { get => Get<PreviewViewModel>(); set => Set(value); }
     public StatusBarViewModel StatusBar { get => Get<StatusBarViewModel>(); set => Set(value); }
+    public CharacterGridViewModel CharacterGrid { get => Get<CharacterGridViewModel>(); set => Set(value); }
 
     public MainViewModel(
         FileDialogService fileDialogService,
@@ -33,6 +34,7 @@ public class MainViewModel : ViewModel
         FontConfig = new FontConfigViewModel();
         Preview = new PreviewViewModel();
         StatusBar = new StatusBarViewModel();
+        CharacterGrid = new CharacterGridViewModel();
     }
 
     public void OpenFont()
@@ -79,7 +81,7 @@ public class MainViewModel : ViewModel
                     : null,
                 SourceKind = FontConfig.FontSourceKind,
                 FontSize = FontConfig.FontSize,
-                Characters = FontConfig.GetCharacterSet()
+                Characters = CharacterGrid.ToCharacterSet()
             };
 
             _lastResult = await _generationService.GenerateAsync(request);

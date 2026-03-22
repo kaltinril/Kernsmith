@@ -35,6 +35,18 @@ public class KernSmithGame : Game
         _mainLayout = new MainLayout(_mainViewModel, GraphicsDevice);
         _mainLayout.AddToRoot();
 
+        // Drag-and-drop font loading
+        Window.FileDrop += (_, args) =>
+        {
+            if (args.Files is { Length: > 0 })
+            {
+                var path = args.Files[0];
+                var ext = Path.GetExtension(path).ToLowerInvariant();
+                if (ext is ".ttf" or ".otf" or ".woff" or ".ttc")
+                    _mainViewModel!.LoadFontFromPath(path);
+            }
+        };
+
         // Load system fonts in background
         Task.Run(() =>
         {
