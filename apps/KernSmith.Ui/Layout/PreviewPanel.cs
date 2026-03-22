@@ -15,6 +15,7 @@ public class PreviewPanel : Panel
     private readonly GraphicsDevice _graphicsDevice;
     private SpriteRuntime? _atlasSprite;
     private SpriteRuntime? _checkerSprite;
+    private Texture2D? _currentAtlasTexture;
     private Label? _placeholder;
     private Label? _pageLabel;
     private Label? _atlasInfoLabel;
@@ -207,7 +208,7 @@ public class PreviewPanel : Panel
 
         // Placeholder text centered
         _placeholder = new Label();
-        _placeholder.Text = "No atlas generated";
+        _placeholder.Text = "Drop a font file here or use Browse to get started";
         _placeholder.Anchor(Gum.Wireframe.Anchor.Center);
         _previewContent.AddChild(_placeholder);
 
@@ -317,8 +318,13 @@ public class PreviewPanel : Panel
         if (_placeholder != null)
             _placeholder.IsVisible = false;
 
+        // Dispose previous atlas texture to prevent memory leaks
+        _currentAtlasTexture?.Dispose();
+
         using var stream = new MemoryStream(page.PngData);
         var texture = Texture2D.FromStream(_graphicsDevice, stream);
+        _currentAtlasTexture = texture;
+
         var zoom = _preview.ZoomLevel;
         var scaledWidth = (int)(texture.Width * zoom);
         var scaledHeight = (int)(texture.Height * zoom);

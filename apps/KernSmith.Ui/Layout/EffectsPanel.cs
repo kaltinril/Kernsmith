@@ -1,5 +1,6 @@
 using Gum.DataTypes;
 using Gum.Forms.Controls;
+using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using MonoGameGum.GueDeriving;
 
@@ -319,9 +320,19 @@ public class EffectsPanel : Panel
 
     private static void AddSectionHeader(Gum.Wireframe.GraphicalUiElement parent, string text)
     {
-        var label = new Label();
-        label.Text = text;
-        parent.Children.Add(label.Visual);
+        // Top spacer for consistent section separation
+        var spacer = new ColoredRectangleRuntime();
+        spacer.Width = 0;
+        spacer.WidthUnits = DimensionUnitType.RelativeToParent;
+        spacer.Height = 4;
+        spacer.Color = Microsoft.Xna.Framework.Color.Transparent;
+        parent.Children.Add(spacer);
+
+        // Use TextRuntime directly so we can set color for section headers
+        var header = new TextRuntime();
+        header.Text = text;
+        header.Color = Theme.Accent;
+        parent.Children.Add(header);
     }
 
     private static void AddDivider(Gum.Wireframe.GraphicalUiElement parent)
@@ -330,7 +341,7 @@ public class EffectsPanel : Panel
         divider.Width = 0;
         divider.WidthUnits = DimensionUnitType.RelativeToParent;
         divider.Height = 1;
-        divider.Color = new Microsoft.Xna.Framework.Color(60, 60, 60);
+        divider.Color = Theme.PanelBorder;
         parent.Children.Add(divider);
     }
 }

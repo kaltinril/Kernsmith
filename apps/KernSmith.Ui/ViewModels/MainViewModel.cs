@@ -14,7 +14,7 @@ public class MainViewModel : ViewModel
     private readonly GenerationService _generationService;
     private readonly ProjectService _projectService;
     private readonly SessionService _sessionService;
-    private readonly Game _game;
+    private readonly KernSmithGame _game;
     private BmFontResult? _lastResult;
     private CancellationTokenSource? _autoRegenCts;
 
@@ -37,7 +37,7 @@ public class MainViewModel : ViewModel
         GenerationService generationService,
         ProjectService projectService,
         SessionService sessionService,
-        Game game)
+        KernSmithGame game)
     {
         _fileDialogService = fileDialogService;
         _fontDiscoveryService = fontDiscoveryService;
@@ -193,27 +193,35 @@ public class MainViewModel : ViewModel
 
             sw.Stop();
 
-            Preview.LoadResult(_lastResult);
+            // Marshal preview update to main thread — Texture2D creation requires the GPU thread
+            var result = _lastResult;
+            var elapsed = sw.Elapsed;
+            _game.RunOnMainThread(() =>
+            {
+                Preview.LoadResult(result);
 
-            var common = _lastResult.Model.Common;
-            StatusBar.SetComplete(
-                pageCount: common.Pages,
-                scaleW: common.ScaleW,
-                scaleH: common.ScaleH,
-                glyphCount: _lastResult.Model.Characters.Count,
-                elapsed: sw.Elapsed);
+                var common = result.Model.Common;
+                StatusBar.SetComplete(
+                    pageCount: common.Pages,
+                    scaleW: common.ScaleW,
+                    scaleH: common.ScaleH,
+                    glyphCount: result.Model.Characters.Count,
+                    elapsed: elapsed);
 
-            StatusBar.GlyphInfoText = Preview.GlyphInfoText;
+                StatusBar.GlyphInfoText = Preview.GlyphInfoText;
+            });
         }
         catch (Exception ex) when (ex is BmFontException or InvalidOperationException)
         {
             sw.Stop();
-            StatusBar.SetError(ex.Message);
+            var msg = ex.Message;
+            _game.RunOnMainThread(() => StatusBar.SetError(msg));
         }
         catch (Exception ex)
         {
             sw.Stop();
-            StatusBar.SetError($"Unexpected error: {ex.Message}");
+            var msg = ex.Message;
+            _game.RunOnMainThread(() => StatusBar.SetError($"Unexpected error: {msg}"));
         }
     }
 
@@ -224,13 +232,20 @@ public class MainViewModel : ViewModel
         var path = _fileDialogService.SaveFile("myfont", "fnt");
         if (path == null) return;
 
-        _lastResult.ToFile(path);
+        try
+        {
+            _lastResult.ToFile(path);
 
-        var dir = Path.GetDirectoryName(path);
-        if (!string.IsNullOrEmpty(dir))
-            _sessionService.State.LastOutputDir = dir;
+            var dir = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(dir))
+                _sessionService.State.LastOutputDir = dir;
 
-        StatusBar.StatusText = $"Saved to {path}";
+            StatusBar.StatusText = $"Saved to {path}";
+        }
+        catch (Exception ex)
+        {
+            StatusBar.SetError($"Export failed: {ex.Message}");
+        }
     }
 
     public void SaveProject()

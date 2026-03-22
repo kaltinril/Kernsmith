@@ -223,34 +223,34 @@ API additions to the KernSmith NuGet library needed by the UI application. 21 it
 
 Desktop GUI for bitmap font generation using **MonoGame (DesktopGL) + GUM UI (code-only) + MonoGame.Extended**. Replaces the workflow of BMFont and Hiero with a modern, cross-platform tool that wraps the KernSmith NuGet library directly (no CLI dependency).
 
-### Phase 60 -- UI MVP (IN PROGRESS)
+### Phase 60 -- UI MVP (PARTIAL)
 MonoGame + GUM UI project scaffold in `apps/KernSmith.Ui/`. Three-panel layout (font config | preview | effects) using GUM StackPanel + Splitter. Font loading from file or system fonts via NativeFileDialogSharp. Basic generation with CharacterSet presets. Atlas display via SpriteRuntime + Texture2D. Save output to disk.
 
 ### Phase 61 -- Font Loading & Character Selection (PARTIAL)
 Full font loading experience: system font browser with search, drag-and-drop via MonoGame Window.FileDrop, .ttc face selection. BMFont-inspired interactive character grid (custom GUM component with ColoredRectangleRuntime cells), Unicode block sidebar with checkboxes. Hiero-inspired text-based character input. Character set presets and custom preset management.
 
-### Phase 62 -- Effects System UI (PLANNING)
+### Phase 62 -- Effects System UI (PARTIAL)
 Effects panel with collapsible sections and enable/disable toggles. Font style controls (bold, italic, AA, hinting, super-sampling). Outline with custom color picker (MonoGame-rendered spectrum + GUM sliders). Shadow with interactive 2D offset pad. Gradient with compass-style click+drag angle control. Channel configuration with BMFont-style presets. Advanced rendering (SDF, color font, cell equalization).
 
-### Phase 63 -- Atlas & Texture Configuration (PLANNING)
+### Phase 63 -- Atlas & Texture Configuration (PARTIAL)
 Atlas size controls (max dimensions, power-of-two, autofit). BMFont-style padding/spacing inputs. Packing algorithm selection (MaxRects/Skyline). Output format configuration (PNG/TGA/DDS, Text/XML/Binary). Channel config with presets. Post-generation metrics display (pages, dimensions, efficiency, pipeline timing). Multi-page atlas navigation.
 
-### Phase 64 -- Live Preview & Visualization (PLANNING)
+### Phase 64 -- Live Preview & Visualization (PARTIAL)
 Atlas preview with MonoGame SpriteBatch rendering, checkered transparency background, zoom/pan via Matrix transforms. Glyph inspector (hover tooltips, click-to-select, metrics overlay). Sample text preview compositing glyphs from atlas with kerning. Kerning pair table and visualization. Side-by-side comparison mode. Preview overlays (bounding boxes, metrics, grid, channel isolation). Optional auto-regeneration with debounce.
 
-### Phase 65 -- Project Management & File Operations (PLANNING)
+### Phase 65 -- Project Management & File Operations (PARTIAL)
 Custom menu bar and toolbar built from GUM primitives (GUM has no built-in MenuBar). Full File/Edit/View/Tools/Help menus with keyboard shortcuts. Project save/load via .bmfc format. Export workflows (font output, quick export, format conversion). Import existing .fnt files. Recent files list. Session state persistence. Undo/redo system with command pattern. Context menus.
 
-### Phase 66 -- Advanced Features (PLANNING)
+### Phase 66 -- Advanced Features (PARTIAL)
 Variable font axis sliders with named instance shortcuts. SDF configuration with engine-specific recommendations. Custom glyph import from PNG via Texture2D.FromStream(). Batch generation dialog with job queue, progress, and parallel execution. Font inspector tool for deep .fnt analysis. Color font rendering with palette selection. Fallback character and .ttc font collection support.
 
-### Phase 67 -- Workflow & UX Polish (PLANNING)
+### Phase 67 -- Workflow & UX Polish (PARTIAL)
 Non-blocking workflow indicator (load → preview → select → configure → export). Engine presets (Unity, Godot, MonoGame, Unreal, Phaser) that auto-configure settings. Custom tooltip system (GUM has none built-in). Drag-and-drop for all file types. Pre-generation validation with quick-fix suggestions. Keyboard shortcuts and command palette. Light/dark theming via GUM ActiveStyles.
 
-### Phase 68 -- Platform, Performance & Accessibility (PLANNING)
+### Phase 68 -- Platform, Performance & Accessibility (PARTIAL)
 Background generation with ConcurrentQueue thread marshaling (MonoGame requires main-thread GPU ops). Virtual character grid for 10K+ glyphs. Texture2D lifecycle management. Cross-platform testing (Windows/macOS/Linux via DesktopGL). Keyboard-first accessibility (MonoGame has no screen reader support — documented honestly). Error handling and crash recovery with auto-save. Platform-specific packaging (MSI, .app, AppImage). Diagnostics.
 
-### Phase 69 -- Final Polish & Release Prep (PLANNING)
+### Phase 69 -- Final Polish & Release Prep (PARTIAL)
 UI consistency audit across all custom GUM components. Visual polish (app icon, splash screen, about dialog, GameTime-based animations). First-run tutorial overlay. ViewModel unit tests and integration tests with real fonts. Platform builds via dotnet publish. Marketing screenshots, demo GIF, sample .bmfc projects. Known issues documentation. Release checklist and v1.1 roadmap.
 
 ---

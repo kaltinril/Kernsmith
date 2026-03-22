@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using Gum.Wireframe;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using MonoGameGum;
@@ -10,11 +12,15 @@ namespace KernSmith.Ui;
 
 public class KernSmithGame : Game
 {
+    private const int MinWindowWidth = 800;
+    private const int MinWindowHeight = 500;
+
     private GraphicsDeviceManager _graphics;
     private MainLayout? _mainLayout;
     private MainViewModel? _mainViewModel;
     private SessionService? _sessionService;
     private KeyboardState _previousKeyboardState;
+    private readonly ConcurrentQueue<Action> _mainThreadActions = new();
 
     public KernSmithGame()
     {
@@ -24,12 +30,29 @@ public class KernSmithGame : Game
         _sessionService = new SessionService();
         _sessionService.Load();
 
-        _graphics.PreferredBackBufferWidth = _sessionService.State.WindowWidth;
-        _graphics.PreferredBackBufferHeight = _sessionService.State.WindowHeight;
+        _graphics.PreferredBackBufferWidth = Math.Max(MinWindowWidth, _sessionService.State.WindowWidth);
+        _graphics.PreferredBackBufferHeight = Math.Max(MinWindowHeight, _sessionService.State.WindowHeight);
         Window.Title = "KernSmith";
         Window.AllowUserResizing = true;
         IsMouseVisible = true;
+
+        // Enforce minimum window size on resize
+        Window.ClientSizeChanged += (_, _) =>
+        {
+            if (Window.ClientBounds.Width < MinWindowWidth || Window.ClientBounds.Height < MinWindowHeight)
+            {
+                _graphics.PreferredBackBufferWidth = Math.Max(MinWindowWidth, Window.ClientBounds.Width);
+                _graphics.PreferredBackBufferHeight = Math.Max(MinWindowHeight, Window.ClientBounds.Height);
+                _graphics.ApplyChanges();
+            }
+        };
     }
+
+    /// <summary>
+    /// Enqueues an action to run on the main/game thread during the next Update cycle.
+    /// Use this to marshal GPU operations (e.g., Texture2D creation) from background threads.
+    /// </summary>
+    public void RunOnMainThread(Action action) => _mainThreadActions.Enqueue(action);
 
     protected override void Initialize()
     {
@@ -72,15 +95,32 @@ public class KernSmithGame : Game
 
     protected override void Update(GameTime gameTime)
     {
+        // Drain main-thread action queue (for GPU operations marshaled from background threads)
+        while (_mainThreadActions.TryDequeue(out var action))
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                _mainViewModel?.StatusBar.SetError($"Main thread action failed: {ex.Message}");
+            }
+        }
+
         var kbState = Keyboard.GetState();
         var ctrlHeld = kbState.IsKeyDown(Keys.LeftControl) || kbState.IsKeyDown(Keys.RightControl);
 
-        if (ctrlHeld && IsKeyPressed(Keys.O, kbState))
-            _mainViewModel?.OpenFont();
-        if (ctrlHeld && IsKeyPressed(Keys.S, kbState))
-            _mainViewModel?.SaveProject();
-        if (ctrlHeld && IsKeyPressed(Keys.G, kbState))
-            Task.Run(() => _mainViewModel?.GenerateAsync());
+        // Only process keyboard shortcuts when no text input has focus
+        if (Gum.Wireframe.InteractiveGue.CurrentInputReceiver == null)
+        {
+            if (ctrlHeld && IsKeyPressed(Keys.O, kbState))
+                _mainViewModel?.OpenFont();
+            if (ctrlHeld && IsKeyPressed(Keys.S, kbState))
+                _mainViewModel?.SaveProject();
+            if (ctrlHeld && IsKeyPressed(Keys.G, kbState))
+                Task.Run(() => _mainViewModel?.GenerateAsync());
+        }
 
         _previousKeyboardState = kbState;
 

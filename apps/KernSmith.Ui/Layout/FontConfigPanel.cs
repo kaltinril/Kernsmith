@@ -1,6 +1,7 @@
 using Gum.DataTypes;
 using Gum.Forms.Controls;
 using KernSmith.Ui.Models;
+using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using MonoGameGum.GueDeriving;
 
@@ -316,8 +317,16 @@ public class FontConfigPanel : Panel
         generateBtn.Text = "Generate";
         generateBtn.Width = 260;
         generateBtn.Height = 40;
+        generateBtn.IsEnabled = _fontConfig.IsFontLoaded;
         generateBtn.Click += async (_, _) => await _mainViewModel.GenerateAsync();
         stack.Children.Add(generateBtn.Visual);
+
+        // Enable/disable Generate button based on font loaded state
+        _fontConfig.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(FontConfigViewModel.IsFontLoaded))
+                generateBtn.IsEnabled = _fontConfig.IsFontLoaded;
+        };
 
         // Auto-regenerate toggle
         var autoRegenCb = new CheckBox();
@@ -468,18 +477,28 @@ public class FontConfigPanel : Panel
 
     private static void AddSectionHeader(Gum.Wireframe.GraphicalUiElement parent, string text)
     {
-        var label = new Label();
-        label.Text = text;
-        parent.Children.Add(label.Visual);
+        // Top spacer for consistent section separation
+        var spacer = new ColoredRectangleRuntime();
+        spacer.Width = 0;
+        spacer.WidthUnits = DimensionUnitType.RelativeToParent;
+        spacer.Height = 4;
+        spacer.Color = Microsoft.Xna.Framework.Color.Transparent;
+        parent.Children.Add(spacer);
+
+        // Use TextRuntime directly so we can set color for section headers
+        var header = new TextRuntime();
+        header.Text = text;
+        header.Color = Theme.Accent;
+        parent.Children.Add(header);
     }
 
     private static void AddDivider(Gum.Wireframe.GraphicalUiElement parent)
     {
         var divider = new ColoredRectangleRuntime();
         divider.Width = 0;
-        divider.WidthUnits = Gum.DataTypes.DimensionUnitType.RelativeToParent;
+        divider.WidthUnits = DimensionUnitType.RelativeToParent;
         divider.Height = 1;
-        divider.Color = new Microsoft.Xna.Framework.Color(60, 60, 60);
+        divider.Color = Theme.PanelBorder;
         parent.Children.Add(divider);
     }
 }

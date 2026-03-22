@@ -1,6 +1,7 @@
 using Gum.DataTypes;
 using Gum.Forms;
 using Gum.Forms.Controls;
+using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGameGum;
@@ -97,6 +98,7 @@ public class MainLayout : ContainerRuntime
         fontConfigPanel.Width = 280;
         fontConfigPanel.HeightUnits = DimensionUnitType.RelativeToParent;
         fontConfigPanel.Height = 0;
+        AddPanelBackground(fontConfigPanel, Theme.Panel);
         body.AddChild(fontConfigPanel);
 
         // Splitter between left and center
@@ -124,6 +126,7 @@ public class MainLayout : ContainerRuntime
         effectsPanel.Width = 240;
         effectsPanel.HeightUnits = DimensionUnitType.RelativeToParent;
         effectsPanel.Height = 0;
+        AddPanelBackground(effectsPanel, Theme.Panel);
         body.AddChild(effectsPanel);
     }
 
@@ -156,12 +159,21 @@ public class MainLayout : ContainerRuntime
         }
     }
 
+    private static void AddPanelBackground(Panel panel, Microsoft.Xna.Framework.Color color)
+    {
+        var bg = new ColoredRectangleRuntime();
+        bg.Color = color;
+        bg.Dock(Gum.Wireframe.Dock.Fill);
+        // Insert as first child so it renders behind other content
+        panel.Visual.Children.Insert(0, bg);
+    }
+
     private void ShowAboutDialog()
     {
         var window = new Window();
         window.Anchor(Gum.Wireframe.Anchor.Center);
-        window.Width = 300;
-        window.Height = 200;
+        window.Width = 340;
+        window.Height = 260;
         FrameworkElement.ModalRoot.AddChild(window);
 
         var contentStack = new StackPanel();
@@ -173,13 +185,22 @@ public class MainLayout : ContainerRuntime
         titleLabel.Text = "KernSmith";
         contentStack.AddChild(titleLabel);
 
+        var version = typeof(MainLayout).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
         var versionLabel = new Label();
-        versionLabel.Text = "Version 1.0.0";
+        versionLabel.Text = $"Version {version}";
         contentStack.AddChild(versionLabel);
 
         var descLabel = new Label();
-        descLabel.Text = "Bitmap Font Generator";
+        descLabel.Text = "Cross-platform bitmap font generator";
         contentStack.AddChild(descLabel);
+
+        var creditsLabel = new Label();
+        creditsLabel.Text = "Built with MonoGame + GUM UI";
+        contentStack.AddChild(creditsLabel);
+
+        var urlLabel = new Label();
+        urlLabel.Text = "https://github.com/kaltinril/kernsmith";
+        contentStack.AddChild(urlLabel);
 
         var okButton = new Button();
         okButton.Text = "OK";
