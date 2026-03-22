@@ -32,10 +32,17 @@ internal class TtfParser
     /// </summary>
     public bool HasColorGlyphs { get; private set; }
 
+    /// <summary>
+    /// Indicates whether the font was parsed successfully. False when the font
+    /// lacks a supported cmap encoding (e.g. no Windows-platform subtable).
+    /// </summary>
+    public bool IsValid { get; private set; }
+
     public TtfParser(ReadOnlySpan<byte> fontData, int faceIndex = 0, HashSet<int>? requestedCodepoints = null)
     {
         _data = fontData.ToArray();
         _requestedCodepoints = requestedCodepoints;
+        IsValid = true;
 
         ParseTableDirectory(fontData, faceIndex);
         ParseHead();
@@ -44,6 +51,7 @@ internal class TtfParser
         ParseOs2();
         ParseName();
         ParseCmap();
+        if (!IsValid) return;
         ParseKern();
         ParseGpos();
         ParseFvar();
@@ -57,6 +65,7 @@ internal class TtfParser
     {
         _data = fontBytes;
         _requestedCodepoints = requestedCodepoints;
+        IsValid = true;
 
         ParseTableDirectory(fontBytes, faceIndex);
         ParseHead();
@@ -65,6 +74,7 @@ internal class TtfParser
         ParseOs2();
         ParseName();
         ParseCmap();
+        if (!IsValid) return;
         ParseKern();
         ParseGpos();
         ParseFvar();
@@ -523,7 +533,10 @@ internal class TtfParser
         }
 
         if (bestOffset < 0 || bestOffset >= table.Length)
-            throw new FontParsingException("cmap", 0, "No supported cmap encoding found (need Windows platform).");
+        {
+            IsValid = false;
+            return;
+        }
 
         var subtable = table.Slice(bestOffset);
         var format = BinaryPrimitives.ReadUInt16BigEndian(subtable);
@@ -535,7 +548,10 @@ internal class TtfParser
         else if (format == 4)
             ParseCmapFormat4(subtable, cmap);
         else
-            throw new FontParsingException("cmap", bestOffset, $"Unsupported cmap format {format}.");
+        {
+            IsValid = false;
+            return;
+        }
 
         CmapTable = new ReadOnlyDictionary<int, int>(cmap);
 
