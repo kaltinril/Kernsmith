@@ -365,43 +365,46 @@ public class EffectsPanel : Panel
             };
             contentPanel.Children.Add(packAlgoCombo.Visual);
 
-            // --- Padding (cross layout) ---
+            // --- Padding (cross layout using 3 columns) ---
             AddLabeledDivider(contentPanel, "Padding");
 
-            // Row 1: centered Up
-            var padTopRow = new StackPanel();
-            padTopRow.Orientation = Orientation.Horizontal;
-            padTopRow.Spacing = 2;
-            contentPanel.Children.Add(padTopRow.Visual);
+            var padCross = new StackPanel();
+            padCross.Orientation = Orientation.Horizontal;
+            padCross.Spacing = 2;
+            contentPanel.Children.Add(padCross.Visual);
 
-            var padTopSpacer = new Label(); padTopSpacer.Text = ""; padTopSpacer.Width = 38;
-            padTopRow.AddChild(padTopSpacer);
-            var padUpBox = CreateSmallIntBox(_atlasConfig.PaddingUp, v => { if (!_updatingFromVm) _atlasConfig.PaddingUp = Math.Clamp(v, 0, 32); });
-            padTopRow.AddChild(padUpBox);
-
-            // Row 2: Left + label + Right
-            var padMidRow = new StackPanel();
-            padMidRow.Orientation = Orientation.Horizontal;
-            padMidRow.Spacing = 2;
-            contentPanel.Children.Add(padMidRow.Visual);
-
+            // Left column: empty, Left input, empty
+            var padColLeft = new StackPanel();
+            padColLeft.Spacing = 2;
+            var padLeftSpacer = new Label(); padLeftSpacer.Text = ""; padLeftSpacer.Height = 24;
+            padColLeft.AddChild(padLeftSpacer);
             var padLeftBox = CreateSmallIntBox(_atlasConfig.PaddingLeft, v => { if (!_updatingFromVm) _atlasConfig.PaddingLeft = Math.Clamp(v, 0, 32); });
-            padMidRow.AddChild(padLeftBox);
-            var padCenterLabel = new Label(); padCenterLabel.Text = " pad "; padCenterLabel.Width = 40;
-            padMidRow.AddChild(padCenterLabel);
-            var padRightBox = CreateSmallIntBox(_atlasConfig.PaddingRight, v => { if (!_updatingFromVm) _atlasConfig.PaddingRight = Math.Clamp(v, 0, 32); });
-            padMidRow.AddChild(padRightBox);
+            padColLeft.AddChild(padLeftBox);
+            var padLeftSpacer2 = new Label(); padLeftSpacer2.Text = ""; padLeftSpacer2.Height = 24;
+            padColLeft.AddChild(padLeftSpacer2);
+            padCross.AddChild(padColLeft);
 
-            // Row 3: centered Down
-            var padBotRow = new StackPanel();
-            padBotRow.Orientation = Orientation.Horizontal;
-            padBotRow.Spacing = 2;
-            contentPanel.Children.Add(padBotRow.Visual);
-
-            var padBotSpacer = new Label(); padBotSpacer.Text = ""; padBotSpacer.Width = 38;
-            padBotRow.AddChild(padBotSpacer);
+            // Center column: Up input, "pad" label, Down input
+            var padColCenter = new StackPanel();
+            padColCenter.Spacing = 2;
+            var padUpBox = CreateSmallIntBox(_atlasConfig.PaddingUp, v => { if (!_updatingFromVm) _atlasConfig.PaddingUp = Math.Clamp(v, 0, 32); });
+            padColCenter.AddChild(padUpBox);
+            var padCenterLabel = new Label(); padCenterLabel.Text = "pad";
+            padColCenter.AddChild(padCenterLabel);
             var padDownBox = CreateSmallIntBox(_atlasConfig.PaddingDown, v => { if (!_updatingFromVm) _atlasConfig.PaddingDown = Math.Clamp(v, 0, 32); });
-            padBotRow.AddChild(padDownBox);
+            padColCenter.AddChild(padDownBox);
+            padCross.AddChild(padColCenter);
+
+            // Right column: empty, Right input, empty
+            var padColRight = new StackPanel();
+            padColRight.Spacing = 2;
+            var padRightSpacer = new Label(); padRightSpacer.Text = ""; padRightSpacer.Height = 24;
+            padColRight.AddChild(padRightSpacer);
+            var padRightBox = CreateSmallIntBox(_atlasConfig.PaddingRight, v => { if (!_updatingFromVm) _atlasConfig.PaddingRight = Math.Clamp(v, 0, 32); });
+            padColRight.AddChild(padRightBox);
+            var padRightSpacer2 = new Label(); padRightSpacer2.Text = ""; padRightSpacer2.Height = 24;
+            padColRight.AddChild(padRightSpacer2);
+            padCross.AddChild(padColRight);
 
             // --- Spacing (simple H x V row) ---
             AddLabeledDivider(contentPanel, "Spacing");
