@@ -374,7 +374,7 @@ public class EffectsPanel : Panel
             padTopRow.Spacing = 2;
             contentPanel.Children.Add(padTopRow.Visual);
 
-            var padTopSpacer = new Label(); padTopSpacer.Text = ""; padTopSpacer.Width = 70;
+            var padTopSpacer = new Label(); padTopSpacer.Text = ""; padTopSpacer.Width = 38;
             padTopRow.AddChild(padTopSpacer);
             var padUpBox = CreateSmallIntBox(_atlasConfig.PaddingUp, v => { if (!_updatingFromVm) _atlasConfig.PaddingUp = Math.Clamp(v, 0, 32); });
             padTopRow.AddChild(padUpBox);
@@ -398,7 +398,7 @@ public class EffectsPanel : Panel
             padBotRow.Spacing = 2;
             contentPanel.Children.Add(padBotRow.Visual);
 
-            var padBotSpacer = new Label(); padBotSpacer.Text = ""; padBotSpacer.Width = 70;
+            var padBotSpacer = new Label(); padBotSpacer.Text = ""; padBotSpacer.Width = 38;
             padBotRow.AddChild(padBotSpacer);
             var padDownBox = CreateSmallIntBox(_atlasConfig.PaddingDown, v => { if (!_updatingFromVm) _atlasConfig.PaddingDown = Math.Clamp(v, 0, 32); });
             padBotRow.AddChild(padDownBox);
