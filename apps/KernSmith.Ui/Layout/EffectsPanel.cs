@@ -389,7 +389,7 @@ public class EffectsPanel : Panel
             padColCenter.Spacing = 2;
             var padUpBox = CreateSmallIntBox(_atlasConfig.PaddingUp, v => { if (!_updatingFromVm) _atlasConfig.PaddingUp = Math.Clamp(v, 0, 32); });
             padColCenter.AddChild(padUpBox);
-            var padCenterLabel = new Label(); padCenterLabel.Text = "pad";
+            var padCenterLabel = new Label(); padCenterLabel.Text = "Aa";
             padColCenter.AddChild(padCenterLabel);
             var padDownBox = CreateSmallIntBox(_atlasConfig.PaddingDown, v => { if (!_updatingFromVm) _atlasConfig.PaddingDown = Math.Clamp(v, 0, 32); });
             padColCenter.AddChild(padDownBox);
