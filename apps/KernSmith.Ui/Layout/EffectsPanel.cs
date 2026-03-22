@@ -300,50 +300,46 @@ public class EffectsPanel : Panel
         // --- ATLAS section ---
         AddCollapsibleSection(stack, "ATLAS", contentPanel =>
         {
-            var maxSizeLabel = new Label();
-            maxSizeLabel.Text = "Max Size:";
-            contentPanel.Children.Add(maxSizeLabel.Visual);
+            bool _updatingFromVm = false;
+
+            var sizes = new[] { 128, 256, 512, 1024, 2048, 4096, 8192 };
 
             var maxSizeRow = new StackPanel();
             maxSizeRow.Orientation = Orientation.Horizontal;
             maxSizeRow.Spacing = 4;
             contentPanel.Children.Add(maxSizeRow.Visual);
 
-            bool _updatingFromVm = false;
+            var sizeLabel = new Label();
+            sizeLabel.Text = "Size:";
+            maxSizeRow.AddChild(sizeLabel);
 
-            var maxWidthBox = new TextBox();
-            maxWidthBox.Width = 70;
-            maxWidthBox.Height = 26;
-            maxWidthBox.Text = _atlasConfig.MaxWidth.ToString();
-            maxWidthBox.TextChanged += (_, _) =>
+            var maxWidthCombo = new ComboBox();
+            maxWidthCombo.Width = 80;
+            foreach (var s in sizes) maxWidthCombo.Items.Add(s.ToString());
+            maxWidthCombo.SelectedIndex = Array.IndexOf(sizes, _atlasConfig.MaxWidth);
+            if (maxWidthCombo.SelectedIndex < 0) maxWidthCombo.SelectedIndex = 3; // 1024
+            maxWidthCombo.SelectionChanged += (_, _) =>
             {
-                if (!_updatingFromVm && int.TryParse(maxWidthBox.Text, out var w))
-                    _atlasConfig.MaxWidth = Math.Clamp(w, 64, 8192);
+                if (!_updatingFromVm && maxWidthCombo.SelectedIndex >= 0)
+                    _atlasConfig.MaxWidth = sizes[maxWidthCombo.SelectedIndex];
             };
-            maxSizeRow.AddChild(maxWidthBox);
+            maxSizeRow.AddChild(maxWidthCombo);
 
             var xLabel = new Label();
             xLabel.Text = "x";
             maxSizeRow.AddChild(xLabel);
 
-            var maxHeightBox = new TextBox();
-            maxHeightBox.Width = 70;
-            maxHeightBox.Height = 26;
-            maxHeightBox.Text = _atlasConfig.MaxHeight.ToString();
-            maxHeightBox.TextChanged += (_, _) =>
+            var maxHeightCombo = new ComboBox();
+            maxHeightCombo.Width = 80;
+            foreach (var s in sizes) maxHeightCombo.Items.Add(s.ToString());
+            maxHeightCombo.SelectedIndex = Array.IndexOf(sizes, _atlasConfig.MaxHeight);
+            if (maxHeightCombo.SelectedIndex < 0) maxHeightCombo.SelectedIndex = 3;
+            maxHeightCombo.SelectionChanged += (_, _) =>
             {
-                if (!_updatingFromVm && int.TryParse(maxHeightBox.Text, out var h))
-                    _atlasConfig.MaxHeight = Math.Clamp(h, 64, 8192);
+                if (!_updatingFromVm && maxHeightCombo.SelectedIndex >= 0)
+                    _atlasConfig.MaxHeight = sizes[maxHeightCombo.SelectedIndex];
             };
-            maxSizeRow.AddChild(maxHeightBox);
-
-            var pot = new CheckBox();
-            pot.Text = "Power of Two";
-            pot.Width = 220;
-            pot.IsChecked = _atlasConfig.PowerOfTwo;
-            pot.Checked += (_, _) => { if (!_updatingFromVm) _atlasConfig.PowerOfTwo = true; };
-            pot.Unchecked += (_, _) => { if (!_updatingFromVm) _atlasConfig.PowerOfTwo = false; };
-            contentPanel.Children.Add(pot.Visual);
+            maxSizeRow.AddChild(maxHeightCombo);
 
             var autofit = new CheckBox();
             autofit.Text = "Autofit Texture";
@@ -391,9 +387,14 @@ public class EffectsPanel : Panel
                 {
                     switch (e.PropertyName)
                     {
-                        case nameof(AtlasConfigViewModel.MaxWidth): maxWidthBox.Text = _atlasConfig.MaxWidth.ToString(); break;
-                        case nameof(AtlasConfigViewModel.MaxHeight): maxHeightBox.Text = _atlasConfig.MaxHeight.ToString(); break;
-                        case nameof(AtlasConfigViewModel.PowerOfTwo): pot.IsChecked = _atlasConfig.PowerOfTwo; break;
+                        case nameof(AtlasConfigViewModel.MaxWidth):
+                            var wi = Array.IndexOf(sizes, _atlasConfig.MaxWidth);
+                            if (wi >= 0) maxWidthCombo.SelectedIndex = wi;
+                            break;
+                        case nameof(AtlasConfigViewModel.MaxHeight):
+                            var hi = Array.IndexOf(sizes, _atlasConfig.MaxHeight);
+                            if (hi >= 0) maxHeightCombo.SelectedIndex = hi;
+                            break;
                         case nameof(AtlasConfigViewModel.AutofitTexture): autofit.IsChecked = _atlasConfig.AutofitTexture; break;
                         case nameof(AtlasConfigViewModel.PackingAlgorithmIndex): packAlgoCombo.SelectedIndex = _atlasConfig.PackingAlgorithmIndex; break;
                         case nameof(AtlasConfigViewModel.PaddingUp): padUpBox.Text = _atlasConfig.PaddingUp.ToString(); break;
