@@ -241,7 +241,7 @@ public class MainLayout : ContainerRuntime
         titleLabel.Text = "KernSmith";
         contentStack.AddChild(titleLabel);
 
-        var version = typeof(MainLayout).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
+        var version = typeof(MainLayout).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
         var versionLabel = new Label();
         versionLabel.Text = $"Version {version}";
         contentStack.AddChild(versionLabel);

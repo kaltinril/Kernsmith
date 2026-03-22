@@ -4,7 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>KernSmith</PackageId>
-    <Version>0.9.0</Version>
     <Description>Generate BMFont-compatible bitmap font atlases from TTF/OTF/WOFF files. Features layered effects (outline, gradient, shadow), color font support (COLRv0/CPAL, sbix, CBDT), variable fonts, SDF rendering, font subsetting, channel packing, super sampling, TGA/DDS/PNG output, and extended metadata. In-memory pipeline with text/XML/binary .fnt output.</Description>
     <PackageProjectUrl>https://github.com/kaltinril/KernSmith</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
