@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.3] - 2026-03-22
+
+### Added
+
+- GitHub Release workflow with CLI + UI binaries for 5 platforms (win-x64, win-arm64, linux-x64, osx-arm64, osx-x64)
+- Manual dispatch trigger for publish workflow (Actions → Run workflow)
+- RELEASING.md documenting the full release process
+- publish.bat as CLI alternative for tagging releases
+
+### Changed
+
+- Bumped all GitHub Actions to latest versions (checkout v6, setup-dotnet v5, upload/download-artifact v7/v8)
+- NuGet license uses PackageLicenseExpression instead of PackageLicenseFile
+
+### Fixed
+
+- CA1416 warnings: added [SupportedOSPlatform("windows")] to Registry-accessing methods
+- CI Ubuntu hang: continue-on-error for known .NET test host hang
+- NU5033: resolved duplicate license property conflict between Directory.Build.props and csproj
+
 ## [0.9.2] - 2026-03-22
 
 ### Added
