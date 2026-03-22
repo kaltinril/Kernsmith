@@ -50,6 +50,46 @@ public class StatusBar : Panel
 
         // Error state visual feedback: change status label text color on error
         var statusTextInstance = FindTextRuntime(statusLabel.Visual);
+
+        // Separator + Atlas dimensions
+        var sep1 = CreateSeparator();
+        stack.AddChild(sep1);
+
+        var dimsLabel = new Label();
+        dimsLabel.Text = "";
+        dimsLabel.SetBinding(nameof(Label.Text), nameof(StatusBarViewModel.AtlasDimensions));
+        dimsLabel.Visual.BindingContext = _statusBar;
+        stack.AddChild(dimsLabel);
+
+        // Separator + Glyph count
+        var sep2 = CreateSeparator();
+        stack.AddChild(sep2);
+
+        var glyphLabel = new Label();
+        glyphLabel.Text = "";
+        stack.AddChild(glyphLabel);
+
+        // Separator + Glyph info
+        var sep3 = CreateSeparator();
+        stack.AddChild(sep3);
+
+        var glyphInfoLabel = new Label();
+        glyphInfoLabel.Text = "";
+        glyphInfoLabel.SetBinding(nameof(Label.Text), nameof(StatusBarViewModel.GlyphInfoText));
+        glyphInfoLabel.Visual.BindingContext = _statusBar;
+        stack.AddChild(glyphInfoLabel);
+
+        // Separator + Generation time
+        var sep4 = CreateSeparator();
+        stack.AddChild(sep4);
+
+        var timeLabel = new Label();
+        timeLabel.Text = "";
+        timeLabel.SetBinding(nameof(Label.Text), nameof(StatusBarViewModel.GenerationTime));
+        timeLabel.Visual.BindingContext = _statusBar;
+        stack.AddChild(timeLabel);
+
+        // Update separator visibility and error coloring when properties change
         _statusBar.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(StatusBarViewModel.StatusText) && statusTextInstance != null)
@@ -60,59 +100,36 @@ public class StatusBar : Panel
                 else
                     statusTextInstance.Color = Theme.Text;
             }
-        };
 
-        // Separator
-        AddSeparator(stack);
-
-        // Atlas dimensions
-        var dimsLabel = new Label();
-        dimsLabel.Text = "";
-        dimsLabel.SetBinding(nameof(Label.Text), nameof(StatusBarViewModel.AtlasDimensions));
-        dimsLabel.Visual.BindingContext = _statusBar;
-        stack.AddChild(dimsLabel);
-
-        // Separator
-        AddSeparator(stack);
-
-        // Glyph count
-        var glyphLabel = new Label();
-        glyphLabel.Text = "";
-        _statusBar.PropertyChanged += (_, e) =>
-        {
             if (e.PropertyName == nameof(StatusBarViewModel.GlyphCount))
                 glyphLabel.Text = _statusBar.GlyphCount > 0 ? $"{_statusBar.GlyphCount} glyphs" : "";
+
+            // Update separator visibility: hide when adjacent label is empty
+            UpdateSeparatorVisibility(sep1, dimsLabel);
+            UpdateSeparatorVisibility(sep2, glyphLabel);
+            UpdateSeparatorVisibility(sep3, glyphInfoLabel);
+            UpdateSeparatorVisibility(sep4, timeLabel);
         };
-        stack.AddChild(glyphLabel);
 
-        // Separator
-        AddSeparator(stack);
-
-        // Glyph info (rendered vs requested, failed codepoints)
-        var glyphInfoLabel = new Label();
-        glyphInfoLabel.Text = "";
-        glyphInfoLabel.SetBinding(nameof(Label.Text), nameof(StatusBarViewModel.GlyphInfoText));
-        glyphInfoLabel.Visual.BindingContext = _statusBar;
-        stack.AddChild(glyphInfoLabel);
-
-        // Separator
-        AddSeparator(stack);
-
-        // Generation time
-        var timeLabel = new Label();
-        timeLabel.Text = "";
-        timeLabel.SetBinding(nameof(Label.Text), nameof(StatusBarViewModel.GenerationTime));
-        timeLabel.Visual.BindingContext = _statusBar;
-        stack.AddChild(timeLabel);
+        // Initial separator state (all hidden since labels start empty)
+        UpdateSeparatorVisibility(sep1, dimsLabel);
+        UpdateSeparatorVisibility(sep2, glyphLabel);
+        UpdateSeparatorVisibility(sep3, glyphInfoLabel);
+        UpdateSeparatorVisibility(sep4, timeLabel);
     }
 
-    private static void AddSeparator(StackPanel parent)
+    private static void UpdateSeparatorVisibility(Label separator, Label adjacentLabel)
+    {
+        separator.IsVisible = !string.IsNullOrEmpty(adjacentLabel.Text);
+    }
+
+    private static Label CreateSeparator()
     {
         var sep = new Label();
         sep.Text = "|";
         var sepText = FindTextRuntime(sep.Visual);
         if (sepText != null) sepText.Color = Theme.TextMuted;
-        parent.AddChild(sep);
+        return sep;
     }
 
     private static TextRuntime? FindTextRuntime(Gum.Wireframe.GraphicalUiElement element)

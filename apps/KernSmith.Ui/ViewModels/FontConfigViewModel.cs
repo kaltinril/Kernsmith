@@ -99,7 +99,20 @@ public class FontConfigViewModel : ViewModel
 
     public void LoadFromSystem(SystemFontInfo systemFont)
     {
-        var fontData = File.ReadAllBytes(systemFont.FilePath);
+        byte[] fontData;
+        try
+        {
+            fontData = File.ReadAllBytes(systemFont.FilePath);
+        }
+        catch (FileNotFoundException)
+        {
+            throw new FontParsingException($"System font file not found: {systemFont.FilePath}");
+        }
+        catch (IOException ex)
+        {
+            throw new FontParsingException($"Cannot read system font file: {ex.Message}");
+        }
+
         var fontInfo = BmFont.ReadFontInfo(fontData, systemFont.FaceIndex);
 
         PopulateFromFontInfo(fontInfo);

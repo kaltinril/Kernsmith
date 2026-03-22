@@ -215,6 +215,18 @@ public class PreviewPanel : Panel
         _glyphInfoLabel.Text = "";
         _navRow.AddChild(_glyphInfoLabel);
 
+        // --- Divider above sample text section ---
+        var sampleDivider = new ColoredRectangleRuntime();
+        sampleDivider.Height = 1;
+        sampleDivider.WidthUnits = DimensionUnitType.RelativeToParent;
+        sampleDivider.Width = -8;
+        sampleDivider.X = 4;
+        sampleDivider.Color = Styling.Theme.PanelBorder;
+        sampleDivider.YUnits = Gum.Converters.GeneralUnitType.PixelsFromLarge;
+        sampleDivider.YOrigin = RenderingLibrary.Graphics.VerticalAlignment.Bottom;
+        sampleDivider.Y = -64;
+        _previewContent.AddChild(sampleDivider);
+
         // --- Sample Text section at bottom (fixed height, always visible) ---
         var sampleRow = new StackPanel();
         sampleRow.Orientation = Orientation.Vertical;

@@ -72,7 +72,7 @@ public class FontConfigPanel : Panel
 
         var browseBtn = new Button();
         browseBtn.Text = "Browse for Font...";
-        browseBtn.Width = 240;
+        browseBtn.Width = 230;
         browseBtn.Height = 28;
         browseBtn.Click += (_, _) =>
         {
@@ -138,7 +138,7 @@ public class FontConfigPanel : Panel
         stack.Children.Add(familyLabel.Visual);
 
         var familyCombo = new ComboBox();
-        familyCombo.Width = 240;
+        familyCombo.Width = 230;
         stack.Children.Add(familyCombo.Visual);
 
         var styleLabel = new Label();
@@ -146,7 +146,7 @@ public class FontConfigPanel : Panel
         stack.Children.Add(styleLabel.Visual);
 
         var styleCombo = new ComboBox();
-        styleCombo.Width = 240;
+        styleCombo.Width = 230;
         stack.Children.Add(styleCombo.Visual);
 
         // Wire system font combos
@@ -283,7 +283,7 @@ public class FontConfigPanel : Panel
         {
             var rb = new RadioButton();
             rb.Text = presets[i];
-            rb.Width = 240;
+            rb.Width = 230;
             if (i == 0) rb.IsChecked = true;
             var presetIndex = i; // capture for closure
             rb.Checked += (_, _) =>
@@ -296,7 +296,7 @@ public class FontConfigPanel : Panel
         }
 
         customTextBox = new TextBox();
-        customTextBox.Width = 240;
+        customTextBox.Width = 230;
         customTextBox.Height = 60;
         customTextBox.IsVisible = false;
         customTextBox.Placeholder = "Type characters to include...";
@@ -317,11 +317,18 @@ public class FontConfigPanel : Panel
 
         AddDivider(stack);
 
-        // --- GENERATE button ---
+        // --- GENERATE button (primary action, visually distinct) ---
+        var generateBtnSpacer = new ColoredRectangleRuntime();
+        generateBtnSpacer.Width = 0;
+        generateBtnSpacer.WidthUnits = DimensionUnitType.RelativeToParent;
+        generateBtnSpacer.Height = 4;
+        generateBtnSpacer.Color = Microsoft.Xna.Framework.Color.Transparent;
+        stack.Children.Add(generateBtnSpacer);
+
         var generateBtn = new Button();
-        generateBtn.Text = "Generate";
-        generateBtn.Width = 240;
-        generateBtn.Height = 40;
+        generateBtn.Text = ">> Generate <<";
+        generateBtn.Width = 230;
+        generateBtn.Height = 44;
         generateBtn.IsEnabled = _fontConfig.IsFontLoaded;
         generateBtn.Click += async (_, _) => await _mainViewModel.GenerateAsync();
         stack.Children.Add(generateBtn.Visual);
@@ -336,7 +343,7 @@ public class FontConfigPanel : Panel
         // Auto-regenerate toggle
         var autoRegenCb = new CheckBox();
         autoRegenCb.Text = "Auto-regenerate";
-        autoRegenCb.Width = 240;
+        autoRegenCb.Width = 230;
         autoRegenCb.Checked += (_, _) => _mainViewModel.AutoRegenerate = true;
         autoRegenCb.Unchecked += (_, _) => _mainViewModel.AutoRegenerate = false;
         stack.Children.Add(autoRegenCb.Visual);
@@ -400,7 +407,7 @@ public class FontConfigPanel : Panel
         stack.Children.Add(packAlgoLabel.Visual);
 
         var packAlgoCombo = new ComboBox();
-        packAlgoCombo.Width = 160;
+        packAlgoCombo.Width = 230;
         packAlgoCombo.Items.Add("MaxRects");
         packAlgoCombo.Items.Add("Skyline");
         packAlgoCombo.SelectedIndex = _atlasConfig.PackingAlgorithmIndex;
@@ -463,7 +470,7 @@ public class FontConfigPanel : Panel
         {
             var rb = new RadioButton();
             rb.Text = name;
-            rb.Width = 240;
+            rb.Width = 230;
             if (format == _atlasConfig.DescriptorFormat) rb.IsChecked = true;
             var capturedFormat = format;
             rb.Checked += (_, _) => _atlasConfig.DescriptorFormat = capturedFormat;

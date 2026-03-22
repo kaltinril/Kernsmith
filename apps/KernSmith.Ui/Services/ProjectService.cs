@@ -55,6 +55,8 @@ public class ProjectService
 
         // Font settings
         fontConfig.FontSize = options.Size;
+        if (options.FaceIndex > 0 && fontConfig.IsFontLoaded)
+            fontConfig.ReloadWithFaceIndex(options.FaceIndex);
 
         // Atlas config
         atlasConfig.MaxWidth = options.MaxTextureWidth;
@@ -78,10 +80,26 @@ public class ProjectService
         effects.SuperSampleLevel = options.SuperSampleLevel;
         effects.OutlineEnabled = options.Outline > 0;
         effects.OutlineWidth = options.Outline > 0 ? options.Outline : 1;
+        effects.OutlineColorR = options.OutlineR;
+        effects.OutlineColorG = options.OutlineG;
+        effects.OutlineColorB = options.OutlineB;
         effects.ShadowEnabled = options.ShadowOffsetX != 0 || options.ShadowOffsetY != 0 || options.ShadowBlur != 0;
         effects.ShadowOffsetX = options.ShadowOffsetX;
         effects.ShadowOffsetY = options.ShadowOffsetY;
         effects.ShadowBlur = options.ShadowBlur;
+        effects.ShadowColorR = options.ShadowR;
+        effects.ShadowColorG = options.ShadowG;
+        effects.ShadowColorB = options.ShadowB;
+        effects.ShadowOpacity = (int)(options.ShadowOpacity * 100);
+        effects.GradientEnabled = options.GradientStartR.HasValue && options.GradientEndR.HasValue;
+        effects.GradientStartR = options.GradientStartR ?? 255;
+        effects.GradientStartG = options.GradientStartG ?? 255;
+        effects.GradientStartB = options.GradientStartB ?? 255;
+        effects.GradientEndR = options.GradientEndR ?? 0;
+        effects.GradientEndG = options.GradientEndG ?? 0;
+        effects.GradientEndB = options.GradientEndB ?? 0;
+        effects.GradientAngle = (int)options.GradientAngle;
+        effects.ChannelPackingEnabled = options.Channels != null;
         effects.SdfEnabled = options.Sdf;
         effects.ColorFontEnabled = options.ColorFont;
 
@@ -127,9 +145,24 @@ public class ProjectService
             EnableHinting = effects.Hinting,
             SuperSampleLevel = effects.SuperSampleLevel,
             Outline = effects.OutlineEnabled ? effects.OutlineWidth : 0,
+            OutlineR = effects.OutlineColorR,
+            OutlineG = effects.OutlineColorG,
+            OutlineB = effects.OutlineColorB,
             ShadowOffsetX = effects.ShadowEnabled ? effects.ShadowOffsetX : 0,
             ShadowOffsetY = effects.ShadowEnabled ? effects.ShadowOffsetY : 0,
             ShadowBlur = effects.ShadowEnabled ? effects.ShadowBlur : 0,
+            ShadowR = effects.ShadowColorR,
+            ShadowG = effects.ShadowColorG,
+            ShadowB = effects.ShadowColorB,
+            ShadowOpacity = effects.ShadowOpacity / 100f,
+            GradientStartR = effects.GradientEnabled ? effects.GradientStartR : null,
+            GradientStartG = effects.GradientEnabled ? effects.GradientStartG : null,
+            GradientStartB = effects.GradientEnabled ? effects.GradientStartB : null,
+            GradientEndR = effects.GradientEnabled ? effects.GradientEndR : null,
+            GradientEndG = effects.GradientEnabled ? effects.GradientEndG : null,
+            GradientEndB = effects.GradientEnabled ? effects.GradientEndB : null,
+            GradientAngle = effects.GradientAngle,
+            FaceIndex = fontConfig.FaceIndex,
             Sdf = effects.SdfEnabled,
             ColorFont = effects.ColorFontEnabled
         };

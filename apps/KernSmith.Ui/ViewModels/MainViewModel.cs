@@ -234,6 +234,16 @@ public class MainViewModel : ViewModel
                 StatusBar.GlyphInfoText = Preview.GlyphInfoText;
             });
         }
+        catch (AtlasPackingException)
+        {
+            sw.Stop();
+            const string msg = "Glyphs too large for max texture size. Try reducing font size or increasing max atlas dimensions.";
+            _game.RunOnMainThread(() =>
+            {
+                StatusBar.SetError(msg);
+                ErrorDialog.Show("Atlas Packing Error", msg);
+            });
+        }
         catch (Exception ex) when (ex is BmFontException or InvalidOperationException)
         {
             sw.Stop();

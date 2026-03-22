@@ -39,11 +39,25 @@ public class KernSmithGame : Game
         // Enforce minimum window size on resize
         Window.ClientSizeChanged += (_, _) =>
         {
-            if (Window.ClientBounds.Width < MinWindowWidth || Window.ClientBounds.Height < MinWindowHeight)
+            try
             {
-                _graphics.PreferredBackBufferWidth = Math.Max(MinWindowWidth, Window.ClientBounds.Width);
-                _graphics.PreferredBackBufferHeight = Math.Max(MinWindowHeight, Window.ClientBounds.Height);
-                _graphics.ApplyChanges();
+                var width = Window.ClientBounds.Width;
+                var height = Window.ClientBounds.Height;
+
+                // Guard against zero or negative dimensions during rapid resize or minimize
+                if (width <= 0 || height <= 0)
+                    return;
+
+                if (width < MinWindowWidth || height < MinWindowHeight)
+                {
+                    _graphics.PreferredBackBufferWidth = Math.Max(MinWindowWidth, width);
+                    _graphics.PreferredBackBufferHeight = Math.Max(MinWindowHeight, height);
+                    _graphics.ApplyChanges();
+                }
+            }
+            catch (Exception)
+            {
+                // Swallow resize errors — the window will settle on the next frame
             }
         };
     }

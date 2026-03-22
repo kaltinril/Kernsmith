@@ -167,6 +167,7 @@ public class MainLayout : ContainerRuntime
         var leftSplitter = new Splitter();
         leftSplitter.Width = 5;
         leftSplitter.Dock(Gum.Wireframe.Dock.FillVertically);
+        AddSplitterBackground(leftSplitter);
         body.AddChild(leftSplitter);
 
         // Center column: preview (fills remaining)
@@ -181,6 +182,7 @@ public class MainLayout : ContainerRuntime
         var rightSplitter = new Splitter();
         rightSplitter.Width = 5;
         rightSplitter.Dock(Gum.Wireframe.Dock.FillVertically);
+        AddSplitterBackground(rightSplitter);
         body.AddChild(rightSplitter);
 
         // Right column: effects (fixed width)
@@ -219,6 +221,14 @@ public class MainLayout : ContainerRuntime
             item.Clicked += (_, _) => _viewModel.LoadFontFromPath(capturedPath);
             parent.Items!.Add(item);
         }
+    }
+
+    private static void AddSplitterBackground(Splitter splitter)
+    {
+        var bg = new ColoredRectangleRuntime();
+        bg.Color = Theme.PanelBorder;
+        bg.Dock(Gum.Wireframe.Dock.Fill);
+        splitter.Visual.Children.Insert(0, bg);
     }
 
     private static void AddPanelBackground(Panel panel, Microsoft.Xna.Framework.Color color)

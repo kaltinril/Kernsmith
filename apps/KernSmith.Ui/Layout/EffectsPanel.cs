@@ -29,47 +29,35 @@ public class EffectsPanel : Panel
         // --- FONT STYLE section (always active) ---
         AddSectionHeader(stack, "FONT STYLE");
 
-        // Bold + Italic row
-        var styleRow = new StackPanel();
-        styleRow.Orientation = Orientation.Horizontal;
-        styleRow.Spacing = 12;
-        stack.Children.Add(styleRow.Visual);
-
         var boldCheck = new CheckBox();
         boldCheck.Text = "Bold";
-        boldCheck.Width = 80;
+        boldCheck.Width = 200;
         boldCheck.Checked += (_, _) => _effects.Bold = true;
         boldCheck.Unchecked += (_, _) => _effects.Bold = false;
-        styleRow.AddChild(boldCheck);
+        stack.Children.Add(boldCheck.Visual);
 
         var italicCheck = new CheckBox();
         italicCheck.Text = "Italic";
-        italicCheck.Width = 80;
+        italicCheck.Width = 200;
         italicCheck.Checked += (_, _) => _effects.Italic = true;
         italicCheck.Unchecked += (_, _) => _effects.Italic = false;
-        styleRow.AddChild(italicCheck);
-
-        // Anti-alias + Hinting row
-        var aaRow = new StackPanel();
-        aaRow.Orientation = Orientation.Horizontal;
-        aaRow.Spacing = 12;
-        stack.Children.Add(aaRow.Visual);
+        stack.Children.Add(italicCheck.Visual);
 
         var aaCheck = new CheckBox();
         aaCheck.Text = "Anti-Alias";
-        aaCheck.Width = 110;
+        aaCheck.Width = 200;
         aaCheck.IsChecked = true;
         aaCheck.Checked += (_, _) => _effects.AntiAlias = true;
         aaCheck.Unchecked += (_, _) => _effects.AntiAlias = false;
-        aaRow.AddChild(aaCheck);
+        stack.Children.Add(aaCheck.Visual);
 
         var hintCheck = new CheckBox();
         hintCheck.Text = "Hinting";
-        hintCheck.Width = 100;
+        hintCheck.Width = 200;
         hintCheck.IsChecked = true;
         hintCheck.Checked += (_, _) => _effects.Hinting = true;
         hintCheck.Unchecked += (_, _) => _effects.Hinting = false;
-        aaRow.AddChild(hintCheck);
+        stack.Children.Add(hintCheck.Visual);
 
         // Super sampling
         var ssLabel = new Label();
