@@ -31,6 +31,40 @@ public class FontConfigPanel : Panel
         var stack = scrollViewer.InnerPanel;
         stack.StackSpacing = 6;
 
+        // --- ENGINE PRESET section ---
+        AddSectionHeader(stack, "ENGINE PRESET");
+
+        var presetRow = new StackPanel();
+        presetRow.Orientation = Orientation.Horizontal;
+        presetRow.Spacing = 4;
+        stack.Children.Add(presetRow.Visual);
+
+        var presetDescLabel = new Label();
+        presetDescLabel.Text = "";
+        presetDescLabel.IsVisible = false;
+
+        foreach (var preset in EnginePresets.All)
+        {
+            if (preset == EnginePresets.Custom) continue; // Custom is the default / no-preset state
+
+            var btn = new Button();
+            btn.Text = preset.Name;
+            btn.Width = 70;
+            btn.Height = 26;
+            var capturedPreset = preset;
+            btn.Click += (_, _) =>
+            {
+                _atlasConfig.ApplyPreset(capturedPreset);
+                presetDescLabel.Text = capturedPreset.Description;
+                presetDescLabel.IsVisible = true;
+            };
+            presetRow.AddChild(btn);
+        }
+
+        stack.Children.Add(presetDescLabel.Visual);
+
+        AddDivider(stack);
+
         // --- FONT SOURCE section ---
         AddSectionHeader(stack, "FONT FILE");
 
@@ -50,6 +84,50 @@ public class FontConfigPanel : Panel
         sourceLabel.SetBinding(nameof(Label.Text), nameof(FontConfigViewModel.FontSourceDescription));
         sourceLabel.Visual.BindingContext = _fontConfig;
         stack.Children.Add(sourceLabel.Visual);
+
+        // --- TTC Face Selection (hidden unless a .ttc font collection is loaded) ---
+        var faceSelectionRow = new StackPanel();
+        faceSelectionRow.Orientation = Orientation.Horizontal;
+        faceSelectionRow.Spacing = 4;
+        faceSelectionRow.IsVisible = false;
+        stack.Children.Add(faceSelectionRow.Visual);
+
+        var faceLabel = new Label();
+        faceLabel.Text = "Face:";
+        faceLabel.Width = 50;
+        faceSelectionRow.AddChild(faceLabel);
+
+        var faceCombo = new ComboBox();
+        faceCombo.Width = 80;
+        faceSelectionRow.AddChild(faceCombo);
+
+        var faceCountLabel = new Label();
+        faceCountLabel.Text = "";
+        faceSelectionRow.AddChild(faceCountLabel);
+
+        _fontConfig.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(FontConfigViewModel.IsFontCollection))
+            {
+                faceSelectionRow.IsVisible = _fontConfig.IsFontCollection;
+                if (_fontConfig.IsFontCollection)
+                {
+                    faceCombo.Items.Clear();
+                    for (int i = 0; i < _fontConfig.FaceCount; i++)
+                        faceCombo.Items.Add($"Face {i}");
+                    faceCombo.SelectedIndex = 0;
+                    faceCountLabel.Text = $"of {_fontConfig.FaceCount}";
+                }
+            }
+        };
+
+        faceCombo.SelectionChanged += (_, _) =>
+        {
+            if (faceCombo.SelectedIndex >= 0 && _fontConfig.IsFontCollection)
+            {
+                _fontConfig.ReloadWithFaceIndex(faceCombo.SelectedIndex);
+            }
+        };
 
         AddDivider(stack);
 

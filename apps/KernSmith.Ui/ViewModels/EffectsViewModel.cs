@@ -1,4 +1,5 @@
 using Gum.Mvvm;
+using KernSmith.Font.Tables;
 
 namespace KernSmith.Ui.ViewModels;
 
@@ -27,6 +28,14 @@ public class EffectsViewModel : ViewModel
     // Color Font
     public bool ColorFontEnabled { get => Get<bool>(); set => Set(value); }
 
+    // Variable Font
+    public bool HasVariationAxes { get => Get<bool>(); set => Set(value); }
+    public IReadOnlyList<VariationAxis>? VariationAxesList { get => Get<IReadOnlyList<VariationAxis>?>(); set => Set(value); }
+    public Dictionary<string, float> VariationAxisValues { get; } = new();
+
+    // Fallback Character
+    public string FallbackCharacter { get => Get<string>(); set => Set(value); }
+
     public EffectsViewModel()
     {
         AntiAlias = true;
@@ -35,5 +44,6 @@ public class EffectsViewModel : ViewModel
         OutlineWidth = 1;
         ShadowOffsetX = 2;
         ShadowOffsetY = 2;
+        FallbackCharacter = "?";
     }
 }

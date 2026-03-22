@@ -1,4 +1,5 @@
 using Gum.Mvvm;
+using KernSmith.Ui.Models;
 
 namespace KernSmith.Ui.ViewModels;
 
@@ -24,6 +25,9 @@ public class AtlasConfigViewModel : ViewModel
     public OutputFormat DescriptorFormat { get => Get<OutputFormat>(); set => Set(value); }
     public bool IncludeKerning { get => Get<bool>(); set => Set(value); }
 
+    // Engine preset tracking
+    public string SelectedPresetName { get => Get<string>(); set => Set(value); }
+
     public AtlasConfigViewModel()
     {
         MaxWidth = 1024;
@@ -38,5 +42,24 @@ public class AtlasConfigViewModel : ViewModel
         SpacingV = 1;
         DescriptorFormat = OutputFormat.Text;
         IncludeKerning = true;
+        SelectedPresetName = "";
+    }
+
+    public void ApplyPreset(EnginePreset preset)
+    {
+        MaxWidth = preset.MaxWidth;
+        MaxHeight = preset.MaxHeight;
+        PowerOfTwo = preset.PowerOfTwo;
+        AutofitTexture = preset.AutofitTexture;
+        PaddingUp = preset.Padding;
+        PaddingRight = preset.Padding;
+        PaddingDown = preset.Padding;
+        PaddingLeft = preset.Padding;
+        SpacingH = preset.Spacing;
+        SpacingV = preset.Spacing;
+        IncludeKerning = preset.IncludeKerning;
+        DescriptorFormat = Enum.TryParse<OutputFormat>(preset.DescriptorFormat, out var fmt)
+            ? fmt : OutputFormat.Text;
+        SelectedPresetName = preset.Name;
     }
 }

@@ -25,6 +25,8 @@ public class MainViewModel : ViewModel
     public AtlasConfigViewModel AtlasConfig { get => Get<AtlasConfigViewModel>(); set => Set(value); }
     public EffectsViewModel Effects { get => Get<EffectsViewModel>(); set => Set(value); }
     public bool AutoRegenerate { get => Get<bool>(); set => Set(value); }
+    public string WindowTitle { get => Get<string>(); set => Set(value); }
+    public bool IsDirty { get => Get<bool>(); set => Set(value); }
 
     public ProjectService ProjectService => _projectService;
     public SessionService SessionService => _sessionService;
@@ -50,23 +52,31 @@ public class MainViewModel : ViewModel
         CharacterGrid = new CharacterGridViewModel();
         AtlasConfig = new AtlasConfigViewModel();
         Effects = new EffectsViewModel();
+        WindowTitle = "KernSmith";
 
-        // Wire auto-regeneration from sub-viewmodels
+        // Wire auto-regeneration and dirty tracking from sub-viewmodels
         FontConfig.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(FontConfigViewModel.FontSize)
                 or nameof(FontConfigViewModel.SelectedPreset)
                 or nameof(FontConfigViewModel.CustomCharacters))
+            {
+                MarkDirty();
                 RequestAutoRegenerate();
+            }
         };
 
         CharacterGrid.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(CharacterGridViewModel.SelectedCount))
+            {
+                MarkDirty();
                 RequestAutoRegenerate();
+            }
         };
 
-        Effects.PropertyChanged += (_, _) => RequestAutoRegenerate();
+        AtlasConfig.PropertyChanged += (_, _) => MarkDirty();
+        Effects.PropertyChanged += (_, _) => { MarkDirty(); RequestAutoRegenerate(); };
     }
 
     public void OpenFont()
@@ -81,8 +91,10 @@ public class MainViewModel : ViewModel
         try
         {
             FontConfig.LoadFromFile(path);
+            SyncVariationAxesToEffects();
             StatusBar.StatusText = $"Loaded {FontConfig.FamilyName} {FontConfig.StyleName} ({FontConfig.NumGlyphs:N0} glyphs)";
             _sessionService.AddRecentFont(path);
+            UpdateWindowTitle();
         }
         catch (FontParsingException ex)
         {
@@ -94,10 +106,41 @@ public class MainViewModel : ViewModel
         }
     }
 
+    private void SyncVariationAxesToEffects()
+    {
+        Effects.VariationAxisValues.Clear();
+        Effects.VariationAxesList = FontConfig.LoadedVariationAxes;
+        Effects.HasVariationAxes = FontConfig.HasVariationAxes;
+
+        if (FontConfig.LoadedVariationAxes is { Count: > 0 })
+        {
+            foreach (var axis in FontConfig.LoadedVariationAxes)
+                Effects.VariationAxisValues[axis.Tag] = axis.DefaultValue;
+        }
+    }
+
+    public string? ValidateBeforeGenerate()
+    {
+        if (!FontConfig.IsFontLoaded)
+            return "No font loaded. Open a font file first.";
+        if (CharacterGrid.SelectedCount < 1)
+            return "No characters selected. Choose a character set or add custom characters.";
+        if (FontConfig.FontSize <= 0)
+            return "Font size must be greater than 0.";
+        return null;
+    }
+
     public async Task GenerateAsync()
     {
-        if (!FontConfig.IsFontLoaded || StatusBar.IsGenerating)
+        if (StatusBar.IsGenerating)
             return;
+
+        var validationError = ValidateBeforeGenerate();
+        if (validationError != null)
+        {
+            StatusBar.SetError(validationError);
+            return;
+        }
 
         StatusBar.SetGenerating();
 
@@ -138,7 +181,12 @@ public class MainViewModel : ViewModel
                 ShadowOffsetY = Effects.ShadowOffsetY,
                 ShadowBlur = Effects.ShadowBlur,
                 SdfEnabled = Effects.SdfEnabled,
-                ColorFontEnabled = Effects.ColorFontEnabled
+                ColorFontEnabled = Effects.ColorFontEnabled,
+                FaceIndex = FontConfig.FaceIndex,
+                VariationAxisValues = Effects.VariationAxisValues.Count > 0
+                    ? new Dictionary<string, float>(Effects.VariationAxisValues)
+                    : null,
+                FallbackCharacter = Effects.FallbackCharacter
             };
 
             _lastResult = await _generationService.GenerateAsync(request);
@@ -198,6 +246,8 @@ public class MainViewModel : ViewModel
         {
             _projectService.SaveProject(path, FontConfig, AtlasConfig, Effects, CharacterGrid);
             _sessionService.State.LastProjectPath = path;
+            IsDirty = false;
+            UpdateWindowTitle();
             StatusBar.StatusText = $"Project saved to {path}";
         }
         catch (Exception ex)
@@ -253,5 +303,28 @@ public class MainViewModel : ViewModel
     public void ResetLayout()
     {
         // Placeholder — layout classes handle actual splitter reset
+    }
+
+    private void MarkDirty()
+    {
+        if (!IsDirty)
+        {
+            IsDirty = true;
+            UpdateWindowTitle();
+        }
+    }
+
+    private void UpdateWindowTitle()
+    {
+        if (!FontConfig.IsFontLoaded)
+        {
+            WindowTitle = "KernSmith";
+            return;
+        }
+
+        var name = FontConfig.FamilyName;
+        WindowTitle = IsDirty
+            ? $"KernSmith \u2014 {name} *"
+            : $"KernSmith \u2014 {name}";
     }
 }

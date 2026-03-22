@@ -38,4 +38,13 @@ public record GenerationRequest
     public int ShadowBlur { get; init; }
     public bool SdfEnabled { get; init; }
     public bool ColorFontEnabled { get; init; }
+
+    // TTC face selection
+    public int FaceIndex { get; init; }
+
+    // Variable font axes
+    public Dictionary<string, float>? VariationAxisValues { get; init; }
+
+    // Fallback character
+    public string FallbackCharacter { get; init; } = "?";
 }

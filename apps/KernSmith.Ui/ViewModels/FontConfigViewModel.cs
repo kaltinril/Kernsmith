@@ -21,6 +21,11 @@ public class FontConfigViewModel : ViewModel
     public string VariationAxesSummary { get => Get<string>(); set => Set(value); }
     public bool IsFontLoaded { get => Get<bool>(); set => Set(value); }
 
+    // --- TTC face selection ---
+    public bool IsFontCollection { get => Get<bool>(); set => Set(value); }
+    public int FaceIndex { get => Get<int>(); set => Set(value); }
+    public int FaceCount { get => Get<int>(); set => Set(value); }
+
     // --- Generation settings ---
     public int FontSize { get => Get<int>(); set => Set(value); }
 
@@ -67,7 +72,13 @@ public class FontConfigViewModel : ViewModel
     public void LoadFromFile(string path)
     {
         var fontData = File.ReadAllBytes(path);
-        var fontInfo = BmFont.ReadFontInfo(fontData);
+        var faceCount = DetectFaceCount(fontData);
+
+        IsFontCollection = faceCount > 1;
+        FaceCount = faceCount;
+        FaceIndex = 0;
+
+        var fontInfo = BmFont.ReadFontInfo(fontData, FaceIndex);
 
         PopulateFromFontInfo(fontInfo);
         FontData = fontData;
@@ -75,6 +86,15 @@ public class FontConfigViewModel : ViewModel
         FontSourceDescription = Path.GetFileName(path);
         FontSourceKind = FontSourceKind.File;
         IsFontLoaded = true;
+    }
+
+    public void ReloadWithFaceIndex(int faceIndex)
+    {
+        if (FontData == null) return;
+
+        FaceIndex = faceIndex;
+        var fontInfo = BmFont.ReadFontInfo(FontData, faceIndex);
+        PopulateFromFontInfo(fontInfo);
     }
 
     public void LoadFromSystem(SystemFontInfo systemFont)
@@ -113,6 +133,31 @@ public class FontConfigViewModel : ViewModel
         VariationAxesSummary = fontInfo.VariationAxes is { Count: > 0 }
             ? string.Join(", ", fontInfo.VariationAxes.Select(a => a.Tag))
             : "";
+        LoadedVariationAxes = fontInfo.VariationAxes;
+    }
+
+    /// <summary>The raw variation axes from the last loaded font, for UI binding.</summary>
+    public IReadOnlyList<Font.Tables.VariationAxis>? LoadedVariationAxes
+    {
+        get => Get<IReadOnlyList<Font.Tables.VariationAxis>?>();
+        set => Set(value);
+    }
+
+    private static int DetectFaceCount(byte[] data)
+    {
+        if (data.Length < 12)
+            return 1;
+
+        var magic = System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(0, 4));
+
+        // "ttcf" magic means TrueType Collection
+        if (magic == 0x74746366)
+        {
+            var numFonts = System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(8, 4));
+            return (int)numFonts;
+        }
+
+        return 1;
     }
 
     private void UpdateCharacterCount()

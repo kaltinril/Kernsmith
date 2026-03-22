@@ -158,6 +158,95 @@ public class EffectsPanel : Panel
         colorCheck.Checked += (_, _) => _effects.ColorFontEnabled = true;
         colorCheck.Unchecked += (_, _) => _effects.ColorFontEnabled = false;
         stack.Children.Add(colorCheck.Visual);
+
+        // --- FALLBACK CHARACTER section ---
+        AddDivider(stack);
+        AddSectionHeader(stack, "FALLBACK CHARACTER");
+
+        var fallbackRow = new StackPanel();
+        fallbackRow.Orientation = Orientation.Horizontal;
+        fallbackRow.Spacing = 4;
+        stack.Children.Add(fallbackRow.Visual);
+
+        var fallbackLabel = new Label();
+        fallbackLabel.Text = "Char:";
+        fallbackLabel.Width = 70;
+        fallbackRow.AddChild(fallbackLabel);
+
+        var fallbackTextBox = new TextBox();
+        fallbackTextBox.Width = 60;
+        fallbackTextBox.Height = 28;
+        fallbackTextBox.Text = _effects.FallbackCharacter;
+        fallbackTextBox.TextChanged += (_, _) =>
+        {
+            if (!string.IsNullOrEmpty(fallbackTextBox.Text))
+                _effects.FallbackCharacter = fallbackTextBox.Text;
+        };
+        fallbackRow.AddChild(fallbackTextBox);
+
+        // --- VARIABLE FONT section (dynamic, appears when axes are present) ---
+        AddDivider(stack);
+
+        var varFontHeader = new Label();
+        varFontHeader.Text = "VARIABLE FONT";
+        varFontHeader.IsVisible = false;
+        stack.Children.Add(varFontHeader.Visual);
+
+        var varFontContainer = new StackPanel();
+        varFontContainer.Spacing = 4;
+        varFontContainer.IsVisible = false;
+        stack.Children.Add(varFontContainer.Visual);
+
+        _effects.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(EffectsViewModel.HasVariationAxes))
+            {
+                var hasAxes = _effects.HasVariationAxes;
+                varFontHeader.IsVisible = hasAxes;
+                varFontContainer.IsVisible = hasAxes;
+
+                // Rebuild axis sliders
+                varFontContainer.Visual.Children.Clear();
+
+                if (hasAxes && _effects.VariationAxesList is { Count: > 0 })
+                {
+                    foreach (var axis in _effects.VariationAxesList)
+                    {
+                        var axisRow = new StackPanel();
+                        axisRow.Orientation = Orientation.Horizontal;
+                        axisRow.Spacing = 4;
+                        varFontContainer.Visual.Children.Add(axisRow.Visual);
+
+                        var axisLabel = new Label();
+                        axisLabel.Text = axis.Name ?? axis.Tag;
+                        axisLabel.Width = 70;
+                        axisRow.AddChild(axisLabel);
+
+                        var axisSlider = new Slider();
+                        axisSlider.Minimum = axis.MinValue;
+                        axisSlider.Maximum = axis.MaxValue;
+                        axisSlider.Value = axis.DefaultValue;
+                        axisSlider.Width = 100;
+                        // Use tick frequency of 1 for integer-like axes, finer for float axes
+                        axisSlider.TicksFrequency = (axis.MaxValue - axis.MinValue) > 100 ? 1 : 0.1;
+                        axisSlider.IsSnapToTickEnabled = (axis.MaxValue - axis.MinValue) > 100;
+                        axisRow.AddChild(axisSlider);
+
+                        var axisValue = new Label();
+                        axisValue.Text = axis.DefaultValue.ToString("F0");
+                        axisRow.AddChild(axisValue);
+
+                        var capturedTag = axis.Tag;
+                        axisSlider.ValueChanged += (_, _) =>
+                        {
+                            var val = (float)axisSlider.Value;
+                            axisValue.Text = val.ToString("F0");
+                            _effects.VariationAxisValues[capturedTag] = val;
+                        };
+                    }
+                }
+            }
+        };
     }
 
     private static void AddCollapsibleSection(

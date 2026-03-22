@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using MonoGameGum;
 using Gum.Forms;
 using KernSmith.Ui.Layout;
@@ -13,6 +14,7 @@ public class KernSmithGame : Game
     private MainLayout? _mainLayout;
     private MainViewModel? _mainViewModel;
     private SessionService? _sessionService;
+    private KeyboardState _previousKeyboardState;
 
     public KernSmithGame()
     {
@@ -70,8 +72,28 @@ public class KernSmithGame : Game
 
     protected override void Update(GameTime gameTime)
     {
+        var kbState = Keyboard.GetState();
+        var ctrlHeld = kbState.IsKeyDown(Keys.LeftControl) || kbState.IsKeyDown(Keys.RightControl);
+
+        if (ctrlHeld && IsKeyPressed(Keys.O, kbState))
+            _mainViewModel?.OpenFont();
+        if (ctrlHeld && IsKeyPressed(Keys.S, kbState))
+            _mainViewModel?.SaveProject();
+        if (ctrlHeld && IsKeyPressed(Keys.G, kbState))
+            Task.Run(() => _mainViewModel?.GenerateAsync());
+
+        _previousKeyboardState = kbState;
+
+        // Sync window title from view model
+        Window.Title = _mainViewModel?.WindowTitle ?? "KernSmith";
+
         GumService.Default.Update(gameTime);
         base.Update(gameTime);
+    }
+
+    private bool IsKeyPressed(Keys key, KeyboardState current)
+    {
+        return current.IsKeyDown(key) && _previousKeyboardState.IsKeyUp(key);
     }
 
     protected override void Draw(GameTime gameTime)

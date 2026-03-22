@@ -32,6 +32,18 @@ public class GenerationService
             if (request.ShadowEnabled)
                 builder.WithShadow(request.ShadowOffsetX, request.ShadowOffsetY, request.ShadowBlur);
 
+            if (request.FaceIndex > 0)
+                builder.WithFaceIndex(request.FaceIndex);
+
+            if (request.VariationAxisValues is { Count: > 0 })
+            {
+                foreach (var (tag, value) in request.VariationAxisValues)
+                    builder.WithVariationAxis(tag, value);
+            }
+
+            if (!string.IsNullOrEmpty(request.FallbackCharacter))
+                builder.WithFallbackCharacter(request.FallbackCharacter[0]);
+
             switch (request.SourceKind)
             {
                 case FontSourceKind.File when request.FontFilePath != null:
