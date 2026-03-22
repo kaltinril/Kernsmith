@@ -1,6 +1,6 @@
 # Phase 60 — UI MVP: Core Font Generation Interface
 
-> **Status**: Planning
+> **Status**: In Progress
 > **Created**: 2026-03-21
 > **Goal**: Build a minimum viable desktop application that wraps the KernSmith NuGet library with a MonoGame + GUM UI interface, enabling users to load a font, configure basic settings, generate a bitmap font, preview the atlas, and save output to disk.
 

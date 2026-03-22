@@ -1,1 +1,4 @@
-Console.WriteLine("KernSmith.Ui — not yet implemented.");
+using KernSmith.Ui;
+
+using var game = new KernSmithGame();
+game.Run();

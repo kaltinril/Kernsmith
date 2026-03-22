@@ -223,7 +223,7 @@ API additions to the KernSmith NuGet library needed by the UI application. 21 it
 
 Desktop GUI for bitmap font generation using **MonoGame (DesktopGL) + GUM UI (code-only) + MonoGame.Extended**. Replaces the workflow of BMFont and Hiero with a modern, cross-platform tool that wraps the KernSmith NuGet library directly (no CLI dependency).
 
-### Phase 60 -- UI MVP (PLANNING)
+### Phase 60 -- UI MVP (IN PROGRESS)
 MonoGame + GUM UI project scaffold in `apps/KernSmith.Ui/`. Three-panel layout (font config | preview | effects) using GUM StackPanel + Splitter. Font loading from file or system fonts via NativeFileDialogSharp. Basic generation with CharacterSet presets. Atlas display via SpriteRuntime + Texture2D. Save output to disk.
 
 ### Phase 61 -- Font Loading & Character Selection (PLANNING)
