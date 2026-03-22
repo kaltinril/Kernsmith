@@ -172,6 +172,7 @@ public class KernSmithGame : Game
 
         GumService.Default.Update(gameTime);
         TooltipService.Update();
+        _mainLayout?.Preview?.UpdateInput();
         base.Update(gameTime);
     }
 

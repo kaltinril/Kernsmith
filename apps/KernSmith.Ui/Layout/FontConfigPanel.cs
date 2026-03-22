@@ -275,18 +275,6 @@ public class FontConfigPanel : Panel
 
         AddDivider(stack);
 
-        // --- CHARACTER INFO (selection managed in Characters tab) ---
-        var charCountLabel = new Label();
-        charCountLabel.Text = "Selected: 95 characters";
-        _fontConfig.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(FontConfigViewModel.CharacterCount))
-                charCountLabel.Text = $"Selected: {_fontConfig.CharacterCount} characters";
-        };
-        stack.Children.Add(charCountLabel.Visual);
-
-        AddDivider(stack);
-
         // --- GENERATE button (primary action, visually distinct) ---
         var generateBtnSpacer = new ColoredRectangleRuntime();
         generateBtnSpacer.Width = 0;

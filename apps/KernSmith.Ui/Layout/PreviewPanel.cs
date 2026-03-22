@@ -41,6 +41,13 @@ public class PreviewPanel : Panel
     private const float ToolbarHeight = 28;
     private const float AtlasContentY = 62;
 
+    // Pan/zoom input state
+    private int _previousScrollValue;
+    private bool _isPanning;
+    private int _panStartX, _panStartY;
+    private float _panOffsetX, _panOffsetY;
+    private float _baseSpriteX = 10, _baseSpriteY = AtlasContentY;
+
     public PreviewPanel(PreviewViewModel preview, CharacterGridViewModel characterGrid, GraphicsDevice graphicsDevice)
     {
         _preview = preview;
@@ -407,5 +414,71 @@ public class PreviewPanel : Panel
             _atlasSummaryLabel.Text = "";
         if (_failedWarningLabel != null)
             _failedWarningLabel.IsVisible = false;
+    }
+
+    /// <summary>
+    /// Call each frame from KernSmithGame.Update() for mouse zoom/pan input.
+    /// </summary>
+    public void UpdateInput()
+    {
+        if (!_showingPreview || !_preview.HasResult) return;
+
+        var mouse = Microsoft.Xna.Framework.Input.Mouse.GetState();
+
+        // --- Scroll wheel zoom ---
+        var scrollDelta = mouse.ScrollWheelValue - _previousScrollValue;
+        _previousScrollValue = mouse.ScrollWheelValue;
+
+        if (scrollDelta != 0 && _zoomSlider != null)
+        {
+            // Check if cursor is over the preview area (rough bounds check)
+            var panelLeft = this.Visual.AbsoluteLeft;
+            var panelTop = this.Visual.AbsoluteTop;
+            var panelRight = panelLeft + this.Visual.GetAbsoluteWidth();
+            var panelBottom = panelTop + this.Visual.GetAbsoluteHeight();
+
+            if (mouse.X >= panelLeft && mouse.X <= panelRight &&
+                mouse.Y >= panelTop && mouse.Y <= panelBottom)
+            {
+                var step = scrollDelta > 0 ? 25 : -25;
+                var newVal = Math.Clamp(_zoomSlider.Value + step, _zoomSlider.Minimum, _zoomSlider.Maximum);
+                _zoomSlider.Value = newVal;
+            }
+        }
+
+        // --- Middle-click pan ---
+        if (mouse.MiddleButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed)
+        {
+            if (!_isPanning)
+            {
+                _isPanning = true;
+                _panStartX = mouse.X;
+                _panStartY = mouse.Y;
+            }
+            else
+            {
+                var dx = mouse.X - _panStartX;
+                var dy = mouse.Y - _panStartY;
+                _panStartX = mouse.X;
+                _panStartY = mouse.Y;
+                _panOffsetX += dx;
+                _panOffsetY += dy;
+
+                if (_atlasSprite != null)
+                {
+                    _atlasSprite.X = _baseSpriteX + _panOffsetX;
+                    _atlasSprite.Y = _baseSpriteY + _panOffsetY;
+                }
+                if (_checkerSprite != null)
+                {
+                    _checkerSprite.X = _baseSpriteX + _panOffsetX;
+                    _checkerSprite.Y = _baseSpriteY + _panOffsetY;
+                }
+            }
+        }
+        else
+        {
+            _isPanning = false;
+        }
     }
 }

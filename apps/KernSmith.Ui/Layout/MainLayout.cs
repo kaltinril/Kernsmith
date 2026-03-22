@@ -13,6 +13,7 @@ public class MainLayout : ContainerRuntime
 {
     private readonly MainViewModel _viewModel;
     private readonly GraphicsDevice _graphicsDevice;
+    public PreviewPanel? Preview { get; private set; }
 
     public MainLayout(MainViewModel viewModel, GraphicsDevice graphicsDevice)
     {
@@ -85,6 +86,10 @@ public class MainLayout : ContainerRuntime
                 var dialog = new FontInspectorDialog(_viewModel.FontConfig);
                 dialog.Show();
             }
+            else
+            {
+                _viewModel.StatusBar.StatusText = "Load a font first to use Font Inspector";
+            }
         };
         helpItem.Items!.Add(inspectorItem);
 
@@ -127,7 +132,8 @@ public class MainLayout : ContainerRuntime
         body.AddChild(leftSplitter);
 
         // Center column: preview (fills remaining)
-        var previewPanel = new PreviewPanel(_viewModel.Preview, _viewModel.CharacterGrid, _graphicsDevice);
+        Preview = new PreviewPanel(_viewModel.Preview, _viewModel.CharacterGrid, _graphicsDevice);
+        var previewPanel = Preview;
         previewPanel.WidthUnits = DimensionUnitType.Ratio;
         previewPanel.Width = 1;
         previewPanel.HeightUnits = DimensionUnitType.RelativeToParent;
