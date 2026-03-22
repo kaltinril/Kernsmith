@@ -64,11 +64,13 @@ public class FontConfigPanel : Panel
                 presetDescLabel.Text = capturedPreset.Description;
                 presetDescLabel.IsVisible = true;
 
-                // Expand selected, abbreviate others
+                // Expand selected, abbreviate others, disable selected for visual distinction
                 foreach (var (b, p) in presetButtons)
                 {
-                    b.Text = p == capturedPreset ? p.Name : p.ShortName;
-                    b.Width = p == capturedPreset ? 80 : 40;
+                    var isSelected = p == capturedPreset;
+                    b.Text = isSelected ? p.Name : p.ShortName;
+                    b.Width = isSelected ? 80 : 40;
+                    b.IsEnabled = !isSelected;
                 }
             };
             presetRow.AddChild(btn);
