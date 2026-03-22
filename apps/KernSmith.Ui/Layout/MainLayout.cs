@@ -77,7 +77,7 @@ public class MainLayout : ContainerRuntime
         this.AddChild(body);
 
         // Left column: font config (fixed width)
-        var fontConfigPanel = new FontConfigPanel(_viewModel, _viewModel.FontConfig);
+        var fontConfigPanel = new FontConfigPanel(_viewModel, _viewModel.FontConfig, _viewModel.AtlasConfig);
         fontConfigPanel.Width = 280;
         fontConfigPanel.HeightUnits = DimensionUnitType.RelativeToParent;
         fontConfigPanel.Height = 0;
@@ -103,8 +103,8 @@ public class MainLayout : ContainerRuntime
         rightSplitter.Dock(Gum.Wireframe.Dock.FillVertically);
         body.AddChild(rightSplitter);
 
-        // Right column: effects placeholder (fixed width)
-        var effectsPanel = new EffectsPanel();
+        // Right column: effects (fixed width)
+        var effectsPanel = new EffectsPanel(_viewModel.Effects);
         effectsPanel.Width = 240;
         effectsPanel.HeightUnits = DimensionUnitType.RelativeToParent;
         effectsPanel.Height = 0;

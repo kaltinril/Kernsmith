@@ -19,6 +19,8 @@ public class MainViewModel : ViewModel
     public PreviewViewModel Preview { get => Get<PreviewViewModel>(); set => Set(value); }
     public StatusBarViewModel StatusBar { get => Get<StatusBarViewModel>(); set => Set(value); }
     public CharacterGridViewModel CharacterGrid { get => Get<CharacterGridViewModel>(); set => Set(value); }
+    public AtlasConfigViewModel AtlasConfig { get => Get<AtlasConfigViewModel>(); set => Set(value); }
+    public EffectsViewModel Effects { get => Get<EffectsViewModel>(); set => Set(value); }
 
     public MainViewModel(
         FileDialogService fileDialogService,
@@ -35,6 +37,8 @@ public class MainViewModel : ViewModel
         Preview = new PreviewViewModel();
         StatusBar = new StatusBarViewModel();
         CharacterGrid = new CharacterGridViewModel();
+        AtlasConfig = new AtlasConfigViewModel();
+        Effects = new EffectsViewModel();
     }
 
     public void OpenFont()
@@ -81,7 +85,31 @@ public class MainViewModel : ViewModel
                     : null,
                 SourceKind = FontConfig.FontSourceKind,
                 FontSize = FontConfig.FontSize,
-                Characters = CharacterGrid.ToCharacterSet()
+                Characters = CharacterGrid.ToCharacterSet(),
+                MaxWidth = AtlasConfig.MaxWidth,
+                MaxHeight = AtlasConfig.MaxHeight,
+                PowerOfTwo = AtlasConfig.PowerOfTwo,
+                AutofitTexture = AtlasConfig.AutofitTexture,
+                PaddingUp = AtlasConfig.PaddingUp,
+                PaddingRight = AtlasConfig.PaddingRight,
+                PaddingDown = AtlasConfig.PaddingDown,
+                PaddingLeft = AtlasConfig.PaddingLeft,
+                SpacingH = AtlasConfig.SpacingH,
+                SpacingV = AtlasConfig.SpacingV,
+                IncludeKerning = AtlasConfig.IncludeKerning,
+                Bold = Effects.Bold,
+                Italic = Effects.Italic,
+                AntiAlias = Effects.AntiAlias,
+                Hinting = Effects.Hinting,
+                SuperSampleLevel = Effects.SuperSampleLevel,
+                OutlineEnabled = Effects.OutlineEnabled,
+                OutlineWidth = Effects.OutlineWidth,
+                ShadowEnabled = Effects.ShadowEnabled,
+                ShadowOffsetX = Effects.ShadowOffsetX,
+                ShadowOffsetY = Effects.ShadowOffsetY,
+                ShadowBlur = Effects.ShadowBlur,
+                SdfEnabled = Effects.SdfEnabled,
+                ColorFontEnabled = Effects.ColorFontEnabled
             };
 
             _lastResult = await _generationService.GenerateAsync(request);
