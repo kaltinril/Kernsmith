@@ -37,28 +37,39 @@ public class FontConfigPanel : Panel
 
         var presetRow = new StackPanel();
         presetRow.Orientation = Orientation.Horizontal;
-        presetRow.Spacing = 3;
-        presetRow.Visual.WrapsChildren = true;
+        presetRow.Spacing = 2;
         stack.Children.Add(presetRow.Visual);
 
         var presetDescLabel = new Label();
         presetDescLabel.Text = "";
         presetDescLabel.IsVisible = false;
 
+        // Collect buttons so we can update their labels on click
+        var presetButtons = new List<(Button btn, EnginePreset preset)>();
+
         foreach (var preset in EnginePresets.All)
         {
-            if (preset == EnginePresets.Custom) continue; // Custom is the default / no-preset state
+            if (preset == EnginePresets.Custom) continue;
 
             var btn = new Button();
-            btn.Text = preset.Name;
-            btn.Width = 50;
+            btn.Text = preset.ShortName;
+            btn.Width = 40;
             btn.Height = 24;
+            presetButtons.Add((btn, preset));
+
             var capturedPreset = preset;
             btn.Click += (_, _) =>
             {
                 _atlasConfig.ApplyPreset(capturedPreset);
                 presetDescLabel.Text = capturedPreset.Description;
                 presetDescLabel.IsVisible = true;
+
+                // Expand selected, abbreviate others
+                foreach (var (b, p) in presetButtons)
+                {
+                    b.Text = p == capturedPreset ? p.Name : p.ShortName;
+                    b.Width = p == capturedPreset ? 80 : 40;
+                }
             };
             presetRow.AddChild(btn);
         }
