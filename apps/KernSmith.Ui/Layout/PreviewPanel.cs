@@ -35,6 +35,12 @@ public class PreviewPanel : Panel
     private Button? _charactersTabBtn;
     private bool _showingPreview = true;
 
+    // UI scale controls
+    private Label? _uiScaleLabel;
+    public event Action? UiScaleUpRequested;
+    public event Action? UiScaleDownRequested;
+    public event Action? UiScaleResetRequested;
+
     // Layout constants
     private const float TabBarHeight = 30;
     private const float ToolbarY = 32;
@@ -104,6 +110,40 @@ public class PreviewPanel : Panel
         _charactersTabBtn.Width = 90;
         _charactersTabBtn.Click += (_, _) => ShowTab(preview: false);
         tabBar.AddChild(_charactersTabBtn);
+
+        // UI scale controls — right-aligned in tab bar
+        var scaleSpacer = new ContainerRuntime();
+        scaleSpacer.WidthUnits = DimensionUnitType.Ratio;
+        scaleSpacer.Width = 1;
+        scaleSpacer.Height = TabBarHeight;
+        tabBar.AddChild(scaleSpacer);
+
+        var scaleDownBtn = new Button();
+        scaleDownBtn.Text = "-";
+        scaleDownBtn.Width = 28;
+        scaleDownBtn.Click += (_, _) => UiScaleDownRequested?.Invoke();
+        tabBar.AddChild(scaleDownBtn);
+
+        _uiScaleLabel = new Label();
+        _uiScaleLabel.Text = "100%";
+        _uiScaleLabel.Visual.WidthUnits = DimensionUnitType.RelativeToChildren;
+        _uiScaleLabel.Visual.HeightUnits = DimensionUnitType.Absolute;
+        _uiScaleLabel.Height = TabBarHeight;
+        _uiScaleLabel.Visual.SetProperty("VerticalAlignment",
+            RenderingLibrary.Graphics.VerticalAlignment.Center);
+        tabBar.AddChild(_uiScaleLabel);
+
+        var scaleUpBtn = new Button();
+        scaleUpBtn.Text = "+";
+        scaleUpBtn.Width = 28;
+        scaleUpBtn.Click += (_, _) => UiScaleUpRequested?.Invoke();
+        tabBar.AddChild(scaleUpBtn);
+
+        var scaleResetBtn = new Button();
+        scaleResetBtn.Text = "Reset";
+        scaleResetBtn.Width = 50;
+        scaleResetBtn.Click += (_, _) => UiScaleResetRequested?.Invoke();
+        tabBar.AddChild(scaleResetBtn);
 
         // Preview content area starts below tab bar — clips children so atlas doesn't overflow
         _previewContent = new Panel();
@@ -427,6 +467,12 @@ public class PreviewPanel : Panel
     {
         if (_zoomSlider != null)
             _zoomSlider.Value = Math.Clamp(_zoomSlider.Value - 25, _zoomSlider.Minimum, _zoomSlider.Maximum);
+    }
+
+    public void UpdateUiScaleDisplay(float scale)
+    {
+        if (_uiScaleLabel != null)
+            _uiScaleLabel.Text = $"{(int)(scale * 100)}%";
     }
 
     /// <summary>

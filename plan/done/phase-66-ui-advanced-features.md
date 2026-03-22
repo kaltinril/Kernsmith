@@ -1,6 +1,7 @@
 # Phase 66 — Advanced Features
 
-> **Status**: Planning
+> **Status**: Complete
+> **Completed**: 2026-03-22. Variable font axis sliders, TTC face selection, fallback character. Bold/Italic checkboxes load real font variant files when available. Batch generation, font inspector dialog, custom glyph import, and SDF engine config deferred — batch generation removed as it required file system browsing for fonts.
 > **Created**: 2026-03-21
 > **Goal**: Implement advanced font generation features in the UI including variable font support, SDF configuration, batch generation, custom glyphs, and font inspection tools.
 

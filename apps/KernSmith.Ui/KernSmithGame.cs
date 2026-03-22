@@ -16,11 +16,16 @@ public class KernSmithGame : Game
     private const int MinWindowWidth = 800;
     private const int MinWindowHeight = 500;
 
+    private const float MinUiScale = 0.5f;
+    private const float MaxUiScale = 2.0f;
+    private const float UiScaleStep = 0.125f;
+
     private GraphicsDeviceManager _graphics;
     private MainLayout? _mainLayout;
     private MainViewModel? _mainViewModel;
     private SessionService? _sessionService;
     private KeyboardState _previousKeyboardState;
+    private float _uiScale = 1.0f;
     private readonly ConcurrentQueue<Action> _mainThreadActions = new();
 
     public KernSmithGame()
@@ -85,6 +90,14 @@ public class KernSmithGame : Game
         _mainLayout = new MainLayout(_mainViewModel, GraphicsDevice);
         _mainLayout.AddToRoot();
 
+        // Wire UI scale controls from preview tab bar
+        if (_mainLayout.Preview != null)
+        {
+            _mainLayout.Preview.UiScaleUpRequested += () => SetUiScale(_uiScale + UiScaleStep);
+            _mainLayout.Preview.UiScaleDownRequested += () => SetUiScale(_uiScale - UiScaleStep);
+            _mainLayout.Preview.UiScaleResetRequested += () => SetUiScale(1.0f);
+        }
+
         TooltipService.Initialize();
 
         // Drag-and-drop font and project loading
@@ -142,9 +155,11 @@ public class KernSmithGame : Game
             if (ctrlHeld && IsKeyPressed(Keys.G, kbState))
                 Task.Run(() => _mainViewModel?.GenerateAsync());
             if (ctrlHeld && (IsKeyPressed(Keys.OemPlus, kbState) || IsKeyPressed(Keys.Add, kbState)))
-                _mainLayout?.Preview?.ZoomIn();
+                SetUiScale(_uiScale + UiScaleStep);
             if (ctrlHeld && (IsKeyPressed(Keys.OemMinus, kbState) || IsKeyPressed(Keys.Subtract, kbState)))
-                _mainLayout?.Preview?.ZoomOut();
+                SetUiScale(_uiScale - UiScaleStep);
+            if (ctrlHeld && IsKeyPressed(Keys.D0, kbState))
+                SetUiScale(1.0f);
         }
 
         _previousKeyboardState = kbState;
@@ -156,6 +171,24 @@ public class KernSmithGame : Game
         TooltipService.Update();
         _mainLayout?.Preview?.UpdateInput();
         base.Update(gameTime);
+    }
+
+    private void SetUiScale(float scale)
+    {
+        _uiScale = Math.Clamp(scale, MinUiScale, MaxUiScale);
+        ApplyUiScale();
+        _mainLayout?.Preview?.UpdateUiScaleDisplay(_uiScale);
+        if (_mainViewModel != null)
+            _mainViewModel.StatusBar.StatusText = $"UI Scale: {(int)(_uiScale * 100)}%";
+    }
+
+    private void ApplyUiScale()
+    {
+        var gumUI = GumService.Default;
+        gumUI.Renderer.Camera.Zoom = _uiScale;
+        gumUI.CanvasWidth = _graphics.GraphicsDevice.Viewport.Width / _uiScale;
+        gumUI.CanvasHeight = _graphics.GraphicsDevice.Viewport.Height / _uiScale;
+        gumUI.Root.UpdateLayout();
     }
 
     private bool IsKeyPressed(Keys key, KeyboardState current)
@@ -188,11 +221,8 @@ public class KernSmithGame : Game
                 _graphics.ApplyChanges();
             }
 
-            // Update GUM canvas to match new window size so layout reflows
-            var gumUI = GumService.Default;
-            gumUI.CanvasWidth = _graphics.GraphicsDevice.Viewport.Width;
-            gumUI.CanvasHeight = _graphics.GraphicsDevice.Viewport.Height;
-            gumUI.Root.UpdateLayout();
+            // Update GUM canvas to match new window size, accounting for UI scale
+            ApplyUiScale();
         }
         catch (Exception)
         {

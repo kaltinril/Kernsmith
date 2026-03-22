@@ -1,6 +1,7 @@
 # Phase 62 — Effects System UI
 
-> **Status**: Planning
+> **Status**: Complete
+> **Completed**: 2026-03-22. Implemented as collapsible CheckBox sections with sliders and RGB TextBox inputs. Custom color picker (spectrum+HSV), ShadowOffsetPad, and GradientDirectionControl deferred — RGB TextBox inputs are sufficient for MVP. Channel per-channel config simplified to packing toggle.
 > **Created**: 2026-03-21
 > **Goal**: Build the complete effects configuration UI including outline, shadow, gradient with interactive controls, inspired by Hiero's stackable effects and SnowB BMF's gradient editor.
 

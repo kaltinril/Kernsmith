@@ -4,6 +4,7 @@ using Gum.Forms.Controls;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using Microsoft.Xna.Framework.Graphics;
+using Gum.Wireframe;
 using MonoGameGum;
 using MonoGameGum.GueDeriving;
 
@@ -11,6 +12,8 @@ namespace KernSmith.Ui.Layout;
 
 public class MainLayout : ContainerRuntime
 {
+    private const float DefaultPanelWidth = 280;
+
     private readonly MainViewModel _viewModel;
     private readonly GraphicsDevice _graphicsDevice;
     public PreviewPanel? Preview { get; private set; }
@@ -131,6 +134,10 @@ public class MainLayout : ContainerRuntime
         AddSplitterBackground(leftSplitter);
         body.AddChild(leftSplitter);
 
+        // Double-click splitter to reset left panel to default width
+        if (leftSplitter.Visual is InteractiveGue leftInteractive)
+            leftInteractive.DoubleClick += (_, _) => fontConfigPanel.Width = DefaultPanelWidth;
+
         // Center column: preview (fills remaining)
         Preview = new PreviewPanel(_viewModel.Preview, _viewModel.CharacterGrid, _graphicsDevice);
         var previewPanel = Preview;
@@ -154,6 +161,10 @@ public class MainLayout : ContainerRuntime
         effectsPanel.Height = 0;
         AddPanelBackground(effectsPanel, Theme.Panel);
         body.AddChild(effectsPanel);
+
+        // Double-click splitter to reset right panel to default width
+        if (rightSplitter.Visual is InteractiveGue rightInteractive)
+            rightInteractive.DoubleClick += (_, _) => effectsPanel.Width = DefaultPanelWidth;
     }
 
     private void CreateStatusBar()

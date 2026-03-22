@@ -117,6 +117,16 @@ label.Text = "Hello World";
 parentPanel.AddChild(label);
 ```
 
+**Text alignment**: V3 `LabelVisual` IS a `TextRuntime` (no separate text child). Use `SetProperty` to center text vertically within fixed-height labels:
+```csharp
+label.Visual.HeightUnits = DimensionUnitType.Absolute;
+label.Height = 30;
+label.Visual.WidthUnits = DimensionUnitType.RelativeToChildren;
+label.Visual.SetProperty("VerticalAlignment",
+    RenderingLibrary.Graphics.VerticalAlignment.Center);
+```
+**Note**: `Dock.FillVertically` on a Label in a horizontal StackPanel does NOT reliably center text. Use explicit `Absolute` height + `SetProperty("VerticalAlignment", Center)` instead.
+
 ### TextBox
 ```csharp
 var textBox = new TextBox();
@@ -258,6 +268,46 @@ var bottomPanel = new Button();
 bottomPanel.Width = 200;
 bottomPanel.Height = 200;
 container.AddChild(bottomPanel);
+```
+
+**Double-click to reset**: `Splitter.Visual` is an `InteractiveGue` which exposes a `DoubleClick` event. Use it to reset adjacent panel widths:
+```csharp
+if (splitter.Visual is InteractiveGue interactive)
+    interactive.DoubleClick += (_, _) => panel.Width = defaultWidth;
+```
+
+### UI Scaling / Accessibility Zoom
+
+Scale the entire UI globally via `Camera.Zoom`. Adjust canvas dimensions inversely so layout still fills the window.
+
+```csharp
+// Store original height at startup
+private int _originalHeight;
+private float _uiScale = 1.0f;
+
+protected override void Initialize()
+{
+    _originalHeight = _graphics.GraphicsDevice.Viewport.Height;
+}
+
+// Apply UI scale
+private void ApplyUiScale()
+{
+    var camera = SystemManagers.Default.Renderer.Camera;
+    camera.Zoom = _uiScale;
+    GumService.Default.CanvasWidth = _graphics.GraphicsDevice.Viewport.Width / _uiScale;
+    GumService.Default.CanvasHeight = _graphics.GraphicsDevice.Viewport.Height / _uiScale;
+    GumService.Default.Root.UpdateLayout();
+}
+```
+
+Also works with window resize — combine the resize zoom with UI scale:
+```csharp
+private void HandleClientSizeChanged(object sender, EventArgs e)
+{
+    // Reapply UI scale after resize
+    ApplyUiScale();
+}
 ```
 
 ### Window (popup/dialog)

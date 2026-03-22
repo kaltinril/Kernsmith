@@ -1,6 +1,7 @@
 # Phase 63 — Atlas & Texture Configuration UI
 
-> **Status**: Planning
+> **Status**: Complete
+> **Completed**: 2026-03-22. Atlas size uses power-of-two ComboBoxes instead of free-text. Padding uses cross/diamond layout. Moved from left panel to effects panel to eliminate scrolling. Post-generation metrics shown in status bar and toolbar. BitDepth/Compression deferred (no library support).
 > **Created**: 2026-03-21
 > **Updated**: 2026-03-21
 > **Goal**: Build comprehensive atlas packing and texture output configuration using GUM UI (code-only) on MonoGame (DesktopGL), including size controls, packing algorithm selection, padding/spacing with BMFont-style directional layout, channel configuration, output format selection, presets, and post-generation metrics.
