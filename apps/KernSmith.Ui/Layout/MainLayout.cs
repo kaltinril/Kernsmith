@@ -112,13 +112,14 @@ public class MainLayout : ContainerRuntime
     private void CreateBody()
     {
         // Horizontal StackPanel for 3-column layout with splitters
+        // Positioned below menu (Y=30) and above status bar (Height = -54 = 30 menu + 24 status)
         var body = new StackPanel();
         body.Orientation = Orientation.Horizontal;
-        body.Y = 40; // below menu
+        body.Y = 30;
         body.WidthUnits = DimensionUnitType.RelativeToParent;
         body.Width = 0;
         body.HeightUnits = DimensionUnitType.RelativeToParent;
-        body.Height = -64; // minus menu (~40) and status bar (~24)
+        body.Height = -54;
         this.AddChild(body);
 
         // Left column: font config (fixed width)
@@ -163,8 +164,14 @@ public class MainLayout : ContainerRuntime
     private void CreateStatusBar()
     {
         var statusBar = new StatusBar(_viewModel.StatusBar);
-        statusBar.Dock(Gum.Wireframe.Dock.Bottom);
+        // Pin to bottom of screen with explicit positioning
+        statusBar.Visual.YUnits = Gum.Converters.GeneralUnitType.PixelsFromLarge;
+        statusBar.Visual.YOrigin = RenderingLibrary.Graphics.VerticalAlignment.Bottom;
+        statusBar.Visual.Y = 0;
         statusBar.Height = 24;
+        statusBar.Visual.HeightUnits = DimensionUnitType.Absolute;
+        statusBar.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        statusBar.Visual.Width = 0;
         this.AddChild(statusBar);
     }
 

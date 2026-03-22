@@ -51,8 +51,8 @@ public class FontConfigPanel : Panel
 
             var btn = new Button();
             btn.Text = preset.Name;
-            btn.Width = 65;
-            btn.Height = 26;
+            btn.Width = 50;
+            btn.Height = 24;
             var capturedPreset = preset;
             btn.Click += (_, _) =>
             {
