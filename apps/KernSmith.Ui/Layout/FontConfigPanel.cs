@@ -259,7 +259,7 @@ public class FontConfigPanel : Panel
         sizeRow.AddChild(sizeLabel);
 
         var sizeTextBox = new TextBox();
-        sizeTextBox.Width = 80;
+        sizeTextBox.Width = 50;
         sizeTextBox.Text = "32";
         sizeTextBox.TextChanged += (_, _) =>
         {
@@ -274,44 +274,7 @@ public class FontConfigPanel : Panel
 
         AddDivider(stack);
 
-        // --- CHARACTER SET section ---
-        AddSectionHeader(stack, "CHARACTER SET");
-
-        // RadioButtons so all options are visible at once
-        var charSetGroup = new StackPanel();
-        charSetGroup.Spacing = 2;
-        stack.Children.Add(charSetGroup.Visual);
-
-        TextBox? customTextBox = null;
-
-        var presets = new[] { "ASCII (95)", "Extended ASCII (224)", "Latin (559)", "Custom" };
-        for (int i = 0; i < presets.Length; i++)
-        {
-            var rb = new RadioButton();
-            rb.Text = presets[i];
-            rb.Width = 260;
-            if (i == 0) rb.IsChecked = true;
-            var presetIndex = i; // capture for closure
-            rb.Checked += (_, _) =>
-            {
-                _fontConfig.SelectedPreset = (CharacterSetPreset)presetIndex;
-                if (customTextBox != null)
-                    customTextBox.IsVisible = _fontConfig.IsCustomMode;
-            };
-            charSetGroup.AddChild(rb);
-        }
-
-        customTextBox = new TextBox();
-        customTextBox.Width = 260;
-        customTextBox.Height = 60;
-        customTextBox.IsVisible = false;
-        customTextBox.Placeholder = "Type characters to include...";
-        customTextBox.TextWrapping = Gum.Forms.TextWrapping.Wrap;
-        customTextBox.AcceptsReturn = true;
-        customTextBox.SetBinding(nameof(TextBox.Text), nameof(FontConfigViewModel.CustomCharacters));
-        customTextBox.Visual.BindingContext = _fontConfig;
-        stack.Children.Add(customTextBox.Visual);
-
+        // --- CHARACTER INFO (selection managed in Characters tab) ---
         var charCountLabel = new Label();
         charCountLabel.Text = "Selected: 95 characters";
         _fontConfig.PropertyChanged += (_, e) =>

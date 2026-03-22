@@ -283,34 +283,43 @@ public class MainViewModel : ViewModel
     {
         if (_lastResult == null) return;
 
-        var path = _fileDialogService.SaveFile("myfont", "fnt");
-        if (path == null) return;
-
-        try
+        var initialDir = _sessionService.State.LastOutputDir;
+        var dialog = new SaveDialog("myfont", "fnt");
+        dialog.Show(path =>
         {
-            _lastResult.ToFile(path);
+            try
+            {
+                _lastResult.ToFile(path);
 
-            var dir = Path.GetDirectoryName(path);
-            if (!string.IsNullOrEmpty(dir))
-                _sessionService.State.LastOutputDir = dir;
+                var dir = Path.GetDirectoryName(path);
+                if (!string.IsNullOrEmpty(dir))
+                    _sessionService.State.LastOutputDir = dir;
 
-            StatusBar.StatusText = $"Saved to {path}";
-        }
-        catch (Exception ex)
-        {
-            StatusBar.SetError($"Export failed: {ex.Message}");
-        }
+                StatusBar.StatusText = $"Saved to {path}";
+            }
+            catch (Exception ex)
+            {
+                StatusBar.SetError($"Export failed: {ex.Message}");
+            }
+        }, initialDir);
     }
 
     public void SaveProject()
     {
         var path = _projectService.CurrentProjectPath;
-        if (path == null)
+        if (path != null)
         {
-            path = _fileDialogService.SaveFile("myproject", "bmfc");
-            if (path == null) return;
+            DoSaveProject(path);
+            return;
         }
 
+        var initialDir = _sessionService.State.LastOutputDir;
+        var dialog = new SaveDialog("myproject", "bmfc");
+        dialog.Show(DoSaveProject, initialDir);
+    }
+
+    private void DoSaveProject(string path)
+    {
         try
         {
             _projectService.SaveProject(path, FontConfig, AtlasConfig, Effects, CharacterGrid);
@@ -367,11 +376,6 @@ public class MainViewModel : ViewModel
     public void Exit()
     {
         _game.Exit();
-    }
-
-    public void ResetLayout()
-    {
-        // Placeholder — layout classes handle actual splitter reset
     }
 
     private void MarkDirty()

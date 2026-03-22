@@ -67,17 +67,6 @@ public class MainLayout : ContainerRuntime
 
         menu.Items!.Add(fileItem);
 
-        // View menu
-        var viewItem = new MenuItem();
-        viewItem.Header = "View";
-
-        var resetItem = new MenuItem();
-        resetItem.Header = "Reset Layout";
-        resetItem.Clicked += (_, _) => _viewModel.ResetLayout();
-        viewItem.Items!.Add(resetItem);
-
-        menu.Items!.Add(viewItem);
-
         // Help menu
         var helpItem = new MenuItem();
         helpItem.Header = "Help";

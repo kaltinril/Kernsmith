@@ -1,4 +1,3 @@
-using Gum.Converters;
 using Gum.DataTypes;
 using Gum.Forms.Controls;
 using KernSmith.Ui.Models;
@@ -7,7 +6,6 @@ using KernSmith.Ui.ViewModels;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGameGum.GueDeriving;
-using RenderingLibrary.Graphics;
 
 namespace KernSmith.Ui.Layout;
 
@@ -37,15 +35,11 @@ public class PreviewPanel : Panel
     private Button? _charactersTabBtn;
     private bool _showingPreview = true;
 
-    // Sample text
-    private TextBox? _sampleTextBox;
-
     // Layout constants
     private const float TabBarHeight = 30;
     private const float ToolbarY = 32;
     private const float ToolbarHeight = 28;
     private const float AtlasContentY = 62;
-    private const float SampleAreaHeight = 60;
 
     public PreviewPanel(PreviewViewModel preview, CharacterGridViewModel characterGrid, GraphicsDevice graphicsDevice)
     {
@@ -147,11 +141,11 @@ public class PreviewPanel : Panel
         _toolbarRow.AddChild(zoomLabel);
 
         _zoomSlider = new Slider();
-        _zoomSlider.Minimum = 10;
-        _zoomSlider.Maximum = 400;
+        _zoomSlider.Minimum = 25;
+        _zoomSlider.Maximum = 300;
         _zoomSlider.Value = 100;
         _zoomSlider.Width = 100;
-        _zoomSlider.TicksFrequency = 5;
+        _zoomSlider.TicksFrequency = 25;
         _zoomSlider.IsSnapToTickEnabled = true;
         _toolbarRow.AddChild(_zoomSlider);
 
@@ -221,46 +215,6 @@ public class PreviewPanel : Panel
         _failedWarningLabel.Text = "";
         _failedWarningLabel.IsVisible = false;
         _navRow.AddChild(_failedWarningLabel);
-
-        // --- Divider above sample text section ---
-        var sampleDivider = new ColoredRectangleRuntime();
-        sampleDivider.Height = 1;
-        sampleDivider.WidthUnits = DimensionUnitType.RelativeToParent;
-        sampleDivider.Width = -8;
-        sampleDivider.X = 4;
-        sampleDivider.Color = Styling.Theme.PanelBorder;
-        sampleDivider.YUnits = GeneralUnitType.PixelsFromLarge;
-        sampleDivider.YOrigin = VerticalAlignment.Bottom;
-        sampleDivider.Y = -SampleAreaHeight;
-        _previewContent.AddChild(sampleDivider);
-
-        // --- Sample Text section at bottom (fixed height, always visible) ---
-        var sampleRow = new StackPanel();
-        sampleRow.Orientation = Orientation.Vertical;
-        sampleRow.Spacing = 4;
-        sampleRow.WidthUnits = DimensionUnitType.RelativeToParent;
-        sampleRow.Width = -8;
-        sampleRow.X = 4;
-        sampleRow.YUnits = GeneralUnitType.PixelsFromLarge;
-        sampleRow.YOrigin = VerticalAlignment.Bottom;
-        sampleRow.Y = -4;
-        sampleRow.Height = SampleAreaHeight - 4;
-        _previewContent.AddChild(sampleRow);
-
-        var sampleHeader = new Label();
-        sampleHeader.Text = "Sample Text:";
-        sampleRow.AddChild(sampleHeader);
-
-        _sampleTextBox = new TextBox();
-        _sampleTextBox.Width = 0;
-        _sampleTextBox.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-        _sampleTextBox.Text = _preview.SampleText;
-        _sampleTextBox.Placeholder = "Type sample text...";
-        _sampleTextBox.TextChanged += (_, _) =>
-        {
-            _preview.SampleText = _sampleTextBox.Text;
-        };
-        sampleRow.AddChild(_sampleTextBox);
 
         // Placeholder text centered
         _placeholder = new Label();
@@ -407,11 +361,11 @@ public class PreviewPanel : Panel
 
         // Available space: panel width minus margins, panel height minus toolbar/nav/sample areas
         var availableWidth = Math.Max(1f, _previewContent.Visual.GetAbsoluteWidth() - 20);
-        var availableHeight = Math.Max(1f, _previewContent.Visual.GetAbsoluteHeight() - AtlasContentY - SampleAreaHeight - 10);
+        var availableHeight = Math.Max(1f, _previewContent.Visual.GetAbsoluteHeight() - AtlasContentY - 10);
 
         var fitZoom = Math.Min(availableWidth / atlasWidth, availableHeight / atlasHeight);
         // Clamp to slider range and don't exceed 100% (no upscaling by default)
-        fitZoom = Math.Clamp(fitZoom, 0.10f, 1.0f);
+        fitZoom = Math.Clamp(fitZoom, 0.25f, 1.0f);
 
         _preview.ZoomLevel = fitZoom;
 

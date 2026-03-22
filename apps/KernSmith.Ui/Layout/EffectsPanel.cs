@@ -26,8 +26,18 @@ public class EffectsPanel : Panel
         scrollViewer.Dock(Gum.Wireframe.Dock.Fill);
         this.AddChild(scrollViewer);
 
-        var stack = scrollViewer.InnerPanel;
-        stack.StackSpacing = 4;
+        // Inner container with padding from panel edges
+        var inner = new ContainerRuntime();
+        inner.WidthUnits = DimensionUnitType.RelativeToParent;
+        inner.HeightUnits = DimensionUnitType.RelativeToChildren;
+        inner.Width = -16; // 8px padding each side
+        inner.Height = 0;
+        inner.X = 8;
+        inner.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
+        inner.StackSpacing = 4;
+        scrollViewer.InnerPanel.Children.Add(inner);
+
+        var stack = inner;
 
         // --- FONT STYLE section (always active) ---
         AddSectionHeader(stack, "FONT STYLE");
@@ -196,12 +206,41 @@ public class EffectsPanel : Panel
         sdfCheck.Unchecked += (_, _) => _effects.SdfEnabled = false;
         stack.Children.Add(sdfCheck.Visual);
 
+        // SDF + SuperSample incompatibility warning
+        var sdfWarning = new TextRuntime();
+        sdfWarning.Text = "Not compatible with super sampling";
+        sdfWarning.Color = Theme.Warning;
+        sdfWarning.Visible = false;
+        stack.Children.Add(sdfWarning);
+
         var colorCheck = new CheckBox();
         colorCheck.Text = "Color Font";
         colorCheck.Width = 220;
         colorCheck.Checked += (_, _) => _effects.ColorFontEnabled = true;
         colorCheck.Unchecked += (_, _) => _effects.ColorFontEnabled = false;
         stack.Children.Add(colorCheck.Visual);
+
+        var colorFontHint = new TextRuntime();
+        colorFontHint.Text = "Only affects fonts with color tables (e.g. emoji)";
+        colorFontHint.Color = Theme.TextMuted;
+        stack.Children.Add(colorFontHint);
+
+        // Color font + Gradient mutual exclusion warning
+        var colorGradientWarning = new TextRuntime();
+        colorGradientWarning.Text = "Color font and gradient cannot be used together";
+        colorGradientWarning.Color = Theme.Warning;
+        colorGradientWarning.Visible = false;
+        stack.Children.Add(colorGradientWarning);
+
+        // Wire up validation warnings
+        _effects.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(EffectsViewModel.SdfEnabled) or nameof(EffectsViewModel.SuperSampleLevel))
+                sdfWarning.Visible = _effects.SdfEnabled && _effects.SuperSampleLevel > 1;
+
+            if (e.PropertyName is nameof(EffectsViewModel.ColorFontEnabled) or nameof(EffectsViewModel.GradientEnabled))
+                colorGradientWarning.Visible = _effects.ColorFontEnabled && _effects.GradientEnabled;
+        };
 
         // --- FALLBACK CHARACTER section ---
         AddDivider(stack);
@@ -309,7 +348,7 @@ public class EffectsPanel : Panel
             contentPanel.Children.Add(maxSizeRow.Visual);
 
             var sizeLabel = new Label();
-            sizeLabel.Text = "Size:";
+            sizeLabel.Text = "Max Size:";
             maxSizeRow.AddChild(sizeLabel);
 
             var maxWidthCombo = new ComboBox();
