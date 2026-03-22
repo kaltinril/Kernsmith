@@ -111,6 +111,7 @@ public class CharacterSelectionPanel : Panel
         {
             var cb = new CheckBox();
             cb.Text = $"{block.Name} ({block.Count})";
+            cb.Width = 350;
 
             // Check if the block overlaps with current selection
             var blockRef = block; // capture for closure

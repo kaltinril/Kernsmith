@@ -37,7 +37,8 @@ public class FontConfigPanel : Panel
 
         var presetRow = new StackPanel();
         presetRow.Orientation = Orientation.Horizontal;
-        presetRow.Spacing = 4;
+        presetRow.Spacing = 3;
+        presetRow.Visual.WrapsChildren = true;
         stack.Children.Add(presetRow.Visual);
 
         var presetDescLabel = new Label();
@@ -50,7 +51,7 @@ public class FontConfigPanel : Panel
 
             var btn = new Button();
             btn.Text = preset.Name;
-            btn.Width = 70;
+            btn.Width = 65;
             btn.Height = 26;
             var capturedPreset = preset;
             btn.Click += (_, _) =>
@@ -71,7 +72,7 @@ public class FontConfigPanel : Panel
 
         var browseBtn = new Button();
         browseBtn.Text = "Browse for Font...";
-        browseBtn.Width = 260;
+        browseBtn.Width = 240;
         browseBtn.Height = 28;
         browseBtn.Click += (_, _) =>
         {
@@ -137,7 +138,7 @@ public class FontConfigPanel : Panel
         stack.Children.Add(familyLabel.Visual);
 
         var familyCombo = new ComboBox();
-        familyCombo.Width = 260;
+        familyCombo.Width = 240;
         stack.Children.Add(familyCombo.Visual);
 
         var styleLabel = new Label();
@@ -145,7 +146,7 @@ public class FontConfigPanel : Panel
         stack.Children.Add(styleLabel.Visual);
 
         var styleCombo = new ComboBox();
-        styleCombo.Width = 260;
+        styleCombo.Width = 240;
         stack.Children.Add(styleCombo.Visual);
 
         // Wire system font combos
@@ -168,6 +169,10 @@ public class FontConfigPanel : Panel
                 styleCombo.Items.Clear();
                 foreach (var style in group.Styles)
                     styleCombo.Items.Add(style.StyleName);
+
+                // Auto-select first style (typically "Regular") and trigger font load
+                if (styleCombo.Items.Count > 0)
+                    styleCombo.SelectedIndex = 0;
             }
         };
 
@@ -278,7 +283,7 @@ public class FontConfigPanel : Panel
         {
             var rb = new RadioButton();
             rb.Text = presets[i];
-            rb.Width = 260;
+            rb.Width = 240;
             if (i == 0) rb.IsChecked = true;
             var presetIndex = i; // capture for closure
             rb.Checked += (_, _) =>
@@ -291,7 +296,7 @@ public class FontConfigPanel : Panel
         }
 
         customTextBox = new TextBox();
-        customTextBox.Width = 260;
+        customTextBox.Width = 240;
         customTextBox.Height = 60;
         customTextBox.IsVisible = false;
         customTextBox.Placeholder = "Type characters to include...";
@@ -315,7 +320,7 @@ public class FontConfigPanel : Panel
         // --- GENERATE button ---
         var generateBtn = new Button();
         generateBtn.Text = "Generate";
-        generateBtn.Width = 260;
+        generateBtn.Width = 240;
         generateBtn.Height = 40;
         generateBtn.IsEnabled = _fontConfig.IsFontLoaded;
         generateBtn.Click += async (_, _) => await _mainViewModel.GenerateAsync();
@@ -331,7 +336,7 @@ public class FontConfigPanel : Panel
         // Auto-regenerate toggle
         var autoRegenCb = new CheckBox();
         autoRegenCb.Text = "Auto-regenerate";
-        autoRegenCb.Width = 260;
+        autoRegenCb.Width = 240;
         autoRegenCb.Checked += (_, _) => _mainViewModel.AutoRegenerate = true;
         autoRegenCb.Unchecked += (_, _) => _mainViewModel.AutoRegenerate = false;
         stack.Children.Add(autoRegenCb.Visual);
@@ -400,16 +405,16 @@ public class FontConfigPanel : Panel
         padTopRow.Spacing = 4;
         stack.Children.Add(padTopRow.Visual);
 
-        AddLabeledIntBox(padTopRow, "Up:", _atlasConfig.PaddingUp, 60, v => _atlasConfig.PaddingUp = Math.Clamp(v, 0, 32));
-        AddLabeledIntBox(padTopRow, "Right:", _atlasConfig.PaddingRight, 60, v => _atlasConfig.PaddingRight = Math.Clamp(v, 0, 32));
+        AddLabeledIntBox(padTopRow, "Up:", _atlasConfig.PaddingUp, 45, v => _atlasConfig.PaddingUp = Math.Clamp(v, 0, 32));
+        AddLabeledIntBox(padTopRow, "Right:", _atlasConfig.PaddingRight, 45, v => _atlasConfig.PaddingRight = Math.Clamp(v, 0, 32));
 
         var padBotRow = new StackPanel();
         padBotRow.Orientation = Orientation.Horizontal;
         padBotRow.Spacing = 4;
         stack.Children.Add(padBotRow.Visual);
 
-        AddLabeledIntBox(padBotRow, "Down:", _atlasConfig.PaddingDown, 60, v => _atlasConfig.PaddingDown = Math.Clamp(v, 0, 32));
-        AddLabeledIntBox(padBotRow, "Left:", _atlasConfig.PaddingLeft, 60, v => _atlasConfig.PaddingLeft = Math.Clamp(v, 0, 32));
+        AddLabeledIntBox(padBotRow, "Down:", _atlasConfig.PaddingDown, 45, v => _atlasConfig.PaddingDown = Math.Clamp(v, 0, 32));
+        AddLabeledIntBox(padBotRow, "Left:", _atlasConfig.PaddingLeft, 45, v => _atlasConfig.PaddingLeft = Math.Clamp(v, 0, 32));
 
         AddDivider(stack);
 
@@ -421,8 +426,8 @@ public class FontConfigPanel : Panel
         spacingRow.Spacing = 4;
         stack.Children.Add(spacingRow.Visual);
 
-        AddLabeledIntBox(spacingRow, "H:", _atlasConfig.SpacingH, 60, v => _atlasConfig.SpacingH = Math.Clamp(v, 0, 32));
-        AddLabeledIntBox(spacingRow, "V:", _atlasConfig.SpacingV, 60, v => _atlasConfig.SpacingV = Math.Clamp(v, 0, 32));
+        AddLabeledIntBox(spacingRow, "H:", _atlasConfig.SpacingH, 45, v => _atlasConfig.SpacingH = Math.Clamp(v, 0, 32));
+        AddLabeledIntBox(spacingRow, "V:", _atlasConfig.SpacingV, 45, v => _atlasConfig.SpacingV = Math.Clamp(v, 0, 32));
 
         AddDivider(stack);
 
@@ -442,7 +447,7 @@ public class FontConfigPanel : Panel
         {
             var rb = new RadioButton();
             rb.Text = name;
-            rb.Width = 260;
+            rb.Width = 240;
             if (format == _atlasConfig.DescriptorFormat) rb.IsChecked = true;
             var capturedFormat = format;
             rb.Checked += (_, _) => _atlasConfig.DescriptorFormat = capturedFormat;

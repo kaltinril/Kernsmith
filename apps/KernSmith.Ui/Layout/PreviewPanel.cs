@@ -1,3 +1,4 @@
+using Gum.Converters;
 using Gum.DataTypes;
 using Gum.Forms.Controls;
 using KernSmith.Ui.Models;
@@ -5,6 +6,7 @@ using KernSmith.Ui.ViewModels;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGameGum.GueDeriving;
+using RenderingLibrary.Graphics;
 
 namespace KernSmith.Ui.Layout;
 
@@ -72,12 +74,17 @@ public class PreviewPanel : Panel
 
     private void BuildContent()
     {
-        // Tab bar at top
+        // Use explicit Y positioning to avoid overlap between tab bar and content
+
+        // Tab bar at very top (Y=0)
         var tabBar = new StackPanel();
         tabBar.Orientation = Orientation.Horizontal;
         tabBar.Spacing = 4;
-        tabBar.Dock(Gum.Wireframe.Dock.Top);
+        tabBar.X = 4;
+        tabBar.Y = 2;
         tabBar.Height = 28;
+        tabBar.WidthUnits = DimensionUnitType.RelativeToParent;
+        tabBar.Width = -8;
         this.AddChild(tabBar);
 
         _previewTabBtn = new Button();
@@ -95,24 +102,24 @@ public class PreviewPanel : Panel
         _charactersTabBtn.Click += (_, _) => ShowTab(preview: false);
         tabBar.AddChild(_charactersTabBtn);
 
-        // Preview content area
+        // Preview content area starts below tab bar
         _previewContent = new Panel();
-        _previewContent.Y = 30;
+        _previewContent.Y = 32;
         _previewContent.WidthUnits = DimensionUnitType.RelativeToParent;
         _previewContent.Width = 0;
         _previewContent.HeightUnits = DimensionUnitType.RelativeToParent;
-        _previewContent.Height = -30;
+        _previewContent.Height = -32;
         this.AddChild(_previewContent);
 
         BuildPreviewContent();
 
-        // Characters content area
+        // Characters content area (same position, toggled via visibility)
         _charactersContent = new CharacterSelectionPanel(_characterGrid);
-        _charactersContent.Y = 30;
+        _charactersContent.Y = 32;
         _charactersContent.WidthUnits = DimensionUnitType.RelativeToParent;
         _charactersContent.Width = 0;
         _charactersContent.HeightUnits = DimensionUnitType.RelativeToParent;
-        _charactersContent.Height = -30;
+        _charactersContent.Height = -32;
         _charactersContent.IsVisible = false;
         this.AddChild(_charactersContent);
     }
@@ -206,6 +213,36 @@ public class PreviewPanel : Panel
         _glyphInfoLabel.Text = "";
         _navRow.AddChild(_glyphInfoLabel);
 
+        // --- Sample Text section at bottom (fixed height, always visible) ---
+        var sampleRow = new StackPanel();
+        sampleRow.Orientation = Orientation.Vertical;
+        sampleRow.Spacing = 4;
+        sampleRow.WidthUnits = DimensionUnitType.RelativeToParent;
+        sampleRow.Width = -8;
+        sampleRow.X = 4;
+        // Pin to bottom of _previewContent
+        sampleRow.YUnits = Gum.Converters.GeneralUnitType.PixelsFromLarge;
+        sampleRow.YOrigin = RenderingLibrary.Graphics.VerticalAlignment.Bottom;
+        sampleRow.Y = -4;
+        sampleRow.Height = 56;
+        _previewContent.AddChild(sampleRow);
+
+        var sampleHeader = new Label();
+        sampleHeader.Text = "Sample Text:";
+        sampleRow.AddChild(sampleHeader);
+
+        _sampleTextBox = new TextBox();
+        _sampleTextBox.Width = 0;
+        _sampleTextBox.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        _sampleTextBox.Height = 28;
+        _sampleTextBox.Text = _preview.SampleText;
+        _sampleTextBox.Placeholder = "Type sample text...";
+        _sampleTextBox.TextChanged += (_, _) =>
+        {
+            _preview.SampleText = _sampleTextBox.Text;
+        };
+        sampleRow.AddChild(_sampleTextBox);
+
         // Placeholder text centered
         _placeholder = new Label();
         _placeholder.Text = "Drop a font file here or use Browse to get started";
@@ -227,30 +264,6 @@ public class PreviewPanel : Panel
         _atlasSprite.X = 10;
         _atlasSprite.Y = 60;
         _previewContent.AddChild(_atlasSprite);
-
-        // --- Sample Text section ---
-        var sampleRow = new StackPanel();
-        sampleRow.Orientation = Orientation.Vertical;
-        sampleRow.Spacing = 4;
-        sampleRow.Dock(Gum.Wireframe.Dock.Bottom);
-        sampleRow.Height = 60;
-        _previewContent.AddChild(sampleRow);
-
-        var sampleHeader = new Label();
-        sampleHeader.Text = "Sample Text:";
-        sampleRow.AddChild(sampleHeader);
-
-        _sampleTextBox = new TextBox();
-        _sampleTextBox.Width = 0;
-        _sampleTextBox.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-        _sampleTextBox.Height = 28;
-        _sampleTextBox.Text = _preview.SampleText;
-        _sampleTextBox.Placeholder = "Type sample text...";
-        _sampleTextBox.TextChanged += (_, _) =>
-        {
-            _preview.SampleText = _sampleTextBox.Text;
-        };
-        sampleRow.AddChild(_sampleTextBox);
 
         // Listen for result changes
         _preview.PropertyChanged += (_, e) =>
@@ -318,12 +331,18 @@ public class PreviewPanel : Panel
         if (_placeholder != null)
             _placeholder.IsVisible = false;
 
-        // Dispose previous atlas texture to prevent memory leaks
-        _currentAtlasTexture?.Dispose();
+        // Unset sprite texture BEFORE disposing to avoid GUM referencing a disposed texture
+        if (_atlasSprite != null)
+            _atlasSprite.Texture = null;
+
+        var oldTexture = _currentAtlasTexture;
 
         using var stream = new MemoryStream(page.PngData);
         var texture = Texture2D.FromStream(_graphicsDevice, stream);
         _currentAtlasTexture = texture;
+
+        // Dispose the old texture AFTER creating the new one
+        oldTexture?.Dispose();
 
         var zoom = _preview.ZoomLevel;
         var scaledWidth = (int)(texture.Width * zoom);

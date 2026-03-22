@@ -57,7 +57,7 @@ public class EffectsPanel : Panel
 
         var aaCheck = new CheckBox();
         aaCheck.Text = "Anti-Alias";
-        aaCheck.Width = 100;
+        aaCheck.Width = 110;
         aaCheck.IsChecked = true;
         aaCheck.Checked += (_, _) => _effects.AntiAlias = true;
         aaCheck.Unchecked += (_, _) => _effects.AntiAlias = false;
@@ -65,7 +65,7 @@ public class EffectsPanel : Panel
 
         var hintCheck = new CheckBox();
         hintCheck.Text = "Hinting";
-        hintCheck.Width = 80;
+        hintCheck.Width = 100;
         hintCheck.IsChecked = true;
         hintCheck.Checked += (_, _) => _effects.Hinting = true;
         hintCheck.Unchecked += (_, _) => _effects.Hinting = false;
@@ -147,7 +147,7 @@ public class EffectsPanel : Panel
         AddSectionHeader(stack, "ADVANCED");
 
         var sdfCheck = new CheckBox();
-        sdfCheck.Text = "SDF (Signed Distance Field)";
+        sdfCheck.Text = "SDF";
         sdfCheck.Width = 220;
         sdfCheck.Checked += (_, _) => _effects.SdfEnabled = true;
         sdfCheck.Unchecked += (_, _) => _effects.SdfEnabled = false;

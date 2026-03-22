@@ -123,7 +123,7 @@ public class MainLayout : ContainerRuntime
 
         // Right column: effects (fixed width)
         var effectsPanel = new EffectsPanel(_viewModel.Effects);
-        effectsPanel.Width = 240;
+        effectsPanel.Width = 280;
         effectsPanel.HeightUnits = DimensionUnitType.RelativeToParent;
         effectsPanel.Height = 0;
         AddPanelBackground(effectsPanel, Theme.Panel);
