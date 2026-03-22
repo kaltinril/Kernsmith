@@ -309,13 +309,15 @@ public class EffectsPanel : Panel
             maxSizeRow.Spacing = 4;
             contentPanel.Children.Add(maxSizeRow.Visual);
 
+            bool _updatingFromVm = false;
+
             var maxWidthBox = new TextBox();
-            maxWidthBox.Width = 80;
-            maxWidthBox.Height = 28;
+            maxWidthBox.Width = 70;
+            maxWidthBox.Height = 26;
             maxWidthBox.Text = _atlasConfig.MaxWidth.ToString();
             maxWidthBox.TextChanged += (_, _) =>
             {
-                if (int.TryParse(maxWidthBox.Text, out var w))
+                if (!_updatingFromVm && int.TryParse(maxWidthBox.Text, out var w))
                     _atlasConfig.MaxWidth = Math.Clamp(w, 64, 8192);
             };
             maxSizeRow.AddChild(maxWidthBox);
@@ -325,28 +327,30 @@ public class EffectsPanel : Panel
             maxSizeRow.AddChild(xLabel);
 
             var maxHeightBox = new TextBox();
-            maxHeightBox.Width = 80;
-            maxHeightBox.Height = 28;
+            maxHeightBox.Width = 70;
+            maxHeightBox.Height = 26;
             maxHeightBox.Text = _atlasConfig.MaxHeight.ToString();
             maxHeightBox.TextChanged += (_, _) =>
             {
-                if (int.TryParse(maxHeightBox.Text, out var h))
+                if (!_updatingFromVm && int.TryParse(maxHeightBox.Text, out var h))
                     _atlasConfig.MaxHeight = Math.Clamp(h, 64, 8192);
             };
             maxSizeRow.AddChild(maxHeightBox);
 
             var pot = new CheckBox();
             pot.Text = "Power of Two";
+            pot.Width = 220;
             pot.IsChecked = _atlasConfig.PowerOfTwo;
-            pot.Checked += (_, _) => _atlasConfig.PowerOfTwo = true;
-            pot.Unchecked += (_, _) => _atlasConfig.PowerOfTwo = false;
+            pot.Checked += (_, _) => { if (!_updatingFromVm) _atlasConfig.PowerOfTwo = true; };
+            pot.Unchecked += (_, _) => { if (!_updatingFromVm) _atlasConfig.PowerOfTwo = false; };
             contentPanel.Children.Add(pot.Visual);
 
             var autofit = new CheckBox();
             autofit.Text = "Autofit Texture";
+            autofit.Width = 220;
             autofit.IsChecked = _atlasConfig.AutofitTexture;
-            autofit.Checked += (_, _) => _atlasConfig.AutofitTexture = true;
-            autofit.Unchecked += (_, _) => _atlasConfig.AutofitTexture = false;
+            autofit.Checked += (_, _) => { if (!_updatingFromVm) _atlasConfig.AutofitTexture = true; };
+            autofit.Unchecked += (_, _) => { if (!_updatingFromVm) _atlasConfig.AutofitTexture = false; };
             contentPanel.Children.Add(autofit.Visual);
 
             var packAlgoLabel = new Label();
@@ -354,13 +358,13 @@ public class EffectsPanel : Panel
             contentPanel.Children.Add(packAlgoLabel.Visual);
 
             var packAlgoCombo = new ComboBox();
-            packAlgoCombo.Width = 220;
+            packAlgoCombo.Width = 200;
             packAlgoCombo.Items.Add("MaxRects");
             packAlgoCombo.Items.Add("Skyline");
             packAlgoCombo.SelectedIndex = _atlasConfig.PackingAlgorithmIndex;
             packAlgoCombo.SelectionChanged += (_, _) =>
             {
-                if (packAlgoCombo.SelectedIndex >= 0)
+                if (!_updatingFromVm && packAlgoCombo.SelectedIndex >= 0)
                     _atlasConfig.PackingAlgorithmIndex = packAlgoCombo.SelectedIndex;
             };
             contentPanel.Children.Add(packAlgoCombo.Visual);
@@ -368,32 +372,40 @@ public class EffectsPanel : Panel
             // --- Padding ---
             AddLabeledDivider(contentPanel, "Padding");
 
-            var padTopRow = new StackPanel();
-            padTopRow.Orientation = Orientation.Horizontal;
-            padTopRow.Spacing = 4;
-            contentPanel.Children.Add(padTopRow.Visual);
-
-            AddLabeledIntBox(padTopRow, "Up:", _atlasConfig.PaddingUp, 45, v => _atlasConfig.PaddingUp = Math.Clamp(v, 0, 32));
-            AddLabeledIntBox(padTopRow, "Right:", _atlasConfig.PaddingRight, 45, v => _atlasConfig.PaddingRight = Math.Clamp(v, 0, 32));
-
-            var padBotRow = new StackPanel();
-            padBotRow.Orientation = Orientation.Horizontal;
-            padBotRow.Spacing = 4;
-            contentPanel.Children.Add(padBotRow.Visual);
-
-            AddLabeledIntBox(padBotRow, "Down:", _atlasConfig.PaddingDown, 45, v => _atlasConfig.PaddingDown = Math.Clamp(v, 0, 32));
-            AddLabeledIntBox(padBotRow, "Left:", _atlasConfig.PaddingLeft, 45, v => _atlasConfig.PaddingLeft = Math.Clamp(v, 0, 32));
+            var padUpBox = AddLabeledIntBoxReturn(contentPanel, "Up:", _atlasConfig.PaddingUp, 40, v => { if (!_updatingFromVm) _atlasConfig.PaddingUp = Math.Clamp(v, 0, 32); });
+            var padRightBox = AddLabeledIntBoxReturn(contentPanel, "Right:", _atlasConfig.PaddingRight, 40, v => { if (!_updatingFromVm) _atlasConfig.PaddingRight = Math.Clamp(v, 0, 32); });
+            var padDownBox = AddLabeledIntBoxReturn(contentPanel, "Down:", _atlasConfig.PaddingDown, 40, v => { if (!_updatingFromVm) _atlasConfig.PaddingDown = Math.Clamp(v, 0, 32); });
+            var padLeftBox = AddLabeledIntBoxReturn(contentPanel, "Left:", _atlasConfig.PaddingLeft, 40, v => { if (!_updatingFromVm) _atlasConfig.PaddingLeft = Math.Clamp(v, 0, 32); });
 
             // --- Spacing ---
             AddLabeledDivider(contentPanel, "Spacing");
 
-            var spacingRow = new StackPanel();
-            spacingRow.Orientation = Orientation.Horizontal;
-            spacingRow.Spacing = 4;
-            contentPanel.Children.Add(spacingRow.Visual);
+            var spacingHBox = AddLabeledIntBoxReturn(contentPanel, "H:", _atlasConfig.SpacingH, 40, v => { if (!_updatingFromVm) _atlasConfig.SpacingH = Math.Clamp(v, 0, 32); });
+            var spacingVBox = AddLabeledIntBoxReturn(contentPanel, "V:", _atlasConfig.SpacingV, 40, v => { if (!_updatingFromVm) _atlasConfig.SpacingV = Math.Clamp(v, 0, 32); });
 
-            AddLabeledIntBox(spacingRow, "H:", _atlasConfig.SpacingH, 45, v => _atlasConfig.SpacingH = Math.Clamp(v, 0, 32));
-            AddLabeledIntBox(spacingRow, "V:", _atlasConfig.SpacingV, 45, v => _atlasConfig.SpacingV = Math.Clamp(v, 0, 32));
+            // Sync UI from ViewModel when preset is applied
+            _atlasConfig.PropertyChanged += (_, e) =>
+            {
+                _updatingFromVm = true;
+                try
+                {
+                    switch (e.PropertyName)
+                    {
+                        case nameof(AtlasConfigViewModel.MaxWidth): maxWidthBox.Text = _atlasConfig.MaxWidth.ToString(); break;
+                        case nameof(AtlasConfigViewModel.MaxHeight): maxHeightBox.Text = _atlasConfig.MaxHeight.ToString(); break;
+                        case nameof(AtlasConfigViewModel.PowerOfTwo): pot.IsChecked = _atlasConfig.PowerOfTwo; break;
+                        case nameof(AtlasConfigViewModel.AutofitTexture): autofit.IsChecked = _atlasConfig.AutofitTexture; break;
+                        case nameof(AtlasConfigViewModel.PackingAlgorithmIndex): packAlgoCombo.SelectedIndex = _atlasConfig.PackingAlgorithmIndex; break;
+                        case nameof(AtlasConfigViewModel.PaddingUp): padUpBox.Text = _atlasConfig.PaddingUp.ToString(); break;
+                        case nameof(AtlasConfigViewModel.PaddingRight): padRightBox.Text = _atlasConfig.PaddingRight.ToString(); break;
+                        case nameof(AtlasConfigViewModel.PaddingDown): padDownBox.Text = _atlasConfig.PaddingDown.ToString(); break;
+                        case nameof(AtlasConfigViewModel.PaddingLeft): padLeftBox.Text = _atlasConfig.PaddingLeft.ToString(); break;
+                        case nameof(AtlasConfigViewModel.SpacingH): spacingHBox.Text = _atlasConfig.SpacingH.ToString(); break;
+                        case nameof(AtlasConfigViewModel.SpacingV): spacingVBox.Text = _atlasConfig.SpacingV.ToString(); break;
+                    }
+                }
+                finally { _updatingFromVm = false; }
+            };
         }, enableChanged: _ => { }, startExpanded: true);
 
         AddDivider(stack);
@@ -409,24 +421,36 @@ public class EffectsPanel : Panel
             formatGroup.Spacing = 2;
             contentPanel.Children.Add(formatGroup.Visual);
 
+            var formatRadios = new List<(RadioButton rb, OutputFormat fmt)>();
             var formats = new[] { ("Text", OutputFormat.Text), ("XML", OutputFormat.Xml), ("Binary", OutputFormat.Binary) };
             foreach (var (name, format) in formats)
             {
                 var rb = new RadioButton();
                 rb.Text = name;
-                rb.Width = 220;
+                rb.Width = 200;
                 if (format == _atlasConfig.DescriptorFormat) rb.IsChecked = true;
                 var capturedFormat = format;
                 rb.Checked += (_, _) => _atlasConfig.DescriptorFormat = capturedFormat;
+                formatRadios.Add((rb, format));
                 formatGroup.AddChild(rb);
             }
 
             var kerningCb = new CheckBox();
             kerningCb.Text = "Include Kerning";
+            kerningCb.Width = 200;
             kerningCb.IsChecked = _atlasConfig.IncludeKerning;
             kerningCb.Checked += (_, _) => _atlasConfig.IncludeKerning = true;
             kerningCb.Unchecked += (_, _) => _atlasConfig.IncludeKerning = false;
             contentPanel.Children.Add(kerningCb.Visual);
+
+            _atlasConfig.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(AtlasConfigViewModel.DescriptorFormat))
+                    foreach (var (rb, fmt) in formatRadios)
+                        rb.IsChecked = fmt == _atlasConfig.DescriptorFormat;
+                if (e.PropertyName == nameof(AtlasConfigViewModel.IncludeKerning))
+                    kerningCb.IsChecked = _atlasConfig.IncludeKerning;
+            };
         }, enableChanged: _ => { }, startExpanded: true);
     }
 
@@ -567,6 +591,30 @@ public class EffectsPanel : Panel
                 onChanged(val);
         };
         parent.AddChild(box);
+    }
+
+    private static TextBox AddLabeledIntBoxReturn(Gum.Wireframe.GraphicalUiElement parent, string label, int initialValue, int width, Action<int> onChanged)
+    {
+        var row = new StackPanel();
+        row.Orientation = Orientation.Horizontal;
+        row.Spacing = 4;
+        parent.Children.Add(row.Visual);
+
+        var lbl = new Label();
+        lbl.Text = label;
+        row.AddChild(lbl);
+
+        var box = new TextBox();
+        box.Width = width;
+        box.Height = 26;
+        box.Text = initialValue.ToString();
+        box.TextChanged += (_, _) =>
+        {
+            if (int.TryParse(box.Text, out var val))
+                onChanged(val);
+        };
+        row.AddChild(box);
+        return box;
     }
 
     private static void AddLabeledDivider(Gum.Wireframe.GraphicalUiElement parent, string label)
