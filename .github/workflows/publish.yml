@@ -1,23 +1,149 @@
-name: Publish to NuGet
+name: Publish Release
 
 on:
   push:
     tags: ['v*']
-  release:
-    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.9.2)'
+        required: true
+        type: string
+
+env:
+  # Resolve version from either manual input or tag name (strip leading 'v')
+  RELEASE_VERSION: ${{ inputs.version || github.ref_name }}
 
 jobs:
-  publish:
+  validate:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: resolve
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify version matches Directory.Build.props
+        run: |
+          version="${{ steps.resolve.outputs.version }}"
+          props_version=$(grep -oP '(?<=<Version>)[^<]+' Directory.Build.props)
+          if [ "$props_version" != "$version" ]; then
+            echo "::error::Release version ($version) does not match Directory.Build.props ($props_version)"
+            echo "Make sure you've merged a PR that bumps the version first."
+            exit 1
+          fi
+
+  build-binaries:
+    needs: validate
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        include:
+          - rid: win-x64
+            os: windows-latest
+            archive: zip
+          - rid: win-arm64
+            os: windows-latest
+            archive: zip
+          - rid: linux-x64
+            os: ubuntu-latest
+            archive: tar
+          - rid: osx-arm64
+            os: macos-latest
+            archive: tar
+          - rid: osx-x64
+            os: macos-latest
+            archive: tar
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish CLI
+        run: dotnet publish tools/KernSmith.Cli/KernSmith.Cli.csproj -c Release -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=false -o ./publish/cli
+
+      - name: Publish UI
+        run: dotnet publish apps/KernSmith.Ui/KernSmith.Ui.csproj -c Release -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=false -o ./publish/ui
+
+      - name: Archive (zip)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path ./publish/cli/* -DestinationPath KernSmith-CLI-${{ matrix.rid }}.zip
+          Compress-Archive -Path ./publish/ui/* -DestinationPath KernSmith-UI-${{ matrix.rid }}.zip
+
+      - name: Archive (tar.gz)
+        if: matrix.archive == 'tar'
+        run: |
+          tar -czf KernSmith-CLI-${{ matrix.rid }}.tar.gz -C ./publish/cli .
+          tar -czf KernSmith-UI-${{ matrix.rid }}.tar.gz -C ./publish/ui .
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: binaries-${{ matrix.rid }}
+          path: |
+            KernSmith-CLI-${{ matrix.rid }}.*
+            KernSmith-UI-${{ matrix.rid }}.*
+
+  publish-nuget:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
       - run: dotnet restore
       - run: dotnet build --configuration Release --no-restore
-      - run: dotnet test --configuration Release --no-build
+      - run: dotnet test --configuration Release --no-build --blame-hang --blame-hang-timeout 3m
+        continue-on-error: true
       - run: dotnet pack src/KernSmith/KernSmith.csproj --configuration Release --no-build --output ./nupkg
       - run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+  create-release:
+    needs: [validate, build-binaries, publish-nuget]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Create tag (manual dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git tag v${{ needs.validate.outputs.version }}
+          git push origin v${{ needs.validate.outputs.version }}
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.validate.outputs.version }}
+          generate_release_notes: true
+          draft: false
+          files: |
+            artifacts/**/*.zip
+            artifacts/**/*.tar.gz

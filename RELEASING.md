@@ -10,21 +10,22 @@ All projects (library, CLI, UI) inherit it automatically.
 ### Feature Development
 1. Create a feature branch from `main`
 2. Make changes, commit, push, create PR
-3. **Do NOT bump the version in feature PRs**
+3. **Do NOT bump the version in feature PRs** (unless this PR is the release)
 4. Merge PR after review/CI passes
 
 ### Cutting a Release
-1. Create a branch: `git checkout -b release/v0.9.2`
-2. Bump `<Version>` in `Directory.Build.props`
-3. Add a new section to `CHANGELOG.md` with the date and changes
-4. Commit: `Bump version to 0.9.2`
-5. Push, create PR, merge
-
-### Tagging & Publishing
-1. After the release PR merges, pull main: `git checkout main && git pull`
-2. Tag: `git tag v0.9.2`
-3. Push the tag: `git push origin v0.9.2`
-4. The `publish.yml` workflow triggers automatically and pushes to NuGet
+1. Create a PR that bumps `<Version>` in `Directory.Build.props` and updates `CHANGELOG.md`
+2. Merge the PR to main
+3. Trigger the publish — pick **one**:
+   - **GitHub UI (recommended):** Actions → Publish Release → Run workflow → enter version → click Run
+   - **Command line:** `git tag v0.9.3 && git push origin v0.9.3`
+   - **Local script:** `scripts\publish.bat 0.9.3`
+4. The workflow automatically:
+   - Validates the version matches `Directory.Build.props`
+   - Builds CLI and UI binaries for all platforms (win-x64, win-arm64, linux-x64, osx-arm64, osx-x64)
+   - Publishes the NuGet package
+   - Creates a git tag (manual dispatch only — tag push already has one)
+   - Creates a GitHub Release page with downloadable binaries (.zip for Windows, .tar.gz for Linux/macOS)
 
 ## Version Scheme
 
@@ -35,9 +36,10 @@ All projects (library, CLI, UI) inherit it automatically.
 
 ## Checklist
 
-- [ ] `Directory.Build.props` version bumped
-- [ ] `CHANGELOG.md` updated with new section
-- [ ] Release PR merged to main
-- [ ] Tag created and pushed
-- [ ] Verify publish workflow completed on GitHub Actions
+- [ ] Version bumped in `Directory.Build.props`
+- [ ] `CHANGELOG.md` updated
+- [ ] PR merged to main
+- [ ] Run "Publish Release" workflow from GitHub Actions
+- [ ] Verify workflow completed successfully
 - [ ] Verify package appears on nuget.org
+- [ ] Verify GitHub Release page has binaries for all platforms

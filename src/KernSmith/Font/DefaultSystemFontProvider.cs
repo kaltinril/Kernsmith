@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using KernSmith.Font.Models;
 using Microsoft.Win32;
 
@@ -145,7 +146,7 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     /// Core registry lookup logic, separated so the platform guard and exception
     /// handling remain in the caller.
     /// </summary>
-#pragma warning disable CA1416 // Platform compatibility — caller guards with RuntimeInformation.IsOSPlatform
+    [SupportedOSPlatform("windows")]
     private static bool TryLoadFontFromRegistryCore(string familyName, string? styleName, out byte[]? fontData, out bool familyFound)
     {
         fontData = null;
@@ -222,6 +223,7 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     /// family and style. Registry entry names typically look like
     /// "Arial (TrueType)" or "Arial Bold (TrueType)".
     /// </summary>
+    [SupportedOSPlatform("windows")]
     private static string? FindFontFileNameInRegistryKey(RegistryKey? key, string familyName, string? styleName, out bool familyFound)
     {
         familyFound = false;
