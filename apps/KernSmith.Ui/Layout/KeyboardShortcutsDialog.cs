@@ -11,6 +11,8 @@ public static class KeyboardShortcutsDialog
         ("Ctrl+S", "Save project"),
         ("Ctrl+G", "Generate"),
         ("Ctrl+Shift+S", "Export / Save As"),
+        ("Ctrl++", "Zoom in"),
+        ("Ctrl+-", "Zoom out"),
         ("Scroll Wheel", "Zoom preview (over atlas)"),
         ("Middle Drag", "Pan preview"),
     ];

@@ -105,13 +105,14 @@ public class PreviewPanel : Panel
         _charactersTabBtn.Click += (_, _) => ShowTab(preview: false);
         tabBar.AddChild(_charactersTabBtn);
 
-        // Preview content area starts below tab bar
+        // Preview content area starts below tab bar — clips children so atlas doesn't overflow
         _previewContent = new Panel();
         _previewContent.Y = TabBarHeight;
         _previewContent.WidthUnits = DimensionUnitType.RelativeToParent;
         _previewContent.Width = 0;
         _previewContent.HeightUnits = DimensionUnitType.RelativeToParent;
         _previewContent.Height = -TabBarHeight;
+        _previewContent.Visual.ClipsChildren = true;
         this.AddChild(_previewContent);
 
         BuildPreviewContent();
@@ -414,6 +415,18 @@ public class PreviewPanel : Panel
             _atlasSummaryLabel.Text = "";
         if (_failedWarningLabel != null)
             _failedWarningLabel.IsVisible = false;
+    }
+
+    public void ZoomIn()
+    {
+        if (_zoomSlider != null)
+            _zoomSlider.Value = Math.Clamp(_zoomSlider.Value + 25, _zoomSlider.Minimum, _zoomSlider.Maximum);
+    }
+
+    public void ZoomOut()
+    {
+        if (_zoomSlider != null)
+            _zoomSlider.Value = Math.Clamp(_zoomSlider.Value - 25, _zoomSlider.Minimum, _zoomSlider.Maximum);
     }
 
     /// <summary>

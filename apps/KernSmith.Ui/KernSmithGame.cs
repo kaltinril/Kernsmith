@@ -163,6 +163,10 @@ public class KernSmithGame : Game
                 _mainViewModel?.SaveProject();
             if (ctrlHeld && IsKeyPressed(Keys.G, kbState))
                 Task.Run(() => _mainViewModel?.GenerateAsync());
+            if (ctrlHeld && (IsKeyPressed(Keys.OemPlus, kbState) || IsKeyPressed(Keys.Add, kbState)))
+                _mainLayout?.Preview?.ZoomIn();
+            if (ctrlHeld && (IsKeyPressed(Keys.OemMinus, kbState) || IsKeyPressed(Keys.Subtract, kbState)))
+                _mainLayout?.Preview?.ZoomOut();
         }
 
         _previousKeyboardState = kbState;
