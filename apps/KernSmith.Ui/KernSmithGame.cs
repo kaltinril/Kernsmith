@@ -7,6 +7,7 @@ using Gum.Forms;
 using KernSmith.Ui.Layout;
 using KernSmith.Ui.ViewModels;
 using KernSmith.Ui.Services;
+using KernSmith.Ui.Styling;
 
 namespace KernSmith.Ui;
 
@@ -71,6 +72,21 @@ public class KernSmithGame : Game
     protected override void Initialize()
     {
         GumService.Default.Initialize(this, DefaultVisualsVersion.V3);
+
+        // Build a dark theme style and set it as active BEFORE creating any controls
+        var darkStyle = new Gum.Forms.DefaultVisuals.V3.Styling(null);
+        darkStyle.Colors.Primary = Theme.Accent;
+        darkStyle.Colors.InputBackground = new Color(45, 45, 48);
+        darkStyle.Colors.TextPrimary = Theme.Text;
+        darkStyle.Colors.TextMuted = Theme.TextMuted;
+        darkStyle.Colors.Accent = Theme.Accent;
+        darkStyle.Colors.SurfaceVariant = Theme.PanelBorder;
+        darkStyle.Colors.DarkGray = Theme.Panel;
+        darkStyle.Colors.Gray = Theme.PanelBorder;
+        darkStyle.Colors.LightGray = Theme.TextMuted;
+        darkStyle.Colors.Black = Theme.Background;
+        darkStyle.Colors.White = Theme.Text;
+        Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle = darkStyle;
 
         var fileDialogService = new FileDialogService();
         var fontDiscoveryService = new FontDiscoveryService();

@@ -1,5 +1,6 @@
 using Gum.DataTypes;
 using Gum.Forms.Controls;
+using KernSmith.Ui.Models;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using MonoGameGum.GueDeriving;
@@ -9,10 +10,12 @@ namespace KernSmith.Ui.Layout;
 public class EffectsPanel : Panel
 {
     private readonly EffectsViewModel _effects;
+    private readonly AtlasConfigViewModel _atlasConfig;
 
-    public EffectsPanel(EffectsViewModel effects)
+    public EffectsPanel(EffectsViewModel effects, AtlasConfigViewModel atlasConfig)
     {
         _effects = effects;
+        _atlasConfig = atlasConfig;
         BuildContent();
     }
 
@@ -288,25 +291,166 @@ public class EffectsPanel : Panel
                 }
             }
         };
+
+        // ================================================================
+        // ATLAS / OUTPUT CONFIG (moved from left panel to reduce scrolling)
+        // ================================================================
+        AddDivider(stack);
+
+        // --- ATLAS section ---
+        AddCollapsibleSection(stack, "ATLAS", contentPanel =>
+        {
+            var maxSizeLabel = new Label();
+            maxSizeLabel.Text = "Max Size:";
+            contentPanel.Children.Add(maxSizeLabel.Visual);
+
+            var maxSizeRow = new StackPanel();
+            maxSizeRow.Orientation = Orientation.Horizontal;
+            maxSizeRow.Spacing = 4;
+            contentPanel.Children.Add(maxSizeRow.Visual);
+
+            var maxWidthBox = new TextBox();
+            maxWidthBox.Width = 80;
+            maxWidthBox.Height = 28;
+            maxWidthBox.Text = _atlasConfig.MaxWidth.ToString();
+            maxWidthBox.TextChanged += (_, _) =>
+            {
+                if (int.TryParse(maxWidthBox.Text, out var w))
+                    _atlasConfig.MaxWidth = Math.Clamp(w, 64, 8192);
+            };
+            maxSizeRow.AddChild(maxWidthBox);
+
+            var xLabel = new Label();
+            xLabel.Text = "x";
+            maxSizeRow.AddChild(xLabel);
+
+            var maxHeightBox = new TextBox();
+            maxHeightBox.Width = 80;
+            maxHeightBox.Height = 28;
+            maxHeightBox.Text = _atlasConfig.MaxHeight.ToString();
+            maxHeightBox.TextChanged += (_, _) =>
+            {
+                if (int.TryParse(maxHeightBox.Text, out var h))
+                    _atlasConfig.MaxHeight = Math.Clamp(h, 64, 8192);
+            };
+            maxSizeRow.AddChild(maxHeightBox);
+
+            var pot = new CheckBox();
+            pot.Text = "Power of Two";
+            pot.IsChecked = _atlasConfig.PowerOfTwo;
+            pot.Checked += (_, _) => _atlasConfig.PowerOfTwo = true;
+            pot.Unchecked += (_, _) => _atlasConfig.PowerOfTwo = false;
+            contentPanel.Children.Add(pot.Visual);
+
+            var autofit = new CheckBox();
+            autofit.Text = "Autofit Texture";
+            autofit.IsChecked = _atlasConfig.AutofitTexture;
+            autofit.Checked += (_, _) => _atlasConfig.AutofitTexture = true;
+            autofit.Unchecked += (_, _) => _atlasConfig.AutofitTexture = false;
+            contentPanel.Children.Add(autofit.Visual);
+
+            var packAlgoLabel = new Label();
+            packAlgoLabel.Text = "Packing Algorithm:";
+            contentPanel.Children.Add(packAlgoLabel.Visual);
+
+            var packAlgoCombo = new ComboBox();
+            packAlgoCombo.Width = 220;
+            packAlgoCombo.Items.Add("MaxRects");
+            packAlgoCombo.Items.Add("Skyline");
+            packAlgoCombo.SelectedIndex = _atlasConfig.PackingAlgorithmIndex;
+            packAlgoCombo.SelectionChanged += (_, _) =>
+            {
+                if (packAlgoCombo.SelectedIndex >= 0)
+                    _atlasConfig.PackingAlgorithmIndex = packAlgoCombo.SelectedIndex;
+            };
+            contentPanel.Children.Add(packAlgoCombo.Visual);
+
+            // --- Padding ---
+            AddLabeledDivider(contentPanel, "Padding");
+
+            var padTopRow = new StackPanel();
+            padTopRow.Orientation = Orientation.Horizontal;
+            padTopRow.Spacing = 4;
+            contentPanel.Children.Add(padTopRow.Visual);
+
+            AddLabeledIntBox(padTopRow, "Up:", _atlasConfig.PaddingUp, 45, v => _atlasConfig.PaddingUp = Math.Clamp(v, 0, 32));
+            AddLabeledIntBox(padTopRow, "Right:", _atlasConfig.PaddingRight, 45, v => _atlasConfig.PaddingRight = Math.Clamp(v, 0, 32));
+
+            var padBotRow = new StackPanel();
+            padBotRow.Orientation = Orientation.Horizontal;
+            padBotRow.Spacing = 4;
+            contentPanel.Children.Add(padBotRow.Visual);
+
+            AddLabeledIntBox(padBotRow, "Down:", _atlasConfig.PaddingDown, 45, v => _atlasConfig.PaddingDown = Math.Clamp(v, 0, 32));
+            AddLabeledIntBox(padBotRow, "Left:", _atlasConfig.PaddingLeft, 45, v => _atlasConfig.PaddingLeft = Math.Clamp(v, 0, 32));
+
+            // --- Spacing ---
+            AddLabeledDivider(contentPanel, "Spacing");
+
+            var spacingRow = new StackPanel();
+            spacingRow.Orientation = Orientation.Horizontal;
+            spacingRow.Spacing = 4;
+            contentPanel.Children.Add(spacingRow.Visual);
+
+            AddLabeledIntBox(spacingRow, "H:", _atlasConfig.SpacingH, 45, v => _atlasConfig.SpacingH = Math.Clamp(v, 0, 32));
+            AddLabeledIntBox(spacingRow, "V:", _atlasConfig.SpacingV, 45, v => _atlasConfig.SpacingV = Math.Clamp(v, 0, 32));
+        }, enableChanged: _ => { }, startExpanded: true);
+
+        AddDivider(stack);
+
+        // --- OUTPUT section ---
+        AddCollapsibleSection(stack, "OUTPUT", contentPanel =>
+        {
+            var formatLabel = new Label();
+            formatLabel.Text = "Descriptor Format:";
+            contentPanel.Children.Add(formatLabel.Visual);
+
+            var formatGroup = new StackPanel();
+            formatGroup.Spacing = 2;
+            contentPanel.Children.Add(formatGroup.Visual);
+
+            var formats = new[] { ("Text", OutputFormat.Text), ("XML", OutputFormat.Xml), ("Binary", OutputFormat.Binary) };
+            foreach (var (name, format) in formats)
+            {
+                var rb = new RadioButton();
+                rb.Text = name;
+                rb.Width = 220;
+                if (format == _atlasConfig.DescriptorFormat) rb.IsChecked = true;
+                var capturedFormat = format;
+                rb.Checked += (_, _) => _atlasConfig.DescriptorFormat = capturedFormat;
+                formatGroup.AddChild(rb);
+            }
+
+            var kerningCb = new CheckBox();
+            kerningCb.Text = "Include Kerning";
+            kerningCb.IsChecked = _atlasConfig.IncludeKerning;
+            kerningCb.Checked += (_, _) => _atlasConfig.IncludeKerning = true;
+            kerningCb.Unchecked += (_, _) => _atlasConfig.IncludeKerning = false;
+            contentPanel.Children.Add(kerningCb.Visual);
+        }, enableChanged: _ => { }, startExpanded: true);
     }
 
     private static void AddCollapsibleSection(
         Gum.Wireframe.GraphicalUiElement parent,
         string title,
         Action<Gum.Wireframe.GraphicalUiElement> buildContent,
-        Action<bool> enableChanged)
+        Action<bool> enableChanged,
+        bool startExpanded = false)
     {
         var enableCheck = new CheckBox();
         enableCheck.Text = title;
         enableCheck.Width = 220;
         parent.Children.Add(enableCheck.Visual);
 
-        // Content container (initially hidden)
+        // Content container (initially hidden unless startExpanded)
         var content = new StackPanel();
         content.Spacing = 4;
         content.Visual.X = 16; // indent
-        content.IsVisible = false;
+        content.IsVisible = startExpanded;
         parent.Children.Add(content.Visual);
+
+        if (startExpanded)
+            enableCheck.IsChecked = true;
 
         enableCheck.Checked += (_, _) =>
         {
@@ -405,6 +549,32 @@ public class EffectsPanel : Panel
                 onBChanged(val);
         };
         row.AddChild(bBox);
+    }
+
+    private static void AddLabeledIntBox(StackPanel parent, string label, int initialValue, int width, Action<int> onChanged)
+    {
+        var lbl = new Label();
+        lbl.Text = label;
+        parent.AddChild(lbl);
+
+        var box = new TextBox();
+        box.Width = width;
+        box.Height = 28;
+        box.Text = initialValue.ToString();
+        box.TextChanged += (_, _) =>
+        {
+            if (int.TryParse(box.Text, out var val))
+                onChanged(val);
+        };
+        parent.AddChild(box);
+    }
+
+    private static void AddLabeledDivider(Gum.Wireframe.GraphicalUiElement parent, string label)
+    {
+        var text = new TextRuntime();
+        text.Text = label;
+        text.Color = Theme.Accent;
+        parent.Children.Add(text);
     }
 
     private static void AddSectionHeader(Gum.Wireframe.GraphicalUiElement parent, string text)

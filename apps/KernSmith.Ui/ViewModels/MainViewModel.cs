@@ -1,9 +1,9 @@
 using System.Diagnostics;
 using Gum.Mvvm;
+using KernSmith.Output;
 using KernSmith.Ui.Layout;
 using KernSmith.Ui.Models;
 using KernSmith.Ui.Services;
-using KernSmith.Output;
 using Microsoft.Xna.Framework;
 
 namespace KernSmith.Ui.ViewModels;
@@ -255,21 +255,6 @@ public class MainViewModel : ViewModel
             sw.Stop();
             var msg = ex.Message;
             _game.RunOnMainThread(() => StatusBar.SetError($"Unexpected error: {msg}"));
-        }
-    }
-
-    public void ImportFnt(string path)
-    {
-        try
-        {
-            var fntData = File.ReadAllBytes(path);
-            var model = BmFontReader.Read(fntData);
-            var kpCount = model.KerningPairs?.Count ?? 0;
-            StatusBar.StatusText = $"Imported: {Path.GetFileName(path)} — {model.Characters.Count} glyphs, {model.Common.ScaleW}x{model.Common.ScaleH}, {kpCount} kerning pairs";
-        }
-        catch (Exception ex)
-        {
-            StatusBar.SetError($"Import failed: {ex.Message}");
         }
     }
 

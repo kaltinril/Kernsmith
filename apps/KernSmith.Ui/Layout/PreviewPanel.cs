@@ -20,13 +20,13 @@ public class PreviewPanel : Panel
     private Texture2D? _currentAtlasTexture;
     private Label? _placeholder;
     private Label? _pageLabel;
-    private Label? _atlasInfoLabel;
     private Label? _glyphInfoLabel;
     private Label? _zoomValueLabel;
     private Label? _atlasSummaryLabel;
     private Label? _failedWarningLabel;
     private StackPanel? _navRow;
     private StackPanel? _toolbarRow;
+    private Slider? _zoomSlider;
     private Texture2D? _checkerTexture;
 
     // Tab switching
@@ -38,6 +38,13 @@ public class PreviewPanel : Panel
 
     // Sample text
     private TextBox? _sampleTextBox;
+
+    // Layout constants
+    private const float TabBarHeight = 30;
+    private const float ToolbarY = 32;
+    private const float ToolbarHeight = 28;
+    private const float AtlasContentY = 62;
+    private const float SampleAreaHeight = 60;
 
     public PreviewPanel(PreviewViewModel preview, CharacterGridViewModel characterGrid, GraphicsDevice graphicsDevice)
     {
@@ -76,15 +83,13 @@ public class PreviewPanel : Panel
 
     private void BuildContent()
     {
-        // Use explicit Y positioning to avoid overlap between tab bar and content
-
-        // Tab bar at very top (Y=0)
+        // Tab bar at Y=0, height=30
         var tabBar = new StackPanel();
         tabBar.Orientation = Orientation.Horizontal;
         tabBar.Spacing = 4;
         tabBar.X = 4;
-        tabBar.Y = 2;
-        tabBar.Height = 28;
+        tabBar.Y = 0;
+        tabBar.Height = TabBarHeight;
         tabBar.WidthUnits = DimensionUnitType.RelativeToParent;
         tabBar.Width = -8;
         this.AddChild(tabBar);
@@ -106,22 +111,22 @@ public class PreviewPanel : Panel
 
         // Preview content area starts below tab bar
         _previewContent = new Panel();
-        _previewContent.Y = 32;
+        _previewContent.Y = TabBarHeight;
         _previewContent.WidthUnits = DimensionUnitType.RelativeToParent;
         _previewContent.Width = 0;
         _previewContent.HeightUnits = DimensionUnitType.RelativeToParent;
-        _previewContent.Height = -32;
+        _previewContent.Height = -TabBarHeight;
         this.AddChild(_previewContent);
 
         BuildPreviewContent();
 
         // Characters content area (same position, toggled via visibility)
         _charactersContent = new CharacterSelectionPanel(_characterGrid);
-        _charactersContent.Y = 32;
+        _charactersContent.Y = TabBarHeight;
         _charactersContent.WidthUnits = DimensionUnitType.RelativeToParent;
         _charactersContent.Width = 0;
         _charactersContent.HeightUnits = DimensionUnitType.RelativeToParent;
-        _charactersContent.Height = -32;
+        _charactersContent.Height = -TabBarHeight;
         _charactersContent.IsVisible = false;
         this.AddChild(_charactersContent);
     }
@@ -130,12 +135,15 @@ public class PreviewPanel : Panel
     {
         if (_previewContent == null) return;
 
-        // --- Toolbar row: zoom slider + atlas info ---
+        // --- Toolbar row at Y=2: zoom slider + atlas info + summary ---
         _toolbarRow = new StackPanel();
         _toolbarRow.Orientation = Orientation.Horizontal;
         _toolbarRow.Spacing = 8;
-        _toolbarRow.Dock(Gum.Wireframe.Dock.Top);
-        _toolbarRow.Height = 28;
+        _toolbarRow.X = 4;
+        _toolbarRow.Y = 2;
+        _toolbarRow.Height = ToolbarHeight;
+        _toolbarRow.WidthUnits = DimensionUnitType.RelativeToParent;
+        _toolbarRow.Width = -8;
         _toolbarRow.IsVisible = false;
         _previewContent.AddChild(_toolbarRow);
 
@@ -143,22 +151,22 @@ public class PreviewPanel : Panel
         zoomLabel.Text = "Zoom:";
         _toolbarRow.AddChild(zoomLabel);
 
-        var zoomSlider = new Slider();
-        zoomSlider.Minimum = 25;
-        zoomSlider.Maximum = 400;
-        zoomSlider.Value = 100;
-        zoomSlider.Width = 120;
-        zoomSlider.TicksFrequency = 25;
-        zoomSlider.IsSnapToTickEnabled = true;
-        _toolbarRow.AddChild(zoomSlider);
+        _zoomSlider = new Slider();
+        _zoomSlider.Minimum = 10;
+        _zoomSlider.Maximum = 400;
+        _zoomSlider.Value = 100;
+        _zoomSlider.Width = 100;
+        _zoomSlider.TicksFrequency = 5;
+        _zoomSlider.IsSnapToTickEnabled = true;
+        _toolbarRow.AddChild(_zoomSlider);
 
         _zoomValueLabel = new Label();
         _zoomValueLabel.Text = "100%";
         _toolbarRow.AddChild(_zoomValueLabel);
 
-        zoomSlider.ValueChanged += (_, _) =>
+        _zoomSlider.ValueChanged += (_, _) =>
         {
-            var pct = (int)zoomSlider.Value;
+            var pct = (int)_zoomSlider.Value;
             _preview.ZoomLevel = pct / 100f;
             if (_zoomValueLabel != null)
                 _zoomValueLabel.Text = $"{pct}%";
@@ -170,17 +178,18 @@ public class PreviewPanel : Panel
         sep.Text = "|";
         _toolbarRow.AddChild(sep);
 
-        // Atlas info overlay
-        _atlasInfoLabel = new Label();
-        _atlasInfoLabel.Text = "";
-        _toolbarRow.AddChild(_atlasInfoLabel);
+        // Atlas summary in toolbar (compact info)
+        _atlasSummaryLabel = new Label();
+        _atlasSummaryLabel.Text = "";
+        _toolbarRow.AddChild(_atlasSummaryLabel);
 
-        // --- Page navigation row ---
+        // --- Page navigation row (below toolbar) ---
         _navRow = new StackPanel();
         _navRow.Orientation = Orientation.Horizontal;
         _navRow.Spacing = 4;
-        _navRow.Dock(Gum.Wireframe.Dock.Top);
-        _navRow.Height = 28;
+        _navRow.X = 4;
+        _navRow.Y = ToolbarHeight + 4;
+        _navRow.Height = 24;
         _navRow.IsVisible = false;
         _previewContent.AddChild(_navRow);
 
@@ -210,10 +219,15 @@ public class PreviewPanel : Panel
         };
         _navRow.AddChild(nextBtn);
 
-        // Per-page info label
+        // Per-page glyph info + failed warning combined
         _glyphInfoLabel = new Label();
         _glyphInfoLabel.Text = "";
         _navRow.AddChild(_glyphInfoLabel);
+
+        _failedWarningLabel = new Label();
+        _failedWarningLabel.Text = "";
+        _failedWarningLabel.IsVisible = false;
+        _navRow.AddChild(_failedWarningLabel);
 
         // --- Divider above sample text section ---
         var sampleDivider = new ColoredRectangleRuntime();
@@ -222,9 +236,9 @@ public class PreviewPanel : Panel
         sampleDivider.Width = -8;
         sampleDivider.X = 4;
         sampleDivider.Color = Styling.Theme.PanelBorder;
-        sampleDivider.YUnits = Gum.Converters.GeneralUnitType.PixelsFromLarge;
-        sampleDivider.YOrigin = RenderingLibrary.Graphics.VerticalAlignment.Bottom;
-        sampleDivider.Y = -64;
+        sampleDivider.YUnits = GeneralUnitType.PixelsFromLarge;
+        sampleDivider.YOrigin = VerticalAlignment.Bottom;
+        sampleDivider.Y = -SampleAreaHeight;
         _previewContent.AddChild(sampleDivider);
 
         // --- Sample Text section at bottom (fixed height, always visible) ---
@@ -234,11 +248,10 @@ public class PreviewPanel : Panel
         sampleRow.WidthUnits = DimensionUnitType.RelativeToParent;
         sampleRow.Width = -8;
         sampleRow.X = 4;
-        // Pin to bottom of _previewContent
-        sampleRow.YUnits = Gum.Converters.GeneralUnitType.PixelsFromLarge;
-        sampleRow.YOrigin = RenderingLibrary.Graphics.VerticalAlignment.Bottom;
+        sampleRow.YUnits = GeneralUnitType.PixelsFromLarge;
+        sampleRow.YOrigin = VerticalAlignment.Bottom;
         sampleRow.Y = -4;
-        sampleRow.Height = 56;
+        sampleRow.Height = SampleAreaHeight - 4;
         _previewContent.AddChild(sampleRow);
 
         var sampleHeader = new Label();
@@ -267,7 +280,7 @@ public class PreviewPanel : Panel
         _checkerSprite = new SpriteRuntime();
         _checkerSprite.Visible = false;
         _checkerSprite.X = 10;
-        _checkerSprite.Y = 60;
+        _checkerSprite.Y = AtlasContentY;
         if (_checkerTexture != null)
             _checkerSprite.Texture = _checkerTexture;
         _previewContent.AddChild(_checkerSprite);
@@ -276,28 +289,8 @@ public class PreviewPanel : Panel
         _atlasSprite = new SpriteRuntime();
         _atlasSprite.Visible = false;
         _atlasSprite.X = 10;
-        _atlasSprite.Y = 60;
+        _atlasSprite.Y = AtlasContentY;
         _previewContent.AddChild(_atlasSprite);
-
-        // Atlas summary label (between atlas and sample text, pinned above sample row)
-        _atlasSummaryLabel = new Label();
-        _atlasSummaryLabel.Text = "";
-        _atlasSummaryLabel.IsVisible = false;
-        _atlasSummaryLabel.X = 10;
-        _atlasSummaryLabel.YUnits = Gum.Converters.GeneralUnitType.PixelsFromLarge;
-        _atlasSummaryLabel.YOrigin = RenderingLibrary.Graphics.VerticalAlignment.Bottom;
-        _atlasSummaryLabel.Y = -64;
-        _previewContent.AddChild(_atlasSummaryLabel);
-
-        // Warning label for failed codepoints (below summary, pinned above sample row)
-        _failedWarningLabel = new Label();
-        _failedWarningLabel.Text = "";
-        _failedWarningLabel.IsVisible = false;
-        _failedWarningLabel.X = 10;
-        _failedWarningLabel.YUnits = Gum.Converters.GeneralUnitType.PixelsFromLarge;
-        _failedWarningLabel.YOrigin = RenderingLibrary.Graphics.VerticalAlignment.Bottom;
-        _failedWarningLabel.Y = -84;
-        _previewContent.AddChild(_failedWarningLabel);
 
         // Listen for result changes
         _preview.PropertyChanged += (_, e) =>
@@ -350,28 +343,19 @@ public class PreviewPanel : Panel
             _pageLabel.Text = $"Page {_preview.SelectedPageIndex + 1} of {_preview.Pages.Count}  ({page.Width}x{page.Height})";
         }
 
-        if (_atlasInfoLabel != null && _preview.SelectedPage != null)
-        {
-            var page = _preview.SelectedPage;
-            _atlasInfoLabel.Text = $"Atlas: {page.Width}x{page.Height}  |  {_preview.Pages.Count} page(s)";
-        }
-
         if (_glyphInfoLabel != null)
             _glyphInfoLabel.Text = _preview.GlyphInfoText;
 
-        // Atlas summary
+        // Atlas summary in toolbar
         if (_atlasSummaryLabel != null)
-        {
             _atlasSummaryLabel.Text = _preview.AtlasSummary;
-            _atlasSummaryLabel.IsVisible = !string.IsNullOrEmpty(_preview.AtlasSummary);
-        }
 
-        // Failed codepoints warning
+        // Failed codepoints warning (shown in nav row)
         if (_failedWarningLabel != null)
         {
             if (_preview.FailedCodepointCount > 0)
             {
-                _failedWarningLabel.Text = $"Warning: {_preview.FailedCodepointCount} codepoints could not be rendered";
+                _failedWarningLabel.Text = $"| {_preview.FailedCodepointCount} failed";
                 _failedWarningLabel.IsVisible = true;
             }
             else
@@ -400,6 +384,9 @@ public class PreviewPanel : Panel
         // Dispose the old texture AFTER creating the new one
         oldTexture?.Dispose();
 
+        // Auto-fit: calculate zoom so atlas fits within available space
+        AutoFitZoom(texture.Width, texture.Height);
+
         var zoom = _preview.ZoomLevel;
         var scaledWidth = (int)(texture.Width * zoom);
         var scaledHeight = (int)(texture.Height * zoom);
@@ -420,6 +407,27 @@ public class PreviewPanel : Panel
             _atlasSprite.Height = scaledHeight;
             _atlasSprite.Visible = true;
         }
+    }
+
+    private void AutoFitZoom(int atlasWidth, int atlasHeight)
+    {
+        if (_previewContent == null || atlasWidth <= 0 || atlasHeight <= 0) return;
+
+        // Available space: panel width minus margins, panel height minus toolbar/nav/sample areas
+        var availableWidth = Math.Max(1f, _previewContent.Visual.GetAbsoluteWidth() - 20);
+        var availableHeight = Math.Max(1f, _previewContent.Visual.GetAbsoluteHeight() - AtlasContentY - SampleAreaHeight - 10);
+
+        var fitZoom = Math.Min(availableWidth / atlasWidth, availableHeight / atlasHeight);
+        // Clamp to slider range and don't exceed 100% (no upscaling by default)
+        fitZoom = Math.Clamp(fitZoom, 0.10f, 1.0f);
+
+        _preview.ZoomLevel = fitZoom;
+
+        var pct = (int)(fitZoom * 100);
+        if (_zoomSlider != null)
+            _zoomSlider.Value = pct;
+        if (_zoomValueLabel != null)
+            _zoomValueLabel.Text = $"{pct}%";
     }
 
     private void ApplyZoom()
@@ -450,7 +458,7 @@ public class PreviewPanel : Panel
         if (_placeholder != null)
             _placeholder.IsVisible = true;
         if (_atlasSummaryLabel != null)
-            _atlasSummaryLabel.IsVisible = false;
+            _atlasSummaryLabel.Text = "";
         if (_failedWarningLabel != null)
             _failedWarningLabel.IsVisible = false;
     }

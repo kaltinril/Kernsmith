@@ -71,6 +71,8 @@ public class PreviewViewModel : ViewModel
         var kpCount = result.Model.KerningPairs?.Count ?? 0;
         AtlasSummary = $"{result.Model.Characters.Count} glyphs | Line height: {result.Model.Common.LineHeight} | Base: {result.Model.Common.Base} | {kpCount} kerning pairs";
 
+        // Force PropertyChanged even if already true (for subsequent generations)
+        HasResult = false;
         HasResult = true;
     }
 

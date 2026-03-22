@@ -60,46 +60,12 @@ public class MainLayout : ContainerRuntime
         saveAsItem.Clicked += (_, _) => _viewModel.SaveAs();
         fileItem.Items!.Add(saveAsItem);
 
-        var importFntItem = new MenuItem();
-        importFntItem.Header = "Import .fnt...";
-        importFntItem.Clicked += (_, _) =>
-        {
-            var dialog = new FileBrowserDialog();
-            dialog.FileExtensionFilter = [".fnt"];
-            dialog.Show(selectedPath =>
-            {
-                if (!string.IsNullOrEmpty(selectedPath))
-                    _viewModel.ImportFnt(selectedPath);
-            });
-        };
-        fileItem.Items!.Add(importFntItem);
-
-        var batchItem = new MenuItem();
-        batchItem.Header = "Batch Generate...";
-        batchItem.Clicked += (_, _) =>
-        {
-            var dialog = new BatchGenerationDialog(_viewModel);
-            dialog.Show();
-        };
-        fileItem.Items!.Add(batchItem);
-
         var exitItem = new MenuItem();
         exitItem.Header = "Exit";
         exitItem.Clicked += (_, _) => _viewModel.Exit();
         fileItem.Items!.Add(exitItem);
 
         menu.Items!.Add(fileItem);
-
-        // Edit menu
-        var editItem = new MenuItem();
-        editItem.Header = "Edit";
-
-        var prefsItem = new MenuItem();
-        prefsItem.Header = "Preferences...";
-        prefsItem.Clicked += (_, _) => _viewModel.StatusBar.StatusText = "Preferences not yet implemented";
-        editItem.Items!.Add(prefsItem);
-
-        menu.Items!.Add(editItem);
 
         // View menu
         var viewItem = new MenuItem();
@@ -186,7 +152,7 @@ public class MainLayout : ContainerRuntime
         body.AddChild(rightSplitter);
 
         // Right column: effects (fixed width)
-        var effectsPanel = new EffectsPanel(_viewModel.Effects);
+        var effectsPanel = new EffectsPanel(_viewModel.Effects, _viewModel.AtlasConfig);
         effectsPanel.Width = 280;
         effectsPanel.HeightUnits = DimensionUnitType.RelativeToParent;
         effectsPanel.Height = 0;
