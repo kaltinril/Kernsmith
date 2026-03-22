@@ -496,4 +496,4 @@ var result = BmFont.Generate("font.ttf", new FontGeneratorOptions
 
 ## License
 
-Proprietary. See [LICENSE](LICENSE) for details.
+MIT. See [LICENSE](LICENSE) for details.

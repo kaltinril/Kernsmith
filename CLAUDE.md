@@ -45,7 +45,7 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 - **Unsafe**: allowed only in FreeType interop (`FreeTypeRasterizer.cs`, `FreeTypeNative.cs`)
 - **Testing**: xUnit + FluentAssertions
 - **Dependencies**: FreeTypeSharp 3.1.0, StbImageWriteSharp 1.16.7
-- **License**: Proprietary (see LICENSE)
+- **License**: MIT (see LICENSE)
 
 ### Namespace Rules
 
