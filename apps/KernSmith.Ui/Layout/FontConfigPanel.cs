@@ -30,14 +30,29 @@ public class FontConfigPanel : Panel
         stack.StackSpacing = 6;
 
         // --- FONT SOURCE section ---
-        AddSectionHeader(stack, "FONT SOURCE");
+        AddSectionHeader(stack, "FONT FILE");
 
-        var openFileBtn = new Button();
-        openFileBtn.Text = "Open File...";
-        openFileBtn.Width = 260;
-        openFileBtn.Height = 30;
-        openFileBtn.Click += (_, _) => _mainViewModel.OpenFont();
-        stack.Children.Add(openFileBtn.Visual);
+        var pathLabel = new Label();
+        pathLabel.Text = "Path to .ttf/.otf/.woff:";
+        stack.Children.Add(pathLabel.Visual);
+
+        var pathTextBox = new TextBox();
+        pathTextBox.Width = 260;
+        pathTextBox.Height = 26;
+        pathTextBox.Placeholder = "C:\\Fonts\\MyFont.ttf";
+        stack.Children.Add(pathTextBox.Visual);
+
+        var loadBtn = new Button();
+        loadBtn.Text = "Load Font";
+        loadBtn.Width = 120;
+        loadBtn.Height = 26;
+        loadBtn.Click += (_, _) =>
+        {
+            var path = pathTextBox.Text?.Trim();
+            if (!string.IsNullOrEmpty(path))
+                _mainViewModel.LoadFontFromPath(path);
+        };
+        stack.Children.Add(loadBtn.Visual);
 
         var sourceLabel = new Label();
         sourceLabel.Text = "No font loaded";
@@ -45,8 +60,7 @@ public class FontConfigPanel : Panel
         sourceLabel.Visual.BindingContext = _fontConfig;
         stack.Children.Add(sourceLabel.Visual);
 
-        // --- System font section ---
-        AddSectionHeader(stack, "-- OR --");
+        AddDivider(stack);
 
         var familyLabel = new Label();
         familyLabel.Text = "System Font:";
@@ -106,11 +120,23 @@ public class FontConfigPanel : Panel
             }
         };
 
-        // --- FONT INFO section ---
-        AddSectionHeader(stack, "FONT INFO");
-        AddInfoRow(stack, "Family:", nameof(FontConfigViewModel.FamilyName));
-        AddInfoRow(stack, "Style:", nameof(FontConfigViewModel.StyleName));
-        AddInfoRow(stack, "Glyphs:", nameof(FontConfigViewModel.NumGlyphs));
+        // --- Glyph count (only useful non-redundant info) ---
+        var glyphRow = new StackPanel();
+        glyphRow.Orientation = Orientation.Horizontal;
+        glyphRow.Spacing = 4;
+        stack.Children.Add(glyphRow.Visual);
+
+        var glyphLbl = new Label();
+        glyphLbl.Text = "Glyphs in font:";
+        glyphRow.AddChild(glyphLbl);
+
+        var glyphCount = new Label();
+        glyphCount.Text = "0";
+        glyphCount.SetBinding(nameof(Label.Text), nameof(FontConfigViewModel.NumGlyphs));
+        glyphCount.Visual.BindingContext = _fontConfig;
+        glyphRow.AddChild(glyphCount);
+
+        AddDivider(stack);
 
         // --- SIZE section ---
         AddSectionHeader(stack, "SIZE");
@@ -139,30 +165,42 @@ public class FontConfigPanel : Panel
         ptLabel.Text = "pt";
         sizeRow.AddChild(ptLabel);
 
+        AddDivider(stack);
+
         // --- CHARACTER SET section ---
         AddSectionHeader(stack, "CHARACTER SET");
 
+        // RadioButtons so all options are visible at once
+        var charSetGroup = new StackPanel();
+        charSetGroup.Spacing = 2;
+        stack.Children.Add(charSetGroup.Visual);
+
         TextBox? customTextBox = null;
 
-        var presetCombo = new ComboBox();
-        presetCombo.Width = 260;
-        presetCombo.Items.Add("ASCII (95)");
-        presetCombo.Items.Add("Extended ASCII (224)");
-        presetCombo.Items.Add("Latin (559)");
-        presetCombo.Items.Add("Custom");
-        presetCombo.SelectedIndex = 0;
-        presetCombo.SelectionChanged += (_, _) =>
+        var presets = new[] { "ASCII (95)", "Extended ASCII (224)", "Latin (559)", "Custom" };
+        for (int i = 0; i < presets.Length; i++)
         {
-            _fontConfig.SelectedPreset = (CharacterSetPreset)presetCombo.SelectedIndex;
-            if (customTextBox != null)
-                customTextBox.IsVisible = _fontConfig.IsCustomMode;
-        };
-        stack.Children.Add(presetCombo.Visual);
+            var rb = new RadioButton();
+            rb.Text = presets[i];
+            rb.Width = 260;
+            if (i == 0) rb.IsChecked = true;
+            var presetIndex = i; // capture for closure
+            rb.Checked += (_, _) =>
+            {
+                _fontConfig.SelectedPreset = (CharacterSetPreset)presetIndex;
+                if (customTextBox != null)
+                    customTextBox.IsVisible = _fontConfig.IsCustomMode;
+            };
+            charSetGroup.AddChild(rb);
+        }
 
         customTextBox = new TextBox();
         customTextBox.Width = 260;
-        customTextBox.Height = 28;
+        customTextBox.Height = 60;
         customTextBox.IsVisible = false;
+        customTextBox.Placeholder = "Type characters to include...";
+        customTextBox.TextWrapping = Gum.Forms.TextWrapping.Wrap;
+        customTextBox.AcceptsReturn = true;
         customTextBox.SetBinding(nameof(TextBox.Text), nameof(FontConfigViewModel.CustomCharacters));
         customTextBox.Visual.BindingContext = _fontConfig;
         stack.Children.Add(customTextBox.Visual);
@@ -175,6 +213,8 @@ public class FontConfigPanel : Panel
                 charCountLabel.Text = $"Selected: {_fontConfig.CharacterCount} characters";
         };
         stack.Children.Add(charCountLabel.Visual);
+
+        AddDivider(stack);
 
         // --- GENERATE button ---
         var generateBtn = new Button();
@@ -192,22 +232,13 @@ public class FontConfigPanel : Panel
         parent.Children.Add(label.Visual);
     }
 
-    private void AddInfoRow(Gum.Wireframe.GraphicalUiElement parent, string labelText, string bindingProperty)
+    private static void AddDivider(Gum.Wireframe.GraphicalUiElement parent)
     {
-        var row = new StackPanel();
-        row.Orientation = Orientation.Horizontal;
-        row.Spacing = 4;
-        parent.Children.Add(row.Visual);
-
-        var lbl = new Label();
-        lbl.Text = labelText;
-        lbl.Width = 80;
-        row.AddChild(lbl);
-
-        var valueLabel = new Label();
-        valueLabel.Text = "";
-        valueLabel.SetBinding(nameof(Label.Text), bindingProperty);
-        valueLabel.Visual.BindingContext = _fontConfig;
-        row.AddChild(valueLabel);
+        var divider = new ColoredRectangleRuntime();
+        divider.Width = 0;
+        divider.WidthUnits = Gum.DataTypes.DimensionUnitType.RelativeToParent;
+        divider.Height = 1;
+        divider.Color = new Microsoft.Xna.Framework.Color(60, 60, 60);
+        parent.Children.Add(divider);
     }
 }

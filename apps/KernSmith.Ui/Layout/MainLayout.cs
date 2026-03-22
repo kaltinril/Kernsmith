@@ -50,17 +50,6 @@ public class MainLayout : ContainerRuntime
 
         menu.Items!.Add(fileItem);
 
-        // Tools menu
-        var toolsItem = new MenuItem();
-        toolsItem.Header = "Tools";
-
-        var generateItem = new MenuItem();
-        generateItem.Header = "Generate";
-        generateItem.Clicked += async (_, _) => await _viewModel.GenerateAsync();
-        toolsItem.Items!.Add(generateItem);
-
-        menu.Items!.Add(toolsItem);
-
         // Help menu
         var helpItem = new MenuItem();
         helpItem.Header = "Help";

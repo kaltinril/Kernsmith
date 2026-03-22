@@ -11,8 +11,7 @@
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.DesktopGL" />
     <PackageReference Include="Gum.MonoGame" />
-    <PackageReference Include="MonoGame.Extended" />
-    <PackageReference Include="NativeFileDialogSharp" />
+
   </ItemGroup>
 
   <ItemGroup>

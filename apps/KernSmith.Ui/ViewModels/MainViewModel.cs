@@ -39,13 +39,21 @@ public class MainViewModel : ViewModel
     {
         var path = _fileDialogService.OpenFontFile();
         if (path == null) return;
+        LoadFontFromPath(path);
+    }
 
+    public void LoadFontFromPath(string path)
+    {
         try
         {
             FontConfig.LoadFromFile(path);
             StatusBar.StatusText = $"Loaded {FontConfig.FamilyName} {FontConfig.StyleName} ({FontConfig.NumGlyphs:N0} glyphs)";
         }
         catch (FontParsingException ex)
+        {
+            StatusBar.SetError(ex.Message);
+        }
+        catch (Exception ex)
         {
             StatusBar.SetError(ex.Message);
         }
