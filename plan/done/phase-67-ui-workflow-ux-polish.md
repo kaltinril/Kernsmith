@@ -1,6 +1,7 @@
 # Phase 67 — Workflow & UX Polish
 
-> **Status**: Planning
+> **Status**: Complete
+> **Completed**: 2026-03-22. Keyboard shortcuts (Ctrl+O/S/G/Shift+S/+/-/0), engine presets (XNA/Unity/Godot/Unreal/Phaser), pre-generation validation, dynamic window title with dirty tracking, UI scaling via Camera.Zoom, tooltip system (custom built — GUM has none). Command palette and light/dark theme switching deferred as unnecessary.
 > **Created**: 2026-03-21
 > **Goal**: Refine the user experience with guided workflows, smart defaults, contextual help, and intuitive interaction patterns that make font generation approachable for beginners while powerful for experts.
 

@@ -1,6 +1,7 @@
 # Phase 65 — Project Management & File Operations
 
-> **Status**: Planning
+> **Status**: Complete
+> **Completed**: 2026-03-22. .bmfc save/load via BmfcConfigWriter/Reader. Session persistence (window size, recent fonts, last paths). SaveDialog for export. Undo/redo removed — unnecessary for a settings-based tool. Custom menu bar replaced with GUM Menu/MenuItem. Context menus and toolbar deferred.
 > **Created**: 2026-03-21
 > **Goal**: Build complete project management including save/load configurations, import/export workflows, recent files, undo/redo, and integration with the .bmfc config format. All UI built with GUM (code-only) + MonoGame + MonoGame.Extended.
 

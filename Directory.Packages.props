@@ -22,6 +22,12 @@
 
     <!-- Benchmark dependencies -->
     <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
+
+    <!-- UI dependencies -->
+    <PackageVersion Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
+    <PackageVersion Include="Gum.MonoGame" Version="2026.3.14.1" />
+    <PackageVersion Include="MonoGame.Extended" Version="5.4.0" />
+    <PackageVersion Include="NativeFileDialogSharp" Version="0.5.0" />
   </ItemGroup>
 
 </Project>

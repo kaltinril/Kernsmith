@@ -1,6 +1,7 @@
 # Phase 61 — Font Loading & Character Selection
 
-> **Status**: Planning
+> **Status**: Complete
+> **Completed**: 2026-03-22. NativeFileDialogSharp and MonoGame.Extended removed — replaced with GUM-based file browser and standard MonoGame APIs. Character grid uses RadioButton presets + Unicode block CheckBoxes + text input instead of BMFont-style clickable cell grid. Preset management deferred as unnecessary.
 > **Created**: 2026-03-21
 > **Goal**: Build comprehensive font loading and character selection capabilities inspired by BMFont's character grid and Hiero's text-based input, using GUM UI + MonoGame + MonoGame.Extended.
 
