@@ -1,6 +1,24 @@
 @echo off
-for /f "usebackq tokens=1,* delims==" %%a in ("scripts\.env") do (
-    if "%%a"=="NUGET_API_KEY" set NUGET_API_KEY=%%b
+if "%~1"=="" (
+    echo Usage: publish.bat ^<version^>
+    echo Example: publish.bat 0.9.2
+    exit /b 1
 )
-dotnet pack src/KernSmith/KernSmith.csproj --configuration Release --output ./nupkg
-dotnet nuget push ./nupkg/KernSmith.*.nupkg --api-key %NUGET_API_KEY% --source https://api.nuget.org/v3/index.json
+
+echo Updating Directory.Build.props to version %1...
+powershell -Command "(Get-Content Directory.Build.props) -replace '<Version>[^<]*</Version>', '<Version>%1</Version>' | Set-Content Directory.Build.props"
+
+echo Committing version bump...
+git commit -am "Bump version to %1"
+
+echo Creating tag v%1...
+git tag v%1
+
+echo Pushing commit and tag...
+git push && git push origin v%1
+
+echo.
+echo Done! The GitHub Actions workflow will handle the rest:
+echo   - Build CLI and UI binaries for all platforms
+echo   - Publish NuGet package
+echo   - Create GitHub Release with downloadable binaries
