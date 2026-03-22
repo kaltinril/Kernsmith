@@ -59,6 +59,13 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 - `KernSmith.Output.Model`: BmFontModel, InfoBlock, CommonBlock, ExtendedMetadata, etc.
 - Files in `Config/` and `Exceptions/` use the ROOT `KernSmith` namespace
 
+### Git & Release Workflow
+
+- **Never push directly to main** — always use a feature branch + PR
+- **Version and release process** — see `RELEASING.md` for the full workflow
+- **Version source of truth** — `Directory.Build.props` `<Version>` property (all projects inherit it)
+- **Don't bump versions or tag releases** unless explicitly asked
+
 ### Project File References
 
 | What | Location |

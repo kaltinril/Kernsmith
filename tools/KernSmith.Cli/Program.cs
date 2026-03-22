@@ -122,7 +122,7 @@ static int ShowHelp()
 static int ShowVersion()
 {
     var version = typeof(KernSmith.BmFont).Assembly.GetName().Version;
-    Console.WriteLine($"kernsmith {version?.ToString(3) ?? "0.1.0"}");
+    Console.WriteLine($"kernsmith {version?.ToString(3) ?? "0.0.0"}");
     return ExitCodes.Success;
 }
 

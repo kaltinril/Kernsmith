@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2] - 2026-03-22
+
+### Added
+
+- XML doc comments across core library (95%+ coverage), CLI tool, and UI app
+- UI README.md with architecture overview and build instructions
+- Namespace-level documentation (8 NamespaceDoc.cs files)
+- docfx API reference site with GitHub Pages deployment
+- GitHub Actions workflow for automatic doc site builds
+
+### Changed
+
+- Unified versioning: single `<Version>` in Directory.Build.props shared by all projects
+- CLI and UI version displays now read from assembly (no more hardcoded versions)
+- publish.bat uses wildcard for .nupkg filename
+
+### Fixed
+
+- CI hang on Ubuntu: added `--blame-hang` timeout to dotnet test
+- LICENSE copyright updated to "KernSmith contributors"
+
 ## [0.9.1] - 2026-03-22
 
 ### Changed

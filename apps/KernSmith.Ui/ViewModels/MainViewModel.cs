@@ -15,7 +15,7 @@ namespace KernSmith.Ui.ViewModels;
 /// </summary>
 public class MainViewModel : ViewModel
 {
-    private const string AppVersion = "1.0.0";
+    private static readonly string AppVersion = typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
     private static readonly string BaseTitle = $"KernSmith v{AppVersion}";
 
     private readonly FileDialogService _fileDialogService;
