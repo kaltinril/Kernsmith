@@ -11,6 +11,8 @@ namespace KernSmith.Font.Tables;
 /// <param name="IndexToLocFormat">How glyph offsets are stored: 0 = short (16-bit), 1 = long (32-bit).</param>
 /// <param name="Created">When the font was created (as a raw timestamp).</param>
 /// <param name="Modified">When the font was last modified (as a raw timestamp).</param>
+/// <param name="MacStyle">Mac style flags: bit 0 = bold, bit 1 = italic, etc.</param>
+/// <param name="LowestRecPPEM">Smallest readable size in pixels per em.</param>
 public sealed record HeadTable(
     int UnitsPerEm,
     int XMin,
@@ -19,4 +21,15 @@ public sealed record HeadTable(
     int YMax,
     int IndexToLocFormat,
     long Created,
-    long Modified);
+    long Modified,
+    ushort MacStyle = 0,
+    ushort LowestRecPPEM = 0)
+{
+    private static readonly DateTime Epoch = new(1904, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+    /// <summary>Font creation date as a UTC DateTime.</summary>
+    public DateTime CreatedUtc => Epoch.AddSeconds(Created);
+
+    /// <summary>Font modification date as a UTC DateTime.</summary>
+    public DateTime ModifiedUtc => Epoch.AddSeconds(Modified);
+}

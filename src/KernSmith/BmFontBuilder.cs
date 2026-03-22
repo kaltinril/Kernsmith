@@ -252,6 +252,20 @@ public sealed class BmFontBuilder
     /// <returns>This builder.</returns>
     public BmFontBuilder WithFallbackCharacter(char fallbackChar) { _options.FallbackCharacter = fallbackChar; return this; }
 
+    /// <summary>Sets the fallback codepoint used when a requested character is not available in the font.
+    /// Supports supplementary plane characters (above U+FFFF) unlike <see cref="WithFallbackCharacter(char)"/>.</summary>
+    /// <param name="codepoint">Unicode codepoint to use as fallback (e.g., 0x25A1 for '&#x25A1;').</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithFallbackCodepoint(int codepoint)
+    {
+        if (codepoint < 0 || codepoint > 0x10FFFF)
+            throw new ArgumentOutOfRangeException(nameof(codepoint), "Codepoint must be between 0 and 0x10FFFF.");
+        if (codepoint >= 0xD800 && codepoint <= 0xDFFF)
+            throw new ArgumentOutOfRangeException(nameof(codepoint), "Surrogate codepoints (U+D800 to U+DFFF) are not valid Unicode scalar values.");
+        _options.FallbackCodepoint = codepoint;
+        return this;
+    }
+
     /// <summary>Sets the output texture format (PNG, TGA, or DDS).</summary>
     /// <param name="format">Texture format.</param>
     /// <returns>This builder.</returns>
@@ -396,6 +410,11 @@ public sealed class BmFontBuilder
         return this;
     }
 
+    /// <summary>Enables collection of pipeline performance metrics on the result.</summary>
+    /// <param name="collect">Whether to collect metrics (default true).</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithCollectMetrics(bool collect = true) { _options.CollectMetrics = collect; return this; }
+
     private void CopyOptions(FontGeneratorOptions source)
     {
         _options.Size = source.Size;
@@ -423,6 +442,7 @@ public sealed class BmFontBuilder
         _options.VariationAxes = source.VariationAxes != null ? new Dictionary<string, float>(source.VariationAxes) : null;
         _options.SuperSampleLevel = source.SuperSampleLevel;
         _options.FallbackCharacter = source.FallbackCharacter;
+        _options.FallbackCodepoint = source.FallbackCodepoint;
         _options.TextureFormat = source.TextureFormat;
         _options.EnableHinting = source.EnableHinting;
         _options.AutofitTexture = source.AutofitTexture;

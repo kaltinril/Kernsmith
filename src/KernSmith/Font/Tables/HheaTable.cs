@@ -8,9 +8,15 @@ namespace KernSmith.Font.Tables;
 /// <param name="LineGap">Additional inter-line spacing, in font units.</param>
 /// <param name="AdvanceWidthMax">Maximum advance width across all glyphs, in font units.</param>
 /// <param name="NumberOfHMetrics">Number of entries in the horizontal metrics (hmtx) table.</param>
+/// <param name="MinLeftSideBearing">Minimum left side bearing across all glyphs, in font units.</param>
+/// <param name="MinRightSideBearing">Minimum right side bearing across all glyphs, in font units.</param>
+/// <param name="XMaxExtent">Maximum horizontal extent (lsb + (xMax - xMin)), in font units.</param>
 public sealed record HheaTable(
     int Ascender,
     int Descender,
     int LineGap,
     int AdvanceWidthMax,
-    int NumberOfHMetrics);
+    int NumberOfHMetrics,
+    short MinLeftSideBearing = 0,
+    short MinRightSideBearing = 0,
+    short XMaxExtent = 0);

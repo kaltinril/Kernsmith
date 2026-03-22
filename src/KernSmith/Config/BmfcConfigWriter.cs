@@ -127,7 +127,10 @@ public static class BmfcConfigWriter
             extensions.AppendLine($"superSample={options.SuperSampleLevel}");
         if (options.PackingAlgorithm != PackingAlgorithm.MaxRects)
             extensions.AppendLine("packer=skyline");
-        if (options.FallbackCharacter.HasValue)
+        // FallbackCodepoint takes precedence over FallbackCharacter
+        if (options.FallbackCodepoint.HasValue)
+            extensions.AppendLine($"fallbackChar={options.FallbackCodepoint.Value}");
+        else if (options.FallbackCharacter.HasValue)
             extensions.AppendLine($"fallbackChar={(int)options.FallbackCharacter.Value}");
         if (options.ColorFont)
             extensions.AppendLine("colorFont=1");

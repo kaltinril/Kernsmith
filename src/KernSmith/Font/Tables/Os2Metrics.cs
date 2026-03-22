@@ -15,6 +15,13 @@ namespace KernSmith.Font.Tables;
 /// <param name="Panose">10-byte array classifying the font's visual style (serif, weight, etc.).</param>
 /// <param name="FirstCharIndex">Lowest Unicode character in the font.</param>
 /// <param name="LastCharIndex">Highest Unicode character in the font.</param>
+/// <param name="XAvgCharWidth">Weighted average width of lowercase Latin letters and space, in font units.</param>
+/// <param name="SubscriptXSize">Horizontal size for subscripts, in font units.</param>
+/// <param name="SubscriptYSize">Vertical size for subscripts, in font units.</param>
+/// <param name="SuperscriptXSize">Horizontal size for superscripts, in font units.</param>
+/// <param name="SuperscriptYSize">Vertical size for superscripts, in font units.</param>
+/// <param name="StrikeoutSize">Width of the strikeout stroke, in font units.</param>
+/// <param name="StrikeoutPosition">Position of the strikeout stroke relative to the baseline, in font units.</param>
 public sealed record Os2Metrics(
     int WeightClass,
     int WidthClass,
@@ -27,4 +34,11 @@ public sealed record Os2Metrics(
     int CapHeight,
     byte[] Panose,
     int FirstCharIndex,
-    int LastCharIndex);
+    int LastCharIndex,
+    short XAvgCharWidth = 0,
+    short SubscriptXSize = 0,
+    short SubscriptYSize = 0,
+    short SuperscriptXSize = 0,
+    short SuperscriptYSize = 0,
+    short StrikeoutSize = 0,
+    short StrikeoutPosition = 0);

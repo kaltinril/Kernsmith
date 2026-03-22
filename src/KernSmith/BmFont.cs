@@ -19,6 +19,7 @@ public static class BmFont
     /// <summary>Generates a BMFont from raw font bytes.</summary>
     /// <param name="fontData">Raw TTF/OTF/WOFF file bytes.</param>
     /// <param name="options">Generation options, or null for defaults.</param>
+    /// <returns>The generated bitmap font result containing the .fnt descriptor and atlas pages.</returns>
     public static BmFontResult Generate(byte[] fontData, FontGeneratorOptions? options = null)
         => GenerateCore(fontData, options, sourceFontFile: null, sourceFontName: null);
 
@@ -53,11 +54,13 @@ public static class BmFont
         // 2. Resolve character set
         var codepoints = options.Characters.Resolve(fontInfo.AvailableCodepoints).ToList();
 
-        if (options.FallbackCharacter.HasValue)
+        // FallbackCodepoint takes precedence over FallbackCharacter
+        var resolvedFallback = options.FallbackCodepoint
+            ?? (options.FallbackCharacter.HasValue ? (int)options.FallbackCharacter.Value : (int?)null);
+        if (resolvedFallback.HasValue)
         {
-            var fbCodepoint = (int)options.FallbackCharacter.Value;
-            if (!codepoints.Contains(fbCodepoint))
-                codepoints.Add(fbCodepoint);
+            if (!codepoints.Contains(resolvedFallback.Value))
+                codepoints.Add(resolvedFallback.Value);
         }
 
         // 3. Rasterize glyphs
@@ -421,12 +424,14 @@ public static class BmFont
     /// <summary>Generates a BMFont from raw font bytes at the given size.</summary>
     /// <param name="fontData">Raw TTF/OTF/WOFF file bytes.</param>
     /// <param name="size">Font size in pixels.</param>
+    /// <returns>The generated bitmap font result containing the .fnt descriptor and atlas pages.</returns>
     public static BmFontResult Generate(byte[] fontData, int size)
         => Generate(fontData, new FontGeneratorOptions { Size = size });
 
     /// <summary>Generates a BMFont from a font file on disk.</summary>
     /// <param name="fontPath">Path to a TTF/OTF/WOFF file.</param>
     /// <param name="options">Generation options, or null for defaults.</param>
+    /// <returns>The generated bitmap font result containing the .fnt descriptor and atlas pages.</returns>
     public static BmFontResult Generate(string fontPath, FontGeneratorOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(fontPath);
@@ -436,6 +441,7 @@ public static class BmFont
     /// <summary>Generates a BMFont from a font file on disk at the given size.</summary>
     /// <param name="fontPath">Path to a TTF/OTF/WOFF file.</param>
     /// <param name="size">Font size in pixels.</param>
+    /// <returns>The generated bitmap font result containing the .fnt descriptor and atlas pages.</returns>
     public static BmFontResult Generate(string fontPath, int size)
     {
         ArgumentNullException.ThrowIfNull(fontPath);
@@ -445,6 +451,7 @@ public static class BmFont
     /// <summary>Generates a BMFont from a system-installed font, looked up by family name (e.g., "Arial").</summary>
     /// <param name="fontFamily">Font family name, like "Arial" or "Times New Roman".</param>
     /// <param name="options">Generation options, or null for defaults.</param>
+    /// <returns>The generated bitmap font result containing the .fnt descriptor and atlas pages.</returns>
     /// <exception cref="FontParsingException">Thrown if the font family is not installed.</exception>
     public static BmFontResult GenerateFromSystem(string fontFamily, FontGeneratorOptions? options = null)
     {
@@ -493,6 +500,7 @@ public static class BmFont
     /// <summary>Generates a BMFont from a system-installed font at the given size.</summary>
     /// <param name="fontFamily">Font family name, like "Arial".</param>
     /// <param name="size">Font size in pixels.</param>
+    /// <returns>The generated bitmap font result containing the .fnt descriptor and atlas pages.</returns>
     public static BmFontResult GenerateFromSystem(string fontFamily, int size)
     {
         ArgumentNullException.ThrowIfNull(fontFamily);
@@ -502,6 +510,7 @@ public static class BmFont
     /// <summary>Queries the estimated atlas size from raw font bytes without rasterizing.</summary>
     /// <param name="fontData">Raw TTF/OTF/WOFF file bytes.</param>
     /// <param name="options">Generation options, or null for defaults.</param>
+    /// <returns>Estimated atlas dimensions and page count.</returns>
     public static AtlasSizeInfo QueryAtlasSize(byte[] fontData, FontGeneratorOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(fontData);
@@ -511,6 +520,7 @@ public static class BmFont
     /// <summary>Queries the estimated atlas size from a font file on disk without rasterizing.</summary>
     /// <param name="fontPath">Path to a TTF/OTF/WOFF file.</param>
     /// <param name="options">Generation options, or null for defaults.</param>
+    /// <returns>Estimated atlas dimensions and page count.</returns>
     public static AtlasSizeInfo QueryAtlasSize(string fontPath, FontGeneratorOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(fontPath);
@@ -520,12 +530,39 @@ public static class BmFont
     /// <summary>Queries the estimated atlas size from a system-installed font without rasterizing.</summary>
     /// <param name="fontFamily">Font family name, like "Arial".</param>
     /// <param name="options">Generation options, or null for defaults.</param>
+    /// <returns>Estimated atlas dimensions and page count.</returns>
     public static AtlasSizeInfo QueryAtlasSizeFromSystem(string fontFamily, FontGeneratorOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(fontFamily);
         var fontData = s_systemFontProvider.Value.LoadFont(fontFamily)
             ?? throw new FontParsingException($"System font '{fontFamily}' not found");
         return QueryAtlasSizeCore(fontData, options);
+    }
+
+    /// <summary>Reads font metadata from raw font file bytes without generating a bitmap font.</summary>
+    /// <param name="fontData">Raw TTF/OTF/WOFF font file bytes.</param>
+    /// <param name="faceIndex">Face index for .ttc font collections (default 0).</param>
+    /// <returns>Font metadata including family name, metrics, available codepoints, and kerning pairs.</returns>
+    public static Font.Models.FontInfo ReadFontInfo(byte[] fontData, int faceIndex = 0)
+    {
+        ArgumentNullException.ThrowIfNull(fontData);
+
+        // Auto-detect and decompress WOFF/WOFF2
+        if (WoffDecompressor.IsWoff(fontData) || WoffDecompressor.IsWoff2(fontData))
+            fontData = WoffDecompressor.Decompress(fontData);
+
+        var reader = new TtfFontReader();
+        return reader.ReadFont(fontData, faceIndex);
+    }
+
+    /// <summary>Reads font metadata from a font file on disk without generating a bitmap font.</summary>
+    /// <param name="fontPath">Path to a TTF/OTF/WOFF font file.</param>
+    /// <param name="faceIndex">Face index for .ttc font collections (default 0).</param>
+    /// <returns>Font metadata including family name, metrics, available codepoints, and kerning pairs.</returns>
+    public static Font.Models.FontInfo ReadFontInfo(string fontPath, int faceIndex = 0)
+    {
+        ArgumentNullException.ThrowIfNull(fontPath);
+        return ReadFontInfo(File.ReadAllBytes(fontPath), faceIndex);
     }
 
     private static AtlasSizeInfo QueryAtlasSizeCore(byte[] fontData, FontGeneratorOptions? options)
@@ -551,11 +588,13 @@ public static class BmFont
 
         // 2. Resolve character set
         var codepoints = options.Characters.Resolve(fontInfo.AvailableCodepoints).ToList();
-        if (options.FallbackCharacter.HasValue)
+        // FallbackCodepoint takes precedence over FallbackCharacter
+        var resolvedFallback = options.FallbackCodepoint
+            ?? (options.FallbackCharacter.HasValue ? (int)options.FallbackCharacter.Value : (int?)null);
+        if (resolvedFallback.HasValue)
         {
-            var fbCodepoint = (int)options.FallbackCharacter.Value;
-            if (!codepoints.Contains(fbCodepoint))
-                codepoints.Add(fbCodepoint);
+            if (!codepoints.Contains(resolvedFallback.Value))
+                codepoints.Add(resolvedFallback.Value);
         }
 
         // 3. Get metrics without rasterizing
@@ -684,6 +723,7 @@ public static class BmFont
     /// Also loads atlas images (.png) from the same directory.
     /// </summary>
     /// <param name="fntPath">Path to the .fnt file.</param>
+    /// <returns>The loaded bitmap font result with descriptor model and atlas pages.</returns>
     public static BmFontResult Load(string fntPath)
     {
         ArgumentNullException.ThrowIfNull(fntPath);
@@ -715,6 +755,7 @@ public static class BmFont
 
     /// <summary>Loads a BMFont model from raw .fnt bytes. Does not load atlas images.</summary>
     /// <param name="fntData">Raw .fnt file bytes.</param>
+    /// <returns>The parsed BMFont descriptor model.</returns>
     public static Output.Model.BmFontModel LoadModel(byte[] fntData)
     {
         ArgumentNullException.ThrowIfNull(fntData);
@@ -723,6 +764,7 @@ public static class BmFont
 
     /// <summary>Loads a BMFont model from a text-format .fnt string. Does not load atlas images.</summary>
     /// <param name="fntContent">Text-format .fnt content.</param>
+    /// <returns>The parsed BMFont descriptor model.</returns>
     public static Output.Model.BmFontModel LoadModel(string fntContent)
     {
         ArgumentNullException.ThrowIfNull(fntContent);
@@ -730,6 +772,7 @@ public static class BmFont
     }
 
     /// <summary>Creates a fluent builder for BMFont generation.</summary>
+    /// <returns>A new fluent builder instance.</returns>
     public static BmFontBuilder Builder() => new();
 
     /// <summary>Checks if any built-in effects (outline, gradient, shadow) are enabled.</summary>
@@ -1104,6 +1147,7 @@ public static class BmFont
     /// <summary>Generates multiple BMFonts in batch, with optional parallelism and font caching.</summary>
     /// <param name="jobs">The batch jobs to run.</param>
     /// <param name="options">Batch options, or null for sequential execution.</param>
+    /// <returns>Batch results with per-job outcomes and timing.</returns>
     public static BatchResult GenerateBatch(IReadOnlyList<BatchJob> jobs, BatchOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(jobs);

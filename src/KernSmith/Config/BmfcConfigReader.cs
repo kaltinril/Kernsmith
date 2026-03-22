@@ -255,7 +255,13 @@ public static class BmfcConfigReader
                         break;
                     case "fallbackChar":
                         if (!string.IsNullOrEmpty(value))
-                            options.FallbackCharacter = value.Length == 1 ? value[0] : (char)int.Parse(value, CultureInfo.InvariantCulture);
+                        {
+                            int fallbackCode = value.Length == 1 ? value[0] : int.Parse(value, CultureInfo.InvariantCulture);
+                            if (fallbackCode > 0xFFFF)
+                                options.FallbackCodepoint = fallbackCode;
+                            else
+                                options.FallbackCharacter = (char)fallbackCode;
+                        }
                         break;
                     case "colorFont":
                         options.ColorFont = value == "1";

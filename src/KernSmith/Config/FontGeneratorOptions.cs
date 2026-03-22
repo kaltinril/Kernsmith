@@ -97,8 +97,17 @@ public class FontGeneratorOptions
 
     /// <summary>
     /// Character to show for missing glyphs. Common choices: '?' or '\uFFFD'.
+    /// For supplementary plane characters (above U+FFFF), use <see cref="FallbackCodepoint"/> instead.
     /// </summary>
     public char? FallbackCharacter { get; set; }
+
+    /// <summary>
+    /// Unicode codepoint to show for missing glyphs. Supports the full Unicode range (U+0000 to U+10FFFF),
+    /// including supplementary plane characters that cannot be represented by <see cref="FallbackCharacter"/>.
+    /// When both <see cref="FallbackCodepoint"/> and <see cref="FallbackCharacter"/> are set,
+    /// <see cref="FallbackCodepoint"/> takes precedence.
+    /// </summary>
+    public int? FallbackCodepoint { get; set; }
 
     /// <summary>Texture format for atlas output (PNG, TGA, or DDS). Default is PNG.</summary>
     public TextureFormat TextureFormat { get; set; } = TextureFormat.Png;

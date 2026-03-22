@@ -203,9 +203,9 @@ internal static class BmFontModelBuilder
             ? new Dictionary<string, float>(options.VariationAxes)
             : null;
 
-        int? fallbackCharacter = options.FallbackCharacter.HasValue
-            ? (int)options.FallbackCharacter.Value
-            : null;
+        // FallbackCodepoint takes precedence over FallbackCharacter
+        int? fallbackCharacter = options.FallbackCodepoint
+            ?? (options.FallbackCharacter.HasValue ? (int)options.FallbackCharacter.Value : null);
 
         var meta = new ExtendedMetadata
         {

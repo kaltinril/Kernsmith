@@ -147,9 +147,12 @@ internal class TtfParser
         var yMin = BinaryPrimitives.ReadInt16BigEndian(table.Slice(38));
         var xMax = BinaryPrimitives.ReadInt16BigEndian(table.Slice(40));
         var yMax = BinaryPrimitives.ReadInt16BigEndian(table.Slice(42));
+        ushort macStyle = table.Length >= 46 ? BinaryPrimitives.ReadUInt16BigEndian(table.Slice(44)) : (ushort)0;
+        ushort lowestRecPPEM = table.Length >= 48 ? BinaryPrimitives.ReadUInt16BigEndian(table.Slice(46)) : (ushort)0;
         var indexToLocFormat = BinaryPrimitives.ReadInt16BigEndian(table.Slice(50));
 
-        Head = new HeadTable(unitsPerEm, xMin, yMin, xMax, yMax, indexToLocFormat, created, modified);
+        Head = new HeadTable(unitsPerEm, xMin, yMin, xMax, yMax, indexToLocFormat, created, modified,
+            macStyle, lowestRecPPEM);
     }
 
     // 2C: hhea Table
@@ -166,9 +169,13 @@ internal class TtfParser
         var descender = BinaryPrimitives.ReadInt16BigEndian(table.Slice(6));
         var lineGap = BinaryPrimitives.ReadInt16BigEndian(table.Slice(8));
         var advanceWidthMax = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(10));
+        short minLeftSideBearing = table.Length >= 14 ? BinaryPrimitives.ReadInt16BigEndian(table.Slice(12)) : (short)0;
+        short minRightSideBearing = table.Length >= 16 ? BinaryPrimitives.ReadInt16BigEndian(table.Slice(14)) : (short)0;
+        short xMaxExtent = table.Length >= 18 ? BinaryPrimitives.ReadInt16BigEndian(table.Slice(16)) : (short)0;
         var numberOfHMetrics = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(34));
 
-        Hhea = new HheaTable(ascender, descender, lineGap, advanceWidthMax, numberOfHMetrics);
+        Hhea = new HheaTable(ascender, descender, lineGap, advanceWidthMax, numberOfHMetrics,
+            minLeftSideBearing, minRightSideBearing, xMaxExtent);
     }
 
     // 2D: hmtx Table — intentionally skipped.
@@ -187,8 +194,15 @@ internal class TtfParser
             return;
 
         var version = BinaryPrimitives.ReadUInt16BigEndian(table);
+        short xAvgCharWidth = table.Length >= 4 ? BinaryPrimitives.ReadInt16BigEndian(table.Slice(2)) : (short)0;
         var weightClass = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(4));
         var widthClass = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(6));
+        short subscriptXSize = table.Length >= 12 ? BinaryPrimitives.ReadInt16BigEndian(table.Slice(10)) : (short)0;
+        short subscriptYSize = table.Length >= 14 ? BinaryPrimitives.ReadInt16BigEndian(table.Slice(12)) : (short)0;
+        short superscriptXSize = table.Length >= 20 ? BinaryPrimitives.ReadInt16BigEndian(table.Slice(18)) : (short)0;
+        short superscriptYSize = table.Length >= 22 ? BinaryPrimitives.ReadInt16BigEndian(table.Slice(20)) : (short)0;
+        short strikeoutSize = table.Length >= 28 ? BinaryPrimitives.ReadInt16BigEndian(table.Slice(26)) : (short)0;
+        short strikeoutPosition = table.Length >= 30 ? BinaryPrimitives.ReadInt16BigEndian(table.Slice(28)) : (short)0;
 
         var panose = new byte[10];
         table.Slice(32, 10).CopyTo(panose);
@@ -213,7 +227,9 @@ internal class TtfParser
         Os2 = new Os2Metrics(
             weightClass, widthClass, typoAscender, typoDescender, typoLineGap,
             winAscent, winDescent, xHeight, capHeight, panose,
-            firstCharIndex, lastCharIndex);
+            firstCharIndex, lastCharIndex,
+            xAvgCharWidth, subscriptXSize, subscriptYSize,
+            superscriptXSize, superscriptYSize, strikeoutSize, strikeoutPosition);
     }
 
     // 2F: name Table
@@ -229,8 +245,10 @@ internal class TtfParser
         var count = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(2));
         var stringOffset = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(4));
 
-        // Target nameIDs: 0=copyright, 1=family, 2=subfamily, 4=fullName, 6=postScript, 7=trademark
-        var targetIds = new HashSet<int> { 0, 1, 2, 4, 6, 7 };
+        // Target nameIDs: 0=copyright, 1=family, 2=subfamily, 3=uniqueId, 4=fullName,
+        // 5=version, 6=postScript, 7=trademark, 8=manufacturer, 9=designer,
+        // 10=description, 13=license, 14=licenseUrl
+        var targetIds = new HashSet<int> { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14 };
         // Store best match: nameID -> (priority, string)
         // Priority: Windows English=3, Windows other=2, Mac=1
         var results = new Dictionary<int, (int priority, string value)>();
@@ -288,7 +306,14 @@ internal class TtfParser
             FullName: results.TryGetValue(4, out var fullName) ? fullName.value : null,
             PostScriptName: results.TryGetValue(6, out var psName) ? psName.value : null,
             Copyright: results.TryGetValue(0, out var copyright) ? copyright.value : null,
-            Trademark: results.TryGetValue(7, out var trademark) ? trademark.value : null);
+            Trademark: results.TryGetValue(7, out var trademark) ? trademark.value : null,
+            UniqueId: results.TryGetValue(3, out var uniqueId) ? uniqueId.value : null,
+            Version: results.TryGetValue(5, out var version) ? version.value : null,
+            Manufacturer: results.TryGetValue(8, out var manufacturer) ? manufacturer.value : null,
+            Designer: results.TryGetValue(9, out var designer) ? designer.value : null,
+            Description: results.TryGetValue(10, out var description) ? description.value : null,
+            License: results.TryGetValue(13, out var license) ? license.value : null,
+            LicenseUrl: results.TryGetValue(14, out var licenseUrl) ? licenseUrl.value : null);
     }
 
     /// <summary>
