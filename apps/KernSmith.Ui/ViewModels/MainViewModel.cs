@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Gum.Mvvm;
+using KernSmith.Ui.Layout;
 using KernSmith.Ui.Models;
 using KernSmith.Ui.Services;
 using KernSmith.Output;
@@ -9,6 +10,9 @@ namespace KernSmith.Ui.ViewModels;
 
 public class MainViewModel : ViewModel
 {
+    private const string AppVersion = "1.0.0";
+    private static readonly string BaseTitle = $"KernSmith v{AppVersion}";
+
     private readonly FileDialogService _fileDialogService;
     private readonly FontDiscoveryService _fontDiscoveryService;
     private readonly GenerationService _generationService;
@@ -52,7 +56,7 @@ public class MainViewModel : ViewModel
         CharacterGrid = new CharacterGridViewModel();
         AtlasConfig = new AtlasConfigViewModel();
         Effects = new EffectsViewModel();
-        WindowTitle = "KernSmith";
+        WindowTitle = BaseTitle;
 
         // Wire auto-regeneration and dirty tracking from sub-viewmodels
         FontConfig.PropertyChanged += (_, e) =>
@@ -99,10 +103,12 @@ public class MainViewModel : ViewModel
         catch (FontParsingException ex)
         {
             StatusBar.SetError(ex.Message);
+            ErrorDialog.Show("Font Parsing Error", ex.Message);
         }
         catch (Exception ex)
         {
             StatusBar.SetError(ex.Message);
+            ErrorDialog.Show("Font Load Error", ex.Message);
         }
     }
 
@@ -176,12 +182,29 @@ public class MainViewModel : ViewModel
                 SuperSampleLevel = Effects.SuperSampleLevel,
                 OutlineEnabled = Effects.OutlineEnabled,
                 OutlineWidth = Effects.OutlineWidth,
+                OutlineColorR = Effects.OutlineColorR,
+                OutlineColorG = Effects.OutlineColorG,
+                OutlineColorB = Effects.OutlineColorB,
                 ShadowEnabled = Effects.ShadowEnabled,
                 ShadowOffsetX = Effects.ShadowOffsetX,
                 ShadowOffsetY = Effects.ShadowOffsetY,
                 ShadowBlur = Effects.ShadowBlur,
+                ShadowColorR = Effects.ShadowColorR,
+                ShadowColorG = Effects.ShadowColorG,
+                ShadowColorB = Effects.ShadowColorB,
+                ShadowOpacity = Effects.ShadowOpacity,
+                GradientEnabled = Effects.GradientEnabled,
+                GradientStartR = Effects.GradientStartR,
+                GradientStartG = Effects.GradientStartG,
+                GradientStartB = Effects.GradientStartB,
+                GradientEndR = Effects.GradientEndR,
+                GradientEndG = Effects.GradientEndG,
+                GradientEndB = Effects.GradientEndB,
+                GradientAngle = Effects.GradientAngle,
+                ChannelPackingEnabled = Effects.ChannelPackingEnabled,
                 SdfEnabled = Effects.SdfEnabled,
                 ColorFontEnabled = Effects.ColorFontEnabled,
+                PackingAlgorithmIndex = AtlasConfig.PackingAlgorithmIndex,
                 FaceIndex = FontConfig.FaceIndex,
                 VariationAxisValues = Effects.VariationAxisValues.Count > 0
                     ? new Dictionary<string, float>(Effects.VariationAxisValues)
@@ -222,6 +245,21 @@ public class MainViewModel : ViewModel
             sw.Stop();
             var msg = ex.Message;
             _game.RunOnMainThread(() => StatusBar.SetError($"Unexpected error: {msg}"));
+        }
+    }
+
+    public void ImportFnt(string path)
+    {
+        try
+        {
+            var fntData = File.ReadAllBytes(path);
+            var model = BmFontReader.Read(fntData);
+            var kpCount = model.KerningPairs?.Count ?? 0;
+            StatusBar.StatusText = $"Imported: {Path.GetFileName(path)} — {model.Characters.Count} glyphs, {model.Common.ScaleW}x{model.Common.ScaleH}, {kpCount} kerning pairs";
+        }
+        catch (Exception ex)
+        {
+            StatusBar.SetError($"Import failed: {ex.Message}");
         }
     }
 
@@ -333,13 +371,13 @@ public class MainViewModel : ViewModel
     {
         if (!FontConfig.IsFontLoaded)
         {
-            WindowTitle = "KernSmith";
+            WindowTitle = BaseTitle;
             return;
         }
 
         var name = FontConfig.FamilyName;
         WindowTitle = IsDirty
-            ? $"KernSmith \u2014 {name} *"
-            : $"KernSmith \u2014 {name}";
+            ? $"{BaseTitle} \u2014 {name} *"
+            : $"{BaseTitle} \u2014 {name}";
     }
 }

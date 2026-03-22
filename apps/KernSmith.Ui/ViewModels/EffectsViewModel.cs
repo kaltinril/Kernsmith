@@ -15,12 +15,32 @@ public class EffectsViewModel : ViewModel
     // Outline
     public bool OutlineEnabled { get => Get<bool>(); set => Set(value); }
     public int OutlineWidth { get => Get<int>(); set => Set(value); }
+    public byte OutlineColorR { get => Get<byte>(); set => Set(value); }
+    public byte OutlineColorG { get => Get<byte>(); set => Set(value); }
+    public byte OutlineColorB { get => Get<byte>(); set => Set(value); }
 
     // Shadow
     public bool ShadowEnabled { get => Get<bool>(); set => Set(value); }
     public int ShadowOffsetX { get => Get<int>(); set => Set(value); }
     public int ShadowOffsetY { get => Get<int>(); set => Set(value); }
     public int ShadowBlur { get => Get<int>(); set => Set(value); }
+    public byte ShadowColorR { get => Get<byte>(); set => Set(value); }
+    public byte ShadowColorG { get => Get<byte>(); set => Set(value); }
+    public byte ShadowColorB { get => Get<byte>(); set => Set(value); }
+    public int ShadowOpacity { get => Get<int>(); set => Set(value); }
+
+    // Gradient
+    public bool GradientEnabled { get => Get<bool>(); set => Set(value); }
+    public byte GradientStartR { get => Get<byte>(); set => Set(value); }
+    public byte GradientStartG { get => Get<byte>(); set => Set(value); }
+    public byte GradientStartB { get => Get<byte>(); set => Set(value); }
+    public byte GradientEndR { get => Get<byte>(); set => Set(value); }
+    public byte GradientEndG { get => Get<byte>(); set => Set(value); }
+    public byte GradientEndB { get => Get<byte>(); set => Set(value); }
+    public int GradientAngle { get => Get<int>(); set => Set(value); }
+
+    // Channel Packing
+    public bool ChannelPackingEnabled { get => Get<bool>(); set => Set(value); }
 
     // SDF
     public bool SdfEnabled { get => Get<bool>(); set => Set(value); }
@@ -44,6 +64,11 @@ public class EffectsViewModel : ViewModel
         OutlineWidth = 1;
         ShadowOffsetX = 2;
         ShadowOffsetY = 2;
+        ShadowOpacity = 100;
+        GradientStartR = 255;
+        GradientStartG = 255;
+        GradientStartB = 255;
+        GradientAngle = 90;
         FallbackCharacter = "?";
     }
 }

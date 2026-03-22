@@ -23,6 +23,8 @@ public class PreviewPanel : Panel
     private Label? _atlasInfoLabel;
     private Label? _glyphInfoLabel;
     private Label? _zoomValueLabel;
+    private Label? _atlasSummaryLabel;
+    private Label? _failedWarningLabel;
     private StackPanel? _navRow;
     private StackPanel? _toolbarRow;
     private Texture2D? _checkerTexture;
@@ -265,6 +267,26 @@ public class PreviewPanel : Panel
         _atlasSprite.Y = 60;
         _previewContent.AddChild(_atlasSprite);
 
+        // Atlas summary label (between atlas and sample text, pinned above sample row)
+        _atlasSummaryLabel = new Label();
+        _atlasSummaryLabel.Text = "";
+        _atlasSummaryLabel.IsVisible = false;
+        _atlasSummaryLabel.X = 10;
+        _atlasSummaryLabel.YUnits = Gum.Converters.GeneralUnitType.PixelsFromLarge;
+        _atlasSummaryLabel.YOrigin = RenderingLibrary.Graphics.VerticalAlignment.Bottom;
+        _atlasSummaryLabel.Y = -64;
+        _previewContent.AddChild(_atlasSummaryLabel);
+
+        // Warning label for failed codepoints (below summary, pinned above sample row)
+        _failedWarningLabel = new Label();
+        _failedWarningLabel.Text = "";
+        _failedWarningLabel.IsVisible = false;
+        _failedWarningLabel.X = 10;
+        _failedWarningLabel.YUnits = Gum.Converters.GeneralUnitType.PixelsFromLarge;
+        _failedWarningLabel.YOrigin = RenderingLibrary.Graphics.VerticalAlignment.Bottom;
+        _failedWarningLabel.Y = -84;
+        _previewContent.AddChild(_failedWarningLabel);
+
         // Listen for result changes
         _preview.PropertyChanged += (_, e) =>
         {
@@ -324,6 +346,28 @@ public class PreviewPanel : Panel
 
         if (_glyphInfoLabel != null)
             _glyphInfoLabel.Text = _preview.GlyphInfoText;
+
+        // Atlas summary
+        if (_atlasSummaryLabel != null)
+        {
+            _atlasSummaryLabel.Text = _preview.AtlasSummary;
+            _atlasSummaryLabel.IsVisible = !string.IsNullOrEmpty(_preview.AtlasSummary);
+        }
+
+        // Failed codepoints warning
+        if (_failedWarningLabel != null)
+        {
+            if (_preview.FailedCodepointCount > 0)
+            {
+                _failedWarningLabel.Text = $"Warning: {_preview.FailedCodepointCount} codepoints could not be rendered";
+                _failedWarningLabel.IsVisible = true;
+            }
+            else
+            {
+                _failedWarningLabel.Text = "";
+                _failedWarningLabel.IsVisible = false;
+            }
+        }
     }
 
     private void ShowAtlas(PreviewPage page)
@@ -393,5 +437,9 @@ public class PreviewPanel : Panel
             _checkerSprite.Visible = false;
         if (_placeholder != null)
             _placeholder.IsVisible = true;
+        if (_atlasSummaryLabel != null)
+            _atlasSummaryLabel.IsVisible = false;
+        if (_failedWarningLabel != null)
+            _failedWarningLabel.IsVisible = false;
     }
 }

@@ -395,6 +395,22 @@ public class FontConfigPanel : Panel
         autofit.Unchecked += (_, _) => _atlasConfig.AutofitTexture = false;
         stack.Children.Add(autofit.Visual);
 
+        var packAlgoLabel = new Label();
+        packAlgoLabel.Text = "Packing Algorithm:";
+        stack.Children.Add(packAlgoLabel.Visual);
+
+        var packAlgoCombo = new ComboBox();
+        packAlgoCombo.Width = 160;
+        packAlgoCombo.Items.Add("MaxRects");
+        packAlgoCombo.Items.Add("Skyline");
+        packAlgoCombo.SelectedIndex = _atlasConfig.PackingAlgorithmIndex;
+        packAlgoCombo.SelectionChanged += (_, _) =>
+        {
+            if (packAlgoCombo.SelectedIndex >= 0)
+                _atlasConfig.PackingAlgorithmIndex = packAlgoCombo.SelectedIndex;
+        };
+        stack.Children.Add(packAlgoCombo.Visual);
+
         AddDivider(stack);
 
         // --- PADDING section ---

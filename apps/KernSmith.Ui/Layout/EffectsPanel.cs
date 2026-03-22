@@ -126,6 +126,13 @@ public class EffectsPanel : Panel
                 widthValue.Text = val.ToString();
                 _effects.OutlineWidth = val;
             };
+
+            // Outline color RGB row
+            AddColorRow(contentPanel, "Color:",
+                _effects.OutlineColorR, _effects.OutlineColorG, _effects.OutlineColorB,
+                v => _effects.OutlineColorR = v,
+                v => _effects.OutlineColorG = v,
+                v => _effects.OutlineColorB = v);
         }, enableChanged: enabled => _effects.OutlineEnabled = enabled);
 
         AddDivider(stack);
@@ -139,7 +146,52 @@ public class EffectsPanel : Panel
                 val => _effects.ShadowOffsetY = val);
             AddSliderRow(contentPanel, "Blur:", 0, 10, 0,
                 val => _effects.ShadowBlur = val);
+
+            // Shadow color RGB row
+            AddColorRow(contentPanel, "Color:",
+                _effects.ShadowColorR, _effects.ShadowColorG, _effects.ShadowColorB,
+                v => _effects.ShadowColorR = v,
+                v => _effects.ShadowColorG = v,
+                v => _effects.ShadowColorB = v);
+
+            // Shadow opacity slider
+            AddSliderRow(contentPanel, "Opacity:", 0, 100, 100,
+                val => _effects.ShadowOpacity = val);
         }, enableChanged: enabled => _effects.ShadowEnabled = enabled);
+
+        AddDivider(stack);
+
+        // --- GRADIENT section ---
+        AddCollapsibleSection(stack, "GRADIENT", contentPanel =>
+        {
+            AddColorRow(contentPanel, "Start:",
+                _effects.GradientStartR, _effects.GradientStartG, _effects.GradientStartB,
+                v => _effects.GradientStartR = v,
+                v => _effects.GradientStartG = v,
+                v => _effects.GradientStartB = v);
+
+            AddColorRow(contentPanel, "End:",
+                _effects.GradientEndR, _effects.GradientEndG, _effects.GradientEndB,
+                v => _effects.GradientEndR = v,
+                v => _effects.GradientEndG = v,
+                v => _effects.GradientEndB = v);
+
+            AddSliderRow(contentPanel, "Angle:", 0, 360, 90,
+                val => _effects.GradientAngle = val);
+        }, enableChanged: enabled => _effects.GradientEnabled = enabled);
+
+        AddDivider(stack);
+
+        // --- CHANNELS section ---
+        AddCollapsibleSection(stack, "CHANNELS", contentPanel =>
+        {
+            var packingCheck = new CheckBox();
+            packingCheck.Text = "Channel Packing";
+            packingCheck.Width = 180;
+            packingCheck.Checked += (_, _) => _effects.ChannelPackingEnabled = true;
+            packingCheck.Unchecked += (_, _) => _effects.ChannelPackingEnabled = false;
+            contentPanel.Children.Add(packingCheck.Visual);
+        }, enableChanged: _ => { });
 
         AddDivider(stack);
 
@@ -316,6 +368,55 @@ public class EffectsPanel : Panel
             valueLabel.Text = val.ToString();
             onChanged(val);
         };
+    }
+
+    private static void AddColorRow(
+        Gum.Wireframe.GraphicalUiElement parent,
+        string label, byte defaultR, byte defaultG, byte defaultB,
+        Action<byte> onRChanged, Action<byte> onGChanged, Action<byte> onBChanged)
+    {
+        var row = new StackPanel();
+        row.Orientation = Orientation.Horizontal;
+        row.Spacing = 4;
+        parent.Children.Add(row.Visual);
+
+        var lbl = new Label();
+        lbl.Text = label;
+        lbl.Width = 70;
+        row.AddChild(lbl);
+
+        var rBox = new TextBox();
+        rBox.Width = 40;
+        rBox.Height = 28;
+        rBox.Text = defaultR.ToString();
+        rBox.TextChanged += (_, _) =>
+        {
+            if (byte.TryParse(rBox.Text, out var val))
+                onRChanged(val);
+        };
+        row.AddChild(rBox);
+
+        var gBox = new TextBox();
+        gBox.Width = 40;
+        gBox.Height = 28;
+        gBox.Text = defaultG.ToString();
+        gBox.TextChanged += (_, _) =>
+        {
+            if (byte.TryParse(gBox.Text, out var val))
+                onGChanged(val);
+        };
+        row.AddChild(gBox);
+
+        var bBox = new TextBox();
+        bBox.Width = 40;
+        bBox.Height = 28;
+        bBox.Text = defaultB.ToString();
+        bBox.TextChanged += (_, _) =>
+        {
+            if (byte.TryParse(bBox.Text, out var val))
+                onBChanged(val);
+        };
+        row.AddChild(bBox);
     }
 
     private static void AddSectionHeader(Gum.Wireframe.GraphicalUiElement parent, string text)

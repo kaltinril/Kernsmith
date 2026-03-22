@@ -27,10 +27,23 @@ public class GenerationService
                 .WithColorFont(request.ColorFontEnabled);
 
             if (request.OutlineEnabled)
-                builder.WithOutline(request.OutlineWidth);
+                builder.WithOutline(request.OutlineWidth, request.OutlineColorR, request.OutlineColorG, request.OutlineColorB);
 
             if (request.ShadowEnabled)
-                builder.WithShadow(request.ShadowOffsetX, request.ShadowOffsetY, request.ShadowBlur);
+                builder.WithShadow(request.ShadowOffsetX, request.ShadowOffsetY, request.ShadowBlur,
+                    (request.ShadowColorR, request.ShadowColorG, request.ShadowColorB),
+                    request.ShadowOpacity / 100f);
+
+            if (request.GradientEnabled)
+                builder.WithGradient(
+                    (request.GradientStartR, request.GradientStartG, request.GradientStartB),
+                    (request.GradientEndR, request.GradientEndG, request.GradientEndB),
+                    request.GradientAngle);
+
+            if (request.ChannelPackingEnabled)
+                builder.WithChannelPacking();
+
+            builder.WithPackingAlgorithm((PackingAlgorithm)request.PackingAlgorithmIndex);
 
             if (request.FaceIndex > 0)
                 builder.WithFaceIndex(request.FaceIndex);

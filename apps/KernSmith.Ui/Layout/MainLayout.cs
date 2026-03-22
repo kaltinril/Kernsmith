@@ -60,6 +60,29 @@ public class MainLayout : ContainerRuntime
         saveAsItem.Clicked += (_, _) => _viewModel.SaveAs();
         fileItem.Items!.Add(saveAsItem);
 
+        var importFntItem = new MenuItem();
+        importFntItem.Header = "Import .fnt...";
+        importFntItem.Clicked += (_, _) =>
+        {
+            var dialog = new FileBrowserDialog();
+            dialog.FileExtensionFilter = [".fnt"];
+            dialog.Show(selectedPath =>
+            {
+                if (!string.IsNullOrEmpty(selectedPath))
+                    _viewModel.ImportFnt(selectedPath);
+            });
+        };
+        fileItem.Items!.Add(importFntItem);
+
+        var batchItem = new MenuItem();
+        batchItem.Header = "Batch Generate...";
+        batchItem.Clicked += (_, _) =>
+        {
+            var dialog = new BatchGenerationDialog(_viewModel);
+            dialog.Show();
+        };
+        fileItem.Items!.Add(batchItem);
+
         var exitItem = new MenuItem();
         exitItem.Header = "Exit";
         exitItem.Clicked += (_, _) => _viewModel.Exit();
@@ -67,9 +90,48 @@ public class MainLayout : ContainerRuntime
 
         menu.Items!.Add(fileItem);
 
+        // Edit menu
+        var editItem = new MenuItem();
+        editItem.Header = "Edit";
+
+        var prefsItem = new MenuItem();
+        prefsItem.Header = "Preferences...";
+        prefsItem.Clicked += (_, _) => _viewModel.StatusBar.StatusText = "Preferences not yet implemented";
+        editItem.Items!.Add(prefsItem);
+
+        menu.Items!.Add(editItem);
+
+        // View menu
+        var viewItem = new MenuItem();
+        viewItem.Header = "View";
+
+        var resetItem = new MenuItem();
+        resetItem.Header = "Reset Layout";
+        resetItem.Clicked += (_, _) => _viewModel.ResetLayout();
+        viewItem.Items!.Add(resetItem);
+
+        menu.Items!.Add(viewItem);
+
         // Help menu
         var helpItem = new MenuItem();
         helpItem.Header = "Help";
+
+        var shortcutsItem = new MenuItem();
+        shortcutsItem.Header = "Keyboard Shortcuts";
+        shortcutsItem.Clicked += (_, _) => KeyboardShortcutsDialog.Show();
+        helpItem.Items!.Add(shortcutsItem);
+
+        var inspectorItem = new MenuItem();
+        inspectorItem.Header = "Font Inspector...";
+        inspectorItem.Clicked += (_, _) =>
+        {
+            if (_viewModel.FontConfig.IsFontLoaded)
+            {
+                var dialog = new FontInspectorDialog(_viewModel.FontConfig);
+                dialog.Show();
+            }
+        };
+        helpItem.Items!.Add(inspectorItem);
 
         var aboutItem = new MenuItem();
         aboutItem.Header = "About";

@@ -32,7 +32,7 @@ public class KernSmithGame : Game
 
         _graphics.PreferredBackBufferWidth = Math.Max(MinWindowWidth, _sessionService.State.WindowWidth);
         _graphics.PreferredBackBufferHeight = Math.Max(MinWindowHeight, _sessionService.State.WindowHeight);
-        Window.Title = "KernSmith";
+        Window.Title = "KernSmith v1.0.0";
         Window.AllowUserResizing = true;
         IsMouseVisible = true;
 
@@ -110,13 +110,16 @@ public class KernSmithGame : Game
 
         var kbState = Keyboard.GetState();
         var ctrlHeld = kbState.IsKeyDown(Keys.LeftControl) || kbState.IsKeyDown(Keys.RightControl);
+        var shiftHeld = kbState.IsKeyDown(Keys.LeftShift) || kbState.IsKeyDown(Keys.RightShift);
 
         // Only process keyboard shortcuts when no text input has focus
         if (Gum.Wireframe.InteractiveGue.CurrentInputReceiver == null)
         {
             if (ctrlHeld && IsKeyPressed(Keys.O, kbState))
                 _mainViewModel?.OpenFont();
-            if (ctrlHeld && IsKeyPressed(Keys.S, kbState))
+            if (ctrlHeld && shiftHeld && IsKeyPressed(Keys.S, kbState))
+                _mainViewModel?.SaveAs();
+            else if (ctrlHeld && IsKeyPressed(Keys.S, kbState))
                 _mainViewModel?.SaveProject();
             if (ctrlHeld && IsKeyPressed(Keys.G, kbState))
                 Task.Run(() => _mainViewModel?.GenerateAsync());
@@ -125,7 +128,7 @@ public class KernSmithGame : Game
         _previousKeyboardState = kbState;
 
         // Sync window title from view model
-        Window.Title = _mainViewModel?.WindowTitle ?? "KernSmith";
+        Window.Title = _mainViewModel?.WindowTitle ?? "KernSmith v1.0.0";
 
         GumService.Default.Update(gameTime);
         base.Update(gameTime);

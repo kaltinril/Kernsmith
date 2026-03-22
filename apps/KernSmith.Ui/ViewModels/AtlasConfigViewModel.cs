@@ -25,6 +25,9 @@ public class AtlasConfigViewModel : ViewModel
     public OutputFormat DescriptorFormat { get => Get<OutputFormat>(); set => Set(value); }
     public bool IncludeKerning { get => Get<bool>(); set => Set(value); }
 
+    // Packing algorithm
+    public int PackingAlgorithmIndex { get => Get<int>(); set => Set(value); }
+
     // Engine preset tracking
     public string SelectedPresetName { get => Get<string>(); set => Set(value); }
 

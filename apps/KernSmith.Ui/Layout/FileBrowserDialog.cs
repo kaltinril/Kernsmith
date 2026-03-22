@@ -14,6 +14,12 @@ public class FileBrowserDialog
 
     private static readonly string[] FontExtensions = [".ttf", ".otf", ".woff", ".ttc"];
 
+    /// <summary>
+    /// Optional custom file extensions filter. If set, overrides the default font extensions.
+    /// Each entry should include the leading dot (e.g., ".fnt").
+    /// </summary>
+    public string[]? FileExtensionFilter { get; set; }
+
     public void Show(Action<string> onFileSelected)
     {
         _onFileSelected = onFileSelected;
@@ -130,8 +136,9 @@ public class FileBrowserDialog
                 items.Add(Path.GetFileName(dir) + "/");
             }
 
+            var extensions = FileExtensionFilter ?? FontExtensions;
             foreach (var file in Directory.GetFiles(_currentDir)
-                .Where(f => FontExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                .Where(f => extensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
                 .OrderBy(f => Path.GetFileName(f)))
             {
                 items.Add(Path.GetFileName(file));

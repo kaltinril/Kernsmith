@@ -23,12 +23,16 @@ public class PreviewViewModel : ViewModel
     public int FailedCodepointCount { get => Get<int>(); set => Set(value); }
     public string GlyphInfoText { get => Get<string>(); set => Set(value); }
 
+    // Atlas summary
+    public string AtlasSummary { get => Get<string>(); set => Set(value); }
+
     public PreviewViewModel()
     {
         Pages = Array.Empty<PreviewPage>();
         ZoomLevel = 1.0f;
         SampleText = "Hello World";
         GlyphInfoText = "";
+        AtlasSummary = "";
     }
 
     public void LoadResult(BmFontResult result)
@@ -63,6 +67,10 @@ public class PreviewViewModel : ViewModel
             ? $"Rendered {RenderedGlyphCount}/{RequestedGlyphCount} glyphs ({FailedCodepointCount} failed)"
             : $"Rendered {RenderedGlyphCount} glyphs";
 
+        // Atlas summary with kerning pair count
+        var kpCount = result.Model.KerningPairs?.Count ?? 0;
+        AtlasSummary = $"{result.Model.Characters.Count} glyphs | Line height: {result.Model.Common.LineHeight} | Base: {result.Model.Common.Base} | {kpCount} kerning pairs";
+
         HasResult = true;
     }
 
@@ -81,5 +89,6 @@ public class PreviewViewModel : ViewModel
         SelectedPage = null;
         HasResult = false;
         GlyphInfoText = "";
+        AtlasSummary = "";
     }
 }
