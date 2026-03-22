@@ -107,6 +107,7 @@ public class FontConfigPanel : Panel
             dialog.Show(path => _mainViewModel.LoadFontFromPath(path));
         };
         stack.Children.Add(browseBtn.Visual);
+        TooltipService.SetTooltip(browseBtn, "Open a file browser to select a .ttf, .otf, or .woff font file");
 
         var sourceLabel = new Label();
         sourceLabel.Text = "No font loaded";
@@ -315,6 +316,7 @@ public class FontConfigPanel : Panel
         autoRegenCb.Checked += (_, _) => _mainViewModel.AutoRegenerate = true;
         autoRegenCb.Unchecked += (_, _) => _mainViewModel.AutoRegenerate = false;
         stack.Children.Add(autoRegenCb.Visual);
+        TooltipService.SetTooltip(autoRegenCb, "Automatically re-generate when settings change");
     }
 
     private static void AddSectionHeader(Gum.Wireframe.GraphicalUiElement parent, string text)

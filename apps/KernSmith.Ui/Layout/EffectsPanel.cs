@@ -48,6 +48,7 @@ public class EffectsPanel : Panel
         boldCheck.Checked += (_, _) => _effects.Bold = true;
         boldCheck.Unchecked += (_, _) => _effects.Bold = false;
         stack.Children.Add(boldCheck.Visual);
+        TooltipService.SetTooltip(boldCheck, "Use the bold variant of the font if available, otherwise apply synthetic bold");
 
         var italicCheck = new CheckBox();
         italicCheck.Text = "Italic";
@@ -55,6 +56,7 @@ public class EffectsPanel : Panel
         italicCheck.Checked += (_, _) => _effects.Italic = true;
         italicCheck.Unchecked += (_, _) => _effects.Italic = false;
         stack.Children.Add(italicCheck.Visual);
+        TooltipService.SetTooltip(italicCheck, "Use the italic variant if available, otherwise apply synthetic italic");
 
         var aaCheck = new CheckBox();
         aaCheck.Text = "Anti-Alias";
@@ -63,6 +65,7 @@ public class EffectsPanel : Panel
         aaCheck.Checked += (_, _) => _effects.AntiAlias = true;
         aaCheck.Unchecked += (_, _) => _effects.AntiAlias = false;
         stack.Children.Add(aaCheck.Visual);
+        TooltipService.SetTooltip(aaCheck, "Smooth glyph edges using grayscale anti-aliasing");
 
         var hintCheck = new CheckBox();
         hintCheck.Text = "Hinting";
@@ -71,11 +74,13 @@ public class EffectsPanel : Panel
         hintCheck.Checked += (_, _) => _effects.Hinting = true;
         hintCheck.Unchecked += (_, _) => _effects.Hinting = false;
         stack.Children.Add(hintCheck.Visual);
+        TooltipService.SetTooltip(hintCheck, "Apply font hinting for sharper rendering at small sizes");
 
         // Super sampling
         var ssLabel = new Label();
         ssLabel.Text = "Super Sample:";
         stack.Children.Add(ssLabel.Visual);
+        TooltipService.SetTooltip(ssLabel, "Render at higher resolution then downscale for smoother results");
 
         var ssGroup = new StackPanel();
         ssGroup.Orientation = Orientation.Horizontal;
@@ -134,7 +139,8 @@ public class EffectsPanel : Panel
                 v => _effects.OutlineColorR = v,
                 v => _effects.OutlineColorG = v,
                 v => _effects.OutlineColorB = v);
-        }, enableChanged: enabled => _effects.OutlineEnabled = enabled);
+        }, enableChanged: enabled => _effects.OutlineEnabled = enabled,
+            tooltip: "Add an outline border around each glyph");
 
         AddDivider(stack);
 
@@ -158,7 +164,8 @@ public class EffectsPanel : Panel
             // Shadow opacity slider
             AddSliderRow(contentPanel, "Opacity:", 0, 100, 100,
                 val => _effects.ShadowOpacity = val);
-        }, enableChanged: enabled => _effects.ShadowEnabled = enabled);
+        }, enableChanged: enabled => _effects.ShadowEnabled = enabled,
+            tooltip: "Add a drop shadow behind each glyph");
 
         AddDivider(stack);
 
@@ -179,7 +186,8 @@ public class EffectsPanel : Panel
 
             AddSliderRow(contentPanel, "Angle:", 0, 360, 90,
                 val => _effects.GradientAngle = val);
-        }, enableChanged: enabled => _effects.GradientEnabled = enabled);
+        }, enableChanged: enabled => _effects.GradientEnabled = enabled,
+            tooltip: "Apply a color gradient across each glyph");
 
         AddDivider(stack);
 
@@ -192,7 +200,8 @@ public class EffectsPanel : Panel
             packingCheck.Checked += (_, _) => _effects.ChannelPackingEnabled = true;
             packingCheck.Unchecked += (_, _) => _effects.ChannelPackingEnabled = false;
             contentPanel.Children.Add(packingCheck.Visual);
-        }, enableChanged: _ => { });
+        }, enableChanged: _ => { },
+            tooltip: "Pack glyph data into specific RGBA channels");
 
         AddDivider(stack);
 
@@ -205,6 +214,7 @@ public class EffectsPanel : Panel
         sdfCheck.Checked += (_, _) => _effects.SdfEnabled = true;
         sdfCheck.Unchecked += (_, _) => _effects.SdfEnabled = false;
         stack.Children.Add(sdfCheck.Visual);
+        TooltipService.SetTooltip(sdfCheck, "Signed Distance Field — scalable font rendering for game engines");
 
         // SDF + SuperSample incompatibility warning
         var sdfWarning = new TextRuntime();
@@ -219,6 +229,7 @@ public class EffectsPanel : Panel
         colorCheck.Checked += (_, _) => _effects.ColorFontEnabled = true;
         colorCheck.Unchecked += (_, _) => _effects.ColorFontEnabled = false;
         stack.Children.Add(colorCheck.Visual);
+        TooltipService.SetTooltip(colorCheck, "Render color glyphs from fonts with COLR/CPAL tables (e.g., emoji)");
 
         var colorFontHint = new TextRuntime();
         colorFontHint.Text = "Only affects fonts with color tables (e.g. emoji)";
@@ -542,12 +553,15 @@ public class EffectsPanel : Panel
         string title,
         Action<Gum.Wireframe.GraphicalUiElement> buildContent,
         Action<bool> enableChanged,
-        bool startExpanded = false)
+        bool startExpanded = false,
+        string? tooltip = null)
     {
         var enableCheck = new CheckBox();
         enableCheck.Text = title;
         enableCheck.Width = 220;
         parent.Children.Add(enableCheck.Visual);
+        if (tooltip != null)
+            TooltipService.SetTooltip(enableCheck, tooltip);
 
         // Content container with subtle background
         var contentWrapper = new ContainerRuntime();

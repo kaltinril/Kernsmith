@@ -107,6 +107,8 @@ public class KernSmithGame : Game
         _mainLayout = new MainLayout(_mainViewModel, GraphicsDevice);
         _mainLayout.AddToRoot();
 
+        TooltipService.Initialize();
+
         // Drag-and-drop font and project loading
         Window.FileDrop += (_, args) =>
         {
@@ -169,6 +171,7 @@ public class KernSmithGame : Game
         Window.Title = _mainViewModel?.WindowTitle ?? "KernSmith v1.0.0";
 
         GumService.Default.Update(gameTime);
+        TooltipService.Update();
         base.Update(gameTime);
     }
 
