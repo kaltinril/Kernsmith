@@ -706,3 +706,108 @@ internal class MyScreen : ContainerRuntime
 7. **`button.Click`** is on the Button directly (not `button.Visual.Click`)
 8. **`MenuItem.Clicked`** for menu item events (not `Click`)
 9. **`Window`** is in `Gum.Forms` namespace (not `Gum.Forms.Controls`)
+
+---
+
+## Lessons Learned (KernSmith UI Development)
+
+### Don't force heights on controls
+V3 controls (Button, TextBox, CheckBox, RadioButton, ComboBox, Label) size to their content by default. Setting explicit Height makes buttons 2-3x taller than needed. **Only set Height on**: ScrollViewer, ListBox, Window dialogs, status bars, spacer rectangles, and the small int boxes in compact layouts.
+
+```csharp
+// BAD — forces oversized button
+var btn = new Button();
+btn.Height = 28;  // unnecessary, makes it too tall
+
+// GOOD — let GUM size it
+var btn = new Button();
+btn.Text = "Click Me";
+// no Height set — sizes to content
+```
+
+### Use RelativeToParent for widths inside containers
+Controls inside a panel should use `RelativeToParent` widths, not hardcoded pixel values. Hardcoded widths break when the panel resizes.
+
+```csharp
+// Acceptable for known fixed-width panels:
+btn.Width = 230;
+
+// Better for responsive layouts:
+btn.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+btn.Width = -16;  // fill parent minus 16px margin
+```
+
+### PropertyChanged for re-generation: toggle false→true
+GUM's `Get/Set` pattern only fires `PropertyChanged` when the value actually changes. If `HasResult` is already `true` and you set it to `true` again, nothing fires. To force an update on repeated generation:
+```csharp
+HasResult = false;
+HasResult = true;  // now PropertyChanged fires
+```
+
+### Cross/diamond layout for directional inputs (padding, etc.)
+Use 3 vertical StackPanels in a horizontal StackPanel:
+```
+Column 1 (vertical): [empty] [Left]  [empty]
+Column 2 (vertical): [Up]    [label] [Down]
+Column 3 (vertical): [empty] [Right] [empty]
+```
+The empty spacers need explicit Height matching the TextBox height to align properly.
+
+### Atlas sizes should be ComboBox dropdowns, not TextBoxes
+Nobody types "2047" — use power-of-two values: 128, 256, 512, 1024, 2048, 4096, 8192.
+
+### Section headers with background bars
+Wrap a `TextRuntime` in a `ContainerRuntime` with a `ColoredRectangleRuntime` background for visual grouping:
+```csharp
+var container = new ContainerRuntime();
+container.Width = 0;
+container.WidthUnits = DimensionUnitType.RelativeToParent;
+container.Height = 22;
+
+var bg = new ColoredRectangleRuntime();
+bg.Dock(Gum.Wireframe.Dock.Fill);
+bg.Color = new Color(50, 50, 55);
+container.Children.Add(bg);
+
+var header = new TextRuntime();
+header.Text = "SECTION NAME";
+header.Color = accentColor;
+header.X = 6; header.Y = 2;
+container.Children.Add(header);
+```
+
+### Collapsible sections with background
+Wrap content in a `ContainerRuntime` with a subtle background color, toggle `Visible` on the wrapper (not individual controls):
+```csharp
+var wrapper = new ContainerRuntime();
+wrapper.HeightUnits = DimensionUnitType.RelativeToChildren;
+wrapper.Height = 8; // padding
+
+var bg = new ColoredRectangleRuntime();
+bg.Dock(Gum.Wireframe.Dock.Fill);
+bg.Color = new Color(40, 40, 44);
+wrapper.Children.Add(bg);
+
+var content = new StackPanel();
+content.Visual.X = 4; content.Visual.Y = 4;
+wrapper.Children.Add(content.Visual);
+
+// Toggle: wrapper.Visible = true/false;
+```
+
+### Engine preset buttons — abbreviate and expand on selection
+Use short labels (2-3 chars) that expand to full name when clicked:
+```csharp
+btn.Text = isSelected ? preset.Name : preset.ShortName;
+btn.Width = isSelected ? 80 : 40;
+btn.IsEnabled = !isSelected;  // disabled state = visual distinction
+```
+
+### Styling must be set BEFORE creating controls
+`Styling.ActiveStyle` only affects controls created AFTER it's set. Always configure styling right after `GumService.Default.Initialize()`, before any UI construction.
+
+### Status bar: hide empty separators
+When using `|` separators between status fields, hide them when adjacent labels are empty to avoid "Ready | | | |".
+
+### Don't read DLL/XML files for API info
+Use WebFetch on documentation URLs or read the GUM source at `c:\git\gum\` if available locally. Never grep NuGet package DLLs or XML files.

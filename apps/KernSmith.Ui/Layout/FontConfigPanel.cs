@@ -54,7 +54,6 @@ public class FontConfigPanel : Panel
             var btn = new Button();
             btn.Text = preset.ShortName;
             btn.Width = 40;
-            btn.Height = 24;
             presetButtons.Add((btn, preset));
 
             var capturedPreset = preset;
@@ -85,8 +84,7 @@ public class FontConfigPanel : Panel
 
         var browseBtn = new Button();
         browseBtn.Text = "Browse for Font...";
-        browseBtn.Width = 230;
-        browseBtn.Height = 28;
+        browseBtn.Width = 260;
         browseBtn.Click += (_, _) =>
         {
             var dialog = new FileBrowserDialog();
@@ -151,7 +149,7 @@ public class FontConfigPanel : Panel
         stack.Children.Add(familyLabel.Visual);
 
         var familyCombo = new ComboBox();
-        familyCombo.Width = 230;
+        familyCombo.Width = 260;
         stack.Children.Add(familyCombo.Visual);
 
         var styleLabel = new Label();
@@ -159,7 +157,7 @@ public class FontConfigPanel : Panel
         stack.Children.Add(styleLabel.Visual);
 
         var styleCombo = new ComboBox();
-        styleCombo.Width = 230;
+        styleCombo.Width = 260;
         stack.Children.Add(styleCombo.Visual);
 
         // Wire system font combos
@@ -266,7 +264,6 @@ public class FontConfigPanel : Panel
 
         var sizeTextBox = new TextBox();
         sizeTextBox.Width = 80;
-        sizeTextBox.Height = 28;
         sizeTextBox.Text = "32";
         sizeTextBox.TextChanged += (_, _) =>
         {
@@ -296,7 +293,7 @@ public class FontConfigPanel : Panel
         {
             var rb = new RadioButton();
             rb.Text = presets[i];
-            rb.Width = 230;
+            rb.Width = 260;
             if (i == 0) rb.IsChecked = true;
             var presetIndex = i; // capture for closure
             rb.Checked += (_, _) =>
@@ -309,7 +306,7 @@ public class FontConfigPanel : Panel
         }
 
         customTextBox = new TextBox();
-        customTextBox.Width = 230;
+        customTextBox.Width = 260;
         customTextBox.Height = 60;
         customTextBox.IsVisible = false;
         customTextBox.Placeholder = "Type characters to include...";
@@ -339,9 +336,8 @@ public class FontConfigPanel : Panel
         stack.Children.Add(generateBtnSpacer);
 
         var generateBtn = new Button();
-        generateBtn.Text = ">> Generate <<";
-        generateBtn.Width = 230;
-        generateBtn.Height = 44;
+        generateBtn.Text = "Generate";
+        generateBtn.Width = 260;
         generateBtn.IsEnabled = _fontConfig.IsFontLoaded;
         generateBtn.Click += async (_, _) => await _mainViewModel.GenerateAsync();
         stack.Children.Add(generateBtn.Visual);
@@ -356,7 +352,7 @@ public class FontConfigPanel : Panel
         // Auto-regenerate toggle
         var autoRegenCb = new CheckBox();
         autoRegenCb.Text = "Auto-regenerate";
-        autoRegenCb.Width = 230;
+        autoRegenCb.Width = 260;
         autoRegenCb.Checked += (_, _) => _mainViewModel.AutoRegenerate = true;
         autoRegenCb.Unchecked += (_, _) => _mainViewModel.AutoRegenerate = false;
         stack.Children.Add(autoRegenCb.Visual);

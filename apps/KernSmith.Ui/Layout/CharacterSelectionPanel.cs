@@ -80,7 +80,6 @@ public class CharacterSelectionPanel : Panel
         var addTextBtn = new Button();
         addTextBtn.Text = "Add";
         addTextBtn.Width = 60;
-        addTextBtn.Height = 28;
         addTextBtn.Click += (_, _) =>
         {
             var text = textBox.Text?.Trim();
@@ -148,7 +147,6 @@ public class CharacterSelectionPanel : Panel
         var selectAllBtn = new Button();
         selectAllBtn.Text = "Select All";
         selectAllBtn.Width = 80;
-        selectAllBtn.Height = 26;
         selectAllBtn.Click += (_, _) =>
         {
             // Select all standard blocks
@@ -161,7 +159,6 @@ public class CharacterSelectionPanel : Panel
         var clearBtn = new Button();
         clearBtn.Text = "Clear";
         clearBtn.Width = 60;
-        clearBtn.Height = 26;
         clearBtn.Click += (_, _) =>
         {
             _gridVm.Clear();

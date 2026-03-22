@@ -97,7 +97,6 @@ public class PreviewPanel : Panel
         _previewTabBtn = new Button();
         _previewTabBtn.Text = "Preview";
         _previewTabBtn.Width = 90;
-        _previewTabBtn.Height = 26;
         _previewTabBtn.IsEnabled = false; // active tab shown as disabled
         _previewTabBtn.Click += (_, _) => ShowTab(preview: true);
         tabBar.AddChild(_previewTabBtn);
@@ -105,7 +104,6 @@ public class PreviewPanel : Panel
         _charactersTabBtn = new Button();
         _charactersTabBtn.Text = "Characters";
         _charactersTabBtn.Width = 90;
-        _charactersTabBtn.Height = 26;
         _charactersTabBtn.Click += (_, _) => ShowTab(preview: false);
         tabBar.AddChild(_charactersTabBtn);
 
@@ -200,7 +198,6 @@ public class PreviewPanel : Panel
         var prevBtn = new Button();
         prevBtn.Text = "<";
         prevBtn.Width = 30;
-        prevBtn.Height = 24;
         prevBtn.Click += (_, _) =>
         {
             _preview.NavigatePage(-1);
@@ -211,7 +208,6 @@ public class PreviewPanel : Panel
         var nextBtn = new Button();
         nextBtn.Text = ">";
         nextBtn.Width = 30;
-        nextBtn.Height = 24;
         nextBtn.Click += (_, _) =>
         {
             _preview.NavigatePage(1);
@@ -261,7 +257,6 @@ public class PreviewPanel : Panel
         _sampleTextBox = new TextBox();
         _sampleTextBox.Width = 0;
         _sampleTextBox.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-        _sampleTextBox.Height = 28;
         _sampleTextBox.Text = _preview.SampleText;
         _sampleTextBox.Placeholder = "Type sample text...";
         _sampleTextBox.TextChanged += (_, _) =>

@@ -219,7 +219,6 @@ public class EffectsPanel : Panel
 
         var fallbackTextBox = new TextBox();
         fallbackTextBox.Width = 60;
-        fallbackTextBox.Height = 28;
         fallbackTextBox.Text = _effects.FallbackCharacter;
         fallbackTextBox.TextChanged += (_, _) =>
         {
@@ -511,24 +510,42 @@ public class EffectsPanel : Panel
         enableCheck.Width = 220;
         parent.Children.Add(enableCheck.Visual);
 
-        // Content container (initially hidden unless startExpanded)
+        // Content container with subtle background
+        var contentWrapper = new ContainerRuntime();
+        contentWrapper.X = 8;
+        contentWrapper.Width = -8;
+        contentWrapper.WidthUnits = DimensionUnitType.RelativeToParent;
+        contentWrapper.HeightUnits = DimensionUnitType.RelativeToChildren;
+        contentWrapper.Height = 8; // padding
+        contentWrapper.Visible = startExpanded;
+        parent.Children.Add(contentWrapper);
+
+        var contentBg = new ColoredRectangleRuntime();
+        contentBg.Width = 0;
+        contentBg.WidthUnits = DimensionUnitType.RelativeToParent;
+        contentBg.Height = 0;
+        contentBg.HeightUnits = DimensionUnitType.RelativeToParent;
+        contentBg.Color = new Microsoft.Xna.Framework.Color(40, 40, 44);
+        contentWrapper.Children.Add(contentBg);
+
         var content = new StackPanel();
         content.Spacing = 4;
-        content.Visual.X = 16; // indent
-        content.IsVisible = startExpanded;
-        parent.Children.Add(content.Visual);
+        content.Visual.X = 4;
+        content.Visual.Y = 4;
+        content.IsVisible = true;
+        contentWrapper.Children.Add(content.Visual);
 
         if (startExpanded)
             enableCheck.IsChecked = true;
 
         enableCheck.Checked += (_, _) =>
         {
-            content.IsVisible = true;
+            contentWrapper.Visible = true;
             enableChanged(true);
         };
         enableCheck.Unchecked += (_, _) =>
         {
-            content.IsVisible = false;
+            contentWrapper.Visible = false;
             enableChanged(false);
         };
 
@@ -588,7 +605,6 @@ public class EffectsPanel : Panel
 
         var rBox = new TextBox();
         rBox.Width = 40;
-        rBox.Height = 28;
         rBox.Text = defaultR.ToString();
         rBox.TextChanged += (_, _) =>
         {
@@ -599,7 +615,6 @@ public class EffectsPanel : Panel
 
         var gBox = new TextBox();
         gBox.Width = 40;
-        gBox.Height = 28;
         gBox.Text = defaultG.ToString();
         gBox.TextChanged += (_, _) =>
         {
@@ -610,7 +625,6 @@ public class EffectsPanel : Panel
 
         var bBox = new TextBox();
         bBox.Width = 40;
-        bBox.Height = 28;
         bBox.Text = defaultB.ToString();
         bBox.TextChanged += (_, _) =>
         {
@@ -628,7 +642,6 @@ public class EffectsPanel : Panel
 
         var box = new TextBox();
         box.Width = width;
-        box.Height = 28;
         box.Text = initialValue.ToString();
         box.TextChanged += (_, _) =>
         {
@@ -651,7 +664,6 @@ public class EffectsPanel : Panel
 
         var box = new TextBox();
         box.Width = width;
-        box.Height = 26;
         box.Text = initialValue.ToString();
         box.TextChanged += (_, _) =>
         {

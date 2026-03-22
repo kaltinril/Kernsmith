@@ -31,16 +31,30 @@ public class FileBrowserDialog
         _window.Height = 400;
         FrameworkElement.ModalRoot.Children.Add(_window.Visual);
 
+        // Title label inside the title bar
+        var windowVisual = _window.Visual as Gum.Forms.DefaultVisuals.V3.WindowVisual;
+        if (windowVisual?.TitleBarInstance != null)
+        {
+            var titleLabel = new Label();
+            titleLabel.Text = "Choose Font File";
+            titleLabel.X = 8;
+            titleLabel.Y = 2;
+            windowVisual.TitleBarInstance.AddChild(titleLabel);
+        }
+
+        // One vertical StackPanel inside the window holds everything
         var stack = new StackPanel();
         stack.Spacing = 4;
         stack.Y = 28; // below window title bar
-        stack.Dock(Gum.Wireframe.Dock.Fill);
+        stack.Visual.WidthUnits = Gum.DataTypes.DimensionUnitType.RelativeToParent;
+        stack.Width = -8;
+        stack.Visual.X = 4;
         _window.AddChild(stack);
 
+        // 1. Path box
         _pathBox = new TextBox();
-        _pathBox.Width = 0;
         _pathBox.Visual.WidthUnits = Gum.DataTypes.DimensionUnitType.RelativeToParent;
-        _pathBox.Height = 26;
+        _pathBox.Width = 0;
         _pathBox.Text = _currentDir;
         _pathBox.TextChanged += (_, _) =>
         {
@@ -53,10 +67,11 @@ public class FileBrowserDialog
         };
         stack.AddChild(_pathBox);
 
+        // 2. File list (fixed height to fill most of the dialog)
         _fileList = new ListBox();
-        _fileList.Width = 0;
         _fileList.Visual.WidthUnits = Gum.DataTypes.DimensionUnitType.RelativeToParent;
-        _fileList.Height = 280;
+        _fileList.Width = 0;
+        _fileList.Height = 300;
         stack.AddChild(_fileList);
 
         _fileList.SelectionChanged += (_, _) =>
@@ -91,6 +106,7 @@ public class FileBrowserDialog
             }
         };
 
+        // 3. Button row
         var btnRow = new StackPanel();
         btnRow.Orientation = Orientation.Horizontal;
         btnRow.Spacing = 8;
