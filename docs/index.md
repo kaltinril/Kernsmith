@@ -19,7 +19,7 @@ KernSmith is a cross-platform .NET library that generates BMFont-compatible bitm
 | [Core Library](core/index.md) | Namespaces, pipeline flow, and key classes in the KernSmith library |
 | [CLI Reference](cli/index.md) | Command-line tool for generating bitmap fonts |
 | [UI Guide](ui/index.md) | Visual interface for font configuration and preview |
-| API Reference | Auto-generated API documentation (see top navigation) |
+| [API Reference](../api/KernSmith.html) | Auto-generated API documentation |
 
 ## Quick Start
 

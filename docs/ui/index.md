@@ -26,7 +26,7 @@ The application follows the MVVM pattern using GUM's built-in `ViewModel` base c
 - **KernSmithGame** -- MonoGame `Game` subclass. Initializes GUM, creates services, handles keyboard shortcuts, drag-and-drop, UI scaling, and the game loop.
 - **MainViewModel** -- Central orchestrator. Owns all child ViewModels (`FontConfigViewModel`, `AtlasConfigViewModel`, `EffectsViewModel`, `PreviewViewModel`, `CharacterGridViewModel`, `StatusBarViewModel`), wires auto-regeneration, and manages project save/load.
 - **MainLayout** -- Root GUM container. Three-column layout (font config, preview, effects) with splitters, menu bar, and status bar.
-- **GenerationService** -- Translates a `GenerationRequest` into a `BmFont.Builder()` call chain and runs generation on a background thread.
+- **GenerationService** -- Translates a `GenerationRequest` into a <xref:KernSmith.BmFont>.Builder() call chain and runs generation on a background thread.
 
 ## Dependencies
 
