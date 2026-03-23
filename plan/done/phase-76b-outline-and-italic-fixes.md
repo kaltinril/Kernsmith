@@ -1,6 +1,6 @@
 # Phase 76B — Outline Rendering and Italic Tilt Fixes
 
-> **Status**: Planning
+> **Status**: Done
 > **Created**: 2026-03-22
 > **Goal**: Fix EDT outline counter-fill bug and italic tilt differences vs BMFont.
 
@@ -141,3 +141,19 @@ if (options.Italic && (_face->style_flags & 0x02) == 0)
 | Italic application | `src/KernSmith/Rasterizer/FreeTypeRasterizer.cs` (lines 204-207) |
 | Phase 12 Track D | `plan/done/phase-12-pre-ship-polish.md` (lines 105-150) |
 | Phase 9 outline overhaul | `plan/done/phase-09-outline-overhaul.md` |
+
+---
+
+## Decisions
+
+### Problem 1: Fixed with Option A — Flood-Fill EDT Fix
+
+The OutlineEffect uses a BFS flood-fill from image edges through zero-alpha pixels to distinguish true exterior pixels from counter (hole) pixels. Counter pixels (zero-alpha but unreachable from edges) are excluded from outline rendering. Applied in OutlineEffect.cs between EDT computation and RGBA output generation. This prevents letter counters from filling in at large sizes with thick outlines.
+
+### Problem 2: Accepted Option C — Document as Known Limitation
+
+The 12-degree synthetic italic angle already matches BMFont's GDI angle. The remaining visual differences are inherent to FreeType vs GDI rasterization — different hinting engines (FreeType auto-hinter vs GDI grid-fitting) and different anti-aliasing modes (grayscale AA vs ClearType). Documented as a known limitation; no code change required.
+
+### Bonus: Synthetic Bold Counter Bloat Fix
+
+FreeType's `FT_GlyphSlot_Embolden` uses strength `ppem/24` which is too aggressive at larger sizes — fills letter counters in heavy fonts like Bauhaus 93. Replaced with custom `EmboldenGlyph` method using `FT_Outline_Embolden` at `ppem/36` strength (minimum 0.5px) to better approximate GDI's lighter synthetic bold. Metric adjustments after emboldening: width += 2*strength, height += 2*strength, horiBearingY += strength, horiAdvance += strength, vertAdvance += strength. horiBearingX is NOT adjusted.

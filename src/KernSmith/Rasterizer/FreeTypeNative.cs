@@ -87,6 +87,17 @@ internal static unsafe class FreeTypeNative
     [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
     public static extern void FT_Done_Glyph(IntPtr glyph);
 
+    // ---------------------------------------------------------------
+    // FT_Outline_Embolden — lightweight synthetic bold
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// Emboldens a glyph outline by moving contour points outward.
+    /// <paramref name="strength"/> is in 26.6 fixed-point units (64 = 1 pixel).
+    /// </summary>
+    [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern FT_Error FT_Outline_Embolden(FT_Outline_* outline, int strength);
+
     /// <summary>
     /// Reads the FT_BitmapGlyphRec_ fields from a glyph pointer after FT_Glyph_To_Bitmap.
     /// Uses manual pointer arithmetic to avoid struct layout portability issues.

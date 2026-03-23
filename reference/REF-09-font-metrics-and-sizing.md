@@ -511,7 +511,8 @@ The rasterization pipeline differs at every stage: outline interpretation, scan 
 
 ### FreeType
 
-- `FT_GlyphSlot_Embolden(slot)` thickens glyph strokes
+- `FT_GlyphSlot_Embolden(slot)` thickens glyph strokes using strength `ppem/24` (in 26.6 units)
+- At size 72 this is 3px — too aggressive, fills letter counters in heavy fonts like Bauhaus 93
 - Applied after loading, before rendering
 - Only applied when font lacks native bold variant (`style_flags & 0x01 == 0`)
 - KernSmith tries loading bold font variant first; falls back to synthetic
@@ -520,13 +521,20 @@ The rasterization pipeline differs at every stage: outline interpretation, scan 
 
 - `CreateFont()` with `lfWeight = FW_BOLD (700)`
 - GDI loads native bold face if available, otherwise synthesizes
-- Synthetic bold in GDI adds 1 pixel overstrike at small sizes, more at larger sizes
+- GDI's synthetic bold is lighter and scales differently than FreeType's
+- Exact algorithm is undocumented but empirically closer to `ppem/36` strength
 
-### Difference
+### KernSmith Approach
 
-- Both approaches produce different visual results
-- FreeType's embolden modifies outline control points; GDI overstrikes the rendered bitmap
-- At larger sizes, FreeType bold may appear thicker or thinner than GDI bold
+- Uses `FT_Outline_Embolden` with `ppem/36` strength as a GDI approximation (minimum 0.5px)
+- Lighter than FreeType's default `ppem/24`, preserves letter counters in heavy fonts
+- Metric adjustments after emboldening must match FreeType's internal behavior:
+  - `width += 2 * strength`
+  - `height += 2 * strength`
+  - `horiBearingY += strength`
+  - `horiAdvance += strength`
+  - `vertAdvance += strength`
+  - Do NOT adjust `horiBearingX`
 
 ---
 
@@ -534,7 +542,7 @@ The rasterization pipeline differs at every stage: outline interpretation, scan 
 
 ### FreeType
 
-- `FT_GlyphSlot_Oblique(slot)` applies a fixed 12-degree shear matrix
+- `FT_GlyphSlot_Oblique(slot)` applies a fixed 12-degree shear matrix after glyph loading
 - Shear factor: `tan(12 deg) = 0.2126`
 - Transform matrix: `[1.0, 0.2126; 0.0, 1.0]` (in FreeType 16.16 fixed-point: `0x000036B8`)
 - Only applied when font lacks native italic flag (`style_flags & 0x02 == 0`)
@@ -542,9 +550,10 @@ The rasterization pipeline differs at every stage: outline interpretation, scan 
 
 ### Windows GDI
 
-- `CreateFont()` with `lfItalic = TRUE`
+- `CreateFont()` with `lfItalic = TRUE` applies 12-degree shear during rasterization
 - GDI also uses approximately 12-degree shear for synthetic italic
-- Visual differences arise from different hinting and rasterization, not the angle
+- Visual differences arise from different hinting engines (GDI ClearType vs FreeType grayscale) and rasterization, not the angle
+- Cannot be fixed while using FreeType — would require a pluggable rasterizer (Phase 78)
 
 ### Font's Own Italic Angle
 
@@ -561,7 +570,14 @@ The rasterization pipeline differs at every stage: outline interpretation, scan 
 - Computes distance from each pixel to nearest glyph edge
 - Outline alpha = `clamp(outlineWidth - distance + 0.5, 0, 255)`
 - Anti-aliased, smooth results
-- **Known issue**: Treats counter (hole) regions same as exterior --- outline expands inward into counters at thick widths
+- EDT expands bidirectionally — both outward and into letter counters
+
+### Outline Counter Protection
+
+- BFS flood-fill from image edges through zero-alpha pixels identifies true exterior pixels
+- Counter pixels (zero-alpha but unreachable from edges) are excluded from outline rendering
+- Applied in OutlineEffect.cs between EDT computation and RGBA output generation
+- Fixes the counter-fill problem at large sizes with thick outlines
 
 ### FT_Stroker (FreeType Native) --- Implemented but Disabled
 
