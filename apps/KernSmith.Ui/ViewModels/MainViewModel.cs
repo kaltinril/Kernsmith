@@ -82,7 +82,11 @@ public class MainViewModel : ViewModel
             }
         };
 
-        AtlasConfig.PropertyChanged += (_, _) => MarkDirty();
+        AtlasConfig.PropertyChanged += (_, _) =>
+        {
+            MarkDirty();
+            RequestAutoRegenerateDebounced();
+        };
         Effects.PropertyChanged += (_, e) =>
         {
             MarkDirty();

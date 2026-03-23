@@ -1,4 +1,5 @@
 using Gum.DataTypes;
+using Gum.Managers;
 using Gum.Forms.Controls;
 using KernSmith.Output.Model;
 using KernSmith.Ui.Models;
@@ -45,8 +46,7 @@ public class PreviewPanel : Panel
     private ActiveTab _activeTab = ActiveTab.Preview;
 
     // Sample text rendering
-    private SpriteRuntime? _sampleTextSprite;
-    private Texture2D? _sampleTextTexture;
+    private ContainerRuntime? _sampleTextContainer;
     private TextBox? _sampleTextBox;
     private List<Texture2D>? _atlasPageTextures;
 
@@ -127,8 +127,8 @@ public class PreviewPanel : Panel
         tabBar.AddChild(_charactersTabBtn);
 
         _sampleTextTabBtn = new Button();
-        _sampleTextTabBtn.Text = "Sample Text";
-        _sampleTextTabBtn.Width = 100;
+        _sampleTextTabBtn.Text = "Sample";
+        _sampleTextTabBtn.Width = 70;
         _sampleTextTabBtn.Click += (_, _) => SwitchTab(ActiveTab.SampleText);
         tabBar.AddChild(_sampleTextTabBtn);
 
@@ -343,8 +343,8 @@ public class PreviewPanel : Panel
                     _navRow.IsVisible = false;
                     if (_toolbarRow != null)
                         _toolbarRow.IsVisible = false;
-                    if (_sampleTextSprite != null)
-                        _sampleTextSprite.Visible = false;
+                    if (_sampleTextContainer != null)
+                        _sampleTextContainer.Visible = false;
                 }
             }
         };
@@ -544,12 +544,14 @@ public class PreviewPanel : Panel
         samplePlaceholder.Anchor(Gum.Wireframe.Anchor.Center);
         _sampleTextContent.AddChild(samplePlaceholder);
 
-        // Rendered sample text sprite
-        _sampleTextSprite = new SpriteRuntime();
-        _sampleTextSprite.Visible = false;
-        _sampleTextSprite.X = 8;
-        _sampleTextSprite.Y = 44;
-        _sampleTextContent.AddChild(_sampleTextSprite);
+        // Container for per-glyph sprites
+        _sampleTextContainer = new ContainerRuntime();
+        _sampleTextContainer.Visible = false;
+        _sampleTextContainer.X = 8;
+        _sampleTextContainer.Y = 44;
+        _sampleTextContainer.WidthUnits = DimensionUnitType.RelativeToChildren;
+        _sampleTextContainer.HeightUnits = DimensionUnitType.RelativeToChildren;
+        _sampleTextContent.Visual.Children.Add(_sampleTextContainer);
 
         // Hide placeholder when result is available
         _preview.PropertyChanged += (_, e) =>
@@ -562,12 +564,15 @@ public class PreviewPanel : Panel
     private void RenderSampleText()
     {
         var model = _preview.Model;
-        if (model == null || _sampleTextSprite == null) return;
+        if (model == null || _sampleTextContainer == null) return;
+
+        // Clear previous glyph sprites
+        _sampleTextContainer.Children.Clear();
 
         var text = _preview.SampleText ?? "";
         if (string.IsNullOrEmpty(text))
         {
-            _sampleTextSprite.Visible = false;
+            _sampleTextContainer.Visible = false;
             return;
         }
 
@@ -592,54 +597,34 @@ public class PreviewPanel : Panel
             foreach (var page in _preview.Pages)
             {
                 using var stream = new MemoryStream(page.PngData);
-                _atlasPageTextures.Add(Texture2D.FromStream(_graphicsDevice, stream));
+                var tex = Texture2D.FromStream(_graphicsDevice, stream);
+
+                // Grayscale atlas: MonoGame loads as (L,L,L,255). Convert to (255,255,255,L)
+                // so luminance becomes alpha and black background is transparent.
+                var pixels = new Color[tex.Width * tex.Height];
+                tex.GetData(pixels);
+                for (int i = 0; i < pixels.Length; i++)
+                {
+                    var l = pixels[i].R;
+                    pixels[i] = new Color(l, l, l, l);
+                }
+                tex.SetData(pixels);
+
+                _atlasPageTextures.Add(tex);
             }
         }
 
         if (_atlasPageTextures.Count == 0) return;
 
         var lineHeight = model.Common.LineHeight;
-        var baseLine = model.Common.Base;
-
-        // Handle multi-line text: split by newlines
+        var padLeft = model.Info.Padding.Left;
+        var padTop = model.Info.Padding.Up;
         var lines = text.Split('\n');
 
-        // First pass: measure total size needed
-        int totalWidth = 0;
-        int totalHeight = lineHeight * lines.Length;
-
-        foreach (var line in lines)
-        {
-            int lineWidth = 0;
-            int prevId = -1;
-            foreach (var c in line)
-            {
-                int id = c;
-                if (!charMap.TryGetValue(id, out var entry)) continue;
-
-                if (prevId >= 0 && kerningMap.TryGetValue((prevId, id), out var kern))
-                    lineWidth += kern;
-
-                lineWidth += entry.XAdvance;
-                prevId = id;
-            }
-            totalWidth = Math.Max(totalWidth, lineWidth);
-        }
-
-        if (totalWidth <= 0 || totalHeight <= 0)
-        {
-            _sampleTextSprite.Visible = false;
-            return;
-        }
-
-        // Clamp to reasonable max to avoid huge texture allocations
-        totalWidth = Math.Min(totalWidth + 4, 4096);
-        totalHeight = Math.Min(totalHeight + 4, 4096);
-
-        // Create pixel buffer and composite glyphs
-        var pixels = new Color[totalWidth * totalHeight];
-
         int cursorY = 0;
+        int maxRight = 0;
+        int maxBottom = 0;
+
         foreach (var line in lines)
         {
             int cursorX = 0;
@@ -654,37 +639,25 @@ public class PreviewPanel : Panel
                 if (prevId >= 0 && kerningMap.TryGetValue((prevId, id), out var kern))
                     cursorX += kern;
 
-                // Get the source atlas page texture
                 if (entry.Page >= 0 && entry.Page < _atlasPageTextures.Count && entry.Width > 0 && entry.Height > 0)
                 {
-                    var atlasTexture = _atlasPageTextures[entry.Page];
-                    var srcPixels = new Color[atlasTexture.Width * atlasTexture.Height];
-                    atlasTexture.GetData(srcPixels);
+                    var glyph = new SpriteRuntime();
+                    glyph.Texture = _atlasPageTextures[entry.Page];
+                    glyph.TextureLeft = entry.X + padLeft;
+                    glyph.TextureTop = entry.Y + padTop;
+                    glyph.TextureWidth = entry.Width;
+                    glyph.TextureHeight = entry.Height;
+                    glyph.TextureAddress = TextureAddress.Custom;
+                    glyph.X = cursorX + entry.XOffset;
+                    glyph.Y = cursorY + entry.YOffset;
+                    glyph.WidthUnits = DimensionUnitType.Absolute;
+                    glyph.HeightUnits = DimensionUnitType.Absolute;
+                    glyph.Width = entry.Width;
+                    glyph.Height = entry.Height;
+                    _sampleTextContainer.Children.Add(glyph);
 
-                    // Copy glyph pixels from atlas to output
-                    int destX = cursorX + entry.XOffset;
-                    int destY = cursorY + entry.YOffset;
-
-                    for (int gy = 0; gy < entry.Height; gy++)
-                    {
-                        for (int gx = 0; gx < entry.Width; gx++)
-                        {
-                            int sx = entry.X + gx;
-                            int sy = entry.Y + gy;
-                            int dx = destX + gx;
-                            int dy = destY + gy;
-
-                            if (sx >= 0 && sx < atlasTexture.Width &&
-                                sy >= 0 && sy < atlasTexture.Height &&
-                                dx >= 0 && dx < totalWidth &&
-                                dy >= 0 && dy < totalHeight)
-                            {
-                                var srcColor = srcPixels[sy * atlasTexture.Width + sx];
-                                if (srcColor.A > 0)
-                                    pixels[dy * totalWidth + dx] = srcColor;
-                            }
-                        }
-                    }
+                    maxRight = Math.Max(maxRight, cursorX + entry.XOffset + entry.Width);
+                    maxBottom = Math.Max(maxBottom, cursorY + entry.YOffset + entry.Height);
                 }
 
                 cursorX += entry.XAdvance;
@@ -694,15 +667,12 @@ public class PreviewPanel : Panel
             cursorY += lineHeight;
         }
 
-        // Create the output texture
-        _sampleTextTexture?.Dispose();
-        _sampleTextTexture = new Texture2D(_graphicsDevice, totalWidth, totalHeight);
-        _sampleTextTexture.SetData(pixels);
-
-        _sampleTextSprite.Texture = _sampleTextTexture;
-        _sampleTextSprite.Width = totalWidth;
-        _sampleTextSprite.Height = totalHeight;
-        _sampleTextSprite.Visible = true;
+        // Set container size explicitly so nothing gets clipped
+        _sampleTextContainer.WidthUnits = DimensionUnitType.Absolute;
+        _sampleTextContainer.HeightUnits = DimensionUnitType.Absolute;
+        _sampleTextContainer.Width = maxRight;
+        _sampleTextContainer.Height = maxBottom;
+        _sampleTextContainer.Visible = true;
     }
 
     private void DisposeAtlasPageTextures()

@@ -1,6 +1,6 @@
 # Phase 72 — UI Issues Round 2
 
-> **Status**: Complete
+> **Status**: Partial
 > **Created**: 2026-03-22
 > **Goal**: Fix remaining UI issues found during manual testing.
 
@@ -48,6 +48,8 @@
 | 13 | Character set shows up twice — redundant | **Fixed** | Removed dead `SelectedPreset`/`CustomCharacters`/`GetCharacterSet`/`UpdateCharacterCount` from `FontConfigViewModel`; characters tab is the single source |
 | 11 | Color font checkbox doesn't seem to do anything | **Fixed** | Feature is fully implemented; added warning when enabled on a font without color tables so users understand why nothing changes |
 | 14 | Atlas size setting seems ignored — output was 256x256 despite 1024x1024 | **Fixed** | Working as designed — Autofit shrinks atlas to fit. Improved tooltips on Max Size and Autofit to explain the relationship |
+| 20 | Sample text preview — background not transparent, bottom pixels clipped | **Open** | Per-glyph sprite approach renders correctly but: (1) black background behind text instead of transparent, (2) last row of pixels on glyphs is cut off. May be a GUM container clipping or sprite sizing issue. |
+| 21 | Atlas preview rendering slightly degraded vs saved PNG | **Open** | PointClamp sampler helped but preview still shows minor artifacts vs the saved PNG at 1:1 zoom. Likely sub-pixel alignment or GUM sprite scaling issue. |
 
 ---
 

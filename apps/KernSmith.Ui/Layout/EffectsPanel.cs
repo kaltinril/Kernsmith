@@ -696,12 +696,12 @@ public class EffectsPanel : Panel
     {
         var row = new StackPanel();
         row.Orientation = Orientation.Horizontal;
-        row.Spacing = 4;
+        row.Spacing = 2;
         parent.Children.Add(row.Visual);
 
         var lbl = new Label();
         lbl.Text = label;
-        lbl.Width = 70;
+        lbl.Width = 50;
         row.AddChild(lbl);
 
         var slider = new Slider();
@@ -754,7 +754,6 @@ public class EffectsPanel : Panel
         swatch.Color = new Microsoft.Xna.Framework.Color(defaultR, defaultG, defaultB);
         swatchContainer.Children.Add(swatch);
 
-        // Swatch border for visibility against dark backgrounds
         var swatchBorder = new ColoredRectangleRuntime();
         swatchBorder.Width = 0;
         swatchBorder.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -763,18 +762,14 @@ public class EffectsPanel : Panel
         swatchBorder.Color = Theme.PanelBorder;
         swatchContainer.Children.Insert(0, swatchBorder);
 
-        // Hex input (e.g., "#FF0000" or "FF0000")
+        // Hex input
         var hexBox = new TextBox();
         hexBox.Width = 80;
         hexBox.Text = $"#{defaultR:X2}{defaultG:X2}{defaultB:X2}";
-        TooltipService.SetTooltip(hexBox, "Enter a hex color value (e.g., #FF0000 or FF0000)");
-
-        byte currentR = defaultR, currentG = defaultG, currentB = defaultB;
-        bool updatingFromSlider = false;
+        TooltipService.SetTooltip(hexBox, "Hex color (e.g., #FF0000)");
 
         hexBox.TextChanged += (_, _) =>
         {
-            if (updatingFromSlider) return;
             var hex = hexBox.Text?.Trim() ?? "";
             if (hex.StartsWith('#')) hex = hex[1..];
             if (hex.Length == 6 &&
@@ -782,64 +777,11 @@ public class EffectsPanel : Panel
                 byte.TryParse(hex[2..4], System.Globalization.NumberStyles.HexNumber, null, out var g) &&
                 byte.TryParse(hex[4..6], System.Globalization.NumberStyles.HexNumber, null, out var b))
             {
-                currentR = r; currentG = g; currentB = b;
                 onRChanged(r); onGChanged(g); onBChanged(b);
                 swatch.Color = new Microsoft.Xna.Framework.Color(r, g, b);
             }
         };
         row.AddChild(hexBox);
-
-        // R/G/B individual component boxes (compact, for fine-tuning)
-        var rBox = new TextBox();
-        rBox.Width = 34;
-        rBox.Text = defaultR.ToString();
-        rBox.TextChanged += (_, _) =>
-        {
-            if (byte.TryParse(rBox.Text, out var val))
-            {
-                currentR = val;
-                onRChanged(val);
-                swatch.Color = new Microsoft.Xna.Framework.Color(currentR, currentG, currentB);
-                updatingFromSlider = true;
-                hexBox.Text = $"#{currentR:X2}{currentG:X2}{currentB:X2}";
-                updatingFromSlider = false;
-            }
-        };
-        row.AddChild(rBox);
-
-        var gBox = new TextBox();
-        gBox.Width = 34;
-        gBox.Text = defaultG.ToString();
-        gBox.TextChanged += (_, _) =>
-        {
-            if (byte.TryParse(gBox.Text, out var val))
-            {
-                currentG = val;
-                onGChanged(val);
-                swatch.Color = new Microsoft.Xna.Framework.Color(currentR, currentG, currentB);
-                updatingFromSlider = true;
-                hexBox.Text = $"#{currentR:X2}{currentG:X2}{currentB:X2}";
-                updatingFromSlider = false;
-            }
-        };
-        row.AddChild(gBox);
-
-        var bBox = new TextBox();
-        bBox.Width = 34;
-        bBox.Text = defaultB.ToString();
-        bBox.TextChanged += (_, _) =>
-        {
-            if (byte.TryParse(bBox.Text, out var val))
-            {
-                currentB = val;
-                onBChanged(val);
-                swatch.Color = new Microsoft.Xna.Framework.Color(currentR, currentG, currentB);
-                updatingFromSlider = true;
-                hexBox.Text = $"#{currentR:X2}{currentG:X2}{currentB:X2}";
-                updatingFromSlider = false;
-            }
-        };
-        row.AddChild(bBox);
     }
 
     private static void AddLabeledIntBox(StackPanel parent, string label, int initialValue, int width, Action<int> onChanged)

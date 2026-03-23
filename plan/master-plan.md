@@ -1,7 +1,7 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-18, 20, and 21 complete. Phase 30 (WASM) is future/exploratory. Phases 60-69 (UI) in planning.
-> **Date**: 2026-03-21
+> **Status**: Phases 1-21, 60-68, 73-74 complete. Phase 30 (WASM) is future/exploratory. Phases 55, 69, 72 partial. Phases 75-77 active.
+> **Date**: 2026-03-22
 
 ---
 
@@ -79,22 +79,14 @@ Output Layer
 
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
-| 21 | [Atlas Output Modes](phase-21-atlas-output-modes.md) | Combined batch atlas, render-to-existing-PNG, atlas size query & constraints | Planning |
 | 30 | [WASM Rasterization](phase-30-wasm-rasterization.md) | Live investigation of WASM-compatible rasterizers (prior research was preliminary) | Future |
 | 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
 | 55 | [UI Core Library Prerequisites](phase-55-ui-core-library-prerequisites.md) | API additions needed by the UI: public font reader, missing builder methods, FontInfo expansion, CancellationToken, progress reporting | Partial |
-| 60 | [UI MVP](done/phase-60-ui-mvp.md) | MonoGame + GUM UI app: project scaffold, three-panel layout, font loading, basic generation | Complete |
-| 61 | [Font Loading & Character Selection](done/phase-61-ui-font-character-selection.md) | System font browser, BMFont-style character grid, Unicode block sidebar, text-based selection | Complete |
-| 62 | [Effects System UI](done/phase-62-ui-effects-system.md) | Outline, shadow, gradient controls with interactive angle/offset pads, channel config | Complete |
-| 63 | [Atlas & Texture Configuration](done/phase-63-ui-atlas-texture-config.md) | Atlas size, padding/spacing, packing algorithm, output format, metrics display | Complete |
-| 64 | [Live Preview & Visualization](done/phase-64-ui-preview-visualization.md) | Atlas preview with zoom/pan, glyph inspector, sample text, kerning visualization | Complete |
-| 65 | [Project Management & File Operations](done/phase-65-ui-project-file-operations.md) | Menu system, save/load .bmfc, export, import, undo/redo, recent files | Complete |
-| 66 | [Advanced Features](done/phase-66-ui-advanced-features.md) | Variable fonts, SDF, custom glyphs, batch generation, font inspector, color fonts | Complete |
-| 67 | [Workflow & UX Polish](done/phase-67-ui-workflow-ux-polish.md) | Guided workflow, engine presets, contextual help, drag-and-drop, themes | Complete |
-| 68 | [Platform, Performance & Accessibility](done/phase-68-ui-platform-performance.md) | Background generation, cross-platform, keyboard accessibility, error handling, packaging | Complete |
 | 69 | [Final Polish & Release Prep](phase-69-ui-final-polish.md) | UI consistency, branding, testing, distribution, marketing assets, release checklist | Partial |
-| 73 | [Documentation Review](done/phase-73-documentation-review.md) | XML doc comments, class/method summaries, README gaps across library, CLI, and UI | Complete |
-| 74 | [MIT License](phase-74-mit-license.md) | Switch all license references from proprietary to MIT | Planning |
+| 72 | [UI Issues Round 2](phase-72-ui-issues-round2.md) | Fix remaining UI issues found during manual testing | Partial |
+| 75 | [DocFX Docs Site Fixes](phase-75-docs-site-fixes.md) | Fix issues found on the deployed DocFX documentation site | In Progress |
+| 76 | [Metrics Parity with BMFont](phase-76-metrics-parity.md) | Investigate and fix glyph metric differences between KernSmith and BMFont output | Planning |
+| 77 | [Color Picker Dialog](phase-77-color-picker-dialog.md) | Build a reusable color picker dialog that opens when clicking a color swatch | Planning |
 
 ---
 
@@ -121,6 +113,20 @@ Output Layer
 | 17 | [Rebrand to KernSmith](done/phase-17-rebrand-kernsmith.md) | Full project rename from bmfontier to KernSmith |
 | 18 | [API Usability](done/phase-18-api-usability.md) | FromConfig, convenience properties, GetPngData, ToBmfc, Builder.FromConfig, init CLI command |
 | 20 | [Release Readiness](done/phase-20-release-readiness.md) | Version alignment, package icon, dotnet pack, CI verification, GitHub polish, first NuGet publish |
+| 21 | [Atlas Output Modes](phase-21-atlas-output-modes.md) | Combined batch atlas, render-to-existing-PNG, atlas size query & constraints |
+| 60 | [UI MVP](done/phase-60-ui-mvp.md) | MonoGame + GUM UI app: project scaffold, three-panel layout, font loading, basic generation |
+| 61 | [Font Loading & Character Selection](done/phase-61-ui-font-character-selection.md) | System font browser, BMFont-style character grid, Unicode block sidebar, text-based selection |
+| 62 | [Effects System UI](done/phase-62-ui-effects-system.md) | Outline, shadow, gradient controls with interactive angle/offset pads, channel config |
+| 63 | [Atlas & Texture Configuration](done/phase-63-ui-atlas-texture-config.md) | Atlas size, padding/spacing, packing algorithm, output format, metrics display |
+| 64 | [Live Preview & Visualization](done/phase-64-ui-preview-visualization.md) | Atlas preview with zoom/pan, glyph inspector, sample text, kerning visualization |
+| 65 | [Project Management & File Operations](done/phase-65-ui-project-file-operations.md) | Menu system, save/load .bmfc, export, import, undo/redo, recent files |
+| 66 | [Advanced Features](done/phase-66-ui-advanced-features.md) | Variable fonts, SDF, custom glyphs, batch generation, font inspector, color fonts |
+| 67 | [Workflow & UX Polish](done/phase-67-ui-workflow-ux-polish.md) | Guided workflow, engine presets, contextual help, drag-and-drop, themes |
+| 68 | [Platform, Performance & Accessibility](done/phase-68-ui-platform-performance.md) | Background generation, cross-platform, keyboard accessibility, error handling, packaging |
+| 70 | [UI Manual Review](done/phase-70-ui-manual-review.md) | Manual review and testing of UI application |
+| 71 | [UI Stabilization](done/phase-71-ui-stabilization.md) | UI bug fixes and stabilization |
+| 73 | [Documentation Review](done/phase-73-documentation-review.md) | XML doc comments, class/method summaries, README gaps across library, CLI, and UI |
+| 74 | [MIT License](phase-74-mit-license.md) | Switch all license references from proprietary to MIT |
 
 ### Topical Plan Docs (archived in `done/`)
 
@@ -195,7 +201,7 @@ Convenience API for game developers: BmFont.FromConfig() one-liner, FntText/FntX
 ### Phase 20 -- Release Readiness (COMPLETE)
 Version alignment, package icon, dotnet pack verification, CI smoke test, SourceLink check, GitHub repo polish, first NuGet publish, sample project updates.
 
-### Phase 21 -- Atlas Output Modes (PLANNING)
+### Phase 21 -- Atlas Output Modes (COMPLETE)
 Combined batch atlas output (multiple fonts into shared PNG), render-to-existing-PNG at target rectangle, and atlas size query/constraint API (square, power-of-2, fixed-width modes).
 
 ### Phase 50 -- In-Memory Layer Retention (FUTURE)
@@ -254,6 +260,30 @@ Background generation with ConcurrentQueue thread marshaling (MonoGame requires 
 
 ### Phase 69 -- Final Polish & Release Prep (PARTIAL)
 UI consistency audit across all custom GUM components. Visual polish (app icon, splash screen, about dialog, GameTime-based animations). First-run tutorial overlay. ViewModel unit tests and integration tests with real fonts. Platform builds via dotnet publish. Marketing screenshots, demo GIF, sample .bmfc projects. Known issues documentation. Release checklist and v1.1 roadmap.
+
+### Phase 70 -- UI Manual Review (COMPLETE)
+Manual review and testing of the UI application. Identified issues and areas for improvement.
+
+### Phase 71 -- UI Stabilization (COMPLETE)
+Bug fixes and stabilization of the UI application based on manual review findings.
+
+### Phase 72 -- UI Issues Round 2 (PARTIAL)
+Fix remaining UI issues found during manual testing. Second round of bug fixes and improvements.
+
+### Phase 73 -- Documentation Review (COMPLETE)
+XML doc comments, class/method summaries, README gaps across library, CLI, and UI.
+
+### Phase 74 -- MIT License (COMPLETE)
+Switch all license references from proprietary to MIT. Updated LICENSE file, .csproj, README, CLAUDE.md, CHANGELOG, and plan docs.
+
+### Phase 75 -- DocFX Docs Site Fixes (IN PROGRESS)
+Fix issues found on the deployed DocFX documentation site at https://kaltinril.github.io/Kernsmith/.
+
+### Phase 76 -- Metrics Parity with BMFont (PLANNING)
+Investigate and fix glyph metric differences between KernSmith and BMFont output.
+
+### Phase 77 -- Color Picker Dialog (PLANNING)
+Build a reusable color picker dialog that opens when clicking a color swatch in the UI.
 
 ---
 
