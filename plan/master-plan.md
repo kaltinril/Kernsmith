@@ -84,6 +84,12 @@ Output Layer
 | 76 | [Metrics Parity with BMFont](phase-76-metrics-parity.md) | Investigate and fix glyph metric differences between KernSmith and BMFont output | Planning |
 | 77 | [Color Picker Dialog](phase-77-color-picker-dialog.md) | Build a reusable color picker dialog that opens when clicking a color swatch | Planning |
 | 80 | [Atlas Preview Rendering](phase-80-atlas-preview-rendering.md) | Fix atlas preview rendering quality in UI to match saved PNG | Planning |
+| 81 | [Hiero Format Support](phase-81-hiero-format-support.md) | Hiero `.hiero` config format specification and design decisions | Planning |
+| 82 | [Hiero Core Library](phase-82-hiero-core-library.md) | Add `.hiero` config read/write to the NuGet library | Planning |
+| 83 | [Hiero UI Changes](phase-83-hiero-ui-changes.md) | Update UI for `.hiero` file dialogs, drag-drop, project service | Planning |
+| 84 | [Hiero CLI Changes](phase-84-hiero-cli-changes.md) | Update CLI for `.hiero` format auto-detection and batch support | Planning |
+| 85 | [Hiero Documentation](phase-85-hiero-documentation.md) | Document `.hiero` support in README, CLI docs, samples | Planning |
+| 100 | [Hiero Advanced Features](phase-100-hiero-advanced-features.md) | Advanced Hiero features requiring new KernSmith properties | Future |
 
 ---
 
@@ -290,6 +296,28 @@ Build a reusable color picker dialog that opens when clicking a color swatch in 
 ### Phase 80 -- Atlas Preview Rendering Quality (PLANNING)
 Fix atlas preview rendering in the UI to match the saved PNG at 1:1 zoom. Cosmetic issue only — saved output is correct.
 
+### Hiero Format Support Phases (81-85, 100)
+
+Add read/write support for the libGDX Hiero `.hiero` configuration file format. Enables KernSmith ↔ Hiero round-trip: export fonts to `.hiero`, import them back.
+
+### Phase 81 -- Hiero Format Support (PLANNING)
+Format specification, property mapping, and design decisions for `.hiero` config support. Reference phase — no code changes.
+
+### Phase 82 -- Hiero Core Library Changes (PLANNING)
+Implement `HieroConfigReader`, `HieroConfigWriter`, `ConfigFormatFactory`, and public API updates (`ToHiero()`, format auto-detection in `FromConfig()`).
+
+### Phase 83 -- Hiero UI Changes (PLANNING)
+Update file dialogs, drag-drop, and `ProjectService` to support `.hiero` alongside `.bmfc`.
+
+### Phase 84 -- Hiero CLI Changes (PLANNING)
+Update CLI config parsing, init command, and batch command for `.hiero` format auto-detection.
+
+### Phase 85 -- Hiero Documentation (PLANNING)
+Document `.hiero` support in README, CLI docs, samples, NuGet metadata, and CHANGELOG.
+
+### Phase 100 -- Hiero Advanced Features (FUTURE)
+Deferred Hiero features requiring new KernSmith properties: fill color, per-glyph advance, two-param blur, gradient extras, SDF scale/spread, wobble/zigzag effects.
+
 ---
 
 ## Reference Documents
@@ -302,6 +330,7 @@ Fix atlas preview rendering in the UI to match the saved PNG at 1:1 zoom. Cosmet
 | REF-04 | [Other Font Formats](../reference/REF-04-other-font-formats-reference.md) | WOFF, OTF, and other format details |
 | REF-05 | [BMFont Format Reference](../reference/REF-05-bmfont-format-reference.md) | BMFont file format specification |
 | REF-06 | [Texture Packing Reference](../reference/REF-06-texture-packing-reference.md) | Rectangle packing algorithm research |
+| REF-10 | [Hiero Format Reference](../reference/REF-10-hiero-format-reference.md) | Hiero `.hiero` configuration file format specification |
 
 ---
 
