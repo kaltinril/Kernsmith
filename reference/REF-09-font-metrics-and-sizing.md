@@ -504,3 +504,114 @@ The rasterization pipeline differs at every stage: outline interpretation, scan 
    - An "em height" mode is available, equivalent to BMFont's "Match char height" option.
    - Minor per-glyph differences (1px) compared to BMFont are expected due to different rasterization engines.
    - KernSmith may produce additional kerning pairs from GPOS data that BMFont does not extract.
+
+---
+
+## 11. Synthetic Bold
+
+### FreeType
+
+- `FT_GlyphSlot_Embolden(slot)` thickens glyph strokes
+- Applied after loading, before rendering
+- Only applied when font lacks native bold variant (`style_flags & 0x01 == 0`)
+- KernSmith tries loading bold font variant first; falls back to synthetic
+
+### Windows GDI
+
+- `CreateFont()` with `lfWeight = FW_BOLD (700)`
+- GDI loads native bold face if available, otherwise synthesizes
+- Synthetic bold in GDI adds 1 pixel overstrike at small sizes, more at larger sizes
+
+### Difference
+
+- Both approaches produce different visual results
+- FreeType's embolden modifies outline control points; GDI overstrikes the rendered bitmap
+- At larger sizes, FreeType bold may appear thicker or thinner than GDI bold
+
+---
+
+## 12. Synthetic Italic
+
+### FreeType
+
+- `FT_GlyphSlot_Oblique(slot)` applies a fixed 12-degree shear matrix
+- Shear factor: `tan(12 deg) = 0.2126`
+- Transform matrix: `[1.0, 0.2126; 0.0, 1.0]` (in FreeType 16.16 fixed-point: `0x000036B8`)
+- Only applied when font lacks native italic flag (`style_flags & 0x02 == 0`)
+- Angle is NOT configurable in FreeType
+
+### Windows GDI
+
+- `CreateFont()` with `lfItalic = TRUE`
+- GDI also uses approximately 12-degree shear for synthetic italic
+- Visual differences arise from different hinting and rasterization, not the angle
+
+### Font's Own Italic Angle
+
+- The `post` table contains `italicAngle` field (Fixed 16.16, degrees counter-clockwise)
+- Neither FreeType's `FT_GlyphSlot_Oblique` nor GDI's synthetic italic reads this value
+- Custom angle possible via `FT_Set_Transform` with a manual shear matrix
+
+---
+
+## 13. Outline Rendering Approaches
+
+### EDT (Euclidean Distance Transform) --- Current KernSmith Default
+
+- Computes distance from each pixel to nearest glyph edge
+- Outline alpha = `clamp(outlineWidth - distance + 0.5, 0, 255)`
+- Anti-aliased, smooth results
+- **Known issue**: Treats counter (hole) regions same as exterior --- outline expands inward into counters at thick widths
+
+### FT_Stroker (FreeType Native) --- Implemented but Disabled
+
+- `FT_Stroker_New`, `FT_Stroker_Set` (radius in 26.6 fixed-point)
+- `FT_Glyph_StrokeBorder(glyph, stroker, inside=false, destroy=true)` --- strokes OUTER contour only
+- Produces geometrically precise outline that never fills counters
+- Vector-based: follows actual glyph contour topology
+- Currently disabled due to compositing integration issues (Phase 12 Track D)
+
+### Windows GDI
+
+- `GetGlyphOutline` with `GGO_BEZIER` returns vector outline paths
+- Path can be widened with GDI+ `GraphicsPath.Widen(Pen)`
+- Or use `ExtCreatePen` + `StrokePath` for outline rendering
+- Native counter handling --- always correct topology
+
+---
+
+## 14. TTC (TrueType Collection) Handling
+
+### Structure
+
+- A `.ttc` file bundles multiple font faces (e.g., `batang.ttc` contains Batang, BatangChe, Gungsuh, GungsuhChe)
+- Each face has a zero-based index (face 0, face 1, etc.)
+- Windows registry entries list them as `"Batang & BatangChe & Gungsuh & GungsuhChe (TrueType)"` followed by `batang.ttc`
+
+### FreeType
+
+- `FT_New_Face(library, path, face_index, &face)` --- `face_index` selects the face
+- `FT_Open_Face` with memory buffer also accepts face index
+- `face->num_faces` reports total faces in the collection
+
+### Windows GDI
+
+- `CreateFont()` with the font name automatically selects the correct face
+- No face index needed --- GDI resolves by name
+
+### KernSmith
+
+- `ISystemFontProvider.LoadFont()` returns `FontLoadResult(byte[] Data, int FaceIndex)`
+- Registry parser computes face index from the segment position in "&"-separated TTC entries
+- Filesystem scanner reads each face via `TtfParser(data, faceIndex)`
+
+---
+
+## 15. Windows Cloud Fonts
+
+- Word and other Office apps can trigger on-demand font downloads
+- Cloud fonts are stored in `%LOCALAPPDATA%\Microsoft\FontCache\4\CloudFonts\{FontName}\`
+- These are NOT in the standard Fonts directory or Windows registry
+- GDI `CreateFont()` can access cloud fonts transparently
+- FreeType-based tools (including KernSmith) cannot find them unless the path is specified manually
+- Not worth scanning automatically --- users can point to the file directly
