@@ -34,11 +34,11 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     }
 
     /// <inheritdoc />
-    public byte[]? LoadFont(string familyName, string? styleName = null)
+    public FontLoadResult? LoadFont(string familyName, string? styleName = null)
     {
         // Try fast registry-based lookup on Windows before falling back to
         // the full font directory scan, which can take several seconds.
-        if (TryLoadFontFromRegistry(familyName, styleName, out byte[]? registryResult, out bool familyFound))
+        if (TryLoadFontFromRegistry(familyName, styleName, out FontLoadResult? registryResult, out bool familyFound))
         {
             return registryResult;
         }
@@ -102,7 +102,7 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
 
         try
         {
-            return File.ReadAllBytes(best.FilePath);
+            return new FontLoadResult(File.ReadAllBytes(best.FilePath), best.FaceIndex);
         }
         catch (IOException)
         {
@@ -119,9 +119,9 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     /// the expensive full font directory scan. Returns false on non-Windows platforms
     /// or if the font cannot be found via the registry.
     /// </summary>
-    private static bool TryLoadFontFromRegistry(string familyName, string? styleName, out byte[]? fontData, out bool familyFound)
+    private static bool TryLoadFontFromRegistry(string familyName, string? styleName, out FontLoadResult? fontResult, out bool familyFound)
     {
-        fontData = null;
+        fontResult = null;
         familyFound = false;
 
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -131,7 +131,7 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
 
         try
         {
-            return TryLoadFontFromRegistryCore(familyName, styleName, out fontData, out familyFound);
+            return TryLoadFontFromRegistryCore(familyName, styleName, out fontResult, out familyFound);
         }
         catch (Exception ex) when (ex is PlatformNotSupportedException
                                      or System.Security.SecurityException
@@ -147,33 +147,36 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     /// handling remain in the caller.
     /// </summary>
     [SupportedOSPlatform("windows")]
-    private static bool TryLoadFontFromRegistryCore(string familyName, string? styleName, out byte[]? fontData, out bool familyFound)
+    private static bool TryLoadFontFromRegistryCore(string familyName, string? styleName, out FontLoadResult? fontResult, out bool familyFound)
     {
-        fontData = null;
+        fontResult = null;
         familyFound = false;
 
         // Registry keys that contain font entries. The HKLM key has system-wide fonts;
         // the HKCU key has per-user installed fonts.
         const string systemFontsKey = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts";
 
-        string? bestFileName = null;
+        (string FileName, int FaceIndex)? bestMatch = null;
 
         // Search both system-wide and per-user font registry keys.
         using (RegistryKey? systemKey = Registry.LocalMachine.OpenSubKey(systemFontsKey))
         {
-            bestFileName = FindFontFileNameInRegistryKey(systemKey, familyName, styleName, out familyFound);
+            bestMatch = FindFontFileNameInRegistryKey(systemKey, familyName, styleName, out familyFound);
         }
 
-        if (bestFileName == null && !familyFound)
+        if (bestMatch == null && !familyFound)
         {
             using RegistryKey? userKey = Registry.CurrentUser.OpenSubKey(systemFontsKey);
-            bestFileName = FindFontFileNameInRegistryKey(userKey, familyName, styleName, out familyFound);
+            bestMatch = FindFontFileNameInRegistryKey(userKey, familyName, styleName, out familyFound);
         }
 
-        if (bestFileName == null)
+        if (bestMatch == null)
         {
             return false;
         }
+
+        string bestFileName = bestMatch.Value.FileName;
+        int faceIndex = bestMatch.Value.FaceIndex;
 
         // The registry value is usually just a filename; resolve it against known font directories.
         string fontPath;
@@ -213,7 +216,7 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
             }
         }
 
-        fontData = File.ReadAllBytes(fontPath);
+        fontResult = new FontLoadResult(File.ReadAllBytes(fontPath), faceIndex);
         return true;
     }
 #pragma warning restore CA1416
@@ -224,7 +227,7 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     /// "Arial (TrueType)" or "Arial Bold (TrueType)".
     /// </summary>
     [SupportedOSPlatform("windows")]
-    private static string? FindFontFileNameInRegistryKey(RegistryKey? key, string familyName, string? styleName, out bool familyFound)
+    private static (string FileName, int FaceIndex)? FindFontFileNameInRegistryKey(RegistryKey? key, string familyName, string? styleName, out bool familyFound)
     {
         familyFound = false;
 
@@ -234,7 +237,7 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
         }
 
         string[] valueNames = key.GetValueNames();
-        string? fallbackFileName = null;
+        (string FileName, int FaceIndex)? fallback = null;
 
         foreach (string name in valueNames)
         {
@@ -249,16 +252,19 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
             }
 
             // Handle bundled TTC entries with " & " separators.
-            // Find the segment that matches our family name.
+            // Find the segment that matches our family name. The segment's position
+            // in the split array corresponds to the TTC face index.
             string? matchedSegment = null;
+            int faceIndex = 0;
             if (displayPart.Contains(" & "))
             {
                 string[] segments = displayPart.Split(new[] { " & " }, StringSplitOptions.None);
-                foreach (string segment in segments)
+                for (int i = 0; i < segments.Length; i++)
                 {
-                    if (segment.StartsWith(familyName, StringComparison.OrdinalIgnoreCase))
+                    if (segments[i].StartsWith(familyName, StringComparison.OrdinalIgnoreCase))
                     {
-                        matchedSegment = segment;
+                        matchedSegment = segments[i];
+                        faceIndex = i;
                         break;
                     }
                 }
@@ -266,6 +272,7 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
             else if (displayPart.StartsWith(familyName, StringComparison.OrdinalIgnoreCase))
             {
                 matchedSegment = displayPart;
+                faceIndex = 0;
             }
 
             if (matchedSegment == null)
@@ -291,7 +298,7 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
                 // Caller wants a specific style — match it exactly.
                 if (string.Equals(entryStyle, styleName, StringComparison.OrdinalIgnoreCase))
                 {
-                    return fileName;
+                    return (fileName, faceIndex);
                 }
             }
             else
@@ -300,15 +307,15 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
                 if (entryStyle.Length == 0
                     || string.Equals(entryStyle, "Regular", StringComparison.OrdinalIgnoreCase))
                 {
-                    return fileName;
+                    return (fileName, faceIndex);
                 }
 
                 // Keep the first match as a fallback in case no "Regular" entry exists.
-                fallbackFileName ??= fileName;
+                fallback ??= (fileName, faceIndex);
             }
         }
 
-        return fallbackFileName;
+        return fallback;
     }
 
     private static List<SystemFontInfo> ScanSystemFonts()

@@ -22,8 +22,9 @@ public sealed class FontCache
         _cache.GetOrAdd(fontFamily, key =>
         {
             var provider = BmFont.SystemFontProvider;
-            return provider.LoadFont(key)
+            var result = provider.LoadFont(key)
                 ?? throw new FontParsingException($"System font '{key}' not found");
+            return result.Data;
         });
     }
 

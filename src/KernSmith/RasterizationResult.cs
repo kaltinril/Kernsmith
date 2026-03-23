@@ -13,4 +13,10 @@ internal sealed class RasterizationResult
     public required List<int> Codepoints { get; init; }
     public required List<int> FailedCodepoints { get; init; }
     public required FontGeneratorOptions Options { get; init; }
+
+    /// <summary>
+    /// The effective ppem used for rasterization. When cell-height scaling is applied
+    /// (default BMFont behavior), this differs from <see cref="Options"/>.Size.
+    /// </summary>
+    public int EffectiveSize { get; init; }
 }

@@ -97,19 +97,20 @@ public static class BmFont
 
             var rasterOptions = RasterOptions.FromGeneratorOptions(options);
 
-            if (options.MatchCharHeight)
+            // BMFont treats fontSize as cell height (usWinAscent + usWinDescent scaled),
+            // not as em-square size (ppem). Compute the effective ppem that produces the
+            // requested cell height. When MatchCharHeight is true (negative fontSize in
+            // .bmfc), use fontSize directly as ppem (em-square mode).
+            int effectiveSize = options.Size;
+            if (!options.MatchCharHeight
+                && fontInfo.Os2 is { } os2CellScale
+                && os2CellScale.WinAscent + os2CellScale.WinDescent > 0)
             {
-                var probeGlyphs = rasterizer.RasterizeAll(codepoints, rasterOptions).ToList();
-                if (probeGlyphs.Count > 0)
-                {
-                    var maxRenderedHeight = probeGlyphs.Max(g => g.Height);
-                    if (maxRenderedHeight > 0 && maxRenderedHeight != rasterOptions.Size)
-                    {
-                        var adjustedSize = (int)Math.Round((double)rasterOptions.Size * rasterOptions.Size / maxRenderedHeight);
-                        if (adjustedSize < 1) adjustedSize = 1;
-                        rasterOptions = rasterOptions with { Size = adjustedSize };
-                    }
-                }
+                effectiveSize = (int)(
+                    (double)options.Size * fontInfo.UnitsPerEm
+                    / (os2CellScale.WinAscent + os2CellScale.WinDescent));
+                if (effectiveSize < 1) effectiveSize = 1;
+                rasterOptions = rasterOptions with { Size = effectiveSize };
             }
 
             var ssLevel = Math.Clamp(options.SuperSampleLevel, 1, 4);
@@ -165,7 +166,8 @@ public static class BmFont
                 Glyphs = glyphs,
                 Codepoints = codepoints,
                 FailedCodepoints = failedCodepoints,
-                Options = options
+                Options = options,
+                EffectiveSize = effectiveSize
             };
         }
         finally
@@ -300,7 +302,8 @@ public static class BmFont
             metrics?.Begin("ModelAssembly");
             var model = BmFontModelBuilder.Build(fontInfo, glyphs, packResult, options,
                 charOffsetX: region.X, charOffsetY: region.Y,
-                overrideScaleW: sourceWidth, overrideScaleH: sourceHeight);
+                overrideScaleW: sourceWidth, overrideScaleH: sourceHeight,
+                effectiveSize: rasterResult.EffectiveSize);
             metrics?.End();
 
             return new BmFontResult(model, pages, failedCodepoints, metrics, options, sourceFontFile, sourceFontName);
@@ -414,7 +417,8 @@ public static class BmFont
 
             // 7. Assemble BMFont model
             metrics?.Begin("ModelAssembly");
-            var model = BmFontModelBuilder.Build(fontInfo, glyphs, packResult, options, glyphChannels);
+            var model = BmFontModelBuilder.Build(fontInfo, glyphs, packResult, options, glyphChannels,
+                effectiveSize: rasterResult.EffectiveSize);
             metrics?.End();
 
             return new BmFontResult(model, pages, failedCodepoints, metrics, options, sourceFontFile, sourceFontName);
@@ -462,39 +466,40 @@ public static class BmFont
         // to match GDI behavior: if the font family has a dedicated bold face, use it
         // directly without synthetic emboldening. If no styled variant exists, fall back
         // to the regular face and let FreeType apply synthetic bold/italic.
-        byte[]? fontData = null;
+        FontLoadResult? fontResult = null;
         if (options.Bold && options.Italic)
         {
-            fontData = s_systemFontProvider.Value.LoadFont(fontFamily, "Bold Italic");
-            if (fontData != null)
+            fontResult = s_systemFontProvider.Value.LoadFont(fontFamily, "Bold Italic");
+            if (fontResult != null)
             {
                 options.Bold = false;
                 options.Italic = false;
             }
         }
 
-        if (fontData == null && options.Bold)
+        if (fontResult == null && options.Bold)
         {
-            fontData = s_systemFontProvider.Value.LoadFont(fontFamily, "Bold");
-            if (fontData != null)
+            fontResult = s_systemFontProvider.Value.LoadFont(fontFamily, "Bold");
+            if (fontResult != null)
             {
                 options.Bold = false;
             }
         }
 
-        if (fontData == null && options.Italic)
+        if (fontResult == null && options.Italic)
         {
-            fontData = s_systemFontProvider.Value.LoadFont(fontFamily, "Italic");
-            if (fontData != null)
+            fontResult = s_systemFontProvider.Value.LoadFont(fontFamily, "Italic");
+            if (fontResult != null)
             {
                 options.Italic = false;
             }
         }
 
-        fontData ??= s_systemFontProvider.Value.LoadFont(fontFamily)
+        fontResult ??= s_systemFontProvider.Value.LoadFont(fontFamily)
             ?? throw new FontParsingException($"System font '{fontFamily}' not found");
 
-        return GenerateCore(fontData, options, sourceFontFile: null, sourceFontName: fontFamily);
+        options.FaceIndex = fontResult.FaceIndex;
+        return GenerateCore(fontResult.Data, options, sourceFontFile: null, sourceFontName: fontFamily);
     }
 
     /// <summary>Generates a BMFont from a system-installed font at the given size.</summary>
@@ -534,9 +539,11 @@ public static class BmFont
     public static AtlasSizeInfo QueryAtlasSizeFromSystem(string fontFamily, FontGeneratorOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(fontFamily);
-        var fontData = s_systemFontProvider.Value.LoadFont(fontFamily)
+        var fontResult = s_systemFontProvider.Value.LoadFont(fontFamily)
             ?? throw new FontParsingException($"System font '{fontFamily}' not found");
-        return QueryAtlasSizeCore(fontData, options);
+        options ??= new FontGeneratorOptions();
+        options.FaceIndex = fontResult.FaceIndex;
+        return QueryAtlasSizeCore(fontResult.Data, options);
     }
 
     /// <summary>Reads font metadata from raw font file bytes without generating a bitmap font.</summary>
@@ -709,9 +716,10 @@ public static class BmFont
 
         if (!string.IsNullOrEmpty(config.FontName))
         {
-            var fontData = s_systemFontProvider.Value.LoadFont(config.FontName)
+            var fontResult = s_systemFontProvider.Value.LoadFont(config.FontName)
                 ?? throw new FontParsingException($"System font '{config.FontName}' not found");
-            return GenerateCore(fontData, config.Options, sourceFontFile: null, sourceFontName: config.FontName);
+            config.Options.FaceIndex = fontResult.FaceIndex;
+            return GenerateCore(fontResult.Data, config.Options, sourceFontFile: null, sourceFontName: config.FontName);
         }
 
         throw new InvalidOperationException(
@@ -1329,7 +1337,8 @@ public static class BmFont
 
                 var model = BmFontModelBuilder.Build(
                     rr.FontInfo, rr.Glyphs, packResult, jobOptions,
-                    placementOverride: placementOverride);
+                    placementOverride: placementOverride,
+                    effectiveSize: rr.EffectiveSize);
                 var fontResult = new BmFontResult(model, sharedPages, rr.FailedCodepoints);
 
                 sw.Stop();

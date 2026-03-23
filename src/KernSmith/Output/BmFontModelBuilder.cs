@@ -22,8 +22,14 @@ internal static class BmFontModelBuilder
         int charOffsetX = 0,
         int charOffsetY = 0,
         int? overrideScaleW = null,
-        int? overrideScaleH = null)
+        int? overrideScaleH = null,
+        int? effectiveSize = null)
     {
+        // The effective ppem used for rasterization. When cell-height scaling is
+        // applied, this is smaller than options.Size. For metric calculations we
+        // use the effective size; for the InfoBlock we record the original.
+        var metricSize = effectiveSize ?? options.Size;
+
         var info = new InfoBlock(
             Face: fontInfo.FamilyName,
             Size: options.Size,
@@ -49,13 +55,13 @@ internal static class BmFontModelBuilder
             // what bmfont.exe uses for lineHeight and base. This produces consistent
             // line spacing across generators. Note: WinDescent is positive (unlike
             // hhea Descender which is negative).
-            lineHeight = (int)Math.Ceiling((double)(os2.WinAscent + os2.WinDescent) * options.Size / fontInfo.UnitsPerEm);
-            baseLine = (int)Math.Ceiling((double)os2.WinAscent * options.Size / fontInfo.UnitsPerEm);
+            lineHeight = (int)Math.Ceiling((double)(os2.WinAscent + os2.WinDescent) * metricSize / fontInfo.UnitsPerEm);
+            baseLine = (int)Math.Ceiling((double)os2.WinAscent * metricSize / fontInfo.UnitsPerEm);
         }
         else
         {
-            lineHeight = (int)Math.Ceiling((double)fontInfo.LineHeight * options.Size / fontInfo.UnitsPerEm);
-            baseLine = (int)Math.Ceiling((double)fontInfo.Ascender * options.Size / fontInfo.UnitsPerEm);
+            lineHeight = (int)Math.Ceiling((double)fontInfo.LineHeight * metricSize / fontInfo.UnitsPerEm);
+            baseLine = (int)Math.Ceiling((double)fontInfo.Ascender * metricSize / fontInfo.UnitsPerEm);
         }
 
         // When channel packing is enabled, mark the font as packed and indicate
@@ -147,7 +153,7 @@ internal static class BmFontModelBuilder
                     !glyphCodepoints.Contains(pair.RightCodepoint))
                     continue;
 
-                int amount = (int)Math.Round((double)pair.XAdvanceAdjustment * options.Size / fontInfo.UnitsPerEm);
+                int amount = (int)Math.Round((double)pair.XAdvanceAdjustment * metricSize / fontInfo.UnitsPerEm);
                 if (amount == 0)
                     continue;
 
