@@ -466,39 +466,40 @@ public static class BmFont
         // to match GDI behavior: if the font family has a dedicated bold face, use it
         // directly without synthetic emboldening. If no styled variant exists, fall back
         // to the regular face and let FreeType apply synthetic bold/italic.
-        byte[]? fontData = null;
+        FontLoadResult? fontResult = null;
         if (options.Bold && options.Italic)
         {
-            fontData = s_systemFontProvider.Value.LoadFont(fontFamily, "Bold Italic");
-            if (fontData != null)
+            fontResult = s_systemFontProvider.Value.LoadFont(fontFamily, "Bold Italic");
+            if (fontResult != null)
             {
                 options.Bold = false;
                 options.Italic = false;
             }
         }
 
-        if (fontData == null && options.Bold)
+        if (fontResult == null && options.Bold)
         {
-            fontData = s_systemFontProvider.Value.LoadFont(fontFamily, "Bold");
-            if (fontData != null)
+            fontResult = s_systemFontProvider.Value.LoadFont(fontFamily, "Bold");
+            if (fontResult != null)
             {
                 options.Bold = false;
             }
         }
 
-        if (fontData == null && options.Italic)
+        if (fontResult == null && options.Italic)
         {
-            fontData = s_systemFontProvider.Value.LoadFont(fontFamily, "Italic");
-            if (fontData != null)
+            fontResult = s_systemFontProvider.Value.LoadFont(fontFamily, "Italic");
+            if (fontResult != null)
             {
                 options.Italic = false;
             }
         }
 
-        fontData ??= s_systemFontProvider.Value.LoadFont(fontFamily)
+        fontResult ??= s_systemFontProvider.Value.LoadFont(fontFamily)
             ?? throw new FontParsingException($"System font '{fontFamily}' not found");
 
-        return GenerateCore(fontData, options, sourceFontFile: null, sourceFontName: fontFamily);
+        options.FaceIndex = fontResult.FaceIndex;
+        return GenerateCore(fontResult.Data, options, sourceFontFile: null, sourceFontName: fontFamily);
     }
 
     /// <summary>Generates a BMFont from a system-installed font at the given size.</summary>
@@ -538,9 +539,11 @@ public static class BmFont
     public static AtlasSizeInfo QueryAtlasSizeFromSystem(string fontFamily, FontGeneratorOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(fontFamily);
-        var fontData = s_systemFontProvider.Value.LoadFont(fontFamily)
+        var fontResult = s_systemFontProvider.Value.LoadFont(fontFamily)
             ?? throw new FontParsingException($"System font '{fontFamily}' not found");
-        return QueryAtlasSizeCore(fontData, options);
+        options ??= new FontGeneratorOptions();
+        options.FaceIndex = fontResult.FaceIndex;
+        return QueryAtlasSizeCore(fontResult.Data, options);
     }
 
     /// <summary>Reads font metadata from raw font file bytes without generating a bitmap font.</summary>
@@ -713,9 +716,10 @@ public static class BmFont
 
         if (!string.IsNullOrEmpty(config.FontName))
         {
-            var fontData = s_systemFontProvider.Value.LoadFont(config.FontName)
+            var fontResult = s_systemFontProvider.Value.LoadFont(config.FontName)
                 ?? throw new FontParsingException($"System font '{config.FontName}' not found");
-            return GenerateCore(fontData, config.Options, sourceFontFile: null, sourceFontName: config.FontName);
+            config.Options.FaceIndex = fontResult.FaceIndex;
+            return GenerateCore(fontResult.Data, config.Options, sourceFontFile: null, sourceFontName: config.FontName);
         }
 
         throw new InvalidOperationException(
