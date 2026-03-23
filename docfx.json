@@ -37,7 +37,10 @@
     "globalMetadata": {
       "_appTitle": "KernSmith Documentation",
       "_appFooter": "KernSmith &mdash; Bitmap Font Generator for .NET",
-      "_enableSearch": true
+      "_enableSearch": true,
+      "_appLogoPath": "assets/icon.png",
+      "_appFaviconPath": "assets/icon-favicon-32.png",
+      "_appLogoUrl": "index.html"
     },
     "template": ["default", "modern"]
   }

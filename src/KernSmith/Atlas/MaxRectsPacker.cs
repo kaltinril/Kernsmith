@@ -60,8 +60,10 @@ internal sealed class MaxRectsPacker : IAtlasPacker
 
     private static (int X, int Y)? TryPlace(List<Rect> freeRects, int width, int height)
     {
-        // Best Short Side Fit: find the free rect where the shorter leftover side is minimized.
-        var bestScore = int.MaxValue;
+        // Best Short Side Fit: find the free rect where the shorter leftover side is minimized,
+        // with the longer leftover side as a tiebreaker.
+        var bestShortSide = int.MaxValue;
+        var bestLongSide = int.MaxValue;
         var bestIndex = -1;
 
         for (var i = 0; i < freeRects.Count; i++)
@@ -71,10 +73,12 @@ internal sealed class MaxRectsPacker : IAtlasPacker
             {
                 var leftoverX = fr.Width - width;
                 var leftoverY = fr.Height - height;
-                var score = Math.Min(leftoverX, leftoverY);
-                if (score < bestScore)
+                var shortSide = Math.Min(leftoverX, leftoverY);
+                var longSide = Math.Max(leftoverX, leftoverY);
+                if (shortSide < bestShortSide || (shortSide == bestShortSide && longSide < bestLongSide))
                 {
-                    bestScore = score;
+                    bestShortSide = shortSide;
+                    bestLongSide = longSide;
                     bestIndex = i;
                 }
             }

@@ -390,8 +390,9 @@ FodyWeavers.xsd
 # JetBrains Rider
 .idea/
 
-# DocFX generated site
+# DocFX generated output
 /_site/
+/api/
 
 # Environment files
 .env

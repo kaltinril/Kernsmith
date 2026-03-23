@@ -21,6 +21,8 @@ public class MainLayout : ContainerRuntime
 
     private readonly MainViewModel _viewModel;
     private readonly GraphicsDevice _graphicsDevice;
+    private FontConfigPanel? _fontConfigPanel;
+    private EffectsPanel? _effectsPanel;
     public PreviewPanel? Preview { get; private set; }
 
     public MainLayout(MainViewModel viewModel, GraphicsDevice graphicsDevice)
@@ -76,6 +78,17 @@ public class MainLayout : ContainerRuntime
 
         menu.Items!.Add(fileItem);
 
+        // View menu
+        var viewItem = new MenuItem();
+        viewItem.Header = "View";
+
+        var resetLayoutItem = new MenuItem();
+        resetLayoutItem.Header = "Reset Layout";
+        resetLayoutItem.Clicked += (_, _) => ResetLayout();
+        viewItem.Items!.Add(resetLayoutItem);
+
+        menu.Items!.Add(viewItem);
+
         // Help menu
         var helpItem = new MenuItem();
         helpItem.Header = "Help";
@@ -122,11 +135,13 @@ public class MainLayout : ContainerRuntime
         body.Width = 0;
         body.HeightUnits = DimensionUnitType.RelativeToParent;
         body.Height = -54;
+        body.Visual.ClipsChildren = true;
         this.AddChild(body);
 
         // Left column: font config (fixed width)
-        var fontConfigPanel = new FontConfigPanel(_viewModel, _viewModel.FontConfig, _viewModel.AtlasConfig);
-        fontConfigPanel.Width = 280;
+        _fontConfigPanel = new FontConfigPanel(_viewModel, _viewModel.FontConfig, _viewModel.AtlasConfig);
+        var fontConfigPanel = _fontConfigPanel;
+        fontConfigPanel.Width = DefaultPanelWidth;
         fontConfigPanel.HeightUnits = DimensionUnitType.RelativeToParent;
         fontConfigPanel.Height = 0;
         AddPanelBackground(fontConfigPanel, Theme.Panel);
@@ -160,8 +175,9 @@ public class MainLayout : ContainerRuntime
         body.AddChild(rightSplitter);
 
         // Right column: effects (fixed width)
-        var effectsPanel = new EffectsPanel(_viewModel.Effects, _viewModel.AtlasConfig);
-        effectsPanel.Width = 280;
+        _effectsPanel = new EffectsPanel(_viewModel.Effects, _viewModel.AtlasConfig);
+        var effectsPanel = _effectsPanel;
+        effectsPanel.Width = DefaultPanelWidth;
         effectsPanel.HeightUnits = DimensionUnitType.RelativeToParent;
         effectsPanel.Height = 0;
         AddPanelBackground(effectsPanel, Theme.Panel);
@@ -205,6 +221,17 @@ public class MainLayout : ContainerRuntime
             item.Clicked += (_, _) => _viewModel.LoadFontFromPath(capturedPath);
             parent.Items!.Add(item);
         }
+    }
+
+    /// <summary>
+    /// Resets both side panels to their default width.
+    /// </summary>
+    public void ResetLayout()
+    {
+        if (_fontConfigPanel != null)
+            _fontConfigPanel.Width = DefaultPanelWidth;
+        if (_effectsPanel != null)
+            _effectsPanel.Width = DefaultPanelWidth;
     }
 
     private static void AddSplitterBackground(Splitter splitter)

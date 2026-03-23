@@ -34,30 +34,6 @@ public class FontConfigViewModel : ViewModel
     // --- Generation settings ---
     public int FontSize { get => Get<int>(); set => Set(value); }
 
-    // --- Character set ---
-    public CharacterSetPreset SelectedPreset
-    {
-        get => Get<CharacterSetPreset>();
-        set
-        {
-            Set(value);
-            IsCustomMode = value == CharacterSetPreset.Custom;
-            UpdateCharacterCount();
-        }
-    }
-    public string CustomCharacters
-    {
-        get => Get<string>();
-        set
-        {
-            Set(value);
-            if (SelectedPreset == CharacterSetPreset.Custom)
-                UpdateCharacterCount();
-        }
-    }
-    public int CharacterCount { get => Get<int>(); set => Set(value); }
-    public bool IsCustomMode { get => Get<bool>(); set => Set(value); }
-
     // --- System font list ---
     public IReadOnlyList<SystemFontGroup>? SystemFonts { get => Get<IReadOnlyList<SystemFontGroup>?>(); set => Set(value); }
     public string? SelectedFontFamily { get => Get<string?>(); set => Set(value); }
@@ -75,9 +51,7 @@ public class FontConfigViewModel : ViewModel
         FamilyName = "";
         StyleName = "";
         VariationAxesSummary = "";
-        CustomCharacters = "";
         FontSize = 32;
-        SelectedPreset = CharacterSetPreset.Ascii;
     }
 
     /// <summary>
@@ -180,7 +154,34 @@ public class FontConfigViewModel : ViewModel
                 s.StyleName.Contains("Italic", StringComparison.OrdinalIgnoreCase));
 
         if (match == null)
-            return false; // no matching file, use synthetic
+        {
+            // No matching variant found. If we previously loaded a specific variant
+            // (e.g., Bold), we need to fall back to Regular so both bold and italic
+            // are applied synthetically. Otherwise the behavior depends on checkbox order.
+            if (LoadedAsBold || LoadedAsItalic)
+            {
+                var regular = CurrentFontGroup.Styles.FirstOrDefault(s =>
+                    s.StyleName.Equals("Regular", StringComparison.OrdinalIgnoreCase))
+                    ?? CurrentFontGroup.Styles.FirstOrDefault();
+
+                if (regular != null)
+                {
+                    try
+                    {
+                        LoadFromSystem(regular);
+                    }
+                    catch
+                    {
+                        // Fall through — keep current font data
+                    }
+                }
+
+                LoadedAsBold = false;
+                LoadedAsItalic = false;
+            }
+
+            return false; // use synthetic for all requested styles
+        }
 
         try
         {
@@ -193,22 +194,6 @@ public class FontConfigViewModel : ViewModel
         {
             return false;
         }
-    }
-
-    /// <summary>
-    /// Returns the <see cref="CharacterSet"/> corresponding to the current preset or custom characters.
-    /// </summary>
-    public CharacterSet GetCharacterSet()
-    {
-        return SelectedPreset switch
-        {
-            CharacterSetPreset.Ascii => CharacterSet.Ascii,
-            CharacterSetPreset.ExtendedAscii => CharacterSet.ExtendedAscii,
-            CharacterSetPreset.Latin => CharacterSet.Latin,
-            CharacterSetPreset.Custom when !string.IsNullOrEmpty(CustomCharacters)
-                => CharacterSet.FromChars(CustomCharacters),
-            _ => CharacterSet.Ascii
-        };
     }
 
     private void PopulateFromFontInfo(FontInfo fontInfo)
@@ -246,10 +231,5 @@ public class FontConfigViewModel : ViewModel
         }
 
         return 1;
-    }
-
-    private void UpdateCharacterCount()
-    {
-        CharacterCount = GetCharacterSet().Count;
     }
 }

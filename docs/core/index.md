@@ -15,12 +15,12 @@ The `KernSmith` NuGet package is the core library that powers bitmap font genera
 |-----------|---------|
 | `KernSmith` | Entry point (<xref:KernSmith.BmFont>), configuration types, exceptions, enums |
 | `KernSmith.Font` | Font reading and TTF table parsing |
-| `KernSmith.Font.Models` | Data models: `FontInfo`, `KerningPair`, `GlyphMetrics` |
-| `KernSmith.Font.Tables` | Parsed table structures: `HeadTable`, `HheaTable`, `Os2Metrics`, `NameInfo` |
-| `KernSmith.Rasterizer` | `IRasterizer`, `FreeTypeRasterizer`, glyph effects (`IGlyphEffect`), `GlyphCompositor` |
-| `KernSmith.Atlas` | `IAtlasPacker`, packing algorithms, texture encoders (PNG/TGA/DDS), `AtlasBuilder` |
-| `KernSmith.Output` | BMFont formatters, `FileWriter`, `BmFontResult`, `BmFontReader` |
-| `KernSmith.Output.Model` | BMFont data model: `BmFontModel`, `InfoBlock`, `CommonBlock` |
+| `KernSmith.Font.Models` | Data models: <xref:KernSmith.Font.Models.FontInfo>, <xref:KernSmith.Font.Models.KerningPair>, <xref:KernSmith.Font.Models.GlyphMetrics> |
+| `KernSmith.Font.Tables` | Parsed table structures: <xref:KernSmith.Font.Tables.HeadTable>, <xref:KernSmith.Font.Tables.HheaTable>, <xref:KernSmith.Font.Tables.Os2Metrics>, <xref:KernSmith.Font.Tables.NameInfo> |
+| `KernSmith.Rasterizer` | <xref:KernSmith.Rasterizer.IRasterizer>, <xref:KernSmith.Rasterizer.FreeTypeRasterizer>, glyph effects (<xref:KernSmith.Rasterizer.IGlyphEffect>), <xref:KernSmith.Rasterizer.GlyphCompositor> |
+| `KernSmith.Atlas` | <xref:KernSmith.Atlas.IAtlasPacker>, packing algorithms, texture encoders (PNG/TGA/DDS), <xref:KernSmith.Atlas.AtlasBuilder> |
+| `KernSmith.Output` | BMFont formatters, <xref:KernSmith.Output.FileWriter>, <xref:KernSmith.Output.BmFontResult>, <xref:KernSmith.Output.BmFontReader> |
+| `KernSmith.Output.Model` | BMFont data model: <xref:KernSmith.Output.Model.BmFontModel>, <xref:KernSmith.Output.Model.InfoBlock>, <xref:KernSmith.Output.Model.CommonBlock> |
 
 ## Key Classes
 
@@ -28,12 +28,12 @@ The `KernSmith` NuGet package is the core library that powers bitmap font genera
 
 The main entry point. Provides static methods for font generation:
 
-- `BmFont.Generate()` -- generate from a font file path or byte array
-- `BmFont.GenerateFromSystem()` -- generate from a system-installed font
-- `BmFont.FromConfig()` -- generate from a `.bmfc` configuration file
-- `BmFont.Builder()` -- start a fluent builder chain
-- `BmFont.Load()` -- load an existing `.fnt` file with atlas pages
-- `BmFont.GenerateBatch()` -- parallel batch generation
+- <xref:KernSmith.BmFont>.Generate() -- generate from a font file path or byte array
+- <xref:KernSmith.BmFont>.GenerateFromSystem() -- generate from a system-installed font
+- <xref:KernSmith.BmFont>.FromConfig() -- generate from a `.bmfc` configuration file
+- <xref:KernSmith.BmFont>.Builder() -- start a fluent builder chain
+- <xref:KernSmith.BmFont>.Load() -- load an existing `.fnt` file with atlas pages
+- <xref:KernSmith.BmFont>.GenerateBatch() -- parallel batch generation
 
 ### BmFontResult
 
@@ -43,7 +43,7 @@ The output of font generation. Provides access to:
 - `.Pages` -- atlas page pixel data and dimensions
 - `.GetPngData()`, `.GetTgaData()`, `.GetDdsData()` -- encoded atlas images
 - `.ToFile()` -- write all output files to disk
-- `.Model` -- the underlying `BmFontModel` data
+- `.Model` -- the underlying <xref:KernSmith.Output.Model.BmFontModel> data
 
 ### FontGeneratorOptions
 

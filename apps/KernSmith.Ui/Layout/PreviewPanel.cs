@@ -1,5 +1,7 @@
 using Gum.DataTypes;
+using Gum.Managers;
 using Gum.Forms.Controls;
+using KernSmith.Output.Model;
 using KernSmith.Ui.Models;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
@@ -36,9 +38,17 @@ public class PreviewPanel : Panel
     // Tab switching
     private Panel? _previewContent;
     private CharacterSelectionPanel? _charactersContent;
+    private Panel? _sampleTextContent;
     private Button? _previewTabBtn;
     private Button? _charactersTabBtn;
-    private bool _showingPreview = true;
+    private Button? _sampleTextTabBtn;
+    private enum ActiveTab { Preview, Characters, SampleText }
+    private ActiveTab _activeTab = ActiveTab.Preview;
+
+    // Sample text rendering
+    private ContainerRuntime? _sampleTextContainer;
+    private TextBox? _sampleTextBox;
+    private List<Texture2D>? _atlasPageTextures;
 
     // UI scale controls
     private Label? _uiScaleLabel;
@@ -107,14 +117,20 @@ public class PreviewPanel : Panel
         _previewTabBtn.Text = "Preview";
         _previewTabBtn.Width = 90;
         _previewTabBtn.IsEnabled = false; // active tab shown as disabled
-        _previewTabBtn.Click += (_, _) => ShowTab(preview: true);
+        _previewTabBtn.Click += (_, _) => SwitchTab(ActiveTab.Preview);
         tabBar.AddChild(_previewTabBtn);
 
         _charactersTabBtn = new Button();
         _charactersTabBtn.Text = "Characters";
         _charactersTabBtn.Width = 90;
-        _charactersTabBtn.Click += (_, _) => ShowTab(preview: false);
+        _charactersTabBtn.Click += (_, _) => SwitchTab(ActiveTab.Characters);
         tabBar.AddChild(_charactersTabBtn);
+
+        _sampleTextTabBtn = new Button();
+        _sampleTextTabBtn.Text = "Sample";
+        _sampleTextTabBtn.Width = 70;
+        _sampleTextTabBtn.Click += (_, _) => SwitchTab(ActiveTab.SampleText);
+        tabBar.AddChild(_sampleTextTabBtn);
 
         // UI scale controls — right-aligned in tab bar
         var scaleSpacer = new ContainerRuntime();
@@ -171,6 +187,19 @@ public class PreviewPanel : Panel
         _charactersContent.Height = -TabBarHeight;
         _charactersContent.IsVisible = false;
         this.AddChild(_charactersContent);
+
+        // Sample text content area (same position, toggled via visibility)
+        _sampleTextContent = new Panel();
+        _sampleTextContent.Y = TabBarHeight;
+        _sampleTextContent.WidthUnits = DimensionUnitType.RelativeToParent;
+        _sampleTextContent.Width = 0;
+        _sampleTextContent.HeightUnits = DimensionUnitType.RelativeToParent;
+        _sampleTextContent.Height = -TabBarHeight;
+        _sampleTextContent.Visual.ClipsChildren = true;
+        _sampleTextContent.IsVisible = false;
+        this.AddChild(_sampleTextContent);
+
+        BuildSampleTextContent();
     }
 
     private void BuildPreviewContent()
@@ -195,9 +224,9 @@ public class PreviewPanel : Panel
 
         _zoomSlider = new Slider();
         _zoomSlider.Minimum = 25;
-        _zoomSlider.Maximum = 300;
+        _zoomSlider.Maximum = 400;
         _zoomSlider.Value = 100;
-        _zoomSlider.Width = 100;
+        _zoomSlider.Width = 120;
         _zoomSlider.TicksFrequency = 25;
         _zoomSlider.IsSnapToTickEnabled = true;
         _toolbarRow.AddChild(_zoomSlider);
@@ -294,12 +323,19 @@ public class PreviewPanel : Panel
         {
             if (e.PropertyName == nameof(PreviewViewModel.HasResult))
             {
+                // Invalidate cached atlas page textures for sample text rendering
+                DisposeAtlasPageTextures();
+
                 if (_preview.HasResult)
                 {
                     UpdateDisplay();
                     _navRow.IsVisible = _preview.Pages.Count > 1;
                     if (_toolbarRow != null)
                         _toolbarRow.IsVisible = true;
+
+                    // Refresh sample text if that tab is active
+                    if (_activeTab == ActiveTab.SampleText)
+                        RenderSampleText();
                 }
                 else
                 {
@@ -307,25 +343,35 @@ public class PreviewPanel : Panel
                     _navRow.IsVisible = false;
                     if (_toolbarRow != null)
                         _toolbarRow.IsVisible = false;
+                    if (_sampleTextContainer != null)
+                        _sampleTextContainer.Visible = false;
                 }
             }
         };
     }
 
-    private void ShowTab(bool preview)
+    private void SwitchTab(ActiveTab tab)
     {
-        _showingPreview = preview;
+        _activeTab = tab;
 
         if (_previewContent != null)
-            _previewContent.IsVisible = preview;
+            _previewContent.IsVisible = tab == ActiveTab.Preview;
         if (_charactersContent != null)
-            _charactersContent.IsVisible = !preview;
+            _charactersContent.IsVisible = tab == ActiveTab.Characters;
+        if (_sampleTextContent != null)
+            _sampleTextContent.IsVisible = tab == ActiveTab.SampleText;
 
-        // Toggle button enabled state to indicate active tab
+        // Toggle button enabled state to indicate active tab (disabled = active)
         if (_previewTabBtn != null)
-            _previewTabBtn.IsEnabled = !preview;
+            _previewTabBtn.IsEnabled = tab != ActiveTab.Preview;
         if (_charactersTabBtn != null)
-            _charactersTabBtn.IsEnabled = preview;
+            _charactersTabBtn.IsEnabled = tab != ActiveTab.Characters;
+        if (_sampleTextTabBtn != null)
+            _sampleTextTabBtn.IsEnabled = tab != ActiveTab.SampleText;
+
+        // Refresh sample text rendering when switching to that tab
+        if (tab == ActiveTab.SampleText && _preview.HasResult)
+            RenderSampleText();
     }
 
     private void UpdateDisplay()
@@ -462,6 +508,183 @@ public class PreviewPanel : Panel
             _failedWarningLabel.IsVisible = false;
     }
 
+    private void BuildSampleTextContent()
+    {
+        if (_sampleTextContent == null) return;
+
+        // Input row at top
+        var inputRow = new StackPanel();
+        inputRow.Orientation = Orientation.Horizontal;
+        inputRow.Spacing = 8;
+        inputRow.X = 8;
+        inputRow.Y = 8;
+        inputRow.Height = 28;
+        inputRow.WidthUnits = DimensionUnitType.RelativeToParent;
+        inputRow.Width = -16;
+        _sampleTextContent.AddChild(inputRow);
+
+        var label = new Label();
+        label.Text = "Text:";
+        inputRow.AddChild(label);
+
+        _sampleTextBox = new TextBox();
+        _sampleTextBox.Text = _preview.SampleText;
+        _sampleTextBox.Width = 400;
+        _sampleTextBox.TextChanged += (_, _) =>
+        {
+            _preview.SampleText = _sampleTextBox.Text;
+            if (_preview.HasResult)
+                RenderSampleText();
+        };
+        inputRow.AddChild(_sampleTextBox);
+
+        // Placeholder when no result is available
+        var samplePlaceholder = new Label();
+        samplePlaceholder.Text = "Generate a bitmap font first to preview sample text";
+        samplePlaceholder.Anchor(Gum.Wireframe.Anchor.Center);
+        _sampleTextContent.AddChild(samplePlaceholder);
+
+        // Container for per-glyph sprites
+        _sampleTextContainer = new ContainerRuntime();
+        _sampleTextContainer.Visible = false;
+        _sampleTextContainer.X = 8;
+        _sampleTextContainer.Y = 44;
+        _sampleTextContainer.WidthUnits = DimensionUnitType.RelativeToChildren;
+        _sampleTextContainer.HeightUnits = DimensionUnitType.RelativeToChildren;
+        _sampleTextContent.Visual.Children.Add(_sampleTextContainer);
+
+        // Hide placeholder when result is available
+        _preview.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PreviewViewModel.HasResult))
+                samplePlaceholder.IsVisible = !_preview.HasResult;
+        };
+    }
+
+    private void RenderSampleText()
+    {
+        var model = _preview.Model;
+        if (model == null || _sampleTextContainer == null) return;
+
+        // Clear previous glyph sprites
+        _sampleTextContainer.Children.Clear();
+
+        var text = _preview.SampleText ?? "";
+        if (string.IsNullOrEmpty(text))
+        {
+            _sampleTextContainer.Visible = false;
+            return;
+        }
+
+        // Build character lookup from BmFontModel
+        var charMap = new Dictionary<int, CharEntry>();
+        foreach (var ch in model.Characters)
+            charMap[ch.Id] = ch;
+
+        // Build kerning lookup
+        var kerningMap = new Dictionary<(int, int), int>();
+        if (model.KerningPairs != null)
+        {
+            foreach (var kp in model.KerningPairs)
+                kerningMap[(kp.First, kp.Second)] = kp.Amount;
+        }
+
+        // Load atlas page textures if not yet loaded
+        if (_atlasPageTextures == null || _atlasPageTextures.Count != _preview.Pages.Count)
+        {
+            DisposeAtlasPageTextures();
+            _atlasPageTextures = new List<Texture2D>();
+            foreach (var page in _preview.Pages)
+            {
+                using var stream = new MemoryStream(page.PngData);
+                var tex = Texture2D.FromStream(_graphicsDevice, stream);
+
+                // Grayscale atlas: MonoGame loads as (L,L,L,255). Convert to (255,255,255,L)
+                // so luminance becomes alpha and black background is transparent.
+                var pixels = new Color[tex.Width * tex.Height];
+                tex.GetData(pixels);
+                for (int i = 0; i < pixels.Length; i++)
+                {
+                    var l = pixels[i].R;
+                    pixels[i] = new Color(l, l, l, l);
+                }
+                tex.SetData(pixels);
+
+                _atlasPageTextures.Add(tex);
+            }
+        }
+
+        if (_atlasPageTextures.Count == 0) return;
+
+        var lineHeight = model.Common.LineHeight;
+        var padLeft = model.Info.Padding.Left;
+        var padTop = model.Info.Padding.Up;
+        var lines = text.Split('\n');
+
+        int cursorY = 0;
+        int maxRight = 0;
+        int maxBottom = 0;
+
+        foreach (var line in lines)
+        {
+            int cursorX = 0;
+            int prevId = -1;
+
+            foreach (var c in line)
+            {
+                int id = c;
+                if (!charMap.TryGetValue(id, out var entry))
+                    continue;
+
+                if (prevId >= 0 && kerningMap.TryGetValue((prevId, id), out var kern))
+                    cursorX += kern;
+
+                if (entry.Page >= 0 && entry.Page < _atlasPageTextures.Count && entry.Width > 0 && entry.Height > 0)
+                {
+                    var glyph = new SpriteRuntime();
+                    glyph.Texture = _atlasPageTextures[entry.Page];
+                    glyph.TextureLeft = entry.X + padLeft;
+                    glyph.TextureTop = entry.Y + padTop;
+                    glyph.TextureWidth = entry.Width;
+                    glyph.TextureHeight = entry.Height;
+                    glyph.TextureAddress = TextureAddress.Custom;
+                    glyph.X = cursorX + entry.XOffset;
+                    glyph.Y = cursorY + entry.YOffset;
+                    glyph.WidthUnits = DimensionUnitType.Absolute;
+                    glyph.HeightUnits = DimensionUnitType.Absolute;
+                    glyph.Width = entry.Width;
+                    glyph.Height = entry.Height;
+                    _sampleTextContainer.Children.Add(glyph);
+
+                    maxRight = Math.Max(maxRight, cursorX + entry.XOffset + entry.Width);
+                    maxBottom = Math.Max(maxBottom, cursorY + entry.YOffset + entry.Height);
+                }
+
+                cursorX += entry.XAdvance;
+                prevId = id;
+            }
+
+            cursorY += lineHeight;
+        }
+
+        // Set container size explicitly so nothing gets clipped
+        _sampleTextContainer.WidthUnits = DimensionUnitType.Absolute;
+        _sampleTextContainer.HeightUnits = DimensionUnitType.Absolute;
+        _sampleTextContainer.Width = maxRight;
+        _sampleTextContainer.Height = maxBottom;
+        _sampleTextContainer.Visible = true;
+    }
+
+    private void DisposeAtlasPageTextures()
+    {
+        if (_atlasPageTextures != null)
+        {
+            foreach (var tex in _atlasPageTextures)
+                tex.Dispose();
+            _atlasPageTextures = null;
+        }
+    }
+
     /// <summary>Increases atlas zoom by 25%, clamped to slider range.</summary>
     public void ZoomIn()
     {
@@ -488,7 +711,7 @@ public class PreviewPanel : Panel
     /// </summary>
     public void UpdateInput()
     {
-        if (!_showingPreview || !_preview.HasResult) return;
+        if (_activeTab != ActiveTab.Preview || !_preview.HasResult) return;
 
         var mouse = Microsoft.Xna.Framework.Input.Mouse.GetState();
 

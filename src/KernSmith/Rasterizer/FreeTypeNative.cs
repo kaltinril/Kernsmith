@@ -21,6 +21,12 @@ internal static unsafe class FreeTypeNative
     public const int FT_LOAD_NO_HINTING = 1 << 1;
 
     /// <summary>
+    /// FT_LOAD_TARGET_MONO flag. Tells the hinter to optimize for monochrome (1-bit) output.
+    /// Value is (FT_RENDER_MODE_MONO &lt;&lt; 16) = (2 &lt;&lt; 16) = 0x20000.
+    /// </summary>
+    public const int FT_LOAD_TARGET_MONO = 2 << 16;
+
+    /// <summary>
     /// FT_LOAD_NO_BITMAP flag (1 &lt;&lt; 3 = 8). Do not load embedded bitmaps; load outlines only.
     /// </summary>
     public const int FT_LOAD_NO_BITMAP = 1 << 3;
