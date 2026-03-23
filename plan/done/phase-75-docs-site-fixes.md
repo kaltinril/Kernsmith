@@ -1,7 +1,8 @@
 # Phase 75 — DocFX Documentation Site Fixes
 
-> **Status**: In Progress
+> **Status**: Completed
 > **Created**: 2026-03-22
+> **Completed**: 2026-03-22
 > **Goal**: Fix issues found on the deployed DocFX site at https://kaltinril.github.io/Kernsmith/.
 
 ---

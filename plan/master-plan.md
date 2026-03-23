@@ -1,6 +1,6 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-21, 55, 60-69, 72-74 complete. Phase 30 (WASM) is future/exploratory. Phases 75-77, 80 active.
+> **Status**: Phases 1-21, 55, 60-69, 72-75 complete. Phase 30 (WASM) is future/exploratory. Phases 76-77, 80 active.
 > **Date**: 2026-03-22
 
 ---
@@ -81,7 +81,6 @@ Output Layer
 |---|----------|-------------|--------|
 | 30 | [WASM Rasterization](phase-30-wasm-rasterization.md) | Live investigation of WASM-compatible rasterizers (prior research was preliminary) | Future |
 | 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
-| 75 | [DocFX Docs Site Fixes](phase-75-docs-site-fixes.md) | Fix issues found on the deployed DocFX documentation site | In Progress |
 | 76 | [Metrics Parity with BMFont](phase-76-metrics-parity.md) | Investigate and fix glyph metric differences between KernSmith and BMFont output | Planning |
 | 77 | [Color Picker Dialog](phase-77-color-picker-dialog.md) | Build a reusable color picker dialog that opens when clicking a color swatch | Planning |
 | 80 | [Atlas Preview Rendering](phase-80-atlas-preview-rendering.md) | Fix atlas preview rendering quality in UI to match saved PNG | Planning |
@@ -116,6 +115,7 @@ Output Layer
 | 69 | [Final Polish & Release Prep](done/phase-69-ui-final-polish.md) | UI consistency, about dialog, status bar, accent headers, panel backgrounds |
 | 72 | [UI Issues Round 2](done/phase-72-ui-issues-round2.md) | Fix remaining UI issues from manual testing — 21 issues resolved |
 | 74 | [MIT License](done/phase-74-mit-license.md) | Switch all license references to MIT |
+| 75 | [DocFX Docs Site Fixes](done/phase-75-docs-site-fixes.md) | Fix issues found on the deployed DocFX documentation site |
 | 60 | [UI MVP](done/phase-60-ui-mvp.md) | MonoGame + GUM UI app: project scaffold, three-panel layout, font loading, basic generation |
 | 61 | [Font Loading & Character Selection](done/phase-61-ui-font-character-selection.md) | System font browser, BMFont-style character grid, Unicode block sidebar, text-based selection |
 | 62 | [Effects System UI](done/phase-62-ui-effects-system.md) | Outline, shadow, gradient controls with interactive angle/offset pads, channel config |
@@ -278,7 +278,7 @@ XML doc comments, class/method summaries, README gaps across library, CLI, and U
 ### Phase 74 -- MIT License (COMPLETE)
 Switch all license references from proprietary to MIT. Updated LICENSE file, .csproj, README, CLAUDE.md, CHANGELOG, and plan docs.
 
-### Phase 75 -- DocFX Docs Site Fixes (IN PROGRESS)
+### Phase 75 -- DocFX Docs Site Fixes (COMPLETE)
 Fix issues found on the deployed DocFX documentation site at https://kaltinril.github.io/Kernsmith/.
 
 ### Phase 76 -- Metrics Parity with BMFont (PLANNING)
