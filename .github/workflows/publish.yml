@@ -144,6 +144,10 @@ jobs:
           tag_name: v${{ needs.validate.outputs.version }}
           generate_release_notes: true
           draft: false
+          append_body: true
+          body: |
+            **NuGet**: [KernSmith ${{ needs.validate.outputs.version }}](https://www.nuget.org/packages/KernSmith/${{ needs.validate.outputs.version }})
+            **Docs**: [kaltinril.github.io/Kernsmith](https://kaltinril.github.io/Kernsmith/)
           files: |
             artifacts/**/*.zip
             artifacts/**/*.tar.gz
