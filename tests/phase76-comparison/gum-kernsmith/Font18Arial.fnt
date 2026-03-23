@@ -1,5 +1,5 @@
 info face="Arial" size=18 bold=0 italic=0 charset="" unicode=1 stretchH=100 smooth=1 aa=1 padding=0,0,0,0 spacing=1,1 outline=0
-common lineHeight=21 base=17 scaleW=256 scaleH=256 pages=1 packed=0 alphaChnl=0 redChnl=4 greenChnl=4 blueChnl=4
+common lineHeight=21 base=17 scaleW=256 scaleH=256 pages=1 packed=0 alphaChnl=0 redChnl=0 greenChnl=0 blueChnl=0
 page id=0 file="Font18Arial_0.png"
 chars count=191
 char id=32 x=65 y=56 width=0 height=0 xoffset=0 yoffset=17 xadvance=5 page=0 chnl=15
@@ -267,4 +267,4 @@ kerning first=119 second=44 amount=-1
 kerning first=119 second=46 amount=-1
 kerning first=121 second=44 amount=-1
 kerning first=121 second=46 amount=-1
-kernsmith version="0.9.3+4c36092c42943a880c0fd5d1777df25929bafad9"
+kernsmith version="0.9.4+9ba41f6f3da01d5d7fd99a446e2b84eb31f02398"

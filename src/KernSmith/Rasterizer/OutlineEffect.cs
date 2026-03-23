@@ -47,6 +47,10 @@ internal sealed class OutlineEffect : IGlyphEffect
         // Step 2: Compute EDT on the expanded alpha.
         var squaredDist = EuclideanDistanceTransform.Compute(expandedAlpha, dstW, dstH);
 
+        // Step 2b: Flood-fill from edges to identify exterior zero-alpha pixels.
+        // Counter pixels (holes in glyphs like 'e', 'o') are NOT exterior and must not receive outline.
+        var exterior = FloodFillExterior(expandedAlpha, dstW, dstH);
+
         // Step 3: Build RGBA output with outline color and anti-aliased alpha.
         var dst = new byte[dstW * dstH * 4];
 
@@ -54,14 +58,18 @@ internal sealed class OutlineEffect : IGlyphEffect
         {
             for (var x = 0; x < dstW; x++)
             {
-                var dist = MathF.Sqrt(squaredDist[y * dstW + x]);
-                // Anti-aliased outline alpha: smooth transition at the outer edge.
+                var pixelIdx = y * dstW + x;
+
+                if (!exterior[pixelIdx])
+                    continue;
+
+                var dist = MathF.Sqrt(squaredDist[pixelIdx]);
                 var outlineAlpha = Math.Clamp(255f * (ow - dist + 0.5f), 0f, 255f);
 
                 if (outlineAlpha <= 0)
                     continue;
 
-                var idx = (y * dstW + x) * 4;
+                var idx = pixelIdx * 4;
                 dst[idx + 0] = _outlineR;
                 dst[idx + 1] = _outlineG;
                 dst[idx + 2] = _outlineB;
@@ -70,5 +78,71 @@ internal sealed class OutlineEffect : IGlyphEffect
         }
 
         return new GlyphLayer(dst, dstW, dstH, OffsetX: -ow, OffsetY: -ow, ZOrder);
+    }
+
+    private static bool[] FloodFillExterior(byte[] alpha, int width, int height)
+    {
+        var exterior = new bool[width * height];
+        var queue = new Queue<int>();
+
+        // Seed all edge pixels that have zero alpha.
+        for (var x = 0; x < width; x++)
+        {
+            if (alpha[x] == 0)
+            {
+                exterior[x] = true;
+                queue.Enqueue(x);
+            }
+
+            var bottomIdx = (height - 1) * width + x;
+            if (alpha[bottomIdx] == 0)
+            {
+                exterior[bottomIdx] = true;
+                queue.Enqueue(bottomIdx);
+            }
+        }
+
+        for (var y = 1; y < height - 1; y++)
+        {
+            var leftIdx = y * width;
+            if (alpha[leftIdx] == 0)
+            {
+                exterior[leftIdx] = true;
+                queue.Enqueue(leftIdx);
+            }
+
+            var rightIdx = y * width + width - 1;
+            if (alpha[rightIdx] == 0)
+            {
+                exterior[rightIdx] = true;
+                queue.Enqueue(rightIdx);
+            }
+        }
+
+        // BFS through 4-connected zero-alpha neighbors.
+        while (queue.Count > 0)
+        {
+            var idx = queue.Dequeue();
+            var x = idx % width;
+            var y = idx / width;
+
+            ReadOnlySpan<(int dx, int dy)> neighbors = [(-1, 0), (1, 0), (0, -1), (0, 1)];
+            foreach (var (dx, dy) in neighbors)
+            {
+                var nx = x + dx;
+                var ny = y + dy;
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height)
+                    continue;
+
+                var nIdx = ny * width + nx;
+                if (!exterior[nIdx] && alpha[nIdx] == 0)
+                {
+                    exterior[nIdx] = true;
+                    queue.Enqueue(nIdx);
+                }
+            }
+        }
+
+        return exterior;
     }
 }

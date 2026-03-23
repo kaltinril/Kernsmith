@@ -164,9 +164,9 @@ public class LayeredRenderingTests
             "gradient+outline glyph should be wider than gradient-only glyph");
 
         // Assert -- contains gradient colors (not plain white)
-        // Look at the center of the glyph where the body should be rendered
+        // Sample the left stroke of 'A' (not the center, which is the counter hole)
         var pw = page.Width;
-        var centerX = combined.X + combined.Width / 2;
+        var centerX = combined.X + combined.Width / 4;
         var centerY = combined.Y + combined.Height / 2;
         var idx = (centerY * pw + centerX) * 4;
 

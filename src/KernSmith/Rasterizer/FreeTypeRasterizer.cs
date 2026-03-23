@@ -197,7 +197,7 @@ internal sealed class FreeTypeRasterizer : IRasterizer
         // doesn't apply additional emboldening.
         if (options.Bold && (_face->style_flags & 0x01) == 0)
         {
-            FT.FT_GlyphSlot_Embolden(slot);
+            EmboldenGlyph(slot, _face);
         }
 
         // Apply synthetic italic only if the font isn't already italic.
@@ -341,7 +341,7 @@ internal sealed class FreeTypeRasterizer : IRasterizer
 
         if (options.Bold && (_face->style_flags & 0x01) == 0)
         {
-            FT.FT_GlyphSlot_Embolden(slot);
+            EmboldenGlyph(slot, _face);
         }
         if (options.Italic && (_face->style_flags & 0x02) == 0)
         {
@@ -514,7 +514,7 @@ internal sealed class FreeTypeRasterizer : IRasterizer
 
         if (options.Bold && (_face->style_flags & 0x01) == 0)
         {
-            FT.FT_GlyphSlot_Embolden(slot);
+            EmboldenGlyph(slot, _face);
         }
         if (options.Italic && (_face->style_flags & 0x02) == 0)
         {
@@ -543,6 +543,36 @@ internal sealed class FreeTypeRasterizer : IRasterizer
                 results.Add(glyph);
         }
         return results;
+    }
+
+    /// <summary>
+    /// Applies synthetic bold with a fixed 1-pixel strength to match GDI behavior.
+    /// FreeType's built-in FT_GlyphSlot_Embolden uses ppem/24 which is too aggressive
+    /// at large sizes (e.g., 3 pixels at size 72). GDI uses approximately 1 pixel regardless
+    /// of size. This method calls FT_Outline_Embolden directly with a fixed strength and
+    /// adjusts the glyph slot metrics to match.
+    /// </summary>
+    private static unsafe void EmboldenGlyph(FT_GlyphSlotRec_* slot, FT_FaceRec_* face)
+    {
+        // GDI's synthetic bold is lighter than FreeType's default (ppem/24).
+        // Use ppem/36 as a closer approximation: ~0.9px at 32, ~1.3px at 48, ~2px at 72.
+        var ppem = (int)face->size->metrics.y_ppem;
+        var strength = Math.Max(32, ppem * 64 / 36); // 26.6 fixed-point, minimum 0.5px
+
+        // Only embolden outline glyphs; bitmap glyphs would need FT_Bitmap_Embolden.
+        if (slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_OUTLINE)
+            return;
+
+        var err = FreeTypeNative.FT_Outline_Embolden(&slot->outline, strength);
+        if (err != FT_Error.FT_Err_Ok)
+            return;
+
+        // Adjust metrics to match FreeType's FT_GlyphSlot_Embolden behavior.
+        slot->metrics.width += (IntPtr)(2 * strength);
+        slot->metrics.height += (IntPtr)(2 * strength);
+        slot->metrics.horiBearingY += (IntPtr)strength;
+        slot->metrics.horiAdvance += (IntPtr)strength;
+        slot->metrics.vertAdvance += (IntPtr)strength;
     }
 
     /// <summary>
