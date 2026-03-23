@@ -52,6 +52,8 @@ public class EffectsViewModel : ViewModel
 
     // Color Font
     public bool ColorFontEnabled { get => Get<bool>(); set => Set(value); }
+    /// <summary>Whether the currently loaded font has color glyph tables (COLR/CPAL/CBDT).</summary>
+    public bool HasColorGlyphs { get => Get<bool>(); set => Set(value); }
 
     // Variable Font
     public bool HasVariationAxes { get => Get<bool>(); set => Set(value); }

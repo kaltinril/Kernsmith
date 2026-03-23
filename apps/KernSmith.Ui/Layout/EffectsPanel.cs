@@ -39,7 +39,8 @@ public class EffectsPanel : Panel
         inner.Height = 0;
         inner.X = 8;
         inner.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
-        inner.StackSpacing = 4;
+        inner.Y = 4;
+        inner.StackSpacing = 6;
         scrollViewer.InnerPanel.Children.Add(inner);
 
         var stack = inner;
@@ -219,11 +220,11 @@ public class EffectsPanel : Panel
         sdfCheck.Checked += (_, _) => _effects.SdfEnabled = true;
         sdfCheck.Unchecked += (_, _) => _effects.SdfEnabled = false;
         stack.Children.Add(sdfCheck.Visual);
-        TooltipService.SetTooltip(sdfCheck, "Signed Distance Field — scalable font rendering for game engines");
+        TooltipService.SetTooltip(sdfCheck, "Signed Distance Field — scalable font rendering for game engines. Not compatible with outline, shadow, gradient, or super sampling.");
 
-        // SDF + SuperSample incompatibility warning
+        // SDF incompatibility warning (covers super-sample, outline, shadow, gradient)
         var sdfWarning = new TextRuntime();
-        sdfWarning.Text = "Not compatible with super sampling";
+        sdfWarning.Text = "";
         sdfWarning.Color = Theme.Warning;
         sdfWarning.Visible = false;
         stack.Children.Add(sdfWarning);
@@ -234,28 +235,100 @@ public class EffectsPanel : Panel
         colorCheck.Checked += (_, _) => _effects.ColorFontEnabled = true;
         colorCheck.Unchecked += (_, _) => _effects.ColorFontEnabled = false;
         stack.Children.Add(colorCheck.Visual);
-        TooltipService.SetTooltip(colorCheck, "Render color glyphs from fonts with COLR/CPAL tables (e.g., emoji)");
+        TooltipService.SetTooltip(colorCheck, "Render color glyphs from fonts with COLR/CPAL tables (e.g., emoji). Has no effect on fonts without color tables.");
 
         var colorFontHint = new TextRuntime();
         colorFontHint.Text = "Only affects fonts with color tables (e.g. emoji)";
         colorFontHint.Color = Theme.TextMuted;
         stack.Children.Add(colorFontHint);
 
-        // Color font + Gradient mutual exclusion warning
+        // Warning when color font is enabled but the loaded font has no color glyphs
+        var colorFontNoTablesWarning = new TextRuntime();
+        colorFontNoTablesWarning.Text = "Current font has no color tables \u2014 no visible effect";
+        colorFontNoTablesWarning.Color = Theme.Warning;
+        colorFontNoTablesWarning.Visible = false;
+        stack.Children.Add(colorFontNoTablesWarning);
+
+        // Color font + Gradient mutual exclusion feedback
         var colorGradientWarning = new TextRuntime();
-        colorGradientWarning.Text = "Color font and gradient cannot be used together";
+        colorGradientWarning.Text = "";
         colorGradientWarning.Color = Theme.Warning;
         colorGradientWarning.Visible = false;
         stack.Children.Add(colorGradientWarning);
 
-        // Wire up validation warnings
+        // Track whether we are programmatically updating checkboxes to avoid recursive loops
+        bool updatingSdfCheck = false;
+        bool updatingColorCheck = false;
+
+        // Wire up validation, SDF auto-disable, and color/gradient mutual exclusion
         _effects.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName is nameof(EffectsViewModel.SdfEnabled) or nameof(EffectsViewModel.SuperSampleLevel))
-                sdfWarning.Visible = _effects.SdfEnabled && _effects.SuperSampleLevel > 1;
+            // --- Issue #9: SDF auto-disable when incompatible options are active ---
+            if (e.PropertyName is nameof(EffectsViewModel.SdfEnabled)
+                or nameof(EffectsViewModel.SuperSampleLevel)
+                or nameof(EffectsViewModel.OutlineEnabled)
+                or nameof(EffectsViewModel.ShadowEnabled)
+                or nameof(EffectsViewModel.GradientEnabled))
+            {
+                if (_effects.SdfEnabled)
+                {
+                    var incompatible = new List<string>();
+                    if (_effects.SuperSampleLevel > 1) incompatible.Add("super sampling");
+                    if (_effects.OutlineEnabled) incompatible.Add("outline");
+                    if (_effects.ShadowEnabled) incompatible.Add("shadow");
+                    if (_effects.GradientEnabled) incompatible.Add("gradient");
 
-            if (e.PropertyName is nameof(EffectsViewModel.ColorFontEnabled) or nameof(EffectsViewModel.GradientEnabled))
-                colorGradientWarning.Visible = _effects.ColorFontEnabled && _effects.GradientEnabled;
+                    if (incompatible.Count > 0)
+                    {
+                        // Auto-disable SDF
+                        _effects.SdfEnabled = false;
+                        if (!updatingSdfCheck)
+                        {
+                            updatingSdfCheck = true;
+                            sdfCheck.IsChecked = false;
+                            updatingSdfCheck = false;
+                        }
+                        sdfWarning.Text = $"SDF disabled \u2014 not compatible with {string.Join(", ", incompatible)}";
+                        sdfWarning.Visible = true;
+                    }
+                    else
+                    {
+                        sdfWarning.Visible = false;
+                    }
+                }
+                else
+                {
+                    sdfWarning.Visible = false;
+                }
+            }
+
+            // --- Issue #10: Color font + Gradient mutual exclusion ---
+            if (e.PropertyName == nameof(EffectsViewModel.ColorFontEnabled) && _effects.ColorFontEnabled && _effects.GradientEnabled)
+            {
+                _effects.GradientEnabled = false;
+                colorGradientWarning.Text = "Gradient disabled \u2014 mutually exclusive with color font";
+                colorGradientWarning.Visible = true;
+            }
+            else if (e.PropertyName == nameof(EffectsViewModel.GradientEnabled) && _effects.GradientEnabled && _effects.ColorFontEnabled)
+            {
+                _effects.ColorFontEnabled = false;
+                if (!updatingColorCheck)
+                {
+                    updatingColorCheck = true;
+                    colorCheck.IsChecked = false;
+                    updatingColorCheck = false;
+                }
+                colorGradientWarning.Text = "Color font disabled \u2014 mutually exclusive with gradient";
+                colorGradientWarning.Visible = true;
+            }
+            else if (e.PropertyName is nameof(EffectsViewModel.ColorFontEnabled) or nameof(EffectsViewModel.GradientEnabled))
+            {
+                colorGradientWarning.Visible = false;
+            }
+
+            // Color font no-tables warning
+            if (e.PropertyName is nameof(EffectsViewModel.ColorFontEnabled) or nameof(EffectsViewModel.HasColorGlyphs))
+                colorFontNoTablesWarning.Visible = _effects.ColorFontEnabled && !_effects.HasColorGlyphs;
         };
 
         // --- FALLBACK CHARACTER section ---
@@ -271,6 +344,7 @@ public class EffectsPanel : Panel
         fallbackLabel.Text = "Char:";
         fallbackLabel.Width = 70;
         fallbackRow.AddChild(fallbackLabel);
+        TooltipService.SetTooltip(fallbackLabel, "Character to display when a requested glyph is missing from the font");
 
         var fallbackTextBox = new TextBox();
         fallbackTextBox.Width = 60;
@@ -366,6 +440,7 @@ public class EffectsPanel : Panel
             var sizeLabel = new Label();
             sizeLabel.Text = "Max Size:";
             maxSizeRow.AddChild(sizeLabel);
+            TooltipService.SetTooltip(sizeLabel, "Maximum atlas texture dimensions in pixels. When Autofit is enabled, the actual output may be smaller if all glyphs fit in a smaller atlas.");
 
             var maxWidthCombo = new ComboBox();
             maxWidthCombo.Width = 80;
@@ -399,6 +474,7 @@ public class EffectsPanel : Panel
             autofit.Text = "Autofit Texture";
             autofit.Width = 220;
             autofit.IsChecked = _atlasConfig.AutofitTexture;
+            TooltipService.SetTooltip(autofit, "Shrink the atlas to the smallest power-of-two size that fits all glyphs. The output may be much smaller than Max Size (e.g., 256x256 even if max is 1024x1024). Disable this to always use the exact Max Size.");
             autofit.Checked += (_, _) => { if (!_updatingFromVm) _atlasConfig.AutofitTexture = true; };
             autofit.Unchecked += (_, _) => { if (!_updatingFromVm) _atlasConfig.AutofitTexture = false; };
             contentPanel.Children.Add(autofit.Visual);
@@ -406,6 +482,7 @@ public class EffectsPanel : Panel
             var packAlgoLabel = new Label();
             packAlgoLabel.Text = "Packing Algorithm:";
             contentPanel.Children.Add(packAlgoLabel.Visual);
+            TooltipService.SetTooltip(packAlgoLabel, "Algorithm used to arrange glyphs in the texture atlas");
 
             var packAlgoCombo = new ComboBox();
             packAlgoCombo.Width = 200;
@@ -515,6 +592,7 @@ public class EffectsPanel : Panel
             var formatLabel = new Label();
             formatLabel.Text = "Descriptor Format:";
             contentPanel.Children.Add(formatLabel.Visual);
+            TooltipService.SetTooltip(formatLabel, "File format for the .fnt descriptor (Text, XML, or Binary)");
 
             var formatGroup = new StackPanel();
             formatGroup.Spacing = 2;
@@ -538,6 +616,7 @@ public class EffectsPanel : Panel
             kerningCb.Text = "Include Kerning";
             kerningCb.Width = 200;
             kerningCb.IsChecked = _atlasConfig.IncludeKerning;
+            TooltipService.SetTooltip(kerningCb, "Include kerning pair data in the output for improved text spacing");
             kerningCb.Checked += (_, _) => _atlasConfig.IncludeKerning = true;
             kerningCb.Unchecked += (_, _) => _atlasConfig.IncludeKerning = false;
             contentPanel.Children.Add(kerningCb.Visual);
@@ -661,33 +740,104 @@ public class EffectsPanel : Panel
         lbl.Width = 70;
         row.AddChild(lbl);
 
+        // Color swatch preview
+        var swatchContainer = new ContainerRuntime();
+        swatchContainer.Width = 24;
+        swatchContainer.Height = 24;
+        row.Visual.Children.Add(swatchContainer);
+
+        var swatch = new ColoredRectangleRuntime();
+        swatch.Width = 0;
+        swatch.WidthUnits = DimensionUnitType.RelativeToParent;
+        swatch.Height = 0;
+        swatch.HeightUnits = DimensionUnitType.RelativeToParent;
+        swatch.Color = new Microsoft.Xna.Framework.Color(defaultR, defaultG, defaultB);
+        swatchContainer.Children.Add(swatch);
+
+        // Swatch border for visibility against dark backgrounds
+        var swatchBorder = new ColoredRectangleRuntime();
+        swatchBorder.Width = 0;
+        swatchBorder.WidthUnits = DimensionUnitType.RelativeToParent;
+        swatchBorder.Height = 0;
+        swatchBorder.HeightUnits = DimensionUnitType.RelativeToParent;
+        swatchBorder.Color = Theme.PanelBorder;
+        swatchContainer.Children.Insert(0, swatchBorder);
+
+        // Hex input (e.g., "#FF0000" or "FF0000")
+        var hexBox = new TextBox();
+        hexBox.Width = 80;
+        hexBox.Text = $"#{defaultR:X2}{defaultG:X2}{defaultB:X2}";
+        TooltipService.SetTooltip(hexBox, "Enter a hex color value (e.g., #FF0000 or FF0000)");
+
+        byte currentR = defaultR, currentG = defaultG, currentB = defaultB;
+        bool updatingFromSlider = false;
+
+        hexBox.TextChanged += (_, _) =>
+        {
+            if (updatingFromSlider) return;
+            var hex = hexBox.Text?.Trim() ?? "";
+            if (hex.StartsWith('#')) hex = hex[1..];
+            if (hex.Length == 6 &&
+                byte.TryParse(hex[..2], System.Globalization.NumberStyles.HexNumber, null, out var r) &&
+                byte.TryParse(hex[2..4], System.Globalization.NumberStyles.HexNumber, null, out var g) &&
+                byte.TryParse(hex[4..6], System.Globalization.NumberStyles.HexNumber, null, out var b))
+            {
+                currentR = r; currentG = g; currentB = b;
+                onRChanged(r); onGChanged(g); onBChanged(b);
+                swatch.Color = new Microsoft.Xna.Framework.Color(r, g, b);
+            }
+        };
+        row.AddChild(hexBox);
+
+        // R/G/B individual component boxes (compact, for fine-tuning)
         var rBox = new TextBox();
-        rBox.Width = 40;
+        rBox.Width = 34;
         rBox.Text = defaultR.ToString();
         rBox.TextChanged += (_, _) =>
         {
             if (byte.TryParse(rBox.Text, out var val))
+            {
+                currentR = val;
                 onRChanged(val);
+                swatch.Color = new Microsoft.Xna.Framework.Color(currentR, currentG, currentB);
+                updatingFromSlider = true;
+                hexBox.Text = $"#{currentR:X2}{currentG:X2}{currentB:X2}";
+                updatingFromSlider = false;
+            }
         };
         row.AddChild(rBox);
 
         var gBox = new TextBox();
-        gBox.Width = 40;
+        gBox.Width = 34;
         gBox.Text = defaultG.ToString();
         gBox.TextChanged += (_, _) =>
         {
             if (byte.TryParse(gBox.Text, out var val))
+            {
+                currentG = val;
                 onGChanged(val);
+                swatch.Color = new Microsoft.Xna.Framework.Color(currentR, currentG, currentB);
+                updatingFromSlider = true;
+                hexBox.Text = $"#{currentR:X2}{currentG:X2}{currentB:X2}";
+                updatingFromSlider = false;
+            }
         };
         row.AddChild(gBox);
 
         var bBox = new TextBox();
-        bBox.Width = 40;
+        bBox.Width = 34;
         bBox.Text = defaultB.ToString();
         bBox.TextChanged += (_, _) =>
         {
             if (byte.TryParse(bBox.Text, out var val))
+            {
+                currentB = val;
                 onBChanged(val);
+                swatch.Color = new Microsoft.Xna.Framework.Color(currentR, currentG, currentB);
+                updatingFromSlider = true;
+                hexBox.Text = $"#{currentR:X2}{currentG:X2}{currentB:X2}";
+                updatingFromSlider = false;
+            }
         };
         row.AddChild(bBox);
     }

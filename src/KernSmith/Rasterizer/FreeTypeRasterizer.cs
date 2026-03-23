@@ -176,6 +176,12 @@ internal sealed class FreeTypeRasterizer : IRasterizer
             ? (FT_LOAD)FreeTypeNative.FT_LOAD_COLOR
             : FT_LOAD.FT_LOAD_DEFAULT;
 
+        // When rendering mono, tell the hinter to optimize for 1-bit output.
+        // Without this, hinting targets grayscale which produces suboptimal
+        // stroke placement when the final render is monochrome.
+        if (options.AntiAlias == AntiAliasMode.None && !options.Sdf)
+            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_TARGET_MONO;
+
         if (!options.EnableHinting)
             loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
 
@@ -229,14 +235,17 @@ internal sealed class FreeTypeRasterizer : IRasterizer
         var bitmapHeight = (int)bitmap.rows;
         var pitch = bitmap.pitch;
 
-        // Extract metrics from 26.6 fixed-point values.
+        // Use bitmap_left/bitmap_top for bearing — these are the actual pixel-snapped
+        // positions after hinting, unlike slot->metrics which are outline metrics in
+        // 26.6 fixed-point that don't reflect grid-fitting adjustments. This matters
+        // most at small font sizes where hinting shifts glyphs by 1-2 pixels.
         ref var metrics = ref slot->metrics;
         var glyphMetrics = new GlyphMetrics(
-            BearingX: F26Dot6ToRounded(metrics.horiBearingX),
-            BearingY: F26Dot6ToRounded(metrics.horiBearingY),
+            BearingX: slot->bitmap_left,
+            BearingY: slot->bitmap_top,
             Advance: F26Dot6ToRounded(metrics.horiAdvance),
-            Width: F26Dot6ToRounded(metrics.width),
-            Height: F26Dot6ToRounded(metrics.height));
+            Width: bitmapWidth,
+            Height: bitmapHeight);
 
         // Copy bitmap data.
         byte[] bitmapData;
@@ -254,6 +263,26 @@ internal sealed class FreeTypeRasterizer : IRasterizer
             {
                 Marshal.Copy(src + row * pitch, bitmapData, row * absPitch, absPitch);
             }
+        }
+
+        // Unpack 1bpp mono bitmap to 8bpp grayscale when anti-alias is off.
+        if (bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_MONO && bitmapData.Length > 0)
+        {
+            var unpacked = new byte[bitmapWidth * bitmapHeight];
+            var absPitch = Math.Abs(pitch);
+            for (var row = 0; row < bitmapHeight; row++)
+            {
+                for (var col = 0; col < bitmapWidth; col++)
+                {
+                    var byteIndex = row * absPitch + col / 8;
+                    var bitIndex = 7 - (col % 8); // MSB-first
+                    unpacked[row * bitmapWidth + col] = (bitmapData[byteIndex] & (1 << bitIndex)) != 0
+                        ? (byte)255
+                        : (byte)0;
+                }
+            }
+            bitmapData = unpacked;
+            pitch = bitmapWidth;
         }
 
         // Swap BGRA to RGBA when FreeType returns a color bitmap.

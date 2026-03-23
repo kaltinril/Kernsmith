@@ -1,5 +1,6 @@
 using Gum.Mvvm;
 using KernSmith.Output;
+using KernSmith.Output.Model;
 using KernSmith.Ui.Models;
 
 namespace KernSmith.Ui.ViewModels;
@@ -29,6 +30,9 @@ public class PreviewViewModel : ViewModel
 
     // Atlas summary
     public string AtlasSummary { get => Get<string>(); set => Set(value); }
+
+    // BMFont model for sample text rendering
+    public BmFontModel? Model { get => Get<BmFontModel?>(); set => Set(value); }
 
     public PreviewViewModel()
     {
@@ -62,6 +66,7 @@ public class PreviewViewModel : ViewModel
         }
 
         Pages = pages;
+        Model = result.Model;
         SelectedPageIndex = 0;
         SelectedPage = pages.Count > 0 ? pages[0] : null;
 
@@ -100,6 +105,7 @@ public class PreviewViewModel : ViewModel
     public void Clear()
     {
         Pages = Array.Empty<PreviewPage>();
+        Model = null;
         SelectedPageIndex = 0;
         SelectedPage = null;
         HasResult = false;

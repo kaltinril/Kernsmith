@@ -37,7 +37,7 @@ public class StatusBarViewModel : ViewModel
         StatusText = $"Generation complete ({pageCount} page(s))";
         AtlasDimensions = $"{scaleW}x{scaleH}";
         GlyphCount = glyphCount;
-        GenerationTime = $"{elapsed.TotalSeconds:F2}s";
+        GenerationTime = $"{elapsed.TotalMilliseconds:F0}ms";
         IsGenerating = false;
     }
 

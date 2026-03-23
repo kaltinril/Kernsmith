@@ -8,6 +8,7 @@ using KernSmith.Ui.Layout;
 using KernSmith.Ui.ViewModels;
 using KernSmith.Ui.Services;
 using KernSmith.Ui.Styling;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace KernSmith.Ui;
 
@@ -204,6 +205,7 @@ public class KernSmithGame : Game
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(new Color(30, 30, 30));
+        GraphicsDevice.SamplerStates[0] = SamplerState.PointClamp;
         GumService.Default.Draw();
         base.Draw(gameTime);
     }

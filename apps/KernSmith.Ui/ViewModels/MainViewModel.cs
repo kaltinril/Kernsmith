@@ -66,12 +66,10 @@ public class MainViewModel : ViewModel
         // Wire auto-regeneration and dirty tracking from sub-viewmodels
         FontConfig.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName is nameof(FontConfigViewModel.FontSize)
-                or nameof(FontConfigViewModel.SelectedPreset)
-                or nameof(FontConfigViewModel.CustomCharacters))
+            if (e.PropertyName is nameof(FontConfigViewModel.FontSize))
             {
                 MarkDirty();
-                RequestAutoRegenerate();
+                RequestAutoRegenerateDebounced();
             }
         };
 
@@ -107,13 +105,12 @@ public class MainViewModel : ViewModel
     }
 
     /// <summary>
-    /// Opens a font file using the pending path from <see cref="FileDialogService"/>.
+    /// Opens a file browser dialog to select and load a font file.
     /// </summary>
     public void OpenFont()
     {
-        var path = _fileDialogService.OpenFontFile();
-        if (path == null) return;
-        LoadFontFromPath(path);
+        var dialog = new FileBrowserDialog();
+        dialog.Show(LoadFontFromPath);
     }
 
     /// <summary>
@@ -146,6 +143,7 @@ public class MainViewModel : ViewModel
         Effects.VariationAxisValues.Clear();
         Effects.VariationAxesList = FontConfig.LoadedVariationAxes;
         Effects.HasVariationAxes = FontConfig.HasVariationAxes;
+        Effects.HasColorGlyphs = FontConfig.HasColorGlyphs;
 
         if (FontConfig.LoadedVariationAxes is { Count: > 0 })
         {
@@ -299,10 +297,28 @@ public class MainViewModel : ViewModel
 
     /// <summary>
     /// Opens a save dialog and exports the last generated result to the chosen path.
+    /// If no result has been generated yet, triggers generation first.
     /// </summary>
-    public void SaveAs()
+    public async void SaveAs()
     {
-        if (_lastResult == null) return;
+        if (_lastResult == null)
+        {
+            var validationError = ValidateBeforeGenerate();
+            if (validationError != null)
+            {
+                StatusBar.SetError(validationError);
+                return;
+            }
+
+            StatusBar.StatusText = "Generating before export...";
+            await GenerateAsync();
+
+            if (_lastResult == null)
+            {
+                StatusBar.SetError("Generation failed — cannot export.");
+                return;
+            }
+        }
 
         var initialDir = _sessionService.State.LastOutputDir;
         var dialog = new SaveDialog("myfont", "fnt");
@@ -310,13 +326,19 @@ public class MainViewModel : ViewModel
         {
             try
             {
-                _lastResult.ToFile(path);
+                // ToFile expects a base path without extension (e.g., "output/myfont")
+                var basePath = path;
+                var ext = Path.GetExtension(path);
+                if (ext.Equals(".fnt", StringComparison.OrdinalIgnoreCase))
+                    basePath = path[..^ext.Length];
+
+                _lastResult!.ToFile(basePath);
 
                 var dir = Path.GetDirectoryName(path);
                 if (!string.IsNullOrEmpty(dir))
                     _sessionService.State.LastOutputDir = dir;
 
-                StatusBar.StatusText = $"Saved to {path}";
+                StatusBar.StatusText = $"Exported to {basePath}.fnt";
             }
             catch (Exception ex)
             {
@@ -359,13 +381,12 @@ public class MainViewModel : ViewModel
     }
 
     /// <summary>
-    /// Opens a file dialog to select and load a .bmfc project file.
+    /// Opens a file browser dialog to select and load a .bmfc project file.
     /// </summary>
     public void LoadProject()
     {
-        var path = _fileDialogService.OpenFontFile();
-        if (path == null) return;
-        LoadProjectFromPath(path);
+        var dialog = new FileBrowserDialog { FileExtensionFilter = [".bmfc"] };
+        dialog.Show(LoadProjectFromPath);
     }
 
     /// <summary>
@@ -389,7 +410,7 @@ public class MainViewModel : ViewModel
     }
 
     /// <summary>
-    /// Debounces auto-regeneration: waits 500ms after the last change before generating.
+    /// Triggers immediate auto-regeneration (for checkbox/dropdown changes).
     /// Only triggers when <see cref="AutoRegenerate"/> is enabled and a font is loaded.
     /// </summary>
     public void RequestAutoRegenerate()
@@ -397,10 +418,21 @@ public class MainViewModel : ViewModel
         if (!AutoRegenerate || !FontConfig.IsFontLoaded) return;
 
         _autoRegenCts?.Cancel();
+        _ = GenerateAsync();
+    }
+
+    /// <summary>
+    /// Debounced auto-regeneration with 300ms delay (for text input changes).
+    /// </summary>
+    public void RequestAutoRegenerateDebounced()
+    {
+        if (!AutoRegenerate || !FontConfig.IsFontLoaded) return;
+
+        _autoRegenCts?.Cancel();
         _autoRegenCts = new CancellationTokenSource();
         var token = _autoRegenCts.Token;
 
-        Task.Delay(500, token).ContinueWith(async _ =>
+        Task.Delay(300, token).ContinueWith(async _ =>
         {
             if (!token.IsCancellationRequested)
                 await GenerateAsync();

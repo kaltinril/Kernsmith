@@ -36,6 +36,7 @@ public class FontConfigPanel : Panel
         inner.Width = -16; // 8px padding each side
         inner.Height = 0;
         inner.X = 8;
+        inner.Y = 4;
         inner.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
         inner.StackSpacing = 6;
         this.AddChild(inner);
@@ -65,6 +66,7 @@ public class FontConfigPanel : Panel
             btn.Width = 40;
             presetButtons.Add((btn, preset));
 
+            TooltipService.SetTooltip(btn, preset.Description);
             var capturedPreset = preset;
             btn.Click += (_, _) =>
             {
@@ -181,6 +183,7 @@ public class FontConfigPanel : Panel
         var familyLabel = new Label();
         familyLabel.Text = "System Font:";
         stack.Children.Add(familyLabel.Visual);
+        TooltipService.SetTooltip(familyLabel, "Select a font installed on your system");
 
         var familyCombo = new ComboBox();
         familyCombo.Width = 260;
@@ -275,9 +278,10 @@ public class FontConfigPanel : Panel
         var sizeLabel = new Label();
         sizeLabel.Text = "Font Size:";
         sizeRow.AddChild(sizeLabel);
+        TooltipService.SetTooltip(sizeLabel, "Font size in points (4-500)");
 
         var sizeTextBox = new TextBox();
-        sizeTextBox.Width = 50;
+        sizeTextBox.Width = 42;
         sizeTextBox.Text = "32";
         sizeTextBox.TextChanged += (_, _) =>
         {
@@ -306,6 +310,7 @@ public class FontConfigPanel : Panel
         generateBtn.IsEnabled = _fontConfig.IsFontLoaded;
         generateBtn.Click += async (_, _) => await _mainViewModel.GenerateAsync();
         stack.Children.Add(generateBtn.Visual);
+        TooltipService.SetTooltip(generateBtn, "Generate bitmap font atlas from current settings");
 
         // Enable/disable Generate button based on font loaded state
         _fontConfig.PropertyChanged += (_, e) =>
@@ -322,6 +327,7 @@ public class FontConfigPanel : Panel
         autoRegenCb.Unchecked += (_, _) => _mainViewModel.AutoRegenerate = false;
         stack.Children.Add(autoRegenCb.Visual);
         TooltipService.SetTooltip(autoRegenCb, "Automatically re-generate when settings change");
+
     }
 
     private static void AddSectionHeader(Gum.Wireframe.GraphicalUiElement parent, string text)
