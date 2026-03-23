@@ -97,19 +97,20 @@ public static class BmFont
 
             var rasterOptions = RasterOptions.FromGeneratorOptions(options);
 
-            if (options.MatchCharHeight)
+            // BMFont treats fontSize as cell height (usWinAscent + usWinDescent scaled),
+            // not as em-square size (ppem). Compute the effective ppem that produces the
+            // requested cell height. When MatchCharHeight is true (negative fontSize in
+            // .bmfc), use fontSize directly as ppem (em-square mode).
+            int effectiveSize = options.Size;
+            if (!options.MatchCharHeight
+                && fontInfo.Os2 is { } os2CellScale
+                && os2CellScale.WinAscent + os2CellScale.WinDescent > 0)
             {
-                var probeGlyphs = rasterizer.RasterizeAll(codepoints, rasterOptions).ToList();
-                if (probeGlyphs.Count > 0)
-                {
-                    var maxRenderedHeight = probeGlyphs.Max(g => g.Height);
-                    if (maxRenderedHeight > 0 && maxRenderedHeight != rasterOptions.Size)
-                    {
-                        var adjustedSize = (int)Math.Round((double)rasterOptions.Size * rasterOptions.Size / maxRenderedHeight);
-                        if (adjustedSize < 1) adjustedSize = 1;
-                        rasterOptions = rasterOptions with { Size = adjustedSize };
-                    }
-                }
+                effectiveSize = (int)(
+                    (double)options.Size * fontInfo.UnitsPerEm
+                    / (os2CellScale.WinAscent + os2CellScale.WinDescent));
+                if (effectiveSize < 1) effectiveSize = 1;
+                rasterOptions = rasterOptions with { Size = effectiveSize };
             }
 
             var ssLevel = Math.Clamp(options.SuperSampleLevel, 1, 4);
@@ -165,7 +166,8 @@ public static class BmFont
                 Glyphs = glyphs,
                 Codepoints = codepoints,
                 FailedCodepoints = failedCodepoints,
-                Options = options
+                Options = options,
+                EffectiveSize = effectiveSize
             };
         }
         finally
@@ -300,7 +302,8 @@ public static class BmFont
             metrics?.Begin("ModelAssembly");
             var model = BmFontModelBuilder.Build(fontInfo, glyphs, packResult, options,
                 charOffsetX: region.X, charOffsetY: region.Y,
-                overrideScaleW: sourceWidth, overrideScaleH: sourceHeight);
+                overrideScaleW: sourceWidth, overrideScaleH: sourceHeight,
+                effectiveSize: rasterResult.EffectiveSize);
             metrics?.End();
 
             return new BmFontResult(model, pages, failedCodepoints, metrics, options, sourceFontFile, sourceFontName);
@@ -414,7 +417,8 @@ public static class BmFont
 
             // 7. Assemble BMFont model
             metrics?.Begin("ModelAssembly");
-            var model = BmFontModelBuilder.Build(fontInfo, glyphs, packResult, options, glyphChannels);
+            var model = BmFontModelBuilder.Build(fontInfo, glyphs, packResult, options, glyphChannels,
+                effectiveSize: rasterResult.EffectiveSize);
             metrics?.End();
 
             return new BmFontResult(model, pages, failedCodepoints, metrics, options, sourceFontFile, sourceFontName);
@@ -1329,7 +1333,8 @@ public static class BmFont
 
                 var model = BmFontModelBuilder.Build(
                     rr.FontInfo, rr.Glyphs, packResult, jobOptions,
-                    placementOverride: placementOverride);
+                    placementOverride: placementOverride,
+                    effectiveSize: rr.EffectiveSize);
                 var fontResult = new BmFontResult(model, sharedPages, rr.FailedCodepoints);
 
                 sw.Stop();

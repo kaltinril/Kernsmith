@@ -1,6 +1,6 @@
 # Phase 76 — Metrics Parity with BMFont
 
-> **Status**: Investigation complete — ready for implementation
+> **Status**: In Progress — cell-height sizing fix implemented, TTC face index and yOffset issues remain
 > **Created**: 2026-03-22
 > **Goal**: Investigate and fix glyph metric differences between KernSmith and BMFont output.
 
