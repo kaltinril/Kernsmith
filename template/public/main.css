@@ -1,0 +1,5 @@
+/* Constrain the navbar logo to a reasonable size */
+.navbar-brand img#logo {
+    height: 36px;
+    width: auto;
+}
