@@ -81,12 +81,10 @@ Output Layer
 |---|----------|-------------|--------|
 | 30 | [WASM Rasterization](phase-30-wasm-rasterization.md) | Live investigation of WASM-compatible rasterizers (prior research was preliminary) | Future |
 | 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
-| 55 | [UI Core Library Prerequisites](phase-55-ui-core-library-prerequisites.md) | API additions needed by the UI: public font reader, missing builder methods, FontInfo expansion, CancellationToken, progress reporting | Complete |
-| 69 | [Final Polish & Release Prep](phase-69-ui-final-polish.md) | UI consistency, branding, testing, distribution, marketing assets, release checklist | Complete |
-| 72 | [UI Issues Round 2](phase-72-ui-issues-round2.md) | Fix remaining UI issues found during manual testing | Partial |
 | 75 | [DocFX Docs Site Fixes](phase-75-docs-site-fixes.md) | Fix issues found on the deployed DocFX documentation site | In Progress |
 | 76 | [Metrics Parity with BMFont](phase-76-metrics-parity.md) | Investigate and fix glyph metric differences between KernSmith and BMFont output | Planning |
 | 77 | [Color Picker Dialog](phase-77-color-picker-dialog.md) | Build a reusable color picker dialog that opens when clicking a color swatch | Planning |
+| 80 | [Atlas Preview Rendering](phase-80-atlas-preview-rendering.md) | Fix atlas preview rendering quality in UI to match saved PNG | Planning |
 
 ---
 
@@ -113,7 +111,11 @@ Output Layer
 | 17 | [Rebrand to KernSmith](done/phase-17-rebrand-kernsmith.md) | Full project rename from bmfontier to KernSmith |
 | 18 | [API Usability](done/phase-18-api-usability.md) | FromConfig, convenience properties, GetPngData, ToBmfc, Builder.FromConfig, init CLI command |
 | 20 | [Release Readiness](done/phase-20-release-readiness.md) | Version alignment, package icon, dotnet pack, CI verification, GitHub polish, first NuGet publish |
-| 21 | [Atlas Output Modes](phase-21-atlas-output-modes.md) | Combined batch atlas, render-to-existing-PNG, atlas size query & constraints |
+| 21 | [Atlas Output Modes](done/phase-21-atlas-output-modes.md) | Combined batch atlas, render-to-existing-PNG, atlas size query & constraints |
+| 55 | [UI Core Library Prerequisites](done/phase-55-ui-core-library-prerequisites.md) | API additions needed by the UI: font reader, builder methods, FontInfo expansion |
+| 69 | [Final Polish & Release Prep](done/phase-69-ui-final-polish.md) | UI consistency, about dialog, status bar, accent headers, panel backgrounds |
+| 72 | [UI Issues Round 2](done/phase-72-ui-issues-round2.md) | Fix remaining UI issues from manual testing — 21 issues resolved |
+| 74 | [MIT License](done/phase-74-mit-license.md) | Switch all license references to MIT |
 | 60 | [UI MVP](done/phase-60-ui-mvp.md) | MonoGame + GUM UI app: project scaffold, three-panel layout, font loading, basic generation |
 | 61 | [Font Loading & Character Selection](done/phase-61-ui-font-character-selection.md) | System font browser, BMFont-style character grid, Unicode block sidebar, text-based selection |
 | 62 | [Effects System UI](done/phase-62-ui-effects-system.md) | Outline, shadow, gradient controls with interactive angle/offset pads, channel config |
