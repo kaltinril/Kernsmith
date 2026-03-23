@@ -1,6 +1,6 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-21, 60-68, 73-74 complete. Phase 30 (WASM) is future/exploratory. Phases 55, 69, 72 partial. Phases 75-77 active.
+> **Status**: Phases 1-21, 55, 60-69, 72-74 complete. Phase 30 (WASM) is future/exploratory. Phases 75-77, 80 active.
 > **Date**: 2026-03-22
 
 ---
@@ -81,8 +81,8 @@ Output Layer
 |---|----------|-------------|--------|
 | 30 | [WASM Rasterization](phase-30-wasm-rasterization.md) | Live investigation of WASM-compatible rasterizers (prior research was preliminary) | Future |
 | 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
-| 55 | [UI Core Library Prerequisites](phase-55-ui-core-library-prerequisites.md) | API additions needed by the UI: public font reader, missing builder methods, FontInfo expansion, CancellationToken, progress reporting | Partial |
-| 69 | [Final Polish & Release Prep](phase-69-ui-final-polish.md) | UI consistency, branding, testing, distribution, marketing assets, release checklist | Partial |
+| 55 | [UI Core Library Prerequisites](phase-55-ui-core-library-prerequisites.md) | API additions needed by the UI: public font reader, missing builder methods, FontInfo expansion, CancellationToken, progress reporting | Complete |
+| 69 | [Final Polish & Release Prep](phase-69-ui-final-polish.md) | UI consistency, branding, testing, distribution, marketing assets, release checklist | Complete |
 | 72 | [UI Issues Round 2](phase-72-ui-issues-round2.md) | Fix remaining UI issues found during manual testing | Partial |
 | 75 | [DocFX Docs Site Fixes](phase-75-docs-site-fixes.md) | Fix issues found on the deployed DocFX documentation site | In Progress |
 | 76 | [Metrics Parity with BMFont](phase-76-metrics-parity.md) | Investigate and fix glyph metric differences between KernSmith and BMFont output | Planning |
@@ -224,7 +224,7 @@ Replaced custom INI-style .bmfc format with standard AngelCode BMFont flat key=v
 
 ---
 
-### Phase 55 -- UI Core Library Prerequisites (PARTIAL)
+### Phase 55 -- UI Core Library Prerequisites (COMPLETE)
 API additions to the KernSmith NuGet library needed by the UI application. 21 items across 5 categories. **Completed**: BmFont.ReadFontInfo() public wrapper, WithCollectMetrics builder method, WithFallbackCodepoint(int) with surrogate rejection, BmfcConfig.FromOptions() factory, Os2Metrics/NameInfo/HheaTable/HeadTable expanded with additional parsed fields, AtlasPage.PixelData and PipelineMetrics documented, BmfcConfigReader round-trip fix. **Deferred**: CancellationToken on Build()/GenerateBatch(), IProgress<T> progress reporting, WithSdfSpread, WithOutputFormat, WithAdaptivePaddingFactor, WithBitDepth, compression options, CPAL palette data, .ttc face enumeration. AtlasSizeEstimator already resolved via existing QueryAtlasSize() API.
 
 ### UI Application Phases (60-69)
@@ -258,7 +258,7 @@ Non-blocking workflow indicator (load → preview → select → configure → e
 ### Phase 68 -- Platform, Performance & Accessibility (COMPLETE)
 Background generation with ConcurrentQueue thread marshaling (MonoGame requires main-thread GPU ops). Virtual character grid for 10K+ glyphs. Texture2D lifecycle management. Cross-platform testing (Windows/macOS/Linux via DesktopGL). Keyboard-first accessibility (MonoGame has no screen reader support — documented honestly). Error handling and crash recovery with auto-save. Platform-specific packaging (MSI, .app, AppImage). Diagnostics.
 
-### Phase 69 -- Final Polish & Release Prep (PARTIAL)
+### Phase 69 -- Final Polish & Release Prep (COMPLETE)
 UI consistency audit across all custom GUM components. Visual polish (app icon, splash screen, about dialog, GameTime-based animations). First-run tutorial overlay. ViewModel unit tests and integration tests with real fonts. Platform builds via dotnet publish. Marketing screenshots, demo GIF, sample .bmfc projects. Known issues documentation. Release checklist and v1.1 roadmap.
 
 ### Phase 70 -- UI Manual Review (COMPLETE)
@@ -267,7 +267,7 @@ Manual review and testing of the UI application. Identified issues and areas for
 ### Phase 71 -- UI Stabilization (COMPLETE)
 Bug fixes and stabilization of the UI application based on manual review findings.
 
-### Phase 72 -- UI Issues Round 2 (PARTIAL)
+### Phase 72 -- UI Issues Round 2 (COMPLETE)
 Fix remaining UI issues found during manual testing. Second round of bug fixes and improvements.
 
 ### Phase 73 -- Documentation Review (COMPLETE)
@@ -284,6 +284,9 @@ Investigate and fix glyph metric differences between KernSmith and BMFont output
 
 ### Phase 77 -- Color Picker Dialog (PLANNING)
 Build a reusable color picker dialog that opens when clicking a color swatch in the UI.
+
+### Phase 80 -- Atlas Preview Rendering Quality (PLANNING)
+Fix atlas preview rendering in the UI to match the saved PNG at 1:1 zoom. Cosmetic issue only — saved output is correct.
 
 ---
 

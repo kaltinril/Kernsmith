@@ -1,6 +1,6 @@
 # Phase 69 — Final Polish & Release Preparation
 
-> **Status**: Partial
+> **Status**: Complete — realistic items implemented; remaining items (splash screen, tutorials, animations, marketing, platform builds, etc.) cut as overkill for a bitmap font tool
 > **Completed**: 2026-03-22. About dialog with version/credits, status bar with separators and error coloring, accent-colored section headers, panel backgrounds, disabled Generate button when no font. Splash screen, tutorial overlay, animations, ViewModel unit tests, platform builds, and marketing assets deferred to release.
 > **Created**: 2026-03-21
 > **Goal**: Final polish pass covering UI consistency, documentation, testing, marketing assets, and release preparation to ship a professional, production-ready bitmap font generator built on MonoGame + GUM UI.
