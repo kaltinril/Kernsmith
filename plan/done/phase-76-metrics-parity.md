@@ -30,7 +30,7 @@ KernSmith's ppem is ~12% larger, producing systematically wider metrics across a
 
 ### Evidence
 
-Generated identical .fnt files from both tools using Arial 32px, chars 32-126, padding 1,1,1,1, spacing 1,1. Full diff at `tests/phase76-comparison/`.
+Generated identical .fnt files from both tools using Arial 32px, chars 32-126, padding 1,1,1,1, spacing 1,1. Full diff at `tests/bmfont-compare/`.
 
 | Metric | BMFont | KernSmith | Delta |
 |--------|--------|-----------|-------|
@@ -78,7 +78,7 @@ Re-run the comparison diff script after changes. Target:
 
 - `plan/phase76/side-by-side.png` — side-by-side at 100%
 - `plan/phase76/zoomed.png` — zoomed comparison
-- `tests/phase76-comparison/` — comparison configs, generated .fnt files, diff script
+- `tests/bmfont-compare/` — comparison configs, generated .fnt files, diff script
 - `reference/REF-09-font-metrics-and-sizing.md` — comprehensive font metrics reference
 
 ## Key Source Files

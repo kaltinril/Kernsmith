@@ -16,6 +16,7 @@
 /samples/output/
 /samples/KernSmith.Samples/output/
 /tests/output/
+/tests/bmfont-compare/
 
 # Generated font files at repo root (from CLI testing)
 /*.fnt
