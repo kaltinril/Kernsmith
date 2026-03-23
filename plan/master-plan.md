@@ -173,6 +173,8 @@ These detailed docs were used during implementation and remain as reference mate
 | REF-04 | [Other Font Formats](../reference/REF-04-other-font-formats-reference.md) | WOFF, OTF, and other format details |
 | REF-05 | [BMFont Format Reference](../reference/REF-05-bmfont-format-reference.md) | BMFont file format specification |
 | REF-06 | [Texture Packing Reference](../reference/REF-06-texture-packing-reference.md) | Rectangle packing algorithm research |
+| REF-07 | [GUM Forms Cheatsheet](../reference/REF-07-gum-forms-cheatsheet.md) | GUM/Forms UI framework quick reference |
+| REF-09 | [Font Metrics and Sizing](../reference/REF-09-font-metrics-and-sizing.md) | Font metrics, sizing, synthetic bold/italic, outline rendering |
 | REF-10 | [Hiero Format Reference](../reference/REF-10-hiero-format-reference.md) | Hiero `.hiero` configuration file format specification |
 
 ---
