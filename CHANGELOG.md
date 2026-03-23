@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.5] - 2026-03-23
+
+### Fixed
+
+- Outline counter-fill: EDT outlines no longer expand into letter counters (holes in e/o/a/H) — uses BFS flood-fill to distinguish exterior vs counter pixels
+- Synthetic bold counter bloat: replaced FT_GlyphSlot_Embolden with lighter FT_Outline_Embolden (ppem/36) to preserve counters at large sizes
+
+### Changed
+
+- Renamed reference/gum-forms-cheatsheet.md to REF-07-gum-forms-cheatsheet.md
+- Updated REF-09 with synthetic bold/italic/outline rendering findings
+- Moved completed plans (phase 76, 76B, docfx) to plan/done/
+
 ## [0.9.4] - 2026-03-22
 
 ### Fixed
