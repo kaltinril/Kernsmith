@@ -79,9 +79,12 @@ public class PreviewViewModel : ViewModel
             ? $"Rendered {RenderedGlyphCount}/{RequestedGlyphCount} glyphs ({FailedCodepointCount} failed)"
             : $"Rendered {RenderedGlyphCount} glyphs";
 
-        // Atlas summary with kerning pair count
+        // Atlas summary with dimensions and kerning pair count
         var kpCount = result.Model.KerningPairs?.Count ?? 0;
-        AtlasSummary = $"{result.Model.Characters.Count} glyphs | Line height: {result.Model.Common.LineHeight} | Base: {result.Model.Common.Base} | {kpCount} kerning pairs";
+        var firstPage = result.Model.Pages.Count > 0 ? result.Model.Pages[0] : null;
+        var sizeText = firstPage != null ? $"{result.Model.Common.ScaleW}x{result.Model.Common.ScaleH}" : "";
+        var pageText = result.Model.Pages.Count > 1 ? $" ({result.Model.Pages.Count} pages)" : "";
+        AtlasSummary = $"{sizeText}{pageText} | {result.Model.Characters.Count} glyphs | Line height: {result.Model.Common.LineHeight} | Base: {result.Model.Common.Base} | {kpCount} kerning pairs";
 
         // Force PropertyChanged even if already true (for subsequent generations)
         HasResult = false;

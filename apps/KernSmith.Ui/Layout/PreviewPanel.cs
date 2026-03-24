@@ -309,6 +309,9 @@ public class PreviewPanel : Panel
         _checkerSprite.Visible = false;
         _checkerSprite.X = 10;
         _checkerSprite.Y = AtlasContentY;
+        _checkerSprite.WidthUnits = DimensionUnitType.Absolute;
+        _checkerSprite.HeightUnits = DimensionUnitType.Absolute;
+        _checkerSprite.TextureAddress = Gum.Managers.TextureAddress.EntireTexture;
         _previewContent.AddChild(_checkerSprite);
 
         // Atlas sprite (hidden initially)
@@ -316,6 +319,9 @@ public class PreviewPanel : Panel
         _atlasSprite.Visible = false;
         _atlasSprite.X = 10;
         _atlasSprite.Y = AtlasContentY;
+        _atlasSprite.WidthUnits = DimensionUnitType.Absolute;
+        _atlasSprite.HeightUnits = DimensionUnitType.Absolute;
+        _atlasSprite.TextureAddress = Gum.Managers.TextureAddress.EntireTexture;
         _previewContent.AddChild(_atlasSprite);
 
         // Listen for result changes
@@ -452,6 +458,7 @@ public class PreviewPanel : Panel
             _atlasSprite.Height = scaledHeight;
             _atlasSprite.Visible = true;
         }
+
     }
 
     private void AutoFitZoom(int atlasWidth, int atlasHeight)
@@ -492,6 +499,7 @@ public class PreviewPanel : Panel
             _checkerSprite.Width = scaledWidth;
             _checkerSprite.Height = scaledHeight;
         }
+
     }
 
     private void ShowPlaceholder()

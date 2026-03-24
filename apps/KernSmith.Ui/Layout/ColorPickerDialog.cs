@@ -1,22 +1,33 @@
 using Gum.DataTypes;
 using Gum.Forms;
 using Gum.Forms.Controls;
+using Gum.Wireframe;
 using KernSmith.Ui.Styling;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using MonoGameGum.GueDeriving;
 
 namespace KernSmith.Ui.Layout;
 
 /// <summary>
 /// Modal color picker dialog with hex, RGB, HSL, and HSV input modes.
-/// All inputs sync bidirectionally. Includes "New" and "Previous" color preview swatches.
+/// All inputs sync bidirectionally. Includes visual HSV picker (SV square + hue bar)
+/// and "New" and "Previous" color preview swatches.
 /// </summary>
 public class ColorPickerDialog
 {
+    private const int SvSize = 160;
+    private const int HueBarWidth = 20;
+    private const int HueBarHeight = 160;
+
     private bool _suppressSync;
 
     private byte _r, _g, _b;
+    private float _currentHue;
+    private float _currentSat;
+    private float _currentVal;
     private readonly Color _previousColor;
+    private readonly GraphicsDevice _graphicsDevice;
 
     private TextBox _hexBox = null!;
     private TextBox _rBox = null!, _gBox = null!, _bBox = null!;
@@ -24,80 +35,90 @@ public class ColorPickerDialog
     private TextBox _hsvHBox = null!, _hsvSBox = null!, _hsvVBox = null!;
     private ColoredRectangleRuntime _newSwatch = null!;
 
-    private ColorPickerDialog(Color currentColor)
+    private Texture2D? _svTexture;
+    private Texture2D? _hueBarTexture;
+    private SpriteRuntime? _svSprite;
+    private SpriteRuntime? _hueBarSprite;
+
+    // SV crosshair indicator (4 thin rectangles forming a + shape)
+    private ColoredRectangleRuntime? _svCrosshairH;
+    private ColoredRectangleRuntime? _svCrosshairV;
+    private ColoredRectangleRuntime? _svCrosshairHBorder;
+    private ColoredRectangleRuntime? _svCrosshairVBorder;
+
+    // Hue bar indicator
+    private ColoredRectangleRuntime? _hueIndicator;
+    private ColoredRectangleRuntime? _hueIndicatorBorder;
+
+    private bool _draggingSv;
+    private bool _draggingHue;
+
+    private ColorPickerDialog(GraphicsDevice graphicsDevice, Color currentColor)
     {
+        _graphicsDevice = graphicsDevice;
         _previousColor = currentColor;
         _r = currentColor.R;
         _g = currentColor.G;
         _b = currentColor.B;
+
+        var (h, s, v) = RgbToHsv(_r, _g, _b);
+        _currentHue = h;
+        _currentSat = s;
+        _currentVal = v;
     }
 
     /// <summary>
     /// Opens the color picker dialog. Calls <paramref name="onColorSelected"/> with the chosen color on OK.
     /// Does nothing on Cancel.
     /// </summary>
-    public static void Show(Color currentColor, Action<Color> onColorSelected)
+    public static void Show(GraphicsDevice graphicsDevice, Color currentColor, Action<Color> onColorSelected)
     {
-        var dialog = new ColorPickerDialog(currentColor);
+        var dialog = new ColorPickerDialog(graphicsDevice, currentColor);
         dialog.Build(onColorSelected);
     }
 
     private void Build(Action<Color> onColorSelected)
     {
-        var window = new Window();
-        window.Anchor(Gum.Wireframe.Anchor.Center);
-        window.Width = 400;
-        window.Height = 260;
-        FrameworkElement.ModalRoot.Children.Add(window.Visual);
+        _window = new Window();
+        _window.Anchor(Gum.Wireframe.Anchor.Center);
+        _window.Width = 370;
+        _window.Height = 236;
+        _window.ResizeMode = ResizeMode.NoResize;
+        FrameworkElement.ModalRoot.Children.Add(_window.Visual);
 
-        var stack = new ContainerRuntime();
-        stack.WidthUnits = DimensionUnitType.RelativeToParent;
-        stack.HeightUnits = DimensionUnitType.RelativeToChildren;
-        stack.Width = -16;
-        stack.Height = 0;
-        stack.X = 8;
-        stack.Y = 32;
-        stack.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
-        stack.StackSpacing = 4;
-        window.AddChild(stack);
-
-        // --- Color preview swatches ---
-        BuildSwatchRow(stack);
-
-        // --- Input grid (Hex, RGB, HSL, HSV) ---
-        BuildInputGrid(stack);
-
-        // --- OK / Cancel buttons ---
-        var buttonRow = new ContainerRuntime();
-        buttonRow.WidthUnits = DimensionUnitType.RelativeToParent;
-        buttonRow.Width = 0;
-        buttonRow.HeightUnits = DimensionUnitType.RelativeToChildren;
-        buttonRow.Height = 0;
-        buttonRow.ChildrenLayout = Gum.Managers.ChildrenLayout.LeftToRightStack;
-        buttonRow.StackSpacing = 8;
-        stack.Children.Add(buttonRow);
-
-        var okBtn = new Button();
-        okBtn.Text = "OK";
-        okBtn.Width = 80;
-        okBtn.Click += (_, _) =>
+        // Title
+        var windowVisual = _window.Visual as Gum.Forms.DefaultVisuals.V3.WindowVisual;
+        if (windowVisual?.TitleBarInstance != null)
         {
-            onColorSelected(new Color(_r, _g, _b));
-            window.RemoveFromRoot();
-        };
-        buttonRow.Children.Add(okBtn.Visual);
+            var titleLabel = new Label();
+            titleLabel.Text = "Color Picker";
+            titleLabel.X = 8;
+            titleLabel.Y = 2;
+            windowVisual.TitleBarInstance.AddChild(titleLabel);
+        }
 
-        var cancelBtn = new Button();
-        cancelBtn.Text = "Cancel";
-        cancelBtn.Width = 80;
-        cancelBtn.Click += (_, _) => window.RemoveFromRoot();
-        buttonRow.Children.Add(cancelBtn.Visual);
+        var outerStack = new ContainerRuntime();
+        outerStack.WidthUnits = DimensionUnitType.RelativeToParent;
+        outerStack.HeightUnits = DimensionUnitType.RelativeToChildren;
+        outerStack.Width = -16;
+        outerStack.Height = 0;
+        outerStack.X = 8;
+        outerStack.Y = 32;
+        outerStack.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
+        outerStack.StackSpacing = 4;
+        _window.AddChild(outerStack);
+
+        // --- Row 1: New [swatch] Previous [swatch] Hex: [#hexbox] ---
+        BuildTopRow(outerStack);
+
+        // --- Row 2: [SV square] [Hue bar] [Right panel: inputs + buttons] ---
+        BuildMainRow(outerStack, onColorSelected);
 
         // Initial sync to populate all fields from the current color
         SyncFromRgb();
     }
 
-    private void BuildSwatchRow(ContainerRuntime parent)
+    private void BuildTopRow(ContainerRuntime parent)
     {
         var row = new ContainerRuntime();
         row.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -105,284 +126,597 @@ public class ColorPickerDialog
         row.HeightUnits = DimensionUnitType.RelativeToChildren;
         row.Height = 0;
         row.ChildrenLayout = Gum.Managers.ChildrenLayout.LeftToRightStack;
-        row.StackSpacing = 4;
+        row.StackSpacing = 2;
         parent.Children.Add(row);
 
         // "New" label + swatch
         var newLabel = new TextRuntime();
         newLabel.Text = "New";
-        newLabel.Width = 36;
+        newLabel.Width = 26;
         newLabel.Color = Theme.TextMuted;
         row.Children.Add(newLabel);
 
-        var newContainer = new ContainerRuntime();
-        newContainer.Width = 40;
-        newContainer.Height = 24;
-        row.Children.Add(newContainer);
-
-        var newBorder = new ColoredRectangleRuntime();
-        newBorder.Width = 0;
-        newBorder.WidthUnits = DimensionUnitType.RelativeToParent;
-        newBorder.Height = 0;
-        newBorder.HeightUnits = DimensionUnitType.RelativeToParent;
-        newBorder.Color = Theme.PanelBorder;
-        newContainer.Children.Add(newBorder);
-
-        _newSwatch = new ColoredRectangleRuntime();
-        _newSwatch.X = 1;
-        _newSwatch.Y = 1;
-        _newSwatch.Width = -2;
-        _newSwatch.WidthUnits = DimensionUnitType.RelativeToParent;
-        _newSwatch.Height = -2;
-        _newSwatch.HeightUnits = DimensionUnitType.RelativeToParent;
+        AddBorderedSwatch(row, 24, 20, out _newSwatch);
         _newSwatch.Color = new Color(_r, _g, _b);
-        newContainer.Children.Add(_newSwatch);
+
+        // Small spacer
+        var spacer1 = new ContainerRuntime();
+        spacer1.Width = 4;
+        spacer1.Height = 1;
+        row.Children.Add(spacer1);
 
         // "Previous" label + swatch
         var prevLabel = new TextRuntime();
-        prevLabel.Text = "Previous";
-        prevLabel.Width = 56;
+        prevLabel.Text = "Prev";
+        prevLabel.Width = 28;
         prevLabel.Color = Theme.TextMuted;
         row.Children.Add(prevLabel);
 
-        var prevContainer = new ContainerRuntime();
-        prevContainer.Width = 40;
-        prevContainer.Height = 24;
-        row.Children.Add(prevContainer);
-
-        var prevBorder = new ColoredRectangleRuntime();
-        prevBorder.Width = 0;
-        prevBorder.WidthUnits = DimensionUnitType.RelativeToParent;
-        prevBorder.Height = 0;
-        prevBorder.HeightUnits = DimensionUnitType.RelativeToParent;
-        prevBorder.Color = Theme.PanelBorder;
-        prevContainer.Children.Add(prevBorder);
-
-        var prevSwatch = new ColoredRectangleRuntime();
-        prevSwatch.X = 1;
-        prevSwatch.Y = 1;
-        prevSwatch.Width = -2;
-        prevSwatch.WidthUnits = DimensionUnitType.RelativeToParent;
-        prevSwatch.Height = -2;
-        prevSwatch.HeightUnits = DimensionUnitType.RelativeToParent;
+        AddBorderedSwatch(row, 24, 20, out var prevSwatch);
         prevSwatch.Color = _previousColor;
-        prevContainer.Children.Add(prevSwatch);
+
+        // Spacer before hex
+        var spacer2 = new ContainerRuntime();
+        spacer2.Width = 8;
+        spacer2.Height = 1;
+        row.Children.Add(spacer2);
+
+        // Hex label + text box
+        var hexLabel = new TextRuntime();
+        hexLabel.Text = "Hex:";
+        hexLabel.Width = 28;
+        hexLabel.Color = Theme.Text;
+        row.Children.Add(hexLabel);
+
+        _hexBox = new TextBox();
+        _hexBox.Width = 84;
+        _hexBox.Text = $"#{_r:X2}{_g:X2}{_b:X2}";
+        _hexBox.TextChanged += OnHexChanged;
+        row.Children.Add(_hexBox.Visual);
     }
 
-    private void BuildInputGrid(ContainerRuntime parent)
+    private void BuildMainRow(ContainerRuntime parent, Action<Color> onColorSelected)
     {
-        // Outer horizontal stack acts as a "grid" with vertical column stacks
-        var grid = new ContainerRuntime();
-        grid.HeightUnits = DimensionUnitType.RelativeToChildren;
-        grid.Height = 0;
-        grid.WidthUnits = DimensionUnitType.RelativeToChildren;
-        grid.Width = 0;
-        grid.ChildrenLayout = Gum.Managers.ChildrenLayout.LeftToRightStack;
-        grid.StackSpacing = 2;
-        parent.Children.Add(grid);
+        var mainRow = new ContainerRuntime();
+        mainRow.WidthUnits = DimensionUnitType.RelativeToParent;
+        mainRow.Width = 0;
+        mainRow.HeightUnits = DimensionUnitType.Absolute;
+        mainRow.Height = SvSize;
+        mainRow.ChildrenLayout = Gum.Managers.ChildrenLayout.LeftToRightStack;
+        mainRow.StackSpacing = 4;
+        parent.Children.Add(mainRow);
 
-        // Helper to create a vertical column stack
-        ContainerRuntime MakeColumn()
-        {
-            var col = new ContainerRuntime();
-            col.HeightUnits = DimensionUnitType.RelativeToChildren;
-            col.Height = 0;
-            col.WidthUnits = DimensionUnitType.RelativeToChildren;
-            col.Width = 0;
-            col.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
-            col.StackSpacing = 4;
-            grid.Children.Add(col);
-            return col;
-        }
+        // --- SV Square ---
+        BuildSvSquare(mainRow);
 
-        // Helper to create a label TextRuntime
-        TextRuntime MakeLabel(string text, float width)
-        {
-            var lbl = new TextRuntime();
-            lbl.Text = text;
-            lbl.Width = width;
-            lbl.Color = string.IsNullOrEmpty(text) ? Theme.TextMuted : Theme.Text;
-            return lbl;
-        }
+        // --- Hue Bar ---
+        BuildHueBar(mainRow);
 
-        // Helper to create a letter TextRuntime
-        TextRuntime MakeLetter(string text)
-        {
-            var lbl = new TextRuntime();
-            lbl.Text = text;
-            lbl.Width = 12;
-            lbl.Color = Theme.TextMuted;
-            return lbl;
-        }
+        // --- Right panel: inputs + buttons ---
+        BuildRightPanel(mainRow, onColorSelected);
+    }
 
-        // --- Column 0: Row labels ---
-        var col0 = MakeColumn();
-        col0.Children.Add(MakeLabel("Hex:", 36));
-        col0.Children.Add(MakeLabel("RGB:", 36));
-        col0.Children.Add(MakeLabel("HSL:", 36));
-        col0.Children.Add(MakeLabel("HSV:", 36));
+    private void BuildRightPanel(ContainerRuntime parent, Action<Color> onColorSelected)
+    {
+        var rightPanel = new ContainerRuntime();
+        rightPanel.WidthUnits = DimensionUnitType.RelativeToChildren;
+        rightPanel.Width = 0;
+        rightPanel.HeightUnits = DimensionUnitType.RelativeToParent;
+        rightPanel.Height = 0;
+        rightPanel.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
+        rightPanel.StackSpacing = 4;
+        parent.Children.Add(rightPanel);
 
-        // --- Precompute HSL/HSV initial values ---
+        // --- Precompute initial values ---
         var (hslH, hslS, hslL) = RgbToHsl(_r, _g, _b);
         var (hsvH, hsvS, hsvV) = RgbToHsv(_r, _g, _b);
 
-        // --- Column 1: Letter 1 ---
-        var col1 = MakeColumn();
-        col1.Children.Add(MakeLetter(""));   // hex has no letter
-        col1.Children.Add(MakeLetter("R"));
-        col1.Children.Add(MakeLetter("H"));
-        col1.Children.Add(MakeLetter("H"));
+        // --- Grid: 3 rows (RGB/HSL/HSV) x 4 columns (label + 3 values) ---
+        var grid = new Grid();
+        grid.Visual.WidthUnits = DimensionUnitType.RelativeToChildren;
+        grid.Visual.Width = 0;
+        grid.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
+        grid.Visual.Height = 0;
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        rightPanel.Children.Add(grid.Visual);
 
-        // --- Column 2: Value 1 ---
-        var col2 = MakeColumn();
+        // Row 0: RGB
+        AddGridLabel(grid, "RGB:", 0, 0);
+        _rBox = AddGridTextBox(grid, _r.ToString(), 0, 1);
+        _gBox = AddGridTextBox(grid, _g.ToString(), 0, 2);
+        _bBox = AddGridTextBox(grid, _b.ToString(), 0, 3);
 
-        _hexBox = new TextBox();
-        _hexBox.Width = 80;
-        _hexBox.Text = $"#{_r:X2}{_g:X2}{_b:X2}";
-        _hexBox.TextChanged += (_, _) =>
+        // Row 1: HSL
+        AddGridLabel(grid, "HSL:", 1, 0);
+        _hslHBox = AddGridTextBox(grid, ((int)hslH).ToString(), 1, 1);
+        _hslSBox = AddGridTextBox(grid, ((int)hslS).ToString(), 1, 2);
+        _hslLBox = AddGridTextBox(grid, ((int)hslL).ToString(), 1, 3);
+
+        // Row 2: HSV
+        AddGridLabel(grid, "HSV:", 2, 0);
+        _hsvHBox = AddGridTextBox(grid, ((int)hsvH).ToString(), 2, 1);
+        _hsvSBox = AddGridTextBox(grid, ((int)hsvS).ToString(), 2, 2);
+        _hsvVBox = AddGridTextBox(grid, ((int)hsvV).ToString(), 2, 3);
+
+        // --- OK / Cancel buttons ---
+        var buttonRow = new ContainerRuntime();
+        buttonRow.WidthUnits = DimensionUnitType.RelativeToChildren;
+        buttonRow.Width = 0;
+        buttonRow.HeightUnits = DimensionUnitType.RelativeToChildren;
+        buttonRow.Height = 0;
+        buttonRow.ChildrenLayout = Gum.Managers.ChildrenLayout.LeftToRightStack;
+        buttonRow.StackSpacing = 4;
+        rightPanel.Children.Add(buttonRow);
+
+        var okBtn = new Button();
+        okBtn.Text = "OK";
+        okBtn.Width = 70;
+        okBtn.Click += (_, _) =>
         {
-            if (_suppressSync) return;
-            var hex = _hexBox.Text?.Trim() ?? "";
-            if (hex.StartsWith('#')) hex = hex[1..];
-            if (hex.Length == 6 &&
-                byte.TryParse(hex[..2], System.Globalization.NumberStyles.HexNumber, null, out var r) &&
-                byte.TryParse(hex[2..4], System.Globalization.NumberStyles.HexNumber, null, out var g) &&
-                byte.TryParse(hex[4..6], System.Globalization.NumberStyles.HexNumber, null, out var b))
-            {
-                _r = r; _g = g; _b = b;
-                SyncFromRgb(syncHex: false);
-            }
+            onColorSelected(new Color(_r, _g, _b));
+            CloseDialog();
         };
-        col2.Children.Add(_hexBox.Visual);
+        buttonRow.Children.Add(okBtn.Visual);
 
-        _rBox = new TextBox();
-        _rBox.Width = 50;
-        _rBox.Text = _r.ToString();
-        col2.Children.Add(_rBox.Visual);
-
-        _hslHBox = new TextBox();
-        _hslHBox.Width = 50;
-        _hslHBox.Text = ((int)hslH).ToString();
-        col2.Children.Add(_hslHBox.Visual);
-
-        _hsvHBox = new TextBox();
-        _hsvHBox.Width = 50;
-        _hsvHBox.Text = ((int)hsvH).ToString();
-        col2.Children.Add(_hsvHBox.Visual);
-
-        // --- Column 3: Letter 2 ---
-        var col3 = MakeColumn();
-        col3.Children.Add(MakeLetter(""));   // hex spacer
-        col3.Children.Add(MakeLetter("G"));
-        col3.Children.Add(MakeLetter("S"));
-        col3.Children.Add(MakeLetter("S"));
-
-        // --- Column 4: Value 2 ---
-        var col4 = MakeColumn();
-
-        var spacer4 = new ContainerRuntime();
-        spacer4.Width = 50;
-        spacer4.Height = 24;
-        col4.Children.Add(spacer4);
-
-        _gBox = new TextBox();
-        _gBox.Width = 50;
-        _gBox.Text = _g.ToString();
-        col4.Children.Add(_gBox.Visual);
-
-        _hslSBox = new TextBox();
-        _hslSBox.Width = 50;
-        _hslSBox.Text = ((int)hslS).ToString();
-        col4.Children.Add(_hslSBox.Visual);
-
-        _hsvSBox = new TextBox();
-        _hsvSBox.Width = 50;
-        _hsvSBox.Text = ((int)hsvS).ToString();
-        col4.Children.Add(_hsvSBox.Visual);
-
-        // --- Column 5: Letter 3 ---
-        var col5 = MakeColumn();
-        col5.Children.Add(MakeLetter(""));   // hex spacer
-        col5.Children.Add(MakeLetter("B"));
-        col5.Children.Add(MakeLetter("L"));
-        col5.Children.Add(MakeLetter("V"));
-
-        // --- Column 6: Value 3 ---
-        var col6 = MakeColumn();
-
-        var spacer6 = new ContainerRuntime();
-        spacer6.Width = 50;
-        spacer6.Height = 24;
-        col6.Children.Add(spacer6);
-
-        _bBox = new TextBox();
-        _bBox.Width = 50;
-        _bBox.Text = _b.ToString();
-        col6.Children.Add(_bBox.Visual);
-
-        _hslLBox = new TextBox();
-        _hslLBox.Width = 50;
-        _hslLBox.Text = ((int)hslL).ToString();
-        col6.Children.Add(_hslLBox.Visual);
-
-        _hsvVBox = new TextBox();
-        _hsvVBox.Width = 50;
-        _hsvVBox.Text = ((int)hsvV).ToString();
-        col6.Children.Add(_hsvVBox.Visual);
+        var cancelBtn = new Button();
+        cancelBtn.Text = "Cancel";
+        cancelBtn.Width = 70;
+        cancelBtn.Click += (_, _) => CloseDialog();
+        buttonRow.Children.Add(cancelBtn.Visual);
 
         // --- Wire up TextChanged handlers ---
-
-        void OnRgbChanged()
-        {
-            if (_suppressSync) return;
-            if (byte.TryParse(_rBox.Text, out var r) &&
-                byte.TryParse(_gBox.Text, out var g) &&
-                byte.TryParse(_bBox.Text, out var b))
-            {
-                _r = r; _g = g; _b = b;
-                SyncFromRgb(syncRgb: false);
-            }
-        }
-
         _rBox.TextChanged += (_, _) => OnRgbChanged();
         _gBox.TextChanged += (_, _) => OnRgbChanged();
         _bBox.TextChanged += (_, _) => OnRgbChanged();
-
-        void OnHslChanged()
-        {
-            if (_suppressSync) return;
-            if (int.TryParse(_hslHBox.Text, out var hv) &&
-                int.TryParse(_hslSBox.Text, out var sv) &&
-                int.TryParse(_hslLBox.Text, out var lv) &&
-                hv is >= 0 and <= 360 && sv is >= 0 and <= 100 && lv is >= 0 and <= 100)
-            {
-                var (r, g, b) = HslToRgb(hv, sv, lv);
-                _r = r; _g = g; _b = b;
-                SyncFromRgb(syncHsl: false);
-            }
-        }
 
         _hslHBox.TextChanged += (_, _) => OnHslChanged();
         _hslSBox.TextChanged += (_, _) => OnHslChanged();
         _hslLBox.TextChanged += (_, _) => OnHslChanged();
 
-        void OnHsvChanged()
-        {
-            if (_suppressSync) return;
-            if (int.TryParse(_hsvHBox.Text, out var hv) &&
-                int.TryParse(_hsvSBox.Text, out var sv) &&
-                int.TryParse(_hsvVBox.Text, out var vv) &&
-                hv is >= 0 and <= 360 && sv is >= 0 and <= 100 && vv is >= 0 and <= 100)
-            {
-                var (r, g, b) = HsvToRgb(hv, sv, vv);
-                _r = r; _g = g; _b = b;
-                SyncFromRgb(syncHsv: false);
-            }
-        }
-
         _hsvHBox.TextChanged += (_, _) => OnHsvChanged();
         _hsvSBox.TextChanged += (_, _) => OnHsvChanged();
         _hsvVBox.TextChanged += (_, _) => OnHsvChanged();
+    }
+
+    private Window? _window;
+
+    private void CloseDialog()
+    {
+        DisposeTextures();
+        _window?.RemoveFromRoot();
+    }
+
+    private static void AddGridLabel(Grid grid, string text, int row, int column)
+    {
+        var lbl = new Label();
+        lbl.Text = text;
+        grid.AddChild(lbl, row, column);
+    }
+
+    private static TextBox AddGridTextBox(Grid grid, string text, int row, int column)
+    {
+        var box = new TextBox();
+        box.Width = 40;
+        box.MaxLettersToShow = 3;
+        box.MaxLength = 3;
+        box.Placeholder = "";
+        box.Text = text;
+        grid.AddChild(box, row, column);
+        return box;
+    }
+
+    private static void AddBorderedSwatch(ContainerRuntime parent, int width, int height, out ColoredRectangleRuntime innerSwatch)
+    {
+        var container = new ContainerRuntime();
+        container.Width = width;
+        container.Height = height;
+        parent.Children.Add(container);
+
+        var border = new ColoredRectangleRuntime();
+        border.Width = 0;
+        border.WidthUnits = DimensionUnitType.RelativeToParent;
+        border.Height = 0;
+        border.HeightUnits = DimensionUnitType.RelativeToParent;
+        border.Color = Theme.PanelBorder;
+        container.Children.Add(border);
+
+        innerSwatch = new ColoredRectangleRuntime();
+        innerSwatch.X = 1;
+        innerSwatch.Y = 1;
+        innerSwatch.Width = -2;
+        innerSwatch.WidthUnits = DimensionUnitType.RelativeToParent;
+        innerSwatch.Height = -2;
+        innerSwatch.HeightUnits = DimensionUnitType.RelativeToParent;
+        container.Children.Add(innerSwatch);
+    }
+
+    private void BuildSvSquare(ContainerRuntime parent)
+    {
+        var svContainer = new ContainerRuntime();
+        svContainer.Width = SvSize;
+        svContainer.Height = SvSize;
+        svContainer.ClipsChildren = true;
+        parent.Children.Add(svContainer);
+
+        // Border
+        var svBorder = new ColoredRectangleRuntime();
+        svBorder.Width = 0;
+        svBorder.WidthUnits = DimensionUnitType.RelativeToParent;
+        svBorder.Height = 0;
+        svBorder.HeightUnits = DimensionUnitType.RelativeToParent;
+        svBorder.Color = Theme.PanelBorder;
+        svContainer.Children.Add(svBorder);
+
+        // SV texture sprite
+        _svSprite = new SpriteRuntime();
+        _svSprite.X = 1;
+        _svSprite.Y = 1;
+        _svSprite.WidthUnits = DimensionUnitType.Absolute;
+        _svSprite.HeightUnits = DimensionUnitType.Absolute;
+        _svSprite.Width = SvSize - 2;
+        _svSprite.Height = SvSize - 2;
+        _svSprite.TextureAddress = Gum.Managers.TextureAddress.EntireTexture;
+        svContainer.Children.Add(_svSprite);
+
+        RegenerateSvTexture();
+
+        // Crosshair indicator: dark border lines behind white lines
+        _svCrosshairHBorder = new ColoredRectangleRuntime();
+        _svCrosshairHBorder.Width = 9;
+        _svCrosshairHBorder.Height = 3;
+        _svCrosshairHBorder.Color = new Color(0, 0, 0);
+        svContainer.Children.Add(_svCrosshairHBorder);
+
+        _svCrosshairVBorder = new ColoredRectangleRuntime();
+        _svCrosshairVBorder.Width = 3;
+        _svCrosshairVBorder.Height = 9;
+        _svCrosshairVBorder.Color = new Color(0, 0, 0);
+        svContainer.Children.Add(_svCrosshairVBorder);
+
+        _svCrosshairH = new ColoredRectangleRuntime();
+        _svCrosshairH.Width = 7;
+        _svCrosshairH.Height = 1;
+        _svCrosshairH.Color = Color.White;
+        svContainer.Children.Add(_svCrosshairH);
+
+        _svCrosshairV = new ColoredRectangleRuntime();
+        _svCrosshairV.Width = 1;
+        _svCrosshairV.Height = 7;
+        _svCrosshairV.Color = Color.White;
+        svContainer.Children.Add(_svCrosshairV);
+
+        UpdateSvIndicator();
+
+        // Mouse interaction
+        if (svContainer is InteractiveGue svInteractive)
+        {
+            svInteractive.Push += OnSvPush;
+            svInteractive.RollOver += OnSvRollOver;
+            svInteractive.LosePush += OnSvLosePush;
+        }
+    }
+
+    private void BuildHueBar(ContainerRuntime parent)
+    {
+        var hueContainer = new ContainerRuntime();
+        hueContainer.Width = HueBarWidth;
+        hueContainer.Height = HueBarHeight;
+        hueContainer.ClipsChildren = true;
+        parent.Children.Add(hueContainer);
+
+        // Border
+        var hueBorder = new ColoredRectangleRuntime();
+        hueBorder.Width = 0;
+        hueBorder.WidthUnits = DimensionUnitType.RelativeToParent;
+        hueBorder.Height = 0;
+        hueBorder.HeightUnits = DimensionUnitType.RelativeToParent;
+        hueBorder.Color = Theme.PanelBorder;
+        hueContainer.Children.Add(hueBorder);
+
+        // Hue bar texture sprite
+        _hueBarSprite = new SpriteRuntime();
+        _hueBarSprite.X = 1;
+        _hueBarSprite.Y = 1;
+        _hueBarSprite.WidthUnits = DimensionUnitType.Absolute;
+        _hueBarSprite.HeightUnits = DimensionUnitType.Absolute;
+        _hueBarSprite.Width = HueBarWidth - 2;
+        _hueBarSprite.Height = HueBarHeight - 2;
+        _hueBarSprite.TextureAddress = Gum.Managers.TextureAddress.EntireTexture;
+        hueContainer.Children.Add(_hueBarSprite);
+
+        GenerateHueBarTexture();
+
+        // Hue indicator: horizontal line with dark border
+        _hueIndicatorBorder = new ColoredRectangleRuntime();
+        _hueIndicatorBorder.Width = HueBarWidth;
+        _hueIndicatorBorder.Height = 5;
+        _hueIndicatorBorder.Color = new Color(0, 0, 0);
+        hueContainer.Children.Add(_hueIndicatorBorder);
+
+        _hueIndicator = new ColoredRectangleRuntime();
+        _hueIndicator.Width = HueBarWidth - 2;
+        _hueIndicator.Height = 3;
+        _hueIndicator.Color = Color.White;
+        hueContainer.Children.Add(_hueIndicator);
+
+        UpdateHueIndicator();
+
+        // Mouse interaction
+        if (hueContainer is InteractiveGue hueInteractive)
+        {
+            hueInteractive.Push += OnHuePush;
+            hueInteractive.RollOver += OnHueRollOver;
+            hueInteractive.LosePush += OnHueLosePush;
+        }
+    }
+
+    // --- Mouse event handlers ---
+
+    private void OnSvPush(object? sender, EventArgs e)
+    {
+        _draggingSv = true;
+        PickSvColorFromMouse();
+    }
+
+    private void OnSvRollOver(object? sender, EventArgs e)
+    {
+        if (!_draggingSv) return;
+        PickSvColorFromMouse();
+    }
+
+    private void OnSvLosePush(object? sender, EventArgs e)
+    {
+        _draggingSv = false;
+    }
+
+    private void OnHuePush(object? sender, EventArgs e)
+    {
+        _draggingHue = true;
+        PickHueFromMouse();
+    }
+
+    private void OnHueRollOver(object? sender, EventArgs e)
+    {
+        if (!_draggingHue) return;
+        PickHueFromMouse();
+    }
+
+    private void OnHueLosePush(object? sender, EventArgs e)
+    {
+        _draggingHue = false;
+    }
+
+    private void PickSvColorFromMouse()
+    {
+        if (_svSprite == null) return;
+
+        var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
+        float relX = mouseState.X - _svSprite.AbsoluteLeft;
+        float relY = mouseState.Y - _svSprite.AbsoluteTop;
+
+        float spriteWidth = SvSize - 2;
+        float spriteHeight = SvSize - 2;
+
+        relX = Math.Clamp(relX, 0, spriteWidth - 1);
+        relY = Math.Clamp(relY, 0, spriteHeight - 1);
+
+        _currentSat = relX / (spriteWidth - 1) * 100f;
+        _currentVal = (1f - relY / (spriteHeight - 1)) * 100f;
+
+        var (r, g, b) = HsvToRgb(_currentHue, _currentSat, _currentVal);
+        _r = r; _g = g; _b = b;
+
+        UpdateSvIndicator();
+        SyncFromRgb(syncHsv: false);
+
+        _suppressSync = true;
+        try
+        {
+            _hsvHBox.Text = ((int)_currentHue).ToString();
+            _hsvSBox.Text = ((int)_currentSat).ToString();
+            _hsvVBox.Text = ((int)_currentVal).ToString();
+        }
+        finally
+        {
+            _suppressSync = false;
+        }
+    }
+
+    private void PickHueFromMouse()
+    {
+        if (_hueBarSprite == null) return;
+
+        var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
+        float relY = mouseState.Y - _hueBarSprite.AbsoluteTop;
+
+        float spriteHeight = HueBarHeight - 2;
+
+        relY = Math.Clamp(relY, 0, spriteHeight - 1);
+
+        _currentHue = relY / (spriteHeight - 1) * 360f;
+
+        RegenerateSvTexture();
+        UpdateHueIndicator();
+
+        var (r, g, b) = HsvToRgb(_currentHue, _currentSat, _currentVal);
+        _r = r; _g = g; _b = b;
+
+        SyncFromRgb(syncHsv: false);
+
+        _suppressSync = true;
+        try
+        {
+            _hsvHBox.Text = ((int)_currentHue).ToString();
+            _hsvSBox.Text = ((int)_currentSat).ToString();
+            _hsvVBox.Text = ((int)_currentVal).ToString();
+        }
+        finally
+        {
+            _suppressSync = false;
+        }
+    }
+
+    // --- Texture generation ---
+
+    private void RegenerateSvTexture()
+    {
+        int w = SvSize - 2;
+        int h = SvSize - 2;
+        var pixels = new Color[w * h];
+
+        for (int y = 0; y < h; y++)
+        {
+            float val = (1f - (float)y / (h - 1)) * 100f;
+            for (int x = 0; x < w; x++)
+            {
+                float sat = (float)x / (w - 1) * 100f;
+                var (r, g, b) = HsvToRgb(_currentHue, sat, val);
+                pixels[y * w + x] = new Color(r, g, b);
+            }
+        }
+
+        if (_svTexture == null)
+            _svTexture = new Texture2D(_graphicsDevice, w, h);
+
+        _svTexture.SetData(pixels);
+
+        if (_svSprite != null)
+            _svSprite.Texture = _svTexture;
+    }
+
+    private void GenerateHueBarTexture()
+    {
+        int w = HueBarWidth - 2;
+        int h = HueBarHeight - 2;
+        var pixels = new Color[w * h];
+
+        for (int y = 0; y < h; y++)
+        {
+            float hue = (float)y / (h - 1) * 360f;
+            var (r, g, b) = HsvToRgb(hue, 100, 100);
+            var color = new Color(r, g, b);
+            for (int x = 0; x < w; x++)
+                pixels[y * w + x] = color;
+        }
+
+        _hueBarTexture = new Texture2D(_graphicsDevice, w, h);
+        _hueBarTexture.SetData(pixels);
+
+        if (_hueBarSprite != null)
+            _hueBarSprite.Texture = _hueBarTexture;
+    }
+
+    // --- Indicator positioning ---
+
+    private void UpdateSvIndicator()
+    {
+        if (_svCrosshairH == null || _svSprite == null) return;
+
+        float spriteWidth = SvSize - 2;
+        float spriteHeight = SvSize - 2;
+
+        float cx = 1 + _currentSat / 100f * (spriteWidth - 1);
+        float cy = 1 + (1f - _currentVal / 100f) * (spriteHeight - 1);
+
+        _svCrosshairHBorder!.X = cx - 4;
+        _svCrosshairHBorder.Y = cy - 1;
+        _svCrosshairVBorder!.X = cx - 1;
+        _svCrosshairVBorder.Y = cy - 4;
+
+        _svCrosshairH.X = cx - 3;
+        _svCrosshairH.Y = cy;
+        _svCrosshairV!.X = cx;
+        _svCrosshairV.Y = cy - 3;
+    }
+
+    private void UpdateHueIndicator()
+    {
+        if (_hueIndicator == null) return;
+
+        float spriteHeight = HueBarHeight - 2;
+        float iy = 1 + _currentHue / 360f * (spriteHeight - 1);
+
+        _hueIndicatorBorder!.X = 0;
+        _hueIndicatorBorder.Y = iy - 2;
+
+        _hueIndicator.X = 1;
+        _hueIndicator.Y = iy - 1;
+    }
+
+    private void DisposeTextures()
+    {
+        if (_svSprite != null)
+            _svSprite.Texture = null;
+        if (_hueBarSprite != null)
+            _hueBarSprite.Texture = null;
+
+        _svTexture?.Dispose();
+        _svTexture = null;
+        _hueBarTexture?.Dispose();
+        _hueBarTexture = null;
+    }
+
+    // --- Text input change handlers ---
+
+    private void OnHexChanged(object? sender, EventArgs e)
+    {
+        if (_suppressSync) return;
+        var hex = _hexBox.Text?.Trim() ?? "";
+        if (hex.StartsWith('#')) hex = hex[1..];
+        if (hex.Length == 6 &&
+            byte.TryParse(hex[..2], System.Globalization.NumberStyles.HexNumber, null, out var r) &&
+            byte.TryParse(hex[2..4], System.Globalization.NumberStyles.HexNumber, null, out var g) &&
+            byte.TryParse(hex[4..6], System.Globalization.NumberStyles.HexNumber, null, out var b))
+        {
+            _r = r; _g = g; _b = b;
+            SyncFromRgb(syncHex: false);
+        }
+    }
+
+    private void OnRgbChanged()
+    {
+        if (_suppressSync) return;
+        if (byte.TryParse(_rBox.Text, out var r) &&
+            byte.TryParse(_gBox.Text, out var g) &&
+            byte.TryParse(_bBox.Text, out var b))
+        {
+            _r = r; _g = g; _b = b;
+            SyncFromRgb(syncRgb: false);
+        }
+    }
+
+    private void OnHslChanged()
+    {
+        if (_suppressSync) return;
+        if (int.TryParse(_hslHBox.Text, out var hv) &&
+            int.TryParse(_hslSBox.Text, out var sv) &&
+            int.TryParse(_hslLBox.Text, out var lv) &&
+            hv is >= 0 and <= 360 && sv is >= 0 and <= 100 && lv is >= 0 and <= 100)
+        {
+            var (r, g, b) = HslToRgb(hv, sv, lv);
+            _r = r; _g = g; _b = b;
+            SyncFromRgb(syncHsl: false);
+        }
+    }
+
+    private void OnHsvChanged()
+    {
+        if (_suppressSync) return;
+        if (int.TryParse(_hsvHBox.Text, out var hv) &&
+            int.TryParse(_hsvSBox.Text, out var sv) &&
+            int.TryParse(_hsvVBox.Text, out var vv) &&
+            hv is >= 0 and <= 360 && sv is >= 0 and <= 100 && vv is >= 0 and <= 100)
+        {
+            var (r, g, b) = HsvToRgb(hv, sv, vv);
+            _r = r; _g = g; _b = b;
+            SyncFromRgb(syncHsv: false);
+        }
     }
 
     /// <summary>
@@ -417,9 +751,16 @@ public class ColorPickerDialog
             if (syncHsv)
             {
                 var (hv, sv, vv) = RgbToHsv(_r, _g, _b);
+                _currentHue = hv;
+                _currentSat = sv;
+                _currentVal = vv;
                 _hsvHBox.Text = ((int)hv).ToString();
                 _hsvSBox.Text = ((int)sv).ToString();
                 _hsvVBox.Text = ((int)vv).ToString();
+
+                RegenerateSvTexture();
+                UpdateSvIndicator();
+                UpdateHueIndicator();
             }
         }
         finally

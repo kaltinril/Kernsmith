@@ -1,6 +1,6 @@
 # Phase 77 — Color Picker Dialog
 
-> **Status**: Planning
+> **Status**: In Progress
 > **Created**: 2026-03-22
 > **Goal**: Build a reusable color picker dialog that opens when clicking a color swatch.
 
@@ -29,10 +29,15 @@ Clicking any color swatch in the effects panel (outline, shadow, gradient) opens
 - Dialog returns the selected color on OK, reverts on Cancel
 - Reusable `ColorPickerDialog` class for any future color input needs
 
+## Remaining Work
+
+- [ ] Fix window background transparency — default Gum Window uses semi-transparent nineslice, causing background bleed. Need solid opaque background behind dialog content (similar to KeyboardShortcutsDialog pattern).
+
 ## Key Source Files
 
 | What | Location |
 |------|----------|
+| Color picker dialog | `apps/KernSmith.Ui/Layout/ColorPickerDialog.cs` |
 | Color row helper | `apps/KernSmith.Ui/Layout/EffectsPanel.cs` |
 | Dialog base pattern | `apps/KernSmith.Ui/Layout/FontInspectorDialog.cs` |
 | Theme colors | `apps/KernSmith.Ui/Styling/Theme.cs` |

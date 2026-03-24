@@ -71,6 +71,11 @@ public class MainViewModel : ViewModel
                 MarkDirty();
                 RequestAutoRegenerateDebounced();
             }
+
+            if (e.PropertyName is nameof(FontConfigViewModel.HasColorGlyphs))
+            {
+                Effects.HasColorGlyphs = FontConfig.HasColorGlyphs;
+            }
         };
 
         CharacterGrid.PropertyChanged += (_, e) =>

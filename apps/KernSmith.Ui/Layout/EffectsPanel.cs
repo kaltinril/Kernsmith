@@ -3,6 +3,7 @@ using Gum.Forms.Controls;
 using KernSmith.Ui.Models;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
+using Microsoft.Xna.Framework.Graphics;
 using MonoGameGum.GueDeriving;
 
 namespace KernSmith.Ui.Layout;
@@ -22,11 +23,13 @@ public class EffectsPanel : Panel
 {
     private readonly EffectsViewModel _effects;
     private readonly AtlasConfigViewModel _atlasConfig;
+    private readonly GraphicsDevice _graphicsDevice;
 
-    public EffectsPanel(EffectsViewModel effects, AtlasConfigViewModel atlasConfig)
+    public EffectsPanel(EffectsViewModel effects, AtlasConfigViewModel atlasConfig, GraphicsDevice graphicsDevice)
     {
         _effects = effects;
         _atlasConfig = atlasConfig;
+        _graphicsDevice = graphicsDevice;
         BuildContent();
     }
 
@@ -210,7 +213,7 @@ public class EffectsPanel : Panel
         };
 
         // Outline color RGB row
-        AddColorRow(contentPanel, "Color:",
+        AddColorRow(_graphicsDevice, contentPanel, "Color:",
             _effects.OutlineColorR, _effects.OutlineColorG, _effects.OutlineColorB,
             v => _effects.OutlineColorR = v,
             v => _effects.OutlineColorG = v,
@@ -227,7 +230,7 @@ public class EffectsPanel : Panel
             val => _effects.ShadowBlur = val);
 
         // Shadow color RGB row
-        AddColorRow(contentPanel, "Color:",
+        AddColorRow(_graphicsDevice, contentPanel, "Color:",
             _effects.ShadowColorR, _effects.ShadowColorG, _effects.ShadowColorB,
             v => _effects.ShadowColorR = v,
             v => _effects.ShadowColorG = v,
@@ -240,13 +243,13 @@ public class EffectsPanel : Panel
 
     private void BuildGradientContent(Gum.Wireframe.GraphicalUiElement contentPanel)
     {
-        AddColorRow(contentPanel, "Start:",
+        AddColorRow(_graphicsDevice, contentPanel, "Start:",
             _effects.GradientStartR, _effects.GradientStartG, _effects.GradientStartB,
             v => _effects.GradientStartR = v,
             v => _effects.GradientStartG = v,
             v => _effects.GradientStartB = v);
 
-        AddColorRow(contentPanel, "End:",
+        AddColorRow(_graphicsDevice, contentPanel, "End:",
             _effects.GradientEndR, _effects.GradientEndG, _effects.GradientEndB,
             v => _effects.GradientEndR = v,
             v => _effects.GradientEndG = v,
@@ -288,22 +291,11 @@ public class EffectsPanel : Panel
         var colorCheck = new CheckBox();
         colorCheck.Text = "Color Font";
         colorCheck.Width = 220;
+        colorCheck.IsEnabled = _effects.HasColorGlyphs;
         colorCheck.Checked += (_, _) => _effects.ColorFontEnabled = true;
         colorCheck.Unchecked += (_, _) => _effects.ColorFontEnabled = false;
         stack.Children.Add(colorCheck.Visual);
-        TooltipService.SetTooltip(colorCheck, "Render color glyphs (emoji) if font supports");
-
-        var colorFontHint = new TextRuntime();
-        colorFontHint.Text = "Only affects fonts with color tables (e.g. emoji)";
-        colorFontHint.Color = Theme.TextMuted;
-        stack.Children.Add(colorFontHint);
-
-        // Warning when color font is enabled but the loaded font has no color glyphs
-        var colorFontNoTablesWarning = new TextRuntime();
-        colorFontNoTablesWarning.Text = "Current font has no color tables \u2014 no visible effect";
-        colorFontNoTablesWarning.Color = Theme.Warning;
-        colorFontNoTablesWarning.Visible = false;
-        stack.Children.Add(colorFontNoTablesWarning);
+        TooltipService.SetTooltip(colorCheck, "Render color glyphs (emoji) — requires a font with color tables");
 
         // Color font + Gradient mutual exclusion feedback
         var colorGradientWarning = new TextRuntime();
@@ -382,9 +374,9 @@ public class EffectsPanel : Panel
                 colorGradientWarning.Visible = false;
             }
 
-            // Color font no-tables warning
-            if (e.PropertyName is nameof(EffectsViewModel.ColorFontEnabled) or nameof(EffectsViewModel.HasColorGlyphs))
-                colorFontNoTablesWarning.Visible = _effects.ColorFontEnabled && !_effects.HasColorGlyphs;
+            // Enable/disable color font checkbox based on whether font has color tables
+            if (e.PropertyName is nameof(EffectsViewModel.HasColorGlyphs))
+                colorCheck.IsEnabled = _effects.HasColorGlyphs;
         };
     }
 
@@ -802,6 +794,7 @@ public class EffectsPanel : Panel
     }
 
     private static void AddColorRow(
+        GraphicsDevice graphicsDevice,
         Gum.Wireframe.GraphicalUiElement parent,
         string label, byte defaultR, byte defaultG, byte defaultB,
         Action<byte> onRChanged, Action<byte> onGChanged, Action<byte> onBChanged)
@@ -868,7 +861,7 @@ public class EffectsPanel : Panel
         swatchContainer.Click += (_, _) =>
         {
             var currentColor = swatch.Color;
-            ColorPickerDialog.Show(currentColor, newColor =>
+            ColorPickerDialog.Show(graphicsDevice, currentColor, newColor =>
             {
                 swatch.Color = newColor;
                 hexBox.Text = $"#{newColor.R:X2}{newColor.G:X2}{newColor.B:X2}";

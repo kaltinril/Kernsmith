@@ -135,6 +135,12 @@ textBox.Placeholder = "Enter text here...";
 textBox.TextChanged += (_, _) => { /* handle change */ };
 parentPanel.AddChild(textBox);
 
+// Limit visible characters without restricting input (default null = no limit):
+textBox.MaxLettersToShow = 3;
+// Limit actual input — typing, pasting, and programmatic text are truncated (default null = no limit).
+// Equivalent to WPF's TextBox.MaxLength:
+textBox.MaxLength = 3;
+
 // Multi-line:
 textBox.TextWrapping = Gum.Forms.TextWrapping.Wrap;
 textBox.AcceptsReturn = true;
@@ -319,6 +325,9 @@ window.Width = 300;
 window.Height = 200;
 FrameworkElement.ModalRoot.AddChild(window);
 
+// Disable resize (default is ResizeMode.CanResize):
+window.ResizeMode = ResizeMode.NoResize;
+
 var label = new Label();
 label.Dock(Gum.Wireframe.Dock.Top);
 label.Text = "Dialog text";
@@ -332,6 +341,17 @@ closeBtn.Click += (_, _) => window.RemoveFromRoot();
 
 // Non-modal:
 // FrameworkElement.PopupRoot.AddChild(window);
+
+// No built-in Title property. To set title text:
+// var titleBar = window.GetFrameworkElement("TitleBarInstance");
+// then add a Label to it.
+
+// Disable movement by disabling TitleBarInstance.
+// Resize handles: BorderTopLeftInstance, BorderTopRightInstance,
+//   BorderBottomLeftInstance, BorderBottomRightInstance,
+//   BorderTopInstance, BorderBottomInstance,
+//   BorderLeftInstance, BorderRightInstance
+// Disable any by: window.GetFrameworkElement("BorderXxxInstance").IsEnabled = false;
 ```
 
 ### Image
@@ -371,6 +391,141 @@ stack.Orientation = Orientation.Horizontal;
 stack.AddChild(control1);
 stack.AddChild(control2);
 ```
+
+### Grid
+
+Native grid container that arranges children in rows and columns. Similar to WPF/XAML Grid. **Experimental** — API may change.
+
+> Docs: https://docs.flatredball.com/gum/code/controls/grid
+
+```csharp
+var grid = new Grid();
+// Grid fills its parent by default (RelativeToParent for BOTH width and height)
+
+// Define rows and columns
+grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60, GridUnitType.Absolute) });
+grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+// Place children at specific cells (zero-based row, column)
+var lbl = new Label();
+lbl.Text = "Name:";
+grid.AddChild(lbl, row: 0, column: 0);
+
+var val = new TextBox();
+val.Width = 120;
+grid.AddChild(val, row: 0, column: 1);
+
+parent.Children.Add(grid.Visual);
+```
+
+**GridLength sizing modes**:
+- **Star** (default) — distributes available space proportionally (e.g., 1-star + 2-star in 300px = 100px + 200px)
+- **Absolute** — fixed pixel size (`new GridLength(60, GridUnitType.Absolute)` or `new GridLength(60)`)
+- **Auto** — sizes to fit the widest/tallest content in that row/column (`GridLength.Auto`)
+
+**RowDefinition/ColumnDefinition** also support `MinHeight`/`MaxHeight` and `MinWidth`/`MaxWidth`.
+
+**Key rules**:
+- Always use `grid.AddChild(child, row, column)` — calling `AddChild` without row/column throws `NotSupportedException`
+- Do NOT use `grid.Visual.Children.Add()` directly — bypasses the cell system
+- Calling `AddChild` twice on the same child moves it to the new cell
+- Out-of-range row/column indices clamp to the last valid index
+- Use `grid.RemoveChild(child)` to remove
+
+**Critical: Height inside stacked containers**. Grid defaults to `HeightUnits = RelativeToParent` (fill parent). When placing a Grid inside a `TopToBottomStack`, you MUST override this or grids will overlap/collapse:
+```csharp
+grid.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
+grid.Visual.Height = 0;  // auto-size to row content
+```
+
+**Children don't auto-fill cells**. Grid places children in cells but controls keep their own default width. To make a control fill its Star column, set it explicitly:
+```csharp
+slider.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+slider.Visual.Width = 0;  // fills the grid cell
+```
+> **Performance warning**: RelativeToParent sliders inside Grid cause severe lag — Grid fires `RefreshLayout` on every slider value change. Use fixed `slider.Width = 100` until this is resolved in Gum.
+
+**Common patterns** (from `EffectsPanel`):
+
+Slider row — `[label | slider | value]`:
+```csharp
+grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });        // label
+grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // slider (Star)
+grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });           // value label
+```
+
+Color row — `[label | swatch | hexbox]`:
+```csharp
+grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });  // label
+grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });     // swatch (24x24)
+grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });     // hex textbox (Width=80)
+```
+
+### Grid Alternative: Column StackPanels
+
+When you need grid-like alignment but want more manual control, use vertical `TopToBottomStack` columns inside a horizontal `LeftToRightStack` container.
+
+**Structure**:
+```
+[Horizontal ContainerRuntime - LeftToRightStack]
+  +-- [Vertical ContainerRuntime - TopToBottomStack] (column 0)
+  +-- [Vertical ContainerRuntime - TopToBottomStack] (column 1)
+  +-- ...
+```
+
+```csharp
+var grid = new ContainerRuntime();
+grid.HeightUnits = DimensionUnitType.RelativeToChildren;
+grid.Height = 0;
+grid.WidthUnits = DimensionUnitType.RelativeToChildren;
+grid.Width = 0;
+grid.ChildrenLayout = ChildrenLayout.LeftToRightStack;
+grid.StackSpacing = 4;
+parent.Children.Add(grid);
+
+// Label column
+var labels = new ContainerRuntime();
+labels.HeightUnits = DimensionUnitType.RelativeToChildren;
+labels.Height = 0;
+labels.WidthUnits = DimensionUnitType.RelativeToChildren;
+labels.Width = 0;
+labels.ChildrenLayout = ChildrenLayout.TopToBottomStack;
+labels.StackSpacing = 4;
+grid.Children.Add(labels);
+
+// Value column
+var values = new ContainerRuntime();
+values.HeightUnits = DimensionUnitType.RelativeToChildren;
+values.Height = 0;
+values.WidthUnits = DimensionUnitType.RelativeToChildren;
+values.Width = 0;
+values.ChildrenLayout = ChildrenLayout.TopToBottomStack;
+values.StackSpacing = 4;
+grid.Children.Add(values);
+
+// Row 1
+var lbl1 = new TextRuntime { Text = "Name:", Width = 60 };
+labels.Children.Add(lbl1);
+var val1 = new TextBox { Width = 120 };
+values.Children.Add(val1.Visual);
+
+// Row 2
+var lbl2 = new TextRuntime { Text = "Email:", Width = 60 };
+labels.Children.Add(lbl2);
+var val2 = new TextBox { Width = 120 };
+values.Children.Add(val2.Visual);
+```
+
+**Key rules**:
+- All vertical columns must use the **same `StackSpacing`** so rows align
+- Each column's elements must have **consistent heights** (or all use auto-height)
+- Use `RelativeToChildren` with `Height = 0` / `Width = 0` on both the outer container and each column
+- For empty cells, use a `ContainerRuntime` spacer with explicit height matching the other cells in that row
+- Set fixed `Width` on elements within a column for consistent column widths
+
+**When to use**: Prefer the native `Grid` control for simple tabular layouts. Use column StackPanels when you need custom per-column scroll behavior, dynamic column insertion, or the cross/diamond directional layout pattern (see Lessons Learned).
 
 ---
 
