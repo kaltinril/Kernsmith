@@ -842,9 +842,11 @@ public class EffectsPanel : Panel
         hexBox.Width = 80;
         hexBox.Text = $"#{defaultR:X2}{defaultG:X2}{defaultB:X2}";
         TooltipService.SetTooltip(hexBox, "Hex color (e.g., #FF0000)");
+        var suppressHexSync = false;
 
         hexBox.TextChanged += (_, _) =>
         {
+            if (suppressHexSync) return;
             var hex = hexBox.Text?.Trim() ?? "";
             if (hex.StartsWith('#')) hex = hex[1..];
             if (hex.Length == 6 &&
@@ -863,11 +865,15 @@ public class EffectsPanel : Panel
             var currentColor = swatch.Color;
             ColorPickerDialog.Show(graphicsDevice, currentColor, newColor =>
             {
-                swatch.Color = newColor;
-                hexBox.Text = $"#{newColor.R:X2}{newColor.G:X2}{newColor.B:X2}";
+                // Set all three color values before updating UI to avoid
+                // regeneration seeing partially-updated color.
                 onRChanged(newColor.R);
                 onGChanged(newColor.G);
                 onBChanged(newColor.B);
+                swatch.Color = newColor;
+                suppressHexSync = true;
+                hexBox.Text = $"#{newColor.R:X2}{newColor.G:X2}{newColor.B:X2}";
+                suppressHexSync = false;
             });
         };
     }

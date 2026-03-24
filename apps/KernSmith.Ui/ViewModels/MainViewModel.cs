@@ -109,7 +109,8 @@ public class MainViewModel : ViewModel
                 }
             }
 
-            RequestAutoRegenerate();
+            // Debounce to allow batched updates (e.g. color picker sets R, G, B sequentially)
+            RequestAutoRegenerateDebounced();
         };
     }
 
