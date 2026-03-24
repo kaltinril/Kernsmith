@@ -1,7 +1,7 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-21, 55, 60-69, 72-75 complete. Phase 30 (WASM) is future/exploratory. Phases 76-77, 80 active.
-> **Date**: 2026-03-22
+> **Status**: Phases 1-21, 55, 60-69, 72-77 complete. Phase 30 (WASM) is future/exploratory. Phases 77B, 80 active.
+> **Date**: 2026-03-24
 
 ---
 
@@ -81,8 +81,7 @@ Output Layer
 |---|----------|-------------|--------|
 | 30 | [WASM Rasterization](phase-30-wasm-rasterization.md) | Live investigation of WASM-compatible rasterizers (prior research was preliminary) | Future |
 | 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
-| 76 | [Metrics Parity with BMFont](phase-76-metrics-parity.md) | Investigate and fix glyph metric differences between KernSmith and BMFont output | Planning |
-| 77 | [Color Picker Dialog](phase-77-color-picker-dialog.md) | Build a reusable color picker dialog that opens when clicking a color swatch | Planning |
+| 77B | [Atlas Size Auto Mode](phase-77b-atlas-size-auto-mode.md) | Atlas size auto mode and remove engine presets | Planning |
 | 80 | [Atlas Preview Rendering](phase-80-atlas-preview-rendering.md) | Fix atlas preview rendering quality in UI to match saved PNG | Planning |
 | 81 | [Hiero Format Support](phase-81-hiero-format-support.md) | Hiero `.hiero` config format specification and design decisions | Planning |
 | 82 | [Hiero Core Library](phase-82-hiero-core-library.md) | Add `.hiero` config read/write to the NuGet library | Planning |
@@ -135,6 +134,9 @@ Output Layer
 | 71 | [UI Stabilization](done/phase-71-ui-stabilization.md) | UI bug fixes and stabilization |
 | 73 | [Documentation Review](done/phase-73-documentation-review.md) | XML doc comments, class/method summaries, README gaps across library, CLI, and UI |
 | 74 | [MIT License](phase-74-mit-license.md) | Switch all license references from proprietary to MIT |
+| 76 | [Metrics Parity with BMFont](done/phase-76-metrics-parity.md) | Investigate and fix glyph metric differences between KernSmith and BMFont output |
+| 76B | [Outline and Italic Fixes](done/phase-76b-outline-and-italic-fixes.md) | Fix outline rendering and italic glyph clipping issues |
+| 77 | [Color Picker Dialog](done/phase-77-color-picker-dialog.md) | Build a reusable color picker dialog that opens when clicking a color swatch |
 
 ### Topical Plan Docs (archived in `done/`)
 
