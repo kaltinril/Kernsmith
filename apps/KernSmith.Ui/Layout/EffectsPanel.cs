@@ -112,23 +112,27 @@ public class EffectsPanel : Panel
             var widthRow = new StackPanel();
             widthRow.Orientation = Orientation.Horizontal;
             widthRow.Spacing = 4;
+            widthRow.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+            widthRow.Visual.Width = 0;
             contentPanel.Children.Add(widthRow.Visual);
 
             var widthLabel = new Label();
             widthLabel.Text = "Width:";
-            widthLabel.Width = 70;
+            widthLabel.Width = 35;
             widthRow.AddChild(widthLabel);
 
             var widthSlider = new Slider();
             widthSlider.Minimum = 1;
             widthSlider.Maximum = 10;
             widthSlider.Value = 1;
-            widthSlider.Width = 100;
+            widthSlider.Visual.WidthUnits = DimensionUnitType.Ratio;
+            widthSlider.Visual.Width = 1;
             widthSlider.TicksFrequency = 1;
             widthSlider.IsSnapToTickEnabled = true;
             widthRow.AddChild(widthSlider);
 
             var widthValue = new Label();
+            widthValue.Visual.WidthUnits = DimensionUnitType.RelativeToChildren;
             widthValue.Text = "1";
             widthRow.AddChild(widthValue);
 
@@ -387,6 +391,8 @@ public class EffectsPanel : Panel
                         var axisRow = new StackPanel();
                         axisRow.Orientation = Orientation.Horizontal;
                         axisRow.Spacing = 4;
+                        axisRow.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+                        axisRow.Visual.Width = 0;
                         varFontContainer.Visual.Children.Add(axisRow.Visual);
 
                         var axisLabel = new Label();
@@ -398,13 +404,15 @@ public class EffectsPanel : Panel
                         axisSlider.Minimum = axis.MinValue;
                         axisSlider.Maximum = axis.MaxValue;
                         axisSlider.Value = axis.DefaultValue;
-                        axisSlider.Width = 100;
+                        axisSlider.Visual.WidthUnits = DimensionUnitType.Ratio;
+                        axisSlider.Visual.Width = 1;
                         // Use tick frequency of 1 for integer-like axes, finer for float axes
                         axisSlider.TicksFrequency = (axis.MaxValue - axis.MinValue) > 100 ? 1 : 0.1;
                         axisSlider.IsSnapToTickEnabled = (axis.MaxValue - axis.MinValue) > 100;
                         axisRow.AddChild(axisSlider);
 
                         var axisValue = new Label();
+                        axisValue.Visual.WidthUnits = DimensionUnitType.RelativeToChildren;
                         axisValue.Text = axis.DefaultValue.ToString("F0");
                         axisRow.AddChild(axisValue);
 
@@ -435,6 +443,8 @@ public class EffectsPanel : Panel
             var maxSizeRow = new StackPanel();
             maxSizeRow.Orientation = Orientation.Horizontal;
             maxSizeRow.Spacing = 4;
+            maxSizeRow.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+            maxSizeRow.Visual.Width = 0;
             contentPanel.Children.Add(maxSizeRow.Visual);
 
             var sizeLabel = new Label();
@@ -502,6 +512,8 @@ public class EffectsPanel : Panel
             var padCross = new StackPanel();
             padCross.Orientation = Orientation.Horizontal;
             padCross.Spacing = 2;
+            padCross.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+            padCross.Visual.Width = 0;
             contentPanel.Children.Add(padCross.Visual);
 
             // Left column: empty, Left input, empty
@@ -543,6 +555,8 @@ public class EffectsPanel : Panel
             var spacingRow = new StackPanel();
             spacingRow.Orientation = Orientation.Horizontal;
             spacingRow.Spacing = 4;
+            spacingRow.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+            spacingRow.Visual.Width = 0;
             contentPanel.Children.Add(spacingRow.Visual);
 
             var spcHLabel = new Label(); spcHLabel.Text = "H:";
@@ -669,6 +683,8 @@ public class EffectsPanel : Panel
         content.Spacing = 4;
         content.Visual.X = 4;
         content.Visual.Y = 4;
+        content.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        content.Visual.Width = -8; // 4px padding each side within contentWrapper
         content.IsVisible = true;
         contentWrapper.Children.Add(content.Visual);
 
@@ -696,24 +712,28 @@ public class EffectsPanel : Panel
     {
         var row = new StackPanel();
         row.Orientation = Orientation.Horizontal;
-        row.Spacing = 2;
+        row.Spacing = 4;
+        row.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        row.Visual.Width = 0;
         parent.Children.Add(row.Visual);
 
         var lbl = new Label();
         lbl.Text = label;
-        lbl.Width = 50;
+        lbl.Width = 70;
         row.AddChild(lbl);
 
         var slider = new Slider();
         slider.Minimum = min;
         slider.Maximum = max;
         slider.Value = defaultVal;
-        slider.Width = 100;
+        slider.Visual.WidthUnits = DimensionUnitType.Ratio;
+        slider.Visual.Width = 1; // fill remaining space
         slider.TicksFrequency = 1;
         slider.IsSnapToTickEnabled = true;
         row.AddChild(slider);
 
         var valueLabel = new Label();
+        valueLabel.Visual.WidthUnits = DimensionUnitType.RelativeToChildren;
         valueLabel.Text = defaultVal.ToString();
         row.AddChild(valueLabel);
 
@@ -733,18 +753,22 @@ public class EffectsPanel : Panel
         var row = new StackPanel();
         row.Orientation = Orientation.Horizontal;
         row.Spacing = 4;
+        row.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        row.Visual.Width = 0;
         parent.Children.Add(row.Visual);
 
         var lbl = new Label();
         lbl.Text = label;
-        lbl.Width = 70;
+        lbl.Width = 35;
+        lbl.WidthUnits = DimensionUnitType.RelativeToChildren;
         row.AddChild(lbl);
 
         // Color swatch preview
         var swatchContainer = new ContainerRuntime();
         swatchContainer.Width = 24;
         swatchContainer.Height = 24;
-        row.Visual.Children.Add(swatchContainer);
+        swatchContainer.HasEvents = true;
+        row.AddChild(swatchContainer);
 
         var swatch = new ColoredRectangleRuntime();
         swatch.Width = 0;
@@ -782,6 +806,19 @@ public class EffectsPanel : Panel
             }
         };
         row.AddChild(hexBox);
+
+        swatchContainer.Click += (_, _) =>
+        {
+            var currentColor = swatch.Color;
+            ColorPickerDialog.Show(currentColor, newColor =>
+            {
+                swatch.Color = newColor;
+                hexBox.Text = $"#{newColor.R:X2}{newColor.G:X2}{newColor.B:X2}";
+                onRChanged(newColor.R);
+                onGChanged(newColor.G);
+                onBChanged(newColor.B);
+            });
+        };
     }
 
     private static void AddLabeledIntBox(StackPanel parent, string label, int initialValue, int width, Action<int> onChanged)
