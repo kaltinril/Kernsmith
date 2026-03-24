@@ -71,6 +71,11 @@ public class MainViewModel : ViewModel
                 MarkDirty();
                 RequestAutoRegenerateDebounced();
             }
+
+            if (e.PropertyName is nameof(FontConfigViewModel.HasColorGlyphs))
+            {
+                Effects.HasColorGlyphs = FontConfig.HasColorGlyphs;
+            }
         };
 
         CharacterGrid.PropertyChanged += (_, e) =>
@@ -104,7 +109,8 @@ public class MainViewModel : ViewModel
                 }
             }
 
-            RequestAutoRegenerate();
+            // Debounce to allow batched updates (e.g. color picker sets R, G, B sequentially)
+            RequestAutoRegenerateDebounced();
         };
     }
 
