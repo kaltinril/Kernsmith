@@ -114,7 +114,7 @@ public class FontConfigPanel : Panel
             dialog.Show(path => _mainViewModel.LoadFontFromPath(path));
         };
         stack.Children.Add(browseBtn.Visual);
-        TooltipService.SetTooltip(browseBtn, "Open a file browser to select a .ttf, .otf, or .woff font file");
+        TooltipService.SetTooltip(browseBtn, "Browse for a font file");
 
         var sourceLabel = new Label();
         sourceLabel.Text = "";
@@ -183,7 +183,7 @@ public class FontConfigPanel : Panel
         var familyLabel = new Label();
         familyLabel.Text = "System Font:";
         stack.Children.Add(familyLabel.Visual);
-        TooltipService.SetTooltip(familyLabel, "Select a font installed on your system");
+        TooltipService.SetTooltip(familyLabel, "Choose an installed system font");
 
         var familyCombo = new ComboBox();
         familyCombo.Width = 260;
@@ -310,7 +310,7 @@ public class FontConfigPanel : Panel
         generateBtn.IsEnabled = _fontConfig.IsFontLoaded;
         generateBtn.Click += async (_, _) => await _mainViewModel.GenerateAsync();
         stack.Children.Add(generateBtn.Visual);
-        TooltipService.SetTooltip(generateBtn, "Generate bitmap font atlas from current settings");
+        TooltipService.SetTooltip(generateBtn, "Generate bitmap font from current settings");
 
         // Enable/disable Generate button based on font loaded state
         _fontConfig.PropertyChanged += (_, e) =>
@@ -326,7 +326,7 @@ public class FontConfigPanel : Panel
         autoRegenCb.Checked += (_, _) => _mainViewModel.AutoRegenerate = true;
         autoRegenCb.Unchecked += (_, _) => _mainViewModel.AutoRegenerate = false;
         stack.Children.Add(autoRegenCb.Visual);
-        TooltipService.SetTooltip(autoRegenCb, "Automatically re-generate when settings change");
+        TooltipService.SetTooltip(autoRegenCb, "Auto-regenerate on settings change");
 
     }
 

@@ -12,6 +12,12 @@ namespace KernSmith.Ui.Layout;
 /// channels, SDF, color font, variable font axes, fallback character) and the atlas/output
 /// configuration sections.
 /// </summary>
+/// <remarks>
+/// TODO: Slider controls use fixed Width=100 instead of RelativeToParent inside Grid cells.
+/// Using RelativeToParent (fill cell) looks much better but causes severe lag because Gum's Grid
+/// triggers RefreshLayout on every slider value change. Waiting on a Gum performance fix to switch
+/// sliders to: slider.Visual.WidthUnits = DimensionUnitType.RelativeToParent; slider.Visual.Width = 0;
+/// </remarks>
 public class EffectsPanel : Panel
 {
     private readonly EffectsViewModel _effects;
@@ -46,6 +52,67 @@ public class EffectsPanel : Panel
         var stack = inner;
 
         // --- FONT STYLE section (always active) ---
+        BuildFontStyleSection(stack);
+
+        AddDivider(stack);
+
+        // --- OUTLINE section ---
+        AddCollapsibleSection(stack, "OUTLINE", BuildOutlineContent,
+            enableChanged: enabled => _effects.OutlineEnabled = enabled,
+            tooltip: "Add an outline border around each glyph");
+
+        AddDivider(stack);
+
+        // --- SHADOW section ---
+        AddCollapsibleSection(stack, "SHADOW", BuildShadowContent,
+            enableChanged: enabled => _effects.ShadowEnabled = enabled,
+            tooltip: "Add a drop shadow behind each glyph");
+
+        AddDivider(stack);
+
+        // --- GRADIENT section ---
+        AddCollapsibleSection(stack, "GRADIENT", BuildGradientContent,
+            enableChanged: enabled => _effects.GradientEnabled = enabled,
+            tooltip: "Apply a color gradient across each glyph");
+
+        AddDivider(stack);
+
+        // --- CHANNELS section ---
+        AddCollapsibleSection(stack, "CHANNELS", BuildChannelsContent,
+            enableChanged: _ => { },
+            tooltip: "Pack glyph data into specific RGBA channels");
+
+        AddDivider(stack);
+
+        // --- ADVANCED section (SDF, Color Font, Variable Font) ---
+        BuildAdvancedSection(stack);
+
+        // --- FALLBACK CHARACTER section ---
+        AddDivider(stack);
+        BuildFallbackSection(stack);
+
+        // --- VARIABLE FONT section (dynamic, appears when axes are present) ---
+        AddDivider(stack);
+        BuildVariableFontSection(stack);
+
+        // ================================================================
+        // ATLAS / OUTPUT CONFIG (moved from left panel to reduce scrolling)
+        // ================================================================
+        AddDivider(stack);
+
+        // --- ATLAS section ---
+        AddCollapsibleSection(stack, "ATLAS", BuildAtlasContent,
+            enableChanged: _ => { }, startExpanded: true);
+
+        AddDivider(stack);
+
+        // --- OUTPUT section ---
+        AddCollapsibleSection(stack, "OUTPUT", BuildOutputContent,
+            enableChanged: _ => { }, startExpanded: true);
+    }
+
+    private void BuildFontStyleSection(Gum.Wireframe.GraphicalUiElement stack)
+    {
         AddSectionHeader(stack, "FONT STYLE");
 
         var boldCheck = new CheckBox();
@@ -54,7 +121,7 @@ public class EffectsPanel : Panel
         boldCheck.Checked += (_, _) => _effects.Bold = true;
         boldCheck.Unchecked += (_, _) => _effects.Bold = false;
         stack.Children.Add(boldCheck.Visual);
-        TooltipService.SetTooltip(boldCheck, "Use the bold variant of the font if available, otherwise apply synthetic bold");
+        TooltipService.SetTooltip(boldCheck, "Bold variant, or synthetic if unavailable");
 
         var italicCheck = new CheckBox();
         italicCheck.Text = "Italic";
@@ -62,7 +129,7 @@ public class EffectsPanel : Panel
         italicCheck.Checked += (_, _) => _effects.Italic = true;
         italicCheck.Unchecked += (_, _) => _effects.Italic = false;
         stack.Children.Add(italicCheck.Visual);
-        TooltipService.SetTooltip(italicCheck, "Use the italic variant if available, otherwise apply synthetic italic");
+        TooltipService.SetTooltip(italicCheck, "Italic variant, or synthetic if unavailable");
 
         var aaCheck = new CheckBox();
         aaCheck.Text = "Anti-Alias";
@@ -71,7 +138,7 @@ public class EffectsPanel : Panel
         aaCheck.Checked += (_, _) => _effects.AntiAlias = true;
         aaCheck.Unchecked += (_, _) => _effects.AntiAlias = false;
         stack.Children.Add(aaCheck.Visual);
-        TooltipService.SetTooltip(aaCheck, "Smooth glyph edges using grayscale anti-aliasing");
+        TooltipService.SetTooltip(aaCheck, "Smooth glyph edges with anti-aliasing");
 
         var hintCheck = new CheckBox();
         hintCheck.Text = "Hinting";
@@ -80,13 +147,13 @@ public class EffectsPanel : Panel
         hintCheck.Checked += (_, _) => _effects.Hinting = true;
         hintCheck.Unchecked += (_, _) => _effects.Hinting = false;
         stack.Children.Add(hintCheck.Visual);
-        TooltipService.SetTooltip(hintCheck, "Apply font hinting for sharper rendering at small sizes");
+        TooltipService.SetTooltip(hintCheck, "Font hinting for sharper small sizes");
 
         // Super sampling
         var ssLabel = new Label();
         ssLabel.Text = "Super Sample:";
         stack.Children.Add(ssLabel.Visual);
-        TooltipService.SetTooltip(ssLabel, "Render at higher resolution then downscale for smoother results");
+        TooltipService.SetTooltip(ssLabel, "Supersample then downscale for smoother glyphs");
 
         var ssGroup = new StackPanel();
         ssGroup.Orientation = Orientation.Horizontal;
@@ -103,119 +170,104 @@ public class EffectsPanel : Panel
             rb.Checked += (_, _) => _effects.SuperSampleLevel = capturedLevel;
             ssGroup.AddChild(rb);
         }
+    }
 
-        AddDivider(stack);
+    private void BuildOutlineContent(Gum.Wireframe.GraphicalUiElement contentPanel)
+    {
+        var widthGrid = new Grid();
+        widthGrid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        widthGrid.Visual.Width = 0;
+        widthGrid.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
+        widthGrid.Visual.Height = 0;
+        widthGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        widthGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
+        widthGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        widthGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        contentPanel.Children.Add(widthGrid.Visual);
 
-        // --- OUTLINE section ---
-        AddCollapsibleSection(stack, "OUTLINE", contentPanel =>
+        var widthLabel = new Label();
+        widthLabel.Text = "Width:";
+        widthGrid.AddChild(widthLabel, row: 0, column: 0);
+
+        var widthSlider = new Slider();
+        widthSlider.Minimum = 1;
+        widthSlider.Maximum = 10;
+        widthSlider.Value = 1;
+        widthSlider.Width = 100;
+        widthSlider.TicksFrequency = 1;
+        widthSlider.IsSnapToTickEnabled = true;
+        widthGrid.AddChild(widthSlider, row: 0, column: 1);
+
+        var widthValue = new Label();
+        widthValue.Text = "1";
+        widthGrid.AddChild(widthValue, row: 0, column: 2);
+
+        widthSlider.ValueChanged += (_, _) =>
         {
-            var widthRow = new StackPanel();
-            widthRow.Orientation = Orientation.Horizontal;
-            widthRow.Spacing = 4;
-            widthRow.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-            widthRow.Visual.Width = 0;
-            contentPanel.Children.Add(widthRow.Visual);
+            var val = (int)widthSlider.Value;
+            widthValue.Text = val.ToString();
+            _effects.OutlineWidth = val;
+        };
 
-            var widthLabel = new Label();
-            widthLabel.Text = "Width:";
-            widthLabel.Width = 35;
-            widthRow.AddChild(widthLabel);
+        // Outline color RGB row
+        AddColorRow(contentPanel, "Color:",
+            _effects.OutlineColorR, _effects.OutlineColorG, _effects.OutlineColorB,
+            v => _effects.OutlineColorR = v,
+            v => _effects.OutlineColorG = v,
+            v => _effects.OutlineColorB = v);
+    }
 
-            var widthSlider = new Slider();
-            widthSlider.Minimum = 1;
-            widthSlider.Maximum = 10;
-            widthSlider.Value = 1;
-            widthSlider.Visual.WidthUnits = DimensionUnitType.Ratio;
-            widthSlider.Visual.Width = 1;
-            widthSlider.TicksFrequency = 1;
-            widthSlider.IsSnapToTickEnabled = true;
-            widthRow.AddChild(widthSlider);
+    private void BuildShadowContent(Gum.Wireframe.GraphicalUiElement contentPanel)
+    {
+        AddSliderRow(contentPanel, "Offset X:", -10, 10, 2,
+            val => _effects.ShadowOffsetX = val);
+        AddSliderRow(contentPanel, "Offset Y:", -10, 10, 2,
+            val => _effects.ShadowOffsetY = val);
+        AddSliderRow(contentPanel, "Blur:", 0, 10, 0,
+            val => _effects.ShadowBlur = val);
 
-            var widthValue = new Label();
-            widthValue.Visual.WidthUnits = DimensionUnitType.RelativeToChildren;
-            widthValue.Text = "1";
-            widthRow.AddChild(widthValue);
+        // Shadow color RGB row
+        AddColorRow(contentPanel, "Color:",
+            _effects.ShadowColorR, _effects.ShadowColorG, _effects.ShadowColorB,
+            v => _effects.ShadowColorR = v,
+            v => _effects.ShadowColorG = v,
+            v => _effects.ShadowColorB = v);
 
-            widthSlider.ValueChanged += (_, _) =>
-            {
-                var val = (int)widthSlider.Value;
-                widthValue.Text = val.ToString();
-                _effects.OutlineWidth = val;
-            };
+        // Shadow opacity slider
+        AddSliderRow(contentPanel, "Opacity:", 0, 100, 100,
+            val => _effects.ShadowOpacity = val);
+    }
 
-            // Outline color RGB row
-            AddColorRow(contentPanel, "Color:",
-                _effects.OutlineColorR, _effects.OutlineColorG, _effects.OutlineColorB,
-                v => _effects.OutlineColorR = v,
-                v => _effects.OutlineColorG = v,
-                v => _effects.OutlineColorB = v);
-        }, enableChanged: enabled => _effects.OutlineEnabled = enabled,
-            tooltip: "Add an outline border around each glyph");
+    private void BuildGradientContent(Gum.Wireframe.GraphicalUiElement contentPanel)
+    {
+        AddColorRow(contentPanel, "Start:",
+            _effects.GradientStartR, _effects.GradientStartG, _effects.GradientStartB,
+            v => _effects.GradientStartR = v,
+            v => _effects.GradientStartG = v,
+            v => _effects.GradientStartB = v);
 
-        AddDivider(stack);
+        AddColorRow(contentPanel, "End:",
+            _effects.GradientEndR, _effects.GradientEndG, _effects.GradientEndB,
+            v => _effects.GradientEndR = v,
+            v => _effects.GradientEndG = v,
+            v => _effects.GradientEndB = v);
 
-        // --- SHADOW section ---
-        AddCollapsibleSection(stack, "SHADOW", contentPanel =>
-        {
-            AddSliderRow(contentPanel, "Offset X:", -10, 10, 2,
-                val => _effects.ShadowOffsetX = val);
-            AddSliderRow(contentPanel, "Offset Y:", -10, 10, 2,
-                val => _effects.ShadowOffsetY = val);
-            AddSliderRow(contentPanel, "Blur:", 0, 10, 0,
-                val => _effects.ShadowBlur = val);
+        AddSliderRow(contentPanel, "Angle:", 0, 360, 90,
+            val => _effects.GradientAngle = val);
+    }
 
-            // Shadow color RGB row
-            AddColorRow(contentPanel, "Color:",
-                _effects.ShadowColorR, _effects.ShadowColorG, _effects.ShadowColorB,
-                v => _effects.ShadowColorR = v,
-                v => _effects.ShadowColorG = v,
-                v => _effects.ShadowColorB = v);
+    private void BuildChannelsContent(Gum.Wireframe.GraphicalUiElement contentPanel)
+    {
+        var packingCheck = new CheckBox();
+        packingCheck.Text = "Channel Packing";
+        packingCheck.Width = 180;
+        packingCheck.Checked += (_, _) => _effects.ChannelPackingEnabled = true;
+        packingCheck.Unchecked += (_, _) => _effects.ChannelPackingEnabled = false;
+        contentPanel.Children.Add(packingCheck.Visual);
+    }
 
-            // Shadow opacity slider
-            AddSliderRow(contentPanel, "Opacity:", 0, 100, 100,
-                val => _effects.ShadowOpacity = val);
-        }, enableChanged: enabled => _effects.ShadowEnabled = enabled,
-            tooltip: "Add a drop shadow behind each glyph");
-
-        AddDivider(stack);
-
-        // --- GRADIENT section ---
-        AddCollapsibleSection(stack, "GRADIENT", contentPanel =>
-        {
-            AddColorRow(contentPanel, "Start:",
-                _effects.GradientStartR, _effects.GradientStartG, _effects.GradientStartB,
-                v => _effects.GradientStartR = v,
-                v => _effects.GradientStartG = v,
-                v => _effects.GradientStartB = v);
-
-            AddColorRow(contentPanel, "End:",
-                _effects.GradientEndR, _effects.GradientEndG, _effects.GradientEndB,
-                v => _effects.GradientEndR = v,
-                v => _effects.GradientEndG = v,
-                v => _effects.GradientEndB = v);
-
-            AddSliderRow(contentPanel, "Angle:", 0, 360, 90,
-                val => _effects.GradientAngle = val);
-        }, enableChanged: enabled => _effects.GradientEnabled = enabled,
-            tooltip: "Apply a color gradient across each glyph");
-
-        AddDivider(stack);
-
-        // --- CHANNELS section ---
-        AddCollapsibleSection(stack, "CHANNELS", contentPanel =>
-        {
-            var packingCheck = new CheckBox();
-            packingCheck.Text = "Channel Packing";
-            packingCheck.Width = 180;
-            packingCheck.Checked += (_, _) => _effects.ChannelPackingEnabled = true;
-            packingCheck.Unchecked += (_, _) => _effects.ChannelPackingEnabled = false;
-            contentPanel.Children.Add(packingCheck.Visual);
-        }, enableChanged: _ => { },
-            tooltip: "Pack glyph data into specific RGBA channels");
-
-        AddDivider(stack);
-
-        // --- ADVANCED section ---
+    private void BuildAdvancedSection(Gum.Wireframe.GraphicalUiElement stack)
+    {
         AddSectionHeader(stack, "ADVANCED");
 
         var sdfCheck = new CheckBox();
@@ -224,7 +276,7 @@ public class EffectsPanel : Panel
         sdfCheck.Checked += (_, _) => _effects.SdfEnabled = true;
         sdfCheck.Unchecked += (_, _) => _effects.SdfEnabled = false;
         stack.Children.Add(sdfCheck.Visual);
-        TooltipService.SetTooltip(sdfCheck, "Signed Distance Field — scalable font rendering for game engines. Not compatible with outline, shadow, gradient, or super sampling.");
+        TooltipService.SetTooltip(sdfCheck, "Scalable SDF rendering; incompatible with effects");
 
         // SDF incompatibility warning (covers super-sample, outline, shadow, gradient)
         var sdfWarning = new TextRuntime();
@@ -239,7 +291,7 @@ public class EffectsPanel : Panel
         colorCheck.Checked += (_, _) => _effects.ColorFontEnabled = true;
         colorCheck.Unchecked += (_, _) => _effects.ColorFontEnabled = false;
         stack.Children.Add(colorCheck.Visual);
-        TooltipService.SetTooltip(colorCheck, "Render color glyphs from fonts with COLR/CPAL tables (e.g., emoji). Has no effect on fonts without color tables.");
+        TooltipService.SetTooltip(colorCheck, "Render color glyphs (emoji) if font supports");
 
         var colorFontHint = new TextRuntime();
         colorFontHint.Text = "Only affects fonts with color tables (e.g. emoji)";
@@ -334,9 +386,10 @@ public class EffectsPanel : Panel
             if (e.PropertyName is nameof(EffectsViewModel.ColorFontEnabled) or nameof(EffectsViewModel.HasColorGlyphs))
                 colorFontNoTablesWarning.Visible = _effects.ColorFontEnabled && !_effects.HasColorGlyphs;
         };
+    }
 
-        // --- FALLBACK CHARACTER section ---
-        AddDivider(stack);
+    private void BuildFallbackSection(Gum.Wireframe.GraphicalUiElement stack)
+    {
         AddSectionHeader(stack, "FALLBACK CHARACTER");
 
         var fallbackRow = new StackPanel();
@@ -348,7 +401,7 @@ public class EffectsPanel : Panel
         fallbackLabel.Text = "Char:";
         fallbackLabel.Width = 70;
         fallbackRow.AddChild(fallbackLabel);
-        TooltipService.SetTooltip(fallbackLabel, "Character to display when a requested glyph is missing from the font");
+        TooltipService.SetTooltip(fallbackLabel, "Replacement for missing glyphs");
 
         var fallbackTextBox = new TextBox();
         fallbackTextBox.Width = 60;
@@ -359,10 +412,10 @@ public class EffectsPanel : Panel
                 _effects.FallbackCharacter = fallbackTextBox.Text;
         };
         fallbackRow.AddChild(fallbackTextBox);
+    }
 
-        // --- VARIABLE FONT section (dynamic, appears when axes are present) ---
-        AddDivider(stack);
-
+    private void BuildVariableFontSection(Gum.Wireframe.GraphicalUiElement stack)
+    {
         var varFontHeader = new Label();
         varFontHeader.Text = "VARIABLE FONT";
         varFontHeader.IsVisible = false;
@@ -388,33 +441,34 @@ public class EffectsPanel : Panel
                 {
                     foreach (var axis in _effects.VariationAxesList)
                     {
-                        var axisRow = new StackPanel();
-                        axisRow.Orientation = Orientation.Horizontal;
-                        axisRow.Spacing = 4;
-                        axisRow.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-                        axisRow.Visual.Width = 0;
-                        varFontContainer.Visual.Children.Add(axisRow.Visual);
+                        var axisGrid = new Grid();
+                        axisGrid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+                        axisGrid.Visual.Width = 0;
+                        axisGrid.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
+                        axisGrid.Visual.Height = 0;
+                        axisGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                        axisGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
+                        axisGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                        axisGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                        varFontContainer.Visual.Children.Add(axisGrid.Visual);
 
                         var axisLabel = new Label();
                         axisLabel.Text = axis.Name ?? axis.Tag;
-                        axisLabel.Width = 70;
-                        axisRow.AddChild(axisLabel);
+                        axisGrid.AddChild(axisLabel, row: 0, column: 0);
 
                         var axisSlider = new Slider();
                         axisSlider.Minimum = axis.MinValue;
                         axisSlider.Maximum = axis.MaxValue;
                         axisSlider.Value = axis.DefaultValue;
-                        axisSlider.Visual.WidthUnits = DimensionUnitType.Ratio;
-                        axisSlider.Visual.Width = 1;
+                        axisSlider.Width = 100;
                         // Use tick frequency of 1 for integer-like axes, finer for float axes
                         axisSlider.TicksFrequency = (axis.MaxValue - axis.MinValue) > 100 ? 1 : 0.1;
                         axisSlider.IsSnapToTickEnabled = (axis.MaxValue - axis.MinValue) > 100;
-                        axisRow.AddChild(axisSlider);
+                        axisGrid.AddChild(axisSlider, row: 0, column: 1);
 
                         var axisValue = new Label();
-                        axisValue.Visual.WidthUnits = DimensionUnitType.RelativeToChildren;
                         axisValue.Text = axis.DefaultValue.ToString("F0");
-                        axisRow.AddChild(axisValue);
+                        axisGrid.AddChild(axisValue, row: 0, column: 2);
 
                         var capturedTag = axis.Tag;
                         axisSlider.ValueChanged += (_, _) =>
@@ -427,223 +481,224 @@ public class EffectsPanel : Panel
                 }
             }
         };
+    }
 
-        // ================================================================
-        // ATLAS / OUTPUT CONFIG (moved from left panel to reduce scrolling)
-        // ================================================================
-        AddDivider(stack);
+    private void BuildAtlasContent(Gum.Wireframe.GraphicalUiElement contentPanel)
+    {
+        bool _updatingFromVm = false;
 
-        // --- ATLAS section ---
-        AddCollapsibleSection(stack, "ATLAS", contentPanel =>
+        var sizes = new[] { 128, 256, 512, 1024, 2048, 4096, 8192 };
+
+        var maxSizeGrid = new Grid();
+        maxSizeGrid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        maxSizeGrid.Visual.Width = 0;
+        maxSizeGrid.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
+        maxSizeGrid.Visual.Height = 0;
+        maxSizeGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        maxSizeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        maxSizeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        maxSizeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        maxSizeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        contentPanel.Children.Add(maxSizeGrid.Visual);
+
+        var sizeLabel = new Label();
+        sizeLabel.Text = "Max Size:";
+        maxSizeGrid.AddChild(sizeLabel, row: 0, column: 0);
+        TooltipService.SetTooltip(sizeLabel, "Maximum atlas texture size in pixels");
+
+        var maxWidthCombo = new ComboBox();
+        maxWidthCombo.Width = 80;
+        foreach (var s in sizes) maxWidthCombo.Items.Add(s.ToString());
+        maxWidthCombo.SelectedIndex = Array.IndexOf(sizes, _atlasConfig.MaxWidth);
+        if (maxWidthCombo.SelectedIndex < 0) maxWidthCombo.SelectedIndex = 3; // 1024
+        maxWidthCombo.SelectionChanged += (_, _) =>
         {
-            bool _updatingFromVm = false;
+            if (!_updatingFromVm && maxWidthCombo.SelectedIndex >= 0)
+                _atlasConfig.MaxWidth = sizes[maxWidthCombo.SelectedIndex];
+        };
+        maxSizeGrid.AddChild(maxWidthCombo, row: 0, column: 1);
 
-            var sizes = new[] { 128, 256, 512, 1024, 2048, 4096, 8192 };
+        var xLabel = new Label();
+        xLabel.Text = "x";
+        maxSizeGrid.AddChild(xLabel, row: 0, column: 2);
 
-            var maxSizeRow = new StackPanel();
-            maxSizeRow.Orientation = Orientation.Horizontal;
-            maxSizeRow.Spacing = 4;
-            maxSizeRow.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-            maxSizeRow.Visual.Width = 0;
-            contentPanel.Children.Add(maxSizeRow.Visual);
+        var maxHeightCombo = new ComboBox();
+        maxHeightCombo.Width = 80;
+        foreach (var s in sizes) maxHeightCombo.Items.Add(s.ToString());
+        maxHeightCombo.SelectedIndex = Array.IndexOf(sizes, _atlasConfig.MaxHeight);
+        if (maxHeightCombo.SelectedIndex < 0) maxHeightCombo.SelectedIndex = 3;
+        maxHeightCombo.SelectionChanged += (_, _) =>
+        {
+            if (!_updatingFromVm && maxHeightCombo.SelectedIndex >= 0)
+                _atlasConfig.MaxHeight = sizes[maxHeightCombo.SelectedIndex];
+        };
+        maxSizeGrid.AddChild(maxHeightCombo, row: 0, column: 3);
 
-            var sizeLabel = new Label();
-            sizeLabel.Text = "Max Size:";
-            maxSizeRow.AddChild(sizeLabel);
-            TooltipService.SetTooltip(sizeLabel, "Maximum atlas texture dimensions in pixels. When Autofit is enabled, the actual output may be smaller if all glyphs fit in a smaller atlas.");
+        var autofit = new CheckBox();
+        autofit.Text = "Autofit Texture";
+        autofit.Width = 220;
+        autofit.IsChecked = _atlasConfig.AutofitTexture;
+        TooltipService.SetTooltip(autofit, "Shrink atlas to smallest size that fits");
+        autofit.Checked += (_, _) => { if (!_updatingFromVm) _atlasConfig.AutofitTexture = true; };
+        autofit.Unchecked += (_, _) => { if (!_updatingFromVm) _atlasConfig.AutofitTexture = false; };
+        contentPanel.Children.Add(autofit.Visual);
 
-            var maxWidthCombo = new ComboBox();
-            maxWidthCombo.Width = 80;
-            foreach (var s in sizes) maxWidthCombo.Items.Add(s.ToString());
-            maxWidthCombo.SelectedIndex = Array.IndexOf(sizes, _atlasConfig.MaxWidth);
-            if (maxWidthCombo.SelectedIndex < 0) maxWidthCombo.SelectedIndex = 3; // 1024
-            maxWidthCombo.SelectionChanged += (_, _) =>
+        var packAlgoLabel = new Label();
+        packAlgoLabel.Text = "Packing Algorithm:";
+        contentPanel.Children.Add(packAlgoLabel.Visual);
+        TooltipService.SetTooltip(packAlgoLabel, "Glyph packing algorithm for the atlas");
+
+        var packAlgoCombo = new ComboBox();
+        packAlgoCombo.Width = 200;
+        packAlgoCombo.Items.Add("MaxRects");
+        packAlgoCombo.Items.Add("Skyline");
+        packAlgoCombo.SelectedIndex = _atlasConfig.PackingAlgorithmIndex;
+        packAlgoCombo.SelectionChanged += (_, _) =>
+        {
+            if (!_updatingFromVm && packAlgoCombo.SelectedIndex >= 0)
+                _atlasConfig.PackingAlgorithmIndex = packAlgoCombo.SelectedIndex;
+        };
+        contentPanel.Children.Add(packAlgoCombo.Visual);
+
+        // --- Padding (cross layout using 3 columns) ---
+        AddLabeledDivider(contentPanel, "Padding");
+
+        var padCross = new StackPanel();
+        padCross.Orientation = Orientation.Horizontal;
+        padCross.Spacing = 2;
+        padCross.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        padCross.Visual.Width = 0;
+        contentPanel.Children.Add(padCross.Visual);
+
+        // Left column: empty, Left input, empty
+        var padColLeft = new StackPanel();
+        padColLeft.Spacing = 2;
+        var padLeftSpacer = new Label(); padLeftSpacer.Text = ""; padLeftSpacer.Height = 24;
+        padColLeft.AddChild(padLeftSpacer);
+        var padLeftBox = CreateSmallIntBox(_atlasConfig.PaddingLeft, v => { if (!_updatingFromVm) _atlasConfig.PaddingLeft = Math.Clamp(v, 0, 32); });
+        padColLeft.AddChild(padLeftBox);
+        var padLeftSpacer2 = new Label(); padLeftSpacer2.Text = ""; padLeftSpacer2.Height = 24;
+        padColLeft.AddChild(padLeftSpacer2);
+        padCross.AddChild(padColLeft);
+
+        // Center column: Up input, "pad" label, Down input
+        var padColCenter = new StackPanel();
+        padColCenter.Spacing = 2;
+        var padUpBox = CreateSmallIntBox(_atlasConfig.PaddingUp, v => { if (!_updatingFromVm) _atlasConfig.PaddingUp = Math.Clamp(v, 0, 32); });
+        padColCenter.AddChild(padUpBox);
+        var padCenterLabel = new Label(); padCenterLabel.Text = "Aa";
+        padColCenter.AddChild(padCenterLabel);
+        var padDownBox = CreateSmallIntBox(_atlasConfig.PaddingDown, v => { if (!_updatingFromVm) _atlasConfig.PaddingDown = Math.Clamp(v, 0, 32); });
+        padColCenter.AddChild(padDownBox);
+        padCross.AddChild(padColCenter);
+
+        // Right column: empty, Right input, empty
+        var padColRight = new StackPanel();
+        padColRight.Spacing = 2;
+        var padRightSpacer = new Label(); padRightSpacer.Text = ""; padRightSpacer.Height = 24;
+        padColRight.AddChild(padRightSpacer);
+        var padRightBox = CreateSmallIntBox(_atlasConfig.PaddingRight, v => { if (!_updatingFromVm) _atlasConfig.PaddingRight = Math.Clamp(v, 0, 32); });
+        padColRight.AddChild(padRightBox);
+        var padRightSpacer2 = new Label(); padRightSpacer2.Text = ""; padRightSpacer2.Height = 24;
+        padColRight.AddChild(padRightSpacer2);
+        padCross.AddChild(padColRight);
+
+        // --- Spacing (simple H x V row) ---
+        AddLabeledDivider(contentPanel, "Spacing");
+
+        var spacingGrid = new Grid();
+        spacingGrid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        spacingGrid.Visual.Width = 0;
+        spacingGrid.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
+        spacingGrid.Visual.Height = 0;
+        spacingGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        spacingGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        spacingGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        spacingGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        spacingGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        contentPanel.Children.Add(spacingGrid.Visual);
+
+        var spcHLabel = new Label(); spcHLabel.Text = "H:";
+        spacingGrid.AddChild(spcHLabel, row: 0, column: 0);
+        var spacingHBox = CreateSmallIntBox(_atlasConfig.SpacingH, v => { if (!_updatingFromVm) _atlasConfig.SpacingH = Math.Clamp(v, 0, 32); });
+        spacingGrid.AddChild(spacingHBox, row: 0, column: 1);
+        var spcVLabel = new Label(); spcVLabel.Text = "V:";
+        spacingGrid.AddChild(spcVLabel, row: 0, column: 2);
+        var spacingVBox = CreateSmallIntBox(_atlasConfig.SpacingV, v => { if (!_updatingFromVm) _atlasConfig.SpacingV = Math.Clamp(v, 0, 32); });
+        spacingGrid.AddChild(spacingVBox, row: 0, column: 3);
+
+        // Sync UI from ViewModel when preset is applied
+        _atlasConfig.PropertyChanged += (_, e) =>
+        {
+            _updatingFromVm = true;
+            try
             {
-                if (!_updatingFromVm && maxWidthCombo.SelectedIndex >= 0)
-                    _atlasConfig.MaxWidth = sizes[maxWidthCombo.SelectedIndex];
-            };
-            maxSizeRow.AddChild(maxWidthCombo);
-
-            var xLabel = new Label();
-            xLabel.Text = "x";
-            maxSizeRow.AddChild(xLabel);
-
-            var maxHeightCombo = new ComboBox();
-            maxHeightCombo.Width = 80;
-            foreach (var s in sizes) maxHeightCombo.Items.Add(s.ToString());
-            maxHeightCombo.SelectedIndex = Array.IndexOf(sizes, _atlasConfig.MaxHeight);
-            if (maxHeightCombo.SelectedIndex < 0) maxHeightCombo.SelectedIndex = 3;
-            maxHeightCombo.SelectionChanged += (_, _) =>
-            {
-                if (!_updatingFromVm && maxHeightCombo.SelectedIndex >= 0)
-                    _atlasConfig.MaxHeight = sizes[maxHeightCombo.SelectedIndex];
-            };
-            maxSizeRow.AddChild(maxHeightCombo);
-
-            var autofit = new CheckBox();
-            autofit.Text = "Autofit Texture";
-            autofit.Width = 220;
-            autofit.IsChecked = _atlasConfig.AutofitTexture;
-            TooltipService.SetTooltip(autofit, "Shrink the atlas to the smallest power-of-two size that fits all glyphs. The output may be much smaller than Max Size (e.g., 256x256 even if max is 1024x1024). Disable this to always use the exact Max Size.");
-            autofit.Checked += (_, _) => { if (!_updatingFromVm) _atlasConfig.AutofitTexture = true; };
-            autofit.Unchecked += (_, _) => { if (!_updatingFromVm) _atlasConfig.AutofitTexture = false; };
-            contentPanel.Children.Add(autofit.Visual);
-
-            var packAlgoLabel = new Label();
-            packAlgoLabel.Text = "Packing Algorithm:";
-            contentPanel.Children.Add(packAlgoLabel.Visual);
-            TooltipService.SetTooltip(packAlgoLabel, "Algorithm used to arrange glyphs in the texture atlas");
-
-            var packAlgoCombo = new ComboBox();
-            packAlgoCombo.Width = 200;
-            packAlgoCombo.Items.Add("MaxRects");
-            packAlgoCombo.Items.Add("Skyline");
-            packAlgoCombo.SelectedIndex = _atlasConfig.PackingAlgorithmIndex;
-            packAlgoCombo.SelectionChanged += (_, _) =>
-            {
-                if (!_updatingFromVm && packAlgoCombo.SelectedIndex >= 0)
-                    _atlasConfig.PackingAlgorithmIndex = packAlgoCombo.SelectedIndex;
-            };
-            contentPanel.Children.Add(packAlgoCombo.Visual);
-
-            // --- Padding (cross layout using 3 columns) ---
-            AddLabeledDivider(contentPanel, "Padding");
-
-            var padCross = new StackPanel();
-            padCross.Orientation = Orientation.Horizontal;
-            padCross.Spacing = 2;
-            padCross.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-            padCross.Visual.Width = 0;
-            contentPanel.Children.Add(padCross.Visual);
-
-            // Left column: empty, Left input, empty
-            var padColLeft = new StackPanel();
-            padColLeft.Spacing = 2;
-            var padLeftSpacer = new Label(); padLeftSpacer.Text = ""; padLeftSpacer.Height = 24;
-            padColLeft.AddChild(padLeftSpacer);
-            var padLeftBox = CreateSmallIntBox(_atlasConfig.PaddingLeft, v => { if (!_updatingFromVm) _atlasConfig.PaddingLeft = Math.Clamp(v, 0, 32); });
-            padColLeft.AddChild(padLeftBox);
-            var padLeftSpacer2 = new Label(); padLeftSpacer2.Text = ""; padLeftSpacer2.Height = 24;
-            padColLeft.AddChild(padLeftSpacer2);
-            padCross.AddChild(padColLeft);
-
-            // Center column: Up input, "pad" label, Down input
-            var padColCenter = new StackPanel();
-            padColCenter.Spacing = 2;
-            var padUpBox = CreateSmallIntBox(_atlasConfig.PaddingUp, v => { if (!_updatingFromVm) _atlasConfig.PaddingUp = Math.Clamp(v, 0, 32); });
-            padColCenter.AddChild(padUpBox);
-            var padCenterLabel = new Label(); padCenterLabel.Text = "Aa";
-            padColCenter.AddChild(padCenterLabel);
-            var padDownBox = CreateSmallIntBox(_atlasConfig.PaddingDown, v => { if (!_updatingFromVm) _atlasConfig.PaddingDown = Math.Clamp(v, 0, 32); });
-            padColCenter.AddChild(padDownBox);
-            padCross.AddChild(padColCenter);
-
-            // Right column: empty, Right input, empty
-            var padColRight = new StackPanel();
-            padColRight.Spacing = 2;
-            var padRightSpacer = new Label(); padRightSpacer.Text = ""; padRightSpacer.Height = 24;
-            padColRight.AddChild(padRightSpacer);
-            var padRightBox = CreateSmallIntBox(_atlasConfig.PaddingRight, v => { if (!_updatingFromVm) _atlasConfig.PaddingRight = Math.Clamp(v, 0, 32); });
-            padColRight.AddChild(padRightBox);
-            var padRightSpacer2 = new Label(); padRightSpacer2.Text = ""; padRightSpacer2.Height = 24;
-            padColRight.AddChild(padRightSpacer2);
-            padCross.AddChild(padColRight);
-
-            // --- Spacing (simple H x V row) ---
-            AddLabeledDivider(contentPanel, "Spacing");
-
-            var spacingRow = new StackPanel();
-            spacingRow.Orientation = Orientation.Horizontal;
-            spacingRow.Spacing = 4;
-            spacingRow.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-            spacingRow.Visual.Width = 0;
-            contentPanel.Children.Add(spacingRow.Visual);
-
-            var spcHLabel = new Label(); spcHLabel.Text = "H:";
-            spacingRow.AddChild(spcHLabel);
-            var spacingHBox = CreateSmallIntBox(_atlasConfig.SpacingH, v => { if (!_updatingFromVm) _atlasConfig.SpacingH = Math.Clamp(v, 0, 32); });
-            spacingRow.AddChild(spacingHBox);
-            var spcVLabel = new Label(); spcVLabel.Text = "V:";
-            spacingRow.AddChild(spcVLabel);
-            var spacingVBox = CreateSmallIntBox(_atlasConfig.SpacingV, v => { if (!_updatingFromVm) _atlasConfig.SpacingV = Math.Clamp(v, 0, 32); });
-            spacingRow.AddChild(spacingVBox);
-
-            // Sync UI from ViewModel when preset is applied
-            _atlasConfig.PropertyChanged += (_, e) =>
-            {
-                _updatingFromVm = true;
-                try
+                switch (e.PropertyName)
                 {
-                    switch (e.PropertyName)
-                    {
-                        case nameof(AtlasConfigViewModel.MaxWidth):
-                            var wi = Array.IndexOf(sizes, _atlasConfig.MaxWidth);
-                            if (wi >= 0) maxWidthCombo.SelectedIndex = wi;
-                            break;
-                        case nameof(AtlasConfigViewModel.MaxHeight):
-                            var hi = Array.IndexOf(sizes, _atlasConfig.MaxHeight);
-                            if (hi >= 0) maxHeightCombo.SelectedIndex = hi;
-                            break;
-                        case nameof(AtlasConfigViewModel.AutofitTexture): autofit.IsChecked = _atlasConfig.AutofitTexture; break;
-                        case nameof(AtlasConfigViewModel.PackingAlgorithmIndex): packAlgoCombo.SelectedIndex = _atlasConfig.PackingAlgorithmIndex; break;
-                        case nameof(AtlasConfigViewModel.PaddingUp): padUpBox.Text = _atlasConfig.PaddingUp.ToString(); break;
-                        case nameof(AtlasConfigViewModel.PaddingRight): padRightBox.Text = _atlasConfig.PaddingRight.ToString(); break;
-                        case nameof(AtlasConfigViewModel.PaddingDown): padDownBox.Text = _atlasConfig.PaddingDown.ToString(); break;
-                        case nameof(AtlasConfigViewModel.PaddingLeft): padLeftBox.Text = _atlasConfig.PaddingLeft.ToString(); break;
-                        case nameof(AtlasConfigViewModel.SpacingH): spacingHBox.Text = _atlasConfig.SpacingH.ToString(); break;
-                        case nameof(AtlasConfigViewModel.SpacingV): spacingVBox.Text = _atlasConfig.SpacingV.ToString(); break;
-                    }
+                    case nameof(AtlasConfigViewModel.MaxWidth):
+                        var wi = Array.IndexOf(sizes, _atlasConfig.MaxWidth);
+                        if (wi >= 0) maxWidthCombo.SelectedIndex = wi;
+                        break;
+                    case nameof(AtlasConfigViewModel.MaxHeight):
+                        var hi = Array.IndexOf(sizes, _atlasConfig.MaxHeight);
+                        if (hi >= 0) maxHeightCombo.SelectedIndex = hi;
+                        break;
+                    case nameof(AtlasConfigViewModel.AutofitTexture): autofit.IsChecked = _atlasConfig.AutofitTexture; break;
+                    case nameof(AtlasConfigViewModel.PackingAlgorithmIndex): packAlgoCombo.SelectedIndex = _atlasConfig.PackingAlgorithmIndex; break;
+                    case nameof(AtlasConfigViewModel.PaddingUp): padUpBox.Text = _atlasConfig.PaddingUp.ToString(); break;
+                    case nameof(AtlasConfigViewModel.PaddingRight): padRightBox.Text = _atlasConfig.PaddingRight.ToString(); break;
+                    case nameof(AtlasConfigViewModel.PaddingDown): padDownBox.Text = _atlasConfig.PaddingDown.ToString(); break;
+                    case nameof(AtlasConfigViewModel.PaddingLeft): padLeftBox.Text = _atlasConfig.PaddingLeft.ToString(); break;
+                    case nameof(AtlasConfigViewModel.SpacingH): spacingHBox.Text = _atlasConfig.SpacingH.ToString(); break;
+                    case nameof(AtlasConfigViewModel.SpacingV): spacingVBox.Text = _atlasConfig.SpacingV.ToString(); break;
                 }
-                finally { _updatingFromVm = false; }
-            };
-        }, enableChanged: _ => { }, startExpanded: true);
-
-        AddDivider(stack);
-
-        // --- OUTPUT section ---
-        AddCollapsibleSection(stack, "OUTPUT", contentPanel =>
-        {
-            var formatLabel = new Label();
-            formatLabel.Text = "Descriptor Format:";
-            contentPanel.Children.Add(formatLabel.Visual);
-            TooltipService.SetTooltip(formatLabel, "File format for the .fnt descriptor (Text, XML, or Binary)");
-
-            var formatGroup = new StackPanel();
-            formatGroup.Spacing = 2;
-            contentPanel.Children.Add(formatGroup.Visual);
-
-            var formatRadios = new List<(RadioButton rb, OutputFormat fmt)>();
-            var formats = new[] { ("Text", OutputFormat.Text), ("XML", OutputFormat.Xml), ("Binary", OutputFormat.Binary) };
-            foreach (var (name, format) in formats)
-            {
-                var rb = new RadioButton();
-                rb.Text = name;
-                rb.Width = 200;
-                if (format == _atlasConfig.DescriptorFormat) rb.IsChecked = true;
-                var capturedFormat = format;
-                rb.Checked += (_, _) => _atlasConfig.DescriptorFormat = capturedFormat;
-                formatRadios.Add((rb, format));
-                formatGroup.AddChild(rb);
             }
+            finally { _updatingFromVm = false; }
+        };
+    }
 
-            var kerningCb = new CheckBox();
-            kerningCb.Text = "Include Kerning";
-            kerningCb.Width = 200;
-            kerningCb.IsChecked = _atlasConfig.IncludeKerning;
-            TooltipService.SetTooltip(kerningCb, "Include kerning pair data in the output for improved text spacing");
-            kerningCb.Checked += (_, _) => _atlasConfig.IncludeKerning = true;
-            kerningCb.Unchecked += (_, _) => _atlasConfig.IncludeKerning = false;
-            contentPanel.Children.Add(kerningCb.Visual);
+    private void BuildOutputContent(Gum.Wireframe.GraphicalUiElement contentPanel)
+    {
+        var formatLabel = new Label();
+        formatLabel.Text = "Descriptor Format:";
+        contentPanel.Children.Add(formatLabel.Visual);
+        TooltipService.SetTooltip(formatLabel, "Output format: Text, XML, or Binary");
 
-            _atlasConfig.PropertyChanged += (_, e) =>
-            {
-                if (e.PropertyName == nameof(AtlasConfigViewModel.DescriptorFormat))
-                    foreach (var (rb, fmt) in formatRadios)
-                        rb.IsChecked = fmt == _atlasConfig.DescriptorFormat;
-                if (e.PropertyName == nameof(AtlasConfigViewModel.IncludeKerning))
-                    kerningCb.IsChecked = _atlasConfig.IncludeKerning;
-            };
-        }, enableChanged: _ => { }, startExpanded: true);
+        var formatGroup = new StackPanel();
+        formatGroup.Spacing = 2;
+        contentPanel.Children.Add(formatGroup.Visual);
+
+        var formatRadios = new List<(RadioButton rb, OutputFormat fmt)>();
+        var formats = new[] { ("Text", OutputFormat.Text), ("XML", OutputFormat.Xml), ("Binary", OutputFormat.Binary) };
+        foreach (var (name, format) in formats)
+        {
+            var rb = new RadioButton();
+            rb.Text = name;
+            rb.Width = 200;
+            if (format == _atlasConfig.DescriptorFormat) rb.IsChecked = true;
+            var capturedFormat = format;
+            rb.Checked += (_, _) => _atlasConfig.DescriptorFormat = capturedFormat;
+            formatRadios.Add((rb, format));
+            formatGroup.AddChild(rb);
+        }
+
+        var kerningCb = new CheckBox();
+        kerningCb.Text = "Include Kerning";
+        kerningCb.Width = 200;
+        kerningCb.IsChecked = _atlasConfig.IncludeKerning;
+        TooltipService.SetTooltip(kerningCb, "Include kerning pairs for better spacing");
+        kerningCb.Checked += (_, _) => _atlasConfig.IncludeKerning = true;
+        kerningCb.Unchecked += (_, _) => _atlasConfig.IncludeKerning = false;
+        contentPanel.Children.Add(kerningCb.Visual);
+
+        _atlasConfig.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(AtlasConfigViewModel.DescriptorFormat))
+                foreach (var (rb, fmt) in formatRadios)
+                    rb.IsChecked = fmt == _atlasConfig.DescriptorFormat;
+            if (e.PropertyName == nameof(AtlasConfigViewModel.IncludeKerning))
+                kerningCb.IsChecked = _atlasConfig.IncludeKerning;
+        };
     }
 
     private static void AddCollapsibleSection(
@@ -710,32 +765,33 @@ public class EffectsPanel : Panel
         string label, int min, int max, int defaultVal,
         Action<int> onChanged)
     {
-        var row = new StackPanel();
-        row.Orientation = Orientation.Horizontal;
-        row.Spacing = 4;
-        row.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-        row.Visual.Width = 0;
-        parent.Children.Add(row.Visual);
+        var grid = new Grid();
+        grid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        grid.Visual.Width = 0;
+        grid.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
+        grid.Visual.Height = 0;
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        parent.Children.Add(grid.Visual);
 
         var lbl = new Label();
         lbl.Text = label;
-        lbl.Width = 70;
-        row.AddChild(lbl);
+        grid.AddChild(lbl, row: 0, column: 0);
 
         var slider = new Slider();
         slider.Minimum = min;
         slider.Maximum = max;
         slider.Value = defaultVal;
-        slider.Visual.WidthUnits = DimensionUnitType.Ratio;
-        slider.Visual.Width = 1; // fill remaining space
+        slider.Width = 100;
         slider.TicksFrequency = 1;
         slider.IsSnapToTickEnabled = true;
-        row.AddChild(slider);
+        grid.AddChild(slider, row: 0, column: 1);
 
         var valueLabel = new Label();
-        valueLabel.Visual.WidthUnits = DimensionUnitType.RelativeToChildren;
         valueLabel.Text = defaultVal.ToString();
-        row.AddChild(valueLabel);
+        grid.AddChild(valueLabel, row: 0, column: 2);
 
         slider.ValueChanged += (_, _) =>
         {
@@ -750,25 +806,27 @@ public class EffectsPanel : Panel
         string label, byte defaultR, byte defaultG, byte defaultB,
         Action<byte> onRChanged, Action<byte> onGChanged, Action<byte> onBChanged)
     {
-        var row = new StackPanel();
-        row.Orientation = Orientation.Horizontal;
-        row.Spacing = 4;
-        row.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-        row.Visual.Width = 0;
-        parent.Children.Add(row.Visual);
+        var grid = new Grid();
+        grid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        grid.Visual.Width = 0;
+        grid.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
+        grid.Visual.Height = 0;
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        parent.Children.Add(grid.Visual);
 
         var lbl = new Label();
         lbl.Text = label;
-        lbl.Width = 35;
-        lbl.WidthUnits = DimensionUnitType.RelativeToChildren;
-        row.AddChild(lbl);
+        grid.AddChild(lbl, row: 0, column: 0);
 
         // Color swatch preview
         var swatchContainer = new ContainerRuntime();
         swatchContainer.Width = 24;
         swatchContainer.Height = 24;
         swatchContainer.HasEvents = true;
-        row.AddChild(swatchContainer);
+        grid.AddChild(swatchContainer, row: 0, column: 1);
 
         var swatch = new ColoredRectangleRuntime();
         swatch.Width = 0;
@@ -805,7 +863,7 @@ public class EffectsPanel : Panel
                 swatch.Color = new Microsoft.Xna.Framework.Color(r, g, b);
             }
         };
-        row.AddChild(hexBox);
+        grid.AddChild(hexBox, row: 0, column: 2);
 
         swatchContainer.Click += (_, _) =>
         {
