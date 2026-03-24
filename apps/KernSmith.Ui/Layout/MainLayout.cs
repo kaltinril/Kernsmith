@@ -175,7 +175,7 @@ public class MainLayout : ContainerRuntime
         body.AddChild(rightSplitter);
 
         // Right column: effects (fixed width)
-        _effectsPanel = new EffectsPanel(_viewModel.Effects, _viewModel.AtlasConfig, _graphicsDevice);
+        _effectsPanel = new EffectsPanel(_viewModel.Effects, _graphicsDevice);
         var effectsPanel = _effectsPanel;
         effectsPanel.Width = DefaultPanelWidth;
         effectsPanel.HeightUnits = DimensionUnitType.RelativeToParent;
