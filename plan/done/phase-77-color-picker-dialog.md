@@ -1,6 +1,6 @@
 # Phase 77 — Color Picker Dialog
 
-> **Status**: In Progress
+> **Status**: Complete
 > **Created**: 2026-03-22
 > **Goal**: Build a reusable color picker dialog that opens when clicking a color swatch.
 
@@ -29,9 +29,19 @@ Clicking any color swatch in the effects panel (outline, shadow, gradient) opens
 - Dialog returns the selected color on OK, reverts on Cancel
 - Reusable `ColorPickerDialog` class for any future color input needs
 
+## Completed
+
+- [x] Visual HSV picker (SV square + hue bar with click+drag)
+- [x] Hex, RGB, HSL, HSV text inputs with bidirectional sync
+- [x] Compact Grid layout (inputs beside picker)
+- [x] Title bar, non-resizable modal (ResizeMode.NoResize)
+- [x] MaxLettersToShow/MaxLength on value textboxes
+- [x] Integration with EffectsPanel AddColorRow click handler
+- [x] Fixed regeneration using stale color values (debounced Effects PropertyChanged)
+
 ## Remaining Work
 
-- [ ] Fix window background transparency — default Gum Window uses semi-transparent nineslice, causing background bleed. Need solid opaque background behind dialog content (similar to KeyboardShortcutsDialog pattern).
+- [ ] ~~Fix window background transparency — default Gum Window uses semi-transparent nineslice, causing background bleed. Need solid opaque background behind dialog content (similar to KeyboardShortcutsDialog pattern).~~ **Deferred** — cosmetic only, not blocking.
 
 ## Key Source Files
 
