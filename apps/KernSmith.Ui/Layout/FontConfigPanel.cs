@@ -29,17 +29,22 @@ public class FontConfigPanel : Panel
 
     private void BuildContent()
     {
+        var scrollViewer = new ScrollViewer();
+        scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+        scrollViewer.Dock(Gum.Wireframe.Dock.Fill);
+        this.AddChild(scrollViewer);
+
         // Inner container with padding from panel edges
         var inner = new ContainerRuntime();
         inner.WidthUnits = DimensionUnitType.RelativeToParent;
-        inner.HeightUnits = DimensionUnitType.RelativeToParent;
+        inner.HeightUnits = DimensionUnitType.RelativeToChildren;
         inner.Width = -16; // 8px padding each side
         inner.Height = 0;
         inner.X = 8;
         inner.Y = 4;
         inner.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
         inner.StackSpacing = 6;
-        this.AddChild(inner);
+        scrollViewer.InnerPanel.Children.Add(inner);
         var stack = inner;
 
         // --- FONT SOURCE section ---
@@ -47,7 +52,8 @@ public class FontConfigPanel : Panel
 
         var browseBtn = new Button();
         browseBtn.Text = "Browse for Font...";
-        browseBtn.Width = 260;
+        browseBtn.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        browseBtn.Visual.Width = 0;
         browseBtn.Click += (_, _) =>
         {
             var dialog = new FileBrowserDialog();
@@ -126,7 +132,8 @@ public class FontConfigPanel : Panel
         TooltipService.SetTooltip(familyLabel, "Choose an installed system font");
 
         var familyCombo = new ComboBox();
-        familyCombo.Width = 260;
+        familyCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        familyCombo.Visual.Width = 0;
         stack.Children.Add(familyCombo.Visual);
 
         // Wire system font combo
@@ -246,7 +253,8 @@ public class FontConfigPanel : Panel
 
         var generateBtn = new Button();
         generateBtn.Text = "Generate";
-        generateBtn.Width = 260;
+        generateBtn.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        generateBtn.Visual.Width = 0;
         generateBtn.IsEnabled = _fontConfig.IsFontLoaded;
         generateBtn.Click += async (_, _) => await _mainViewModel.GenerateAsync();
         stack.Children.Add(generateBtn.Visual);
@@ -262,7 +270,8 @@ public class FontConfigPanel : Panel
         // Auto-regenerate toggle
         var autoRegenCb = new CheckBox();
         autoRegenCb.Text = "Auto-regenerate";
-        autoRegenCb.Width = 260;
+        autoRegenCb.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        autoRegenCb.Visual.Width = 0;
         autoRegenCb.Checked += (_, _) => _mainViewModel.AutoRegenerate = true;
         autoRegenCb.Unchecked += (_, _) => _mainViewModel.AutoRegenerate = false;
         stack.Children.Add(autoRegenCb.Visual);
@@ -322,7 +331,8 @@ public class FontConfigPanel : Panel
 
         var forceSizeCheck = new CheckBox();
         forceSizeCheck.Text = "Force Size";
-        forceSizeCheck.Width = 220;
+        forceSizeCheck.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        forceSizeCheck.Visual.Width = 0;
         forceSizeCheck.IsChecked = !_atlasConfig.AutofitTexture;
         TooltipService.SetTooltip(forceSizeCheck, "Use exact atlas dimensions instead of auto-fitting");
         stack.Children.Add(forceSizeCheck.Visual);
@@ -397,7 +407,8 @@ public class FontConfigPanel : Panel
         TooltipService.SetTooltip(packAlgoLabel, "Glyph packing algorithm for the atlas");
 
         var packAlgoCombo = new ComboBox();
-        packAlgoCombo.Width = 200;
+        packAlgoCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        packAlgoCombo.Visual.Width = 0;
         packAlgoCombo.Items.Add("MaxRects");
         packAlgoCombo.Items.Add("Skyline");
         packAlgoCombo.SelectedIndex = _atlasConfig.PackingAlgorithmIndex;
@@ -420,8 +431,8 @@ public class FontConfigPanel : Panel
 
         // --- Padding (cross layout using 3 columns) ---
         var padContainer = new ContainerRuntime();
-        padContainer.WidthUnits = DimensionUnitType.Ratio;
-        padContainer.Width = 1;
+        padContainer.WidthUnits = DimensionUnitType.RelativeToChildren;
+        padContainer.Width = 0;
         padContainer.HeightUnits = DimensionUnitType.RelativeToChildren;
         padContainer.Height = 0;
         padContainer.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
@@ -433,7 +444,7 @@ public class FontConfigPanel : Panel
         var padCross = new StackPanel();
         padCross.Orientation = Orientation.Horizontal;
         padCross.Spacing = 2;
-        padCross.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        padCross.Visual.WidthUnits = DimensionUnitType.RelativeToChildren;
         padCross.Visual.Width = 0;
         padContainer.Children.Add(padCross.Visual);
 
@@ -472,8 +483,8 @@ public class FontConfigPanel : Panel
 
         // --- Spacing (simple H x V) ---
         var spaceContainer = new ContainerRuntime();
-        spaceContainer.WidthUnits = DimensionUnitType.Ratio;
-        spaceContainer.Width = 1;
+        spaceContainer.WidthUnits = DimensionUnitType.RelativeToChildren;
+        spaceContainer.Width = 0;
         spaceContainer.HeightUnits = DimensionUnitType.RelativeToChildren;
         spaceContainer.Height = 0;
         spaceContainer.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
