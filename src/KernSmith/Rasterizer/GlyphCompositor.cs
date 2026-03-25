@@ -54,18 +54,39 @@ internal static class GlyphCompositor
             layers.Add(outlineLayer);
         }
 
-        // Generate shadow from the outline silhouette (if outline exists),
-        // otherwise from the raw glyph alpha.
+        // Generate shadow from the full glyph silhouette.
+        // When outline is present, merge outline alpha with the original glyph alpha
+        // so the shadow covers both the border and the glyph body.
         if (shadowEffect != null)
         {
             if (outlineLayer != null)
             {
-                // Extract alpha from the outline layer to use as the shadow source.
-                var outlineAlpha = new byte[outlineLayer.Width * outlineLayer.Height];
-                for (var i = 0; i < outlineAlpha.Length; i++)
-                    outlineAlpha[i] = outlineLayer.RgbaData[i * 4 + 3];
+                // Merge outline alpha with original glyph alpha into the outline-sized canvas.
+                var mergedAlpha = new byte[outlineLayer.Width * outlineLayer.Height];
 
-                // Generate shadow from the outlined shape, adjusting metrics for the outline offset.
+                // First, copy outline alpha.
+                for (var i = 0; i < mergedAlpha.Length; i++)
+                    mergedAlpha[i] = outlineLayer.RgbaData[i * 4 + 3];
+
+                // Then, overlay the original glyph alpha at the correct offset.
+                // The glyph sits at (-outlineLayer.OffsetX, -outlineLayer.OffsetY) within the outline canvas.
+                var glyphOffX = -outlineLayer.OffsetX;
+                var glyphOffY = -outlineLayer.OffsetY;
+                for (var y = 0; y < srcH; y++)
+                {
+                    for (var x = 0; x < srcW; x++)
+                    {
+                        var dx = glyphOffX + x;
+                        var dy = glyphOffY + y;
+                        if (dx < 0 || dx >= outlineLayer.Width || dy < 0 || dy >= outlineLayer.Height) continue;
+
+                        var srcIdx = y * alphaPitch + x;
+                        var srcAlpha = srcIdx < alphaData.Length ? alphaData[srcIdx] : (byte)0;
+                        var dstIdx = dy * outlineLayer.Width + dx;
+                        mergedAlpha[dstIdx] = Math.Max(mergedAlpha[dstIdx], srcAlpha);
+                    }
+                }
+
                 var outlineMetrics = new Font.Models.GlyphMetrics(
                     BearingX: sourceGlyph.Metrics.BearingX + outlineLayer.OffsetX,
                     BearingY: sourceGlyph.Metrics.BearingY - outlineLayer.OffsetY,
@@ -74,10 +95,9 @@ internal static class GlyphCompositor
                     Height: outlineLayer.Height);
 
                 var shadowLayer = shadowEffect.Generate(
-                    outlineAlpha, outlineLayer.Width, outlineLayer.Height,
+                    mergedAlpha, outlineLayer.Width, outlineLayer.Height,
                     outlineLayer.Width, outlineMetrics);
 
-                // Adjust shadow offset to account for the outline's own offset.
                 layers.Add(shadowLayer with
                 {
                     OffsetX = shadowLayer.OffsetX + outlineLayer.OffsetX,
