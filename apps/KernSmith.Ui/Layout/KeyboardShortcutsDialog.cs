@@ -57,28 +57,32 @@ public static class KeyboardShortcutsDialog
         bg.Color = Theme.Panel;
         window.Visual.Children.Insert(0, bg);
 
-        var stack = new StackPanel();
-        stack.Spacing = 4;
-        stack.Y = 32;
-        stack.X = 16;
-        window.AddChild(stack);
+        var grid = new Grid();
+        grid.Y = 32;
+        grid.X = 16;
+        grid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        grid.Visual.Width = -32;
+        grid.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
+        grid.Visual.Height = 0;
 
-        foreach (var (shortcut, description) in Shortcuts)
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        for (var i = 0; i < Shortcuts.Length; i++)
         {
-            var row = new StackPanel();
-            row.Orientation = Orientation.Horizontal;
-            row.Spacing = 8;
-            stack.AddChild(row);
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
             var keyLabel = new Label();
-            keyLabel.Text = shortcut;
-            keyLabel.Width = 140;
-            row.AddChild(keyLabel);
+            keyLabel.Text = Shortcuts[i].Shortcut;
+            grid.AddChild(keyLabel, row: i, column: 0);
 
             var descLabel = new Label();
-            descLabel.Text = description;
-            row.AddChild(descLabel);
+            descLabel.Text = Shortcuts[i].Description;
+            grid.AddChild(descLabel, row: i, column: 2);
         }
+
+        window.AddChild(grid);
 
         var okButton = new Button();
         okButton.Text = "OK";
