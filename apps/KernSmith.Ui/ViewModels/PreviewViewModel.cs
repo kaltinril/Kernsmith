@@ -61,7 +61,8 @@ public class PreviewViewModel : ViewModel
                 PngData = pngBytes,
                 Width = page.Width,
                 Height = page.Height,
-                Label = $"Page {i} ({page.Width}x{page.Height})"
+                Label = $"Page {i} ({page.Width}x{page.Height})",
+                IsRgba = page.Format == PixelFormat.Rgba32
             });
         }
 
