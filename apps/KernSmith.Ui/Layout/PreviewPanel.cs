@@ -32,6 +32,7 @@ public class PreviewPanel : Panel
     private Label? _failedWarningLabel;
     private StackPanel? _navRow;
     private StackPanel? _toolbarRow;
+    private ContainerRuntime? _atlasContentArea;
     private Slider? _zoomSlider;
     private Texture2D? _checkerTexture;
 
@@ -55,6 +56,7 @@ public class PreviewPanel : Panel
 
     // Sample text pan state
     private float _samplePanOffsetX, _samplePanOffsetY;
+    private float _baseSampleX = 8, _baseSampleY = 72;
     private int _samplePanStartX, _samplePanStartY;
     private bool _isSamplePanning;
 
@@ -68,14 +70,14 @@ public class PreviewPanel : Panel
     private const float TabBarHeight = 30;
     private const float ToolbarY = 32;
     private const float ToolbarHeight = 28;
-    private const float AtlasContentY = 62;
+    private const float AtlasContentY = 32;
 
     // Pan/zoom input state
     private int _previousScrollValue;
     private bool _isPanning;
     private int _panStartX, _panStartY;
     private float _panOffsetX, _panOffsetY;
-    private float _baseSpriteX = 10, _baseSpriteY = AtlasContentY;
+    private float _baseSpriteX = 10, _baseSpriteY = 0;
     private bool _hasUserZoom;
 
     public PreviewPanel(PreviewViewModel preview, CharacterGridViewModel characterGrid, GraphicsDevice graphicsDevice)
@@ -314,25 +316,35 @@ public class PreviewPanel : Panel
         _placeholder.Anchor(Gum.Wireframe.Anchor.Center);
         _previewContent.AddChild(_placeholder);
 
+        // Clipped container for atlas sprites — prevents them from overlapping the toolbar/nav
+        _atlasContentArea = new ContainerRuntime();
+        _atlasContentArea.Y = AtlasContentY;
+        _atlasContentArea.WidthUnits = DimensionUnitType.RelativeToParent;
+        _atlasContentArea.Width = 0;
+        _atlasContentArea.HeightUnits = DimensionUnitType.RelativeToParent;
+        _atlasContentArea.Height = -AtlasContentY;
+        _atlasContentArea.ClipsChildren = true;
+        _previewContent.AddChild(_atlasContentArea);
+
         // Checkered transparency background (hidden initially)
         _checkerSprite = new SpriteRuntime();
         _checkerSprite.Visible = false;
         _checkerSprite.X = 10;
-        _checkerSprite.Y = AtlasContentY;
+        _checkerSprite.Y = 0;
         _checkerSprite.WidthUnits = DimensionUnitType.Absolute;
         _checkerSprite.HeightUnits = DimensionUnitType.Absolute;
         _checkerSprite.TextureAddress = Gum.Managers.TextureAddress.EntireTexture;
-        _previewContent.AddChild(_checkerSprite);
+        _atlasContentArea.Children.Add(_checkerSprite);
 
         // Atlas sprite (hidden initially)
         _atlasSprite = new SpriteRuntime();
         _atlasSprite.Visible = false;
         _atlasSprite.X = 10;
-        _atlasSprite.Y = AtlasContentY;
+        _atlasSprite.Y = 0;
         _atlasSprite.WidthUnits = DimensionUnitType.Absolute;
         _atlasSprite.HeightUnits = DimensionUnitType.Absolute;
         _atlasSprite.TextureAddress = Gum.Managers.TextureAddress.EntireTexture;
-        _previewContent.AddChild(_atlasSprite);
+        _atlasContentArea.Children.Add(_atlasSprite);
 
         // Listen for result changes
         _preview.PropertyChanged += (_, e) =>
@@ -791,32 +803,84 @@ public class PreviewPanel : Panel
         var scrollDelta = mouse.ScrollWheelValue - _previousScrollValue;
         _previousScrollValue = mouse.ScrollWheelValue;
 
+        var panelLeft = this.Visual.AbsoluteLeft;
+        var panelTop = this.Visual.AbsoluteTop;
+        var panelRight = panelLeft + this.Visual.GetAbsoluteWidth();
+        var panelBottom = panelTop + this.Visual.GetAbsoluteHeight();
+
         if (scrollDelta != 0 && activeSlider != null)
         {
-            var panelLeft = this.Visual.AbsoluteLeft;
-            var panelTop = this.Visual.AbsoluteTop;
-            var panelRight = panelLeft + this.Visual.GetAbsoluteWidth();
-            var panelBottom = panelTop + this.Visual.GetAbsoluteHeight();
 
             if (mouse.X >= panelLeft && mouse.X <= panelRight &&
                 mouse.Y >= panelTop && mouse.Y <= panelBottom)
             {
+                var oldZoom = _activeTab == ActiveTab.Preview ? _preview.ZoomLevel : _sampleZoomLevel;
+
                 var step = scrollDelta > 0 ? 25 : -25;
                 var newVal = Math.Clamp(activeSlider.Value + step, activeSlider.Minimum, activeSlider.Maximum);
                 activeSlider.Value = newVal;
+
+                // Zoom toward cursor: adjust pan offset so the point under the cursor stays fixed
+                if (_activeTab == ActiveTab.Preview && _atlasSprite != null && _atlasContentArea != null)
+                {
+                    var newZoom = _preview.ZoomLevel;
+                    var spriteScreenX = _baseSpriteX + _panOffsetX;
+                    var spriteScreenY = _baseSpriteY + _panOffsetY;
+
+                    // Mouse position relative to the sprite's top-left within the content area
+                    var areaLeft = _atlasContentArea.AbsoluteLeft;
+                    var areaTop = _atlasContentArea.AbsoluteTop;
+                    var relX = mouse.X - areaLeft - spriteScreenX;
+                    var relY = mouse.Y - areaTop - spriteScreenY;
+
+                    // Scale the relative offset by the zoom ratio
+                    var ratio = newZoom / oldZoom;
+                    _panOffsetX -= relX * (ratio - 1);
+                    _panOffsetY -= relY * (ratio - 1);
+
+                    _atlasSprite.X = (float)Math.Round(_baseSpriteX + _panOffsetX);
+                    _atlasSprite.Y = (float)Math.Round(_baseSpriteY + _panOffsetY);
+                    if (_checkerSprite != null)
+                    {
+                        _checkerSprite.X = _atlasSprite.X;
+                        _checkerSprite.Y = _atlasSprite.Y;
+                    }
+                }
+                else if (_activeTab == ActiveTab.SampleText && _sampleTextContainer != null)
+                {
+                    var newZoom = _sampleZoomLevel;
+                    var containerScreenX = _sampleTextContainer.AbsoluteLeft - panelLeft;
+                    var containerScreenY = _sampleTextContainer.AbsoluteTop - panelTop;
+
+                    var relX = mouse.X - panelLeft - containerScreenX;
+                    var relY = mouse.Y - panelTop - containerScreenY;
+
+                    var ratio = newZoom / oldZoom;
+                    _samplePanOffsetX -= relX * (ratio - 1);
+                    _samplePanOffsetY -= relY * (ratio - 1);
+
+                    _sampleTextContainer.X = (float)Math.Round(_baseSampleX + _samplePanOffsetX);
+                    _sampleTextContainer.Y = (float)Math.Round(_baseSampleY + _samplePanOffsetY);
+                }
             }
         }
 
         // --- Middle-click pan (atlas preview) ---
+        bool mouseInPanel = mouse.X >= panelLeft && mouse.X <= panelRight &&
+                            mouse.Y >= panelTop && mouse.Y <= panelBottom;
+
         if (_activeTab == ActiveTab.Preview)
         {
             if (mouse.MiddleButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed)
             {
                 if (!_isPanning)
                 {
-                    _isPanning = true;
-                    _panStartX = mouse.X;
-                    _panStartY = mouse.Y;
+                    if (mouseInPanel)
+                    {
+                        _isPanning = true;
+                        _panStartX = mouse.X;
+                        _panStartY = mouse.Y;
+                    }
                 }
                 else
                 {
@@ -850,9 +914,12 @@ public class PreviewPanel : Panel
             {
                 if (!_isSamplePanning)
                 {
-                    _isSamplePanning = true;
-                    _samplePanStartX = mouse.X;
-                    _samplePanStartY = mouse.Y;
+                    if (mouseInPanel)
+                    {
+                        _isSamplePanning = true;
+                        _samplePanStartX = mouse.X;
+                        _samplePanStartY = mouse.Y;
+                    }
                 }
                 else
                 {
@@ -865,8 +932,8 @@ public class PreviewPanel : Panel
 
                     if (_sampleTextContainer != null)
                     {
-                        _sampleTextContainer.X = 8 + _samplePanOffsetX;
-                        _sampleTextContainer.Y = 72 + _samplePanOffsetY;
+                        _sampleTextContainer.X = _baseSampleX + _samplePanOffsetX;
+                        _sampleTextContainer.Y = _baseSampleY + _samplePanOffsetY;
                     }
                 }
             }

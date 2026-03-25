@@ -34,6 +34,10 @@ public class EffectsPanel : Panel
         var scrollViewer = new ScrollViewer();
         scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
         scrollViewer.Dock(Gum.Wireframe.Dock.Fill);
+        // Make ScrollViewer background transparent so the panel background color shows through
+        var scrollBg = scrollViewer.Visual.GetGraphicalUiElementByName("Background");
+        if (scrollBg is ColoredRectangleRuntime scrollRect)
+            scrollRect.Color = Microsoft.Xna.Framework.Color.Transparent;
         this.AddChild(scrollViewer);
 
         // Inner container with padding from panel edges
