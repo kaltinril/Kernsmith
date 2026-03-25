@@ -1,5 +1,5 @@
 using KernSmith.Atlas;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests.Atlas;
 
@@ -54,9 +54,9 @@ public class RenderToExistingTests
         var result = BmFont.Generate(FontData, options);
 
         // Assert
-        result.Pages.Should().HaveCount(1);
-        result.Pages[0].Width.Should().Be(512, "output image width should match source");
-        result.Pages[0].Height.Should().Be(512, "output image height should match source");
+        result.Pages.Count.ShouldBe(1);
+        result.Pages[0].Width.ShouldBe(512);
+        result.Pages[0].Height.ShouldBe(512);
     }
 
     // ---------------------------------------------------------------
@@ -88,9 +88,9 @@ public class RenderToExistingTests
         // Assert — all character X/Y values should be offset by the region origin
         foreach (var ch in result.Model.Characters)
         {
-            ch.X.Should().BeGreaterThanOrEqualTo(128,
+            ch.X.ShouldBeGreaterThanOrEqualTo(128,
                 $"char {ch.Id} X should be >= region offset 128");
-            ch.Y.Should().BeGreaterThanOrEqualTo(128,
+            ch.Y.ShouldBeGreaterThanOrEqualTo(128,
                 $"char {ch.Id} Y should be >= region offset 128");
         }
     }
@@ -123,9 +123,9 @@ public class RenderToExistingTests
 
         // Assert — the packer throws InvalidOperationException when a single glyph exceeds page dimensions
         var exception = Record.Exception(() => act());
-        exception.Should().NotBeNull("glyphs should not fit in a 10x10 region");
+        exception.ShouldNotBeNull("glyphs should not fit in a 10x10 region");
         (exception is AtlasPackingException || exception is InvalidOperationException)
-            .Should().BeTrue($"expected AtlasPackingException or InvalidOperationException, got {exception!.GetType().Name}");
+            .ShouldBeTrue($"expected AtlasPackingException or InvalidOperationException, got {exception!.GetType().Name}");
     }
 
     // ---------------------------------------------------------------
@@ -155,8 +155,7 @@ public class RenderToExistingTests
         var act = () => BmFont.Generate(FontData, options);
 
         // Assert
-        act.Should().Throw<ArgumentException>(
-            "region exceeding source image bounds should throw");
+        Should.Throw<ArgumentException>(act);
     }
 
     // ---------------------------------------------------------------
@@ -186,11 +185,11 @@ public class RenderToExistingTests
         var result = BmFont.Generate(FontData, options);
 
         // Assert
-        result.Model.Characters.Should().HaveCountGreaterThan(0,
+        result.Model.Characters.Count.ShouldBeGreaterThan(0,
             "in-memory source PNG should produce valid results");
-        result.Pages.Should().HaveCount(1);
-        result.Pages[0].Width.Should().Be(256);
-        result.Pages[0].Height.Should().Be(256);
+        result.Pages.Count.ShouldBe(1);
+        result.Pages[0].Width.ShouldBe(256);
+        result.Pages[0].Height.ShouldBe(256);
     }
 
     // ---------------------------------------------------------------
@@ -212,8 +211,8 @@ public class RenderToExistingTests
         var result = BmFont.Generate(FontData, options);
 
         // Assert — normal generation without compositing
-        result.Model.Characters.Should().HaveCount(2);
-        result.Pages.Should().HaveCountGreaterThan(0);
+        result.Model.Characters.Count.ShouldBe(2);
+        result.Pages.Count.ShouldBeGreaterThan(0);
     }
 
     // ---------------------------------------------------------------
@@ -242,8 +241,7 @@ public class RenderToExistingTests
         var act = () => BmFont.Generate(FontData, options);
 
         // Assert
-        act.Should().Throw<ArgumentException>(
-            "TargetRegion without source data should throw");
+        Should.Throw<ArgumentException>(act);
     }
 
     // ---------------------------------------------------------------
@@ -273,8 +271,7 @@ public class RenderToExistingTests
         var act = () => BmFont.Generate(FontData, options);
 
         // Assert
-        act.Should().Throw<ArgumentOutOfRangeException>(
-            "zero-width region should throw");
+        Should.Throw<ArgumentOutOfRangeException>(act);
     }
 
     // ---------------------------------------------------------------
@@ -306,13 +303,13 @@ public class RenderToExistingTests
         // Assert — every character must be fully contained within the target rectangle
         foreach (var ch in result.Model.Characters)
         {
-            ch.X.Should().BeGreaterThanOrEqualTo(128,
+            ch.X.ShouldBeGreaterThanOrEqualTo(128,
                 $"char {ch.Id} X should be >= region X (128)");
-            ch.Y.Should().BeGreaterThanOrEqualTo(128,
+            ch.Y.ShouldBeGreaterThanOrEqualTo(128,
                 $"char {ch.Id} Y should be >= region Y (128)");
-            (ch.X + ch.Width).Should().BeLessThanOrEqualTo(128 + 256,
+            (ch.X + ch.Width).ShouldBeLessThanOrEqualTo(128 + 256,
                 $"char {ch.Id} right edge should be <= region right (384)");
-            (ch.Y + ch.Height).Should().BeLessThanOrEqualTo(128 + 256,
+            (ch.Y + ch.Height).ShouldBeLessThanOrEqualTo(128 + 256,
                 $"char {ch.Id} bottom edge should be <= region bottom (384)");
         }
     }
@@ -352,10 +349,10 @@ public class RenderToExistingTests
         void AssertPixelUnchanged(int x, int y, string label)
         {
             var idx = (y * width + x) * 4;
-            pixels[idx + 0].Should().Be(srcR, $"{label} R at ({x},{y})");
-            pixels[idx + 1].Should().Be(srcG, $"{label} G at ({x},{y})");
-            pixels[idx + 2].Should().Be(srcB, $"{label} B at ({x},{y})");
-            pixels[idx + 3].Should().Be(srcA, $"{label} A at ({x},{y})");
+            pixels[idx + 0].ShouldBe(srcR, $"{label} R at ({x},{y})");
+            pixels[idx + 1].ShouldBe(srcG, $"{label} G at ({x},{y})");
+            pixels[idx + 2].ShouldBe(srcB, $"{label} B at ({x},{y})");
+            pixels[idx + 3].ShouldBe(srcA, $"{label} A at ({x},{y})");
         }
 
         // Corners of the full image (all outside the 64,64,128,128 region)
@@ -416,7 +413,7 @@ public class RenderToExistingTests
             }
         }
 
-        changedCount.Should().BeGreaterThan(0,
+        changedCount.ShouldBeGreaterThan(0,
             "compositing should change at least some pixels inside the target region");
     }
 
@@ -447,9 +444,9 @@ public class RenderToExistingTests
         var result = BmFont.Generate(FontData, options);
 
         // Assert — ScaleW/ScaleH should reflect the full source image, not the region
-        result.Model.Common.ScaleW.Should().Be(512,
+        result.Model.Common.ScaleW.ShouldBe(512,
             "ScaleW should match source image width, not region width");
-        result.Model.Common.ScaleH.Should().Be(512,
+        result.Model.Common.ScaleH.ShouldBe(512,
             "ScaleH should match source image height, not region height");
     }
 
@@ -480,7 +477,7 @@ public class RenderToExistingTests
         var result = BmFont.Generate(FontData, options);
 
         // Assert
-        result.Pages.Should().HaveCount(1,
+        result.Pages.Count.ShouldBe(1,
             "target region mode must never produce multi-page output");
     }
 }

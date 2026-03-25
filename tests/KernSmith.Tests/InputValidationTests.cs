@@ -1,4 +1,4 @@
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests;
 
@@ -19,8 +19,8 @@ public class InputValidationTests
         var act = () => BmFont.Generate(nullData, new FontGeneratorOptions { Size = 32 });
 
         // Assert
-        act.Should().Throw<ArgumentNullException>()
-            .And.ParamName.Should().Be("fontData");
+        var ex = Should.Throw<ArgumentNullException>(act);
+        ex.ParamName.ShouldBe("fontData");
     }
 
     [Fact]
@@ -30,8 +30,8 @@ public class InputValidationTests
         var act = () => BmFont.Load(null!);
 
         // Assert
-        act.Should().Throw<ArgumentNullException>()
-            .And.ParamName.Should().Be("fntPath");
+        var ex = Should.Throw<ArgumentNullException>(act);
+        ex.ParamName.ShouldBe("fntPath");
     }
 
     [Fact]
@@ -41,8 +41,8 @@ public class InputValidationTests
         var act = () => CharacterSet.FromChars((string)null!);
 
         // Assert
-        act.Should().Throw<ArgumentNullException>()
-            .And.ParamName.Should().Be("characters");
+        var ex = Should.Throw<ArgumentNullException>(act);
+        ex.ParamName.ShouldBe("characters");
     }
 
     [Fact]
@@ -52,8 +52,8 @@ public class InputValidationTests
         var act = () => CharacterSet.FromChars((IEnumerable<int>)null!);
 
         // Assert
-        act.Should().Throw<ArgumentNullException>()
-            .And.ParamName.Should().Be("codepoints");
+        var ex = Should.Throw<ArgumentNullException>(act);
+        ex.ParamName.ShouldBe("codepoints");
     }
 
     // ---------------------------------------------------------------
@@ -67,7 +67,7 @@ public class InputValidationTests
         var act = () => BmFont.Generate(Array.Empty<byte>(), 32);
 
         // Assert
-        act.Should().Throw<FontParsingException>();
+        Should.Throw<FontParsingException>(act);
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public class InputValidationTests
         var act = () => BmFont.Generate(garbage, 32);
 
         // Assert
-        act.Should().Throw<FontParsingException>();
+        Should.Throw<FontParsingException>(act);
     }
 
     // ---------------------------------------------------------------
@@ -96,8 +96,8 @@ public class InputValidationTests
         var act = () => BmFont.Builder().Build();
 
         // Assert
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*No font specified*");
+        var ex = Should.Throw<InvalidOperationException>(act);
+        ex.Message.ShouldContain("No font specified");
     }
 
     // ---------------------------------------------------------------
@@ -119,8 +119,9 @@ public class InputValidationTests
         });
 
         // Assert
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*SDF*super sampling*");
+        var ex = Should.Throw<InvalidOperationException>(act);
+        ex.Message.ShouldContain("SDF");
+        ex.Message.ShouldContain("super sampling");
     }
 
     [Fact]
@@ -138,8 +139,9 @@ public class InputValidationTests
         });
 
         // Assert
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*Channel packing*color*");
+        var ex = Should.Throw<InvalidOperationException>(act);
+        ex.Message.ShouldContain("Channel packing");
+        ex.Message.ShouldContain("color");
     }
 
     // ---------------------------------------------------------------
@@ -156,7 +158,7 @@ public class InputValidationTests
         var act = () => BmFont.Generate(fontData, new FontGeneratorOptions { Size = 0 });
 
         // Assert
-        act.Should().Throw<ArgumentOutOfRangeException>();
+        Should.Throw<ArgumentOutOfRangeException>(act);
     }
 
     [Fact]
@@ -169,7 +171,7 @@ public class InputValidationTests
         var act = () => BmFont.Generate(fontData, new FontGeneratorOptions { Size = -1 });
 
         // Assert
-        act.Should().Throw<ArgumentOutOfRangeException>();
+        Should.Throw<ArgumentOutOfRangeException>(act);
     }
 
     // ---------------------------------------------------------------
@@ -190,7 +192,7 @@ public class InputValidationTests
         });
 
         // Assert
-        act.Should().Throw<ArgumentOutOfRangeException>();
+        Should.Throw<ArgumentOutOfRangeException>(act);
     }
 
     [Fact]
@@ -207,6 +209,6 @@ public class InputValidationTests
         });
 
         // Assert
-        act.Should().Throw<ArgumentOutOfRangeException>();
+        Should.Throw<ArgumentOutOfRangeException>(act);
     }
 }

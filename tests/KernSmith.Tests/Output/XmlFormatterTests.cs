@@ -1,6 +1,6 @@
 using KernSmith.Output;
 using KernSmith.Output.Model;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests.Output;
 
@@ -45,7 +45,7 @@ public sealed class XmlFormatterTests
         var output = _formatter.FormatText(model);
 
         // Assert
-        output.Should().StartWith("<?xml");
+        output.ShouldStartWith("<?xml");
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public sealed class XmlFormatterTests
         var output = _formatter.FormatText(model);
 
         // Assert
-        output.Should().Contain("<font>");
+        output.ShouldContain("<font>");
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public sealed class XmlFormatterTests
         var output = _formatter.FormatText(model);
 
         // Assert
-        output.Should().Contain("face=\"TestFont\"");
+        output.ShouldContain("face=\"TestFont\"");
     }
 
     [Fact]
@@ -84,8 +84,8 @@ public sealed class XmlFormatterTests
         var output = _formatter.FormatText(model);
 
         // Assert
-        output.Should().Contain("<char ");
-        output.Should().Contain("id=\"65\"");
+        output.ShouldContain("<char ");
+        output.ShouldContain("id=\"65\"");
     }
 
     [Fact]
@@ -98,9 +98,9 @@ public sealed class XmlFormatterTests
         var output = _formatter.FormatText(model);
 
         // Assert
-        output.Should().Contain("bold=\"0\"");
-        output.Should().NotContain("bold=\"false\"", "booleans should be formatted as 0 or 1");
-        output.Should().NotContain("bold=\"False\"", "booleans should be formatted as 0 or 1");
+        output.ShouldContain("bold=\"0\"");
+        output.ShouldNotContain("bold=\"false\"");
+        output.ShouldNotContain("bold=\"False\"");
     }
 
     [Fact]
@@ -120,6 +120,6 @@ public sealed class XmlFormatterTests
         var output = _formatter.FormatText(model);
 
         // Assert
-        output.Should().NotContain("<kernings");
+        output.ShouldNotContain("<kernings");
     }
 }

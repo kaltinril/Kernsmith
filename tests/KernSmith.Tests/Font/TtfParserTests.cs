@@ -1,5 +1,5 @@
 using KernSmith.Font;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests.Font;
 
@@ -17,8 +17,8 @@ public class TtfParserTests
         var parser = CreateParser();
 
         // Assert
-        parser.Head.Should().NotBeNull();
-        parser.Head!.UnitsPerEm.Should().Be(2048);
+        parser.Head.ShouldNotBeNull();
+        parser.Head!.UnitsPerEm.ShouldBe(2048);
     }
 
     [Fact]
@@ -28,10 +28,10 @@ public class TtfParserTests
         var parser = CreateParser();
 
         // Assert
-        parser.Hhea.Should().NotBeNull();
-        parser.Hhea!.Ascender.Should().BePositive("hhea ascender should be a positive value");
-        parser.Hhea!.Descender.Should().BeNegative("hhea descender should be a negative value");
-        parser.Hhea!.NumberOfHMetrics.Should().BeGreaterThan(0, "font should have at least one horizontal metric");
+        parser.Hhea.ShouldNotBeNull();
+        parser.Hhea!.Ascender.ShouldBeGreaterThan(0);
+        parser.Hhea!.Descender.ShouldBeLessThan(0, "hhea descender should be a negative value");
+        parser.Hhea!.NumberOfHMetrics.ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -41,9 +41,9 @@ public class TtfParserTests
         var parser = CreateParser();
 
         // Assert
-        parser.Os2.Should().NotBeNull();
-        parser.Os2!.WeightClass.Should().Be(400, "Roboto Regular has weight class 400");
-        parser.Os2!.Panose.Should().HaveCount(10, "PANOSE classification is always 10 bytes");
+        parser.Os2.ShouldNotBeNull();
+        parser.Os2!.WeightClass.ShouldBe(400);
+        parser.Os2!.Panose.Length.ShouldBe(10);
     }
 
     [Fact]
@@ -53,9 +53,9 @@ public class TtfParserTests
         var parser = CreateParser();
 
         // Assert
-        parser.Names.Should().NotBeNull();
-        parser.Names!.FontFamily.Should().Be("Roboto", "font family should be Roboto");
-        parser.Names!.FontSubfamily.Should().Be("Regular", "font subfamily should be Regular");
+        parser.Names.ShouldNotBeNull();
+        parser.Names!.FontFamily.ShouldBe("Roboto", "font family should be Roboto");
+        parser.Names!.FontSubfamily.ShouldBe("Regular", "font subfamily should be Regular");
     }
 
     [Fact]
@@ -65,10 +65,10 @@ public class TtfParserTests
         var parser = CreateParser();
 
         // Assert
-        parser.CmapTable.Should().NotBeEmpty("cmap table should contain character mappings");
-        parser.CmapTable.Should().ContainKey(65, "cmap should contain mapping for 'A' (U+0041)");
-        parser.CmapTable.Should().ContainKey(97, "cmap should contain mapping for 'a' (U+0061)");
-        parser.CmapTable.Should().ContainKey(32, "cmap should contain mapping for space (U+0020)");
+        parser.CmapTable.ShouldNotBeEmpty();
+        parser.CmapTable.ContainsKey(65).ShouldBeTrue();
+        parser.CmapTable.ContainsKey(97).ShouldBeTrue();
+        parser.CmapTable.ContainsKey(32).ShouldBeTrue();
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public class TtfParserTests
         var parser = CreateParser();
 
         // Assert — no codepoints should be negative
-        parser.CmapTable.Keys.Should().OnlyContain(cp => cp >= 0, "cmap should not contain negative codepoints");
+        parser.CmapTable.Keys.ShouldAllBe(cp => cp >= 0, "cmap should not contain negative codepoints");
     }
 
     [Fact]
@@ -91,6 +91,6 @@ public class TtfParserTests
         var act = () => new TtfParser(invalidData);
 
         // Assert
-        act.Should().Throw<FontParsingException>("invalid font data should cause a parsing exception");
+        Should.Throw<FontParsingException>(act, "invalid font data should cause a parsing exception");
     }
 }

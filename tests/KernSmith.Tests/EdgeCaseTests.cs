@@ -1,5 +1,5 @@
 using KernSmith.Rasterizer;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests;
 
@@ -45,14 +45,14 @@ public class EdgeCaseTests
 
         // Assert — character 'A' should have the custom glyph dimensions
         var charA = result.Model.Characters.First(c => c.Id == 65);
-        charA.Width.Should().Be(customWidth,
+        charA.Width.ShouldBe(customWidth,
             "custom glyph should replace the rasterized glyph with the specified width");
-        charA.Height.Should().Be(customHeight,
+        charA.Height.ShouldBe(customHeight,
             "custom glyph should replace the rasterized glyph with the specified height");
 
         // 'B' should still be rasterized normally (not the custom dimensions)
         var charB = result.Model.Characters.First(c => c.Id == 66);
-        charB.Width.Should().NotBe(customWidth,
+        charB.Width.ShouldNotBe(customWidth,
             "'B' should retain its normal rasterized dimensions");
     }
 
@@ -85,10 +85,10 @@ public class EdgeCaseTests
 
         // Assert — the custom codepoint should appear in the output
         var customChar = result.Model.Characters.FirstOrDefault(c => c.Id == privateUseCodepoint);
-        customChar.Should().NotBeNull(
+        customChar.ShouldNotBeNull(
             "custom glyph for a new codepoint should be added to the output");
-        customChar!.Width.Should().Be(customWidth);
-        customChar.Height.Should().Be(customHeight);
+        customChar!.Width.ShouldBe(customWidth);
+        customChar.Height.ShouldBe(customHeight);
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public class EdgeCaseTests
 
         // Assert — XAdvance in the output should match the custom value
         var charA = result.Model.Characters.First(c => c.Id == 65);
-        charA.XAdvance.Should().Be(customAdvance,
+        charA.XAdvance.ShouldBe(customAdvance,
             "custom glyph XAdvance should be reflected in the output");
     }
 
@@ -142,13 +142,12 @@ public class EdgeCaseTests
         // Assert — the tallest rendered glyph should be close to the requested pixel size.
         // MatchCharHeight does a two-pass render: first pass measures, second pass rescales.
         var maxGlyphHeight = result.Model.Characters.Max(c => c.Height);
-        maxGlyphHeight.Should().BeGreaterThan(0,
+        maxGlyphHeight.ShouldBeGreaterThan(0,
             "at least one glyph should have positive height");
 
         // The tallest glyph should be within a reasonable range of the requested size.
         // Allow some tolerance for rounding and padding.
-        maxGlyphHeight.Should().BeCloseTo(requestedSize, 4,
-            "MatchCharHeight should rescale so the tallest glyph is close to the requested pixel size");
+        Math.Abs(maxGlyphHeight - requestedSize).ShouldBeLessThanOrEqualTo(4);
     }
 
     [Fact]
@@ -178,7 +177,7 @@ public class EdgeCaseTests
         var maxWith = resultWith.Model.Characters.Max(c => c.Height);
 
         // They should differ (the two-pass rescale adjusts the effective size)
-        maxWith.Should().NotBe(maxWithout,
+        maxWith.ShouldNotBe(maxWithout,
             "MatchCharHeight two-pass should produce different glyph heights than default rendering");
     }
 
@@ -202,7 +201,7 @@ public class EdgeCaseTests
 
         // Assert — all characters should have the same height after equalization
         var heights = result.Model.Characters.Select(c => c.Height).Distinct().ToList();
-        heights.Should().HaveCount(1,
+        heights.Count.ShouldBe(1,
             "EqualizeCellHeights should pad all glyphs to the same height");
     }
 
@@ -231,7 +230,7 @@ public class EdgeCaseTests
         var maxNaturalHeight = resultWithout.Model.Characters.Max(c => c.Height);
         var equalizedHeight = resultWith.Model.Characters.First().Height;
 
-        equalizedHeight.Should().Be(maxNaturalHeight,
+        equalizedHeight.ShouldBe(maxNaturalHeight,
             "equalized height should match the tallest glyph from non-equalized rendering");
     }
 
@@ -252,7 +251,7 @@ public class EdgeCaseTests
         // Assert — without equalization, different characters should have different heights
         // (e.g., 'A' is taller than 'a', lowercase letters vary in height)
         var heights = result.Model.Characters.Select(c => c.Height).Distinct().ToList();
-        heights.Count.Should().BeGreaterThan(1,
+        heights.Count.ShouldBeGreaterThan(1,
             "without equalization, glyphs should have varying heights");
     }
 
@@ -276,9 +275,9 @@ public class EdgeCaseTests
         });
 
         // Assert — extended metadata should contain the outline thickness
-        result.Model.Extended.Should().NotBeNull(
+        result.Model.Extended.ShouldNotBeNull(
             "generation with outline should produce extended metadata");
-        result.Model.Extended!.OutlineThickness.Should().Be(outlineWidth,
+        result.Model.Extended!.OutlineThickness.ShouldBe(outlineWidth,
             "OutlineThickness in metadata should match the configured outline width");
     }
 
@@ -300,11 +299,11 @@ public class EdgeCaseTests
         });
 
         // Assert — extended metadata should contain gradient colors
-        result.Model.Extended.Should().NotBeNull(
+        result.Model.Extended.ShouldNotBeNull(
             "generation with gradient should produce extended metadata");
-        result.Model.Extended!.GradientTopColor.Should().Be("FFD700",
+        result.Model.Extended!.GradientTopColor.ShouldBe("FFD700",
             "gradient top color should be serialized as hex RGB");
-        result.Model.Extended!.GradientBottomColor.Should().Be("DC143C",
+        result.Model.Extended!.GradientBottomColor.ShouldBe("DC143C",
             "gradient bottom color should be serialized as hex RGB");
     }
 
@@ -325,11 +324,11 @@ public class EdgeCaseTests
         // or have no extended fields (only GeneratorVersion)
         if (result.Model.Extended != null)
         {
-            result.Model.Extended.OutlineThickness.Should().BeNull(
+            result.Model.Extended.OutlineThickness.ShouldBeNull(
                 "no outline was configured");
-            result.Model.Extended.GradientTopColor.Should().BeNull(
+            result.Model.Extended.GradientTopColor.ShouldBeNull(
                 "no gradient was configured");
-            result.Model.Extended.SdfSpread.Should().BeNull(
+            result.Model.Extended.SdfSpread.ShouldBeNull(
                 "SDF was not enabled");
         }
     }
@@ -367,14 +366,11 @@ public class EdgeCaseTests
         var char2x = result2x.Model.Characters.First(c => c.Id == 65);
 
         // Width and height should be similar (within a small tolerance for rounding)
-        char2x.Width.Should().BeCloseTo(char1x.Width, 2,
-            "super-sampled glyph width should be close to non-super-sampled width after downscale");
-        char2x.Height.Should().BeCloseTo(char1x.Height, 2,
-            "super-sampled glyph height should be close to non-super-sampled height after downscale");
+        Math.Abs(char2x.Width - char1x.Width).ShouldBeLessThanOrEqualTo(2);
+        Math.Abs(char2x.Height - char1x.Height).ShouldBeLessThanOrEqualTo(2);
 
         // XAdvance should also be similar
-        char2x.XAdvance.Should().BeCloseTo(char1x.XAdvance, 2,
-            "super-sampled XAdvance should be close to non-super-sampled XAdvance after downscale");
+        Math.Abs(char2x.XAdvance - char1x.XAdvance).ShouldBeLessThanOrEqualTo(2);
     }
 
     [Fact]
@@ -392,13 +388,13 @@ public class EdgeCaseTests
         });
 
         // Assert — the result should be valid and contain rendered glyphs
-        result.Model.Characters.Should().HaveCountGreaterThan(0,
+        result.Model.Characters.Count.ShouldBeGreaterThan(0,
             "super-sampled generation should produce characters");
-        result.Pages.Should().HaveCountGreaterThan(0,
+        result.Pages.Count.ShouldBeGreaterThan(0,
             "super-sampled generation should produce atlas pages");
 
         // Atlas should contain non-zero pixels
-        result.Pages[0].PixelData.Any(b => b != 0).Should().BeTrue(
+        result.Pages[0].PixelData.Any(b => b != 0).ShouldBeTrue(
             "super-sampled atlas should contain rendered glyph pixels");
     }
 
@@ -422,11 +418,11 @@ public class EdgeCaseTests
         // but the output should be back at ~32px scale.
         foreach (var ch in result.Model.Characters)
         {
-            ch.Width.Should().BeLessThan(64,
+            ch.Width.ShouldBeLessThan(64,
                 $"glyph {ch.Id} width should not be at the 4x upscaled size");
-            ch.Height.Should().BeLessThan(64,
+            ch.Height.ShouldBeLessThan(64,
                 $"glyph {ch.Id} height should not be at the 4x upscaled size");
-            ch.XAdvance.Should().BeLessThan(64,
+            ch.XAdvance.ShouldBeLessThan(64,
                 $"glyph {ch.Id} XAdvance should not be at the 4x upscaled size");
         }
     }

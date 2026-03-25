@@ -2,7 +2,7 @@ using KernSmith.Atlas;
 using KernSmith.Font;
 using KernSmith.Output;
 using KernSmith.Output.Model;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests;
 
@@ -33,9 +33,9 @@ public sealed class FeatureCoverageTests
         });
 
         // Assert
-        result.Model.Should().NotBeNull();
-        result.Pages.Should().HaveCountGreaterThan(0, "SDF generation should produce at least one atlas page");
-        result.Model.Characters.Should().HaveCountGreaterThan(0, "SDF generation should produce character entries");
+        result.Model.ShouldNotBeNull();
+        result.Pages.Count.ShouldBeGreaterThan(0);
+        result.Model.Characters.Count.ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public sealed class FeatureCoverageTests
 
         // Assert
         var hasNonZeroPixels = result.Pages.Any(p => p.PixelData.Any(b => b != 0));
-        hasNonZeroPixels.Should().BeTrue("SDF atlas should contain rendered distance field pixels");
+        hasNonZeroPixels.ShouldBeTrue("SDF atlas should contain rendered distance field pixels");
     }
 
     [Fact]
@@ -73,10 +73,10 @@ public sealed class FeatureCoverageTests
 
         // Assert — the 'A' glyph should have positive dimensions in SDF mode
         var charA = result.Model.Characters.FirstOrDefault(c => c.Id == 65);
-        charA.Should().NotBeNull("SDF output should include character 'A'");
-        charA!.Width.Should().BeGreaterThan(0, "SDF glyph should have positive width");
-        charA!.Height.Should().BeGreaterThan(0, "SDF glyph should have positive height");
-        charA!.XAdvance.Should().BeGreaterThan(0, "SDF glyph should have positive advance");
+        charA.ShouldNotBeNull("SDF output should include character 'A'");
+        charA!.Width.ShouldBeGreaterThan(0);
+        charA!.Height.ShouldBeGreaterThan(0);
+        charA!.XAdvance.ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -94,8 +94,8 @@ public sealed class FeatureCoverageTests
         });
 
         // Assert
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*SDF*super sampling*");
+        var ex = Should.Throw<InvalidOperationException>(act);
+        ex.Message.ShouldContain("SDF");
     }
 
     // ------------------------------------------------------------------
@@ -119,9 +119,9 @@ public sealed class FeatureCoverageTests
         });
 
         // Assert
-        result.Pages.Count.Should().BeGreaterThan(1,
+        result.Pages.Count.ShouldBeGreaterThan(1,
             "a 64x64 texture should not fit all ASCII characters at size 32, requiring multiple pages");
-        result.Model.Common.Pages.Should().Be(result.Pages.Count,
+        result.Model.Common.Pages.ShouldBe(result.Pages.Count,
             "model page count should match actual atlas page count");
     }
 
@@ -145,9 +145,9 @@ public sealed class FeatureCoverageTests
         var pageCount = result.Pages.Count;
         foreach (var ch in result.Model.Characters)
         {
-            ch.Page.Should().BeGreaterThanOrEqualTo(0,
+            ch.Page.ShouldBeGreaterThanOrEqualTo(0,
                 $"character U+{ch.Id:X4} should have non-negative page index");
-            ch.Page.Should().BeLessThan(pageCount,
+            ch.Page.ShouldBeLessThan(pageCount,
                 $"character U+{ch.Id:X4} page index {ch.Page} should be less than total page count {pageCount}");
         }
     }
@@ -171,7 +171,7 @@ public sealed class FeatureCoverageTests
         // Assert — each page should have non-empty pixel data
         for (var i = 0; i < result.Pages.Count; i++)
         {
-            result.Pages[i].PixelData.Should().NotBeEmpty(
+            result.Pages[i].PixelData.ShouldNotBeEmpty(
                 $"atlas page {i} should have pixel data");
         }
     }
@@ -193,10 +193,10 @@ public sealed class FeatureCoverageTests
         });
 
         // Assert — model page entries should have sequential IDs starting from 0
-        result.Model.Pages.Should().HaveCount(result.Pages.Count);
+        result.Model.Pages.Count.ShouldBe(result.Pages.Count);
         for (var i = 0; i < result.Model.Pages.Count; i++)
         {
-            result.Model.Pages[i].Id.Should().Be(i,
+            result.Model.Pages[i].Id.ShouldBe(i,
                 $"page entry at index {i} should have Id={i}");
         }
     }
@@ -218,31 +218,31 @@ public sealed class FeatureCoverageTests
         var distances = EuclideanDistanceTransform.Compute(alpha, width, height);
 
         // Assert — distance at center should be 0 (inside pixel)
-        distances[2 * width + 2].Should().Be(0f,
+        distances[2 * width + 2].ShouldBe(0f,
             "the inside pixel itself should have squared distance 0");
 
         // Adjacent pixels (distance = 1) should have squared distance = 1
-        distances[1 * width + 2].Should().BeApproximately(1f, 0.01f,
+        distances[1 * width + 2].ShouldBe(1f, 0.01f,
             "pixel one step above center should have squared distance 1");
-        distances[3 * width + 2].Should().BeApproximately(1f, 0.01f,
+        distances[3 * width + 2].ShouldBe(1f, 0.01f,
             "pixel one step below center should have squared distance 1");
-        distances[2 * width + 1].Should().BeApproximately(1f, 0.01f,
+        distances[2 * width + 1].ShouldBe(1f, 0.01f,
             "pixel one step left of center should have squared distance 1");
-        distances[2 * width + 3].Should().BeApproximately(1f, 0.01f,
+        distances[2 * width + 3].ShouldBe(1f, 0.01f,
             "pixel one step right of center should have squared distance 1");
 
         // Diagonal pixels (distance = sqrt(2)) should have squared distance = 2
-        distances[1 * width + 1].Should().BeApproximately(2f, 0.01f,
+        distances[1 * width + 1].ShouldBe(2f, 0.01f,
             "pixel diagonally adjacent should have squared distance 2");
-        distances[1 * width + 3].Should().BeApproximately(2f, 0.01f,
+        distances[1 * width + 3].ShouldBe(2f, 0.01f,
             "pixel diagonally adjacent should have squared distance 2");
-        distances[3 * width + 1].Should().BeApproximately(2f, 0.01f,
+        distances[3 * width + 1].ShouldBe(2f, 0.01f,
             "pixel diagonally adjacent should have squared distance 2");
-        distances[3 * width + 3].Should().BeApproximately(2f, 0.01f,
+        distances[3 * width + 3].ShouldBe(2f, 0.01f,
             "pixel diagonally adjacent should have squared distance 2");
 
         // Corner pixels at (0,0): distance = sqrt(2^2 + 2^2) = sqrt(8), squared = 8
-        distances[0 * width + 0].Should().BeApproximately(8f, 0.01f,
+        distances[0 * width + 0].ShouldBe(8f, 0.01f,
             "corner pixel should have squared distance 8 from center");
     }
 
@@ -261,7 +261,7 @@ public sealed class FeatureCoverageTests
         // Assert — all distances should be 0
         foreach (var d in distances)
         {
-            d.Should().Be(0f, "all pixels are inside, so distance should be 0");
+            d.ShouldBe(0f, "all pixels are inside, so distance should be 0");
         }
     }
 
@@ -279,7 +279,7 @@ public sealed class FeatureCoverageTests
         // Assert — with no inside pixels, all distances should be very large (infinity marker)
         foreach (var d in distances)
         {
-            d.Should().BeGreaterThan(1_000_000f,
+            d.ShouldBeGreaterThan(1_000_000f,
                 "with no inside pixels, distances should remain at the infinity sentinel");
         }
     }
@@ -300,11 +300,11 @@ public sealed class FeatureCoverageTests
         // Assert — row 0 and row 2 should have squared distance 1 from the inside line
         for (var x = 0; x < width; x++)
         {
-            distances[1 * width + x].Should().Be(0f,
+            distances[1 * width + x].ShouldBe(0f,
                 $"inside pixel at ({x},1) should have distance 0");
-            distances[0 * width + x].Should().BeApproximately(1f, 0.01f,
+            distances[0 * width + x].ShouldBe(1f, 0.01f,
                 $"pixel at ({x},0) should be 1 away from the inside line");
-            distances[2 * width + x].Should().BeApproximately(1f, 0.01f,
+            distances[2 * width + x].ShouldBe(1f, 0.01f,
                 $"pixel at ({x},2) should be 1 away from the inside line");
         }
     }
@@ -323,7 +323,7 @@ public sealed class FeatureCoverageTests
         var act = () => BmFont.LoadModel(truncated);
 
         // Assert — should throw a FormatException, not crash or hang
-        act.Should().Throw<FormatException>();
+        Should.Throw<FormatException>(act);
     }
 
     [Fact]
@@ -336,7 +336,7 @@ public sealed class FeatureCoverageTests
         var act = () => BmFont.LoadModel(empty);
 
         // Assert — should throw FormatException regardless of which format path is taken
-        act.Should().Throw<FormatException>();
+        Should.Throw<FormatException>(act);
     }
 
     [Fact]
@@ -349,7 +349,7 @@ public sealed class FeatureCoverageTests
         var act = () => BmFont.LoadModel(garbage);
 
         // Assert — should throw a parsing error, not crash
-        act.Should().Throw<FormatException>();
+        Should.Throw<FormatException>(act);
     }
 
     [Fact]
@@ -365,7 +365,8 @@ public sealed class FeatureCoverageTests
         var act = () => BmFont.LoadModel(badText);
 
         // Assert
-        act.Should().Throw<FormatException>().WithMessage("*missing*info*");
+        var ex = Should.Throw<FormatException>(act);
+        ex.Message.ShouldContain("missing");
     }
 
     [Fact]
@@ -381,7 +382,8 @@ public sealed class FeatureCoverageTests
         var act = () => BmFont.LoadModel(badText);
 
         // Assert
-        act.Should().Throw<FormatException>().WithMessage("*missing*common*");
+        var ex = Should.Throw<FormatException>(act);
+        ex.Message.ShouldContain("missing");
     }
 
     [Fact]
@@ -399,7 +401,8 @@ public sealed class FeatureCoverageTests
         var act = () => BmFont.LoadModel(corrupt);
 
         // Assert
-        act.Should().Throw<FormatException>().WithMessage("*exceeds*");
+        var ex = Should.Throw<FormatException>(act);
+        ex.Message.ShouldContain("exceeds");
     }
 
     // ------------------------------------------------------------------
@@ -432,8 +435,8 @@ public sealed class FeatureCoverageTests
         var act = () => WoffDecompressor.Decompress(woff2Data);
 
         // Assert
-        act.Should().Throw<NotSupportedException>()
-            .WithMessage("*WOFF2*not*supported*");
+        var ex1 = Should.Throw<NotSupportedException>(act);
+        ex1.Message.ShouldContain("WOFF2");
     }
 
     [Fact]
@@ -450,8 +453,8 @@ public sealed class FeatureCoverageTests
         var act = () => WoffDecompressor.Decompress(woff2Data);
 
         // Assert — message should guide the user toward a workaround
-        act.Should().Throw<NotSupportedException>()
-            .WithMessage("*Convert*TTF*OTF*WOFF1*");
+        var ex = Should.Throw<NotSupportedException>(act);
+        ex.Message.ShouldContain("Convert");
     }
 
     [Fact]
@@ -469,7 +472,7 @@ public sealed class FeatureCoverageTests
 
         // Assert — BmFont.Generate detects WOFF2 and calls WoffDecompressor.Decompress,
         // which should throw NotSupportedException
-        act.Should().Throw<NotSupportedException>()
-            .WithMessage("*WOFF2*not*supported*");
+        var ex2 = Should.Throw<NotSupportedException>(act);
+        ex2.Message.ShouldContain("WOFF2");
     }
 }

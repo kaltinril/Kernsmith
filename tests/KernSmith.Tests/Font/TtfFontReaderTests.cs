@@ -1,5 +1,5 @@
 using KernSmith.Font;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests.Font;
 
@@ -19,9 +19,9 @@ public class TtfFontReaderTests
         var fontInfo = reader.ReadFont(fontData);
 
         // Assert
-        fontInfo.FamilyName.Should().Be("Roboto", "font family should be Roboto");
-        fontInfo.UnitsPerEm.Should().Be(2048, "Roboto has 2048 units per em");
-        fontInfo.AvailableCodepoints.Count.Should().BeGreaterThan(0, "font should have available codepoints");
+        fontInfo.FamilyName.ShouldBe("Roboto", "font family should be Roboto");
+        fontInfo.UnitsPerEm.ShouldBe(2048);
+        fontInfo.AvailableCodepoints.Count.ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class TtfFontReaderTests
         var fontInfo = reader.ReadFont(fontData);
 
         // Assert
-        fontInfo.KerningPairs.Should().NotBeEmpty("Roboto Regular should have kerning pairs");
+        fontInfo.KerningPairs.ShouldNotBeEmpty();
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public class TtfFontReaderTests
 
         // Assert — printable ASCII range 32..126 should all be present
         var expectedCodepoints = Enumerable.Range(32, 95).ToList();
-        fontInfo.AvailableCodepoints.Should().Contain(expectedCodepoints,
-            "Roboto should contain all printable ASCII codepoints (U+0020 to U+007E)");
+        foreach (var cp in expectedCodepoints)
+            fontInfo.AvailableCodepoints.ShouldContain(cp);
     }
 }

@@ -1,5 +1,5 @@
 using KernSmith.Atlas;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests.Atlas;
 
@@ -31,8 +31,8 @@ public class AtlasSizeEstimatorTests
         var (width, height) = AtlasSizeEstimator.Estimate(rects, options);
 
         // Assert
-        width.Should().Be(64, "empty input should return MinSize for width");
-        height.Should().Be(64, "empty input should return MinSize for height");
+        width.ShouldBe(64);
+        height.ShouldBe(64);
     }
 
     [Fact]
@@ -46,8 +46,8 @@ public class AtlasSizeEstimatorTests
         var (width, height) = AtlasSizeEstimator.Estimate(rects, options);
 
         // Assert
-        width.Should().Be(64, "empty input with POT should round MinSize 50 up to 64");
-        height.Should().Be(64);
+        width.ShouldBe(64);
+        height.ShouldBe(64);
     }
 
     // ---------------------------------------------------------------
@@ -65,10 +65,10 @@ public class AtlasSizeEstimatorTests
         var (width, height) = AtlasSizeEstimator.Estimate(rects, options);
 
         // Assert
-        width.Should().BeGreaterThanOrEqualTo(20, "width must fit the glyph");
-        height.Should().BeGreaterThanOrEqualTo(30, "height must fit the glyph");
-        IsPowerOfTwo(width).Should().BeTrue("width should be a power of two");
-        IsPowerOfTwo(height).Should().BeTrue("height should be a power of two");
+        width.ShouldBeGreaterThanOrEqualTo(20, "width must fit the glyph");
+        height.ShouldBeGreaterThanOrEqualTo(30, "height must fit the glyph");
+        IsPowerOfTwo(width).ShouldBeTrue("width should be a power of two");
+        IsPowerOfTwo(height).ShouldBeTrue("height should be a power of two");
     }
 
     // ---------------------------------------------------------------
@@ -94,7 +94,7 @@ public class AtlasSizeEstimatorTests
 
         // Assert -- total area is 10*16*16 = 2560; estimate should be reasonable
         long estimatedArea = (long)width * height;
-        estimatedArea.Should().BeGreaterThanOrEqualTo(2560,
+        estimatedArea.ShouldBeGreaterThanOrEqualTo(2560,
             "estimated area must be at least total glyph area");
     }
 
@@ -129,7 +129,7 @@ public class AtlasSizeEstimatorTests
 
         // Assert
         long estimatedArea = (long)width * height;
-        estimatedArea.Should().BeGreaterThanOrEqualTo(totalArea,
+        estimatedArea.ShouldBeGreaterThanOrEqualTo(totalArea,
             "estimate must never be smaller than total glyph area");
     }
 
@@ -160,13 +160,13 @@ public class AtlasSizeEstimatorTests
         // Assert
         long normalArea = (long)wNormal * hNormal;
         long packedArea = (long)wPacked * hPacked;
-        packedArea.Should().BeLessThanOrEqualTo(normalArea,
+        packedArea.ShouldBeLessThanOrEqualTo(normalArea,
             "channel packing should produce a smaller or equal atlas than without");
 
         // Also verify the channel-packed estimate covers at least 1/4 of total glyph area
         long totalGlyphArea = rects.Sum(r => (long)r.Width * r.Height);
         long channelAdjustedArea = (totalGlyphArea + 3) / 4;
-        packedArea.Should().BeGreaterThanOrEqualTo(channelAdjustedArea,
+        packedArea.ShouldBeGreaterThanOrEqualTo(channelAdjustedArea,
             "channel-packed atlas must still cover the channel-adjusted glyph area");
     }
 
@@ -195,10 +195,10 @@ public class AtlasSizeEstimatorTests
         // Assert
         long totalArea = rects.Sum(r => (long)r.Width * r.Height);
         long estimatedArea = (long)width * height;
-        estimatedArea.Should().BeGreaterThanOrEqualTo(totalArea,
+        estimatedArea.ShouldBeGreaterThanOrEqualTo(totalArea,
             "equalized cell estimate must cover all glyphs");
-        width.Should().BeGreaterThanOrEqualTo(12, "width must fit at least one cell");
-        height.Should().BeGreaterThanOrEqualTo(16, "height must fit at least one row");
+        width.ShouldBeGreaterThanOrEqualTo(12, "width must fit at least one cell");
+        height.ShouldBeGreaterThanOrEqualTo(16, "height must fit at least one row");
     }
 
     // ---------------------------------------------------------------
@@ -222,10 +222,10 @@ public class AtlasSizeEstimatorTests
         var (width, height) = AtlasSizeEstimator.Estimate(rects, options);
 
         // Assert
-        width.Should().BeGreaterThan(0, "result width should be positive");
-        height.Should().BeGreaterThan(0, "result height should be positive");
-        width.Should().BeGreaterThanOrEqualTo(20, "must fit the 20x20 glyph");
-        height.Should().BeGreaterThanOrEqualTo(20, "must fit the 20x20 glyph");
+        width.ShouldBeGreaterThan(0);
+        height.ShouldBeGreaterThan(0);
+        width.ShouldBeGreaterThanOrEqualTo(20, "must fit the 20x20 glyph");
+        height.ShouldBeGreaterThanOrEqualTo(20, "must fit the 20x20 glyph");
     }
 
     [Fact]
@@ -244,8 +244,8 @@ public class AtlasSizeEstimatorTests
         var (width, height) = AtlasSizeEstimator.Estimate(rects, options);
 
         // Assert -- all zero-area, treated as empty
-        width.Should().Be(64);
-        height.Should().Be(64);
+        width.ShouldBe(64);
+        height.ShouldBe(64);
     }
 
     // ---------------------------------------------------------------
@@ -270,8 +270,8 @@ public class AtlasSizeEstimatorTests
         var (width, height) = AtlasSizeEstimator.Estimate(rects, options);
 
         // Assert
-        IsPowerOfTwo(width).Should().BeTrue($"width {width} should be a power of two");
-        IsPowerOfTwo(height).Should().BeTrue($"height {height} should be a power of two");
+        IsPowerOfTwo(width).ShouldBeTrue($"width {width} should be a power of two");
+        IsPowerOfTwo(height).ShouldBeTrue($"height {height} should be a power of two");
     }
 
     // ---------------------------------------------------------------
@@ -301,8 +301,8 @@ public class AtlasSizeEstimatorTests
         var (width, height) = AtlasSizeEstimator.Estimate(rects, options);
 
         // Assert -- just verify it returns valid results, not necessarily POT
-        width.Should().BeGreaterThan(0);
-        height.Should().BeGreaterThan(0);
+        width.ShouldBeGreaterThan(0);
+        height.ShouldBeGreaterThan(0);
         // At least one dimension should be allowed to be non-POT
         // (this is a negative test -- we do not require POT)
     }
@@ -329,8 +329,8 @@ public class AtlasSizeEstimatorTests
         var (width, height) = AtlasSizeEstimator.Estimate(rects, options);
 
         // Assert
-        width.Should().BeGreaterThan(0);
-        height.Should().BeGreaterThan(0);
+        width.ShouldBeGreaterThan(0);
+        height.ShouldBeGreaterThan(0);
         // Non-square atlas may (but is not required to) have different W and H
     }
 
@@ -356,7 +356,7 @@ public class AtlasSizeEstimatorTests
         // Assert
         long squareArea = (long)wSq * hSq;
         long nonSquareArea = (long)wNs * hNs;
-        nonSquareArea.Should().BeLessThanOrEqualTo(squareArea,
+        nonSquareArea.ShouldBeLessThanOrEqualTo(squareArea,
             "non-square atlas should not waste more space than a square atlas");
     }
 
@@ -382,11 +382,11 @@ public class AtlasSizeEstimatorTests
         var act = () => AtlasSizeEstimator.Estimate(rects, options);
 
         // Assert
-        var (width, height) = act.Should().NotThrow("large glyph sets should not cause overflow").Subject;
-        width.Should().BeGreaterThan(0);
-        height.Should().BeGreaterThan(0);
+        var (width, height) = act();
+        width.ShouldBeGreaterThan(0);
+        height.ShouldBeGreaterThan(0);
         long totalGlyphArea = 10_000L * 8 * 8;
-        ((long)width * height).Should().BeGreaterThanOrEqualTo(totalGlyphArea);
+        ((long)width * height).ShouldBeGreaterThanOrEqualTo(totalGlyphArea);
     }
 
     // ---------------------------------------------------------------
@@ -411,8 +411,8 @@ public class AtlasSizeEstimatorTests
         var (width, height) = AtlasSizeEstimator.Estimate(rects, options);
 
         // Assert
-        width.Should().BeLessThanOrEqualTo(256, "width must not exceed MaxWidth");
-        height.Should().BeLessThanOrEqualTo(256, "height must not exceed MaxHeight");
+        width.ShouldBeLessThanOrEqualTo(256, "width must not exceed MaxWidth");
+        height.ShouldBeLessThanOrEqualTo(256, "height must not exceed MaxHeight");
     }
 
     [Fact]
@@ -433,8 +433,8 @@ public class AtlasSizeEstimatorTests
         var (width, height) = AtlasSizeEstimator.Estimate(rects, options);
 
         // Assert
-        width.Should().BeLessThanOrEqualTo(256, "POT width must not exceed MaxWidth");
-        height.Should().BeLessThanOrEqualTo(256, "POT height must not exceed MaxHeight");
+        width.ShouldBeLessThanOrEqualTo(256, "POT width must not exceed MaxWidth");
+        height.ShouldBeLessThanOrEqualTo(256, "POT height must not exceed MaxHeight");
     }
 
     // ---------------------------------------------------------------
@@ -459,8 +459,8 @@ public class AtlasSizeEstimatorTests
         var (width, height) = AtlasSizeEstimator.Estimate(rects, options);
 
         // Assert
-        width.Should().BeGreaterThanOrEqualTo(100, "width must fit the wide glyph");
-        height.Should().BeGreaterThanOrEqualTo(20, "height must fit the glyph height");
+        width.ShouldBeGreaterThanOrEqualTo(100, "width must fit the wide glyph");
+        height.ShouldBeGreaterThanOrEqualTo(20, "height must fit the glyph height");
     }
 
     // ---------------------------------------------------------------
@@ -490,9 +490,9 @@ public class AtlasSizeEstimatorTests
 
         // Assert
         long estimatedArea = (long)width * height;
-        estimatedArea.Should().BeGreaterThanOrEqualTo(totalArea,
+        estimatedArea.ShouldBeGreaterThanOrEqualTo(totalArea,
             "estimate must not underestimate");
-        estimatedArea.Should().BeLessThanOrEqualTo(totalArea * 2,
+        estimatedArea.ShouldBeLessThanOrEqualTo(totalArea * 2,
             "estimate should be within 2x of total glyph area for a typical set");
     }
 
@@ -523,7 +523,7 @@ public class AtlasSizeEstimatorTests
         // Assert
         long highEffArea = (long)wHigh * hHigh;
         long lowEffArea = (long)wLow * hLow;
-        lowEffArea.Should().BeGreaterThanOrEqualTo(highEffArea,
+        lowEffArea.ShouldBeGreaterThanOrEqualTo(highEffArea,
             "lower packing efficiency should produce a larger or equal atlas");
     }
 
@@ -541,7 +541,7 @@ public class AtlasSizeEstimatorTests
         var result = AtlasSizeEstimator.EstimateShelfHeight(glyphs, 256);
 
         // Assert
-        result.Should().Be(0);
+        result.ShouldBe(0);
     }
 
     [Fact]
@@ -554,7 +554,7 @@ public class AtlasSizeEstimatorTests
         var result = AtlasSizeEstimator.EstimateShelfHeight(glyphs, 0);
 
         // Assert
-        result.Should().Be(0);
+        result.ShouldBe(0);
     }
 
     [Fact]
@@ -567,7 +567,7 @@ public class AtlasSizeEstimatorTests
         var result = AtlasSizeEstimator.EstimateShelfHeight(glyphs, 256);
 
         // Assert -- should be 20 * 1.05 = 21
-        result.Should().Be(21);
+        result.ShouldBe(21);
     }
 
     // ---------------------------------------------------------------

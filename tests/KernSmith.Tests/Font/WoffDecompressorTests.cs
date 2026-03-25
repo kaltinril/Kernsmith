@@ -1,5 +1,5 @@
 using KernSmith.Font;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests.Font;
 
@@ -15,7 +15,7 @@ public class WoffDecompressorTests
         var fontData = LoadTestFont();
 
         // Act & Assert
-        WoffDecompressor.IsWoff(fontData).Should().BeFalse();
+        WoffDecompressor.IsWoff(fontData).ShouldBeFalse();
     }
 
     [Fact]
@@ -25,7 +25,7 @@ public class WoffDecompressorTests
         var fontData = LoadTestFont();
 
         // Act & Assert
-        WoffDecompressor.IsWoff2(fontData).Should().BeFalse();
+        WoffDecompressor.IsWoff2(fontData).ShouldBeFalse();
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class WoffDecompressorTests
         var data = new byte[] { (byte)'w', (byte)'O', (byte)'F', (byte)'F', 0, 0, 0, 0 };
 
         // Act & Assert
-        WoffDecompressor.IsWoff(data).Should().BeTrue();
+        WoffDecompressor.IsWoff(data).ShouldBeTrue();
     }
 
     [Fact]
@@ -45,6 +45,6 @@ public class WoffDecompressorTests
         var data = new byte[] { (byte)'w', (byte)'O', (byte)'F', (byte)'2', 0, 0, 0, 0 };
 
         // Act & Assert
-        WoffDecompressor.IsWoff2(data).Should().BeTrue();
+        WoffDecompressor.IsWoff2(data).ShouldBeTrue();
     }
 }

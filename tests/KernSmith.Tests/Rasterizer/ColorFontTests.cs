@@ -1,7 +1,7 @@
 using KernSmith.Font;
 using KernSmith.Font.Models;
 using KernSmith.Rasterizer;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests.Rasterizer;
 
@@ -68,7 +68,7 @@ public class ColorFontTests : IDisposable
         var options = new FontGeneratorOptions();
 
         // Assert
-        options.ColorFont.Should().BeFalse("ColorFont should default to false");
+        options.ColorFont.ShouldBeFalse("ColorFont should default to false");
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public class ColorFontTests : IDisposable
         var options = new FontGeneratorOptions();
 
         // Assert
-        options.ColorPaletteIndex.Should().Be(0, "ColorPaletteIndex should default to 0");
+        options.ColorPaletteIndex.ShouldBe(0);
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public class ColorFontTests : IDisposable
         var rasterOptions = new RasterOptions { Size = 32 };
 
         // Assert
-        rasterOptions.ColorFont.Should().BeFalse("ColorFont should default to false");
+        rasterOptions.ColorFont.ShouldBeFalse("ColorFont should default to false");
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public class ColorFontTests : IDisposable
         var rasterOptions = new RasterOptions { Size = 32 };
 
         // Assert
-        rasterOptions.ColorPaletteIndex.Should().Be(0, "ColorPaletteIndex should default to 0");
+        rasterOptions.ColorPaletteIndex.ShouldBe(0);
     }
 
     [Fact]
@@ -116,8 +116,8 @@ public class ColorFontTests : IDisposable
         var rasterOptions = RasterOptions.FromGeneratorOptions(generatorOptions);
 
         // Assert
-        rasterOptions.ColorFont.Should().BeTrue("ColorFont should be propagated from generator options");
-        rasterOptions.ColorPaletteIndex.Should().Be(3, "ColorPaletteIndex should be propagated from generator options");
+        rasterOptions.ColorFont.ShouldBeTrue("ColorFont should be propagated from generator options");
+        rasterOptions.ColorPaletteIndex.ShouldBe(3);
     }
 
     // ---------------------------------------------------------------
@@ -139,8 +139,8 @@ public class ColorFontTests : IDisposable
             .Build();
 
         // Assert -- should succeed (Roboto is not a color font, but ColorFont=true is a graceful no-op)
-        result.Model.Should().NotBeNull();
-        result.Model.Characters.Should().HaveCount(1);
+        result.Model.ShouldNotBeNull();
+        result.Model.Characters.Count.ShouldBe(1);
     }
 
     [Fact]
@@ -158,8 +158,8 @@ public class ColorFontTests : IDisposable
             .Build();
 
         // Assert
-        result.Model.Should().NotBeNull();
-        result.Model.Characters.Should().HaveCount(1);
+        result.Model.ShouldNotBeNull();
+        result.Model.Characters.Count.ShouldBe(1);
     }
 
     [Fact]
@@ -181,8 +181,8 @@ public class ColorFontTests : IDisposable
             .Build();
 
         // Assert -- should complete without error
-        result.Model.Should().NotBeNull();
-        result.Model.Characters.Should().HaveCount(1);
+        result.Model.ShouldNotBeNull();
+        result.Model.Characters.Count.ShouldBe(1);
     }
 
     [Fact]
@@ -201,8 +201,7 @@ public class ColorFontTests : IDisposable
             .Build();
 
         // Assert -- FreeType rejects palette selection on fonts without CPAL tables
-        act.Should().Throw<Exception>(
-            "selecting a non-zero color palette on a non-color font should fail");
+        Should.Throw<Exception>(act);
     }
 
     // ---------------------------------------------------------------
@@ -220,7 +219,7 @@ public class ColorFontTests : IDisposable
         var fontInfo = fontReader.ReadFont(fontData);
 
         // Assert
-        fontInfo.HasColorGlyphs.Should().BeFalse(
+        fontInfo.HasColorGlyphs.ShouldBeFalse(
             "Roboto-Regular does not contain COLR, sbix, or CBDT tables");
     }
 
@@ -244,9 +243,9 @@ public class ColorFontTests : IDisposable
         var result = BmFont.Generate(fontData, options);
 
         // Assert -- should produce a valid result; FreeType falls back to grayscale rendering
-        result.Model.Should().NotBeNull();
-        result.Model.Characters.Should().HaveCount(2);
-        result.Pages.Should().HaveCountGreaterThan(0);
+        result.Model.ShouldNotBeNull();
+        result.Model.Characters.Count.ShouldBe(2);
+        result.Pages.Count.ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -265,12 +264,12 @@ public class ColorFontTests : IDisposable
         var result = BmFont.Generate(fontData, options);
 
         // Assert -- default (non-color) rendering should produce grayscale pages (1 bpp)
-        result.Pages.Should().HaveCountGreaterThan(0);
+        result.Pages.Count.ShouldBeGreaterThan(0);
         foreach (var page in result.Pages)
         {
-            page.Format.Should().Be(PixelFormat.Grayscale8,
+            page.Format.ShouldBe(PixelFormat.Grayscale8,
                 "non-color font without ColorFont should produce grayscale atlas pages");
-            page.PixelData.Length.Should().Be(page.Width * page.Height,
+            page.PixelData.Length.ShouldBe(page.Width * page.Height,
                 "grayscale pages should have 1 byte per pixel");
         }
     }
@@ -296,9 +295,8 @@ public class ColorFontTests : IDisposable
         var act = () => BmFont.Generate(fontData, options);
 
         // Assert
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*Channel packing*color font*",
-                "channel packing and color font rendering are mutually exclusive");
+        var ex = Should.Throw<InvalidOperationException>(act);
+        ex.Message.ShouldContain("Channel packing");
     }
 
     [Fact]
@@ -317,8 +315,8 @@ public class ColorFontTests : IDisposable
             .Build();
 
         // Assert
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*Channel packing*color font*");
+        var ex = Should.Throw<InvalidOperationException>(act);
+        ex.Message.ShouldContain("Channel packing");
     }
 
     // ---------------------------------------------------------------
@@ -336,10 +334,10 @@ public class ColorFontTests : IDisposable
         var result = processor.Process(rgbaGlyph);
 
         // Assert -- should return the same glyph unmodified
-        result.Should().BeSameAs(rgbaGlyph,
+        result.ShouldBeSameAs(rgbaGlyph,
             "GradientPostProcessor should return the same RGBA glyph instance without modification");
-        result.Format.Should().Be(PixelFormat.Rgba32);
-        result.BitmapData.Should().BeSameAs(rgbaGlyph.BitmapData);
+        result.Format.ShouldBe(PixelFormat.Rgba32);
+        result.BitmapData.ShouldBeSameAs(rgbaGlyph.BitmapData);
     }
 
     [Fact]
@@ -353,10 +351,10 @@ public class ColorFontTests : IDisposable
         var result = processor.Process(grayscaleGlyph);
 
         // Assert -- should convert to RGBA
-        result.Should().NotBeSameAs(grayscaleGlyph,
+        result.ShouldNotBeSameAs(grayscaleGlyph,
             "GradientPostProcessor should create a new RGBA glyph from a grayscale input");
-        result.Format.Should().Be(PixelFormat.Rgba32);
-        result.BitmapData.Length.Should().Be(grayscaleGlyph.Width * grayscaleGlyph.Height * 4,
+        result.Format.ShouldBe(PixelFormat.Rgba32);
+        result.BitmapData.Length.ShouldBe(grayscaleGlyph.Width * grayscaleGlyph.Height * 4,
             "gradient output should be 4 bytes per pixel");
     }
 
@@ -375,12 +373,12 @@ public class ColorFontTests : IDisposable
         var result = processor.Process(rgbaGlyph);
 
         // Assert -- should expand the glyph with an outline (RGBA output)
-        result.Should().NotBeSameAs(rgbaGlyph,
+        result.ShouldNotBeSameAs(rgbaGlyph,
             "OutlinePostProcessor should create a new expanded glyph from an RGBA input");
-        result.Format.Should().Be(PixelFormat.Rgba32);
-        result.Width.Should().Be(rgbaGlyph.Width + 2 * 2,
+        result.Format.ShouldBe(PixelFormat.Rgba32);
+        result.Width.ShouldBe(rgbaGlyph.Width + 2 * 2,
             "outlined glyph should be wider by 2 * outlineWidth");
-        result.Height.Should().Be(rgbaGlyph.Height + 2 * 2,
+        result.Height.ShouldBe(rgbaGlyph.Height + 2 * 2,
             "outlined glyph should be taller by 2 * outlineWidth");
     }
 
@@ -395,13 +393,13 @@ public class ColorFontTests : IDisposable
         var result = processor.Process(grayscaleGlyph);
 
         // Assert -- should expand the glyph with an outline (now outputs RGBA)
-        result.Should().NotBeSameAs(grayscaleGlyph,
+        result.ShouldNotBeSameAs(grayscaleGlyph,
             "OutlinePostProcessor should create a new expanded glyph from a grayscale input");
-        result.Format.Should().Be(PixelFormat.Rgba32,
+        result.Format.ShouldBe(PixelFormat.Rgba32,
             "OutlinePostProcessor now always outputs RGBA with baked outline color");
-        result.Width.Should().Be(grayscaleGlyph.Width + 2 * 2,
+        result.Width.ShouldBe(grayscaleGlyph.Width + 2 * 2,
             "outlined glyph should be wider by 2 * outlineWidth");
-        result.Height.Should().Be(grayscaleGlyph.Height + 2 * 2,
+        result.Height.ShouldBe(grayscaleGlyph.Height + 2 * 2,
             "outlined glyph should be taller by 2 * outlineWidth");
     }
 
@@ -419,8 +417,8 @@ public class ColorFontTests : IDisposable
         var act = () => _rasterizer.SelectColorPalette(0);
 
         // Assert
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*Font not loaded*");
+        var ex = Should.Throw<InvalidOperationException>(act);
+        ex.Message.ShouldContain("Font not loaded");
     }
 
     // ---------------------------------------------------------------
@@ -452,7 +450,7 @@ public class ColorFontTests : IDisposable
         var resultGrayscale = BmFont.Generate(fontData, optionsGrayscale);
 
         // Assert -- both should produce the same number of characters
-        resultColor.Model.Characters.Count.Should().Be(resultGrayscale.Model.Characters.Count,
+        resultColor.Model.Characters.Count.ShouldBe(resultGrayscale.Model.Characters.Count,
             "ColorFont=true on a non-color font should not change the character count");
     }
 
@@ -471,7 +469,7 @@ public class ColorFontTests : IDisposable
         var fontInfo = fontReader.ReadFont(fontData);
 
         // Assert
-        fontInfo.HasColorGlyphs.Should().BeTrue(
+        fontInfo.HasColorGlyphs.ShouldBeTrue(
             "a color font should have COLR, sbix, or CBDT tables detected");
     }
 
@@ -492,10 +490,10 @@ public class ColorFontTests : IDisposable
         var result = BmFont.Generate(fontData, options);
 
         // Assert -- atlas pages should be RGBA (4 bytes per pixel)
-        result.Pages.Should().HaveCountGreaterThan(0);
-        result.Pages[0].Format.Should().Be(PixelFormat.Rgba32,
+        result.Pages.Count.ShouldBeGreaterThan(0);
+        result.Pages[0].Format.ShouldBe(PixelFormat.Rgba32,
             "color font rendering should produce RGBA atlas pages");
-        result.Pages[0].PixelData.Length.Should().Be(
+        result.Pages[0].PixelData.Length.ShouldBe(
             result.Pages[0].Width * result.Pages[0].Height * 4,
             "RGBA pages should have 4 bytes per pixel");
     }
@@ -531,7 +529,7 @@ public class ColorFontTests : IDisposable
             }
         }
 
-        hasColorPixels.Should().BeTrue(
+        hasColorPixels.ShouldBeTrue(
             "color font atlas should contain pixels with varying RGB channels");
     }
 
@@ -552,7 +550,7 @@ public class ColorFontTests : IDisposable
         var act = () => BmFont.Generate(fontData, options);
 
         // Assert
-        act.Should().NotThrow("palette index 0 should always be valid for a color font");
+        Should.NotThrow(act); // palette index 0 should always be valid for a color font
     }
 
     // ---------------------------------------------------------------

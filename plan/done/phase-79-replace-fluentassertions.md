@@ -1,6 +1,6 @@
 # Phase 79 — Replace FluentAssertions with Shouldly
 
-> **Status**: Not started
+> **Status**: Complete
 > **Created**: 2026-03-24
 > **Goal**: Replace FluentAssertions with Shouldly across the entire test suite due to FluentAssertions moving to paid/commercial licensing.
 

@@ -1,5 +1,5 @@
 using KernSmith.Output;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests;
 
@@ -66,9 +66,9 @@ public sealed class ApiUsabilityTests : IDisposable
         var result = BmFont.FromConfig(bmfcPath);
 
         // Assert
-        result.Model.Characters.Should().HaveCountGreaterThan(0,
+        result.Model.Characters.Count.ShouldBeGreaterThan(0,
             "FromConfig should produce character entries for ASCII 32-126");
-        result.Pages.Should().HaveCountGreaterThan(0,
+        result.Pages.Count.ShouldBeGreaterThan(0,
             "FromConfig should produce at least one atlas page");
     }
 
@@ -94,9 +94,9 @@ public sealed class ApiUsabilityTests : IDisposable
         var result = BmFont.FromConfig(config);
 
         // Assert
-        result.Model.Characters.Should().HaveCountGreaterThan(0,
+        result.Model.Characters.Count.ShouldBeGreaterThan(0,
             "FromConfig with BmfcConfig object should produce character entries");
-        result.Pages.Should().HaveCountGreaterThan(0,
+        result.Pages.Count.ShouldBeGreaterThan(0,
             "FromConfig with BmfcConfig object should produce at least one atlas page");
     }
 
@@ -122,9 +122,9 @@ public sealed class ApiUsabilityTests : IDisposable
         var result = BmFont.FromConfig(config);
 
         // Assert
-        result.Model.Characters.Should().HaveCountGreaterThan(0,
+        result.Model.Characters.Count.ShouldBeGreaterThan(0,
             "FromConfig with system font name should produce character entries");
-        result.Pages.Should().HaveCountGreaterThan(0,
+        result.Pages.Count.ShouldBeGreaterThan(0,
             "FromConfig with system font name should produce at least one atlas page");
     }
 
@@ -146,9 +146,8 @@ public sealed class ApiUsabilityTests : IDisposable
         var fntText = result.FntText;
 
         // Assert
-        fntText.Should().NotBeNullOrWhiteSpace("FntText should return non-empty text");
-        fntText.Should().Contain("info face=",
-            "FntText should contain the BMFont text format info line");
+        fntText.ShouldNotBeNullOrWhiteSpace();
+        fntText.ShouldContain("info face=");
     }
 
     // ------------------------------------------------------------------
@@ -169,9 +168,8 @@ public sealed class ApiUsabilityTests : IDisposable
         var fntXml = result.FntXml;
 
         // Assert
-        fntXml.Should().NotBeNullOrWhiteSpace("FntXml should return non-empty XML");
-        fntXml.Should().Contain("<font>",
-            "FntXml should contain the <font> root element");
+        fntXml.ShouldNotBeNullOrWhiteSpace();
+        fntXml.ShouldContain("<font>");
     }
 
     // ------------------------------------------------------------------
@@ -192,10 +190,10 @@ public sealed class ApiUsabilityTests : IDisposable
         var fntBinary = result.FntBinary;
 
         // Assert
-        fntBinary.Should().NotBeEmpty("FntBinary should return non-empty byte array");
-        fntBinary[0].Should().Be(66, "first byte of BMF header should be 'B' (66)");
-        fntBinary[1].Should().Be(77, "second byte of BMF header should be 'M' (77)");
-        fntBinary[2].Should().Be(70, "third byte of BMF header should be 'F' (70)");
+        fntBinary.ShouldNotBeEmpty();
+        fntBinary[0].ShouldBe((byte)66);
+        fntBinary[1].ShouldBe((byte)77);
+        fntBinary[2].ShouldBe((byte)70);
     }
 
     // ------------------------------------------------------------------
@@ -216,17 +214,17 @@ public sealed class ApiUsabilityTests : IDisposable
         var pngDataAll = result.GetPngData();
 
         // Assert
-        pngDataAll.Should().HaveCountGreaterThan(0,
+        pngDataAll.Length.ShouldBeGreaterThan(0,
             "GetPngData() should return at least one page");
 
         foreach (var pngData in pngDataAll)
         {
-            pngData.Should().HaveCountGreaterThan(4,
+            pngData.Length.ShouldBeGreaterThan(4,
                 "each PNG entry should be non-trivially sized");
-            pngData[0].Should().Be(137, "PNG header byte 0 should be 0x89 (137)");
-            pngData[1].Should().Be(80, "PNG header byte 1 should be 'P' (80)");
-            pngData[2].Should().Be(78, "PNG header byte 2 should be 'N' (78)");
-            pngData[3].Should().Be(71, "PNG header byte 3 should be 'G' (71)");
+            pngData[0].ShouldBe((byte)137);
+            pngData[1].ShouldBe((byte)80);
+            pngData[2].ShouldBe((byte)78);
+            pngData[3].ShouldBe((byte)71);
         }
     }
 
@@ -248,11 +246,11 @@ public sealed class ApiUsabilityTests : IDisposable
         var pngData = result.GetPngData(0);
 
         // Assert
-        pngData.Should().HaveCountGreaterThan(4, "PNG data should be non-trivially sized");
-        pngData[0].Should().Be(137, "PNG header byte 0 should be 0x89 (137)");
-        pngData[1].Should().Be(80, "PNG header byte 1 should be 'P' (80)");
-        pngData[2].Should().Be(78, "PNG header byte 2 should be 'N' (78)");
-        pngData[3].Should().Be(71, "PNG header byte 3 should be 'G' (71)");
+        pngData.Length.ShouldBeGreaterThan(4);
+        pngData[0].ShouldBe((byte)137);
+        pngData[1].ShouldBe((byte)80);
+        pngData[2].ShouldBe((byte)78);
+        pngData[3].ShouldBe((byte)71);
     }
 
     // ------------------------------------------------------------------
@@ -273,7 +271,7 @@ public sealed class ApiUsabilityTests : IDisposable
         var act = () => result.GetPngData(-1);
 
         // Assert
-        act.Should().Throw<ArgumentOutOfRangeException>();
+        Should.Throw<ArgumentOutOfRangeException>(act);
     }
 
     // ------------------------------------------------------------------
@@ -294,7 +292,7 @@ public sealed class ApiUsabilityTests : IDisposable
         var act = () => result.GetPngData(999);
 
         // Assert
-        act.Should().Throw<ArgumentOutOfRangeException>();
+        Should.Throw<ArgumentOutOfRangeException>(act);
     }
 
     // ------------------------------------------------------------------
@@ -315,8 +313,8 @@ public sealed class ApiUsabilityTests : IDisposable
         var tgaData = result.GetTgaData(0);
 
         // Assert
-        tgaData.Should().NotBeEmpty("GetTgaData(0) should return non-empty TGA bytes");
-        tgaData.Length.Should().BeGreaterThan(18,
+        tgaData.ShouldNotBeEmpty();
+        tgaData.Length.ShouldBeGreaterThan(18,
             "TGA data should be larger than just the 18-byte header");
     }
 
@@ -338,12 +336,12 @@ public sealed class ApiUsabilityTests : IDisposable
         var ddsData = result.GetDdsData(0);
 
         // Assert
-        ddsData.Should().NotBeEmpty("GetDdsData(0) should return non-empty DDS bytes");
+        ddsData.ShouldNotBeEmpty();
         // "DDS " magic: 0x44, 0x44, 0x53, 0x20
-        ddsData[0].Should().Be(0x44, "DDS header byte 0 should be 'D'");
-        ddsData[1].Should().Be(0x44, "DDS header byte 1 should be 'D'");
-        ddsData[2].Should().Be(0x53, "DDS header byte 2 should be 'S'");
-        ddsData[3].Should().Be(0x20, "DDS header byte 3 should be ' '");
+        ddsData[0].ShouldBe((byte)0x44);
+        ddsData[1].ShouldBe((byte)0x44);
+        ddsData[2].ShouldBe((byte)0x53);
+        ddsData[3].ShouldBe((byte)0x20);
     }
 
     // ------------------------------------------------------------------
@@ -366,12 +364,9 @@ public sealed class ApiUsabilityTests : IDisposable
         var bmfc = result.ToBmfc();
 
         // Assert
-        bmfc.Should().Contain("fontSize=32",
-            "ToBmfc should include fontSize=32");
-        bmfc.Should().Contain("outlineThickness=2",
-            "ToBmfc should include outlineThickness=2");
-        bmfc.Should().Contain("isBold=1",
-            "ToBmfc should include isBold=1");
+        bmfc.ShouldContain("fontSize=32");
+        bmfc.ShouldContain("outlineThickness=2");
+        bmfc.ShouldContain("isBold=1");
     }
 
     // ------------------------------------------------------------------
@@ -388,9 +383,9 @@ public sealed class ApiUsabilityTests : IDisposable
         var result = BmFont.Builder().FromConfig(bmfcPath).Build();
 
         // Assert
-        result.Model.Characters.Should().HaveCountGreaterThan(0,
+        result.Model.Characters.Count.ShouldBeGreaterThan(0,
             "Builder.FromConfig should produce character entries");
-        result.Pages.Should().HaveCountGreaterThan(0,
+        result.Pages.Count.ShouldBeGreaterThan(0,
             "Builder.FromConfig should produce at least one atlas page");
     }
 
@@ -411,7 +406,7 @@ public sealed class ApiUsabilityTests : IDisposable
             .Build();
 
         // Assert — the info block should report size 48, not 32
-        result.Model.Info.Size.Should().Be(48,
+        result.Model.Info.Size.ShouldBe(48,
             "WithSize(48) after FromConfig should override the config's fontSize=32");
     }
 
@@ -433,8 +428,8 @@ public sealed class ApiUsabilityTests : IDisposable
         var tgaBytes = result.Pages[0].ToTga();
 
         // Assert
-        tgaBytes.Should().NotBeEmpty("AtlasPage.ToTga() should return non-empty TGA bytes");
-        tgaBytes.Length.Should().BeGreaterThan(18,
+        tgaBytes.ShouldNotBeEmpty();
+        tgaBytes.Length.ShouldBeGreaterThan(18,
             "TGA data should be larger than just the 18-byte header");
     }
 
@@ -456,10 +451,10 @@ public sealed class ApiUsabilityTests : IDisposable
         var ddsBytes = result.Pages[0].ToDds();
 
         // Assert
-        ddsBytes.Should().NotBeEmpty("AtlasPage.ToDds() should return non-empty DDS bytes");
-        ddsBytes[0].Should().Be(0x44, "DDS header byte 0 should be 'D'");
-        ddsBytes[1].Should().Be(0x44, "DDS header byte 1 should be 'D'");
-        ddsBytes[2].Should().Be(0x53, "DDS header byte 2 should be 'S'");
-        ddsBytes[3].Should().Be(0x20, "DDS header byte 3 should be ' '");
+        ddsBytes.ShouldNotBeEmpty();
+        ddsBytes[0].ShouldBe((byte)0x44);
+        ddsBytes[1].ShouldBe((byte)0x44);
+        ddsBytes[2].ShouldBe((byte)0x53);
+        ddsBytes[3].ShouldBe((byte)0x20);
     }
 }

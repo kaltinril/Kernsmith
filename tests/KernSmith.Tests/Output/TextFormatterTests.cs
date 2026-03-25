@@ -1,6 +1,6 @@
 using KernSmith.Output;
 using KernSmith.Output.Model;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests.Output;
 
@@ -45,7 +45,7 @@ public sealed class TextFormatterTests
         var output = _formatter.FormatText(model);
 
         // Assert
-        output.Should().StartWith("info face=");
+        output.ShouldStartWith("info face=");
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public sealed class TextFormatterTests
         var output = _formatter.FormatText(model);
 
         // Assert
-        output.Should().Contain("face=\"TestFont\"");
+        output.ShouldContain("face=\"TestFont\"");
     }
 
     [Fact]
@@ -71,10 +71,10 @@ public sealed class TextFormatterTests
         var output = _formatter.FormatText(model);
 
         // Assert
-        output.Should().Contain("bold=0");
-        output.Should().NotContain("bold=false", "booleans should be formatted as 0 or 1");
-        output.Should().Contain("unicode=1");
-        output.Should().NotContain("unicode=true", "booleans should be formatted as 0 or 1");
+        output.ShouldContain("bold=0");
+        output.ShouldNotContain("bold=false");
+        output.ShouldContain("unicode=1");
+        output.ShouldNotContain("unicode=true");
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public sealed class TextFormatterTests
         var output = _formatter.FormatText(model);
 
         // Assert
-        output.Should().Contain("padding=0,0,0,0");
+        output.ShouldContain("padding=0,0,0,0");
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public sealed class TextFormatterTests
         var output = _formatter.FormatText(model);
 
         // Assert
-        output.Should().Contain("spacing=1,1");
+        output.ShouldContain("spacing=1,1");
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public sealed class TextFormatterTests
         var output = _formatter.FormatText(model);
 
         // Assert
-        output.Should().Contain("chars count=1");
+        output.ShouldContain("chars count=1");
     }
 
     [Fact]
@@ -126,7 +126,7 @@ public sealed class TextFormatterTests
         var output = _formatter.FormatText(model);
 
         // Assert
-        output.Should().Contain("kernings count=1");
+        output.ShouldContain("kernings count=1");
     }
 
     [Fact]
@@ -139,9 +139,9 @@ public sealed class TextFormatterTests
         var output = _formatter.FormatText(model);
 
         // Assert
-        output.Should().Contain("id=65");
-        output.Should().Contain("x=10");
-        output.Should().Contain("xadvance=18");
+        output.ShouldContain("id=65");
+        output.ShouldContain("x=10");
+        output.ShouldContain("xadvance=18");
     }
 
     [Fact]
@@ -154,7 +154,7 @@ public sealed class TextFormatterTests
         var output = _formatter.FormatText(model);
 
         // Assert
-        output.Should().Contain("first=65 second=86 amount=-2");
+        output.ShouldContain("first=65 second=86 amount=-2");
     }
 
     [Fact]
@@ -174,6 +174,6 @@ public sealed class TextFormatterTests
         var output = _formatter.FormatText(model);
 
         // Assert
-        output.Should().NotContain("kernings");
+        output.ShouldNotContain("kernings");
     }
 }

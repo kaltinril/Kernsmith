@@ -1,7 +1,7 @@
 using KernSmith.Font;
 using KernSmith.Font.Tables;
 using KernSmith.Rasterizer;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests.Rasterizer;
 
@@ -75,7 +75,7 @@ public class VariableFontTests : IDisposable
         var act = () => BmFont.Generate(fontData, options);
 
         // Assert
-        act.Should().NotThrow("setting VariationAxes on a non-variable font should be a no-op");
+        Should.NotThrow(act); // setting VariationAxes on a non-variable font should be a no-op
     }
 
     [Fact]
@@ -94,9 +94,9 @@ public class VariableFontTests : IDisposable
         var result = BmFont.Generate(fontData, options);
 
         // Assert -- should produce a valid result identical to generation without axes
-        result.Model.Should().NotBeNull();
-        result.Model.Characters.Should().HaveCount(2);
-        result.Pages.Should().HaveCountGreaterThan(0);
+        result.Model.ShouldNotBeNull();
+        result.Model.Characters.Count.ShouldBe(2);
+        result.Pages.Count.ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -115,7 +115,7 @@ public class VariableFontTests : IDisposable
         var act = () => BmFont.Generate(fontData, options);
 
         // Assert
-        act.Should().NotThrow("empty VariationAxes dictionary should be a no-op");
+        Should.NotThrow(act); // empty VariationAxes dictionary should be a no-op
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public class VariableFontTests : IDisposable
         var act = () => BmFont.Generate(fontData, options);
 
         // Assert
-        act.Should().NotThrow("null VariationAxes should be the default no-op path");
+        Should.NotThrow(act); // null VariationAxes should be the default no-op path
     }
 
     [Fact]
@@ -150,7 +150,7 @@ public class VariableFontTests : IDisposable
         // Assert -- Roboto-Regular has no fvar table
         var axes = fontInfo.VariationAxes;
         if (axes != null)
-            axes.Should().BeEmpty("Roboto-Regular is not a variable font");
+            axes.ShouldBeEmpty("Roboto-Regular is not a variable font");
     }
 
     // ---------------------------------------------------------------
@@ -172,7 +172,7 @@ public class VariableFontTests : IDisposable
         var act = () => _rasterizer.SetVariationAxes(emptyAxes, userAxes);
 
         // Assert -- should not throw because it returns early when fvarAxes is empty
-        act.Should().NotThrow("empty fvar axes list should cause early return");
+        Should.NotThrow(act); // empty fvar axes list should cause early return
     }
 
     [Fact]
@@ -190,8 +190,8 @@ public class VariableFontTests : IDisposable
         var act = () => _rasterizer.SetVariationAxes(axes, userAxes);
 
         // Assert
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*Font not loaded*");
+        var ex = Should.Throw<InvalidOperationException>(act);
+        ex.Message.ShouldContain("Font not loaded");
     }
 
     // ---------------------------------------------------------------
@@ -209,11 +209,11 @@ public class VariableFontTests : IDisposable
 
         var fontInfo = fontReader.ReadFont(fontData);
 
-        fontInfo.VariationAxes.Should().NotBeNull("a variable font should have fvar axes");
-        fontInfo.VariationAxes!.Count.Should().BeGreaterThan(0);
+        fontInfo.VariationAxes.ShouldNotBeNull("a variable font should have fvar axes");
+        fontInfo.VariationAxes!.Count.ShouldBeGreaterThan(0);
 
         // Common variable fonts have at least a weight axis
-        fontInfo.VariationAxes.Should().Contain(a => a.Tag == "wght",
+        fontInfo.VariationAxes.ShouldContain(a => a.Tag == "wght",
             "most variable fonts define a weight axis");
     }
 
@@ -227,10 +227,10 @@ public class VariableFontTests : IDisposable
 
         foreach (var axis in fontInfo.VariationAxes!)
         {
-            axis.Tag.Should().HaveLength(4, "axis tags are always 4 ASCII characters");
-            axis.MinValue.Should().BeLessThanOrEqualTo(axis.DefaultValue,
+            axis.Tag.Length.ShouldBe(4);
+            axis.MinValue.ShouldBeLessThanOrEqualTo(axis.DefaultValue,
                 $"axis '{axis.Tag}' min should be <= default");
-            axis.DefaultValue.Should().BeLessThanOrEqualTo(axis.MaxValue,
+            axis.DefaultValue.ShouldBeLessThanOrEqualTo(axis.MaxValue,
                 $"axis '{axis.Tag}' default should be <= max");
         }
     }
@@ -244,12 +244,12 @@ public class VariableFontTests : IDisposable
         var fontInfo = fontReader.ReadFont(fontData);
 
         // Named instances are optional but common in variable fonts
-        fontInfo.NamedInstances.Should().NotBeNull();
+        fontInfo.NamedInstances.ShouldNotBeNull();
         if (fontInfo.NamedInstances!.Count > 0)
         {
             foreach (var instance in fontInfo.NamedInstances)
             {
-                instance.Coordinates.Should().NotBeEmpty(
+                instance.Coordinates.ShouldNotBeEmpty(
                     "each named instance should have coordinate values");
             }
         }
@@ -268,7 +268,7 @@ public class VariableFontTests : IDisposable
 
         var act = () => BmFont.Generate(fontData, options);
 
-        act.Should().NotThrow("setting a valid weight axis value should work");
+        Should.NotThrow(act); // setting a valid weight axis value should work
     }
 
     [Fact]
@@ -291,7 +291,7 @@ public class VariableFontTests : IDisposable
         var resultDefault = BmFont.Generate(fontData, optionsDefault);
         var resultEmpty = BmFont.Generate(fontData, optionsEmptyAxes);
 
-        resultDefault.Model.Characters.Should().HaveCount(resultEmpty.Model.Characters.Count);
+        resultDefault.Model.Characters.Count.ShouldBe(resultEmpty.Model.Characters.Count);
     }
 
     [Fact]
@@ -310,8 +310,7 @@ public class VariableFontTests : IDisposable
 
         var act = () => BmFont.Generate(fontData, options);
 
-        act.Should().NotThrow(
-            "unknown axis tags should be ignored (not matched to any fvar axis)");
+        Should.NotThrow(act);
     }
 
     [Fact]
@@ -329,7 +328,7 @@ public class VariableFontTests : IDisposable
         // Act -- should not throw; value will be clamped to axis max
         var act = () => BmFont.Generate(fontData, options);
 
-        act.Should().NotThrow("axis values beyond max should be clamped, not rejected");
+        Should.NotThrow(act); // axis values beyond max should be clamped, not rejected
     }
 
     [Fact]
@@ -345,7 +344,7 @@ public class VariableFontTests : IDisposable
 
         var act = () => BmFont.Generate(fontData, options);
 
-        act.Should().NotThrow("axis values below min should be clamped, not rejected");
+        Should.NotThrow(act); // axis values below min should be clamped, not rejected
     }
 
     [Fact]
@@ -380,8 +379,8 @@ public class VariableFontTests : IDisposable
         var resultBold = BmFont.Generate(fontData, optionsBold);
 
         // Both should succeed
-        resultLight.Model.Characters.Should().HaveCount(1);
-        resultBold.Model.Characters.Should().HaveCount(1);
+        resultLight.Model.Characters.Count.ShouldBe(1);
+        resultBold.Model.Characters.Count.ShouldBe(1);
 
         // The atlas pixel data should differ between light and bold weights.
         // A heavier weight fills more pixels, so the total "ink" should be different.
@@ -396,12 +395,12 @@ public class VariableFontTests : IDisposable
         if (lightPixels.SequenceEqual(boldPixels))
         {
             // FreeType did not apply variations — still verify both results are valid
-            resultLight.Pages.Should().HaveCountGreaterThan(0);
-            resultBold.Pages.Should().HaveCountGreaterThan(0);
+            resultLight.Pages.Count.ShouldBeGreaterThan(0);
+            resultBold.Pages.Count.ShouldBeGreaterThan(0);
         }
         else
         {
-            lightPixels.Should().NotEqual(boldPixels,
+            lightPixels.ShouldNotBe(boldPixels,
                 "different weight values should produce visually different rasterizations");
         }
     }
@@ -429,6 +428,6 @@ public class VariableFontTests : IDisposable
 
         var act = () => BmFont.Generate(fontData, options);
 
-        act.Should().NotThrow("setting all axes to their defaults should work");
+        Should.NotThrow(act); // setting all axes to their defaults should work
     }
 }

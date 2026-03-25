@@ -1,5 +1,5 @@
 using KernSmith.Output;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests.Atlas;
 
@@ -28,11 +28,11 @@ public class AtlasSizeQueryTests
         var info = BmFont.QueryAtlasSize(FontData, options);
 
         // Assert
-        info.Width.Should().BeGreaterThan(0, "atlas width should be positive");
-        info.Height.Should().BeGreaterThan(0, "atlas height should be positive");
-        info.GlyphCount.Should().BeGreaterThan(0, "glyph count should be positive");
-        info.PageCount.Should().BeGreaterThanOrEqualTo(1, "should have at least one page");
-        info.EstimatedEfficiency.Should().BeGreaterThan(0f, "efficiency should be positive");
+        info.Width.ShouldBeGreaterThan(0);
+        info.Height.ShouldBeGreaterThan(0);
+        info.GlyphCount.ShouldBeGreaterThan(0);
+        info.PageCount.ShouldBeGreaterThanOrEqualTo(1, "should have at least one page");
+        info.EstimatedEfficiency.ShouldBeGreaterThan(0f, "efficiency should be positive");
     }
 
     // ---------------------------------------------------------------
@@ -54,7 +54,7 @@ public class AtlasSizeQueryTests
         var info = BmFont.QueryAtlasSize(FontData, options);
 
         // Assert
-        info.Width.Should().Be(info.Height, "ForceSquare should make width equal height");
+        info.Width.ShouldBe(info.Height, "ForceSquare should make width equal height");
     }
 
     // ---------------------------------------------------------------
@@ -76,8 +76,8 @@ public class AtlasSizeQueryTests
         var info = BmFont.QueryAtlasSize(FontData, options);
 
         // Assert
-        IsPowerOfTwo(info.Width).Should().BeTrue($"width {info.Width} should be a power of two");
-        IsPowerOfTwo(info.Height).Should().BeTrue($"height {info.Height} should be a power of two");
+        IsPowerOfTwo(info.Width).ShouldBeTrue($"width {info.Width} should be a power of two");
+        IsPowerOfTwo(info.Height).ShouldBeTrue($"height {info.Height} should be a power of two");
     }
 
     // ---------------------------------------------------------------
@@ -99,8 +99,8 @@ public class AtlasSizeQueryTests
         var info = BmFont.QueryAtlasSize(FontData, options);
 
         // Assert
-        info.Width.Should().Be(512, "width should match the fixed value");
-        info.Height.Should().BeGreaterThan(0, "height should be positive");
+        info.Width.ShouldBe(512);
+        info.Height.ShouldBeGreaterThan(0);
     }
 
     // ---------------------------------------------------------------
@@ -122,8 +122,8 @@ public class AtlasSizeQueryTests
         var info = BmFont.QueryAtlasSize(FontData, options);
 
         // Assert
-        info.Width.Should().BeGreaterThan(0, "default width should be positive");
-        info.Height.Should().BeGreaterThan(0, "default height should be positive");
+        info.Width.ShouldBeGreaterThan(0);
+        info.Height.ShouldBeGreaterThan(0);
     }
 
     // ---------------------------------------------------------------
@@ -145,13 +145,13 @@ public class AtlasSizeQueryTests
         var result = BmFont.Generate(FontData, options);
 
         // Assert — glyph count should match exactly
-        queryInfo.GlyphCount.Should().Be(result.Model.Characters.Count,
+        queryInfo.GlyphCount.ShouldBe(result.Model.Characters.Count,
             "query glyph count should match actual character count");
 
         // Atlas dimensions may differ slightly due to heuristics, but should be in the same ballpark.
         // The query estimates size without packing; actual packing may fit tighter or need more space.
-        queryInfo.Width.Should().BeGreaterThan(0);
-        queryInfo.Height.Should().BeGreaterThan(0);
+        queryInfo.Width.ShouldBeGreaterThan(0);
+        queryInfo.Height.ShouldBeGreaterThan(0);
     }
 
     // ---------------------------------------------------------------
@@ -177,9 +177,9 @@ public class AtlasSizeQueryTests
         var info = BmFont.QueryAtlasSize(FontData, options);
 
         // Assert
-        info.Width.Should().Be(info.Height, "ForceSquare should make width equal height");
-        IsPowerOfTwo(info.Width).Should().BeTrue($"width {info.Width} should be a power of two");
-        IsPowerOfTwo(info.Height).Should().BeTrue($"height {info.Height} should be a power of two");
+        info.Width.ShouldBe(info.Height, "ForceSquare should make width equal height");
+        IsPowerOfTwo(info.Width).ShouldBeTrue($"width {info.Width} should be a power of two");
+        IsPowerOfTwo(info.Height).ShouldBeTrue($"height {info.Height} should be a power of two");
     }
 
     // ---------------------------------------------------------------
@@ -207,9 +207,9 @@ public class AtlasSizeQueryTests
 
         // Assert — query dimensions should match actual page dimensions exactly
         var actualPage = result.Pages[0];
-        queryInfo.Width.Should().Be(actualPage.Width,
+        queryInfo.Width.ShouldBe(actualPage.Width,
             "query width should match actual generation page width");
-        queryInfo.Height.Should().Be(actualPage.Height,
+        queryInfo.Height.ShouldBe(actualPage.Height,
             "query height should match actual generation page height");
     }
 

@@ -1,7 +1,7 @@
 using System.Text;
 using KernSmith.Output;
 using KernSmith.Output.Model;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests.Output;
 
@@ -46,10 +46,10 @@ public sealed class BinaryFormatterTests
         var output = _formatter.FormatBinary(model);
 
         // Assert
-        output[0].Should().Be(66, "first byte should be 'B'");
-        output[1].Should().Be(77, "second byte should be 'M'");
-        output[2].Should().Be(70, "third byte should be 'F'");
-        output[3].Should().Be(3, "fourth byte should be version 3");
+        output[0].ShouldBe((byte)66);
+        output[1].ShouldBe((byte)77);
+        output[2].ShouldBe((byte)70);
+        output[3].ShouldBe((byte)3);
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public sealed class BinaryFormatterTests
         var output = _formatter.FormatBinary(model);
 
         // Assert
-        output[4].Should().Be(1, "byte at index 4 should be block type 1 (info)");
+        output[4].ShouldBe((byte)1);
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public sealed class BinaryFormatterTests
         // Assert
         var fontNameBytes = Encoding.ASCII.GetBytes("TestFont");
         var outputString = Encoding.ASCII.GetString(output);
-        outputString.Should().Contain("TestFont", "binary output should contain the font name as ASCII bytes");
+        outputString.ShouldContain("TestFont");
     }
 
     [Fact]
@@ -90,6 +90,6 @@ public sealed class BinaryFormatterTests
         var output = _formatter.FormatBinary(model);
 
         // Assert
-        output.Length.Should().BeGreaterThan(20, "binary output should contain header, info, common, pages, and chars blocks");
+        output.Length.ShouldBeGreaterThan(20);
     }
 }

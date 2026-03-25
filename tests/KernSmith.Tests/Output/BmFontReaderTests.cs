@@ -1,6 +1,6 @@
 using KernSmith.Output;
 using KernSmith.Output.Model;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests.Output;
 
@@ -35,12 +35,12 @@ public sealed class KernSmithReaderTests
         var parsed = BmFontReader.ReadText(text);
 
         // Assert
-        parsed.Info.Face.Should().Be(original.Model.Info.Face);
-        parsed.Info.Size.Should().Be(original.Model.Info.Size);
-        parsed.Characters.Count.Should().Be(original.Model.Characters.Count);
-        parsed.KerningPairs.Count.Should().Be(original.Model.KerningPairs.Count);
-        parsed.Common.LineHeight.Should().Be(original.Model.Common.LineHeight);
-        parsed.Pages.Count.Should().Be(original.Model.Pages.Count);
+        parsed.Info.Face.ShouldBe(original.Model.Info.Face);
+        parsed.Info.Size.ShouldBe(original.Model.Info.Size);
+        parsed.Characters.Count.ShouldBe(original.Model.Characters.Count);
+        parsed.KerningPairs.Count.ShouldBe(original.Model.KerningPairs.Count);
+        parsed.Common.LineHeight.ShouldBe(original.Model.Common.LineHeight);
+        parsed.Pages.Count.ShouldBe(original.Model.Pages.Count);
     }
 
     [Fact]
@@ -54,12 +54,12 @@ public sealed class KernSmithReaderTests
         var parsed = BmFontReader.ReadXml(xml);
 
         // Assert
-        parsed.Info.Face.Should().Be(original.Model.Info.Face);
-        parsed.Info.Size.Should().Be(original.Model.Info.Size);
-        parsed.Characters.Count.Should().Be(original.Model.Characters.Count);
-        parsed.KerningPairs.Count.Should().Be(original.Model.KerningPairs.Count);
-        parsed.Common.LineHeight.Should().Be(original.Model.Common.LineHeight);
-        parsed.Pages.Count.Should().Be(original.Model.Pages.Count);
+        parsed.Info.Face.ShouldBe(original.Model.Info.Face);
+        parsed.Info.Size.ShouldBe(original.Model.Info.Size);
+        parsed.Characters.Count.ShouldBe(original.Model.Characters.Count);
+        parsed.KerningPairs.Count.ShouldBe(original.Model.KerningPairs.Count);
+        parsed.Common.LineHeight.ShouldBe(original.Model.Common.LineHeight);
+        parsed.Pages.Count.ShouldBe(original.Model.Pages.Count);
     }
 
     [Fact]
@@ -73,12 +73,12 @@ public sealed class KernSmithReaderTests
         var parsed = BmFontReader.ReadBinary(binary);
 
         // Assert
-        parsed.Info.Face.Should().Be(original.Model.Info.Face);
-        parsed.Info.Size.Should().Be(original.Model.Info.Size);
-        parsed.Characters.Count.Should().Be(original.Model.Characters.Count);
-        parsed.KerningPairs.Count.Should().Be(original.Model.KerningPairs.Count);
-        parsed.Common.LineHeight.Should().Be(original.Model.Common.LineHeight);
-        parsed.Pages.Count.Should().Be(original.Model.Pages.Count);
+        parsed.Info.Face.ShouldBe(original.Model.Info.Face);
+        parsed.Info.Size.ShouldBe(original.Model.Info.Size);
+        parsed.Characters.Count.ShouldBe(original.Model.Characters.Count);
+        parsed.KerningPairs.Count.ShouldBe(original.Model.KerningPairs.Count);
+        parsed.Common.LineHeight.ShouldBe(original.Model.Common.LineHeight);
+        parsed.Pages.Count.ShouldBe(original.Model.Pages.Count);
     }
 
     // ------------------------------------------------------------------
@@ -97,7 +97,7 @@ public sealed class KernSmithReaderTests
         var parsed = BmFontReader.Read(bytes);
 
         // Assert
-        parsed.Info.Face.Should().Be("Roboto");
+        parsed.Info.Face.ShouldBe("Roboto");
     }
 
     [Fact]
@@ -112,8 +112,8 @@ public sealed class KernSmithReaderTests
         var parsed = BmFontReader.Read(bytes);
 
         // Assert
-        parsed.Info.Face.Should().Be("Roboto");
-        parsed.Characters.Count.Should().Be(original.Model.Characters.Count);
+        parsed.Info.Face.ShouldBe("Roboto");
+        parsed.Characters.Count.ShouldBe(original.Model.Characters.Count);
     }
 
     [Fact]
@@ -127,7 +127,7 @@ public sealed class KernSmithReaderTests
         var parsed = BmFontReader.Read(binary);
 
         // Assert
-        parsed.Info.Face.Should().Be("Roboto");
+        parsed.Info.Face.ShouldBe("Roboto");
     }
 
     // ------------------------------------------------------------------
@@ -145,8 +145,8 @@ public sealed class KernSmithReaderTests
         var model = BmFont.LoadModel(text);
 
         // Assert
-        model.Info.Face.Should().Be("Roboto");
-        model.Characters.Count.Should().BeGreaterThan(0);
+        model.Info.Face.ShouldBe("Roboto");
+        model.Characters.Count.ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -160,8 +160,8 @@ public sealed class KernSmithReaderTests
         var model = BmFont.LoadModel(binary);
 
         // Assert
-        model.Info.Face.Should().Be("Roboto");
-        model.Characters.Count.Should().BeGreaterThan(0);
+        model.Info.Face.ShouldBe("Roboto");
+        model.Characters.Count.ShouldBeGreaterThan(0);
     }
 
     // ------------------------------------------------------------------
@@ -184,16 +184,16 @@ public sealed class KernSmithReaderTests
 
         for (int i = 0; i < originalChars.Count; i++)
         {
-            parsedChars[i].Id.Should().Be(originalChars[i].Id);
-            parsedChars[i].X.Should().Be(originalChars[i].X);
-            parsedChars[i].Y.Should().Be(originalChars[i].Y);
-            parsedChars[i].Width.Should().Be(originalChars[i].Width);
-            parsedChars[i].Height.Should().Be(originalChars[i].Height);
-            parsedChars[i].XOffset.Should().Be(originalChars[i].XOffset);
-            parsedChars[i].YOffset.Should().Be(originalChars[i].YOffset);
-            parsedChars[i].XAdvance.Should().Be(originalChars[i].XAdvance);
-            parsedChars[i].Page.Should().Be(originalChars[i].Page);
-            parsedChars[i].Channel.Should().Be(originalChars[i].Channel);
+            parsedChars[i].Id.ShouldBe(originalChars[i].Id);
+            parsedChars[i].X.ShouldBe(originalChars[i].X);
+            parsedChars[i].Y.ShouldBe(originalChars[i].Y);
+            parsedChars[i].Width.ShouldBe(originalChars[i].Width);
+            parsedChars[i].Height.ShouldBe(originalChars[i].Height);
+            parsedChars[i].XOffset.ShouldBe(originalChars[i].XOffset);
+            parsedChars[i].YOffset.ShouldBe(originalChars[i].YOffset);
+            parsedChars[i].XAdvance.ShouldBe(originalChars[i].XAdvance);
+            parsedChars[i].Page.ShouldBe(originalChars[i].Page);
+            parsedChars[i].Channel.ShouldBe(originalChars[i].Channel);
         }
     }
 
@@ -211,12 +211,12 @@ public sealed class KernSmithReaderTests
         var originalKerns = original.Model.KerningPairs.OrderBy(k => k.First).ThenBy(k => k.Second).ToList();
         var parsedKerns = parsed.KerningPairs.OrderBy(k => k.First).ThenBy(k => k.Second).ToList();
 
-        parsedKerns.Count.Should().Be(originalKerns.Count);
+        parsedKerns.Count.ShouldBe(originalKerns.Count);
         for (int i = 0; i < originalKerns.Count; i++)
         {
-            parsedKerns[i].First.Should().Be(originalKerns[i].First);
-            parsedKerns[i].Second.Should().Be(originalKerns[i].Second);
-            parsedKerns[i].Amount.Should().Be(originalKerns[i].Amount);
+            parsedKerns[i].First.ShouldBe(originalKerns[i].First);
+            parsedKerns[i].Second.ShouldBe(originalKerns[i].Second);
+            parsedKerns[i].Amount.ShouldBe(originalKerns[i].Amount);
         }
     }
 
@@ -231,10 +231,10 @@ public sealed class KernSmithReaderTests
         var parsed = BmFontReader.ReadXml(xml);
 
         // Assert
-        parsed.Common.Base.Should().Be(original.Model.Common.Base);
-        parsed.Common.ScaleW.Should().Be(original.Model.Common.ScaleW);
-        parsed.Common.ScaleH.Should().Be(original.Model.Common.ScaleH);
-        parsed.Common.Packed.Should().Be(original.Model.Common.Packed);
+        parsed.Common.Base.ShouldBe(original.Model.Common.Base);
+        parsed.Common.ScaleW.ShouldBe(original.Model.Common.ScaleW);
+        parsed.Common.ScaleH.ShouldBe(original.Model.Common.ScaleH);
+        parsed.Common.Packed.ShouldBe(original.Model.Common.Packed);
     }
 
     // ------------------------------------------------------------------
@@ -251,7 +251,8 @@ public sealed class KernSmithReaderTests
         var act = () => BmFontReader.ReadText(badText);
 
         // Assert
-        act.Should().Throw<FormatException>().WithMessage("*missing*info*");
+        var ex = Should.Throw<FormatException>(act);
+        ex.Message.ShouldContain("missing");
     }
 
     [Fact]
@@ -264,7 +265,8 @@ public sealed class KernSmithReaderTests
         var act = () => BmFontReader.ReadText(badText);
 
         // Assert
-        act.Should().Throw<FormatException>().WithMessage("*missing*common*");
+        var ex = Should.Throw<FormatException>(act);
+        ex.Message.ShouldContain("missing");
     }
 
     [Fact]
@@ -277,7 +279,8 @@ public sealed class KernSmithReaderTests
         var act = () => BmFontReader.ReadBinary(tooShort);
 
         // Assert
-        act.Should().Throw<FormatException>().WithMessage("*too short*");
+        var ex = Should.Throw<FormatException>(act);
+        ex.Message.ShouldContain("too short");
     }
 
     [Fact]
@@ -290,7 +293,8 @@ public sealed class KernSmithReaderTests
         var act = () => BmFontReader.ReadBinary(badHeader);
 
         // Assert
-        act.Should().Throw<FormatException>().WithMessage("*invalid header*");
+        var ex = Should.Throw<FormatException>(act);
+        ex.Message.ShouldContain("invalid header");
     }
 
     [Fact]
@@ -303,7 +307,8 @@ public sealed class KernSmithReaderTests
         var act = () => BmFontReader.ReadBinary(badVersion);
 
         // Assert
-        act.Should().Throw<FormatException>().WithMessage("*unsupported version*");
+        var ex = Should.Throw<FormatException>(act);
+        ex.Message.ShouldContain("unsupported version");
     }
 
     [Fact]
@@ -316,6 +321,7 @@ public sealed class KernSmithReaderTests
         var act = () => BmFontReader.ReadXml(badXml);
 
         // Assert
-        act.Should().Throw<FormatException>().WithMessage("*root element*");
+        var ex = Should.Throw<FormatException>(act);
+        ex.Message.ShouldContain("root element");
     }
 }

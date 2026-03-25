@@ -1,5 +1,5 @@
 using KernSmith.Output;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests.Integration;
 
@@ -36,16 +36,16 @@ public class CombinedBatchTests
         var result = BmFont.GenerateBatch(jobs, options);
 
         // Assert
-        result.SharedPages.Should().NotBeNull("combined mode should produce shared pages");
-        result.SharedPages!.Count.Should().BeGreaterThan(0, "shared pages should not be empty");
-        result.Results.Should().HaveCount(2);
-        result.Results[0].Success.Should().BeTrue();
-        result.Results[1].Success.Should().BeTrue();
+        result.SharedPages.ShouldNotBeNull("combined mode should produce shared pages");
+        result.SharedPages!.Count.ShouldBeGreaterThan(0);
+        result.Results.Count.ShouldBe(2);
+        result.Results[0].Success.ShouldBeTrue();
+        result.Results[1].Success.ShouldBeTrue();
 
         // Both font results should reference the shared pages (same page file names in model)
         var pages0 = result.Results[0].Result!.Model.Pages;
         var pages1 = result.Results[1].Result!.Model.Pages;
-        pages0.Select(p => p.File).Should().BeEquivalentTo(pages1.Select(p => p.File),
+        pages0.Select(p => p.File).ShouldBe(pages1.Select(p => p.File),
             "both fonts should reference the same shared page file names");
     }
 
@@ -77,14 +77,14 @@ public class CombinedBatchTests
         var result = BmFont.GenerateBatch(jobs, options);
 
         // Assert
-        result.SharedPages.Should().BeNull("separate mode should not produce shared pages");
-        result.Results.Should().HaveCount(2);
-        result.Results[0].Success.Should().BeTrue();
-        result.Results[1].Success.Should().BeTrue();
+        result.SharedPages.ShouldBeNull("separate mode should not produce shared pages");
+        result.Results.Count.ShouldBe(2);
+        result.Results[0].Success.ShouldBeTrue();
+        result.Results[1].Success.ShouldBeTrue();
 
         // Each result should have its own pages
-        result.Results[0].Result!.Pages.Should().HaveCountGreaterThan(0);
-        result.Results[1].Result!.Pages.Should().HaveCountGreaterThan(0);
+        result.Results[0].Result!.Pages.Count.ShouldBeGreaterThan(0);
+        result.Results[1].Result!.Pages.Count.ShouldBeGreaterThan(0);
     }
 
     // ---------------------------------------------------------------
@@ -115,8 +115,7 @@ public class CombinedBatchTests
         var act = () => BmFont.GenerateBatch(jobs, options);
 
         // Assert
-        act.Should().Throw<ArgumentException>(
-            "combined mode with different texture formats should throw");
+        Should.Throw<ArgumentException>(act);
     }
 
     // ---------------------------------------------------------------
@@ -150,17 +149,17 @@ public class CombinedBatchTests
         var sharedPage = result.SharedPages![0];
         foreach (var jobResult in result.Results)
         {
-            jobResult.Success.Should().BeTrue();
+            jobResult.Success.ShouldBeTrue();
             var model = jobResult.Result!.Model;
-            model.Characters.Should().HaveCountGreaterThan(0);
+            model.Characters.Count.ShouldBeGreaterThan(0);
 
             foreach (var ch in model.Characters)
             {
-                ch.X.Should().BeGreaterThanOrEqualTo(0, $"char {ch.Id} X should be >= 0");
-                ch.Y.Should().BeGreaterThanOrEqualTo(0, $"char {ch.Id} Y should be >= 0");
-                (ch.X + ch.Width).Should().BeLessThanOrEqualTo(sharedPage.Width,
+                ch.X.ShouldBeGreaterThanOrEqualTo(0, $"char {ch.Id} X should be >= 0");
+                ch.Y.ShouldBeGreaterThanOrEqualTo(0, $"char {ch.Id} Y should be >= 0");
+                (ch.X + ch.Width).ShouldBeLessThanOrEqualTo(sharedPage.Width,
                     $"char {ch.Id} should fit within atlas width");
-                (ch.Y + ch.Height).Should().BeLessThanOrEqualTo(sharedPage.Height,
+                (ch.Y + ch.Height).ShouldBeLessThanOrEqualTo(sharedPage.Height,
                     $"char {ch.Id} should fit within atlas height");
             }
         }
@@ -194,8 +193,7 @@ public class CombinedBatchTests
         var act = () => BmFont.GenerateBatch(jobs, options);
 
         // Assert
-        act.Should().Throw<InvalidOperationException>(
-            "channel packing should not be allowed with combined atlas mode");
+        Should.Throw<InvalidOperationException>(act);
     }
 
     // ---------------------------------------------------------------
@@ -232,7 +230,7 @@ public class CombinedBatchTests
         {
             var combinedCount = combinedResult.Results[i].Result!.Model.Characters.Count;
             var separateCount = separateResult.Results[i].Result!.Model.Characters.Count;
-            combinedCount.Should().Be(separateCount,
+            combinedCount.ShouldBe(separateCount,
                 $"job {i} should have the same glyph count in combined and separate modes");
         }
     }
@@ -265,8 +263,8 @@ public class CombinedBatchTests
         var result = BmFont.GenerateBatch(jobs, options);
 
         // Assert — shared pages should have non-zero pixel data (glyphs were actually rendered)
-        result.SharedPages.Should().NotBeNull();
-        result.SharedPages![0].PixelData.Should().Contain(b => b != 0,
+        result.SharedPages.ShouldNotBeNull();
+        result.SharedPages![0].PixelData.ShouldContain(b => b != 0,
             "shared page pixel data should contain rendered glyph pixels, not all zeros");
     }
 
@@ -311,7 +309,7 @@ public class CombinedBatchTests
 
                 var sameRect = c0.X == c1.X && c0.Y == c1.Y
                     && c0.Width == c1.Width && c0.Height == c1.Height;
-                sameRect.Should().BeFalse(
+                sameRect.ShouldBeFalse(
                     $"char {c0.Id} from font 0 and char {c1.Id} from font 1 should not share the exact same rectangle ({c0.X},{c0.Y} {c0.Width}x{c0.Height})");
             }
         }
