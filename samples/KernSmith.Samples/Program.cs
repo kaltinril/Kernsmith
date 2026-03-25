@@ -57,7 +57,7 @@ Console.WriteLine();
 // ============================================================
 // 3. Builder pattern — fluent API with effects
 // ============================================================
-Console.WriteLine("=== 3. Builder Pattern (outline + gradient) ===");
+Console.WriteLine("=== 3. Builder Pattern (outline + shadow + gradient) ===");
 
 var builderResult = BmFont.Builder()
     .WithFont(fontData)
@@ -65,6 +65,8 @@ var builderResult = BmFont.Builder()
     .WithCharacters(CharacterSet.Ascii)
     .WithMaxTextureSize(1024)
     .WithOutline(2, 0, 0, 0)           // 2px black outline
+    .WithShadow(offsetX: 2, offsetY: 2, blur: 3) // soft drop shadow
+    .WithHardShadow()                   // use binarized shadow silhouette
     .WithGradient(                      // top-to-bottom blue-to-white gradient
         startColor: (60, 120, 255),
         endColor: (255, 255, 255),
@@ -76,7 +78,7 @@ var builderPath = Path.Combine(outputDir, "builder-effects");
 builderResult.ToFile(builderPath, OutputFormat.Text);
 
 Console.WriteLine($"  Generated {builderResult.Model.Characters.Count} glyphs at 48px");
-Console.WriteLine($"  Effects: 2px outline + vertical gradient");
+Console.WriteLine($"  Effects: 2px outline + hard shadow + vertical gradient");
 Console.WriteLine($"  Written to: {builderPath}.fnt + .png");
 Console.WriteLine();
 

@@ -11,7 +11,7 @@ The application follows the MVVM pattern using GUM's built-in `ViewModel` base c
 | **ViewModels** | `ViewModels/` | Observable state and commands — `MainViewModel` orchestrates child VMs (`FontConfigViewModel`, `AtlasConfigViewModel`, `EffectsViewModel`, `PreviewViewModel`, `CharacterGridViewModel`, `StatusBarViewModel`) |
 | **Layout** | `Layout/` | GUM UI panels and dialogs — bind to ViewModels via `PropertyChanged` and `SetBinding` |
 | **Services** | `Services/` | Non-UI logic — font discovery, bitmap font generation, project save/load, session persistence, file dialogs |
-| **Models** | `Models/` | Data transfer objects — `GenerationRequest`, `EnginePreset`, `PreviewPage`, `UnicodeBlock`, enums |
+| **Models** | `Models/` | Data transfer objects — `GenerationRequest`, `PreviewPage`, `UnicodeBlock`, `SystemFontGroup`, enums |
 | **Styling** | `Styling/` | `Theme` color constants for the dark IDE-inspired palette |
 
 ### Key Classes
