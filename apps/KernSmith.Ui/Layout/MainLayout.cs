@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Gum.Wireframe;
 using MonoGameGum;
 using MonoGameGum.GueDeriving;
+using Gum.Forms.DefaultVisuals.V3;
 
 namespace KernSmith.Ui.Layout;
 
@@ -40,6 +41,9 @@ public class MainLayout : ContainerRuntime
     private void CreateMenu()
     {
         var menu = new Menu();
+        var visual = (MenuVisual)menu.Visual;
+        // separate out the menu items a little:
+        visual.InnerPanelInstance.StackSpacing = 10;
 
         // File menu
         var fileItem = new MenuItem();
@@ -142,6 +146,7 @@ public class MainLayout : ContainerRuntime
         _fontConfigPanel = new FontConfigPanel(_viewModel, _viewModel.FontConfig, _viewModel.AtlasConfig);
         var fontConfigPanel = _fontConfigPanel;
         fontConfigPanel.Width = DefaultPanelWidth;
+        fontConfigPanel.Visual.MinWidth = 210;
         fontConfigPanel.HeightUnits = DimensionUnitType.RelativeToParent;
         fontConfigPanel.Height = 0;
         AddPanelBackground(fontConfigPanel, Theme.Panel);
