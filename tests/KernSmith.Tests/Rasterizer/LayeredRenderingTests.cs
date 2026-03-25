@@ -1,5 +1,5 @@
 using KernSmith.Rasterizer;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests.Rasterizer;
 
@@ -33,8 +33,8 @@ public class LayeredRenderingTests
 
         // Assert -- output should be RGBA (4 bytes per pixel)
         var page = result.Pages[0];
-        page.Format.Should().Be(PixelFormat.Rgba32, "gradient output must be RGBA");
-        page.PixelData.Length.Should().Be(page.Width * page.Height * 4);
+        page.Format.ShouldBe(PixelFormat.Rgba32, "gradient output must be RGBA");
+        page.PixelData.Length.ShouldBe(page.Width * page.Height * 4);
     }
 
     [Fact]
@@ -78,9 +78,7 @@ public class LayeredRenderingTests
         // The gradient goes from red (top) to blue (bottom), so we expect
         // the top to be more red and the bottom to be more blue.
         var colorDiffers = (topR != bottomR) || (topB != bottomB);
-        colorDiffers.Should().BeTrue(
-            "gradient should produce different colors at top ({0},{1}) vs bottom ({2},{3})",
-            topR, topB, bottomR, bottomB);
+        colorDiffers.ShouldBeTrue();
     }
 
     #endregion
@@ -111,9 +109,9 @@ public class LayeredRenderingTests
         var charWithout = resultWithout.Model.Characters.First(c => c.Id == 65);
         var charWith = resultWith.Model.Characters.First(c => c.Id == 65);
 
-        charWith.Width.Should().BeGreaterThan(charWithout.Width,
+        charWith.Width.ShouldBeGreaterThan(charWithout.Width,
             "outlined glyph should be wider than non-outlined glyph");
-        charWith.Height.Should().BeGreaterThan(charWithout.Height,
+        charWith.Height.ShouldBeGreaterThan(charWithout.Height,
             "outlined glyph should be taller than non-outlined glyph");
     }
 
@@ -155,12 +153,12 @@ public class LayeredRenderingTests
 
         // Assert -- RGBA format
         var page = combinedResult.Pages[0];
-        page.Format.Should().Be(PixelFormat.Rgba32, "combined gradient+outline must be RGBA");
+        page.Format.ShouldBe(PixelFormat.Rgba32, "combined gradient+outline must be RGBA");
 
         // Assert -- wider than gradient-only because outline adds padding
         var gradOnly = gradientOnlyResult.Model.Characters.First(c => c.Id == 65);
         var combined = combinedResult.Model.Characters.First(c => c.Id == 65);
-        combined.Width.Should().BeGreaterThan(gradOnly.Width,
+        combined.Width.ShouldBeGreaterThan(gradOnly.Width,
             "gradient+outline glyph should be wider than gradient-only glyph");
 
         // Assert -- contains gradient colors (not plain white)
@@ -177,9 +175,7 @@ public class LayeredRenderingTests
 
         // The pixel should not be pure white (255,255,255) -- it should show gradient color
         var isNotWhite = r != 255 || g != 255 || b != 255;
-        (isNotWhite && a > 0).Should().BeTrue(
-            "body pixels should show gradient color, not white (got R={0} G={1} B={2} A={3})",
-            r, g, b, a);
+        (isNotWhite && a > 0).ShouldBeTrue();
     }
 
     #endregion
@@ -212,8 +208,8 @@ public class LayeredRenderingTests
         var page1 = result1.Pages[0].PixelData;
         var page2 = result2.Pages[0].PixelData;
 
-        page1.Length.Should().Be(page2.Length, "atlas sizes should match");
-        page1.Should().BeEquivalentTo(page2, "identical settings must produce identical output");
+        page1.Length.ShouldBe(page2.Length, "atlas sizes should match");
+        page1.ShouldBe(page2, "identical settings must produce identical output");
     }
 
     #endregion
@@ -246,9 +242,9 @@ public class LayeredRenderingTests
         var charWith = resultWith.Model.Characters.First(c => c.Id == 65);
 
         // Shadow offset expands the glyph dimensions
-        charWith.Width.Should().BeGreaterThan(charWithout.Width,
+        charWith.Width.ShouldBeGreaterThan(charWithout.Width,
             "shadowed glyph should be wider than unshadowed glyph");
-        charWith.Height.Should().BeGreaterThan(charWithout.Height,
+        charWith.Height.ShouldBeGreaterThan(charWithout.Height,
             "shadowed glyph should be taller than unshadowed glyph");
     }
 
@@ -298,7 +294,7 @@ public class LayeredRenderingTests
         });
 
         // Assert -- RGBA output
-        allEffects.Pages[0].Format.Should().Be(PixelFormat.Rgba32);
+        allEffects.Pages[0].Format.ShouldBe(PixelFormat.Rgba32);
 
         var allChar = allEffects.Model.Characters.First(c => c.Id == 65);
         var gradChar = gradientOnly.Model.Characters.First(c => c.Id == 65);
@@ -306,18 +302,18 @@ public class LayeredRenderingTests
         var shadowChar = shadowOnly.Model.Characters.First(c => c.Id == 65);
 
         // Combined glyph should be at least as large as any single effect
-        allChar.Width.Should().BeGreaterThanOrEqualTo(gradChar.Width,
+        allChar.Width.ShouldBeGreaterThanOrEqualTo(gradChar.Width,
             "combined glyph should be at least as wide as gradient-only");
-        allChar.Width.Should().BeGreaterThanOrEqualTo(outChar.Width,
+        allChar.Width.ShouldBeGreaterThanOrEqualTo(outChar.Width,
             "combined glyph should be at least as wide as outline-only");
-        allChar.Width.Should().BeGreaterThanOrEqualTo(shadowChar.Width,
+        allChar.Width.ShouldBeGreaterThanOrEqualTo(shadowChar.Width,
             "combined glyph should be at least as wide as shadow-only");
 
-        allChar.Height.Should().BeGreaterThanOrEqualTo(gradChar.Height,
+        allChar.Height.ShouldBeGreaterThanOrEqualTo(gradChar.Height,
             "combined glyph should be at least as tall as gradient-only");
-        allChar.Height.Should().BeGreaterThanOrEqualTo(outChar.Height,
+        allChar.Height.ShouldBeGreaterThanOrEqualTo(outChar.Height,
             "combined glyph should be at least as tall as outline-only");
-        allChar.Height.Should().BeGreaterThanOrEqualTo(shadowChar.Height,
+        allChar.Height.ShouldBeGreaterThanOrEqualTo(shadowChar.Height,
             "combined glyph should be at least as tall as shadow-only");
     }
 
@@ -340,9 +336,9 @@ public class LayeredRenderingTests
 
         // Assert -- default output should be grayscale (1 byte per pixel)
         var page = result.Pages[0];
-        page.Format.Should().Be(PixelFormat.Grayscale8,
+        page.Format.ShouldBe(PixelFormat.Grayscale8,
             "default rendering without effects should be grayscale");
-        page.PixelData.Length.Should().Be(page.Width * page.Height);
+        page.PixelData.Length.ShouldBe(page.Width * page.Height);
     }
 
     #endregion
@@ -367,13 +363,13 @@ public class LayeredRenderingTests
         });
 
         // Assert
-        customProcessor.WasCalled.Should().BeTrue(
+        customProcessor.WasCalled.ShouldBeTrue(
             "custom post-processor should run after compositor");
-        customProcessor.ProcessedCount.Should().BeGreaterThan(0,
+        customProcessor.ProcessedCount.ShouldBeGreaterThan(0,
             "custom post-processor should have processed at least one glyph");
 
         // The custom processor should have received RGBA data (from gradient compositor)
-        customProcessor.LastSeenFormat.Should().Be(PixelFormat.Rgba32,
+        customProcessor.LastSeenFormat.ShouldBe(PixelFormat.Rgba32,
             "custom processor should receive RGBA data from compositor output");
     }
 
@@ -423,9 +419,9 @@ public class LayeredRenderingTests
         var charWithout = resultWithout.Model.Characters.First(c => c.Id == 65);
         var charWith = resultWith.Model.Characters.First(c => c.Id == 65);
 
-        charWith.Width.Should().BeGreaterThan(charWithout.Width,
+        charWith.Width.ShouldBeGreaterThan(charWithout.Width,
             "legacy OutlinePostProcessor should still produce wider glyphs via compositor");
-        charWith.Height.Should().BeGreaterThan(charWithout.Height,
+        charWith.Height.ShouldBeGreaterThan(charWithout.Height,
             "legacy OutlinePostProcessor should still produce taller glyphs via compositor");
     }
 
@@ -450,20 +446,20 @@ public class LayeredRenderingTests
             .Build();
 
         // Assert
-        result.Model.Should().NotBeNull();
-        result.Model.Characters.Should().HaveCount(1);
-        result.Pages.Should().HaveCountGreaterThan(0);
+        result.Model.ShouldNotBeNull();
+        result.Model.Characters.Count.ShouldBe(1);
+        result.Pages.Count.ShouldBeGreaterThan(0);
 
         // Output must be RGBA (effects produce RGBA)
-        result.Pages[0].Format.Should().Be(PixelFormat.Rgba32);
+        result.Pages[0].Format.ShouldBe(PixelFormat.Rgba32);
 
         // Glyph should have positive dimensions
         var charA = result.Model.Characters.First(c => c.Id == 65);
-        charA.Width.Should().BeGreaterThan(0);
-        charA.Height.Should().BeGreaterThan(0);
+        charA.Width.ShouldBeGreaterThan(0);
+        charA.Height.ShouldBeGreaterThan(0);
 
         // Atlas should contain rendered pixels
-        result.Pages[0].PixelData.Any(b => b != 0).Should().BeTrue(
+        result.Pages[0].PixelData.Any(b => b != 0).ShouldBeTrue(
             "builder-generated atlas with all effects should contain rendered pixels");
     }
 

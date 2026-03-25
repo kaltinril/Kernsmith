@@ -49,6 +49,14 @@ public class PreviewPanel : Panel
     private ContainerRuntime? _sampleTextContainer;
     private TextBox? _sampleTextBox;
     private List<Texture2D>? _atlasPageTextures;
+    private Slider? _sampleZoomSlider;
+    private Label? _sampleZoomValueLabel;
+    private float _sampleZoomLevel = 1.0f;
+
+    // Sample text pan state
+    private float _samplePanOffsetX, _samplePanOffsetY;
+    private int _samplePanStartX, _samplePanStartY;
+    private bool _isSamplePanning;
 
     // UI scale controls
     private Label? _uiScaleLabel;
@@ -68,6 +76,7 @@ public class PreviewPanel : Panel
     private int _panStartX, _panStartY;
     private float _panOffsetX, _panOffsetY;
     private float _baseSpriteX = 10, _baseSpriteY = AtlasContentY;
+    private bool _hasUserZoom;
 
     public PreviewPanel(PreviewViewModel preview, CharacterGridViewModel characterGrid, GraphicsDevice graphicsDevice)
     {
@@ -224,7 +233,7 @@ public class PreviewPanel : Panel
 
         _zoomSlider = new Slider();
         _zoomSlider.Minimum = 25;
-        _zoomSlider.Maximum = 400;
+        _zoomSlider.Maximum = 1000;
         _zoomSlider.Value = 100;
         _zoomSlider.Width = 120;
         _zoomSlider.TicksFrequency = 25;
@@ -241,6 +250,7 @@ public class PreviewPanel : Panel
             _preview.ZoomLevel = pct / 100f;
             if (_zoomValueLabel != null)
                 _zoomValueLabel.Text = $"{pct}%";
+            _hasUserZoom = true;
             ApplyZoom();
         };
 
@@ -433,12 +443,13 @@ public class PreviewPanel : Panel
         // Dispose the old texture AFTER creating the new one
         oldTexture?.Dispose();
 
-        // Auto-fit: calculate zoom so atlas fits within available space
-        AutoFitZoom(texture.Width, texture.Height);
+        // Auto-fit on first display only; preserve user's zoom on regenerate
+        if (!_hasUserZoom)
+            AutoFitZoom(texture.Width, texture.Height);
 
         var zoom = _preview.ZoomLevel;
-        var scaledWidth = (int)(texture.Width * zoom);
-        var scaledHeight = (int)(texture.Height * zoom);
+        var scaledWidth = (int)Math.Round(texture.Width * zoom);
+        var scaledHeight = (int)Math.Round(texture.Height * zoom);
 
         // Show checkered background behind atlas (sized to match)
         if (_checkerSprite != null)
@@ -488,8 +499,8 @@ public class PreviewPanel : Panel
 
         var zoom = _preview.ZoomLevel;
         var texture = _atlasSprite.Texture;
-        var scaledWidth = (int)(texture.Width * zoom);
-        var scaledHeight = (int)(texture.Height * zoom);
+        var scaledWidth = (int)Math.Round(texture.Width * zoom);
+        var scaledHeight = (int)Math.Round(texture.Height * zoom);
 
         _atlasSprite.Width = scaledWidth;
         _atlasSprite.Height = scaledHeight;
@@ -500,6 +511,12 @@ public class PreviewPanel : Panel
             _checkerSprite.Height = scaledHeight;
         }
 
+    }
+
+    private void ApplySampleZoom()
+    {
+        if (_preview.HasResult)
+            RenderSampleText();
     }
 
     private void ShowPlaceholder()
@@ -546,6 +563,43 @@ public class PreviewPanel : Panel
         };
         inputRow.AddChild(_sampleTextBox);
 
+        // Zoom toolbar row
+        var sampleToolbar = new StackPanel();
+        sampleToolbar.Orientation = Orientation.Horizontal;
+        sampleToolbar.Spacing = 8;
+        sampleToolbar.X = 8;
+        sampleToolbar.Y = 36;
+        sampleToolbar.Height = 28;
+        sampleToolbar.WidthUnits = DimensionUnitType.RelativeToParent;
+        sampleToolbar.Width = -16;
+        _sampleTextContent.AddChild(sampleToolbar);
+
+        var sampleZoomLabel = new Label();
+        sampleZoomLabel.Text = "Zoom:";
+        sampleToolbar.AddChild(sampleZoomLabel);
+
+        _sampleZoomSlider = new Slider();
+        _sampleZoomSlider.Minimum = 25;
+        _sampleZoomSlider.Maximum = 1000;
+        _sampleZoomSlider.Value = 100;
+        _sampleZoomSlider.Width = 120;
+        _sampleZoomSlider.TicksFrequency = 25;
+        _sampleZoomSlider.IsSnapToTickEnabled = true;
+        sampleToolbar.AddChild(_sampleZoomSlider);
+
+        _sampleZoomValueLabel = new Label();
+        _sampleZoomValueLabel.Text = "100%";
+        sampleToolbar.AddChild(_sampleZoomValueLabel);
+
+        _sampleZoomSlider.ValueChanged += (_, _) =>
+        {
+            var scale = (int)_sampleZoomSlider.Value / 100f;
+            _sampleZoomLevel = scale;
+            if (_sampleZoomValueLabel != null)
+                _sampleZoomValueLabel.Text = $"{(int)_sampleZoomSlider.Value}%";
+            ApplySampleZoom();
+        };
+
         // Placeholder when no result is available
         var samplePlaceholder = new Label();
         samplePlaceholder.Text = "Generate a bitmap font first to preview sample text";
@@ -556,7 +610,7 @@ public class PreviewPanel : Panel
         _sampleTextContainer = new ContainerRuntime();
         _sampleTextContainer.Visible = false;
         _sampleTextContainer.X = 8;
-        _sampleTextContainer.Y = 44;
+        _sampleTextContainer.Y = 72;
         _sampleTextContainer.WidthUnits = DimensionUnitType.RelativeToChildren;
         _sampleTextContainer.HeightUnits = DimensionUnitType.RelativeToChildren;
         _sampleTextContent.Visual.Children.Add(_sampleTextContainer);
@@ -607,16 +661,19 @@ public class PreviewPanel : Panel
                 using var stream = new MemoryStream(page.PngData);
                 var tex = Texture2D.FromStream(_graphicsDevice, stream);
 
-                // Grayscale atlas: MonoGame loads as (L,L,L,255). Convert to (255,255,255,L)
-                // so luminance becomes alpha and black background is transparent.
-                var pixels = new Color[tex.Width * tex.Height];
-                tex.GetData(pixels);
-                for (int i = 0; i < pixels.Length; i++)
+                if (!page.IsRgba)
                 {
-                    var l = pixels[i].R;
-                    pixels[i] = new Color(l, l, l, l);
+                    // Grayscale atlas: MonoGame loads as (L,L,L,255). Convert to (L,L,L,L)
+                    // so luminance becomes alpha and black background is transparent.
+                    var pixels = new Color[tex.Width * tex.Height];
+                    tex.GetData(pixels);
+                    for (int i = 0; i < pixels.Length; i++)
+                    {
+                        var l = pixels[i].R;
+                        pixels[i] = new Color(l, l, l, l);
+                    }
+                    tex.SetData(pixels);
                 }
-                tex.SetData(pixels);
 
                 _atlasPageTextures.Add(tex);
             }
@@ -624,6 +681,7 @@ public class PreviewPanel : Panel
 
         if (_atlasPageTextures.Count == 0) return;
 
+        var zoom = _sampleZoomLevel;
         var lineHeight = model.Common.LineHeight;
         var padLeft = model.Info.Padding.Left;
         var padTop = model.Info.Padding.Up;
@@ -656,16 +714,16 @@ public class PreviewPanel : Panel
                     glyph.TextureWidth = entry.Width;
                     glyph.TextureHeight = entry.Height;
                     glyph.TextureAddress = TextureAddress.Custom;
-                    glyph.X = cursorX + entry.XOffset;
-                    glyph.Y = cursorY + entry.YOffset;
+                    glyph.X = (cursorX + entry.XOffset) * zoom;
+                    glyph.Y = (cursorY + entry.YOffset) * zoom;
                     glyph.WidthUnits = DimensionUnitType.Absolute;
                     glyph.HeightUnits = DimensionUnitType.Absolute;
-                    glyph.Width = entry.Width;
-                    glyph.Height = entry.Height;
+                    glyph.Width = entry.Width * zoom;
+                    glyph.Height = entry.Height * zoom;
                     _sampleTextContainer.Children.Add(glyph);
 
-                    maxRight = Math.Max(maxRight, cursorX + entry.XOffset + entry.Width);
-                    maxBottom = Math.Max(maxBottom, cursorY + entry.YOffset + entry.Height);
+                    maxRight = Math.Max(maxRight, (int)((cursorX + entry.XOffset + entry.Width) * zoom));
+                    maxBottom = Math.Max(maxBottom, (int)((cursorY + entry.YOffset + entry.Height) * zoom));
                 }
 
                 cursorX += entry.XAdvance;
@@ -693,18 +751,20 @@ public class PreviewPanel : Panel
         }
     }
 
-    /// <summary>Increases atlas zoom by 25%, clamped to slider range.</summary>
+    /// <summary>Increases zoom by 25%, clamped to the active tab's slider range.</summary>
     public void ZoomIn()
     {
-        if (_zoomSlider != null)
-            _zoomSlider.Value = Math.Clamp(_zoomSlider.Value + 25, _zoomSlider.Minimum, _zoomSlider.Maximum);
+        var slider = _activeTab == ActiveTab.SampleText ? _sampleZoomSlider : _zoomSlider;
+        if (slider != null)
+            slider.Value = Math.Clamp(slider.Value + 25, slider.Minimum, slider.Maximum);
     }
 
-    /// <summary>Decreases atlas zoom by 25%, clamped to slider range.</summary>
+    /// <summary>Decreases zoom by 25%, clamped to the active tab's slider range.</summary>
     public void ZoomOut()
     {
-        if (_zoomSlider != null)
-            _zoomSlider.Value = Math.Clamp(_zoomSlider.Value - 25, _zoomSlider.Minimum, _zoomSlider.Maximum);
+        var slider = _activeTab == ActiveTab.SampleText ? _sampleZoomSlider : _zoomSlider;
+        if (slider != null)
+            slider.Value = Math.Clamp(slider.Value - 25, slider.Minimum, slider.Maximum);
     }
 
     /// <summary>Updates the UI scale label in the tab bar to reflect the current scale percentage.</summary>
@@ -719,17 +779,20 @@ public class PreviewPanel : Panel
     /// </summary>
     public void UpdateInput()
     {
-        if (_activeTab != ActiveTab.Preview || !_preview.HasResult) return;
+        if (_activeTab != ActiveTab.Preview && _activeTab != ActiveTab.SampleText) return;
+        if (!_preview.HasResult) return;
 
         var mouse = Microsoft.Xna.Framework.Input.Mouse.GetState();
+
+        // Determine which slider to use based on active tab
+        var activeSlider = _activeTab == ActiveTab.Preview ? _zoomSlider : _sampleZoomSlider;
 
         // --- Scroll wheel zoom ---
         var scrollDelta = mouse.ScrollWheelValue - _previousScrollValue;
         _previousScrollValue = mouse.ScrollWheelValue;
 
-        if (scrollDelta != 0 && _zoomSlider != null)
+        if (scrollDelta != 0 && activeSlider != null)
         {
-            // Check if cursor is over the preview area (rough bounds check)
             var panelLeft = this.Visual.AbsoluteLeft;
             var panelTop = this.Visual.AbsoluteTop;
             var panelRight = panelLeft + this.Visual.GetAbsoluteWidth();
@@ -739,44 +802,78 @@ public class PreviewPanel : Panel
                 mouse.Y >= panelTop && mouse.Y <= panelBottom)
             {
                 var step = scrollDelta > 0 ? 25 : -25;
-                var newVal = Math.Clamp(_zoomSlider.Value + step, _zoomSlider.Minimum, _zoomSlider.Maximum);
-                _zoomSlider.Value = newVal;
+                var newVal = Math.Clamp(activeSlider.Value + step, activeSlider.Minimum, activeSlider.Maximum);
+                activeSlider.Value = newVal;
             }
         }
 
-        // --- Middle-click pan ---
-        if (mouse.MiddleButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed)
+        // --- Middle-click pan (atlas preview) ---
+        if (_activeTab == ActiveTab.Preview)
         {
-            if (!_isPanning)
+            if (mouse.MiddleButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed)
             {
-                _isPanning = true;
-                _panStartX = mouse.X;
-                _panStartY = mouse.Y;
+                if (!_isPanning)
+                {
+                    _isPanning = true;
+                    _panStartX = mouse.X;
+                    _panStartY = mouse.Y;
+                }
+                else
+                {
+                    var dx = mouse.X - _panStartX;
+                    var dy = mouse.Y - _panStartY;
+                    _panStartX = mouse.X;
+                    _panStartY = mouse.Y;
+                    _panOffsetX += dx;
+                    _panOffsetY += dy;
+
+                    if (_atlasSprite != null)
+                    {
+                        _atlasSprite.X = (float)Math.Round(_baseSpriteX + _panOffsetX);
+                        _atlasSprite.Y = (float)Math.Round(_baseSpriteY + _panOffsetY);
+                    }
+                    if (_checkerSprite != null)
+                    {
+                        _checkerSprite.X = (float)Math.Round(_baseSpriteX + _panOffsetX);
+                        _checkerSprite.Y = (float)Math.Round(_baseSpriteY + _panOffsetY);
+                    }
+                }
             }
             else
             {
-                var dx = mouse.X - _panStartX;
-                var dy = mouse.Y - _panStartY;
-                _panStartX = mouse.X;
-                _panStartY = mouse.Y;
-                _panOffsetX += dx;
-                _panOffsetY += dy;
-
-                if (_atlasSprite != null)
-                {
-                    _atlasSprite.X = _baseSpriteX + _panOffsetX;
-                    _atlasSprite.Y = _baseSpriteY + _panOffsetY;
-                }
-                if (_checkerSprite != null)
-                {
-                    _checkerSprite.X = _baseSpriteX + _panOffsetX;
-                    _checkerSprite.Y = _baseSpriteY + _panOffsetY;
-                }
+                _isPanning = false;
             }
         }
-        else
+        else if (_activeTab == ActiveTab.SampleText)
         {
-            _isPanning = false;
+            if (mouse.MiddleButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed)
+            {
+                if (!_isSamplePanning)
+                {
+                    _isSamplePanning = true;
+                    _samplePanStartX = mouse.X;
+                    _samplePanStartY = mouse.Y;
+                }
+                else
+                {
+                    var dx = mouse.X - _samplePanStartX;
+                    var dy = mouse.Y - _samplePanStartY;
+                    _samplePanStartX = mouse.X;
+                    _samplePanStartY = mouse.Y;
+                    _samplePanOffsetX += dx;
+                    _samplePanOffsetY += dy;
+
+                    if (_sampleTextContainer != null)
+                    {
+                        _sampleTextContainer.X = 8 + _samplePanOffsetX;
+                        _sampleTextContainer.Y = 72 + _samplePanOffsetY;
+                    }
+                }
+            }
+            else
+            {
+                _isSamplePanning = false;
+            }
         }
     }
 }

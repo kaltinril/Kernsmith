@@ -4,6 +4,7 @@
 
 - **NEVER read, open, or access any `.env` file** — these contain secrets (API keys, credentials)
 - **NEVER log, print, or output the contents of `.env` files**
+- **NEVER read, grep, or explore `.dll` files** (including NuGet cache) — use `reference/` docs or WebFetch for API questions
 
 ## Project Purpose
 

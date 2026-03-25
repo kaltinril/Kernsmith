@@ -16,4 +16,6 @@ public class PreviewPage
     public int Height { get; init; }
     /// <summary>Display label, e.g. "Page 0 (1024x1024)".</summary>
     public string Label { get; init; } = "";
+    /// <summary>Whether this page uses RGBA32 format (true) or grayscale (false).</summary>
+    public bool IsRgba { get; init; }
 }

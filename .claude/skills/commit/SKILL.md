@@ -48,6 +48,10 @@ If the changes being committed implement work from a specific phase, update the 
 - `Partial` — some deliverables complete, others deferred
 - `Complete` — all deliverables done
 
+**When a phase is marked Complete:**
+- Move its plan doc from `plan/` to `plan/done/` (e.g., `git mv plan/phase-77b-... plan/done/phase-77b-...`)
+- Update the link in `plan/master-plan.md` to point to `done/` (e.g., `(done/phase-77b-...)`)
+
 Stage the updated plan files alongside the code changes so everything ships in one commit.
 
 ### 3. Analyze and draft the commit message

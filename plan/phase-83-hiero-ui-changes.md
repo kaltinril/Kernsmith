@@ -24,7 +24,7 @@ Key files:
 
 ### 1. File Browser Dialog — Load Project
 
-**File:** `MainViewModel.cs` (lines ~388–393)
+**File:** `MainViewModel.cs` (lines ~401–404)
 
 Current:
 ```csharp
@@ -54,7 +54,7 @@ Options:
 
 **File:** `ProjectService.cs`
 
-**`SaveProject()` (lines ~15–35):**
+**`SaveProject()` (lines ~16–34):**
 
 Current:
 ```csharp
@@ -68,7 +68,7 @@ var config = BmfcConfig.FromOptions(options);
 ConfigFormatFactory.WriteConfig(config, path);  // auto-detects from extension
 ```
 
-**`LoadProject()` (lines ~40–115):**
+**`LoadProject()` (lines ~40+):**
 
 Current:
 ```csharp
@@ -82,7 +82,7 @@ var config = ConfigFormatFactory.ReadConfig(path);  // auto-detects from extensi
 
 ### 4. Drag-and-Drop Handler
 
-**File:** `KernSmithGame.cs` (lines ~110–121)
+**File:** `KernSmithGame.cs` (lines ~110–121, inside `Window.FileDrop` handler)
 
 Current:
 ```csharp
@@ -98,7 +98,7 @@ if (ext is ".bmfc" or ".hiero")
 
 ### 5. Save Project — Preserve Format
 
-**File:** `MainViewModel.cs` (lines ~356–369)
+**File:** `MainViewModel.cs` (lines ~377–379)
 
 Current:
 ```csharp
@@ -107,11 +107,13 @@ new SaveDialog("myproject", "bmfc")
 
 Updated — detect format from current project path:
 ```csharp
-var currentExt = CurrentProjectPath != null
-    ? Path.GetExtension(CurrentProjectPath).TrimStart('.')
+var currentExt = _projectService.CurrentProjectPath != null
+    ? Path.GetExtension(_projectService.CurrentProjectPath).TrimStart('.')
     : "bmfc";
 new SaveDialog("myproject", currentExt)
 ```
+
+> **Note:** `CurrentProjectPath` lives on `ProjectService`, not on `MainViewModel` directly.
 
 This preserves the format when re-saving: if you opened a `.hiero` file, Save will write `.hiero`.
 
@@ -168,3 +170,7 @@ The `LastProjectPath` already stores the full path including extension, so forma
 - **Modified code**: ~20–30 lines across 3–4 files
 - **Risk**: Very low — mostly string/extension changes
 - **Dependencies**: Phase 82 (`ConfigFormatFactory` must exist)
+
+---
+
+> **Plan review 2026-03-24**: Updated line number references for `MainViewModel.cs` (FileExtensionFilter at ~401-404, SaveDialog at ~377-379). Corrected `CurrentProjectPath` reference — it lives on `ProjectService`, not `MainViewModel`. Updated `ProjectService` line references.

@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests.Cli;
 
@@ -63,10 +63,10 @@ public class CliTests : IDisposable
         var (exitCode, stdout, _) = RunCli();
 
         // Assert
-        exitCode.Should().Be(0);
-        stdout.Should().Contain("Usage:");
-        stdout.Should().Contain("generate");
-        stdout.Should().Contain("list-fonts");
+        exitCode.ShouldBe(0);
+        stdout.ShouldContain("Usage:");
+        stdout.ShouldContain("generate");
+        stdout.ShouldContain("list-fonts");
     }
 
     [Fact]
@@ -76,11 +76,11 @@ public class CliTests : IDisposable
         var (exitCode, stdout, _) = RunCli("--help");
 
         // Assert
-        exitCode.Should().Be(0);
-        stdout.Should().Contain("Usage:");
-        stdout.Should().Contain("--font");
-        stdout.Should().Contain("--size");
-        stdout.Should().Contain("--format");
+        exitCode.ShouldBe(0);
+        stdout.ShouldContain("Usage:");
+        stdout.ShouldContain("--font");
+        stdout.ShouldContain("--size");
+        stdout.ShouldContain("--format");
     }
 
     // -- Error handling --
@@ -92,8 +92,8 @@ public class CliTests : IDisposable
         var (exitCode, _, stderr) = RunCli("bogus");
 
         // Assert
-        exitCode.Should().Be(1);
-        stderr.Should().Contain("Unknown command: bogus");
+        exitCode.ShouldBe(1);
+        stderr.ShouldContain("Unknown command: bogus");
     }
 
     [Fact]
@@ -103,8 +103,8 @@ public class CliTests : IDisposable
         var (exitCode, _, stderr) = RunCli("generate", "-s", "32");
 
         // Assert
-        exitCode.Should().Be(1);
-        stderr.Should().Contain("--font is required");
+        exitCode.ShouldBe(1);
+        stderr.ShouldContain("--font is required");
     }
 
     [Fact]
@@ -114,8 +114,8 @@ public class CliTests : IDisposable
         var (exitCode, _, stderr) = RunCli("generate", "-f", FontPath);
 
         // Assert
-        exitCode.Should().Be(1);
-        stderr.Should().Contain("--size is required");
+        exitCode.ShouldBe(1);
+        stderr.ShouldContain("--size is required");
     }
 
     [Fact]
@@ -125,8 +125,8 @@ public class CliTests : IDisposable
         var (exitCode, _, stderr) = RunCli("generate", "-f", "/no/such/font.ttf", "-s", "32");
 
         // Assert
-        exitCode.Should().Be(1);
-        stderr.Should().Contain("Font file not found");
+        exitCode.ShouldBe(1);
+        stderr.ShouldContain("Font file not found");
     }
 
     [Fact]
@@ -136,8 +136,8 @@ public class CliTests : IDisposable
         var (exitCode, _, stderr) = RunCli("generate", "--bogus-flag");
 
         // Assert
-        exitCode.Should().Be(1);
-        stderr.Should().Contain("Unknown option: --bogus-flag");
+        exitCode.ShouldBe(1);
+        stderr.ShouldContain("Unknown option: --bogus-flag");
     }
 
     // -- Basic generation (text format, default) --
@@ -153,19 +153,19 @@ public class CliTests : IDisposable
             "generate", "-f", FontPath, "-s", "32", "-o", outputBase);
 
         // Assert
-        exitCode.Should().Be(0, $"stderr: {stderr}");
-        stdout.Should().Contain("Done.");
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain("Done.");
 
-        File.Exists(outputBase + ".fnt").Should().BeTrue("should produce a .fnt file");
+        File.Exists(outputBase + ".fnt").ShouldBeTrue("should produce a .fnt file");
 
         // PNG pages are named {outputBaseName}_{pageIndex}.png in the output directory
         var pngPath = Path.Combine(_tempDir, "test-output_0.png");
-        File.Exists(pngPath).Should().BeTrue("should produce at least one .png page");
+        File.Exists(pngPath).ShouldBeTrue("should produce at least one .png page");
 
         var fntContent = File.ReadAllText(outputBase + ".fnt");
-        fntContent.Should().Contain("info face=\"Roboto\"");
-        fntContent.Should().Contain("common ");
-        fntContent.Should().Contain("char id=");
+        fntContent.ShouldContain("info face=\"Roboto\"");
+        fntContent.ShouldContain("common ");
+        fntContent.ShouldContain("char id=");
     }
 
     // -- Output formats --
@@ -181,11 +181,11 @@ public class CliTests : IDisposable
             "generate", "-f", FontPath, "-s", "24", "-o", outputBase, "--format", "text");
 
         // Assert
-        exitCode.Should().Be(0, $"stderr: {stderr}");
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
 
         var fnt = File.ReadAllText(outputBase + ".fnt");
-        fnt.Should().StartWith("info ");
-        fnt.Should().Contain("page id=");
+        fnt.ShouldStartWith("info ");
+        fnt.ShouldContain("page id=");
     }
 
     [Fact]
@@ -199,11 +199,11 @@ public class CliTests : IDisposable
             "generate", "-f", FontPath, "-s", "24", "-o", outputBase, "--format", "xml");
 
         // Assert
-        exitCode.Should().Be(0, $"stderr: {stderr}");
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
 
         var fnt = File.ReadAllText(outputBase + ".fnt");
-        fnt.Should().Contain("<font>");
-        fnt.Should().Contain("face=\"Roboto\"");
+        fnt.ShouldContain("<font>");
+        fnt.ShouldContain("face=\"Roboto\"");
     }
 
     [Fact]
@@ -217,14 +217,14 @@ public class CliTests : IDisposable
             "generate", "-f", FontPath, "-s", "24", "-o", outputBase, "--format", "binary");
 
         // Assert
-        exitCode.Should().Be(0, $"stderr: {stderr}");
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
 
         var bytes = File.ReadAllBytes(outputBase + ".fnt");
         // BMF header + version 3
-        bytes[0].Should().Be(66, "first byte should be 'B'");
-        bytes[1].Should().Be(77, "second byte should be 'M'");
-        bytes[2].Should().Be(70, "third byte should be 'F'");
-        bytes[3].Should().Be(3, "fourth byte should be version 3");
+        bytes[0].ShouldBe((byte)66);
+        bytes[1].ShouldBe((byte)77);
+        bytes[2].ShouldBe((byte)70);
+        bytes[3].ShouldBe((byte)3);
     }
 
     // -- Size option --
@@ -243,8 +243,8 @@ public class CliTests : IDisposable
             "generate", "-f", FontPath, "-s", "48", "-o", largeOutput);
 
         // Assert
-        exitCode1.Should().Be(0, $"stderr: {stderr1}");
-        exitCode2.Should().Be(0, $"stderr: {stderr2}");
+        exitCode1.ShouldBe(0, $"stderr: {stderr1}");
+        exitCode2.ShouldBe(0, $"stderr: {stderr2}");
 
         var smallFnt = File.ReadAllText(smallOutput + ".fnt");
         var largeFnt = File.ReadAllText(largeOutput + ".fnt");
@@ -253,7 +253,7 @@ public class CliTests : IDisposable
         var smallLineHeight = ExtractIntAttribute(smallFnt, "lineHeight");
         var largeLineHeight = ExtractIntAttribute(largeFnt, "lineHeight");
 
-        largeLineHeight.Should().BeGreaterThan(smallLineHeight,
+        largeLineHeight.ShouldBeGreaterThan(smallLineHeight,
             "48px font should have larger line height than 12px font");
     }
 
@@ -270,13 +270,13 @@ public class CliTests : IDisposable
             "generate", "-f", FontPath, "-s", "32", "-o", outputBase, "-c", "ABC");
 
         // Assert
-        exitCode.Should().Be(0, $"stderr: {stderr}");
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
 
         var fnt = File.ReadAllText(outputBase + ".fnt");
-        fnt.Should().Contain("chars count=3");
-        fnt.Should().Contain("char id=65 ");  // A
-        fnt.Should().Contain("char id=66 ");  // B
-        fnt.Should().Contain("char id=67 ");  // C
+        fnt.ShouldContain("chars count=3");
+        fnt.ShouldContain("char id=65 ");  // A
+        fnt.ShouldContain("char id=66 ");  // B
+        fnt.ShouldContain("char id=67 ");  // C
     }
 
     // -- Padding option --
@@ -293,11 +293,11 @@ public class CliTests : IDisposable
             "--padding", "4", "-c", "A");
 
         // Assert
-        exitCode.Should().Be(0, $"stderr: {stderr}");
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
 
         var fnt = File.ReadAllText(outputBase + ".fnt");
         // The info block should reflect the padding values
-        fnt.Should().Contain("padding=4,4,4,4");
+        fnt.ShouldContain("padding=4,4,4,4");
     }
 
     // -- Spacing option --
@@ -314,10 +314,10 @@ public class CliTests : IDisposable
             "--spacing", "3", "-c", "A");
 
         // Assert
-        exitCode.Should().Be(0, $"stderr: {stderr}");
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
 
         var fnt = File.ReadAllText(outputBase + ".fnt");
-        fnt.Should().Contain("spacing=3,3");
+        fnt.ShouldContain("spacing=3,3");
     }
 
     // -- Packer option --
@@ -334,12 +334,12 @@ public class CliTests : IDisposable
             "--packer", "skyline");
 
         // Assert
-        exitCode.Should().Be(0, $"stderr: {stderr}");
-        stdout.Should().Contain("Done.");
-        File.Exists(outputBase + ".fnt").Should().BeTrue();
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain("Done.");
+        File.Exists(outputBase + ".fnt").ShouldBeTrue();
 
         var pngPath = Path.Combine(_tempDir, "skyline-out_0.png");
-        File.Exists(pngPath).Should().BeTrue();
+        File.Exists(pngPath).ShouldBeTrue();
     }
 
     // -- Short flag aliases --
@@ -355,13 +355,13 @@ public class CliTests : IDisposable
             "generate", "-f", FontPath, "-s", "24", "-o", outputBase, "-c", "Hello");
 
         // Assert
-        exitCode.Should().Be(0, $"stderr: {stderr}");
-        stdout.Should().Contain("Done.");
-        File.Exists(outputBase + ".fnt").Should().BeTrue();
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain("Done.");
+        File.Exists(outputBase + ".fnt").ShouldBeTrue();
 
         var fnt = File.ReadAllText(outputBase + ".fnt");
         // "Hello" has 4 unique chars: H, e, l, o
-        fnt.Should().Contain("chars count=4");
+        fnt.ShouldContain("chars count=4");
     }
 
     // -- Max texture size --
@@ -378,14 +378,14 @@ public class CliTests : IDisposable
             "--max-texture-size", "256");
 
         // Assert
-        exitCode.Should().Be(0, $"stderr: {stderr}");
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
 
         var fnt = File.ReadAllText(outputBase + ".fnt");
         var scaleW = ExtractIntAttribute(fnt, "scaleW");
         var scaleH = ExtractIntAttribute(fnt, "scaleH");
 
-        scaleW.Should().BeLessThanOrEqualTo(256);
-        scaleH.Should().BeLessThanOrEqualTo(256);
+        scaleW.ShouldBeLessThanOrEqualTo(256);
+        scaleH.ShouldBeLessThanOrEqualTo(256);
     }
 
     // -- Progress output --
@@ -401,12 +401,12 @@ public class CliTests : IDisposable
             "generate", "-f", FontPath, "-s", "32", "-o", outputBase);
 
         // Assert
-        exitCode.Should().Be(0, $"stderr: {stderr}");
-        stdout.Should().Contain("Loading font:");
-        stdout.Should().Contain("Rasterizing");
-        stdout.Should().Contain("Packing into atlas");
-        stdout.Should().Contain("Writing output to");
-        stdout.Should().Contain("Done.");
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain("Loading font:");
+        stdout.ShouldContain("Rasterizing");
+        stdout.ShouldContain("Packing into atlas");
+        stdout.ShouldContain("Writing output to");
+        stdout.ShouldContain("Done.");
     }
 
     // -- Output PNG validation --
@@ -422,16 +422,16 @@ public class CliTests : IDisposable
             "generate", "-f", FontPath, "-s", "32", "-o", outputBase);
 
         // Assert
-        exitCode.Should().Be(0, $"stderr: {stderr}");
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
 
         var pngPath = Path.Combine(_tempDir, "png-check_0.png");
         var pngBytes = File.ReadAllBytes(pngPath);
-        pngBytes.Length.Should().BeGreaterThan(8);
+        pngBytes.Length.ShouldBeGreaterThan(8);
         // PNG magic bytes
-        pngBytes[0].Should().Be(137);
-        pngBytes[1].Should().Be(80);  // P
-        pngBytes[2].Should().Be(78);  // N
-        pngBytes[3].Should().Be(71);  // G
+        pngBytes[0].ShouldBe((byte)137);
+        pngBytes[1].ShouldBe((byte)80);  // P
+        pngBytes[2].ShouldBe((byte)78);  // N
+        pngBytes[3].ShouldBe((byte)71);  // G
     }
 
     // -- Helper methods --
@@ -441,7 +441,7 @@ public class CliTests : IDisposable
         // Matches patterns like "lineHeight=38" or "scaleW=256"
         var pattern = $"{attributeName}=";
         var idx = fntContent.IndexOf(pattern, StringComparison.Ordinal);
-        idx.Should().BeGreaterThanOrEqualTo(0, $"fnt content should contain '{pattern}'");
+        idx.ShouldBeGreaterThanOrEqualTo(0, $"fnt content should contain '{pattern}'");
 
         var start = idx + pattern.Length;
         var end = start;

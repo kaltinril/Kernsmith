@@ -1,5 +1,5 @@
 using KernSmith.Atlas;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests.Packing;
 
@@ -17,11 +17,11 @@ public sealed class MaxRectsPackerTests
         var result = _packer.Pack(glyphs, 256, 256);
 
         // Assert
-        result.PageCount.Should().Be(1);
-        result.Placements.Should().HaveCount(1);
-        result.Placements[0].X.Should().Be(0);
-        result.Placements[0].Y.Should().Be(0);
-        result.Placements[0].PageIndex.Should().Be(0);
+        result.PageCount.ShouldBe(1);
+        result.Placements.Count.ShouldBe(1);
+        result.Placements[0].X.ShouldBe(0);
+        result.Placements[0].Y.ShouldBe(0);
+        result.Placements[0].PageIndex.ShouldBe(0);
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public sealed class MaxRectsPackerTests
                 var aRect = glyphLookup[a.Id];
                 var bRect = glyphLookup[b.Id];
 
-                Overlaps(a, aRect, b, bRect).Should().BeFalse(
+                Overlaps(a, aRect, b, bRect).ShouldBeFalse(
                     $"glyph {a.Id} at ({a.X},{a.Y}) size ({aRect.Width}x{aRect.Height}) " +
                     $"overlaps glyph {b.Id} at ({b.X},{b.Y}) size ({bRect.Width}x{bRect.Height}) on page {a.PageIndex}");
             }
@@ -70,8 +70,8 @@ public sealed class MaxRectsPackerTests
         var result = _packer.Pack(glyphs, 256, 256);
 
         // Assert
-        result.PageCount.Should().BeGreaterThan(1);
-        result.Placements.Should().HaveCount(10);
+        result.PageCount.ShouldBeGreaterThan(1);
+        result.Placements.Count.ShouldBe(10);
     }
 
     [Fact]
@@ -84,8 +84,8 @@ public sealed class MaxRectsPackerTests
         var result = _packer.Pack(glyphs, 256, 256);
 
         // Assert
-        result.Placements.Should().BeEmpty();
-        result.PageCount.Should().BeLessThanOrEqualTo(1);
+        result.Placements.ShouldBeEmpty();
+        result.PageCount.ShouldBeLessThanOrEqualTo(1);
     }
 
     [Fact]
@@ -109,13 +109,13 @@ public sealed class MaxRectsPackerTests
         foreach (var placement in result.Placements)
         {
             var glyph = glyphLookup[placement.Id];
-            placement.X.Should().BeGreaterThanOrEqualTo(0,
+            placement.X.ShouldBeGreaterThanOrEqualTo(0,
                 $"glyph {placement.Id} X should be non-negative");
-            placement.Y.Should().BeGreaterThanOrEqualTo(0,
+            placement.Y.ShouldBeGreaterThanOrEqualTo(0,
                 $"glyph {placement.Id} Y should be non-negative");
-            (placement.X + glyph.Width).Should().BeLessThanOrEqualTo(pageWidth,
+            (placement.X + glyph.Width).ShouldBeLessThanOrEqualTo(pageWidth,
                 $"glyph {placement.Id} right edge should be within page width");
-            (placement.Y + glyph.Height).Should().BeLessThanOrEqualTo(pageHeight,
+            (placement.Y + glyph.Height).ShouldBeLessThanOrEqualTo(pageHeight,
                 $"glyph {placement.Id} bottom edge should be within page height");
         }
     }
@@ -140,8 +140,8 @@ public sealed class MaxRectsPackerTests
         var inputIds = glyphs.Select(g => g.Id).OrderBy(id => id).ToList();
         var outputIds = result.Placements.Select(p => p.Id).OrderBy(id => id).ToList();
 
-        outputIds.Should().BeEquivalentTo(inputIds);
-        result.Placements.Select(p => p.Id).Should().OnlyHaveUniqueItems();
+        outputIds.ShouldBe(inputIds);
+        result.Placements.Select(p => p.Id).ShouldBeUnique();
     }
 
     private static bool Overlaps(GlyphPlacement a, GlyphRect aRect, GlyphPlacement b, GlyphRect bRect)

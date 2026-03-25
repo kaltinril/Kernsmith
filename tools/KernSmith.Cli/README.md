@@ -139,6 +139,7 @@ kernsmith generate -f font.ttf -s 32 --no-pot --packer skyline
 | `--gradient-angle <degrees>` | Gradient rotation angle |
 | `--gradient-midpoint <0.0-1.0>` | Gradient midpoint / bias |
 | `--shadow <x>,<y>[,color[,blur]]` | Drop shadow with offset, optional color and blur |
+| `--hard-shadow` | Use crisp shadow silhouette instead of soft antialiased edges |
 
 See the [Effects](#effects) section below for detailed examples.
 
@@ -404,6 +405,18 @@ kernsmith generate -f font.ttf -s 32 --shadow 2,2,000000,1
 kernsmith generate -f font.ttf -s 32 --shadow 1,1,444444
 ```
 
+### Hard Shadow
+
+Use `--hard-shadow` with `--shadow` to get a crisp binarized silhouette instead of soft antialiased edges.
+
+```
+# Soft shadow (default)
+kernsmith generate -f font.ttf -s 32 --shadow 2,2
+
+# Hard shadow — same offset, crisp edges
+kernsmith generate -f font.ttf -s 32 --shadow 2,2 --hard-shadow
+```
+
 ### Combining Effects
 
 ```
@@ -462,6 +475,7 @@ shadow-offset-x = 1
 shadow-offset-y = 1
 shadow-color = 000000
 shadow-blur = 1
+hard-shadow = false
 
 [kerning]
 enabled = true

@@ -1,7 +1,7 @@
 using KernSmith.Atlas;
 using KernSmith.Output.Model;
 using KernSmith.Rasterizer;
-using FluentAssertions;
+using Shouldly;
 
 namespace KernSmith.Tests.Integration;
 
@@ -24,29 +24,29 @@ public class EndToEndTests
         });
 
         // Assert — model should be populated
-        result.Model.Should().NotBeNull();
-        result.Model.Info.Face.Should().Be("Roboto");
-        result.Model.Info.Size.Should().Be(32);
-        result.Model.Info.Unicode.Should().BeTrue();
+        result.Model.ShouldNotBeNull();
+        result.Model.Info.Face.ShouldBe("Roboto");
+        result.Model.Info.Size.ShouldBe(32);
+        result.Model.Info.Unicode.ShouldBeTrue();
 
         // Should have characters (ASCII printable = 95 codepoints max)
-        result.Model.Characters.Should().HaveCountGreaterThan(0);
-        result.Model.Characters.Count.Should().BeLessThanOrEqualTo(95);
+        result.Model.Characters.Count.ShouldBeGreaterThan(0);
+        result.Model.Characters.Count.ShouldBeLessThanOrEqualTo(95);
 
         // Should have at least 1 atlas page
-        result.Pages.Should().HaveCountGreaterThan(0);
-        result.Model.Common.Pages.Should().Be(result.Pages.Count);
+        result.Pages.Count.ShouldBeGreaterThan(0);
+        result.Model.Common.Pages.ShouldBe(result.Pages.Count);
 
         // Atlas dimensions should be positive
-        result.Model.Common.ScaleW.Should().BeGreaterThan(0);
-        result.Model.Common.ScaleH.Should().BeGreaterThan(0);
+        result.Model.Common.ScaleW.ShouldBeGreaterThan(0);
+        result.Model.Common.ScaleH.ShouldBeGreaterThan(0);
 
         // Each page should have pixel data matching atlas dimensions
         foreach (var page in result.Pages)
         {
-            page.PixelData.Should().NotBeEmpty();
-            page.Width.Should().Be(result.Model.Common.ScaleW);
-            page.Height.Should().Be(result.Model.Common.ScaleH);
+            page.PixelData.ShouldNotBeEmpty();
+            page.Width.ShouldBe(result.Model.Common.ScaleW);
+            page.Height.ShouldBe(result.Model.Common.ScaleH);
         }
     }
 
@@ -61,12 +61,12 @@ public class EndToEndTests
         var text = result.ToString();
 
         // Assert — text output follows BMFont text format
-        text.Should().StartWith("info ");
-        text.Should().Contain("face=\"Roboto\"");
-        text.Should().Contain("common ");
-        text.Should().Contain("page ");
-        text.Should().Contain("chars count=");
-        text.Should().Contain("char id=");
+        text.ShouldStartWith("info ");
+        text.ShouldContain("face=\"Roboto\"");
+        text.ShouldContain("common ");
+        text.ShouldContain("page ");
+        text.ShouldContain("chars count=");
+        text.ShouldContain("char id=");
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public class EndToEndTests
 
         // Assert — at least one page should have rendered glyph pixels
         var hasNonZeroPixels = result.Pages.Any(p => p.PixelData.Any(b => b != 0));
-        hasNonZeroPixels.Should().BeTrue("atlas should contain rendered glyph pixels");
+        hasNonZeroPixels.ShouldBeTrue("atlas should contain rendered glyph pixels");
     }
 
     [Fact]
@@ -94,15 +94,15 @@ public class EndToEndTests
 
         // Assert — space character should have positive advance
         var space = result.Model.Characters.FirstOrDefault(c => c.Id == 32);
-        space.Should().NotBeNull("ASCII set should include space (U+0020)");
-        space!.XAdvance.Should().BeGreaterThan(0, "space should have positive advance");
+        space.ShouldNotBeNull("ASCII set should include space (U+0020)");
+        space!.XAdvance.ShouldBeGreaterThan(0);
 
         // 'A' character should have positive dimensions and advance
         var charA = result.Model.Characters.FirstOrDefault(c => c.Id == 65);
-        charA.Should().NotBeNull("ASCII set should include 'A' (U+0041)");
-        charA!.Width.Should().BeGreaterThan(0);
-        charA!.Height.Should().BeGreaterThan(0);
-        charA!.XAdvance.Should().BeGreaterThan(0);
+        charA.ShouldNotBeNull("ASCII set should include 'A' (U+0041)");
+        charA!.Width.ShouldBeGreaterThan(0);
+        charA!.Height.ShouldBeGreaterThan(0);
+        charA!.XAdvance.ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -115,8 +115,8 @@ public class EndToEndTests
         var result = BmFont.Generate(fontData, 16);
 
         // Assert
-        result.Model.Info.Size.Should().Be(16);
-        result.Model.Characters.Should().HaveCountGreaterThan(0);
+        result.Model.Info.Size.ShouldBe(16);
+        result.Model.Characters.Count.ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -133,7 +133,7 @@ public class EndToEndTests
         });
 
         // Assert — Roboto has kerning pairs
-        result.Model.KerningPairs.Should().HaveCountGreaterThan(0);
+        result.Model.KerningPairs.Count.ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -147,11 +147,11 @@ public class EndToEndTests
         var pngBytes = result.Pages[0].ToPng();
 
         // Assert — PNG magic bytes: 137 80 78 71 13 10 26 10
-        pngBytes.Should().NotBeEmpty();
-        pngBytes[0].Should().Be(137);
-        pngBytes[1].Should().Be(80);  // 'P'
-        pngBytes[2].Should().Be(78);  // 'N'
-        pngBytes[3].Should().Be(71);  // 'G'
+        pngBytes.ShouldNotBeEmpty();
+        pngBytes[0].ShouldBe((byte)137);
+        pngBytes[1].ShouldBe((byte)80);  // 'P'
+        pngBytes[2].ShouldBe((byte)78);  // 'N'
+        pngBytes[3].ShouldBe((byte)71);  // 'G'
     }
 
     [Fact]
@@ -165,9 +165,8 @@ public class EndToEndTests
         var largeResult = BmFont.Generate(fontData, 48);
 
         // Assert — larger size should produce larger line height
-        largeResult.Model.Common.LineHeight.Should()
-            .BeGreaterThan(smallResult.Model.Common.LineHeight,
-                "48pt font should have larger line height than 12pt font");
+        largeResult.Model.Common.LineHeight.ShouldBeGreaterThan(
+            smallResult.Model.Common.LineHeight);
     }
 
     [Fact]
@@ -185,8 +184,8 @@ public class EndToEndTests
         });
 
         // Assert — should have exactly 3 characters
-        result.Model.Characters.Should().HaveCount(3);
-        result.Model.Characters.Select(c => c.Id).Should().BeEquivalentTo(new[] { 65, 66, 67 });
+        result.Model.Characters.Count.ShouldBe(3);
+        result.Model.Characters.Select(c => c.Id).ShouldBe(new[] { 65, 66, 67 });
     }
 
     [Fact]
@@ -199,12 +198,12 @@ public class EndToEndTests
         var result = BmFont.Generate(fontData, 32);
 
         // Assert — model page entries should match atlas page count
-        result.Model.Pages.Should().HaveCount(result.Pages.Count);
+        result.Model.Pages.Count.ShouldBe(result.Pages.Count);
 
         // Page indices should be sequential starting from 0
         for (int i = 0; i < result.Model.Pages.Count; i++)
         {
-            result.Model.Pages[i].Id.Should().Be(i);
+            result.Model.Pages[i].Id.ShouldBe(i);
         }
     }
 
@@ -219,8 +218,8 @@ public class EndToEndTests
         var xml = result.ToXml();
 
         // Assert
-        xml.Should().Contain("<font>", "XML output should contain the font root element");
-        xml.Should().Contain("face=\"Roboto\"", "XML output should contain the font face name");
+        xml.ShouldContain("<font>");
+        xml.ShouldContain("face=\"Roboto\"");
     }
 
     [Fact]
@@ -234,10 +233,10 @@ public class EndToEndTests
         var binary = result.ToBinary();
 
         // Assert — BMF header + version 3
-        binary[0].Should().Be(66, "first byte should be 'B'");
-        binary[1].Should().Be(77, "second byte should be 'M'");
-        binary[2].Should().Be(70, "third byte should be 'F'");
-        binary[3].Should().Be(3, "fourth byte should be version 3");
+        binary[0].ShouldBe((byte)66);
+        binary[1].ShouldBe((byte)77);
+        binary[2].ShouldBe((byte)70);
+        binary[3].ShouldBe((byte)3);
     }
 
     [Fact]
@@ -254,9 +253,9 @@ public class EndToEndTests
         });
 
         // Assert
-        result.Model.Characters.Should().HaveCountGreaterThan(0,
+        result.Model.Characters.Count.ShouldBeGreaterThan(0,
             "generation with Skyline packer should produce characters");
-        result.Pages.Should().HaveCountGreaterThan(0,
+        result.Pages.Count.ShouldBeGreaterThan(0,
             "generation with Skyline packer should produce atlas pages");
     }
 
@@ -273,10 +272,10 @@ public class EndToEndTests
             .Build();
 
         // Assert
-        result.Model.Should().NotBeNull();
-        result.Model.Info.Size.Should().Be(32);
-        result.Model.Characters.Should().HaveCountGreaterThan(0);
-        result.Pages.Should().HaveCountGreaterThan(0);
+        result.Model.ShouldNotBeNull();
+        result.Model.Info.Size.ShouldBe(32);
+        result.Model.Characters.Count.ShouldBeGreaterThan(0);
+        result.Pages.Count.ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -294,18 +293,18 @@ public class EndToEndTests
         });
 
         // Assert — Atlas pages should be RGBA
-        result.Pages[0].Format.Should().Be(PixelFormat.Rgba32);
+        result.Pages[0].Format.ShouldBe(PixelFormat.Rgba32);
 
         // Pixel data should be 4x the size of a grayscale atlas
-        result.Pages[0].PixelData.Length.Should().Be(
+        result.Pages[0].PixelData.Length.ShouldBe(
             result.Pages[0].Width * result.Pages[0].Height * 4);
 
         // Characters should have individual channel assignments (1, 2, 4, or 8), not 15
-        result.Model.Characters.Should().Contain(c => c.Channel == 1 || c.Channel == 2 || c.Channel == 4 || c.Channel == 8);
-        result.Model.Characters.Should().NotContain(c => c.Channel == 15);
+        result.Model.Characters.ShouldContain(c => c.Channel == 1 || c.Channel == 2 || c.Channel == 4 || c.Channel == 8);
+        result.Model.Characters.ShouldNotContain(c => c.Channel == 15);
 
         // Common block should indicate packed
-        result.Model.Common.Packed.Should().BeTrue();
+        result.Model.Common.Packed.ShouldBeTrue();
     }
 
     [Fact]
@@ -323,8 +322,8 @@ public class EndToEndTests
             .Build();
 
         // Assert
-        result.Model.Common.Packed.Should().BeTrue();
-        result.Model.Characters.Should().HaveCountGreaterThan(0);
+        result.Model.Common.Packed.ShouldBeTrue();
+        result.Model.Characters.Count.ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -341,7 +340,7 @@ public class EndToEndTests
             .Build();
 
         // Assert
-        result.Model.Characters.Should().HaveCountGreaterThan(0);
+        result.Model.Characters.Count.ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -359,17 +358,17 @@ public class EndToEndTests
             .Build();
 
         // Assert -- generation should succeed with gradient post-processor
-        result.Model.Characters.Should().HaveCountGreaterThan(0);
-        result.Pages.Should().HaveCountGreaterThan(0);
+        result.Model.Characters.Count.ShouldBeGreaterThan(0);
+        result.Pages.Count.ShouldBeGreaterThan(0);
 
         // Atlas should contain non-zero pixel data (rendered glyphs present)
-        result.Pages[0].PixelData.Any(b => b != 0).Should().BeTrue(
+        result.Pages[0].PixelData.Any(b => b != 0).ShouldBeTrue(
             "gradient atlas should contain rendered pixels");
 
         // Model should be well-formed
-        result.Model.Info.Face.Should().Be("Roboto");
-        result.Model.Info.Size.Should().Be(32);
-        result.Model.Common.LineHeight.Should().BeGreaterThan(0);
+        result.Model.Info.Face.ShouldBe("Roboto");
+        result.Model.Info.Size.ShouldBe(32);
+        result.Model.Common.LineHeight.ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -397,9 +396,9 @@ public class EndToEndTests
         var charWithout = resultWithout.Model.Characters.First(c => c.Id == 65);
         var charWith = resultWith.Model.Characters.First(c => c.Id == 65);
 
-        charWith.Width.Should().BeGreaterThan(charWithout.Width,
+        charWith.Width.ShouldBeGreaterThan(charWithout.Width,
             "outlined glyph should be wider than non-outlined glyph");
-        charWith.Height.Should().BeGreaterThan(charWithout.Height,
+        charWith.Height.ShouldBeGreaterThan(charWithout.Height,
             "outlined glyph should be taller than non-outlined glyph");
     }
 
@@ -429,7 +428,7 @@ public class EndToEndTests
         var charWithout = resultWithout.Model.Characters.First(c => c.Id == 65);
         var charWith = resultWith.Model.Characters.First(c => c.Id == 65);
 
-        charWith.XAdvance.Should().Be(charWithout.XAdvance,
+        charWith.XAdvance.ShouldBe(charWithout.XAdvance,
             "outline should not change the advance — outlines overlap into adjacent glyph space");
     }
 
@@ -458,7 +457,7 @@ public class EndToEndTests
         var charWithout = resultWithout.Model.Characters.First(c => c.Id == 65);
         var charWith = resultWith.Model.Characters.First(c => c.Id == 65);
 
-        charWith.XAdvance.Should().Be(charWithout.XAdvance,
+        charWith.XAdvance.ShouldBe(charWithout.XAdvance,
             "outline should not change the advance — outlines overlap into adjacent glyph space");
     }
 
@@ -499,11 +498,11 @@ public class EndToEndTests
         var charWithout = resultWithout.Model.Characters.First(c => c.Id == 65);
         var charWith = resultWith.Model.Characters.First(c => c.Id == 65);
 
-        charWith.Width.Should().BeGreaterThan(charWithout.Width,
+        charWith.Width.ShouldBeGreaterThan(charWithout.Width,
             "outlined glyph should be wider when using custom channel config");
-        charWith.Height.Should().BeGreaterThan(charWithout.Height,
+        charWith.Height.ShouldBeGreaterThan(charWithout.Height,
             "outlined glyph should be taller when using custom channel config");
-        charWith.XAdvance.Should().Be(charWithout.XAdvance,
+        charWith.XAdvance.ShouldBe(charWithout.XAdvance,
             "outline should not change the advance — outlines overlap into adjacent glyph space");
     }
 
@@ -552,7 +551,7 @@ public class EndToEndTests
             if (hasOutlineBeyondGlyph) break;
         }
 
-        hasOutlineBeyondGlyph.Should().BeTrue(
+        hasOutlineBeyondGlyph.ShouldBeTrue(
             "outline channel should contain pixels beyond the glyph boundary — " +
             "if both channels are identical, the outline is invisible");
     }

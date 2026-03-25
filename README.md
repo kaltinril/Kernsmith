@@ -266,6 +266,18 @@ var result = BmFont.Generate("font.ttf", new FontGeneratorOptions
 });
 ```
 
+For a crisp, uniform silhouette instead of soft antialiased edges, enable hard shadow:
+
+```csharp
+var result = BmFont.Builder()
+    .WithFont("font.ttf")
+    .WithSize(48)
+    .WithCharacters(CharacterSet.Ascii)
+    .WithShadow(2, 2, 0)
+    .WithHardShadow()
+    .Build();
+```
+
 ### Combining Effects
 
 All effects can be combined. They are composited in fixed order: shadow (back), outline (middle), gradient (front).

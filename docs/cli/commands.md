@@ -86,6 +86,7 @@ kernsmith generate -f font.ttf -s 32 --range 0020-007E --range 00A0-00FF
 | `--gradient-angle <degrees>` | Gradient rotation angle |
 | `--gradient-midpoint <0.0-1.0>` | Gradient midpoint / bias |
 | `--shadow <x>,<y>[,color[,blur]]` | Drop shadow with offset, optional color and blur |
+| `--hard-shadow` | Use a crisp shadow silhouette instead of soft antialiased edges |
 
 Effects can be combined freely. All color values are hex (e.g., `FF0000` for red).
 

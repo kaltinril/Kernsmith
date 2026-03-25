@@ -27,10 +27,10 @@ Mention that `.ToFile()` can optionally save `.hiero` alongside `.fnt` + images.
 **Lines 108–115 — Fluent Builder:**
 Add `FromConfig("base.hiero")` example.
 
-**Lines 299–323 — Write to Disk / In-Memory:**
+**Lines ~298+ — Write to Disk / In-Memory:**
 Document `ToHiero()` method alongside `ToBmfc()`.
 
-**Lines 356–374 — Reading and Writing Config Files:**
+**Lines ~368+ — Reading and Writing .bmfc Config Files:**
 Expand section to cover both formats:
 ```csharp
 // Read any supported config format (auto-detected by extension)
@@ -74,13 +74,13 @@ Add `.hiero` example:
 kernsmith init -o myfont.hiero --font "Arial" --size 32
 ```
 
-**Lines 308–330 — batch Command:**
+**Lines ~314+ — batch Command:**
 Document mixed-format batch processing:
 ```bash
 kernsmith batch configs/*.bmfc configs/*.hiero --parallel 4
 ```
 
-**Lines 420–496 — Config Files section:**
+**Lines ~433+ — Config Files section:**
 Add new subsection documenting `.hiero` format structure with example.
 
 ### 4. CLI Docs
@@ -103,7 +103,7 @@ Add new subsection documenting `.hiero` format structure with example.
 
 **File:** `samples/KernSmith.Samples/Program.cs`
 
-**Lines 42–55 — Section 2:**
+**Lines ~42–55 — Section 2:**
 Add Hiero example alongside existing `.bmfc` example:
 ```csharp
 // Section 2b: FromConfig (.hiero)
@@ -115,7 +115,7 @@ if (File.Exists(hieroPath))
 }
 ```
 
-**Line 111 — Export:**
+**Line ~113 — Export:**
 Add `ToHiero()` example:
 ```csharp
 var hieroString = memResult.ToHiero();
@@ -193,3 +193,7 @@ effect.Color=ffffff
 - **New files**: 1 sample `.hiero` file
 - **Risk**: None — documentation only, no code changes
 - **Dependencies**: Phases 82–84 must be implemented first (docs describe actual features)
+
+---
+
+> **Plan review 2026-03-24**: Updated drifted line number references for README.md (~298+, ~368+), CLI README (~314+, ~433+), and samples/Program.cs (~42, ~113). All file paths and type references verified as accurate.
