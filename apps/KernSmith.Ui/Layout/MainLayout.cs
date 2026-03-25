@@ -43,7 +43,7 @@ public class MainLayout : ContainerRuntime
         var menu = new Menu();
         var visual = (MenuVisual)menu.Visual;
         // separate out the menu items a little:
-        visual.StackSpacing = 5;
+        visual.InnerPanelInstance.StackSpacing = 10;
 
         // File menu
         var fileItem = new MenuItem();
