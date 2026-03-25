@@ -253,6 +253,8 @@ internal sealed class GenerateCommand
                 genOptions.ShadowB = sc.B;
             }
         }
+        if (options.HardShadow)
+            genOptions.HardShadow = true;
 
         return genOptions;
     }
@@ -481,6 +483,9 @@ internal sealed class GenerateCommand
                     var shadowArg = NextArg(args, ref i, "--shadow");
                     ParseShadowArg(options, shadowArg);
                     break;
+                case "--hard-shadow":
+                    options.HardShadow = true;
+                    break;
                 case "--instance":
                     options.InstanceName = NextArg(args, ref i, args[i]);
                     break;
@@ -624,6 +629,7 @@ internal sealed class GenerateCommand
         if (cli.ShadowOffsetX != 0 || cli.ShadowOffsetY != 0) { config.ShadowOffsetX = cli.ShadowOffsetX; config.ShadowOffsetY = cli.ShadowOffsetY; }
         if (cli.ShadowColor != null) config.ShadowColor = cli.ShadowColor;
         if (cli.ShadowBlur != 0) config.ShadowBlur = cli.ShadowBlur;
+        if (cli.HardShadow) config.HardShadow = true;
         if (cli.ShowTime) config.ShowTime = true;
         if (cli.ShowProfile) config.ShowProfile = true;
         if (cli.GradientAngle != 90f) config.GradientAngle = cli.GradientAngle;
@@ -827,6 +833,7 @@ internal sealed class GenerateCommand
               --gradient-angle <deg>      Gradient rotation in degrees (default: 90)
               --gradient-midpoint <0-1>   Gradient midpoint bias (default: 0.5)
               --shadow <x>,<y>[,color[,blur]]  Drop shadow (e.g., --shadow 2,2,000000,1)
+              --hard-shadow               Use a crisp shadow silhouette instead of soft edges
 
             Kerning:
               --no-kerning                Disable kerning pair extraction

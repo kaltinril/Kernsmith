@@ -244,6 +244,7 @@ public class MainViewModel : ViewModel
                 ShadowColorG = shadowRgb.G,
                 ShadowColorB = shadowRgb.B,
                 ShadowOpacity = Effects.ShadowOpacity,
+                HardShadow = Effects.HardShadow,
                 GradientEnabled = Effects.GradientEnabled,
                 GradientStartR = gradStartRgb.R,
                 GradientStartG = gradStartRgb.G,

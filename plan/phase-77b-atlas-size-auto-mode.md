@@ -1,6 +1,6 @@
 # Phase 77B — Force Size Checkbox & Remove Engine Presets
 
-> **Status**: In Progress
+> **Status**: Complete
 > **Created**: 2026-03-23
 > **Updated**: 2026-03-24
 > **Goal**: Replace engine presets with a "Force Size" checkbox. Default is autofit (no size UI). When checked, Width/Height dropdowns appear.

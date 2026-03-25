@@ -37,9 +37,13 @@ public class GenerationService
                 builder.WithOutline(request.OutlineWidth, request.OutlineColorR, request.OutlineColorG, request.OutlineColorB);
 
             if (request.ShadowEnabled)
+            {
                 builder.WithShadow(request.ShadowOffsetX, request.ShadowOffsetY, request.ShadowBlur,
                     (request.ShadowColorR, request.ShadowColorG, request.ShadowColorB),
                     request.ShadowOpacity / 100f);
+                if (request.HardShadow)
+                    builder.WithHardShadow();
+            }
 
             if (request.GradientEnabled)
                 builder.WithGradient(

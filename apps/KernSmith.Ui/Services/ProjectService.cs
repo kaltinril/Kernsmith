@@ -87,6 +87,7 @@ public class ProjectService
         effects.ShadowBlur = options.ShadowBlur;
         effects.ShadowColor = EffectsViewModel.ToHex(options.ShadowR, options.ShadowG, options.ShadowB);
         effects.ShadowOpacity = (int)(options.ShadowOpacity * 100);
+        effects.HardShadow = options.HardShadow;
         effects.GradientEnabled = options.GradientStartR.HasValue && options.GradientEndR.HasValue;
         effects.GradientStartColor = EffectsViewModel.ToHex(
             options.GradientStartR ?? 255, options.GradientStartG ?? 255, options.GradientStartB ?? 255);
@@ -154,6 +155,7 @@ public class ProjectService
             ShadowG = shadowRgb.G,
             ShadowB = shadowRgb.B,
             ShadowOpacity = effects.ShadowOpacity / 100f,
+            HardShadow = effects.HardShadow,
             GradientStartR = effects.GradientEnabled ? gradStartRgb.R : null,
             GradientStartG = effects.GradientEnabled ? gradStartRgb.G : null,
             GradientStartB = effects.GradientEnabled ? gradStartRgb.B : null,

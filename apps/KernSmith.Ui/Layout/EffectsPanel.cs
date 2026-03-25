@@ -241,6 +241,15 @@ public class EffectsPanel : Panel
         // Shadow opacity slider
         AddSliderRow(contentPanel, "Opacity:", 0, 100, 100,
             val => _effects.ShadowOpacity = val);
+
+        var hardShadowCheck = new CheckBox();
+        hardShadowCheck.Text = "Hard Shadow";
+        hardShadowCheck.Width = 180;
+        hardShadowCheck.IsChecked = _effects.HardShadow;
+        TooltipService.SetTooltip(hardShadowCheck, "Use a crisp silhouette instead of soft antialiased edges");
+        hardShadowCheck.Checked += (_, _) => _effects.HardShadow = true;
+        hardShadowCheck.Unchecked += (_, _) => _effects.HardShadow = false;
+        contentPanel.Children.Add(hardShadowCheck.Visual);
     }
 
     private void BuildGradientContent(Gum.Wireframe.GraphicalUiElement contentPanel)

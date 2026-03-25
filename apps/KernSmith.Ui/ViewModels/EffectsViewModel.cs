@@ -29,6 +29,7 @@ public class EffectsViewModel : ViewModel
     public int ShadowBlur { get => Get<int>(); set => Set(value); }
     public string ShadowColor { get => Get<string>(); set => Set(value); }
     public int ShadowOpacity { get => Get<int>(); set => Set(value); }
+    public bool HardShadow { get => Get<bool>(); set => Set(value); }
 
     // Gradient
     public bool GradientEnabled { get => Get<bool>(); set => Set(value); }

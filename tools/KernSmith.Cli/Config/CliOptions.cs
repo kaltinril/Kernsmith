@@ -47,6 +47,7 @@ internal sealed class CliOptions
     public int ShadowOffsetY { get; set; }
     public string? ShadowColor { get; set; }
     public int ShadowBlur { get; set; }
+    public bool HardShadow { get; set; }
 
     // Kerning
     public bool? Kerning { get; set; } = true;

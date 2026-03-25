@@ -17,6 +17,7 @@ internal sealed class ShadowEffect : IGlyphEffect
     private readonly byte _shadowG;
     private readonly byte _shadowB;
     private readonly float _opacity;
+    private readonly bool _hardShadow;
 
     public ShadowEffect(
         int offsetX = 2,
@@ -25,7 +26,8 @@ internal sealed class ShadowEffect : IGlyphEffect
         byte shadowR = 0,
         byte shadowG = 0,
         byte shadowB = 0,
-        float opacity = 1.0f)
+        float opacity = 1.0f,
+        bool hardShadow = false)
     {
         _offsetX = offsetX;
         _offsetY = offsetY;
@@ -34,6 +36,7 @@ internal sealed class ShadowEffect : IGlyphEffect
         _shadowG = shadowG;
         _shadowB = shadowB;
         _opacity = Math.Clamp(opacity, 0f, 1f);
+        _hardShadow = hardShadow;
     }
 
     public GlyphLayer Generate(byte[] alphaData, int width, int height, int pitch, GlyphMetrics metrics)
@@ -59,6 +62,8 @@ internal sealed class ShadowEffect : IGlyphEffect
             {
                 var srcIdx = y * pitch + x;
                 var alpha = srcIdx < alphaData.Length ? alphaData[srcIdx] / 255f : 0f;
+                if (_hardShadow && alpha > 0f)
+                    alpha = 1f;
 
                 var dx = shadowOriginX + x;
                 var dy = shadowOriginY + y;
