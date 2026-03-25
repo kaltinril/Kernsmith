@@ -82,7 +82,7 @@ Output Layer
 | 30 | [WASM Rasterization](phase-30-wasm-rasterization.md) | Live investigation of WASM-compatible rasterizers (prior research was preliminary) | Future |
 | 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
 | 77B | [Force Size & Remove Presets](done/phase-77b-atlas-size-auto-mode.md) | Replace engine presets with Force Size checkbox | Complete |
-| 80 | [Atlas Preview Rendering](phase-80-atlas-preview-rendering.md) | Fix atlas preview rendering quality in UI to match saved PNG | Planning |
+| 80 | [Atlas Preview Rendering](done/phase-80-atlas-preview-rendering.md) | Fix atlas preview rendering quality in UI to match saved PNG | Complete |
 | 81 | [Hiero Format Support](phase-81-hiero-format-support.md) | Hiero `.hiero` config format specification and design decisions | Planning |
 | 82 | [Hiero Core Library](phase-82-hiero-core-library.md) | Add `.hiero` config read/write to the NuGet library | Planning |
 | 83 | [Hiero UI Changes](phase-83-hiero-ui-changes.md) | Update UI for `.hiero` file dialogs, drag-drop, project service | Planning |
