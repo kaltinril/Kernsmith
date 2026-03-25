@@ -86,6 +86,8 @@ public record GenerationRequest
     public byte ShadowColorB { get; init; }
     /// <summary>Shadow opacity as a percentage. Range: 0..100.</summary>
     public int ShadowOpacity { get; init; } = 100;
+    /// <summary>Use a hard (binarized) shadow silhouette instead of soft antialiased edges.</summary>
+    public bool HardShadow { get; init; }
     /// <summary>Whether to apply a vertical color gradient across each glyph.</summary>
     public bool GradientEnabled { get; init; }
     /// <summary>Gradient start color red component. Range: 0..255.</summary>

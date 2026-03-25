@@ -203,6 +203,9 @@ public class FontGeneratorOptions
     /// <summary>Shadow blur radius. 0 = hard shadow.</summary>
     public int ShadowBlur { get; set; }
 
+    /// <summary>When true, shadow uses a hard (binarized) silhouette instead of the antialiased glyph alpha.</summary>
+    public bool HardShadow { get; set; }
+
     /// <summary>True if any shadow offset or blur is set.</summary>
     internal bool HasShadow => ShadowOffsetX != 0 || ShadowOffsetY != 0 || ShadowBlur > 0;
 

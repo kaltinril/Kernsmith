@@ -380,6 +380,11 @@ public sealed class BmFontBuilder
         return this;
     }
 
+    /// <summary>Uses a hard (binarized) shadow silhouette instead of the antialiased glyph alpha.</summary>
+    /// <param name="enabled">Enable hard shadow.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithHardShadow(bool enabled = true) { _options.HardShadow = enabled; return this; }
+
     /// <summary>Applies a color gradient across all glyphs.</summary>
     /// <param name="startColor">Start color as (R, G, B).</param>
     /// <param name="endColor">End color as (R, G, B).</param>
@@ -459,6 +464,7 @@ public sealed class BmFontBuilder
         _options.ShadowG = source.ShadowG;
         _options.ShadowB = source.ShadowB;
         _options.ShadowOpacity = source.ShadowOpacity;
+        _options.HardShadow = source.HardShadow;
         _options.GradientStartR = source.GradientStartR;
         _options.GradientStartG = source.GradientStartG;
         _options.GradientStartB = source.GradientStartB;

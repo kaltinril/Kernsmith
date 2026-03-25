@@ -44,12 +44,19 @@ internal sealed class OutlineEffect : IGlyphEffect
             }
         }
 
-        // Step 2: Compute EDT on the expanded alpha.
-        var squaredDist = EuclideanDistanceTransform.Compute(expandedAlpha, dstW, dstH);
+        // Step 2: Binarize alpha so the EDT measures distance from the opaque glyph core.
+        // Semi-transparent antialiased edge pixels (alpha < 128) are treated as "outside",
+        // which lets the outline extend under the fringe and eliminates edge gaps.
+        var binaryAlpha = new byte[dstW * dstH];
+        for (var i = 0; i < expandedAlpha.Length; i++)
+            binaryAlpha[i] = expandedAlpha[i] >= 32 ? (byte)255 : (byte)0;
+
+        var squaredDist = EuclideanDistanceTransform.Compute(binaryAlpha, dstW, dstH);
 
         // Step 2b: Flood-fill from edges to identify exterior zero-alpha pixels.
         // Counter pixels (holes in glyphs like 'e', 'o') are NOT exterior and must not receive outline.
-        var exterior = FloodFillExterior(expandedAlpha, dstW, dstH);
+        // Uses binarized alpha so the fringe is treated as exterior.
+        var exterior = FloodFillExterior(binaryAlpha, dstW, dstH);
 
         // Step 3: Build RGBA output with outline color and anti-aliased alpha.
         var dst = new byte[dstW * dstH * 4];
@@ -64,7 +71,8 @@ internal sealed class OutlineEffect : IGlyphEffect
                     continue;
 
                 var dist = MathF.Sqrt(squaredDist[pixelIdx]);
-                var outlineAlpha = Math.Clamp(255f * (ow - dist + 0.5f), 0f, 255f);
+                // Smooth falloff: fully opaque up to ow, then linear fade over 1.5 pixels.
+                var outlineAlpha = Math.Clamp(255f * (ow + 0.75f - dist) / 1.5f, 0f, 255f);
 
                 if (outlineAlpha <= 0)
                     continue;

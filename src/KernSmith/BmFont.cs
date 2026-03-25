@@ -811,7 +811,8 @@ public static class BmFont
         {
             effects.Add(new ShadowEffect(
                 options.ShadowOffsetX, options.ShadowOffsetY, options.ShadowBlur,
-                options.ShadowR, options.ShadowG, options.ShadowB, options.ShadowOpacity));
+                options.ShadowR, options.ShadowG, options.ShadowB, options.ShadowOpacity,
+                options.HardShadow));
         }
         else if (options.PostProcessors != null)
         {

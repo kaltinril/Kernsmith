@@ -182,8 +182,7 @@ public class MainViewModel : ViewModel
     /// </summary>
     public async Task GenerateAsync()
     {
-        if (StatusBar.IsGenerating)
-            return;
+        if (StatusBar.IsGenerating) return;
 
         var validationError = ValidateBeforeGenerate();
         if (validationError != null)
@@ -198,6 +197,11 @@ public class MainViewModel : ViewModel
 
         try
         {
+            var outlineRgb = EffectsViewModel.ParseHex(Effects.OutlineColor);
+            var shadowRgb = EffectsViewModel.ParseHex(Effects.ShadowColor);
+            var gradStartRgb = EffectsViewModel.ParseHex(Effects.GradientStartColor);
+            var gradEndRgb = EffectsViewModel.ParseHex(Effects.GradientEndColor);
+
             var request = new GenerationRequest
             {
                 FontData = FontConfig.FontData,
@@ -229,24 +233,25 @@ public class MainViewModel : ViewModel
                 SuperSampleLevel = Effects.SuperSampleLevel,
                 OutlineEnabled = Effects.OutlineEnabled,
                 OutlineWidth = Effects.OutlineWidth,
-                OutlineColorR = Effects.OutlineColorR,
-                OutlineColorG = Effects.OutlineColorG,
-                OutlineColorB = Effects.OutlineColorB,
+                OutlineColorR = outlineRgb.R,
+                OutlineColorG = outlineRgb.G,
+                OutlineColorB = outlineRgb.B,
                 ShadowEnabled = Effects.ShadowEnabled,
                 ShadowOffsetX = Effects.ShadowOffsetX,
                 ShadowOffsetY = Effects.ShadowOffsetY,
                 ShadowBlur = Effects.ShadowBlur,
-                ShadowColorR = Effects.ShadowColorR,
-                ShadowColorG = Effects.ShadowColorG,
-                ShadowColorB = Effects.ShadowColorB,
+                ShadowColorR = shadowRgb.R,
+                ShadowColorG = shadowRgb.G,
+                ShadowColorB = shadowRgb.B,
                 ShadowOpacity = Effects.ShadowOpacity,
+                HardShadow = Effects.HardShadow,
                 GradientEnabled = Effects.GradientEnabled,
-                GradientStartR = Effects.GradientStartR,
-                GradientStartG = Effects.GradientStartG,
-                GradientStartB = Effects.GradientStartB,
-                GradientEndR = Effects.GradientEndR,
-                GradientEndG = Effects.GradientEndG,
-                GradientEndB = Effects.GradientEndB,
+                GradientStartR = gradStartRgb.R,
+                GradientStartG = gradStartRgb.G,
+                GradientStartB = gradStartRgb.B,
+                GradientEndR = gradEndRgb.R,
+                GradientEndG = gradEndRgb.G,
+                GradientEndB = gradEndRgb.B,
                 GradientAngle = Effects.GradientAngle,
                 ChannelPackingEnabled = Effects.ChannelPackingEnabled,
                 SdfEnabled = Effects.SdfEnabled,

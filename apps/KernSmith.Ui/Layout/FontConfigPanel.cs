@@ -8,7 +8,7 @@ using MonoGameGum.GueDeriving;
 namespace KernSmith.Ui.Layout;
 
 /// <summary>
-/// Left-side panel containing engine preset buttons, font file browser, system font dropdown,
+/// Left-side panel containing font file browser, system font dropdown,
 /// TTC face selector, font metadata display, font size input, generate button, and
 /// auto-regenerate toggle.
 /// </summary>
@@ -41,66 +41,6 @@ public class FontConfigPanel : Panel
         inner.StackSpacing = 6;
         this.AddChild(inner);
         var stack = inner;
-
-        // --- ENGINE PRESET section ---
-        AddSectionHeader(stack, "ENGINE PRESET");
-
-        var presetRow = new StackPanel();
-        presetRow.Orientation = Orientation.Horizontal;
-        presetRow.Spacing = 2;
-        stack.Children.Add(presetRow.Visual);
-
-        var presetDescLabel = new Label();
-        presetDescLabel.Text = "";
-        presetDescLabel.IsVisible = false;
-
-        // Collect buttons so we can update their labels on click
-        var presetButtons = new List<(Button btn, EnginePreset preset)>();
-
-        foreach (var preset in EnginePresets.All)
-        {
-            if (preset == EnginePresets.Custom) continue;
-
-            var btn = new Button();
-            btn.Text = preset.ShortName;
-            btn.Width = 40;
-            presetButtons.Add((btn, preset));
-
-            TooltipService.SetTooltip(btn, preset.Description);
-            var capturedPreset = preset;
-            btn.Click += (_, _) =>
-            {
-                _atlasConfig.ApplyPreset(capturedPreset);
-                presetDescLabel.Text = capturedPreset.Description;
-                presetDescLabel.IsVisible = true;
-
-                // Expand selected, abbreviate others, disable selected for visual distinction
-                foreach (var (b, p) in presetButtons)
-                {
-                    var isSelected = p == capturedPreset;
-                    b.Text = isSelected ? p.Name : p.ShortName;
-                    b.Width = isSelected ? 80 : 40;
-                    b.IsEnabled = !isSelected;
-                }
-            };
-            presetRow.AddChild(btn);
-        }
-
-        stack.Children.Add(presetDescLabel.Visual);
-
-        // Default to XNA preset
-        _atlasConfig.ApplyPreset(EnginePresets.MonoGame);
-        presetDescLabel.Text = EnginePresets.MonoGame.Description;
-        presetDescLabel.IsVisible = true;
-        foreach (var (b, p) in presetButtons)
-        {
-            var isSelected = p == EnginePresets.MonoGame;
-            b.Text = isSelected ? p.Name : p.ShortName;
-            b.Width = isSelected ? 80 : 40;
-            b.IsEnabled = !isSelected;
-        }
-
-        AddDivider(stack);
 
         // --- FONT SOURCE section ---
         AddSectionHeader(stack, "FONT FILE");
@@ -380,6 +320,13 @@ public class FontConfigPanel : Panel
 
         var sizes = new[] { 128, 256, 512, 1024, 2048, 4096, 8192 };
 
+        var forceSizeCheck = new CheckBox();
+        forceSizeCheck.Text = "Force Size";
+        forceSizeCheck.Width = 220;
+        forceSizeCheck.IsChecked = !_atlasConfig.AutofitTexture;
+        TooltipService.SetTooltip(forceSizeCheck, "Use exact atlas dimensions instead of auto-fitting");
+        stack.Children.Add(forceSizeCheck.Visual);
+
         var maxSizeGrid = new Grid();
         maxSizeGrid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
         maxSizeGrid.Visual.Width = 0;
@@ -393,9 +340,9 @@ public class FontConfigPanel : Panel
         stack.Children.Add(maxSizeGrid.Visual);
 
         var sizeLabel = new Label();
-        sizeLabel.Text = "Max Size:";
+        sizeLabel.Text = "Size:";
         maxSizeGrid.AddChild(sizeLabel, row: 0, column: 0);
-        TooltipService.SetTooltip(sizeLabel, "Maximum atlas texture size in pixels");
+        TooltipService.SetTooltip(sizeLabel, "Atlas texture size in pixels");
 
         var maxWidthCombo = new ComboBox();
         maxWidthCombo.Width = 80;
@@ -425,14 +372,24 @@ public class FontConfigPanel : Panel
         };
         maxSizeGrid.AddChild(maxHeightCombo, row: 0, column: 3);
 
-        var autofit = new CheckBox();
-        autofit.Text = "Autofit Texture";
-        autofit.Width = 220;
-        autofit.IsChecked = _atlasConfig.AutofitTexture;
-        TooltipService.SetTooltip(autofit, "Shrink atlas to smallest size that fits");
-        autofit.Checked += (_, _) => { if (!updatingFromVm) _atlasConfig.AutofitTexture = true; };
-        autofit.Unchecked += (_, _) => { if (!updatingFromVm) _atlasConfig.AutofitTexture = false; };
-        stack.Children.Add(autofit.Visual);
+        maxSizeGrid.Visual.Visible = !_atlasConfig.AutofitTexture;
+
+        forceSizeCheck.Checked += (_, _) =>
+        {
+            if (!updatingFromVm)
+            {
+                _atlasConfig.AutofitTexture = false;
+                maxSizeGrid.Visual.Visible = true;
+            }
+        };
+        forceSizeCheck.Unchecked += (_, _) =>
+        {
+            if (!updatingFromVm)
+            {
+                _atlasConfig.AutofitTexture = true;
+                maxSizeGrid.Visual.Visible = false;
+            }
+        };
 
         var packAlgoLabel = new Label();
         packAlgoLabel.Text = "Packing Algorithm:";
@@ -561,7 +518,10 @@ public class FontConfigPanel : Panel
                         var hi = Array.IndexOf(sizes, _atlasConfig.MaxHeight);
                         if (hi >= 0) maxHeightCombo.SelectedIndex = hi;
                         break;
-                    case nameof(AtlasConfigViewModel.AutofitTexture): autofit.IsChecked = _atlasConfig.AutofitTexture; break;
+                    case nameof(AtlasConfigViewModel.AutofitTexture):
+                        forceSizeCheck.IsChecked = !_atlasConfig.AutofitTexture;
+                        maxSizeGrid.Visual.Visible = !_atlasConfig.AutofitTexture;
+                        break;
                     case nameof(AtlasConfigViewModel.PackingAlgorithmIndex): packAlgoCombo.SelectedIndex = _atlasConfig.PackingAlgorithmIndex; break;
                     case nameof(AtlasConfigViewModel.PaddingUp): padUpBox.Text = _atlasConfig.PaddingUp.ToString(); break;
                     case nameof(AtlasConfigViewModel.PaddingRight): padRightBox.Text = _atlasConfig.PaddingRight.ToString(); break;

@@ -220,12 +220,9 @@ public class EffectsPanel : Panel
             _effects.OutlineWidth = val;
         };
 
-        // Outline color RGB row
+        // Outline color row
         AddColorRow(_graphicsDevice, contentPanel, "Color:",
-            _effects.OutlineColorR, _effects.OutlineColorG, _effects.OutlineColorB,
-            v => _effects.OutlineColorR = v,
-            v => _effects.OutlineColorG = v,
-            v => _effects.OutlineColorB = v);
+            _effects.OutlineColor, hex => _effects.OutlineColor = hex);
     }
 
     private void BuildShadowContent(Gum.Wireframe.GraphicalUiElement contentPanel)
@@ -237,31 +234,31 @@ public class EffectsPanel : Panel
         AddSliderRow(contentPanel, "Blur:", 0, 10, 0,
             val => _effects.ShadowBlur = val);
 
-        // Shadow color RGB row
+        // Shadow color row
         AddColorRow(_graphicsDevice, contentPanel, "Color:",
-            _effects.ShadowColorR, _effects.ShadowColorG, _effects.ShadowColorB,
-            v => _effects.ShadowColorR = v,
-            v => _effects.ShadowColorG = v,
-            v => _effects.ShadowColorB = v);
+            _effects.ShadowColor, hex => _effects.ShadowColor = hex);
 
         // Shadow opacity slider
         AddSliderRow(contentPanel, "Opacity:", 0, 100, 100,
             val => _effects.ShadowOpacity = val);
+
+        var hardShadowCheck = new CheckBox();
+        hardShadowCheck.Text = "Hard Shadow";
+        hardShadowCheck.Width = 180;
+        hardShadowCheck.IsChecked = _effects.HardShadow;
+        TooltipService.SetTooltip(hardShadowCheck, "Use a crisp silhouette instead of soft antialiased edges");
+        hardShadowCheck.Checked += (_, _) => _effects.HardShadow = true;
+        hardShadowCheck.Unchecked += (_, _) => _effects.HardShadow = false;
+        contentPanel.Children.Add(hardShadowCheck.Visual);
     }
 
     private void BuildGradientContent(Gum.Wireframe.GraphicalUiElement contentPanel)
     {
         AddColorRow(_graphicsDevice, contentPanel, "Start:",
-            _effects.GradientStartR, _effects.GradientStartG, _effects.GradientStartB,
-            v => _effects.GradientStartR = v,
-            v => _effects.GradientStartG = v,
-            v => _effects.GradientStartB = v);
+            _effects.GradientStartColor, hex => _effects.GradientStartColor = hex);
 
         AddColorRow(_graphicsDevice, contentPanel, "End:",
-            _effects.GradientEndR, _effects.GradientEndG, _effects.GradientEndB,
-            v => _effects.GradientEndR = v,
-            v => _effects.GradientEndG = v,
-            v => _effects.GradientEndB = v);
+            _effects.GradientEndColor, hex => _effects.GradientEndColor = hex);
 
         AddSliderRow(contentPanel, "Angle:", 0, 360, 90,
             val => _effects.GradientAngle = val);
@@ -586,9 +583,11 @@ public class EffectsPanel : Panel
     private static void AddColorRow(
         GraphicsDevice graphicsDevice,
         Gum.Wireframe.GraphicalUiElement parent,
-        string label, byte defaultR, byte defaultG, byte defaultB,
-        Action<byte> onRChanged, Action<byte> onGChanged, Action<byte> onBChanged)
+        string label, string initialHex,
+        Action<string> onColorChanged)
     {
+        var (defaultR, defaultG, defaultB) = EffectsViewModel.ParseHex(initialHex);
+
         var grid = new Grid();
         grid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
         grid.Visual.Width = 0;
@@ -644,8 +643,8 @@ public class EffectsPanel : Panel
                 byte.TryParse(hex[2..4], System.Globalization.NumberStyles.HexNumber, null, out var g) &&
                 byte.TryParse(hex[4..6], System.Globalization.NumberStyles.HexNumber, null, out var b))
             {
-                onRChanged(r); onGChanged(g); onBChanged(b);
                 swatch.Color = new Microsoft.Xna.Framework.Color(r, g, b);
+                onColorChanged($"#{r:X2}{g:X2}{b:X2}");
             }
         };
         grid.AddChild(hexBox, row: 0, column: 2);
@@ -655,15 +654,12 @@ public class EffectsPanel : Panel
             var currentColor = swatch.Color;
             ColorPickerDialog.Show(graphicsDevice, currentColor, newColor =>
             {
-                // Set all three color values before updating UI to avoid
-                // regeneration seeing partially-updated color.
-                onRChanged(newColor.R);
-                onGChanged(newColor.G);
-                onBChanged(newColor.B);
+                var hex = $"#{newColor.R:X2}{newColor.G:X2}{newColor.B:X2}";
                 swatch.Color = newColor;
                 suppressHexSync = true;
-                hexBox.Text = $"#{newColor.R:X2}{newColor.G:X2}{newColor.B:X2}";
+                hexBox.Text = hex;
                 suppressHexSync = false;
+                onColorChanged(hex);
             });
         };
     }
