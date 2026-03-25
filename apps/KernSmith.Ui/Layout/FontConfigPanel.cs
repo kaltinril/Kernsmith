@@ -4,6 +4,7 @@ using KernSmith.Ui.Models;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using MonoGameGum.GueDeriving;
+using NativeFileDialogNET;
 
 namespace KernSmith.Ui.Layout;
 
@@ -56,8 +57,13 @@ public class FontConfigPanel : Panel
         browseBtn.Visual.Width = 0;
         browseBtn.Click += (_, _) =>
         {
-            var dialog = new FileBrowserDialog();
-            dialog.Show(path => _mainViewModel.LoadFontFromPath(path));
+            using var dialog = new NativeFileDialog()
+                .SelectFile()
+                .AddFilter("Font Files", "ttf,otf,woff,ttc")
+                .AddFilter("All Files", "*");
+            var result = dialog.Open(out string? path);
+            if (result == DialogResult.Okay && path != null)
+                _mainViewModel.LoadFontFromPath(path);
         };
         stack.Children.Add(browseBtn.Visual);
         TooltipService.SetTooltip(browseBtn, "Browse for a font file");

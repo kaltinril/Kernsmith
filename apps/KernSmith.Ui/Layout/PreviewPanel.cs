@@ -127,7 +127,6 @@ public class PreviewPanel : Panel
         _previewTabBtn = new Button();
         _previewTabBtn.Text = "Preview";
         _previewTabBtn.Width = 90;
-        _previewTabBtn.IsEnabled = false; // active tab shown as disabled
         _previewTabBtn.Click += (_, _) => SwitchTab(ActiveTab.Preview);
         tabBar.AddChild(_previewTabBtn);
 
@@ -142,6 +141,9 @@ public class PreviewPanel : Panel
         _sampleTextTabBtn.Width = 70;
         _sampleTextTabBtn.Click += (_, _) => SwitchTab(ActiveTab.SampleText);
         tabBar.AddChild(_sampleTextTabBtn);
+
+        // Style initial active tab
+        StyleTabButtons(_activeTab);
 
         // UI scale controls — right-aligned in tab bar
         var scaleSpacer = new ContainerRuntime();
@@ -389,17 +391,54 @@ public class PreviewPanel : Panel
         if (_sampleTextContent != null)
             _sampleTextContent.IsVisible = tab == ActiveTab.SampleText;
 
-        // Toggle button enabled state to indicate active tab (disabled = active)
-        if (_previewTabBtn != null)
-            _previewTabBtn.IsEnabled = tab != ActiveTab.Preview;
-        if (_charactersTabBtn != null)
-            _charactersTabBtn.IsEnabled = tab != ActiveTab.Characters;
-        if (_sampleTextTabBtn != null)
-            _sampleTextTabBtn.IsEnabled = tab != ActiveTab.SampleText;
+        StyleTabButtons(tab);
 
         // Refresh sample text rendering when switching to that tab
         if (tab == ActiveTab.SampleText && _preview.HasResult)
             RenderSampleText();
+    }
+
+    private void StyleTabButtons(ActiveTab activeTab)
+    {
+        StyleTab(_previewTabBtn, activeTab == ActiveTab.Preview);
+        StyleTab(_charactersTabBtn, activeTab == ActiveTab.Characters);
+        StyleTab(_sampleTextTabBtn, activeTab == ActiveTab.SampleText);
+    }
+
+    private static void StyleTab(Button? btn, bool isActive)
+    {
+        if (btn == null) return;
+        var buttonVisual = (Gum.Forms.DefaultVisuals.V3.ButtonVisual)btn.Visual;
+
+        var activeColor = Theme.Accent;
+        var activeHover = Theme.AccentHover;
+        var activePushed = new Color(0, 90, 170);
+        var inactiveColor = Theme.PanelBorder;
+        var inactiveHover = new Color(75, 75, 80);
+        var inactivePushed = new Color(50, 50, 55);
+
+        var enabled = buttonVisual.States.Enabled;
+        enabled.Clear();
+        enabled.Apply = () =>
+        {
+            buttonVisual.Background.Color = isActive ? activeColor : inactiveColor;
+        };
+
+        var highlighted = buttonVisual.States.Highlighted;
+        highlighted.Clear();
+        highlighted.Apply = () =>
+        {
+            buttonVisual.Background.Color = isActive ? activeHover : inactiveHover;
+        };
+
+        var pushed = buttonVisual.States.Pushed;
+        pushed.Clear();
+        pushed.Apply = () =>
+        {
+            buttonVisual.Background.Color = isActive ? activePushed : inactivePushed;
+        };
+
+        btn.UpdateState();
     }
 
     private void UpdateDisplay()

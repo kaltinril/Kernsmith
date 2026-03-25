@@ -62,6 +62,9 @@ internal static class GlyphCompositor
             if (outlineLayer != null)
             {
                 // Merge outline alpha with original glyph alpha into the outline-sized canvas.
+                // The shadow silhouette must be fully opaque everywhere the final glyph will be
+                // (outline ring + body interior), otherwise anti-aliased boundary pixels between
+                // the ring and body produce sub-255 alpha, causing lighter shadow artifacts.
                 var mergedAlpha = new byte[outlineLayer.Width * outlineLayer.Height];
 
                 // First, copy outline alpha.
@@ -290,4 +293,5 @@ internal static class GlyphCompositor
 
         return new GlyphLayer(rgba, width, height, OffsetX: 0, OffsetY: 0, ZOrder: 2);
     }
+
 }

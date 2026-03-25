@@ -1,5 +1,11 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(find ~/.nuget/packages -path */monogamegum* -name *.cs)",
+      "Bash(find ~/.nuget/packages -path *gum* -type d -maxdepth 3)",
+      "Bash(find ~/.nuget/packages -path *monogamegum* -name *.dll)",
+      "Bash(find ~/.nuget/packages -path *gum* -name *.dll)"
+    ],
     "deny": [
       "Read(**/.env)",
       "Bash(cat */.env*)",
@@ -7,7 +13,6 @@
       "Bash(type */.env*)",
       "Bash(type *.env*)"
     ],
-    "allow": [],
     "additionalDirectories": []
   }
 }

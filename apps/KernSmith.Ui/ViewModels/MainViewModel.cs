@@ -5,6 +5,7 @@ using KernSmith.Ui.Layout;
 using KernSmith.Ui.Models;
 using KernSmith.Ui.Services;
 using Microsoft.Xna.Framework;
+using NativeFileDialogNET;
 
 namespace KernSmith.Ui.ViewModels;
 
@@ -18,7 +19,6 @@ public class MainViewModel : ViewModel
     private static readonly string AppVersion = typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
     private static readonly string BaseTitle = $"KernSmith v{AppVersion}";
 
-    private readonly FileDialogService _fileDialogService;
     private readonly FontDiscoveryService _fontDiscoveryService;
     private readonly GenerationService _generationService;
     private readonly ProjectService _projectService;
@@ -41,14 +41,12 @@ public class MainViewModel : ViewModel
     public SessionService SessionService => _sessionService;
 
     public MainViewModel(
-        FileDialogService fileDialogService,
         FontDiscoveryService fontDiscoveryService,
         GenerationService generationService,
         ProjectService projectService,
         SessionService sessionService,
         KernSmithGame game)
     {
-        _fileDialogService = fileDialogService;
         _fontDiscoveryService = fontDiscoveryService;
         _generationService = generationService;
         _projectService = projectService;
@@ -119,8 +117,13 @@ public class MainViewModel : ViewModel
     /// </summary>
     public void OpenFont()
     {
-        var dialog = new FileBrowserDialog();
-        dialog.Show(LoadFontFromPath);
+        using var dialog = new NativeFileDialog()
+            .SelectFile()
+            .AddFilter("Font Files", "ttf,otf,woff,ttc")
+            .AddFilter("All Files", "*");
+        var result = dialog.Open(out string? path);
+        if (result == DialogResult.Okay && path != null)
+            LoadFontFromPath(path);
     }
 
     /// <summary>
@@ -336,8 +339,11 @@ public class MainViewModel : ViewModel
         }
 
         var initialDir = _sessionService.State.LastOutputDir;
-        var dialog = new SaveDialog("myfont", "fnt");
-        dialog.Show(path =>
+        using var dialog = new NativeFileDialog()
+            .SaveFile()
+            .AddFilter("BMFont Files", "*.fnt");
+        var result = dialog.Open(out string? path, initialDir, "myfont.fnt");
+        if (result == DialogResult.Okay && path != null)
         {
             try
             {
@@ -359,7 +365,7 @@ public class MainViewModel : ViewModel
             {
                 StatusBar.SetError($"Export failed: {ex.Message}");
             }
-        }, initialDir);
+        }
     }
 
     /// <summary>
@@ -375,8 +381,12 @@ public class MainViewModel : ViewModel
         }
 
         var initialDir = _sessionService.State.LastOutputDir;
-        var dialog = new SaveDialog("myproject", "bmfc");
-        dialog.Show(DoSaveProject, initialDir);
+        using var dialog = new NativeFileDialog()
+            .SaveFile()
+            .AddFilter("KernSmith Projects", "*.bmfc");
+        var result = dialog.Open(out string? savePath, initialDir, "myproject.bmfc");
+        if (result == DialogResult.Okay && savePath != null)
+            DoSaveProject(savePath);
     }
 
     private void DoSaveProject(string path)
@@ -400,8 +410,13 @@ public class MainViewModel : ViewModel
     /// </summary>
     public void LoadProject()
     {
-        var dialog = new FileBrowserDialog { FileExtensionFilter = [".bmfc"] };
-        dialog.Show(LoadProjectFromPath);
+        using var dialog = new NativeFileDialog()
+            .SelectFile()
+            .AddFilter("KernSmith Projects", "bmfc")
+            .AddFilter("All Files", "*");
+        var result = dialog.Open(out string? path);
+        if (result == DialogResult.Okay && path != null)
+            LoadProjectFromPath(path);
     }
 
     /// <summary>
