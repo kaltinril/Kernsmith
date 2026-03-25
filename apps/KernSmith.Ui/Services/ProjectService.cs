@@ -80,24 +80,18 @@ public class ProjectService
         effects.SuperSampleLevel = options.SuperSampleLevel;
         effects.OutlineEnabled = options.Outline > 0;
         effects.OutlineWidth = options.Outline > 0 ? options.Outline : 1;
-        effects.OutlineColorR = options.OutlineR;
-        effects.OutlineColorG = options.OutlineG;
-        effects.OutlineColorB = options.OutlineB;
+        effects.OutlineColor = EffectsViewModel.ToHex(options.OutlineR, options.OutlineG, options.OutlineB);
         effects.ShadowEnabled = options.ShadowOffsetX != 0 || options.ShadowOffsetY != 0 || options.ShadowBlur != 0;
         effects.ShadowOffsetX = options.ShadowOffsetX;
         effects.ShadowOffsetY = options.ShadowOffsetY;
         effects.ShadowBlur = options.ShadowBlur;
-        effects.ShadowColorR = options.ShadowR;
-        effects.ShadowColorG = options.ShadowG;
-        effects.ShadowColorB = options.ShadowB;
+        effects.ShadowColor = EffectsViewModel.ToHex(options.ShadowR, options.ShadowG, options.ShadowB);
         effects.ShadowOpacity = (int)(options.ShadowOpacity * 100);
         effects.GradientEnabled = options.GradientStartR.HasValue && options.GradientEndR.HasValue;
-        effects.GradientStartR = options.GradientStartR ?? 255;
-        effects.GradientStartG = options.GradientStartG ?? 255;
-        effects.GradientStartB = options.GradientStartB ?? 255;
-        effects.GradientEndR = options.GradientEndR ?? 0;
-        effects.GradientEndG = options.GradientEndG ?? 0;
-        effects.GradientEndB = options.GradientEndB ?? 0;
+        effects.GradientStartColor = EffectsViewModel.ToHex(
+            options.GradientStartR ?? 255, options.GradientStartG ?? 255, options.GradientStartB ?? 255);
+        effects.GradientEndColor = EffectsViewModel.ToHex(
+            options.GradientEndR ?? 0, options.GradientEndG ?? 0, options.GradientEndB ?? 0);
         effects.GradientAngle = (int)options.GradientAngle;
         effects.ChannelPackingEnabled = options.Channels != null;
         effects.SdfEnabled = options.Sdf;
@@ -128,6 +122,11 @@ public class ProjectService
         EffectsViewModel effects,
         CharacterGridViewModel characterGrid)
     {
+        var outlineRgb = EffectsViewModel.ParseHex(effects.OutlineColor);
+        var shadowRgb = EffectsViewModel.ParseHex(effects.ShadowColor);
+        var gradStartRgb = EffectsViewModel.ParseHex(effects.GradientStartColor);
+        var gradEndRgb = EffectsViewModel.ParseHex(effects.GradientEndColor);
+
         var options = new FontGeneratorOptions
         {
             Size = fontConfig.FontSize,
@@ -145,22 +144,22 @@ public class ProjectService
             EnableHinting = effects.Hinting,
             SuperSampleLevel = effects.SuperSampleLevel,
             Outline = effects.OutlineEnabled ? effects.OutlineWidth : 0,
-            OutlineR = effects.OutlineColorR,
-            OutlineG = effects.OutlineColorG,
-            OutlineB = effects.OutlineColorB,
+            OutlineR = outlineRgb.R,
+            OutlineG = outlineRgb.G,
+            OutlineB = outlineRgb.B,
             ShadowOffsetX = effects.ShadowEnabled ? effects.ShadowOffsetX : 0,
             ShadowOffsetY = effects.ShadowEnabled ? effects.ShadowOffsetY : 0,
             ShadowBlur = effects.ShadowEnabled ? effects.ShadowBlur : 0,
-            ShadowR = effects.ShadowColorR,
-            ShadowG = effects.ShadowColorG,
-            ShadowB = effects.ShadowColorB,
+            ShadowR = shadowRgb.R,
+            ShadowG = shadowRgb.G,
+            ShadowB = shadowRgb.B,
             ShadowOpacity = effects.ShadowOpacity / 100f,
-            GradientStartR = effects.GradientEnabled ? effects.GradientStartR : null,
-            GradientStartG = effects.GradientEnabled ? effects.GradientStartG : null,
-            GradientStartB = effects.GradientEnabled ? effects.GradientStartB : null,
-            GradientEndR = effects.GradientEnabled ? effects.GradientEndR : null,
-            GradientEndG = effects.GradientEnabled ? effects.GradientEndG : null,
-            GradientEndB = effects.GradientEnabled ? effects.GradientEndB : null,
+            GradientStartR = effects.GradientEnabled ? gradStartRgb.R : null,
+            GradientStartG = effects.GradientEnabled ? gradStartRgb.G : null,
+            GradientStartB = effects.GradientEnabled ? gradStartRgb.B : null,
+            GradientEndR = effects.GradientEnabled ? gradEndRgb.R : null,
+            GradientEndG = effects.GradientEnabled ? gradEndRgb.G : null,
+            GradientEndB = effects.GradientEnabled ? gradEndRgb.B : null,
             GradientAngle = effects.GradientAngle,
             FaceIndex = fontConfig.FaceIndex,
             Sdf = effects.SdfEnabled,

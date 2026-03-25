@@ -20,28 +20,20 @@ public class EffectsViewModel : ViewModel
     // Outline
     public bool OutlineEnabled { get => Get<bool>(); set => Set(value); }
     public int OutlineWidth { get => Get<int>(); set => Set(value); }
-    public byte OutlineColorR { get => Get<byte>(); set => Set(value); }
-    public byte OutlineColorG { get => Get<byte>(); set => Set(value); }
-    public byte OutlineColorB { get => Get<byte>(); set => Set(value); }
+    public string OutlineColor { get => Get<string>(); set => Set(value); }
 
     // Shadow
     public bool ShadowEnabled { get => Get<bool>(); set => Set(value); }
     public int ShadowOffsetX { get => Get<int>(); set => Set(value); }
     public int ShadowOffsetY { get => Get<int>(); set => Set(value); }
     public int ShadowBlur { get => Get<int>(); set => Set(value); }
-    public byte ShadowColorR { get => Get<byte>(); set => Set(value); }
-    public byte ShadowColorG { get => Get<byte>(); set => Set(value); }
-    public byte ShadowColorB { get => Get<byte>(); set => Set(value); }
+    public string ShadowColor { get => Get<string>(); set => Set(value); }
     public int ShadowOpacity { get => Get<int>(); set => Set(value); }
 
     // Gradient
     public bool GradientEnabled { get => Get<bool>(); set => Set(value); }
-    public byte GradientStartR { get => Get<byte>(); set => Set(value); }
-    public byte GradientStartG { get => Get<byte>(); set => Set(value); }
-    public byte GradientStartB { get => Get<byte>(); set => Set(value); }
-    public byte GradientEndR { get => Get<byte>(); set => Set(value); }
-    public byte GradientEndG { get => Get<byte>(); set => Set(value); }
-    public byte GradientEndB { get => Get<byte>(); set => Set(value); }
+    public string GradientStartColor { get => Get<string>(); set => Set(value); }
+    public string GradientEndColor { get => Get<string>(); set => Set(value); }
     public int GradientAngle { get => Get<int>(); set => Set(value); }
 
     // Channel Packing
@@ -72,10 +64,29 @@ public class EffectsViewModel : ViewModel
         ShadowOffsetX = 2;
         ShadowOffsetY = 2;
         ShadowOpacity = 100;
-        GradientStartR = 255;
-        GradientStartG = 255;
-        GradientStartB = 255;
+        OutlineColor = "#000000";
+        ShadowColor = "#000000";
+        GradientStartColor = "#FFFFFF";
+        GradientEndColor = "#000000";
         GradientAngle = 90;
         FallbackCharacter = "?";
     }
+
+    /// <summary>Parses a hex color string (#RRGGBB) into R, G, B bytes. Returns black on invalid input.</summary>
+    public static (byte R, byte G, byte B) ParseHex(string? hex)
+    {
+        if (string.IsNullOrEmpty(hex)) return (0, 0, 0);
+        var h = hex.StartsWith('#') ? hex[1..] : hex;
+        if (h.Length == 6 &&
+            byte.TryParse(h[..2], System.Globalization.NumberStyles.HexNumber, null, out var r) &&
+            byte.TryParse(h[2..4], System.Globalization.NumberStyles.HexNumber, null, out var g) &&
+            byte.TryParse(h[4..6], System.Globalization.NumberStyles.HexNumber, null, out var b))
+        {
+            return (r, g, b);
+        }
+        return (0, 0, 0);
+    }
+
+    /// <summary>Formats R, G, B bytes as a hex color string (#RRGGBB).</summary>
+    public static string ToHex(byte r, byte g, byte b) => $"#{r:X2}{g:X2}{b:X2}";
 }
