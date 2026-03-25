@@ -1,8 +1,9 @@
-# Phase 77B — Atlas Size Auto Mode & Remove Engine Presets
+# Phase 77B — Force Size Checkbox & Remove Engine Presets
 
-> **Status**: Planning
+> **Status**: In Progress
 > **Created**: 2026-03-23
-> **Goal**: Replace engine presets with Auto/Manual atlas sizing so the user's explicit size is respected and auto-sizing is the clear default.
+> **Updated**: 2026-03-24
+> **Goal**: Replace engine presets with a "Force Size" checkbox. Default is autofit (no size UI). When checked, Width/Height dropdowns appear.
 
 ---
 
@@ -14,96 +15,90 @@
 
 ## Design
 
-### Atlas Size Mode
+### Force Size Checkbox
 
-Replace the current `AutofitTexture` boolean + `MaxWidth`/`MaxHeight` pair with a clearer mental model:
+Replace engine presets + `AutofitTexture` boolean with a single **"Force Size"** checkbox:
 
-- **Auto** (default): The engine picks the smallest atlas that fits all glyphs. PowerOfTwo toggle still applies. This is the current `AutofitTexture=true` behavior, but without a misleading max size shown.
-- **Manual**: The user sets explicit Width and Height. The atlas uses exactly that size. If glyphs don't fit, they spill to multiple pages (existing packer behavior).
+- **Unchecked** (default): Autofit — the engine picks the smallest atlas that fits all glyphs. Width/Height dropdowns are hidden. This is the current `AutofitTexture=true` behavior.
+- **Checked**: User sets explicit Width and Height via dropdowns. The atlas uses exactly that size. If glyphs don't fit, they spill to multiple pages (existing packer behavior).
+
+This is simpler than the original Auto/Manual enum plan — no new enum, just inverting the existing `AutofitTexture` boolean with better UX.
 
 ### UI Changes
 
 **Remove from FontConfigPanel:**
 - The entire engine preset button row (MonoGame, Unity, Godot, Unreal, Phaser buttons)
+- Preset description label
 - `EnginePreset` model and `EnginePresets.All` static list
 - `SelectedPresetName` tracking in `AtlasConfigViewModel`
 - `ApplyPreset()` method
 
-**Add/modify in atlas config area (likely in EffectsPanel or a new AtlasConfigPanel section):**
-- **Size Mode** toggle: Auto / Manual (two radio-style buttons or a dropdown)
-- **Width** and **Height** numeric inputs — visible and editable only in Manual mode; hidden or greyed out in Auto mode
-- **Power of Two** checkbox — visible in both modes
+**Modify in FontConfigPanel atlas config area:**
+- Replace "Autofit Texture" checkbox with **"Force Size"** checkbox (inverted logic)
+- Width/Height ComboBox dropdowns: **only visible when Force Size is checked**
+- Power of Two checkbox: visible always (applies to both autofit and forced)
 
 **Keep as-is:**
 - Padding (Up/Right/Down/Left)
 - Spacing (H/V)
-- Descriptor Format dropdown (Text/Xml/Binary)
 - Include Kerning checkbox
+- Packing Algorithm dropdown
+
+### ViewModel Changes
+
+**AtlasConfigViewModel:**
+- Remove `SelectedPresetName` property
+- Remove `ApplyPreset()` method
+- Keep `AutofitTexture` property (existing, works as-is)
+- Keep `MaxWidth`, `MaxHeight`, `PowerOfTwo` properties
+- No new enum or mode property needed
 
 ### Core Library Changes
 
-**FontGeneratorOptions:**
-- Keep `AutofitTexture` as the underlying mechanism (no breaking API change)
-- When Auto: `AutofitTexture = true`, `MaxTextureWidth`/`MaxTextureHeight` set to a sensible ceiling (e.g., 4096×4096) so the estimator has room
-- When Manual: `AutofitTexture = false`, `MaxTextureWidth`/`MaxTextureHeight` set to the user's exact values
-
-**BmFont.GenerateCore() sizing logic:**
-- No changes needed — the existing `AutofitTexture` code path already handles both cases correctly
-- When `AutofitTexture = false`, the estimator still runs but is clamped to `MaxWidth`/`MaxHeight`, and the packer uses those dimensions directly
-
-**BmFontBuilder:**
-- No API changes needed — `WithMaxTextureSize()`, `WithAutofitTexture()`, `WithPowerOfTwo()` remain
+None. `FontGeneratorOptions.AutofitTexture`, `MaxTextureWidth`, `MaxTextureHeight` remain unchanged.
 
 ### Data Flow
 
 ```
-UI (Auto mode)    → AutofitTexture=true,  MaxWidth=4096, MaxHeight=4096
-UI (Manual mode)  → AutofitTexture=false, MaxWidth=<user>, MaxHeight=<user>
-                  ↓
-GenerationRequest → same fields
-                  ↓
-BmFontBuilder     → .WithMaxTextureSize(w, h).WithAutofitTexture(auto).WithPowerOfTwo(pot)
-                  ↓
-BmFont.GenerateCore() → existing sizing logic handles both paths
+UI (Force Size unchecked) → AutofitTexture=true,  MaxWidth=4096, MaxHeight=4096
+UI (Force Size checked)   → AutofitTexture=false, MaxWidth=<user>, MaxHeight=<user>
+                          ↓
+GenerationRequest         → same fields (no changes needed)
+                          ↓
+BmFontBuilder             → .WithMaxTextureSize(w, h).WithAutofitTexture(auto).WithPowerOfTwo(pot)
+                          ↓
+BmFont.GenerateCore()     → existing sizing logic handles both paths
 ```
 
 ### Project Save/Load
 
 **ProjectService mapping:**
-- Auto mode: save `AutofitTexture=true`, don't persist width/height (or persist as 4096/4096 sentinel)
-- Manual mode: save `AutofitTexture=false`, persist user's width/height
-- Load: if `AutofitTexture=true` → Auto mode; if `false` → Manual mode with saved width/height
+- Force Size unchecked: save `AutofitTexture=true`, persist 4096/4096 as ceiling
+- Force Size checked: save `AutofitTexture=false`, persist user's width/height
+- Load: if `AutofitTexture=true` → Force Size unchecked; if `false` → checked with saved width/height
+- Backward compat: existing projects already have `AutofitTexture` field — no migration needed
 
 ## Implementation Steps
 
-### Step 1: Remove Engine Presets from UI
-- Delete preset button row from `FontConfigPanel.cs`
-- Remove `EnginePreset.cs` and `EnginePresets` static class
+### Step 1: Remove Engine Presets
+- Delete `EnginePreset.cs` file
+- Remove preset button row and description label from `FontConfigPanel.cs`
 - Remove `SelectedPresetName` from `AtlasConfigViewModel`
-- Remove `ApplyPreset()` method
-- Keep descriptor format dropdown (move if needed)
+- Remove `ApplyPreset()` method from `AtlasConfigViewModel`
 
-### Step 2: Add Size Mode to AtlasConfigViewModel
-- Add `AtlasSizeMode` enum: `Auto`, `Manual`
-- Add `SizeMode` property (default: `Auto`)
-- Keep `MaxWidth`, `MaxHeight`, `PowerOfTwo` properties
-- When `SizeMode` is `Auto`, `MaxWidth`/`MaxHeight` are informational only (show "Auto" in UI)
+### Step 2: Replace Autofit Checkbox with Force Size
+- Rename/replace "Autofit Texture" checkbox with "Force Size" checkbox (inverted: Force Size checked = AutofitTexture false)
+- Wire checkbox: checked → `_atlasConfig.AutofitTexture = false`, unchecked → `_atlasConfig.AutofitTexture = true`
 
-### Step 3: Update Atlas Config UI
-- Add Auto/Manual toggle in the atlas config section
-- Show Width/Height inputs only when Manual is selected
-- PowerOfTwo checkbox visible in both modes
+### Step 3: Conditional Width/Height Visibility
+- Width/Height ComboBox row: set `Visible = false` by default (autofit is default)
+- When Force Size checked → show Width/Height row
+- When Force Size unchecked → hide Width/Height row, set MaxWidth/MaxHeight to 4096
 
-### Step 4: Update GenerationService
-- Map `SizeMode.Auto` → `AutofitTexture=true`, large ceiling for max dimensions
-- Map `SizeMode.Manual` → `AutofitTexture=false`, user's exact dimensions
-
-### Step 5: Update ProjectService Save/Load
-- Serialize/deserialize the new `SizeMode` field
-- Backward compat: if loading old project without `SizeMode`, infer from `AutofitTexture`
-
-### Step 6: Update GenerationRequest
-- Add `AtlasSizeMode` field (or keep mapping through `AutofitTexture` + dimensions)
+### Step 4: Update MainViewModel GenerationRequest
+- When `AutofitTexture = true`: pass 4096/4096 as MaxWidth/MaxHeight ceiling
+- When `AutofitTexture = false`: pass the user's selected MaxWidth/MaxHeight
+- (This may already be correct — verify)
 
 ## Key Source Files
 
@@ -112,17 +107,13 @@ BmFont.GenerateCore() → existing sizing logic handles both paths
 | Engine preset model (DELETE) | `apps/KernSmith.Ui/Models/EnginePreset.cs` |
 | Preset buttons in UI (REMOVE) | `apps/KernSmith.Ui/Layout/FontConfigPanel.cs` |
 | Atlas config view model (MODIFY) | `apps/KernSmith.Ui/ViewModels/AtlasConfigViewModel.cs` |
-| Generation request (MODIFY) | `apps/KernSmith.Ui/Models/GenerationRequest.cs` |
-| Generation service (MODIFY) | `apps/KernSmith.Ui/Services/GenerationService.cs` |
-| Project service (MODIFY) | `apps/KernSmith.Ui/Services/ProjectService.cs` |
+| Main view model (VERIFY) | `apps/KernSmith.Ui/ViewModels/MainViewModel.cs` |
+| Project service (VERIFY) | `apps/KernSmith.Ui/Services/ProjectService.cs` |
 | Core options (NO CHANGE) | `src/KernSmith/Config/FontGeneratorOptions.cs` |
-| Atlas estimator (NO CHANGE) | `src/KernSmith/Atlas/AtlasSizeEstimator.cs` |
-| BmFont generator (NO CHANGE) | `src/KernSmith/BmFont.cs` |
-| Builder API (NO CHANGE) | `src/KernSmith/BmFontBuilder.cs` |
 
 ## Scope
 
 - **UI-only change** — no core library API changes, no breaking changes for CLI or programmatic users
 - **Risk**: Low — removes code, simplifies UI, existing atlas logic handles both paths
-- **Files changed**: ~6 UI files
+- **Files changed**: ~3 UI files
 - **Files deleted**: 1 (`EnginePreset.cs`)

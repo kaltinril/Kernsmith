@@ -1,11 +1,9 @@
 using Gum.Mvvm;
-using KernSmith.Ui.Models;
 
 namespace KernSmith.Ui.ViewModels;
 
 /// <summary>
 /// Holds atlas texture, padding, spacing, output format, and packing settings.
-/// Can be bulk-updated via <see cref="ApplyPreset"/> when the user selects an engine preset.
 /// </summary>
 public class AtlasConfigViewModel : ViewModel
 {
@@ -32,9 +30,6 @@ public class AtlasConfigViewModel : ViewModel
     // Packing algorithm
     public int PackingAlgorithmIndex { get => Get<int>(); set => Set(value); }
 
-    // Engine preset tracking
-    public string SelectedPresetName { get => Get<string>(); set => Set(value); }
-
     public AtlasConfigViewModel()
     {
         MaxWidth = 1024;
@@ -49,27 +44,5 @@ public class AtlasConfigViewModel : ViewModel
         SpacingV = 1;
         DescriptorFormat = OutputFormat.Text;
         IncludeKerning = true;
-        SelectedPresetName = "";
-    }
-
-    /// <summary>
-    /// Applies all settings from an <see cref="EnginePreset"/> to this view model.
-    /// </summary>
-    public void ApplyPreset(EnginePreset preset)
-    {
-        MaxWidth = preset.MaxWidth;
-        MaxHeight = preset.MaxHeight;
-        PowerOfTwo = preset.PowerOfTwo;
-        AutofitTexture = preset.AutofitTexture;
-        PaddingUp = preset.Padding;
-        PaddingRight = preset.Padding;
-        PaddingDown = preset.Padding;
-        PaddingLeft = preset.Padding;
-        SpacingH = preset.Spacing;
-        SpacingV = preset.Spacing;
-        IncludeKerning = preset.IncludeKerning;
-        DescriptorFormat = Enum.TryParse<OutputFormat>(preset.DescriptorFormat, out var fmt)
-            ? fmt : OutputFormat.Text;
-        SelectedPresetName = preset.Name;
     }
 }
