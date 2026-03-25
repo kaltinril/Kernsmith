@@ -1,6 +1,6 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-21, 55, 60-69, 72-77 complete. Phase 30 (WASM) is future/exploratory. Phases 77B, 80 active.
+> **Status**: Phases 1-21, 55, 60-69, 72-77, 77B complete. Phase 30 (WASM) is future/exploratory. Phases 79, 80 planned.
 > **Date**: 2026-03-24
 
 ---
@@ -81,13 +81,14 @@ Output Layer
 |---|----------|-------------|--------|
 | 30 | [WASM Rasterization](phase-30-wasm-rasterization.md) | Live investigation of WASM-compatible rasterizers (prior research was preliminary) | Future |
 | 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
-| 77B | [Atlas Size Auto Mode](phase-77b-atlas-size-auto-mode.md) | Atlas size auto mode and remove engine presets | Planning |
+| 77B | [Force Size & Remove Presets](phase-77b-atlas-size-auto-mode.md) | Replace engine presets with Force Size checkbox | Complete |
 | 80 | [Atlas Preview Rendering](phase-80-atlas-preview-rendering.md) | Fix atlas preview rendering quality in UI to match saved PNG | Planning |
 | 81 | [Hiero Format Support](phase-81-hiero-format-support.md) | Hiero `.hiero` config format specification and design decisions | Planning |
 | 82 | [Hiero Core Library](phase-82-hiero-core-library.md) | Add `.hiero` config read/write to the NuGet library | Planning |
 | 83 | [Hiero UI Changes](phase-83-hiero-ui-changes.md) | Update UI for `.hiero` file dialogs, drag-drop, project service | Planning |
 | 84 | [Hiero CLI Changes](phase-84-hiero-cli-changes.md) | Update CLI for `.hiero` format auto-detection and batch support | Planning |
 | 85 | [Hiero Documentation](phase-85-hiero-documentation.md) | Document `.hiero` support in README, CLI docs, samples | Planning |
+| 79 | [Replace FluentAssertions with Shouldly](phase-79-replace-fluentassertions.md) | Replace FluentAssertions (paid licensing) with Shouldly across test suite | Not started |
 | 100 | [Hiero Advanced Features](phase-100-hiero-advanced-features.md) | Advanced Hiero features requiring new KernSmith properties | Future |
 
 ---
@@ -192,9 +193,19 @@ These detailed docs were used during implementation and remain as reference mate
 | 5 | **FreeTypeSharp usage boundary** | Use everything it can do | Our parser only covers what FreeTypeSharp cannot (GPOS, OS/2, name, cmap). No duplication. |
 | 6 | **Unsafe code policy** | `AllowUnsafeBlocks` in main project | Isolated to FreeType interop (`FreeTypeRasterizer.cs`, `FreeTypeNative.cs`). Rest is safe C#. |
 | 7 | **FreeType memory** | Manual lifecycle via `IDisposable` | Pin font data with `GCHandle`. Do NOT use `FreeTypeFaceFacade`. See [done/plan-rasterization.md](done/plan-rasterization.md). |
-| 8 | **Test framework** | **xUnit** + FluentAssertions | See [done/plan-testing.md](done/plan-testing.md). |
+| 8 | **Test framework** | **xUnit** + Shouldly | FluentAssertions replaced with Shouldly in Phase 79 (FluentAssertions moved to paid licensing). See [done/plan-testing.md](done/plan-testing.md). |
 | 9 | **Error handling** | Custom exception hierarchy | `FontParsingException`, `RasterizationException`, `AtlasPackingException`. See [done/plan-data-types.md](done/plan-data-types.md). |
 | 10 | **UI framework** | **MonoGame (DesktopGL) + GUM UI + MonoGame.Extended** | Cross-platform, game-engine-native rendering, GUM provides Forms controls with MVVM binding. Code-only (no XAML, no GUM editor). NativeFileDialogSharp for OS file dialogs. Evaluated Avalonia, WPF, MAUI — chose MonoGame+GUM for alignment with target audience (game developers). For future web deployment, KNI (API-compatible MonoGame fork) provides Blazor WebGL — swap is NuGet-only, no code changes. Web rasterization tracked in Phase 30. |
+
+---
+
+## Disallowed Technologies
+
+> **Do not use these packages or libraries.** Any agent working on this project must avoid introducing these dependencies.
+
+| Package | Reason | Alternative |
+|---------|--------|-------------|
+| **FluentAssertions** | Moving to paid/commercial licensing (2026). Removed in Phase 79. | **Shouldly** (MIT, `using Shouldly;`) |
 
 ---
 
