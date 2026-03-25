@@ -108,8 +108,8 @@ Responsibilities:
 Effect mapping logic:
 - `ColorEffect` → ignore on import (log warning if non-white); always write white on export. Full fill-color support deferred to Phase 100.
 - `GradientEffect` → `GradientStartR/G/B`, `GradientEndR/G/B`; Hiero's Offset/Scale/Cyclic have no direct equivalent (KernSmith uses `GradientAngle`, `GradientMidpoint`)
-- `OutlineEffect` → `OutlineThickness` (float→int, round-to-nearest), `OutlineR`, `OutlineG`, `OutlineB`; join has no KernSmith equivalent (dropped)
-- `ShadowEffect` → `ShadowOffsetX/Y`, `ShadowR/G/B`, `ShadowOpacity`; Hiero's two-param blur collapses as `ShadowBlur = kernelSize * passes`. Two-param blur deferred to Phase 100.
+- `OutlineEffect` → `Outline` (float→int, round-to-nearest), `OutlineR`, `OutlineG`, `OutlineB`; join has no KernSmith equivalent (dropped)
+- `ShadowEffect` → `ShadowOffsetX/Y`, `ShadowR/G/B`, `ShadowOpacity`, `ShadowBlur`; `HardShadow` has no Hiero equivalent (omitted on export). Hiero's two-param blur collapses as `ShadowBlur = kernelSize * passes`. Two-param blur deferred to Phase 100.
 - `DistanceFieldEffect` → `Sdf = true`; Hiero's Scale and Spread have no KernSmith equivalent
 - `OutlineWobbleEffect` / `OutlineZigzagEffect` → log warning, skip (no KernSmith equivalent)
 
@@ -130,7 +130,7 @@ Responsibilities:
   - Write `GradientEffect` if gradient is enabled
   - Write `ShadowEffect` if shadow is enabled
   - Write `DistanceFieldEffect` if SDF is enabled
-- Log warnings for KernSmith features with no Hiero equivalent
+- Log warnings for KernSmith features with no Hiero equivalent (including `HardShadow`)
 
 ### 4. Public API Updates
 
@@ -228,8 +228,12 @@ Decisions made during pre-implementation review:
 
 1. **`pad.advance.x/y`** — Drop on import with warning. Semantically different from `Spacing` (per-glyph advance vs atlas spacing). Deferred to Phase 100.
 2. **ColorEffect** — Ignore on import (log warning if non-white), always write white on export. Full fill-color support deferred to Phase 100.
-3. **Outline thickness** — Use round-to-nearest (not truncation) for float→int conversion.
+3. **Outline thickness** — Hiero's float width maps to `FontGeneratorOptions.Outline` (int). Use round-to-nearest (not truncation) for float→int conversion.
 4. **Shadow blur** — Collapse as `ShadowBlur = kernelSize * passes`. Two-parameter blur deferred to Phase 100.
 5. **Font paths on export** — Use relative paths, matching `BmfcConfigWriter` behavior.
 6. **Gradient Offset/Scale/Cyclic, DistanceField Scale/Spread, Wobble/Zigzag** — All deferred to Phase 100.
 7. **Scope focus** — Priority is KernSmith ↔ .hiero round-trip fidelity, not full Hiero ecosystem compatibility.
+
+---
+
+> **Plan review 2026-03-24**: Fixed `OutlineThickness` references to `Outline` (the actual `FontGeneratorOptions` property name). Added `HardShadow` to shadow effect mapping notes (added in Phase 77B). Clarified outline thickness mapping to `FontGeneratorOptions.Outline`.

@@ -27,7 +27,7 @@ public interface IRasterizer : IDisposable
 {
     void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0);
     RasterizedGlyph? RasterizeGlyph(int codepoint, RasterOptions options);
-    IEnumerable<RasterizedGlyph> RasterizeAll(IEnumerable<int> codepoints, RasterOptions options);
+    IReadOnlyList<RasterizedGlyph> RasterizeAll(IEnumerable<int> codepoints, RasterOptions options);
     GlyphMetrics? GetGlyphMetrics(int codepoint, RasterOptions options);
 }
 ```
@@ -85,10 +85,12 @@ Add optional `rasterizer=freetype|gdi|directwrite|auto` to `.bmfc` files. Defaul
 
 ### FontGeneratorOptions Extension
 
-Add `RasterizerBackend` property to `FontGeneratorOptions`:
+`FontGeneratorOptions` already has `public IRasterizer? Rasterizer { get; set; }` for injecting a custom instance. Add a separate `RasterizerBackend` property for enum-based selection (the factory creates the instance):
 ```csharp
-public RasterizerBackend Rasterizer { get; set; } = RasterizerBackend.FreeType;
+public RasterizerBackend Backend { get; set; } = RasterizerBackend.FreeType;
 ```
+
+> **Note:** The property is named `Backend` (not `Rasterizer`) to avoid conflicting with the existing `IRasterizer? Rasterizer` property. When `Rasterizer` is set (custom instance), it takes precedence over `Backend`.
 
 ## Implementation Plan
 
@@ -161,3 +163,7 @@ Use Vortice.Windows (actively maintained, targets .NET 9/10):
 | FontGeneratorOptions | `src/KernSmith/Config/FontGeneratorOptions.cs` |
 | BmFont orchestration | `src/KernSmith/BmFont.cs` |
 | Font metrics reference | `reference/REF-09-font-metrics-and-sizing.md` |
+
+---
+
+> **Review 2026-03-24**: Fixed `RasterizeAll` return type from `IEnumerable` to `IReadOnlyList` to match actual interface. Renamed proposed `Rasterizer` property to `Backend` to avoid conflict with existing `IRasterizer? Rasterizer` property on `FontGeneratorOptions`. All file paths verified.

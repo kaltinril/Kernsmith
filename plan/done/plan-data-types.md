@@ -29,10 +29,14 @@ public sealed class FontInfo
     public required bool IsFixedPitch { get; init; }
     public required int NumGlyphs { get; init; }
     public required IReadOnlyList<int> AvailableCodepoints { get; init; }       // from cmap
-    public required IReadOnlyList<KerningPair> KerningPairs { get; init; }      // merged kern + GPOS
+    public IReadOnlyList<KerningPair> KerningPairs { get; init; } = Array.Empty<KerningPair>();
     public Os2Metrics? Os2 { get; init; }                // optional OS/2 table data
-    public required HeadTable Head { get; init; }        // head table data
-    public required HheaTable Hhea { get; init; }        // hhea table data
+    public HeadTable? Head { get; init; }                // head table data, null if missing
+    public HheaTable? Hhea { get; init; }                // hhea table data, null if missing
+    public NameInfo? Names { get; init; }                // name table strings, null if missing
+    public IReadOnlyList<VariationAxis>? VariationAxes { get; init; }   // variable font axes, null for non-variable
+    public IReadOnlyList<NamedInstance>? NamedInstances { get; init; }  // preset variable font styles, null for non-variable
+    public bool HasColorGlyphs { get; init; }            // true if font has color glyphs
 }
 ```
 
@@ -49,64 +53,79 @@ public readonly record struct KerningPair(int LeftCodepoint, int RightCodepoint,
 #### HeadTable
 
 ```csharp
-public sealed record HeadTable
+public sealed record HeadTable(
+    int UnitsPerEm,
+    int XMin,
+    int YMin,
+    int XMax,
+    int YMax,
+    int IndexToLocFormat,       // 0 = short, 1 = long
+    long Created,               // timestamp
+    long Modified,              // timestamp
+    ushort MacStyle = 0,        // bit 0 = bold, bit 1 = italic
+    ushort LowestRecPPEM = 0)   // smallest readable size in pixels per em
 {
-    public required int UnitsPerEm { get; init; }
-    public required int XMin { get; init; }
-    public required int YMin { get; init; }
-    public required int XMax { get; init; }
-    public required int YMax { get; init; }
-    public required int IndexToLocFormat { get; init; }  // 0 = short, 1 = long
-    public required long Created { get; init; }          // timestamp
-    public required long Modified { get; init; }         // timestamp
+    public DateTime CreatedUtc => Epoch.AddSeconds(Created);
+    public DateTime ModifiedUtc => Epoch.AddSeconds(Modified);
 }
 ```
 
 #### HheaTable
 
 ```csharp
-public sealed record HheaTable
-{
-    public required int Ascender { get; init; }
-    public required int Descender { get; init; }
-    public required int LineGap { get; init; }
-    public required int AdvanceWidthMax { get; init; }
-    public required int NumberOfHMetrics { get; init; }
-}
+public sealed record HheaTable(
+    int Ascender,
+    int Descender,
+    int LineGap,
+    int AdvanceWidthMax,
+    int NumberOfHMetrics,
+    short MinLeftSideBearing = 0,
+    short MinRightSideBearing = 0,
+    short XMaxExtent = 0);
 ```
 
 #### Os2Metrics
 
 ```csharp
-public sealed record Os2Metrics
-{
-    public required int WeightClass { get; init; }
-    public required int WidthClass { get; init; }
-    public required int TypoAscender { get; init; }
-    public required int TypoDescender { get; init; }
-    public required int TypoLineGap { get; init; }
-    public required int WinAscent { get; init; }
-    public required int WinDescent { get; init; }
-    public required int XHeight { get; init; }
-    public required int CapHeight { get; init; }
-    public required byte[] Panose { get; init; }         // 10 bytes
-    public required int FirstCharIndex { get; init; }
-    public required int LastCharIndex { get; init; }
-}
+public sealed record Os2Metrics(
+    int WeightClass,
+    int WidthClass,
+    int TypoAscender,
+    int TypoDescender,
+    int TypoLineGap,
+    int WinAscent,
+    int WinDescent,
+    int XHeight,
+    int CapHeight,
+    byte[] Panose,              // 10 bytes
+    int FirstCharIndex,
+    int LastCharIndex,
+    short XAvgCharWidth = 0,
+    short SubscriptXSize = 0,
+    short SubscriptYSize = 0,
+    short SuperscriptXSize = 0,
+    short SuperscriptYSize = 0,
+    short StrikeoutSize = 0,
+    short StrikeoutPosition = 0);
 ```
 
 #### NameInfo
 
 ```csharp
-public sealed record NameInfo
-{
-    public string? FontFamily { get; init; }
-    public string? FontSubfamily { get; init; }
-    public string? FullName { get; init; }
-    public string? PostScriptName { get; init; }
-    public string? Copyright { get; init; }
-    public string? Trademark { get; init; }
-}
+public sealed record NameInfo(
+    string? FontFamily,
+    string? FontSubfamily,
+    string? FullName,
+    string? PostScriptName,
+    string? Copyright,
+    string? Trademark,
+    string? UniqueId = null,
+    string? Version = null,
+    string? Manufacturer = null,
+    string? Designer = null,
+    string? Description = null,
+    string? License = null,
+    string? LicenseUrl = null);
 ```
 
 ## Rasterization Layer Types
@@ -152,10 +171,14 @@ public sealed record RasterOptions
 {
     public required int Size { get; init; }              // font size in points
     public int Dpi { get; init; } = 72;
-    public AntiAliasMode AntiAlias { get; init; } = AntiAliasMode.Normal;
+    public AntiAliasMode AntiAlias { get; init; } = AntiAliasMode.Grayscale;
     public bool Bold { get; init; }                      // synthetic bold
     public bool Italic { get; init; }                    // synthetic italic/oblique
     public bool Sdf { get; init; }                       // SDF rendering mode
+    public bool ColorFont { get; init; }                 // render color glyphs
+    public int ColorPaletteIndex { get; init; }          // CPAL palette index for color fonts
+    public Dictionary<string, float>? VariationAxes { get; init; } // variable font axis overrides
+    public bool EnableHinting { get; init; } = true;     // font hinting for sharper rendering
 }
 ```
 
@@ -221,10 +244,9 @@ public sealed class AtlasPage
     public required byte[] PixelData { get; init; }      // row-major, top-to-bottom
     public required PixelFormat Format { get; init; }
 
-    /// <summary>
-    /// Convenience method. Delegates to the configured IAtlasEncoder.
-    /// </summary>
-    public byte[] ToPng() { /* delegates to IAtlasEncoder */ }
+    public byte[] ToPng() { /* delegates to configured IAtlasEncoder */ }
+    public byte[] ToTga() { /* encodes as TGA */ }
+    public byte[] ToDds() { /* encodes as DDS */ }
 }
 ```
 
@@ -248,13 +270,26 @@ public enum OutputFormat
 ```csharp
 public sealed class BmFontResult
 {
-    public required BmFontModel Model { get; init; }                // the in-memory BMFont descriptor
-    public required IReadOnlyList<AtlasPage> Pages { get; init; }   // the atlas page images
+    public BmFontModel Model { get; }                               // the in-memory BMFont descriptor
+    public IReadOnlyList<AtlasPage> Pages { get; }                  // the atlas page images
+    public IReadOnlyList<int> FailedCodepoints { get; }             // codepoints that could not be rasterized
+    public PipelineMetrics? Metrics { get; }                        // timing metrics (when CollectMetrics is enabled)
 
-    public string ToString() { /* text format via TextFormatter */ }
+    public override string ToString() { /* text format via TextFormatter */ }
     public string ToXml() { /* XML format via XmlFormatter */ }
     public byte[] ToBinary() { /* binary format via BmFontBinaryFormatter */ }
     public void ToFile(string outputPath, OutputFormat format = OutputFormat.Text) { /* writes .fnt + .png files */ }
+    public string ToBmfc() { /* .bmfc config content, requires source options */ }
+
+    public string FntText { get; }                                  // text format (property)
+    public string FntXml { get; }                                   // XML format (property)
+    public byte[] FntBinary { get; }                                // binary format (property)
+    public byte[][] GetPngData() { /* all pages as PNG */ }
+    public byte[] GetPngData(int pageIndex) { /* single page as PNG */ }
+    public byte[][] GetTgaData() { /* all pages as TGA */ }
+    public byte[] GetTgaData(int pageIndex) { /* single page as TGA */ }
+    public byte[][] GetDdsData() { /* all pages as DDS */ }
+    public byte[] GetDdsData(int pageIndex) { /* single page as DDS */ }
 }
 ```
 
@@ -294,7 +329,7 @@ public sealed class SystemFontInfo
     public required string FamilyName { get; init; }
     public required string StyleName { get; init; }
     public required string FilePath { get; init; }
-    public required int FaceIndex { get; init; }         // for .ttc collections
+    public int FaceIndex { get; init; }                   // for .ttc collections
 }
 ```
 
@@ -314,9 +349,10 @@ public interface IFontReader
 ```csharp
 public interface IRasterizer : IDisposable
 {
-    void LoadFont(ReadOnlySpan<byte> fontData, int faceIndex = 0);
+    void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0);
     RasterizedGlyph? RasterizeGlyph(int codepoint, RasterOptions options);
     IReadOnlyList<RasterizedGlyph> RasterizeAll(IEnumerable<int> codepoints, RasterOptions options);
+    GlyphMetrics? GetGlyphMetrics(int codepoint, RasterOptions options) => null;
 }
 ```
 
@@ -336,7 +372,7 @@ public interface IGlyphPostProcessor
 ```csharp
 public interface IAtlasPacker
 {
-    PackResult Pack(IReadOnlyList<GlyphRect> glyphs, int pageWidth, int pageHeight);
+    PackResult Pack(IReadOnlyList<GlyphRect> glyphs, int maxWidth, int maxHeight);
 }
 ```
 
@@ -372,10 +408,12 @@ public interface IBmFontBinaryFormatter : IBmFontFormatter
 ### ISystemFontProvider
 
 ```csharp
+public sealed record FontLoadResult(byte[] Data, int FaceIndex);
+
 public interface ISystemFontProvider
 {
     IReadOnlyList<SystemFontInfo> GetInstalledFonts();
-    byte[] LoadFont(string familyName, string? styleName = null);
+    FontLoadResult? LoadFont(string familyName, string? styleName = null);
 }
 ```
 
@@ -398,25 +436,27 @@ Project-wide approach to errors:
 - **FreeType errors**: Wrap in `RasterizationException` with the FreeType error code.
 - **Invalid options**: Throw `ArgumentException` on `BmFont.Generate()` entry for `Size <= 0`, `MaxTextureSize <= 0`, etc.
 
+All custom exceptions inherit from `BmFontException`, not `Exception` directly.
+
 ### Custom Exception Hierarchy
 
 ```
-KernSmithException (base)
+BmFontException (base)
 ├── FontParsingException
 ├── RasterizationException
 └── AtlasPackingException
 ```
 
 ```csharp
-public class KernSmithException : Exception
+public class BmFontException : Exception
 {
-    public KernSmithException(string message) : base(message) { }
-    public KernSmithException(string message, Exception innerException) : base(message, innerException) { }
+    public BmFontException(string message) : base(message) { }
+    public BmFontException(string message, Exception inner) : base(message, inner) { }
 }
 
-public class FontParsingException : KernSmithException { /* ... */ }
-public class RasterizationException : KernSmithException { /* ... */ }
-public class AtlasPackingException : KernSmithException { /* ... */ }
+public class FontParsingException : BmFontException { /* ... */ }
+public class RasterizationException : BmFontException { /* ... */ }
+public class AtlasPackingException : BmFontException { /* ... */ }
 ```
 
 ## Cross-Reference Index

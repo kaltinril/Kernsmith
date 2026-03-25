@@ -45,7 +45,7 @@ The `.hiero` format maps to KernSmith's existing `FontGeneratorOptions` / `BmfcC
 **Inverted mappings**: `font.mono=true` → `AntiAlias=AntiAliasMode.None`
 **Effect mappings**: Outline, Gradient, Shadow, DistanceField effects map to existing KernSmith effect properties
 **Unmapped Hiero → KernSmith**: `render_type` (always FreeType), `font.gamma`, `OutlineWobbleEffect`, `OutlineZigzagEffect`
-**Unmapped KernSmith → Hiero** (non-exhaustive list): `SuperSampleLevel`, `ChannelPacking`, `ColorFont`, `VariationAxes`, `PowerOfTwo`, `AutofitTexture`, `HeightPercent`, `EqualizeCellHeights`, `ForceOffsetsToZero`, `EnableHinting`, `Dpi`, `FaceIndex`, `CustomGlyphs`, `Kerning` (toggle), `CollectMetrics`, `TextureFormat` (TGA/DDS), `PackingAlgorithm`
+**Unmapped KernSmith → Hiero** (non-exhaustive list): `SuperSampleLevel`, `ChannelPacking`, `ColorFont`, `VariationAxes`, `PowerOfTwo`, `AutofitTexture`, `HeightPercent`, `EqualizeCellHeights`, `ForceOffsetsToZero`, `EnableHinting`, `Dpi`, `FaceIndex`, `CustomGlyphs`, `Kerning` (toggle), `CollectMetrics`, `TextureFormat` (TGA/DDS), `PackingAlgorithm`, `HardShadow`
 
 ## Implementation Phases
 
@@ -88,3 +88,7 @@ Since the formats don't have 1:1 feature parity, round-tripping `.hiero` → Ker
 - Integration tests: Load real `.hiero` files from libGDX examples
 - Integration tests: Generate fonts from `.hiero` config and compare output
 - Edge cases: Empty glyph text, Unicode characters, missing properties, unknown effects
+
+---
+
+> **Plan review 2026-03-24**: Added `HardShadow` to unmapped KernSmith-to-Hiero properties list (added in Phase 77B).

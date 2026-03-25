@@ -124,6 +124,7 @@ public interface IRasterizer : IDisposable
     void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0);
     RasterizedGlyph? RasterizeGlyph(int codepoint, RasterOptions options);
     IReadOnlyList<RasterizedGlyph> RasterizeAll(IEnumerable<int> codepoints, RasterOptions options);
+    GlyphMetrics? GetGlyphMetrics(int codepoint, RasterOptions options) => null;
 }
 ```
 
@@ -220,3 +221,7 @@ Skia's drawing API.
 - [Gum.KNI NuGet](https://www.nuget.org/packages/Gum.KNI)
 - [KNI.Extended NuGet](https://www.nuget.org/packages/KNI.Extended)
 - [KNI Blazor Discussion](https://github.com/kniEngine/kni/discussions/1863)
+
+---
+
+> **Review 2026-03-24**: Updated `IRasterizer` code snippet to include the `GetGlyphMetrics` default interface method that was added after this plan was written. All file paths, type references, and analysis remain accurate.
