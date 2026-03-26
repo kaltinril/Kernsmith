@@ -61,7 +61,7 @@ public enum RasterizerBackend
 }
 ```
 
-Extensible for future backends (SkiaSharp, SixLabors, etc.) but only these three values for now.
+Extensible for future backends (SkiaSharp, SixLabors, etc.) but only these four values for now.
 
 ### 4. Add `Backend` Property to `FontGeneratorOptions`
 
