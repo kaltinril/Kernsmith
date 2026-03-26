@@ -135,6 +135,13 @@ In `Dispose`:
 - **Lifecycle**: verify `Dispose` properly releases all handles (no handle leaks)
 - **Edge cases**: empty glyphs (space, control chars), large sizes, synthetic bold+italic combination
 
+**BMFont Parity Validation:**
+- Use existing `tests/bmfont-compare/` Python scripts (`diff_fnt.py`, `diff_all_fonts.py`) from Phase 76 to compare GDI backend output against actual BMFont output
+- These scripts compare .fnt metrics (lineHeight, base, per-character xadvance/xoffset/yoffset, kerning pairs) and produce tabular diffs
+- Reference BMFont output already exists in `tests/bmfont-compare/gum-bmfont/` (12 font configs)
+- Regression testing via `RegressionBaseline.cs` (SHA256 hash of PNG pixel data + glyph metrics) can be extended with GDI-specific baseline configurations
+- Goal: metrics should match BMFont exactly; pixel output may differ slightly due to antialiasing implementation details but should be visually equivalent
+
 ## Technical Findings
 
 Research-validated implementation details for the `AddFontMemResourceEx` approach:

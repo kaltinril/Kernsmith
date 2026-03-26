@@ -1,6 +1,6 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-21, 55, 60-69, 72-77, 77B complete. Phase 30 (WASM) is future/exploratory. Phases 79, 80 planned.
+> **Status**: Phases 1-21, 55, 60-69, 72-77, 77B, 79, 80 complete. Phase 30 (WASM) is future/exploratory. Phases 78A-78E planned.
 > **Date**: 2026-03-24
 
 ---
@@ -89,6 +89,12 @@ Output Layer
 | 84 | [Hiero CLI Changes](phase-84-hiero-cli-changes.md) | Update CLI for `.hiero` format auto-detection and batch support | Planning |
 | 85 | [Hiero Documentation](phase-85-hiero-documentation.md) | Document `.hiero` support in README, CLI docs, samples | Planning |
 | 79 | [Replace FluentAssertions with Shouldly](done/phase-79-replace-fluentassertions.md) | Replace FluentAssertions (paid licensing) with Shouldly across test suite | Complete |
+| 78 | [Pluggable Rasterizer Backends](phase-78-pluggable-rasterizers.md) | Pluggable rasterizer architecture with GDI and DirectWrite backends | Planning |
+| 78A | [Rasterizer Foundation](phase-78a-rasterizer-foundation.md) | IRasterizer interface, factory, capability system | Planning |
+| 78B | [GDI Backend](phase-78b-gdi-backend.md) | GDI-based rasterizer for BMFont output parity (Windows-only) | Planning |
+| 78C | [DirectWrite Backend](phase-78c-directwrite-backend.md) | DirectWrite-based rasterizer (Windows-only) | Planning |
+| 78D | [CLI & UI Integration](phase-78d-cli-ui-integration.md) | Wire rasterizer selection into CLI and UI | Planning |
+| 78E | [Plugin Template](phase-78e-plugin-template.md) | Template for third-party rasterizer plugins | Planning (deferred) |
 | 100 | [Hiero Advanced Features](phase-100-hiero-advanced-features.md) | Advanced Hiero features requiring new KernSmith properties | Future |
 
 ---
