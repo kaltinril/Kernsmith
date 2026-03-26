@@ -85,13 +85,12 @@ public class KernSmithGame : Game
 
         Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle = darkStyle;
 
-        var fileDialogService = new FileDialogService();
         var fontDiscoveryService = new FontDiscoveryService();
         var generationService = new GenerationService();
         var projectService = new ProjectService();
 
         _mainViewModel = new MainViewModel(
-            fileDialogService, fontDiscoveryService, generationService,
+            fontDiscoveryService, generationService,
             projectService, _sessionService!, this);
         _mainLayout = new MainLayout(_mainViewModel, GraphicsDevice);
         _mainLayout.AddToRoot();

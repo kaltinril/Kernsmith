@@ -59,6 +59,9 @@ internal sealed class OutlineEffect : IGlyphEffect
         var exterior = FloodFillExterior(binaryAlpha, dstW, dstH);
 
         // Step 3: Build RGBA output with outline color and anti-aliased alpha.
+        // The outline extends under the glyph body (not just the exterior ring) so that
+        // alpha-over compositing has full opacity behind the body's anti-aliased edge.
+        // Counters (interior holes like in O, B) are still skipped.
         var dst = new byte[dstW * dstH * 4];
 
         for (var y = 0; y < dstH; y++)
@@ -66,22 +69,38 @@ internal sealed class OutlineEffect : IGlyphEffect
             for (var x = 0; x < dstW; x++)
             {
                 var pixelIdx = y * dstW + x;
+                var hasSourceAlpha = expandedAlpha[pixelIdx] > 0;
 
-                if (!exterior[pixelIdx])
+                // Skip only counter pixels (interior with no source alpha).
+                // Allow: exterior pixels (the ring) and body pixels (under the glyph).
+                if (!exterior[pixelIdx] && !hasSourceAlpha)
                     continue;
 
-                var dist = MathF.Sqrt(squaredDist[pixelIdx]);
-                // Smooth falloff: fully opaque up to ow, then linear fade over 1.5 pixels.
-                var outlineAlpha = Math.Clamp(255f * (ow + 0.75f - dist) / 1.5f, 0f, 255f);
+                if (exterior[pixelIdx])
+                {
+                    var dist = MathF.Sqrt(squaredDist[pixelIdx]);
+                    // Smooth falloff: fully opaque up to ow, then linear fade over 1.5 pixels.
+                    var outlineAlpha = Math.Clamp(255f * (ow + 0.75f - dist) / 1.5f, 0f, 255f);
 
-                if (outlineAlpha <= 0)
-                    continue;
+                    if (outlineAlpha <= 0)
+                        continue;
 
-                var idx = pixelIdx * 4;
-                dst[idx + 0] = _outlineR;
-                dst[idx + 1] = _outlineG;
-                dst[idx + 2] = _outlineB;
-                dst[idx + 3] = (byte)outlineAlpha;
+                    var idx = pixelIdx * 4;
+                    dst[idx + 0] = _outlineR;
+                    dst[idx + 1] = _outlineG;
+                    dst[idx + 2] = _outlineB;
+                    dst[idx + 3] = (byte)outlineAlpha;
+                }
+                else
+                {
+                    // Body area: fill with full outline alpha so there's no seam
+                    // when the body composites on top.
+                    var idx = pixelIdx * 4;
+                    dst[idx + 0] = _outlineR;
+                    dst[idx + 1] = _outlineG;
+                    dst[idx + 2] = _outlineB;
+                    dst[idx + 3] = 255;
+                }
             }
         }
 
