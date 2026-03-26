@@ -3,6 +3,7 @@ using Shouldly;
 
 namespace KernSmith.Tests.Rasterizer;
 
+[Collection("RasterizerFactory")]
 public class RasterizerFactoryTests
 {
     [Fact]
@@ -24,10 +25,19 @@ public class RasterizerFactoryTests
     [Fact]
     public void Create_UnregisteredBackend_ThrowsInvalidOperationException()
     {
-        var act = () => RasterizerFactory.Create(RasterizerBackend.Gdi);
+        // Reset to known state so only FreeType is registered.
+        RasterizerFactory.ResetForTesting();
+        try
+        {
+            var act = () => RasterizerFactory.Create(RasterizerBackend.DirectWrite);
 
-        var ex = Should.Throw<InvalidOperationException>(act);
-        ex.Message.ShouldContain("Gdi");
+            var ex = Should.Throw<InvalidOperationException>(act);
+            ex.Message.ShouldContain("DirectWrite");
+        }
+        finally
+        {
+            RasterizerFactory.ResetForTesting();
+        }
     }
 
     [Fact]

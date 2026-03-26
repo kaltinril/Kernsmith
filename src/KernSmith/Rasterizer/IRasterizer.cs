@@ -37,4 +37,15 @@ public interface IRasterizer : IDisposable
     /// <param name="codepoint">The Unicode character code.</param>
     /// <param name="options">Size, DPI, and other settings.</param>
     Font.Models.GlyphMetrics? GetGlyphMetrics(int codepoint, RasterOptions options) => null;
+
+    /// <summary>
+    /// Returns rasterizer-provided font-wide metrics. Returns null to fall back to TTF table calculation.
+    /// </summary>
+    RasterizerFontMetrics? GetFontMetrics(RasterOptions options) => null;
+
+    /// <summary>
+    /// Returns rasterizer-provided kerning pairs already scaled to pixel values.
+    /// Returns null to fall back to TTF GPOS/kern table parser.
+    /// </summary>
+    IReadOnlyList<Font.Models.ScaledKerningPair>? GetKerningPairs(RasterOptions options) => null;
 }

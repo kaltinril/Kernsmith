@@ -46,4 +46,14 @@ public static class RasterizerFactory
     {
         return Backends.Keys.ToList();
     }
+
+    /// <summary>
+    /// Clears all registered backends and restores factory-default state.
+    /// Intended for test isolation only.
+    /// </summary>
+    internal static void ResetForTesting()
+    {
+        Backends.Clear();
+        Backends[RasterizerBackend.FreeType] = () => new FreeTypeRasterizer();
+    }
 }
