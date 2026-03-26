@@ -55,7 +55,6 @@ File: `src/KernSmith/Config/RasterizerBackend.cs`
 ```csharp
 public enum RasterizerBackend
 {
-    Auto,
     FreeType,
     Gdi,
     DirectWrite
@@ -94,7 +93,7 @@ public static class RasterizerFactory
 }
 ```
 
-When `Auto` is requested: return FreeType everywhere by default. Backend packages can override `Auto` resolution for their platform.
+Default is `FreeType`. No `Auto` value — users explicitly choose their backend.
 
 ### 6. Implement `IRasterizerCapabilities` on `FreeTypeRasterizer`
 
@@ -125,7 +124,7 @@ The `.bmfc` file stores all font generation settings (size, padding, effects, et
 Files to update:
 - `src/KernSmith/Config/BmfcConfig.cs` -- add property to map to `FontGeneratorOptions.Backend`
 - `src/KernSmith/Config/BmfcConfigReader.cs` -- read `rasterizer=auto|freetype|gdi|directwrite` key
-- `src/KernSmith/Config/BmfcConfigWriter.cs` -- write `rasterizer=` in the KernSmith extensions section (only if not `Auto`, since that's the default)
+- `src/KernSmith/Config/BmfcConfigWriter.cs` -- write `rasterizer=` in the KernSmith extensions section (only if not `FreeType`, since that's the default)
 - `tools/KernSmith.Cli/Config/BmfcParser.cs` -- map to CLI options
 - `tools/KernSmith.Cli/Config/BmfcWriter.cs` -- reverse-map from CLI options
 

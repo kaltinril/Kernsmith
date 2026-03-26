@@ -14,19 +14,10 @@ public class RasterizerFactoryTests
     }
 
     [Fact]
-    public void Create_Auto_ResolvesToFreeType()
-    {
-        using var rasterizer = RasterizerFactory.Create(RasterizerBackend.Auto);
-
-        rasterizer.ShouldNotBeNull();
-    }
-
-    [Fact]
-    public void GetAvailableBackends_IncludesFreeTypeAndAuto()
+    public void GetAvailableBackends_IncludesFreeType()
     {
         var backends = RasterizerFactory.GetAvailableBackends();
 
-        backends.ShouldContain(RasterizerBackend.Auto);
         backends.ShouldContain(RasterizerBackend.FreeType);
     }
 
@@ -73,10 +64,10 @@ public class RasterizerFactoryTests
     }
 
     [Fact]
-    public void FontGeneratorOptions_Backend_DefaultsToAuto()
+    public void FontGeneratorOptions_Backend_DefaultsToFreeType()
     {
         var options = new FontGeneratorOptions();
 
-        options.Backend.ShouldBe(RasterizerBackend.Auto);
+        options.Backend.ShouldBe(RasterizerBackend.FreeType);
     }
 }
