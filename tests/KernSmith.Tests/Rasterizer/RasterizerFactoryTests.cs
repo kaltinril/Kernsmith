@@ -3,7 +3,6 @@ using Shouldly;
 
 namespace KernSmith.Tests.Rasterizer;
 
-[Collection("RasterizerFactory")]
 public class RasterizerFactoryTests
 {
     [Fact]
@@ -15,29 +14,29 @@ public class RasterizerFactoryTests
     }
 
     [Fact]
-    public void GetAvailableBackends_IncludesFreeType()
+    public void Create_Auto_ResolvesToFreeType()
+    {
+        using var rasterizer = RasterizerFactory.Create(RasterizerBackend.Auto);
+
+        rasterizer.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void GetAvailableBackends_IncludesFreeTypeAndAuto()
     {
         var backends = RasterizerFactory.GetAvailableBackends();
 
+        backends.ShouldContain(RasterizerBackend.Auto);
         backends.ShouldContain(RasterizerBackend.FreeType);
     }
 
     [Fact]
     public void Create_UnregisteredBackend_ThrowsInvalidOperationException()
     {
-        // Reset to known state so only FreeType is registered.
-        RasterizerFactory.ResetForTesting();
-        try
-        {
-            var act = () => RasterizerFactory.Create(RasterizerBackend.DirectWrite);
+        var act = () => RasterizerFactory.Create(RasterizerBackend.Gdi);
 
-            var ex = Should.Throw<InvalidOperationException>(act);
-            ex.Message.ShouldContain("DirectWrite");
-        }
-        finally
-        {
-            RasterizerFactory.ResetForTesting();
-        }
+        var ex = Should.Throw<InvalidOperationException>(act);
+        ex.Message.ShouldContain("Gdi");
     }
 
     [Fact]
@@ -74,10 +73,10 @@ public class RasterizerFactoryTests
     }
 
     [Fact]
-    public void FontGeneratorOptions_Backend_DefaultsToFreeType()
+    public void FontGeneratorOptions_Backend_DefaultsToAuto()
     {
         var options = new FontGeneratorOptions();
 
-        options.Backend.ShouldBe(RasterizerBackend.FreeType);
+        options.Backend.ShouldBe(RasterizerBackend.Auto);
     }
 }

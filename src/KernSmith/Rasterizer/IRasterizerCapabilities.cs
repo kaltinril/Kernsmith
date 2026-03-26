@@ -19,16 +19,4 @@ public interface IRasterizerCapabilities
 
     /// <summary>The anti-alias modes this rasterizer supports.</summary>
     IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; }
-
-    /// <summary>
-    /// When true, the rasterizer handles font sizing internally and BmFont should
-    /// pass the raw fontSize without cell-height-to-ppem conversion.
-    /// </summary>
-    bool HandlesOwnSizing => false;
-
-    /// <summary>
-    /// When true, the rasterizer can load system-installed fonts by family name
-    /// via <see cref="IRasterizer.LoadSystemFont"/> instead of requiring font bytes.
-    /// </summary>
-    bool SupportsSystemFonts => false;
 }
