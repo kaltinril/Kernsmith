@@ -6,11 +6,25 @@ namespace KernSmith.Rasterizer;
 public interface IRasterizer : IDisposable
 {
     /// <summary>
+    /// Describes what this rasterizer backend supports.
+    /// </summary>
+    IRasterizerCapabilities Capabilities { get; }
+
+    /// <summary>
     /// Loads a font from raw file bytes for subsequent rasterization.
     /// </summary>
     /// <param name="fontData">The font file bytes.</param>
     /// <param name="faceIndex">Which face to use in a .ttc font collection. Usually 0.</param>
     void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0);
+
+    /// <summary>
+    /// Loads a system-installed font by family name for subsequent rasterization.
+    /// Not all backends support this — the default throws <see cref="NotSupportedException"/>.
+    /// Check <see cref="IRasterizerCapabilities.SupportsSystemFonts"/> before calling.
+    /// </summary>
+    /// <param name="familyName">The font family name (e.g., "Arial").</param>
+    void LoadSystemFont(string familyName) => throw new NotSupportedException(
+        "Rasterizer does not support loading system fonts by name. Use LoadFont with font bytes instead.");
 
     /// <summary>
     /// Renders a single character to a bitmap. Returns null if the glyph is missing from the font.
@@ -32,4 +46,15 @@ public interface IRasterizer : IDisposable
     /// <param name="codepoint">The Unicode character code.</param>
     /// <param name="options">Size, DPI, and other settings.</param>
     Font.Models.GlyphMetrics? GetGlyphMetrics(int codepoint, RasterOptions options) => null;
+
+    /// <summary>
+    /// Returns rasterizer-provided font-wide metrics. Returns null to fall back to TTF table calculation.
+    /// </summary>
+    RasterizerFontMetrics? GetFontMetrics(RasterOptions options) => null;
+
+    /// <summary>
+    /// Returns rasterizer-provided kerning pairs already scaled to pixel values.
+    /// Returns null to fall back to TTF GPOS/kern table parser.
+    /// </summary>
+    IReadOnlyList<Font.Models.ScaledKerningPair>? GetKerningPairs(RasterOptions options) => null;
 }

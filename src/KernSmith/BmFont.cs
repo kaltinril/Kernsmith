@@ -23,7 +23,7 @@ public static class BmFont
     public static BmFontResult Generate(byte[] fontData, FontGeneratorOptions? options = null)
         => GenerateCore(fontData, options, sourceFontFile: null, sourceFontName: null);
 
-    internal static RasterizationResult RasterizeFont(byte[] fontData, FontGeneratorOptions options)
+    internal static RasterizationResult RasterizeFont(byte[] fontData, FontGeneratorOptions options, string? systemFontName = null)
     {
         ArgumentNullException.ThrowIfNull(fontData);
 
@@ -64,7 +64,8 @@ public static class BmFont
         }
 
         // 3. Rasterize glyphs
-        var rasterizer = options.Rasterizer ?? new FreeTypeRasterizer();
+        var rasterizer = options.Rasterizer
+            ?? RasterizerFactory.Create(options.Backend);
         try
         {
             // Guard: channel packing is incompatible with color fonts.
@@ -79,7 +80,10 @@ public static class BmFont
                     "Channel packing cannot be combined with effects (outline, gradient, shadow). " +
                     "Effects produce RGBA glyphs which cannot be packed into individual channels.");
 
-            rasterizer.LoadFont(fontData, options.FaceIndex);
+            if (systemFontName is not null && rasterizer.Capabilities.SupportsSystemFonts)
+                rasterizer.LoadSystemFont(systemFontName);
+            else
+                rasterizer.LoadFont(fontData, options.FaceIndex);
 
             if (rasterizer is FreeTypeRasterizer ftRasterizer)
             {
@@ -101,16 +105,20 @@ public static class BmFont
             // not as em-square size (ppem). Compute the effective ppem that produces the
             // requested cell height. When MatchCharHeight is true (negative fontSize in
             // .bmfc), use fontSize directly as ppem (em-square mode).
+            // When the rasterizer handles its own sizing (e.g., GDI), skip this conversion.
             int effectiveSize = options.Size;
-            if (!options.MatchCharHeight
-                && fontInfo.Os2 is { } os2CellScale
-                && os2CellScale.WinAscent + os2CellScale.WinDescent > 0)
+            if (!rasterizer.Capabilities.HandlesOwnSizing)
             {
-                effectiveSize = (int)(
-                    (double)options.Size * fontInfo.UnitsPerEm
-                    / (os2CellScale.WinAscent + os2CellScale.WinDescent));
-                if (effectiveSize < 1) effectiveSize = 1;
-                rasterOptions = rasterOptions with { Size = effectiveSize };
+                if (!options.MatchCharHeight
+                    && fontInfo.Os2 is { } os2CellScale
+                    && os2CellScale.WinAscent + os2CellScale.WinDescent > 0)
+                {
+                    effectiveSize = (int)(
+                        (double)options.Size * fontInfo.UnitsPerEm
+                        / (os2CellScale.WinAscent + os2CellScale.WinDescent));
+                    if (effectiveSize < 1) effectiveSize = 1;
+                    rasterOptions = rasterOptions with { Size = effectiveSize };
+                }
             }
 
             var ssLevel = Math.Clamp(options.SuperSampleLevel, 1, 4);
@@ -160,6 +168,10 @@ public static class BmFont
             var rasterizedCodepoints = new HashSet<int>(glyphs.Select(g => g.Codepoint));
             var failedCodepoints = codepoints.Where(cp => !rasterizedCodepoints.Contains(cp)).ToList();
 
+            // Capture rasterizer-provided values before rasterizer is disposed
+            var rasterizerFontMetrics = rasterizer.GetFontMetrics(rasterOptions);
+            var rasterizerKerningPairs = rasterizer.GetKerningPairs(rasterOptions);
+
             return new RasterizationResult
             {
                 FontInfo = fontInfo,
@@ -167,7 +179,9 @@ public static class BmFont
                 Codepoints = codepoints,
                 FailedCodepoints = failedCodepoints,
                 Options = options,
-                EffectiveSize = effectiveSize
+                EffectiveSize = effectiveSize,
+                RasterizerFontMetrics = rasterizerFontMetrics,
+                RasterizerKerningPairs = rasterizerKerningPairs
             };
         }
         finally
@@ -180,7 +194,7 @@ public static class BmFont
     internal static int EncodeCombinedId(int fontIndex, int codepoint) => (fontIndex << 20) | (codepoint & 0xFFFFF);
     internal static (int FontIndex, int Codepoint) DecodeCombinedId(int combinedId) => (combinedId >> 20, combinedId & 0xFFFFF);
 
-    private static BmFontResult GenerateCore(byte[] fontData, FontGeneratorOptions? options, string? sourceFontFile, string? sourceFontName)
+    private static BmFontResult GenerateCore(byte[] fontData, FontGeneratorOptions? options, string? sourceFontFile, string? sourceFontName, string? systemFontFamily = null)
     {
         ArgumentNullException.ThrowIfNull(fontData);
 
@@ -194,7 +208,7 @@ public static class BmFont
         var metrics = options.CollectMetrics ? new PipelineMetrics() : null;
 
         metrics?.Begin("Rasterization");
-        var rasterResult = RasterizeFont(fontData, options);
+        var rasterResult = RasterizeFont(fontData, options, systemFontFamily);
         metrics?.End();
 
         var fontInfo = rasterResult.FontInfo;
@@ -303,7 +317,9 @@ public static class BmFont
             var model = BmFontModelBuilder.Build(fontInfo, glyphs, packResult, options,
                 charOffsetX: region.X, charOffsetY: region.Y,
                 overrideScaleW: sourceWidth, overrideScaleH: sourceHeight,
-                effectiveSize: rasterResult.EffectiveSize);
+                effectiveSize: rasterResult.EffectiveSize,
+                rasterizerFontMetrics: rasterResult.RasterizerFontMetrics,
+                rasterizerKerningPairs: rasterResult.RasterizerKerningPairs);
             metrics?.End();
 
             return new BmFontResult(model, pages, failedCodepoints, metrics, options, sourceFontFile, sourceFontName);
@@ -418,7 +434,9 @@ public static class BmFont
             // 7. Assemble BMFont model
             metrics?.Begin("ModelAssembly");
             var model = BmFontModelBuilder.Build(fontInfo, glyphs, packResult, options, glyphChannels,
-                effectiveSize: rasterResult.EffectiveSize);
+                effectiveSize: rasterResult.EffectiveSize,
+                rasterizerFontMetrics: rasterResult.RasterizerFontMetrics,
+                rasterizerKerningPairs: rasterResult.RasterizerKerningPairs);
             metrics?.End();
 
             return new BmFontResult(model, pages, failedCodepoints, metrics, options, sourceFontFile, sourceFontName);
@@ -499,7 +517,7 @@ public static class BmFont
             ?? throw new FontParsingException($"System font '{fontFamily}' not found");
 
         options.FaceIndex = fontResult.FaceIndex;
-        return GenerateCore(fontResult.Data, options, sourceFontFile: null, sourceFontName: fontFamily);
+        return GenerateCore(fontResult.Data, options, sourceFontFile: null, sourceFontName: fontFamily, systemFontFamily: fontFamily);
     }
 
     /// <summary>Generates a BMFont from a system-installed font at the given size.</summary>
@@ -605,7 +623,8 @@ public static class BmFont
         }
 
         // 3. Get metrics without rasterizing
-        var rasterizer = options.Rasterizer ?? new FreeTypeRasterizer();
+        var rasterizer = options.Rasterizer
+            ?? RasterizerFactory.Create(options.Backend);
         try
         {
             rasterizer.LoadFont(fontData, options.FaceIndex);
@@ -719,7 +738,7 @@ public static class BmFont
             var fontResult = s_systemFontProvider.Value.LoadFont(config.FontName)
                 ?? throw new FontParsingException($"System font '{config.FontName}' not found");
             config.Options.FaceIndex = fontResult.FaceIndex;
-            return GenerateCore(fontResult.Data, config.Options, sourceFontFile: null, sourceFontName: config.FontName);
+            return GenerateCore(fontResult.Data, config.Options, sourceFontFile: null, sourceFontName: config.FontName, systemFontFamily: config.FontName);
         }
 
         throw new InvalidOperationException(
@@ -1339,7 +1358,9 @@ public static class BmFont
                 var model = BmFontModelBuilder.Build(
                     rr.FontInfo, rr.Glyphs, packResult, jobOptions,
                     placementOverride: placementOverride,
-                    effectiveSize: rr.EffectiveSize);
+                    effectiveSize: rr.EffectiveSize,
+                    rasterizerFontMetrics: rr.RasterizerFontMetrics,
+                    rasterizerKerningPairs: rr.RasterizerKerningPairs);
                 var fontResult = new BmFontResult(model, sharedPages, rr.FailedCodepoints);
 
                 sw.Stop();

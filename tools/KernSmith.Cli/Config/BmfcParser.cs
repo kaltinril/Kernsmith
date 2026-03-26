@@ -74,6 +74,7 @@ internal static class BmfcParser
             ColorPaletteIndex = gen.ColorPaletteIndex,
             FaceIndex = gen.FaceIndex,
             PowerOfTwo = gen.PowerOfTwo,
+            Backend = gen.Backend,
         };
 
         // Map TextureFormat enum back to string

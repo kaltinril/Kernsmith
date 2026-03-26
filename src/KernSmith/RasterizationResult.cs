@@ -19,4 +19,14 @@ internal sealed class RasterizationResult
     /// (default BMFont behavior), this differs from <see cref="Options"/>.Size.
     /// </summary>
     public int EffectiveSize { get; init; }
+
+    /// <summary>
+    /// Rasterizer-provided font-wide metrics, or null to fall back to TTF table calculation.
+    /// </summary>
+    public RasterizerFontMetrics? RasterizerFontMetrics { get; init; }
+
+    /// <summary>
+    /// Rasterizer-provided pre-scaled kerning pairs, or null to fall back to TTF GPOS/kern table parser.
+    /// </summary>
+    public IReadOnlyList<ScaledKerningPair>? RasterizerKerningPairs { get; init; }
 }

@@ -1,157 +1,92 @@
-# Phase 78 — Pluggable Rasterizer Backends
+# Phase 78 -- Pluggable Rasterizer Backends (Overview)
 
-> **Status**: Planning
+> **Status**: In Progress
 > **Created**: 2026-03-22
-> **Goal**: Make the rasterizer backend swappable so users can choose FreeType, GDI, DirectWrite, or other engines.
+> **Updated**: 2026-03-25
+> **Goal**: Make the rasterizer backend pluggable so users can choose FreeType (cross-platform default), GDI (BMFont parity), DirectWrite (modern Windows), or custom backends.
 
 ---
 
-## Motivation
+## Summary
 
-KernSmith currently uses FreeType (via FreeTypeSharp) as its sole rasterizer. This works cross-platform but produces different output from BMFont (which uses Windows GDI). Users on Windows who need exact BMFont parity -- or prefer ClearType rendering -- should be able to select a GDI or DirectWrite backend.
+KernSmith currently uses FreeType (via FreeTypeSharp) as its sole rasterizer. This phase adds capability reporting to the existing `IRasterizer` interface, builds real alternative backends (GDI for BMFont parity, DirectWrite for modern Windows rendering), and packages them as optional NuGet add-ons.
 
-Key differences between backends:
-- **Hinting**: GDI/DirectWrite use Windows native hinting; FreeType uses its own interpreter (v40)
-- **Anti-aliasing**: GDI supports ClearType (subpixel); FreeType supports grayscale, light, LCD
-- **Metrics**: GDI uses TEXTMETRIC; FreeType uses hhea/OS2 table metrics
-- **Font resolution**: GDI accesses Windows font system directly; FreeType needs file paths
-- **Outline stroking**: GDI uses `GetGlyphOutline` vector data; FreeType uses `FT_Stroker`
+The existing `IRasterizer` interface is already the right abstraction -- this phase extends it rather than replacing it.
 
-## Current Architecture
+## User-Facing Model
 
-KernSmith already has the Strategy pattern via `IRasterizer`:
+- **Two main choices**: FreeType (cross-platform default) or a platform-native backend (GDI, DirectWrite)
+- Backend packages use platform-specific TFMs (e.g. `net10.0-windows`); the factory uses runtime `OperatingSystem.IsWindows()` checks for availability
+- Users can also write custom backends implementing `IRasterizer` + `IRasterizerCapabilities`
+- Linux's native font rendering IS FreeType -- there is no separate Linux native backend. macOS Core Text is a possibility but deferred (no demand yet)
 
-```csharp
-// src/KernSmith/Rasterizer/IRasterizer.cs
-public interface IRasterizer : IDisposable
-{
-    void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0);
-    RasterizedGlyph? RasterizeGlyph(int codepoint, RasterOptions options);
-    IReadOnlyList<RasterizedGlyph> RasterizeAll(IEnumerable<int> codepoints, RasterOptions options);
-    GlyphMetrics? GetGlyphMetrics(int codepoint, RasterOptions options);
-}
-```
+## Package Structure
 
-Only one implementation exists: `FreeTypeRasterizer`.
+| Package | Contents | Platform |
+|---------|----------|----------|
+| `KernSmith` | Core library, includes FreeType (the default everyone installs) | All |
+| `KernSmith.Rasterizers.Gdi` | Optional Windows add-on, matches BMFont output | Windows |
+| `KernSmith.Rasterizers.DirectWrite` | Optional Windows add-on, modern rendering | Windows |
 
-## Design
+FreeType stays bundled in core -- don't force every user to install a second package for the obvious default.
 
-### Rasterizer Backends
+Third-party packages can implement `IRasterizer` + `IRasterizerCapabilities` and register with `RasterizerFactory` to work as a KernSmith backend. No special packaging required -- just depend on `KernSmith` and call `RasterizerFactory.Register()` (e.g. `MyCompany.MyFancyRasterizer`).
 
-| Backend | Platform | Package | Notes |
-|---------|----------|---------|-------|
-| FreeType | All | `KernSmith` (built-in) | Current default, cross-platform |
-| GDI | Windows | `KernSmith.Rasterizers.Gdi` | Exact BMFont parity via P/Invoke |
-| DirectWrite | Windows | `KernSmith.Rasterizers.DirectWrite` | Modern Windows, best quality |
-| SkiaSharp | All | `KernSmith.Rasterizers.Skia` | Future option, large dependency |
-| SixLabors.Fonts | All | `KernSmith.Rasterizers.SixLabors` | Future option, pure managed |
+## Sub-Phases
 
-### Capabilities Interface
+| Phase | Name | Size | Description |
+|-------|------|------|-------------|
+| [78A](phase-78a-rasterizer-foundation.md) | Foundation | Small | `IRasterizerCapabilities`, `RasterizerBackend` enum, `RasterizerFactory`, wire into `BmFont.cs` |
+| [78B](phase-78b-gdi-backend.md) | GDI Backend | Medium | `GdiRasterizer` via Win32 P/Invoke -- highest-value backend, matches BMFont output |
+| [78BB](phase-78bb-gdi-parity.md) | GDI Parity Fixes | Medium | GDI parity fixes — metrics from GDI TEXTMETRIC, kerning from GetKerningPairs, sizing bypass |
+| [78C](phase-78c-directwrite-backend.md) | DirectWrite Backend | Medium-Large | `DirectWriteRasterizer` via Vortice.Windows -- color fonts, variable fonts, modern rendering |
+| [78D](phase-78d-cli-ui-integration.md) | CLI and UI Integration | Small | `--rasterizer` flag, UI dropdown, capability-aware option graying |
+| [78E](phase-78e-plugin-template.md) | Plugin Template | Small (deferred) | `dotnet new` template and docs for custom backends -- only after 2+ backends exist |
 
-Different backends support different features. Add a query mechanism:
+## Key Design Decisions
 
-```csharp
-public interface IRasterizerCapabilities
-{
-    bool SupportsClearType { get; }
-    bool SupportsColorFonts { get; }
-    bool SupportsVariableFonts { get; }
-    bool SupportsSdf { get; }
-    bool SupportsOutlineStroke { get; }
-    IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; }
-}
-```
+1. **Two user-facing choices: FreeType or a platform-native backend.** FreeType is the cross-platform default bundled with `KernSmith`. Platform-native backends (GDI, DirectWrite) are optional NuGet add-ons that users install only when they need them.
 
-### Factory / Selection
+2. **FreeType stays in core.** Don't force every user to install a second package for the obvious default. FreeType works everywhere. Only users specifically chasing BMFont-identical output or Windows-native rendering need add-ons.
 
-```csharp
-public enum RasterizerBackend
-{
-    Auto,       // Platform-best: DirectWrite on Windows, FreeType elsewhere
-    FreeType,   // Cross-platform (current default)
-    Gdi,        // Windows only -- exact BMFont match
-    DirectWrite // Windows only -- best quality
-}
+3. **No metapackage.** We considered a `KernSmith.Rasterizers.All` metapackage (MonoGame-style) but rejected it. KernSmith is a library, not a project template -- the MonoGame pattern doesn't translate. A metapackage would force Windows users to download GDI P/Invoke and Vortice.Windows as transitive dependencies even if they only want FreeType. Keep it explicit: install what you need.
 
-public static class RasterizerFactory
-{
-    public static IRasterizer Create(RasterizerBackend backend = RasterizerBackend.FreeType);
-}
-```
+4. **Linux native IS FreeType.** There is no separate "Linux native" backend. Native on Linux maps to FreeType -- the toggle is effectively a no-op. macOS Core Text is a real possibility but deferred (no demand yet).
 
-### BMFC Config Extension
+5. **Build GDI first, generalize later.** Don't build the plugin framework/template (78E) before having 2+ backends. GDI (78B) will pressure-test whether `IRasterizer` is sufficient or needs changes. The graveyard of OSS projects is full of beautiful plugin architectures with exactly one plugin.
 
-Add optional `rasterizer=freetype|gdi|directwrite|auto` to `.bmfc` files. Default is `freetype` for backward compatibility.
+6. **The primary goal is BMFont parity via GDI.** DirectWrite is a nice-to-have for modern rendering (color fonts, variable fonts, subpixel positioning). If scope needs to be cut, 78C (DirectWrite) goes before 78B (GDI).
 
-### FontGeneratorOptions Extension
+7. **`IRasterizer` is the plugin API** -- it already exists; just needs `IRasterizerCapabilities` added.
 
-`FontGeneratorOptions` already has `public IRasterizer? Rasterizer { get; set; }` for injecting a custom instance. Add a separate `RasterizerBackend` property for enum-based selection (the factory creates the instance):
-```csharp
-public RasterizerBackend Backend { get; set; } = RasterizerBackend.FreeType;
-```
+8. **GDI `LoadFont` uses `AddFontMemResourceEx`** -- registers raw bytes as a private font, keeping the `IRasterizer.LoadFont(ReadOnlyMemory<byte>)` interface unchanged. No need for name-based overloads.
 
-> **Note:** The property is named `Backend` (not `Rasterizer`) to avoid conflicting with the existing `IRasterizer? Rasterizer` property. When `Rasterizer` is set (custom instance), it takes precedence over `Backend`.
+9. **ClearType excluded from atlas output.** ClearType produces 3x-wide RGB subpixel bitmaps that don't fit the Grayscale8/Rgba32 pipeline. Game engines don't use subpixel rendering. Explicitly not supported for atlas generation.
 
-## Implementation Plan
+10. **Platform TFMs over `#if` directives.** We discussed using `#if` compiler directives to pick native implementations at compile time. Decision: use platform-specific TFMs on the backend packages (e.g. `net10.0-windows` for GDI) which handles compilation targeting. The factory uses runtime `OperatingSystem.IsWindows()` checks to determine availability. JIT eliminates dead platform branches anyway.
 
-### Phase 78A: Foundation (Small)
-- Add `IRasterizerCapabilities` interface
-- Add `RasterizerBackend` enum
-- Add `RasterizerFactory` with FreeType-only initially
-- Add `Rasterizer` property to `FontGeneratorOptions`
-- Update `BmFont.cs` to use factory instead of direct `FreeTypeRasterizer` construction
-- Parse `rasterizer=` from .bmfc files
+11. **Third-party extensibility is a first-class goal.** Anyone can publish their own NuGet package (e.g. `MyCompany.MyFancyRasterizer`) implementing `IRasterizer` + `IRasterizerCapabilities` and registering with `RasterizerFactory`. The official backends (GDI, DirectWrite) use the exact same mechanism -- no privileged internal APIs.
 
-### Phase 78B: GDI Backend (Medium)
-- New project: `KernSmith.Rasterizers.Gdi`
-- Implement `GdiRasterizer : IRasterizer`
-- Use P/Invoke for `CreateFont`, `GetGlyphOutline` (GGO_GRAY8_BITMAP), `GetTextMetrics`, `GetCharABCWidths`
-- Handle `CreateCompatibleDC`, `SelectObject`, cleanup
-- Support synthetic bold/italic via `lfWeight`/`lfItalic`
-- Map `AntiAliasMode` to `ANTIALIASED_QUALITY` / `CLEARTYPE_QUALITY`
-- System font resolution via GDI (no file path needed -- uses font name directly)
+12. **Plugin contract is intentionally minimal.** Just two interfaces: `IRasterizer` and `IRasterizerCapabilities`. Phase 78E (template + docs) makes it easier but doesn't gate it.
 
-### Phase 78C: DirectWrite Backend (Medium-Large)
-- New project: `KernSmith.Rasterizers.DirectWrite`
-- Use Vortice.Windows (`Vortice.DirectWrite`, `Vortice.Direct2D1`)
-- Implement `DirectWriteRasterizer : IRasterizer`
-- Use `IDWriteFontFace.GetGlyphRunOutline` for vector outlines
-- Use `ID2D1RenderTarget.DrawGlyphRun` for bitmap rasterization
-- Support color fonts (COLR/CPAL), variable fonts, subpixel positioning
+13. **DirectWrite uses Vortice.Windows** -- a community .NET wrapper for Windows native APIs (DirectX, Direct2D, DirectWrite). It's a heavy dependency, which is another reason it's an optional add-on, not bundled in core.
 
-### Phase 78D: CLI and UI Integration (Small)
-- CLI: Add `--rasterizer freetype|gdi|directwrite|auto` flag
-- UI: Add rasterizer dropdown in font config panel
-- Show capabilities (grayed-out options when backend doesn't support them)
+14. **`RasterizerBackend` enum**: `FreeType`, `Gdi`, `DirectWrite` (extensible for future backends). No `Auto` value — users explicitly choose their backend, defaulting to FreeType.
 
-## Reference Material
+15. **Precedence**: `FontGeneratorOptions.Rasterizer` (direct DI) > `FontGeneratorOptions.Backend` (factory enum) > default (FreeType).
 
-### GDI Rasterization from .NET
+16. **Ownership**: Factory-created rasterizers are owned/disposed by BmFont. User-injected rasterizers via `FontGeneratorOptions.Rasterizer` are NOT disposed (caller owns them).
 
-Key Win32 APIs via P/Invoke:
-- `CreateFont()` / `CreateFontIndirectW()` -- create HFONT
-- `CreateCompatibleDC()` -- device context
-- `SelectObject()` -- bind font to DC
-- `GetGlyphOutline()` with `GGO_GRAY8_BITMAP` -- 65-level grayscale glyph bitmaps
-- `GetTextMetrics()` -- font-wide metrics (tmAscent, tmDescent, tmHeight)
-- `GetCharABCWidths()` -- per-char advance widths (A + B + C spacing)
-- `GLYPHMETRICS` struct -- per-glyph width, height, bearings
+17. **Performance impact is effectively zero.** The core is only loosely coupled to FreeType -- `BmFont.cs` directly creates `new FreeTypeRasterizer()` which gets replaced by a factory call (one line change). The `IRasterizer` interface already exists and is already what gets called during rasterization. The factory is a switch statement that runs once at startup, not per-glyph. Virtual dispatch on the interface is ~1-2ns. No perceptible performance impact.
 
-P/Invoke helpers: CsWin32 (Microsoft source generator) or PInvoke.Gdi32 NuGet.
+18. **Core decoupling is minimal work.** The only FreeType coupling in core is the direct `new FreeTypeRasterizer()` call in `BmFont.cs` and the FreeTypeSharp package dependency. `IRasterizer` already serves as the abstraction layer.
 
-### DirectWrite from .NET
+## Risks and Open Questions
 
-Use Vortice.Windows (actively maintained, targets .NET 9/10):
-- `Vortice.DirectWrite` -- font face, metrics, glyph outlines
-- `Vortice.Direct2D1` -- bitmap rasterization via render targets
-- Three measuring modes: Natural, GDI Classic, GDI Natural
-
-### Prior Art
-
-- **FontStashSharp** -- C# bitmap font library with pluggable rasterizers via `IFontLoader`. Ships three backends: StbTrueType, FreeType, SixLabors.Fonts. Each in its own NuGet package. Closest architectural reference.
-- **SDL_ttf 3.0** -- Text engine abstraction for swappable rendering backends
-- **Avalonia UI** -- `IDrawingContextImpl` for swappable rendering (Skia, Direct2D)
-- **LayoutFarm/Typography** -- C# font renderer with pluggable glyph path builders
+- **ClearType subpixel data** doesn't fit the current Grayscale8/Rgba32 pixel pipeline -- would require a new pixel format and render target changes
+- **Metrics divergence** across backends -- GDI uses TEXTMETRIC, FreeType uses hhea/OS2 tables. Same font at same size may produce different ascent/descent/lineHeight values
+- **`IRasterizer` interface stability** -- whether the interface needs changes after building the GDI backend (e.g., additional font loading options, kerning queries)
+- **Module initializer reliability** -- static registration via `[ModuleInitializer]` may have ordering issues; may need explicit `RasterizerFactory.Register()` call instead
 
 ## Key Source Files
 
@@ -164,6 +99,14 @@ Use Vortice.Windows (actively maintained, targets .NET 9/10):
 | BmFont orchestration | `src/KernSmith/BmFont.cs` |
 | Font metrics reference | `reference/REF-09-font-metrics-and-sizing.md` |
 
+## Reference Material
+
+### Prior Art
+
+- **FontStashSharp** -- C# bitmap font library with pluggable rasterizers via `IFontLoader`. Ships three backends: StbTrueType, FreeType, SixLabors.Fonts. Each in its own NuGet package. Closest architectural reference.
+- **SDL_ttf 3.0** -- Text engine abstraction for swappable rendering backends
+- **Avalonia UI** -- `IDrawingContextImpl` for swappable rendering (Skia, Direct2D)
+
 ---
 
-> **Review 2026-03-24**: Fixed `RasterizeAll` return type from `IEnumerable` to `IReadOnlyList` to match actual interface. Renamed proposed `Rasterizer` property to `Backend` to avoid conflict with existing `IRasterizer? Rasterizer` property on `FontGeneratorOptions`. All file paths verified.
+> **Review 2026-03-25**: Rewrote as skeleton overview with links to sub-phase docs (78A-78E). Moved detailed implementation tasks into individual sub-phase documents.

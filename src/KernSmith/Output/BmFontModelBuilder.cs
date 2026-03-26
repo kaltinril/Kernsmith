@@ -23,7 +23,9 @@ internal static class BmFontModelBuilder
         int charOffsetY = 0,
         int? overrideScaleW = null,
         int? overrideScaleH = null,
-        int? effectiveSize = null)
+        int? effectiveSize = null,
+        RasterizerFontMetrics? rasterizerFontMetrics = null,
+        IReadOnlyList<ScaledKerningPair>? rasterizerKerningPairs = null)
     {
         // The effective ppem used for rasterization. When cell-height scaling is
         // applied, this is smaller than options.Size. For metric calculations we
@@ -48,7 +50,13 @@ internal static class BmFontModelBuilder
         int lineHeight;
         int baseLine;
 
-        if (fontInfo.Os2 is { } os2 && os2.WinAscent > 0)
+        if (rasterizerFontMetrics is not null)
+        {
+            // Use rasterizer-provided metrics directly (already in pixels).
+            lineHeight = rasterizerFontMetrics.LineHeight;
+            baseLine = rasterizerFontMetrics.Ascent;
+        }
+        else if (fontInfo.Os2 is { } os2 && os2.WinAscent > 0)
         {
             // Use OS/2 usWinAscent/usWinDescent when available. These match what
             // Windows GDI uses for TEXTMETRIC.tmAscent/tmDescent, and therefore
@@ -128,12 +136,21 @@ internal static class BmFontModelBuilder
             var xOffset = options.ForceOffsetsToZero ? 0 : glyph.Metrics.BearingX;
             var yOffset = options.ForceOffsetsToZero ? 0 : baseLine - glyph.Metrics.BearingY;
 
+            // BMFont applies padding to the character entry: offsets shift inward,
+            // dimensions expand to cover the full padded cell. This matches
+            // CFontPage::AddChar in the reference implementation.
+            var pad = options.Padding;
+            xOffset -= pad.Left;
+            yOffset -= pad.Up;
+            var charWidth = glyph.Width + pad.Left + pad.Right;
+            var charHeight = glyph.Height + pad.Up + pad.Down;
+
             characters.Add(new CharEntry(
                 Id: glyph.Codepoint,
                 X: placement.X + charOffsetX,
                 Y: placement.Y + charOffsetY,
-                Width: glyph.Width,
-                Height: glyph.Height,
+                Width: charWidth,
+                Height: charHeight,
                 XOffset: xOffset,
                 YOffset: yOffset,
                 XAdvance: glyph.Metrics.Advance,
@@ -145,7 +162,22 @@ internal static class BmFontModelBuilder
         var glyphCodepoints = new HashSet<int>(glyphs.Select(g => g.Codepoint));
         var kerningPairs = new List<KerningEntry>();
 
-        if (options.Kerning && fontInfo.KerningPairs.Count > 0)
+        if (options.Kerning && rasterizerKerningPairs is not null)
+        {
+            // Use pre-scaled pairs directly — already in pixel values.
+            foreach (var pair in rasterizerKerningPairs)
+            {
+                if (!glyphCodepoints.Contains(pair.LeftCodepoint) ||
+                    !glyphCodepoints.Contains(pair.RightCodepoint))
+                    continue;
+
+                if (pair.Amount == 0)
+                    continue;
+
+                kerningPairs.Add(new KerningEntry(pair.LeftCodepoint, pair.RightCodepoint, pair.Amount));
+            }
+        }
+        else if (options.Kerning && fontInfo.KerningPairs.Count > 0)
         {
             foreach (var pair in fontInfo.KerningPairs)
             {
@@ -153,7 +185,7 @@ internal static class BmFontModelBuilder
                     !glyphCodepoints.Contains(pair.RightCodepoint))
                     continue;
 
-                int amount = (int)Math.Round((double)pair.XAdvanceAdjustment * metricSize / fontInfo.UnitsPerEm);
+                int amount = (int)Math.Round((double)pair.XAdvanceAdjustment * metricSize / fontInfo.UnitsPerEm, MidpointRounding.AwayFromZero);
                 if (amount == 0)
                     continue;
 

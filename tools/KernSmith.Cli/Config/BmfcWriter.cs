@@ -77,6 +77,7 @@ internal static class BmfcWriter
             ShadowOffsetX = options.ShadowOffsetX,
             ShadowOffsetY = options.ShadowOffsetY,
             ShadowBlur = options.ShadowBlur,
+            Backend = options.Backend,
         };
 
         // Set MaxTextureSize (sets both width and height)
