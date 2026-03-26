@@ -22,25 +22,6 @@ public sealed class GdiRasterizer : IRasterizer
     private string? _familyName;
     private bool _disposed;
 
-    /// <summary>
-    /// Loads a system-installed font by family name, letting GDI's font mapper resolve it.
-    /// This matches BMFont's behavior for system fonts (e.g., "Arial", "Batang").
-    /// </summary>
-    public void LoadSystemFont(string familyName)
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
-        if (_familyName is not null)
-            throw new InvalidOperationException("Font already loaded. Create a new GdiRasterizer instance.");
-
-        ArgumentNullException.ThrowIfNull(familyName);
-
-        if (string.IsNullOrWhiteSpace(familyName))
-            throw new ArgumentException("Font family name cannot be empty.", nameof(familyName));
-
-        _familyName = familyName;
-    }
-
     /// <inheritdoc />
     public void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0)
     {
@@ -94,8 +75,6 @@ public sealed class GdiRasterizer : IRasterizer
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
 
-        int aa = Math.Max(1, options.SuperSample);
-
         var hdc = CreateCompatibleDC(IntPtr.Zero);
         if (hdc == IntPtr.Zero)
             throw new InvalidOperationException("CreateCompatibleDC failed.");
@@ -103,12 +82,12 @@ public sealed class GdiRasterizer : IRasterizer
         try
         {
             SetMapMode(hdc, MM_TEXT);
-            var hFont = CreateHFont(options, options.Size * aa);
+            var hFont = CreateHFont(options);
             var oldFont = SelectObject(hdc, hFont);
 
             try
             {
-                var result = RasterizeGlyphCore(hdc, codepoint, options, aa);
+                var result = RasterizeGlyphCore(hdc, codepoint, options);
                 return result;
             }
             finally
@@ -129,7 +108,6 @@ public sealed class GdiRasterizer : IRasterizer
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
 
-        int aa = Math.Max(1, options.SuperSample);
         var results = new List<RasterizedGlyph>();
 
         var hdc = CreateCompatibleDC(IntPtr.Zero);
@@ -139,14 +117,14 @@ public sealed class GdiRasterizer : IRasterizer
         try
         {
             SetMapMode(hdc, MM_TEXT);
-            var hFont = CreateHFont(options, options.Size * aa);
+            var hFont = CreateHFont(options);
             var oldFont = SelectObject(hdc, hFont);
 
             try
             {
                 foreach (var codepoint in codepoints)
                 {
-                    var glyph = RasterizeGlyphCore(hdc, codepoint, options, aa);
+                    var glyph = RasterizeGlyphCore(hdc, codepoint, options);
                     if (glyph is not null)
                         results.Add(glyph);
                 }
@@ -171,8 +149,6 @@ public sealed class GdiRasterizer : IRasterizer
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
 
-        int aa = Math.Max(1, options.SuperSample);
-
         var hdc = CreateCompatibleDC(IntPtr.Zero);
         if (hdc == IntPtr.Zero)
             throw new InvalidOperationException("CreateCompatibleDC failed.");
@@ -180,7 +156,7 @@ public sealed class GdiRasterizer : IRasterizer
         try
         {
             SetMapMode(hdc, MM_TEXT);
-            var hFont = CreateHFont(options, options.Size * aa);
+            var hFont = CreateHFont(options);
             var oldFont = SelectObject(hdc, hFont);
 
             try
@@ -199,11 +175,11 @@ public sealed class GdiRasterizer : IRasterizer
                     return null;
 
                 return new GlyphMetrics(
-                    BearingX: gm.GmptGlyphOrigin.X / aa,
-                    BearingY: gm.GmptGlyphOrigin.Y / aa,
-                    Advance: gm.GmCellIncX / aa,
-                    Width: (int)gm.GmBlackBoxX / aa,
-                    Height: (int)gm.GmBlackBoxY / aa);
+                    BearingX: gm.GmptGlyphOrigin.X,
+                    BearingY: gm.GmptGlyphOrigin.Y,
+                    Advance: gm.GmCellIncX,
+                    Width: (int)gm.GmBlackBoxX,
+                    Height: (int)gm.GmBlackBoxY);
             }
             finally
             {
@@ -219,15 +195,11 @@ public sealed class GdiRasterizer : IRasterizer
 
     /// <summary>
     /// Returns font-level metrics (ascent, descent, line height) from GDI's TEXTMETRIC.
-    /// When supersampling, creates the HFONT at size*aa and divides results by aa (ceiling),
-    /// matching BMFont's approach.
     /// </summary>
     public RasterizerFontMetrics? GetFontMetrics(RasterOptions options)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
-
-        int aa = Math.Max(1, options.SuperSample);
 
         var hdc = CreateCompatibleDC(IntPtr.Zero);
         if (hdc == IntPtr.Zero)
@@ -236,7 +208,7 @@ public sealed class GdiRasterizer : IRasterizer
         try
         {
             SetMapMode(hdc, MM_TEXT);
-            var hFont = CreateHFont(options, options.Size * aa);
+            var hFont = CreateHFont(options);
             var oldFont = SelectObject(hdc, hFont);
 
             try
@@ -246,9 +218,9 @@ public sealed class GdiRasterizer : IRasterizer
 
                 return new RasterizerFontMetrics
                 {
-                    Ascent = (int)Math.Ceiling((double)tm.TmAscent / aa),
-                    Descent = (int)Math.Ceiling((double)tm.TmDescent / aa),
-                    LineHeight = (int)Math.Ceiling((double)tm.TmHeight / aa)
+                    Ascent = tm.TmAscent,
+                    Descent = tm.TmDescent,
+                    LineHeight = tm.TmHeight
                 };
             }
             finally
@@ -265,14 +237,11 @@ public sealed class GdiRasterizer : IRasterizer
 
     /// <summary>
     /// Returns kerning pairs from GDI, already scaled to the requested pixel size.
-    /// When supersampling, creates the HFONT at size*aa and divides kerning amounts by aa.
     /// </summary>
     public IReadOnlyList<ScaledKerningPair>? GetKerningPairs(RasterOptions options)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
-
-        int aa = Math.Max(1, options.SuperSample);
 
         var hdc = CreateCompatibleDC(IntPtr.Zero);
         if (hdc == IntPtr.Zero)
@@ -281,7 +250,7 @@ public sealed class GdiRasterizer : IRasterizer
         try
         {
             SetMapMode(hdc, MM_TEXT);
-            var hFont = CreateHFont(options, options.Size * aa);
+            var hFont = CreateHFont(options);
             var oldFont = SelectObject(hdc, hFont);
 
             try
@@ -299,7 +268,7 @@ public sealed class GdiRasterizer : IRasterizer
                     result[i] = new ScaledKerningPair(
                         pairs[i].WFirst,
                         pairs[i].WSecond,
-                        pairs[i].IKernAmount / aa);
+                        pairs[i].IKernAmount);
                 }
 
                 return result;
@@ -349,15 +318,14 @@ public sealed class GdiRasterizer : IRasterizer
     private void EnsureFontLoaded()
     {
         if (_familyName is null)
-            throw new InvalidOperationException("Font not loaded. Call LoadFont or LoadSystemFont first.");
+            throw new InvalidOperationException("Font not loaded. Call LoadFont first.");
     }
 
-    private IntPtr CreateHFont(RasterOptions options, int? sizeOverride = null)
+    private IntPtr CreateHFont(RasterOptions options)
     {
-        int size = sizeOverride ?? options.Size;
         var logFont = new LOGFONTW
         {
-            LfHeight = (int)(-(long)size * options.Dpi / 72),
+            LfHeight = (int)(-(long)options.Size * options.Dpi / 72),
             LfWidth = 0,
             LfEscapement = 0,
             LfOrientation = 0,
@@ -382,7 +350,7 @@ public sealed class GdiRasterizer : IRasterizer
         return hFont;
     }
 
-    private static RasterizedGlyph? RasterizeGlyphCore(IntPtr hdc, int codepoint, RasterOptions options, int aa)
+    private static RasterizedGlyph? RasterizeGlyphCore(IntPtr hdc, int codepoint, RasterOptions options)
     {
         var mat2 = MAT2.Identity;
 
@@ -402,10 +370,6 @@ public sealed class GdiRasterizer : IRasterizer
         // Resolve the glyph index for this codepoint.
         var glyphIndex = GetGlyphIndex(hdc, codepoint);
 
-        int bearingX = gm.GmptGlyphOrigin.X / aa;
-        int bearingY = gm.GmptGlyphOrigin.Y / aa;
-        int advance = gm.GmCellIncX / aa;
-
         int width = (int)gm.GmBlackBoxX;
         int height = (int)gm.GmBlackBoxY;
 
@@ -421,9 +385,9 @@ public sealed class GdiRasterizer : IRasterizer
                 Height = 0,
                 Pitch = 0,
                 Metrics = new GlyphMetrics(
-                    BearingX: bearingX,
-                    BearingY: bearingY,
-                    Advance: advance,
+                    BearingX: gm.GmptGlyphOrigin.X,
+                    BearingY: gm.GmptGlyphOrigin.Y,
+                    Advance: gm.GmCellIncX,
                     Width: 0,
                     Height: 0),
                 Format = PixelFormat.Grayscale8
@@ -471,31 +435,6 @@ public sealed class GdiRasterizer : IRasterizer
                 }
             }
 
-            // Downscale bitmap by averaging aa x aa blocks when supersampling.
-            if (aa > 1)
-            {
-                int newWidth = width / aa;
-                int newHeight = height / aa;
-                var downscaled = new byte[newWidth * newHeight];
-                int aaSq = aa * aa;
-
-                for (int dy = 0; dy < newHeight; dy++)
-                {
-                    for (int dx = 0; dx < newWidth; dx++)
-                    {
-                        int sum = 0;
-                        for (int sy = 0; sy < aa; sy++)
-                            for (int sx = 0; sx < aa; sx++)
-                                sum += bitmapData[(dy * aa + sy) * width + (dx * aa + sx)];
-                        downscaled[dy * newWidth + dx] = (byte)(sum / aaSq);
-                    }
-                }
-
-                bitmapData = downscaled;
-                width = newWidth;
-                height = newHeight;
-            }
-
             return new RasterizedGlyph
             {
                 Codepoint = codepoint,
@@ -505,9 +444,9 @@ public sealed class GdiRasterizer : IRasterizer
                 Height = height,
                 Pitch = width,
                 Metrics = new GlyphMetrics(
-                    BearingX: bearingX,
-                    BearingY: bearingY,
-                    Advance: advance,
+                    BearingX: gm.GmptGlyphOrigin.X,
+                    BearingY: gm.GmptGlyphOrigin.Y,
+                    Advance: gm.GmCellIncX,
                     Width: width,
                     Height: height),
                 Format = PixelFormat.Grayscale8
@@ -638,7 +577,6 @@ public sealed class GdiRasterizer : IRasterizer
         public bool SupportsSdf => false;
         public bool SupportsOutlineStroke => false;
         public bool HandlesOwnSizing => true;
-        public bool SupportsSystemFonts => true;
 
         public IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; } =
             [AntiAliasMode.None, AntiAliasMode.Grayscale];
