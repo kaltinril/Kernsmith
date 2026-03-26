@@ -1,6 +1,6 @@
 # Phase 78BB -- GDI BMFont Parity Fixes
 
-> **Status**: Partial (14/15 lineHeight exact, xoffset ±1 remains — rendering path difference)
+> **Status**: Partial
 > **Size**: Medium
 > **Created**: 2026-03-25
 > **Updated**: 2026-03-26
@@ -10,181 +10,118 @@
 
 ---
 
-## Problem
+## Current Parity Results (same-machine validation, 15 Gum UI fonts)
 
-Phase 78B validation comparing KernSmith GDI output against BMFont reference output (15 Gum UI fonts) revealed systematic metrics divergence. After first-pass fixes, current state:
-
-### Current Parity Results (15 fonts)
-
-| Category | Fonts | lineHeight | base | xadvance | xoffset | yoffset |
-|----------|-------|-----------|------|----------|---------|---------|
-| **Exact match** | Arial (18, 24), Bahnschrift (12, 24, 36), Bauhaus 93 (32, 48×3, 60, 72) — **12 fonts** | ✅ exact | ✅ exact | ✅ exact | ±1 avg | ±1-3 some |
-| **CJK divergence** | Batang, BatangChe — **2 fonts** | -4/-5 | -2/-3 | up to 23px | up to 13 | up to 9 |
-| **Minor divergence** | Bell MT (16pt, 48pt) — **2 configs** | -1 (16pt only) | ✅ (48pt) | up to 6 | up to 12 | up to 12 |
-
-### Remaining Issues
-
-1. **xoffset ±1 systematic** on most fonts (padding is 0 in all test configs, so not padding-related)
-2. **Batang/BatangChe major divergence** — different font sizing or font selection path
-3. **Bell MT xadvance/kerning differences** — kerning amount diffs on 218 shared pairs
-4. **Atlas PNG channel issue** — KernSmith produces white-on-black, BMFont produces white-on-alpha (separate bug, not metrics)
-
-## BMFont Source Code Analysis
-
-Read from BMFont source (GitHub mirrors: kylawl/bmfont, xrModder/BMFont; SourceForge SVN). Key files: `fontchar.cpp`, `fontgen.cpp`, `unicode.cpp`, `fontpage.cpp`.
-
-**NOTE**: A comprehensive REF-08 document analyzing the BMFont source is being created separately. The findings below are preliminary and should be validated against REF-08.
-
-### How BMFont works
-
-**Font creation**: BMFont uses `::CreateFont(fontSize*aa, 0, 0, 0, weight, italic, 0, 0, charSet, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH|FF_DONTCARE, fontName)`. It does NOT load font bytes — it uses font name selection directly through GDI.
-
-**Font sizing**: The `fontSize` from .bmfc is passed directly to `CreateFont` as the `cHeight` parameter. Negative fontSize in .bmfc = negative cHeight = character height mode (em height). Positive fontSize = cell height mode. No DPI scaling. The value is multiplied by `aa` (supersampling factor, default 1).
-
-**lineHeight/base**: `GetTextMetrics(dc, &tm)` then `lineHeight = ceil(tmHeight / aa)`, `base = ceil(tmAscent / aa)` (at scaleH=100). GetTextMetrics is called BEFORE world transform is applied.
-
-**Padding**: Applied in `CFontPage::AddChar` AFTER glyph rendering:
-```cpp
-ch->m_xoffset -= paddingLeft;
-ch->m_yoffset -= paddingUp;
-ch->m_width += paddingLeft + paddingRight;
-ch->m_height += paddingUp + paddingDown;
-```
-
-**Glyph rendering**: Two paths:
-- Outline path (`DrawGlyphFromOutline`): uses `GetGlyphOutline` with supersampled transforms. `yoffset = fontAscent - (maxY / 65536)`, where fontAscent = `ceil(tmAscent * scaleH / 100)`.
-- Bitmap path (`DrawGlyphFromBitmap`): renders to a bitmap, trims empty rows/columns, adjusts xoffset/yoffset accordingly. `xoffset` starts as `abc.abcA` (from `GetCharABCWidths`).
-
-**Kerning**: 3-tier approach:
-1. `GetKerningPairsW(dc, ...)` — reads legacy kern table
-2. If 0 pairs, manual GPOS parsing via `GetFontData(dc, 'GPOS', ...)` — PairAdjustment Format 1/2 + Extension Type 9
-3. KERN table parsing via `GetFontData`
-Amounts divided by `aa` when writing.
-
-**Outline effects**: `xoffset -= thickness`, `yoffset -= thickness`, `width += 2*thickness`, `height += 2*thickness`.
-
-**Channel output**: BMFont writes glyphs with configurable channel mapping (`alphaChnl`, `redChnl`, `greenChnl`, `blueChnl`). Common config: alpha=glyph data (0), RGB=constant white (4).
-
-## Root Cause Analysis
-
-### Root Cause 1: Font loading approach differs fundamentally — HIGHEST IMPACT (Batang)
-
-**BMFont**: Calls `CreateFont("Batang", ...)` directly. GDI resolves the font name to the system-installed font (batang.ttc) using its font mapper, which handles TTC face selection, font substitution, and composite font mapping internally.
-
-**KernSmith GDI**: Loads font file bytes, calls `AddFontMemResourceEx` to register privately, parses the family name from the TTF name table, then calls `CreateFontIndirectW` with that parsed name. This is a fundamentally different font resolution path.
-
-For composite CJK fonts like Batang (shipped as batang.ttc containing Batang, BatangChe, Gungsuh, GungsuhChe), the `AddFontMemResourceEx` + name parsing approach may:
-- Select a different face from the collection
-- Register all faces but parse the wrong name
-- Produce different TEXTMETRIC values due to different font mapper behavior for privately-registered vs system-installed fonts
-
-**Evidence**: Tested `OUT_DEFAULT_PRECIS`, `OUT_TT_PRECIS`, and `OUT_TT_ONLY_PRECIS` — all three produce identical tmHeight=32 for KernSmith, while BMFont gets tmHeight=36. This confirms the issue is not `lfOutPrecision` but the font resolution path itself.
-
-**Potential fix**: For system fonts, add a code path that creates HFONT directly by name (matching BMFont) instead of loading bytes + registering. The `IRasterizer.LoadFont(ReadOnlyMemory<byte>)` interface would still work for embedded/custom fonts, but system fonts could bypass the byte-loading path.
-
-### Root Cause 2: lineHeight/base from OS/2 tables instead of GDI TEXTMETRIC
-
-**Status: FIXED.** `GetFontMetrics()` now uses `GetTextMetricsW`. Exact match on 12/15 fonts.
-
-### Root Cause 3: Padding not subtracted from xoffset/yoffset — CONFIRMED
-
-BMFont subtracts padding from offsets and adds to dimensions. **Status: FIXED in code**, but all test configs have padding=0, so cannot validate. Fix is correct per BMFont source.
-
-### Root Cause 4: xoffset ±1 on non-padded fonts — UNKNOWN
-
-Systematic xoffset +1 persists even with padding=0. Possible causes:
-- **Glyph origin rounding**: `GetGlyphOutlineW` GLYPHMETRICS.gmptGlyphOrigin may round differently depending on the rendering path or precision flags
-- **BMFont's bitmap path**: BMFont may use the bitmap rendering path (DrawGlyphFromBitmap) for some fonts, which derives xoffset from `GetCharABCWidths.abcA` + trimming, not from `GetGlyphOutline` bearings
-- **BMFont's outline path**: Uses supersampled transforms and computes `xoffset = int(minX) / scale` from the glyph outline bounding box, which may differ from GLYPHMETRICS.gmptGlyphOrigin.x
-
-Needs investigation: determine which rendering path BMFont uses for each test font, and whether KernSmith's `GetGlyphOutlineW` approach produces different glyph origins.
-
-### Root Cause 5: Kerning gaps
-
-**GetKerningPairsW returns 0 for GPOS-only fonts**: **Status: FIXED.** Returns null to fall back to GPOS parser.
-
-**Remaining kerning issues**:
-- Bahnschrift: BMFont has 47-63 extra pairs beyond what KernSmith's GPOS parser finds. BMFont's GPOS parser may handle class-based pairs (Format 2) more expansively.
-- Bell MT: 218 shared pairs have different amounts. May be a scaling difference or a kern-vs-GPOS source difference.
-- Batang: BMFont has 88-91 pairs, KernSmith has 0. May be related to the font resolution path difference (root cause #1) — GDI `GetKerningPairsW` on the system-installed font may return pairs that the privately-registered font doesn't.
-
-### Root Cause 6: Cell-height-to-ppem round-trip
-
-**Status: FIXED.** `HandlesOwnSizing` flag skips the conversion.
-
-### Root Cause 7: Atlas PNG channel configuration
-
-KernSmith ignores `alphaChnl`/`redChnl`/`greenChnl`/`blueChnl` from .bmfc configs. Produces white-on-black instead of BMFont's white-on-alpha. **Separate bug, not metrics-related.** Tracked in memory: `project_atlas_channel_bug.md`.
+| Metric | 12 standard fonts | Bell MT (2 configs) | Summary |
+|--------|-------------------|---------------------|---------|
+| **lineHeight** | ✅ exact | -1 at 16pt, exact at 48pt | 14/15 exact |
+| **base** | ✅ exact | ✅ exact | 15/15 exact |
+| **xadvance** | ✅ exact | avg +1.31, max 6 | 14/15 exact |
+| **xoffset** | ±1 avg, max ±2 | avg -0.83, max 12 | Systematic ±1 |
+| **yoffset** | ±1-3 some chars | avg -0.58, max 12 | Rendering path diff |
+| **kerning** | ✅ exact on shared | 218 amount diffs | See kerning section |
 
 ## What Was Implemented
 
-### First Pass (Complete)
+### IRasterizer Interface Extensions (all backends)
 
-| Item | File(s) | Status |
-|------|---------|--------|
-| `HandlesOwnSizing` capability flag | IRasterizerCapabilities.cs | ✅ Done |
-| `GetFontMetrics()` default method | IRasterizer.cs, RasterizerFontMetrics.cs | ✅ Done |
-| `GetKerningPairs()` default method | IRasterizer.cs, ScaledKerningPair.cs | ✅ Done |
-| GDI implements GetFontMetrics (GetTextMetricsW) | GdiRasterizer.cs | ✅ Done |
-| GDI implements GetKerningPairs (GetKerningPairsW) | GdiRasterizer.cs, NativeMethods.cs | ✅ Done |
-| BmFont.cs skips cell-height scaling when HandlesOwnSizing | BmFont.cs | ✅ Done |
-| BmFontModelBuilder uses rasterizer metrics/kerning | BmFontModelBuilder.cs | ✅ Done |
-| Captured values before rasterizer disposal | RasterizationResult.cs, BmFont.cs | ✅ Done |
-| FreeTypeRasterizer: HandlesOwnSizing = false | FreeTypeRasterizer.cs | ✅ Done |
+- `HandlesOwnSizing` capability flag (`=> false` default) — backends that handle font sizing internally set this to true so BmFont.cs skips the cell-height-to-ppem conversion
+- `SupportsSystemFonts` capability flag (`=> false` default) — backends that can load system fonts by name set this to true
+- `LoadSystemFont(string familyName)` — loads a system font by name instead of from bytes; default throws NotSupportedException
+- `GetFontMetrics(RasterOptions)` — returns rasterizer-provided lineHeight/base/ascent; default returns null (falls back to OS/2 table calculation)
+- `GetKerningPairs(RasterOptions)` — returns rasterizer-provided pre-scaled kerning pairs; default returns null (falls back to GPOS/kern parser)
+- `RasterizerFontMetrics` record type — Ascent, Descent, LineHeight
+- `ScaledKerningPair` record struct — distinct from `KerningPair` (design units) to prevent double-scaling
+- `SuperSample` property on `RasterOptions` — supersampling factor, any backend can use it
 
-### Second Pass (Complete)
+### GDI Backend Implementation
 
-| Item | File(s) | Status |
-|------|---------|--------|
-| Padding subtracted from xoffset/yoffset | BmFontModelBuilder.cs | ✅ Done (untestable — configs have padding=0) |
-| Kerning fallback: return null when GDI returns 0 pairs | GdiRasterizer.cs | ✅ Done |
-| TTC (font collection) support in ParseFamilyName | GdiRasterizer.cs | ✅ Done |
+- `LoadSystemFont` — stores family name directly, lets GDI font mapper resolve (matching BMFont's `CreateFont` by-name approach)
+- `GetFontMetrics` — calls `GetTextMetricsW`, returns tmHeight/tmAscent/tmDescent, with `ceil(value/aa)` when supersampling
+- `GetKerningPairs` — calls `GetKerningPairsW`, returns null when 0 pairs (falls back to GPOS parser), divides amounts by aa when supersampling
+- Supersampling — renders at `size * aa` via supersized HFONT, downscales bitmap by averaging aa×aa blocks, divides metrics by aa
+- TTC font collection support in `ParseFamilyName`
 
-### Attempted but Reverted
+### Pipeline Changes
 
-| Item | Result |
-|------|--------|
-| lfHeight sign flip (positive for cell height) | ❌ Made ALL fonts worse. BMFont uses negative fontSize from .bmfc directly, not positive. Reverted. |
-| lfOutPrecision changes (DEFAULT, TT, TT_ONLY) | ❌ No effect on Batang metrics. Issue is font resolution path, not precision flags. |
+- `BmFont.cs` — calls `LoadSystemFont` when source is a system font name and backend supports it; skips cell-height-to-ppem when `HandlesOwnSizing` is true; captures rasterizer metrics/kerning before disposal
+- `BmFontModelBuilder` — uses rasterizer-provided lineHeight/base when available; uses rasterizer-provided kerning pairs (already scaled) when available; applies padding to xoffset/yoffset/width/height per BMFont spec
+- `BmfcConfigReader` — maps `aa` key to `SuperSampleLevel` (was incorrectly mapped to AntiAliasMode)
+- Kerning rounding changed to `MidpointRounding.AwayFromZero` to match BMFont
 
-## Remaining Work
+### FreeType Impact: NONE
 
-### Blocked on REF-08
+All changes use default interface methods or capability checks. FreeType code paths are completely unchanged. Verified: 330/330 FreeType tests pass.
 
-The following items need the comprehensive BMFont source analysis (REF-08) before proceeding:
+## Remaining Gaps and Root Causes
 
-1. **Batang/BatangChe font resolution** — need to understand exactly how BMFont resolves system fonts vs KernSmith's byte-loading approach. May need a `LoadSystemFont(string familyName)` path on `IRasterizer`.
+### 1. xoffset ±1 systematic — BMFont's fixed 8x internal supersample
 
-2. **xoffset ±1 systematic offset** — need to determine which rendering path BMFont uses (outline vs bitmap) and how it computes glyph origins. KernSmith uses `GetGlyphOutlineW` GLYPHMETRICS exclusively.
+**Root cause**: BMFont's outline rendering path (`DrawGlyphFromOutline`) has a FIXED 8x internal supersample that is always active, independent of the user-facing `aa` setting. BMFont renders glyph outlines at 8x resolution, computes bounding boxes from the supersampled data, then downscales. KernSmith's GDI backend uses `GetGlyphOutlineW(GGO_GRAY8_BITMAP)` which rasterizes at native resolution.
 
-3. **Bell MT kerning amount differences** — need to understand BMFont's kerning scaling and whether Bell MT uses kern or GPOS tables.
+At `aa=1`: BMFont renders at 8x internally, KernSmith renders at 1x. The glyph origins (`gmptGlyphOrigin`) differ by ±1 pixel because the 8x supersampled bounding box rounds differently than the native-resolution bounding box.
 
-4. **BMFont's glyph rendering pipeline details** — supersampling, world transforms, how `DrawGlyphFromOutline` computes metrics vs `DrawGlyphFromBitmap`.
+**Evidence**: Testing with `aa=2` showed xoffset improving significantly (121/191 diffs → 36/191 diffs for Arial 18pt), confirming that higher resolution rendering aligns the glyph origins more closely.
 
-### Independent of REF-08
+**Fix**: Add a fixed 8x internal supersample factor to the GDI backend. In `RasterizeGlyphCore`, use `aa * 8` as the internal rendering factor instead of just `aa`. This means at `aa=1`, the GDI backend renders at 8x and downscales, matching BMFont's outline path. This is GDI-only — FreeType untouched.
 
-5. **Atlas PNG channel configuration** — separate bug, can be fixed independently. KernSmith ignores alphaChnl/redChnl/greenChnl/blueChnl.
+**Trade-off**: 8x supersampling means each glyph is rendered 64x larger (8x width × 8x height) before downscaling. This increases memory and CPU usage during generation but produces higher quality output and BMFont-matching metrics.
 
-## Files Created/Changed (All Passes)
+### 2. yoffset ±1-3 — downstream of xoffset + bearingY rounding
+
+Partially caused by the same 8x supersample gap. BMFont computes `yoffset = fontAscent - (maxY / 65536)` from its supersampled outline data, while KernSmith uses `baseLine - gmptGlyphOrigin.Y`. The 8x fix should largely resolve this.
+
+### 3. Bell MT lineHeight -1 at 16pt
+
+Likely a font-specific LOGFONT interaction. BMFont uses `::CreateFont` (positional parameters) while KernSmith uses `CreateFontIndirectW` (LOGFONTW struct). For most fonts these are equivalent, but edge cases may exist. Low priority — only affects one font at one size.
+
+### 4. Bell MT xadvance and kerning differences
+
+**xadvance**: avg +1.31 at 48pt. May be related to the 8x supersample gap — at 8x, the advance width rounding would align with BMFont.
+
+**Kerning amounts**: 218 shared pairs have different amounts. Root causes:
+- BMFont uses `otmrcFontBox`-based scaling for GPOS kerning; KernSmith uses `ppem/unitsPerEm`. The formulas produce slightly different scale factors for fonts where `head.yMax - head.yMin != unitsPerEm`.
+- BMFont tries `GetKerningPairsW` first (pre-scaled pixel values from OS), then falls back to GPOS. Bell MT may have kern table pairs that GDI returns with different values than GPOS parsing produces.
+- The rounding fix (AwayFromZero) was applied but didn't change Bell MT results, suggesting the scaling factor difference is the primary cause.
+
+### 5. Missing kerning pairs (Bahnschrift)
+
+BMFont has 47-63 extra pairs beyond what KernSmith's GPOS parser finds. BMFont's GPOS parser may handle class-based pairs (Format 2) more expansively, or may expand classes into individual pairs that KernSmith's parser represents differently.
+
+### 6. Atlas PNG channel configuration (separate bug)
+
+KernSmith ignores `alphaChnl`/`redChnl`/`greenChnl`/`blueChnl` from .bmfc configs. Produces white-on-black instead of BMFont's white-on-alpha. Not a metrics issue — tracked separately.
+
+## Next Steps (Priority Order)
+
+1. **Fixed 8x internal supersample** in GDI backend — addresses xoffset ±1, yoffset, and likely Bell MT xadvance. GDI-only change, FreeType untouched.
+2. **Bell MT kerning scaling** — switch from `ppem/unitsPerEm` to `otmrcFontBox`-based scaling to match BMFont's GPOS path. Shared change but only affects kerning math.
+3. **Atlas channel configuration** — separate phase, affects all backends.
+
+## Files Created/Changed
 
 | File | Change |
 |------|--------|
-| `src/KernSmith/Rasterizer/IRasterizerCapabilities.cs` | Add `HandlesOwnSizing => false` default method |
-| `src/KernSmith/Rasterizer/IRasterizer.cs` | Add `GetFontMetrics()` and `GetKerningPairs()` default methods |
-| `src/KernSmith/Rasterizer/RasterizerFontMetrics.cs` | New — font metrics record type |
-| `src/KernSmith/Font/Models/ScaledKerningPair.cs` | New — pixel-scaled kerning pair type |
+| `src/KernSmith/Rasterizer/IRasterizerCapabilities.cs` | Add `HandlesOwnSizing`, `SupportsSystemFonts` |
+| `src/KernSmith/Rasterizer/IRasterizer.cs` | Add `GetFontMetrics`, `GetKerningPairs`, `LoadSystemFont` |
+| `src/KernSmith/Rasterizer/RasterOptions.cs` | Add `SuperSample` property |
+| `src/KernSmith/Rasterizer/RasterizerFontMetrics.cs` | New — font metrics record |
+| `src/KernSmith/Font/Models/ScaledKerningPair.cs` | New — pre-scaled kerning pair type |
+| `src/KernSmith/Config/FontGeneratorOptions.cs` | Add `SuperSampleLevel` property |
+| `src/KernSmith/Config/BmfcConfigReader.cs` | Map `aa` key to `SuperSampleLevel` |
 | `src/KernSmith/Rasterizer/FreeTypeRasterizer.cs` | Add `HandlesOwnSizing = false` to capabilities |
 | `src/KernSmith/RasterizationResult.cs` | Add captured rasterizer metrics/kerning properties |
-| `src/KernSmith/BmFont.cs` | Skip cell-height scaling when HandlesOwnSizing; capture metrics before disposal |
-| `src/KernSmith/Output/BmFontModelBuilder.cs` | Use rasterizer metrics/kerning; apply padding to offsets/dimensions |
-| `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs` | Implement GetFontMetrics/GetKerningPairs, TTC parsing, kerning null fallback |
-| `src/KernSmith.Rasterizers.Gdi/NativeMethods.cs` | Add GetKerningPairsW P/Invoke, KERNINGPAIR struct, OUT_DEFAULT_PRECIS/OUT_TT_ONLY_PRECIS constants |
+| `src/KernSmith/BmFont.cs` | LoadSystemFont path, HandlesOwnSizing bypass, capture before disposal |
+| `src/KernSmith/Output/BmFontModelBuilder.cs` | Rasterizer metrics/kerning, padding, AwayFromZero rounding |
+| `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs` | LoadSystemFont, GetFontMetrics, GetKerningPairs, supersampling, TTC support |
+| `src/KernSmith.Rasterizers.Gdi/NativeMethods.cs` | GetKerningPairsW, KERNINGPAIR, precision constants |
+| `src/KernSmith.Rasterizers.Gdi/GdiRegistration.cs` | Module initializer (from 78B) |
+| `src/KernSmith/Rasterizer/RasterizerFactory.cs` | ResetForTesting (from 78B) |
 
 ## Testing
 
-- ✅ All 330 FreeType tests pass (zero behavioral change)
-- ✅ All 14 GDI tests pass (344 total on Windows TFMs)
-- ✅ 12/15 fonts: lineHeight/base/xadvance exact match
-- ⚠️ 2 fonts (Batang/BatangChe): significant divergence — blocked on font resolution investigation
-- ⚠️ 1 font config (Bell MT 16pt): minor divergence — kerning and lineHeight -1
-- ⚠️ xoffset ±1 systematic — needs rendering path investigation
+- ✅ 330/330 FreeType tests pass (zero behavioral change)
+- ✅ 344/344 GDI tests pass on Windows TFMs
+- ✅ 14/15 lineHeight exact, 15/15 base exact, 14/15 xadvance exact (same-machine validation)
+- ⚠️ xoffset ±1 systematic — fixable with 8x internal supersample
+- ⚠️ Bell MT minor divergence — kerning scaling difference
