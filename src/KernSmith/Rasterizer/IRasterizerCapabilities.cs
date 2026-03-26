@@ -25,4 +25,10 @@ public interface IRasterizerCapabilities
     /// pass the raw fontSize without cell-height-to-ppem conversion.
     /// </summary>
     bool HandlesOwnSizing => false;
+
+    /// <summary>
+    /// When true, the rasterizer can load system-installed fonts by family name
+    /// via <see cref="IRasterizer.LoadSystemFont"/> instead of requiring font bytes.
+    /// </summary>
+    bool SupportsSystemFonts => false;
 }
