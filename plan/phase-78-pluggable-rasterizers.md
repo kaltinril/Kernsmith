@@ -1,6 +1,6 @@
 # Phase 78 -- Pluggable Rasterizer Backends (Overview)
 
-> **Status**: Planning
+> **Status**: In Progress
 > **Created**: 2026-03-22
 > **Updated**: 2026-03-25
 > **Goal**: Make the rasterizer backend pluggable so users can choose FreeType (cross-platform default), GDI (BMFont parity), DirectWrite (modern Windows), or custom backends.

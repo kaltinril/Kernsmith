@@ -281,6 +281,10 @@ public static class BmfcConfigReader
                     case "autofit":
                         options.AutofitTexture = value == "1";
                         break;
+                    case "rasterizer":
+                        if (Enum.TryParse<RasterizerBackend>(value, true, out var backend))
+                            options.Backend = backend;
+                        break;
 
                     // Ignored BMFont keys we don't support
                     case "fileVersion":

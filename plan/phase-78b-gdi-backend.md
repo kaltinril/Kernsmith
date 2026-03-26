@@ -98,7 +98,11 @@ Report GDI capabilities:
 - `SupportsOutlineStroke`: false (reuse post-processor pipeline instead)
 - `SupportedAntiAliasModes`: `[None, Normal]`
 
-### 10. Static Registration with Factory
+### 10. Add `ResetForTesting()` to `RasterizerFactory`
+
+Add an `internal` `ResetForTesting()` method to `RasterizerFactory` that clears all registered backends and restores factory-default state. Phase 78B is the first phase that registers a second backend, so tests need a way to isolate factory state between test runs (e.g., prevent a GDI registration from leaking into a FreeType-only test). Expose via `[InternalsVisibleTo]` to the test project. Deferred from Phase 78A since it's not needed until multiple backends exist.
+
+### 11. Static Registration with Factory
 
 Register with `RasterizerFactory` so the enum-based API works:
 
@@ -108,7 +112,7 @@ RasterizerFactory.Register(RasterizerBackend.Gdi, () => new GdiRasterizer());
 
 Use a `[ModuleInitializer]` attribute or an explicit registration call. Test both approaches -- module initializer may have ordering issues.
 
-### 11. Disposal
+### 12. Disposal
 
 In `Dispose`:
 - `RemoveFontMemResourceEx` to unregister the private font

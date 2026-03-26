@@ -1,6 +1,6 @@
 # Phase 78A -- Rasterizer Foundation
 
-> **Status**: Planning
+> **Status**: In Progress
 > **Size**: Small
 > **Created**: 2026-03-25
 > **Dependencies**: None
@@ -118,11 +118,18 @@ Precedence logic:
 
 Factory-created rasterizers are owned/disposed by BmFont. User-provided rasterizers via the `Rasterizer` property are NOT disposed by BmFont.
 
-### 8. Parse `rasterizer=` from `.bmfc` Config Files
+### 8. Add `rasterizer` Setting to `.bmfc` Config Format
 
-File: `src/KernSmith/Config/BmfcConfigReader.cs` (or wherever .bmfc parsing lives)
+The `.bmfc` file stores all font generation settings (size, padding, effects, etc.). Add a `rasterizer` setting so users can specify which rasterizer backend to use per-font config, just like any other generation setting.
 
-Map `rasterizer=freetype|gdi|directwrite|auto` to `RasterizerBackend` enum. Default is `FreeType` for backward compatibility when the key is absent.
+Files to update:
+- `src/KernSmith/Config/BmfcConfig.cs` -- add property to map to `FontGeneratorOptions.Backend`
+- `src/KernSmith/Config/BmfcConfigReader.cs` -- read `rasterizer=auto|freetype|gdi|directwrite` key
+- `src/KernSmith/Config/BmfcConfigWriter.cs` -- write `rasterizer=` in the KernSmith extensions section (only if not `Auto`, since that's the default)
+- `tools/KernSmith.Cli/Config/BmfcParser.cs` -- map to CLI options
+- `tools/KernSmith.Cli/Config/BmfcWriter.cs` -- reverse-map from CLI options
+
+The key should be written under the `# kernsmith extensions` section since this is a KernSmith-specific extension to the BMFont format. Follow the existing pattern for other extension keys (only write if non-default).
 
 ## Files Changed
 
@@ -135,7 +142,11 @@ Map `rasterizer=freetype|gdi|directwrite|auto` to `RasterizerBackend` enum. Defa
 | `src/KernSmith/Rasterizer/RasterizerFactory.cs` | New -- factory with registration API |
 | `src/KernSmith/Rasterizer/FreeTypeRasterizer.cs` | Implement `IRasterizerCapabilities` |
 | `src/KernSmith/BmFont.cs` | Use factory when `Backend` is set, ownership semantics |
-| `src/KernSmith/Config/BmfcConfigReader.cs` | Parse `rasterizer=` key |
+| `src/KernSmith/Config/BmfcConfig.cs` | Add `Rasterizer` property |
+| `src/KernSmith/Config/BmfcConfigReader.cs` | Read `rasterizer=` key |
+| `src/KernSmith/Config/BmfcConfigWriter.cs` | Write `rasterizer=` in extensions section |
+| `tools/KernSmith.Cli/Config/BmfcParser.cs` | Map `rasterizer` to CLI options |
+| `tools/KernSmith.Cli/Config/BmfcWriter.cs` | Reverse-map from CLI options |
 
 ## Testing
 

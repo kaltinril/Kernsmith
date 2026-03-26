@@ -64,7 +64,8 @@ public static class BmFont
         }
 
         // 3. Rasterize glyphs
-        var rasterizer = options.Rasterizer ?? new FreeTypeRasterizer();
+        var rasterizer = options.Rasterizer
+            ?? RasterizerFactory.Create(options.Backend);
         try
         {
             // Guard: channel packing is incompatible with color fonts.
@@ -605,7 +606,8 @@ public static class BmFont
         }
 
         // 3. Get metrics without rasterizing
-        var rasterizer = options.Rasterizer ?? new FreeTypeRasterizer();
+        var rasterizer = options.Rasterizer
+            ?? RasterizerFactory.Create(options.Backend);
         try
         {
             rasterizer.LoadFont(fontData, options.FaceIndex);

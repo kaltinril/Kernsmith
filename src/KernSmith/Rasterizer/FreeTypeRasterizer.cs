@@ -7,6 +7,10 @@ namespace KernSmith.Rasterizer;
 
 internal sealed class FreeTypeRasterizer : IRasterizer
 {
+    private static readonly IRasterizerCapabilities FreeTypeCapabilitiesInstance = new FreeTypeCapabilities();
+
+    public IRasterizerCapabilities Capabilities => FreeTypeCapabilitiesInstance;
+
     private FreeTypeLibrary? _library;
     private GCHandle _pinnedFontData;
     private unsafe FT_FaceRec_* _face;
@@ -610,5 +614,16 @@ internal sealed class FreeTypeRasterizer : IRasterizer
                     _pinnedFontData.Free();
             }
         }
+    }
+
+    private sealed class FreeTypeCapabilities : IRasterizerCapabilities
+    {
+        public bool SupportsColorFonts => true;
+        public bool SupportsVariableFonts => true;
+        public bool SupportsSdf => true;
+        public bool SupportsOutlineStroke => true;
+
+        public IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; } =
+            Enum.GetValues<AntiAliasMode>();
     }
 }

@@ -50,7 +50,11 @@ File: `apps/KernSmith.Ui/` (font config panel)
 - Default selection: `FreeType`
 - Persist selection in project file
 
-### 4. UI: Capability-Aware Options
+### 4. Add `IsRegistered(RasterizerBackend)` to `RasterizerFactory`
+
+Add an `IsRegistered(RasterizerBackend)` method to `RasterizerFactory` that returns `bool`. This enables the UI to check backend availability for capability-aware option graying without catching exceptions or iterating `GetAvailableBackends()`. Deferred from Phase 78A since it's only needed for UI integration.
+
+### 5. UI: Capability-Aware Options
 
 Use `IRasterizerCapabilities` to gray out or disable options not supported by the selected backend:
 - If backend doesn't support color fonts, disable color font toggle
@@ -58,13 +62,13 @@ Use `IRasterizerCapabilities` to gray out or disable options not supported by th
 - If backend doesn't support SDF, disable SDF option
 - Show tooltip explaining why the option is disabled (e.g., "SDF is not supported by the GDI backend")
 
-### 5. UI: Linux Native Info Message
+### 6. UI: Linux Native Info Message
 
 When `Native` or `Auto` resolves to FreeType on Linux, show an informational message:
 - "Native rasterizer on Linux uses FreeType (same as the default)"
 - Non-blocking info, not an error
 
-### 6. Validation
+### 7. Validation
 
 Both CLI and UI should validate early:
 - If the requested backend is not available (package not installed or wrong platform), error immediately with a helpful message

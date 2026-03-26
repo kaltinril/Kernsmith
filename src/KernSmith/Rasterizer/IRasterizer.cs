@@ -6,6 +6,11 @@ namespace KernSmith.Rasterizer;
 public interface IRasterizer : IDisposable
 {
     /// <summary>
+    /// Describes what this rasterizer backend supports.
+    /// </summary>
+    IRasterizerCapabilities Capabilities { get; }
+
+    /// <summary>
     /// Loads a font from raw file bytes for subsequent rasterization.
     /// </summary>
     /// <param name="fontData">The font file bytes.</param>

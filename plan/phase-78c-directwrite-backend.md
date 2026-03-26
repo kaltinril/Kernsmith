@@ -23,6 +23,12 @@ DirectWrite does NOT produce BMFont-identical output. It uses different hinting 
 
 Vortice.Windows is a community .NET wrapper for Windows native APIs (DirectX, Direct2D, DirectWrite). It's actively maintained and targets modern .NET. However, it's a heavy dependency (pulls in DirectX/Direct2D interop), which is a key reason this backend is an optional NuGet add-on rather than bundled in core.
 
+## Prerequisites from Phase 78A Deferrals
+
+### Resolve FreeType-specific downcasts in `BmFont.cs`
+
+`SetVariationAxes()` and `SelectColorPalette()` in `BmFont.cs` are currently called via `rasterizer is FreeTypeRasterizer` downcast. DirectWrite supports both variable fonts and color palettes, so these capabilities must be promoted to `IRasterizer` (as optional methods with default no-op implementations) or extracted into a new `IRasterizerConfiguration` interface BEFORE the DirectWrite backend can use them. This does NOT block Phase 78B since GDI reports `false` for both `SupportsColorFonts` and `SupportsVariableFonts`.
+
 ## Tasks
 
 ### 1. New Project

@@ -63,6 +63,8 @@ internal sealed class CliOptions
     public bool ColorFont { get; set; }
     public int ColorPaletteIndex { get; set; }
 
+    // Rasterizer
+    public RasterizerBackend Backend { get; set; } = RasterizerBackend.Auto;
 
     // Variable fonts
     public Dictionary<string, float> VariationAxes { get; set; } = new();
