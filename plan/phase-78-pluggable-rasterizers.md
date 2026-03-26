@@ -1,6 +1,6 @@
 # Phase 78 -- Pluggable Rasterizer Backends (Overview)
 
-> **Status**: In Progress
+> **Status**: Planning
 > **Created**: 2026-03-22
 > **Updated**: 2026-03-25
 > **Goal**: Make the rasterizer backend pluggable so users can choose FreeType (cross-platform default), GDI (BMFont parity), DirectWrite (modern Windows), or custom backends.
@@ -38,7 +38,6 @@ Third-party packages can implement `IRasterizer` + `IRasterizerCapabilities` and
 |-------|------|------|-------------|
 | [78A](phase-78a-rasterizer-foundation.md) | Foundation | Small | `IRasterizerCapabilities`, `RasterizerBackend` enum, `RasterizerFactory`, wire into `BmFont.cs` |
 | [78B](phase-78b-gdi-backend.md) | GDI Backend | Medium | `GdiRasterizer` via Win32 P/Invoke -- highest-value backend, matches BMFont output |
-| [78BB](phase-78bb-gdi-parity.md) | GDI Parity Fixes | Medium | GDI parity fixes — metrics from GDI TEXTMETRIC, kerning from GetKerningPairs, sizing bypass |
 | [78C](phase-78c-directwrite-backend.md) | DirectWrite Backend | Medium-Large | `DirectWriteRasterizer` via Vortice.Windows -- color fonts, variable fonts, modern rendering |
 | [78D](phase-78d-cli-ui-integration.md) | CLI and UI Integration | Small | `--rasterizer` flag, UI dropdown, capability-aware option graying |
 | [78E](phase-78e-plugin-template.md) | Plugin Template | Small (deferred) | `dotnet new` template and docs for custom backends -- only after 2+ backends exist |
@@ -71,7 +70,7 @@ Third-party packages can implement `IRasterizer` + `IRasterizerCapabilities` and
 
 13. **DirectWrite uses Vortice.Windows** -- a community .NET wrapper for Windows native APIs (DirectX, Direct2D, DirectWrite). It's a heavy dependency, which is another reason it's an optional add-on, not bundled in core.
 
-14. **`RasterizerBackend` enum**: `FreeType`, `Gdi`, `DirectWrite` (extensible for future backends). No `Auto` value — users explicitly choose their backend, defaulting to FreeType.
+14. **`RasterizerBackend` enum**: `Auto`, `FreeType`, `Gdi`, `DirectWrite` (extensible for future backends).
 
 15. **Precedence**: `FontGeneratorOptions.Rasterizer` (direct DI) > `FontGeneratorOptions.Backend` (factory enum) > default (FreeType).
 
@@ -109,4 +108,4 @@ Third-party packages can implement `IRasterizer` + `IRasterizerCapabilities` and
 
 ---
 
-> **Review 2026-03-25**: Rewrote as skeleton overview with links to sub-phase docs (78A-78E). Moved detailed implementation tasks into individual sub-phase documents.
+> **Review 2026-03-25**: Rewrote as skeleton overview with links to sub-phase docs (78A-78F). Moved detailed implementation tasks into individual sub-phase documents.

@@ -98,11 +98,7 @@ Report GDI capabilities:
 - `SupportsOutlineStroke`: false (reuse post-processor pipeline instead)
 - `SupportedAntiAliasModes`: `[None, Normal]`
 
-### 10. Add `ResetForTesting()` to `RasterizerFactory`
-
-Add an `internal` `ResetForTesting()` method to `RasterizerFactory` that clears all registered backends and restores factory-default state. Phase 78B is the first phase that registers a second backend, so tests need a way to isolate factory state between test runs (e.g., prevent a GDI registration from leaking into a FreeType-only test). Expose via `[InternalsVisibleTo]` to the test project. Deferred from Phase 78A since it's not needed until multiple backends exist.
-
-### 11. Static Registration with Factory
+### 10. Static Registration with Factory
 
 Register with `RasterizerFactory` so the enum-based API works:
 
@@ -112,7 +108,7 @@ RasterizerFactory.Register(RasterizerBackend.Gdi, () => new GdiRasterizer());
 
 Use a `[ModuleInitializer]` attribute or an explicit registration call. Test both approaches -- module initializer may have ordering issues.
 
-### 12. Disposal
+### 11. Disposal
 
 In `Dispose`:
 - `RemoveFontMemResourceEx` to unregister the private font
@@ -138,13 +134,6 @@ In `Dispose`:
 - **Glyph rendering**: visual comparison of rasterized glyphs (golden image tests where possible)
 - **Lifecycle**: verify `Dispose` properly releases all handles (no handle leaks)
 - **Edge cases**: empty glyphs (space, control chars), large sizes, synthetic bold+italic combination
-
-**BMFont Parity Validation:**
-- Use existing `tests/bmfont-compare/` Python scripts (`diff_fnt.py`, `diff_all_fonts.py`) from Phase 76 to compare GDI backend output against actual BMFont output
-- These scripts compare .fnt metrics (lineHeight, base, per-character xadvance/xoffset/yoffset, kerning pairs) and produce tabular diffs
-- Reference BMFont output already exists in `tests/bmfont-compare/gum-bmfont/` (12 font configs)
-- Regression testing via `RegressionBaseline.cs` (SHA256 hash of PNG pixel data + glyph metrics) can be extended with GDI-specific baseline configurations
-- Goal: metrics should match BMFont exactly; pixel output may differ slightly due to antialiasing implementation details but should be visually equivalent
 
 ## Technical Findings
 
