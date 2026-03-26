@@ -36,6 +36,13 @@ public sealed record RasterOptions
     public bool EnableHinting { get; init; } = true;
 
     /// <summary>
+    /// Supersampling factor for higher quality rendering. The rasterizer renders at
+    /// Size * SuperSample internally and downscales. Default is 1 (no supersampling).
+    /// BMFont's "aa" setting maps to this value.
+    /// </summary>
+    public int SuperSample { get; init; } = 1;
+
+    /// <summary>
     /// Creates a <see cref="RasterOptions"/> from a <see cref="FontGeneratorOptions"/>.
     /// </summary>
     public static RasterOptions FromGeneratorOptions(FontGeneratorOptions options)
@@ -51,7 +58,8 @@ public sealed record RasterOptions
             ColorFont = options.ColorFont,
             ColorPaletteIndex = options.ColorPaletteIndex,
             VariationAxes = options.VariationAxes,
-            EnableHinting = options.EnableHinting
+            EnableHinting = options.EnableHinting,
+            SuperSample = options.SuperSampleLevel
         };
     }
 }

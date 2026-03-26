@@ -113,9 +113,8 @@ public static class BmfcConfigReader
                             options.AntiAlias = AntiAliasMode.None;
                         break;
                     case "aa":
-                        // 1=grayscale (default), 2=ClearType (map to Light as closest)
-                        if (value == "2")
-                            options.AntiAlias = AntiAliasMode.Light;
+                        // BMFont's aa is the supersampling factor (1, 2, or 4), not the AA mode.
+                        options.SuperSampleLevel = int.Parse(value, CultureInfo.InvariantCulture);
                         break;
                     case "useHinting":
                         options.EnableHinting = value == "1";
