@@ -22,6 +22,25 @@ public sealed class GdiRasterizer : IRasterizer
     private string? _familyName;
     private bool _disposed;
 
+    /// <summary>
+    /// Loads a system-installed font by family name, letting GDI's font mapper resolve it.
+    /// This matches BMFont's behavior for system fonts (e.g., "Arial", "Batang").
+    /// </summary>
+    public void LoadSystemFont(string familyName)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (_familyName is not null)
+            throw new InvalidOperationException("Font already loaded. Create a new GdiRasterizer instance.");
+
+        ArgumentNullException.ThrowIfNull(familyName);
+
+        if (string.IsNullOrWhiteSpace(familyName))
+            throw new ArgumentException("Font family name cannot be empty.", nameof(familyName));
+
+        _familyName = familyName;
+    }
+
     /// <inheritdoc />
     public void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0)
     {
@@ -318,7 +337,7 @@ public sealed class GdiRasterizer : IRasterizer
     private void EnsureFontLoaded()
     {
         if (_familyName is null)
-            throw new InvalidOperationException("Font not loaded. Call LoadFont first.");
+            throw new InvalidOperationException("Font not loaded. Call LoadFont or LoadSystemFont first.");
     }
 
     private IntPtr CreateHFont(RasterOptions options)
@@ -370,6 +389,10 @@ public sealed class GdiRasterizer : IRasterizer
         // Resolve the glyph index for this codepoint.
         var glyphIndex = GetGlyphIndex(hdc, codepoint);
 
+        int bearingX = gm.GmptGlyphOrigin.X;
+        int bearingY = gm.GmptGlyphOrigin.Y;
+        int advance = gm.GmCellIncX;
+
         int width = (int)gm.GmBlackBoxX;
         int height = (int)gm.GmBlackBoxY;
 
@@ -385,9 +408,9 @@ public sealed class GdiRasterizer : IRasterizer
                 Height = 0,
                 Pitch = 0,
                 Metrics = new GlyphMetrics(
-                    BearingX: gm.GmptGlyphOrigin.X,
-                    BearingY: gm.GmptGlyphOrigin.Y,
-                    Advance: gm.GmCellIncX,
+                    BearingX: bearingX,
+                    BearingY: bearingY,
+                    Advance: advance,
                     Width: 0,
                     Height: 0),
                 Format = PixelFormat.Grayscale8
@@ -444,9 +467,9 @@ public sealed class GdiRasterizer : IRasterizer
                 Height = height,
                 Pitch = width,
                 Metrics = new GlyphMetrics(
-                    BearingX: gm.GmptGlyphOrigin.X,
-                    BearingY: gm.GmptGlyphOrigin.Y,
-                    Advance: gm.GmCellIncX,
+                    BearingX: bearingX,
+                    BearingY: bearingY,
+                    Advance: advance,
                     Width: width,
                     Height: height),
                 Format = PixelFormat.Grayscale8
@@ -577,6 +600,7 @@ public sealed class GdiRasterizer : IRasterizer
         public bool SupportsSdf => false;
         public bool SupportsOutlineStroke => false;
         public bool HandlesOwnSizing => true;
+        public bool SupportsSystemFonts => true;
 
         public IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; } =
             [AntiAliasMode.None, AntiAliasMode.Grayscale];

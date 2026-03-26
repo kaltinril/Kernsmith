@@ -185,7 +185,7 @@ internal static class BmFontModelBuilder
                     !glyphCodepoints.Contains(pair.RightCodepoint))
                     continue;
 
-                int amount = (int)Math.Round((double)pair.XAdvanceAdjustment * metricSize / fontInfo.UnitsPerEm);
+                int amount = (int)Math.Round((double)pair.XAdvanceAdjustment * metricSize / fontInfo.UnitsPerEm, MidpointRounding.AwayFromZero);
                 if (amount == 0)
                     continue;
 

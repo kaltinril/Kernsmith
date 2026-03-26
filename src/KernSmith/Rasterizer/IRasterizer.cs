@@ -18,6 +18,15 @@ public interface IRasterizer : IDisposable
     void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0);
 
     /// <summary>
+    /// Loads a system-installed font by family name for subsequent rasterization.
+    /// Not all backends support this — the default throws <see cref="NotSupportedException"/>.
+    /// Check <see cref="IRasterizerCapabilities.SupportsSystemFonts"/> before calling.
+    /// </summary>
+    /// <param name="familyName">The font family name (e.g., "Arial").</param>
+    void LoadSystemFont(string familyName) => throw new NotSupportedException(
+        "Rasterizer does not support loading system fonts by name. Use LoadFont with font bytes instead.");
+
+    /// <summary>
     /// Renders a single character to a bitmap. Returns null if the glyph is missing from the font.
     /// </summary>
     /// <param name="codepoint">The Unicode character code to render.</param>

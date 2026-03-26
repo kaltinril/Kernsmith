@@ -1,6 +1,6 @@
 # Phase 78BB -- GDI BMFont Parity Fixes
 
-> **Status**: In Progress (paused — awaiting REF-08 BMFont source analysis)
+> **Status**: Partial (14/15 lineHeight exact, xoffset ±1 remains — rendering path difference)
 > **Size**: Medium
 > **Created**: 2026-03-25
 > **Updated**: 2026-03-26

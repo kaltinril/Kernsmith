@@ -23,7 +23,7 @@ public static class BmFont
     public static BmFontResult Generate(byte[] fontData, FontGeneratorOptions? options = null)
         => GenerateCore(fontData, options, sourceFontFile: null, sourceFontName: null);
 
-    internal static RasterizationResult RasterizeFont(byte[] fontData, FontGeneratorOptions options)
+    internal static RasterizationResult RasterizeFont(byte[] fontData, FontGeneratorOptions options, string? systemFontName = null)
     {
         ArgumentNullException.ThrowIfNull(fontData);
 
@@ -80,7 +80,10 @@ public static class BmFont
                     "Channel packing cannot be combined with effects (outline, gradient, shadow). " +
                     "Effects produce RGBA glyphs which cannot be packed into individual channels.");
 
-            rasterizer.LoadFont(fontData, options.FaceIndex);
+            if (systemFontName is not null && rasterizer.Capabilities.SupportsSystemFonts)
+                rasterizer.LoadSystemFont(systemFontName);
+            else
+                rasterizer.LoadFont(fontData, options.FaceIndex);
 
             if (rasterizer is FreeTypeRasterizer ftRasterizer)
             {
@@ -191,7 +194,7 @@ public static class BmFont
     internal static int EncodeCombinedId(int fontIndex, int codepoint) => (fontIndex << 20) | (codepoint & 0xFFFFF);
     internal static (int FontIndex, int Codepoint) DecodeCombinedId(int combinedId) => (combinedId >> 20, combinedId & 0xFFFFF);
 
-    private static BmFontResult GenerateCore(byte[] fontData, FontGeneratorOptions? options, string? sourceFontFile, string? sourceFontName)
+    private static BmFontResult GenerateCore(byte[] fontData, FontGeneratorOptions? options, string? sourceFontFile, string? sourceFontName, string? systemFontFamily = null)
     {
         ArgumentNullException.ThrowIfNull(fontData);
 
@@ -205,7 +208,7 @@ public static class BmFont
         var metrics = options.CollectMetrics ? new PipelineMetrics() : null;
 
         metrics?.Begin("Rasterization");
-        var rasterResult = RasterizeFont(fontData, options);
+        var rasterResult = RasterizeFont(fontData, options, systemFontFamily);
         metrics?.End();
 
         var fontInfo = rasterResult.FontInfo;
@@ -514,7 +517,7 @@ public static class BmFont
             ?? throw new FontParsingException($"System font '{fontFamily}' not found");
 
         options.FaceIndex = fontResult.FaceIndex;
-        return GenerateCore(fontResult.Data, options, sourceFontFile: null, sourceFontName: fontFamily);
+        return GenerateCore(fontResult.Data, options, sourceFontFile: null, sourceFontName: fontFamily, systemFontFamily: fontFamily);
     }
 
     /// <summary>Generates a BMFont from a system-installed font at the given size.</summary>
@@ -735,7 +738,7 @@ public static class BmFont
             var fontResult = s_systemFontProvider.Value.LoadFont(config.FontName)
                 ?? throw new FontParsingException($"System font '{config.FontName}' not found");
             config.Options.FaceIndex = fontResult.FaceIndex;
-            return GenerateCore(fontResult.Data, config.Options, sourceFontFile: null, sourceFontName: config.FontName);
+            return GenerateCore(fontResult.Data, config.Options, sourceFontFile: null, sourceFontName: config.FontName, systemFontFamily: config.FontName);
         }
 
         throw new InvalidOperationException(
