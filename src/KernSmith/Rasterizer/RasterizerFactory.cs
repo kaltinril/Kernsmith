@@ -26,14 +26,11 @@ public static class RasterizerFactory
 
     /// <summary>
     /// Creates a rasterizer instance for the specified backend.
-    /// <see cref="RasterizerBackend.Auto"/> resolves to FreeType.
     /// </summary>
     /// <exception cref="InvalidOperationException">Thrown when the backend is not registered.</exception>
     public static IRasterizer Create(RasterizerBackend backend)
     {
-        var resolved = backend == RasterizerBackend.Auto ? RasterizerBackend.FreeType : backend;
-
-        if (Backends.TryGetValue(resolved, out var factory))
+        if (Backends.TryGetValue(backend, out var factory))
             return factory();
 
         throw new InvalidOperationException(
@@ -43,12 +40,10 @@ public static class RasterizerFactory
     }
 
     /// <summary>
-    /// Returns all registered backends plus <see cref="RasterizerBackend.Auto"/>.
+    /// Returns all registered backends.
     /// </summary>
     public static IReadOnlyList<RasterizerBackend> GetAvailableBackends()
     {
-        var backends = new List<RasterizerBackend> { RasterizerBackend.Auto };
-        backends.AddRange(Backends.Keys);
-        return backends;
+        return Backends.Keys.ToList();
     }
 }

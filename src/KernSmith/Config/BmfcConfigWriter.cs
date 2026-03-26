@@ -144,7 +144,7 @@ public static class BmfcConfigWriter
             extensions.AppendLine("powerOfTwo=0");
         if (options.AutofitTexture)
             extensions.AppendLine("autofit=1");
-        if (options.Backend != RasterizerBackend.Auto)
+        if (options.Backend != RasterizerBackend.FreeType)
             extensions.AppendLine($"rasterizer={options.Backend.ToString().ToLowerInvariant()}");
 
         if (extensions.Length > 0)

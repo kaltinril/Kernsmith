@@ -5,9 +5,6 @@ namespace KernSmith;
 /// </summary>
 public enum RasterizerBackend
 {
-    /// <summary>Automatically select the best available backend (currently FreeType).</summary>
-    Auto,
-
     /// <summary>FreeType rasterizer. Cross-platform, full-featured.</summary>
     FreeType,
 
