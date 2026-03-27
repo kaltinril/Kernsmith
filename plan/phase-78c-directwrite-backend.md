@@ -29,6 +29,14 @@ Vortice.Windows is a community .NET wrapper for Windows native APIs (DirectX, Di
 
 `SetVariationAxes()` and `SelectColorPalette()` in `BmFont.cs` are currently called via `rasterizer is FreeTypeRasterizer` downcast. DirectWrite supports both variable fonts and color palettes, so these capabilities must be promoted to `IRasterizer` (as optional methods with default no-op implementations) or extracted into a new `IRasterizerConfiguration` interface BEFORE the DirectWrite backend can use them. This does NOT block Phase 78B since GDI reports `false` for both `SupportsColorFonts` and `SupportsVariableFonts`.
 
+## Lessons from 78B/78BB
+
+- **IRasterizer interface grew in 78BB**: DirectWrite must implement these new members added in 78BB: `GetFontMetrics(RasterOptions)` returning `RasterizerFontMetrics`, `GetKerningPairs(RasterOptions)` returning `ScaledKerningPair[]?`, `LoadSystemFont(string familyName)`, plus capabilities `HandlesOwnSizing` and `SupportsSystemFonts`. Also `SuperSample` property exists on `RasterOptions`.
+- **Don't chase BMFont parity**: 78BB proved rendering path differences are architectural (8x supersample was attempted and reverted because BMFont uses GGO_NATIVE + polygon fill vs GDI's GGO_GRAY8_BITMAP). DirectWrite uses its own rendering pipeline -- don't try to match BMFont or GDI output pixel-for-pixel.
+- **Default interface methods are the proven pattern**: 78BB successfully extended IRasterizer with default implementations (returning null/false) so FreeType was completely unaffected (330/330 tests pass). Use the same pattern for any DirectWrite-specific extensions.
+- **Pipeline captures metrics/kerning before disposal**: BmFont.cs now calls `GetFontMetrics()` and `GetKerningPairs()` on the rasterizer and stores results before disposing it. DirectWrite should implement both -- DirectWrite's DWRITE_FONT_METRICS are high-quality and its kerning via IDWriteFontFace1.GetKerningPairAdjustments is authoritative.
+- **FreeType downcast resolution pattern is proven**: 78BB added optional interface methods with defaults. Apply the same approach to promote `SetVariationAxes()` and `SelectColorPalette()` to `IRasterizer` before starting DirectWrite.
+
 ## Tasks
 
 ### 1. New Project
@@ -97,7 +105,16 @@ Same as GDI backend: DirectWrite produces compatible `RasterizedGlyph` output wi
 RasterizerFactory.Register(RasterizerBackend.DirectWrite, () => new DirectWriteRasterizer());
 ```
 
-### 11. Disposal
+### 11. Implement 78BB IRasterizer Members
+
+- Implement `GetFontMetrics(RasterOptions)` using DWRITE_FONT_METRICS (ascent, descent, lineGap, unitsPerEm, etc.)
+- Implement `GetKerningPairs(RasterOptions)` using IDWriteFontFace1.GetKerningPairAdjustments
+- Implement `LoadSystemFont(string familyName)` using IDWriteFactory.GetSystemFontCollection
+- Set `HandlesOwnSizing = true` (DirectWrite handles its own sizing like GDI does)
+- Set `SupportsSystemFonts = true`
+- Handle `SuperSample` from RasterOptions if applicable to DirectWrite rendering
+
+### 12. Disposal
 
 - Release `IDWriteFactory`, `IDWriteFontFace`, `ID2D1Factory` COM objects
 - Release any custom font loaders/streams
@@ -111,6 +128,7 @@ RasterizerFactory.Register(RasterizerBackend.DirectWrite, () => new DirectWriteR
 | `src/KernSmith.Rasterizers.DirectWrite/DirectWriteRasterizer.cs` | New -- main rasterizer implementation |
 | `src/KernSmith.Rasterizers.DirectWrite/DirectWriteFontLoader.cs` | New -- custom font file loader for in-memory fonts |
 | `src/KernSmith.Rasterizers.DirectWrite/DirectWriteRegistration.cs` | New -- factory registration |
+| `src/KernSmith/Rasterizer/IRasterizer.cs` | Promote `SetVariationAxes()` and `SelectColorPalette()` from FreeType downcasts to interface methods with default no-op implementations |
 
 ## Testing
 
