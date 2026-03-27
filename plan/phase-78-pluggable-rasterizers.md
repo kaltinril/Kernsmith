@@ -37,8 +37,8 @@ Third-party packages can implement `IRasterizer` + `IRasterizerCapabilities` and
 | Phase | Name | Size | Description |
 |-------|------|------|-------------|
 | [78A](phase-78a-rasterizer-foundation.md) | Foundation | Small | `IRasterizerCapabilities`, `RasterizerBackend` enum, `RasterizerFactory`, wire into `BmFont.cs` |
-| [78B](phase-78b-gdi-backend.md) | GDI Backend | Medium | `GdiRasterizer` via Win32 P/Invoke -- highest-value backend, matches BMFont output |
-| [78BB](phase-78bb-gdi-parity.md) | GDI Parity Fixes | Medium | GDI parity fixes — metrics from GDI TEXTMETRIC, kerning from GetKerningPairs, sizing bypass |
+| [78B](done/phase-78b-gdi-backend.md) | GDI Backend | Medium | `GdiRasterizer` via Win32 P/Invoke -- highest-value backend, matches BMFont output. **Complete.** |
+| [78BB](done/phase-78bb-gdi-parity.md) | GDI Parity Fixes | Medium | GDI parity fixes -- metrics from GDI TEXTMETRIC, kerning from GetKerningPairs, sizing bypass. **Complete.** |
 | [78C](phase-78c-directwrite-backend.md) | DirectWrite Backend | Medium-Large | `DirectWriteRasterizer` via Vortice.Windows -- color fonts, variable fonts, modern rendering |
 | [78D](phase-78d-cli-ui-integration.md) | CLI and UI Integration | Small | `--rasterizer` flag, UI dropdown, capability-aware option graying |
 | [78E](phase-78e-plugin-template.md) | Plugin Template | Small (deferred) | `dotnet new` template and docs for custom backends -- only after 2+ backends exist |
