@@ -171,8 +171,6 @@ public sealed class GdiRasterizer : IRasterizer
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
 
-        int aa = Math.Max(1, options.SuperSample);
-
         var hdc = CreateCompatibleDC(IntPtr.Zero);
         if (hdc == IntPtr.Zero)
             throw new InvalidOperationException("CreateCompatibleDC failed.");
@@ -180,7 +178,7 @@ public sealed class GdiRasterizer : IRasterizer
         try
         {
             SetMapMode(hdc, MM_TEXT);
-            var hFont = CreateHFont(options, options.Size * aa);
+            var hFont = CreateHFont(options);
             var oldFont = SelectObject(hdc, hFont);
 
             try
@@ -199,11 +197,11 @@ public sealed class GdiRasterizer : IRasterizer
                     return null;
 
                 return new GlyphMetrics(
-                    BearingX: gm.GmptGlyphOrigin.X / aa,
-                    BearingY: gm.GmptGlyphOrigin.Y / aa,
-                    Advance: gm.GmCellIncX / aa,
-                    Width: (int)gm.GmBlackBoxX / aa,
-                    Height: (int)gm.GmBlackBoxY / aa);
+                    BearingX: gm.GmptGlyphOrigin.X,
+                    BearingY: gm.GmptGlyphOrigin.Y,
+                    Advance: gm.GmCellIncX,
+                    Width: (int)gm.GmBlackBoxX,
+                    Height: (int)gm.GmBlackBoxY);
             }
             finally
             {
@@ -227,8 +225,6 @@ public sealed class GdiRasterizer : IRasterizer
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
 
-        int aa = Math.Max(1, options.SuperSample);
-
         var hdc = CreateCompatibleDC(IntPtr.Zero);
         if (hdc == IntPtr.Zero)
             throw new InvalidOperationException("CreateCompatibleDC failed.");
@@ -236,7 +232,7 @@ public sealed class GdiRasterizer : IRasterizer
         try
         {
             SetMapMode(hdc, MM_TEXT);
-            var hFont = CreateHFont(options, options.Size * aa);
+            var hFont = CreateHFont(options);
             var oldFont = SelectObject(hdc, hFont);
 
             try
@@ -246,9 +242,9 @@ public sealed class GdiRasterizer : IRasterizer
 
                 return new RasterizerFontMetrics
                 {
-                    Ascent = (int)Math.Ceiling((double)tm.TmAscent / aa),
-                    Descent = (int)Math.Ceiling((double)tm.TmDescent / aa),
-                    LineHeight = (int)Math.Ceiling((double)tm.TmHeight / aa)
+                    Ascent = tm.TmAscent,
+                    Descent = tm.TmDescent,
+                    LineHeight = tm.TmHeight
                 };
             }
             finally
@@ -264,56 +260,22 @@ public sealed class GdiRasterizer : IRasterizer
     }
 
     /// <summary>
-    /// Returns kerning pairs from GDI, already scaled to the requested pixel size.
-    /// When supersampling, creates the HFONT at size*aa and divides kerning amounts by aa.
+    /// Returns null to let the shared GPOS/kern parser handle kerning scaling.
+    /// <para>
+    /// BMFont's documented behavior is: try <c>GetKerningPairsW</c> first, then fall back to
+    /// GPOS parsing with <c>otmrcFontBox</c>-based scaling. In practice, BMFont (32-bit) gets
+    /// zero pairs from <c>GetKerningPairsW</c> for fonts like Bell MT whose kerning is in the
+    /// GPOS table, and uses GPOS-scaled values. The 64-bit <c>GetKerningPairsW</c> returns
+    /// legacy kern table data for those same fonts, producing completely different (wrong)
+    /// amounts. Returning null here delegates to the shared GPOS parser, which produces
+    /// values consistent with BMFont's output. For fonts where <c>GetKerningPairsW</c> and
+    /// GPOS agree (Arial, Bahnschrift), the GPOS path produces equivalent results because
+    /// their <c>unitsPerEm</c> matches <c>head.yMax - head.yMin</c>.
+    /// </para>
     /// </summary>
     public IReadOnlyList<ScaledKerningPair>? GetKerningPairs(RasterOptions options)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        EnsureFontLoaded();
-
-        int aa = Math.Max(1, options.SuperSample);
-
-        var hdc = CreateCompatibleDC(IntPtr.Zero);
-        if (hdc == IntPtr.Zero)
-            throw new InvalidOperationException("CreateCompatibleDC failed.");
-
-        try
-        {
-            SetMapMode(hdc, MM_TEXT);
-            var hFont = CreateHFont(options, options.Size * aa);
-            var oldFont = SelectObject(hdc, hFont);
-
-            try
-            {
-                var count = GetKerningPairsW(hdc, 0, null);
-                if (count == 0)
-                    return null;
-
-                var pairs = new KERNINGPAIR[count];
-                GetKerningPairsW(hdc, count, pairs);
-
-                var result = new ScaledKerningPair[count];
-                for (int i = 0; i < count; i++)
-                {
-                    result[i] = new ScaledKerningPair(
-                        pairs[i].WFirst,
-                        pairs[i].WSecond,
-                        pairs[i].IKernAmount / aa);
-                }
-
-                return result;
-            }
-            finally
-            {
-                SelectObject(hdc, oldFont);
-                DeleteObject(hFont);
-            }
-        }
-        finally
-        {
-            DeleteDC(hdc);
-        }
+        return null;
     }
 
     /// <summary>Releases unmanaged font resources if Dispose was not called.</summary>

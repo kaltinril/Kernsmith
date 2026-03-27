@@ -942,6 +942,7 @@ internal class TtfParser
         // For class2, we need all glyphs that could be the second glyph.
         // Glyphs not in classDef2 belong to class 0.
         var class2ToGlyphs = new Dictionary<int, List<int>>();
+        var class2AssignedGlyphs = new HashSet<int>();
         foreach (var (glyph, cls) in classDef2)
         {
             if (!class2ToGlyphs.TryGetValue(cls, out var list))
@@ -950,6 +951,23 @@ internal class TtfParser
                 class2ToGlyphs[cls] = list;
             }
             list.Add(glyph);
+            class2AssignedGlyphs.Add(glyph);
+        }
+
+        // Populate class 0 with all relevant glyphs not explicitly assigned to any class.
+        // Per the OpenType spec, glyphs not listed in a ClassDef table belong to class 0.
+        if (_relevantGlyphIndices != null && class2Count > 0)
+        {
+            if (!class2ToGlyphs.TryGetValue(0, out var class0List))
+            {
+                class0List = new List<int>();
+                class2ToGlyphs[0] = class0List;
+            }
+            foreach (var glyph in _relevantGlyphIndices)
+            {
+                if (!class2AssignedGlyphs.Contains(glyph))
+                    class0List.Add(glyph);
+            }
         }
 
         var recordPairSize = valueRecord1Size + valueRecord2Size;

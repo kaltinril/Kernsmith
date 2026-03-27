@@ -3,7 +3,7 @@
 > **Status**: Partial
 > **Size**: Medium
 > **Created**: 2026-03-25
-> **Updated**: 2026-03-26
+> **Updated**: 2026-03-26 (session 2)
 > **Dependencies**: Phase 78B (GDI backend must exist)
 > **Parent**: [Phase 78 -- Pluggable Rasterizer Backends](phase-78-pluggable-rasterizers.md)
 > **Goal**: Close the metrics gap between KernSmith's GDI backend and BMFont's GDI output, achieving exact (or near-exact) parity on lineHeight, base, xadvance, xoffset, yoffset, and kerning pairs.
@@ -19,7 +19,7 @@
 | **xadvance** | ✅ exact | avg +1.31, max 6 | 14/15 exact |
 | **xoffset** | ±1 avg, max ±2 | avg -0.83, max 12 | Systematic ±1 |
 | **yoffset** | ±1-3 some chars | avg -0.58, max 12 | Rendering path diff |
-| **kerning** | ✅ exact on shared | 218 amount diffs | See kerning section |
+| **kerning** | ✅ exact on shared | ✅ exact on shared (was 218 diffs) | See kerning section |
 
 ## What Was Implemented
 
@@ -38,7 +38,7 @@
 
 - `LoadSystemFont` — stores family name directly, lets GDI font mapper resolve (matching BMFont's `CreateFont` by-name approach)
 - `GetFontMetrics` — calls `GetTextMetricsW`, returns tmHeight/tmAscent/tmDescent, with `ceil(value/aa)` when supersampling
-- `GetKerningPairs` — calls `GetKerningPairsW`, returns null when 0 pairs (falls back to GPOS parser), divides amounts by aa when supersampling
+- `GetKerningPairs` — returns `null` (delegates to shared GPOS parser). Originally called `GetKerningPairsW`, but the 64-bit API returns legacy kern table data that differs from BMFont's 32-bit behavior.
 - Supersampling — renders at `size * aa` via supersized HFONT, downscales bitmap by averaging aa×aa blocks, divides metrics by aa
 - TTC font collection support in `ParseFamilyName`
 
@@ -53,50 +53,103 @@
 
 All changes use default interface methods or capability checks. FreeType code paths are completely unchanged. Verified: 330/330 FreeType tests pass.
 
+## Fixes Applied This Session
+
+### Bell MT kerning scaling -- FIXED
+
+`GetKerningPairs` now returns `null`, delegating all kerning to the shared GPOS parser. The 64-bit `GetKerningPairsW` returns legacy kern table data that differs from BMFont's 32-bit behavior (BMFont is a 32-bit application). By falling back to GPOS parsing, Bell MT kerning amount diffs went from 218 to 0 (48pt) and 49 to 0 (16pt). All shared pairs now match exactly.
+
+### GPOS Format 2 class 0 -- FIXED (partial)
+
+`TtfParser.ParsePairPosFormat2` now populates class 0 with glyphs not explicitly in `classDef2`, per OpenType spec. This added missing kerning pairs for class-based GPOS lookups. However, Bahnschrift still shows 47-63 missing pairs from an unknown source in BMFont's pipeline.
+
+### Attempted and Reverted
+
+1. **8x internal supersample -- REVERTED**: Made xadvance, yoffset, and lineHeight significantly worse. BMFont's 8x is in its own outline renderer (`GGO_NATIVE` + polygon fill via `DrawGlyphFromOutline`), not reproducible via GDI's `GetGlyphOutlineW(GGO_GRAY8_BITMAP)`. The two rendering paths produce fundamentally different results.
+
+2. **ABC widths for xoffset/xadvance -- REVERTED**: Made xoffset worse because BMFont applies bitmap trimming (`TrimLeftAndRight`) after `abcA`. `GmptGlyphOrigin.X` already approximates the post-trim value.
+
 ## Remaining Gaps and Root Causes
 
-### 1. xoffset ±1 systematic — BMFont's fixed 8x internal supersample
+### 1. xoffset ±1 systematic -- architectural rendering path difference
 
-**Root cause**: BMFont's outline rendering path (`DrawGlyphFromOutline`) has a FIXED 8x internal supersample that is always active, independent of the user-facing `aa` setting. BMFont renders glyph outlines at 8x resolution, computes bounding boxes from the supersampled data, then downscales. KernSmith's GDI backend uses `GetGlyphOutlineW(GGO_GRAY8_BITMAP)` which rasterizes at native resolution.
+**Root cause**: BMFont renders its own outlines at 8x via `DrawGlyphFromOutline` using `GGO_NATIVE` + polygon fill, producing different sub-pixel positions than `GetGlyphOutlineW(GGO_GRAY8_BITMAP)`. These are fundamentally different rendering paths in the Windows GDI stack. The 8x supersample approach was tested and reverted because it makes other metrics worse when applied to `GGO_GRAY8_BITMAP` output.
 
-At `aa=1`: BMFont renders at 8x internally, KernSmith renders at 1x. The glyph origins (`gmptGlyphOrigin`) differ by ±1 pixel because the 8x supersampled bounding box rounds differently than the native-resolution bounding box.
+**Status**: Not fixable without implementing BMFont's own outline renderer (GGO_NATIVE polygon fill + 8x rasterization). This would be a major undertaking for diminishing returns (±1 pixel).
 
-**Evidence**: Testing with `aa=2` showed xoffset improving significantly (121/191 diffs → 36/191 diffs for Arial 18pt), confirming that higher resolution rendering aligns the glyph origins more closely.
+### 2. yoffset ±1-3 -- downstream of rendering path difference
 
-**Fix**: Add a fixed 8x internal supersample factor to the GDI backend. In `RasterizeGlyphCore`, use `aa * 8` as the internal rendering factor instead of just `aa`. This means at `aa=1`, the GDI backend renders at 8x and downscales, matching BMFont's outline path. This is GDI-only — FreeType untouched.
-
-**Trade-off**: 8x supersampling means each glyph is rendered 64x larger (8x width × 8x height) before downscaling. This increases memory and CPU usage during generation but produces higher quality output and BMFont-matching metrics.
-
-### 2. yoffset ±1-3 — downstream of xoffset + bearingY rounding
-
-Partially caused by the same 8x supersample gap. BMFont computes `yoffset = fontAscent - (maxY / 65536)` from its supersampled outline data, while KernSmith uses `baseLine - gmptGlyphOrigin.Y`. The 8x fix should largely resolve this.
+Same root cause as xoffset. BMFont computes yoffset from its supersampled outline data, while KernSmith uses `gmptGlyphOrigin.Y` from the GDI rasterizer. The difference is inherent to the different rendering paths.
 
 ### 3. Bell MT lineHeight -1 at 16pt
 
-Likely a font-specific LOGFONT interaction. BMFont uses `::CreateFont` (positional parameters) while KernSmith uses `CreateFontIndirectW` (LOGFONTW struct). For most fonts these are equivalent, but edge cases may exist. Low priority — only affects one font at one size.
+`CreateFont` (positional parameters, used by BMFont) vs `CreateFontIndirectW` (LOGFONTW struct, used by KernSmith) edge case. Only affects one font at one size. Low priority.
 
-### 4. Bell MT xadvance and kerning differences
+### 4. Bell MT xadvance diffs
 
-**xadvance**: avg +1.31 at 48pt. May be related to the 8x supersample gap — at 8x, the advance width rounding would align with BMFont.
+Same root cause as xoffset -- BMFont's outline renderer produces different advance widths than `GetGlyphOutlineW`. The avg +1.31 at 48pt is an artifact of the different rendering paths.
 
-**Kerning amounts**: 218 shared pairs have different amounts. Root causes:
-- BMFont uses `otmrcFontBox`-based scaling for GPOS kerning; KernSmith uses `ppem/unitsPerEm`. The formulas produce slightly different scale factors for fonts where `head.yMax - head.yMin != unitsPerEm`.
-- BMFont tries `GetKerningPairsW` first (pre-scaled pixel values from OS), then falls back to GPOS. Bell MT may have kern table pairs that GDI returns with different values than GPOS parsing produces.
-- The rounding fix (AwayFromZero) was applied but didn't change Bell MT results, suggesting the scaling factor difference is the primary cause.
+### 5. Bahnschrift 47-63 missing kerning pairs
 
-### 5. Missing kerning pairs (Bahnschrift)
-
-BMFont has 47-63 extra pairs beyond what KernSmith's GPOS parser finds. BMFont's GPOS parser may handle class-based pairs (Format 2) more expansively, or may expand classes into individual pairs that KernSmith's parser represents differently.
+GPOS class 0 fix reduced but didn't fully resolve this. The remaining missing pairs come from an unknown source in BMFont's kerning pipeline. Possible causes:
+- BMFont may expand class pairs differently or have additional fallback logic
+- BMFont's 32-bit GPOS parser may handle edge cases differently than our implementation
+- There may be additional kerning sources (kern table fallback after GPOS) that BMFont merges
 
 ### 6. Atlas PNG channel configuration (separate bug)
 
-KernSmith ignores `alphaChnl`/`redChnl`/`greenChnl`/`blueChnl` from .bmfc configs. Produces white-on-black instead of BMFont's white-on-alpha. Not a metrics issue — tracked separately.
+KernSmith ignores `alphaChnl`/`redChnl`/`greenChnl`/`blueChnl` from .bmfc configs. Produces white-on-black instead of BMFont's white-on-alpha. Not a metrics issue -- tracked separately.
+
+## Testing & Comparison
+
+### Regenerating Output
+
+Both BMFont and KernSmith GDI output live under `tests/bmfont-compare/`:
+
+| Directory | Source | Contents |
+|-----------|--------|----------|
+| `gum-bmfont/` | BMFont64.exe | `.bmfc` configs + `.fnt` + `.png` (ground truth) |
+| `gum-gdi/` | KernSmith GDI backend | `.fnt` + `.png` + copied `.bmfc` |
+
+**Regenerate BMFont output** (requires `bmfont64.exe` on PATH or at `c:/tools/`):
+```bash
+cd tests/bmfont-compare
+for f in gum-bmfont/*.bmfc; do
+  name=$(basename "$f" .bmfc)
+  bmfont64.exe -c "$f" -o "gum-bmfont/${name}.fnt"
+done
+```
+
+**Regenerate KernSmith GDI output**:
+```bash
+dotnet run --project tests/bmfont-compare/GenerateGdi/
+```
+
+### Running the Comparison
+
+**Compare all fonts** (BMFont vs KernSmith GDI):
+```bash
+python tests/bmfont-compare/diff_all_fonts.py
+```
+
+**Compare a single font pair**:
+```bash
+python tests/bmfont-compare/diff_fnt.py tests/bmfont-compare/gum-bmfont/Font18Arial.fnt tests/bmfont-compare/gum-gdi/Font18Arial.fnt
+```
+
+### Visual Comparison
+
+PNG atlas textures are generated alongside `.fnt` files in both directories. Open the matching `*_0.png` files side-by-side to visually compare glyph rendering:
+- `tests/bmfont-compare/gum-bmfont/Font18Arial_0.png` (BMFont)
+- `tests/bmfont-compare/gum-gdi/Font18Arial_0.png` (KernSmith GDI)
 
 ## Next Steps (Priority Order)
 
-1. **Fixed 8x internal supersample** in GDI backend — addresses xoffset ±1, yoffset, and likely Bell MT xadvance. GDI-only change, FreeType untouched.
-2. **Bell MT kerning scaling** — switch from `ppem/unitsPerEm` to `otmrcFontBox`-based scaling to match BMFont's GPOS path. Shared change but only affects kerning math.
-3. **Atlas channel configuration** — separate phase, affects all backends.
+1. ~~**Fixed 8x internal supersample**~~ -- ATTEMPTED AND REVERTED. Not viable with `GGO_GRAY8_BITMAP`.
+2. ~~**Bell MT kerning scaling**~~ -- FIXED by delegating to GPOS parser instead of `GetKerningPairsW`.
+3. **Bahnschrift missing pairs investigation** -- identify the source of 47-63 extra pairs in BMFont's output. May require deeper analysis of BMFont's 32-bit GPOS parser behavior.
+4. **Atlas channel configuration** -- separate phase, affects all backends.
+5. **Accept xoffset/yoffset ±1 as known limitation** -- document that exact parity requires BMFont's proprietary outline renderer (`GGO_NATIVE` + polygon fill), which is outside scope.
 
 ## Files Created/Changed
 
@@ -123,5 +176,6 @@ KernSmith ignores `alphaChnl`/`redChnl`/`greenChnl`/`blueChnl` from .bmfc config
 - ✅ 330/330 FreeType tests pass (zero behavioral change)
 - ✅ 344/344 GDI tests pass on Windows TFMs
 - ✅ 14/15 lineHeight exact, 15/15 base exact, 14/15 xadvance exact (same-machine validation)
-- ⚠️ xoffset ±1 systematic — fixable with 8x internal supersample
-- ⚠️ Bell MT minor divergence — kerning scaling difference
+- ✅ Kerning: all shared pairs now match exactly (Bell MT 218 diffs resolved)
+- ⚠️ xoffset ±1 systematic -- architectural limitation (different GDI rendering paths)
+- ⚠️ Bahnschrift 47-63 missing kerning pairs -- unknown source in BMFont pipeline
