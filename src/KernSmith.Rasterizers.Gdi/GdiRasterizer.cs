@@ -171,6 +171,8 @@ public sealed class GdiRasterizer : IRasterizer
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
 
+        int aa = Math.Max(1, options.SuperSample);
+
         var hdc = CreateCompatibleDC(IntPtr.Zero);
         if (hdc == IntPtr.Zero)
             throw new InvalidOperationException("CreateCompatibleDC failed.");
@@ -178,7 +180,7 @@ public sealed class GdiRasterizer : IRasterizer
         try
         {
             SetMapMode(hdc, MM_TEXT);
-            var hFont = CreateHFont(options);
+            var hFont = CreateHFont(options, options.Size * aa);
             var oldFont = SelectObject(hdc, hFont);
 
             try
@@ -197,11 +199,11 @@ public sealed class GdiRasterizer : IRasterizer
                     return null;
 
                 return new GlyphMetrics(
-                    BearingX: gm.GmptGlyphOrigin.X,
-                    BearingY: gm.GmptGlyphOrigin.Y,
-                    Advance: gm.GmCellIncX,
-                    Width: (int)gm.GmBlackBoxX,
-                    Height: (int)gm.GmBlackBoxY);
+                    BearingX: gm.GmptGlyphOrigin.X / aa,
+                    BearingY: gm.GmptGlyphOrigin.Y / aa,
+                    Advance: gm.GmCellIncX / aa,
+                    Width: (int)gm.GmBlackBoxX / aa,
+                    Height: (int)gm.GmBlackBoxY / aa);
             }
             finally
             {
@@ -225,6 +227,8 @@ public sealed class GdiRasterizer : IRasterizer
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
 
+        int aa = Math.Max(1, options.SuperSample);
+
         var hdc = CreateCompatibleDC(IntPtr.Zero);
         if (hdc == IntPtr.Zero)
             throw new InvalidOperationException("CreateCompatibleDC failed.");
@@ -232,7 +236,7 @@ public sealed class GdiRasterizer : IRasterizer
         try
         {
             SetMapMode(hdc, MM_TEXT);
-            var hFont = CreateHFont(options);
+            var hFont = CreateHFont(options, options.Size * aa);
             var oldFont = SelectObject(hdc, hFont);
 
             try
@@ -242,9 +246,9 @@ public sealed class GdiRasterizer : IRasterizer
 
                 return new RasterizerFontMetrics
                 {
-                    Ascent = tm.TmAscent,
-                    Descent = tm.TmDescent,
-                    LineHeight = tm.TmHeight
+                    Ascent = (int)Math.Ceiling((double)tm.TmAscent / aa),
+                    Descent = (int)Math.Ceiling((double)tm.TmDescent / aa),
+                    LineHeight = (int)Math.Ceiling((double)tm.TmHeight / aa)
                 };
             }
             finally
