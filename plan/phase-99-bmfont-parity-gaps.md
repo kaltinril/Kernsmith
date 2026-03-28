@@ -62,8 +62,8 @@ Reference the existing comparison tools:
 - `tests/bmfont-compare/diff_fnt.py` -- single-font comparison
 - `tests/bmfont-compare/diff_images.py` -- visual atlas comparison
 - `tests/bmfont-compare/GenerateGdi/` -- regenerate KernSmith GDI output
-- `temp-test/TestGen/` -- generates atlas PNGs from all 3 backends (FreeType, GDI, DirectWrite) with both fire-effect and plain configs
-- `temp-test/CompareGen/` -- character-by-character visual comparison across all backends + BMFont64, outputs `comparison.png` (fire effects) and `comparison2.png` (plain white)
+- `tests/bmfont-compare/GenerateAll/` -- generates atlas PNGs from all 3 backends (FreeType, GDI, DirectWrite) with both fire-effect and plain configs. Usage: `dotnet run --framework net10.0-windows -- <output-dir>`
+- `tests/bmfont-compare/CompareGlyphs/` -- character-by-character visual comparison across all backends + BMFont64, outputs `comparison.png` (fire effects) and `comparison2.png` (plain white). Usage: `dotnet run --framework net10.0-windows -- <data-dir>`. Gracefully skips missing backends.
 
 ## Potential Approaches
 
