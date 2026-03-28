@@ -1,6 +1,6 @@
 # Phase 78D -- CLI and UI Integration
 
-> **Status**: Planning
+> **Status**: In Progress
 > **Size**: Small
 > **Created**: 2026-03-25
 > **Dependencies**: Phase 78A (foundation), at least one backend (78B or 78C) for meaningful testing
@@ -19,110 +19,174 @@
 - **SuperSampleLevel needs CLI exposure**: 78BB added `SuperSampleLevel` to `FontGeneratorOptions` and the bmfc `aa` key now maps to it. The CLI needs a `--supersample` flag (integer, default 1).
 - **System font loading path exists**: 78BB added `LoadSystemFont(string familyName)` for backends that support it. CLI may benefit from a `--system-font <name>` flag that uses the system font path instead of requiring a TTF file path. UI should offer a system font picker when the selected backend supports it (`SupportsSystemFonts` capability).
 
+## Design Decision: Backend Assembly Loading via Compile-Time `#if`
+
+During implementation we identified that adding project references to the backend packages is not sufficient to make them register -- the CLR lazy-loads assemblies, so `[ModuleInitializer]` in the backend assemblies won't fire unless something forces the assembly to load.
+
+**Options considered:**
+1. ~~Runtime `Assembly.Load()` with try/catch~~ -- fragile, reflection-based
+2. ~~Directory scanning for `KernSmith.Rasterizers.*.dll`~~ -- overly generic, unnecessary plugin architecture
+3. ~~`OperatingSystem.IsWindows()` guard + `Assembly.Load()`~~ -- redundant since the build is already platform-specific
+4. **Compile-time `#if WINDOWS` with direct type reference** -- chosen approach
+
+**Rationale:** The UI and CLI are purpose-built per platform (`dotnet publish -r win-x64`, `linux-x64`, etc.). Since the build output is already platform-specific, compile-time `#if` is the simplest and safest approach. No reflection, no try/catch, no runtime overhead. The Phase 78 design decision "TFMs over `#if`" (decision #10) applies to the backend packages' own code, not to how consuming apps wire up references.
+
+**Implementation pattern for UI and CLI `.csproj` files:**
+```xml
+<!-- Cross-platform by default, Windows TFM on Windows (enables #if WINDOWS) -->
+<TargetFramework Condition="'$(OS)' != 'Windows_NT'">net10.0</TargetFramework>
+<TargetFramework Condition="'$(OS)' == 'Windows_NT'">net10.0-windows</TargetFramework>
+
+<!-- Backend references only included in Windows builds -->
+<ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+  <ProjectReference Include="..\..\src\KernSmith.Rasterizers.Gdi\KernSmith.Rasterizers.Gdi.csproj" />
+  <ProjectReference Include="..\..\src\KernSmith.Rasterizers.DirectWrite.TerraFX\KernSmith.Rasterizers.DirectWrite.TerraFX.csproj" />
+</ItemGroup>
+```
+
+**Startup code (Program.cs or equivalent):**
+```csharp
+#if WINDOWS
+// Force assembly load so [ModuleInitializer] registers the backends
+_ = typeof(KernSmith.Rasterizers.Gdi.GdiRasterizer);
+_ = typeof(KernSmith.Rasterizers.DirectWrite.TerraFX.DirectWriteRasterizer);
+#endif
+```
+
+**Result:**
+- Windows: all 3 backends available in dropdown / `--list-rasterizers`
+- Linux/Mac/mobile/web: FreeType only, zero Windows-specific code compiled
+
 ## Tasks
 
-### 1. CLI: `--rasterizer` Flag
+### 1. CLI: `--rasterizer` Flag ✅
 
-File: `tools/KernSmith.Cli/` (generate command)
+File: `tools/KernSmith.Cli/Commands/GenerateCommand.cs`
 
-Add `--rasterizer auto|freetype|gdi|directwrite` option:
-- Maps to `FontGeneratorOptions.Backend`
-- Only show available options based on platform and installed packages (use `RasterizerFactory.GetAvailableBackends()`)
-- Default: `freetype` (matches current behavior)
-- Validate early: if user requests an unavailable backend, error with a clear message listing available backends
+- Added `--rasterizer freetype|gdi|directwrite` flag in `ParseArgs()`
+- Maps to `CliOptions.Backend` → `FontGeneratorOptions.Backend` in `BuildGenOptions()`
+- Handled in `MergeConfigIntoOptions()` for .bmfc config overlay
+- Early validation in `Execute()`: checks `RasterizerFactory.GetAvailableBackends()` and errors with available list if backend unavailable
+- Help text updated
 
-### 2. CLI: `--list-rasterizers`
+### 2. CLI: `--list-rasterizers` ✅
 
-Add a `--list-rasterizers` flag (or subcommand) that prints:
-- Available backends with their capabilities
-- Which backend is the default
-- Platform information
+- New `ListRasterizersCommand.cs` prints available backends with platform and capability info
+- Wired into `Program.cs` command dispatch as `list-rasterizers`
+- Added to top-level help text
 
-Example output:
-```
-Available rasterizer backends:
-  freetype     (default)  All platforms    Color, Variable, SDF, Outline
-  gdi                     Windows only     Grayscale only
-  directwrite             Windows only     Color, Variable
-```
+### 3. UI: Rasterizer Dropdown ✅
 
-### 3. UI: Rasterizer Dropdown
+- ComboBox added to `FontConfigPanel.cs` in the font configuration section
+- Populated from `FontConfigViewModel.AvailableBackends` (via `RasterizerFactory.GetAvailableBackends()`)
+- Bound to `FontConfigViewModel.SelectedBackend`
+- Uses named method `OnRasterizerComboSelectionChanged()` (not anonymous lambda)
 
-File: `apps/KernSmith.Ui/` (font config panel)
+### 4. Add `IsRegistered(RasterizerBackend)` to `RasterizerFactory` ✅
 
-- Add a dropdown/combo box for rasterizer selection in the font configuration panel
-- Populate from `RasterizerFactory.GetAvailableBackends()`
-- Default selection: `FreeType`
-- Persist selection in project file
+- Added `public static bool IsRegistered(RasterizerBackend backend)` method
 
-### 4. Add `IsRegistered(RasterizerBackend)` to `RasterizerFactory`
+### 5. UI: Capability-Aware Options ✅
 
-Add an `IsRegistered(RasterizerBackend)` method to `RasterizerFactory` that returns `bool`. This enables the UI to check backend availability for capability-aware option graying without catching exceptions or iterating `GetAvailableBackends()`. Deferred from Phase 78A since it's only needed for UI integration.
-
-### 5. UI: Capability-Aware Options
-
-Use `IRasterizerCapabilities` to gray out or disable options not supported by the selected backend:
-- If backend doesn't support color fonts, disable color font toggle
-- If backend doesn't support variable fonts, disable variation axis controls
-- If backend doesn't support SDF, disable SDF option
-- Show tooltip explaining why the option is disabled (e.g., "SDF is not supported by the GDI backend")
+- `FontConfigViewModel` exposes `BackendSupportsColorFonts`, `BackendSupportsVariableFonts`, `BackendSupportsSdf`, `BackendSupportsSystemFonts` properties
+- Capabilities refresh when `SelectedBackend` changes (creates temporary rasterizer, reads capabilities, disposes)
+- `MainViewModel` propagates capability changes from `FontConfigViewModel` → `EffectsViewModel`
+- `EffectsPanel`: SDF checkbox disabled when `!BackendSupportsSdf`, color font checkbox gated on `BackendSupportsColorFonts`, variable font axis sliders disabled when `!BackendSupportsVariableFonts` with warning label
+- System font section visibility in `FontConfigPanel` tied to `BackendSupportsSystemFonts`
 
 ### 6. UI: Linux Native Info Message
 
-When `Native` or `Auto` resolves to FreeType on Linux, show an informational message:
-- "Native rasterizer on Linux uses FreeType (same as the default)"
-- Non-blocking info, not an error
+Not needed -- there is no `Auto` or `Native` backend value. The dropdown only shows actually-available backends (FreeType only on Linux). No misleading options to explain.
 
-### 7. CLI: `--supersample` Flag
+### 7. CLI: `--supersample` Flag ✅ (pre-existing)
 
-File: `tools/KernSmith.Cli/Commands/GenerateCommand.cs`
+Already implemented as `--super-sample <n>` in a prior phase. Maps to `CliOptions.SuperSampleLevel` → `FontGeneratorOptions.SuperSampleLevel`.
 
-Add `--supersample <level>` option:
-- Integer value, default 1 (no supersampling)
-- Maps to `FontGeneratorOptions.SuperSampleLevel`
-- Validate: must be >= 1
+### 8. CLI: `--system-font` Flag ✅ (pre-existing)
 
-### 8. CLI: `--system-font` Flag
+Already implemented as `--system-font <name>` in a prior phase. Maps to `CliOptions.SystemFontName`, handled in `Execute()` via `BmFont.GenerateFromSystem()`.
 
-File: `tools/KernSmith.Cli/Commands/GenerateCommand.cs`
+### 9. UI: System Font Picker ✅ (pre-existing, now capability-gated)
 
-Add `--system-font <name>` option as an alternative to the positional font file path:
-- Mutually exclusive with the font file path argument
-- Only valid when the selected backend reports `SupportsSystemFonts = true`
-- Error with a clear message if the backend does not support system fonts
+System font ComboBox already existed in `FontConfigPanel`. Now its visibility is tied to `BackendSupportsSystemFonts` -- hidden when the selected backend doesn't support system fonts.
 
-### 9. UI: System Font Picker
+### 10. Validation ✅
 
-File: `apps/KernSmith.Ui/` (font config panel)
+- CLI: early validation in `Execute()` checks requested backend against `GetAvailableBackends()`, errors with list of alternatives
+- UI: dropdown only shows available backends (invalid selection impossible)
 
-- When the selected backend reports `SupportsSystemFonts = true`, show a system font picker
-- Allow the user to choose between loading from file or selecting a system font
-- Disable system font picker when the backend does not support it
+### 11. Backend Assembly Wiring (NEW)
 
-### 10. Validation
+Both UI and CLI `.csproj` files need:
+- [ ] Conditional TFM: `net10.0-windows` on Windows, `net10.0` elsewhere
+- [ ] Windows-only project references to GDI and DirectWrite backend packages
+- [ ] `#if WINDOWS` type reference in startup to force `[ModuleInitializer]` execution
 
-Both CLI and UI should validate early:
-- If the requested backend is not available (package not installed or wrong platform), error immediately with a helpful message
-- List available alternatives in the error message
-- Use `RasterizerFactory.GetAvailableBackends()` for runtime availability checks
+See "Design Decision: Backend Assembly Loading" section above for implementation pattern.
+
+### 12. BmFontBuilder.WithBackend() ✅
+
+- Added `WithBackend(RasterizerBackend)` fluent method to `BmFontBuilder`
+- `GenerationService` calls `.WithBackend(request.Backend)` in the builder chain
+- `GenerationRequest` includes `Backend` property, populated from `FontConfigViewModel.SelectedBackend`
 
 ## Files Changed
 
-| File | Change |
-|------|--------|
-| `tools/KernSmith.Cli/Commands/GenerateCommand.cs` | Add `--rasterizer` and `--list-rasterizers` options |
-| `apps/KernSmith.Ui/` (font config panel) | Add rasterizer dropdown, capability-aware option disabling |
-| `apps/KernSmith.Ui/` (project service) | Persist rasterizer selection |
-| `tools/KernSmith.Cli/Commands/GenerateCommand.cs` | Add `--supersample` and `--system-font` options |
-| `apps/KernSmith.Ui/` (font config panel) | Add system font picker when backend supports it |
+| File | Change | Status |
+|------|--------|--------|
+| `src/KernSmith/Rasterizer/RasterizerFactory.cs` | Added `IsRegistered(RasterizerBackend)` method | ✅ |
+| `src/KernSmith/BmFontBuilder.cs` | Added `WithBackend(RasterizerBackend)` fluent method | ✅ |
+| `tools/KernSmith.Cli/Commands/GenerateCommand.cs` | `--rasterizer` flag, Backend in BuildGenOptions/MergeConfigIntoOptions, validation, help text | ✅ |
+| `tools/KernSmith.Cli/Commands/ListRasterizersCommand.cs` | New command: list available backends with capabilities | ✅ |
+| `tools/KernSmith.Cli/Program.cs` | Wired `list-rasterizers` command, updated help | ✅ |
+| `apps/KernSmith.Ui/ViewModels/FontConfigViewModel.cs` | `SelectedBackend`, `AvailableBackends`, `BackendSupports*` capability properties | ✅ |
+| `apps/KernSmith.Ui/Layout/FontConfigPanel.cs` | Rasterizer dropdown, system font visibility tied to capability | ✅ |
+| `apps/KernSmith.Ui/ViewModels/EffectsViewModel.cs` | `BackendSupports*` bindable properties | ✅ |
+| `apps/KernSmith.Ui/Layout/EffectsPanel.cs` | Capability-aware SDF/ColorFont/VariableFont disabling | ✅ |
+| `apps/KernSmith.Ui/ViewModels/MainViewModel.cs` | Capability propagation FontConfigVM→EffectsVM, Backend in GenerationRequest | ✅ |
+| `apps/KernSmith.Ui/Models/GenerationRequest.cs` | Added `Backend` property | ✅ |
+| `apps/KernSmith.Ui/Services/GenerationService.cs` | `.WithBackend(request.Backend)` in builder chain | ✅ |
+| `apps/KernSmith.Ui/KernSmith.Ui.csproj` | Conditional TFM + Windows backend references | TODO |
+| `tools/KernSmith.Cli/KernSmith.Cli.csproj` | Conditional TFM + Windows backend references | TODO |
+| UI/CLI startup code | `#if WINDOWS` type references to force backend loading | TODO |
+
+## Review Findings (2026-03-28)
+
+Issues discovered during QA review of implemented code:
+
+### HIGH — Must fix before merge
+
+1. **`CopyOptions()` missing `Backend` property** — `BmFontBuilder.CopyOptions()` copies every `FontGeneratorOptions` property except `Backend`. Means `BmFont.Builder().FromConfig()` silently drops the backend setting. Fix: add `_options.Backend = source.Backend;` near the `Rasterizer` copy line.
+
+2. **`WINDOWS` preprocessor symbol not auto-defined** — `net10.0-windows` TFM does NOT auto-define `WINDOWS`. Need explicit `<DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>` block conditioned on `$(TargetFramework.Contains('-windows'))`. Pattern already exists in `tests/KernSmith.Tests/KernSmith.Tests.csproj`.
+
+3. **`TargetFramework` (singular) vs `TargetFrameworks` (plural) conflict** — CLI inherits `<TargetFrameworks>` (plural) from `Directory.Build.props`. Using singular `<TargetFramework>` causes NETSDK1005. Must override the plural form. Pattern already exists in `tests/KernSmith.Tests/KernSmith.Tests.csproj`.
+
+### MEDIUM — Should fix
+
+4. **Use `RuntimeHelpers.RunModuleConstructor()` instead of `typeof()`** — `typeof()` may not reliably trigger `[ModuleInitializer]` in all scenarios (NativeAOT, trimming). `RuntimeHelpers.RunModuleConstructor(typeof(T).Module.ModuleHandle)` is the guaranteed API. The test code already uses `RuntimeHelpers.RunClassConstructor()` with a defensive fallback showing the team hit this before.
+
+5. **Hardcoded capabilities in `ListRasterizersCommand`** — Claims DirectWrite supports "Color, Variable" but actual capabilities are `SupportsColorFonts => false`, `SupportsVariableFonts => false`. Should query actual `IRasterizerCapabilities` at runtime instead of hardcoding.
+
+6. **Bare `catch` in `RefreshBackendCapabilities()`** — Silently sets everything to false on failure. Should at minimum log the exception via `Debug.WriteLine()`.
+
+7. **CI/publish workflow TFM** — `.github/workflows/publish.yml` hardcodes `-f net10.0` for CLI/UI publish. Windows builds need `-f net10.0-windows` to include backends.
+
+### LOW — Known limitations
+
+8. **`MergeConfigIntoOptions` cannot override `Backend` back to FreeType** — `--rasterizer freetype` on CLI won't override a non-FreeType config because the value equals the default. Consistent with existing merge pattern for other flags.
+
+9. **`AvailableBackends` is a snapshot** — Populated once at `FontConfigViewModel` construction. If backends register later, the dropdown won't update. Not an issue in practice since registration happens at startup.
 
 ## Testing
 
-- CLI: verify `--rasterizer freetype` produces output (same as default)
-- CLI: verify `--rasterizer gdi` errors gracefully on non-Windows or when package is not installed
-- CLI: verify `--list-rasterizers` output is correct
-- UI: verify dropdown populates with available backends
-- UI: verify capability-dependent options are disabled/enabled correctly when switching backends
-- CLI: verify `--supersample 4` sets SuperSampleLevel correctly
-- CLI: verify `--system-font "Arial"` works with GDI backend and errors with FreeType backend
-- UI: verify system font picker is shown/hidden based on backend SupportsSystemFonts capability
+- [ ] CLI: verify `--rasterizer freetype` produces output (same as default)
+- [ ] CLI: verify `--rasterizer gdi` works on Windows (errors on non-Windows)
+- [ ] CLI: verify `--rasterizer directwrite` works on Windows (errors on non-Windows)
+- [ ] CLI: verify `--rasterizer invalid` errors with helpful message listing available backends
+- [ ] CLI: verify `--list-rasterizers` output is correct on Windows (shows all 3) and Linux (shows FreeType only)
+- [ ] UI: verify dropdown populates with available backends per platform
+- [ ] UI: verify capability-dependent options disable/enable correctly when switching backends
+- [ ] UI: verify system font picker visibility toggles with backend SupportsSystemFonts
+- [ ] Build: verify `dotnet build` succeeds on Windows (all backends compiled)
+- [ ] Build: verify `dotnet build` succeeds on Linux (backends excluded, no errors)

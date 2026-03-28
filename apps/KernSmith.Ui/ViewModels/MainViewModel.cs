@@ -74,6 +74,16 @@ public class MainViewModel : ViewModel
             {
                 Effects.HasColorGlyphs = FontConfig.HasColorGlyphs;
             }
+
+            if (e.PropertyName is nameof(FontConfigViewModel.SelectedBackend)
+                or nameof(FontConfigViewModel.BackendSupportsColorFonts)
+                or nameof(FontConfigViewModel.BackendSupportsVariableFonts)
+                or nameof(FontConfigViewModel.BackendSupportsSdf))
+            {
+                Effects.BackendSupportsColorFonts = FontConfig.BackendSupportsColorFonts;
+                Effects.BackendSupportsVariableFonts = FontConfig.BackendSupportsVariableFonts;
+                Effects.BackendSupportsSdf = FontConfig.BackendSupportsSdf;
+            }
         };
 
         CharacterGrid.PropertyChanged += (_, e) =>
@@ -264,7 +274,8 @@ public class MainViewModel : ViewModel
                 VariationAxisValues = Effects.VariationAxisValues.Count > 0
                     ? new Dictionary<string, float>(Effects.VariationAxisValues)
                     : null,
-                FallbackCharacter = Effects.FallbackCharacter
+                FallbackCharacter = Effects.FallbackCharacter,
+                Backend = FontConfig.SelectedBackend
             };
 
             _lastResult = await _generationService.GenerateAsync(request);

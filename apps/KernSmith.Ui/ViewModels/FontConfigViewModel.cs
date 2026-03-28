@@ -1,5 +1,6 @@
 using Gum.Mvvm;
 using KernSmith.Font.Models;
+using KernSmith.Rasterizer;
 using KernSmith.Ui.Models;
 
 namespace KernSmith.Ui.ViewModels;
@@ -34,6 +35,25 @@ public class FontConfigViewModel : ViewModel
     // --- Generation settings ---
     public int FontSize { get => Get<int>(); set => Set(value); }
 
+    // --- Rasterizer backend selection ---
+    public IReadOnlyList<RasterizerBackend> AvailableBackends { get; }
+
+    public RasterizerBackend SelectedBackend
+    {
+        get => Get<RasterizerBackend>();
+        set
+        {
+            Set(value);
+            RefreshBackendCapabilities();
+        }
+    }
+
+    // --- Backend capability properties (computed from SelectedBackend) ---
+    public bool BackendSupportsColorFonts { get => Get<bool>(); set => Set(value); }
+    public bool BackendSupportsVariableFonts { get => Get<bool>(); set => Set(value); }
+    public bool BackendSupportsSdf { get => Get<bool>(); set => Set(value); }
+    public bool BackendSupportsSystemFonts { get => Get<bool>(); set => Set(value); }
+
     // --- System font list ---
     public IReadOnlyList<SystemFontGroup>? SystemFonts { get => Get<IReadOnlyList<SystemFontGroup>?>(); set => Set(value); }
     public string? SelectedFontFamily { get => Get<string?>(); set => Set(value); }
@@ -52,6 +72,29 @@ public class FontConfigViewModel : ViewModel
         StyleName = "";
         VariationAxesSummary = "";
         FontSize = 32;
+        AvailableBackends = RasterizerFactory.GetAvailableBackends();
+        SelectedBackend = RasterizerBackend.FreeType;
+        RefreshBackendCapabilities();
+    }
+
+    private void RefreshBackendCapabilities()
+    {
+        try
+        {
+            using var rasterizer = RasterizerFactory.Create(SelectedBackend);
+            var caps = rasterizer.Capabilities;
+            BackendSupportsColorFonts = caps.SupportsColorFonts;
+            BackendSupportsVariableFonts = caps.SupportsVariableFonts;
+            BackendSupportsSdf = caps.SupportsSdf;
+            BackendSupportsSystemFonts = caps.SupportsSystemFonts;
+        }
+        catch
+        {
+            BackendSupportsColorFonts = false;
+            BackendSupportsVariableFonts = false;
+            BackendSupportsSdf = false;
+            BackendSupportsSystemFonts = false;
+        }
     }
 
     /// <summary>

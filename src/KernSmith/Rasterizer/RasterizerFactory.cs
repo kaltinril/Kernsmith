@@ -47,6 +47,9 @@ public static class RasterizerFactory
         return Backends.Keys.ToList();
     }
 
+    /// <summary>Returns true if the specified backend has been registered.</summary>
+    public static bool IsRegistered(RasterizerBackend backend) => Backends.ContainsKey(backend);
+
     /// <summary>
     /// Clears all registered backends and restores factory-default state.
     /// Intended for test isolation only.

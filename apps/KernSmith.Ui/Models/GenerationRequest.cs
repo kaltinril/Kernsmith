@@ -1,4 +1,5 @@
 using KernSmith;
+using KernSmith.Rasterizer;
 
 namespace KernSmith.Ui.Models;
 
@@ -112,6 +113,11 @@ public record GenerationRequest
     public bool ColorFontEnabled { get; init; }
     /// <summary>Index into the packing algorithm list: 0 = MaxRects, 1 = Skyline.</summary>
     public int PackingAlgorithmIndex { get; init; }
+
+    // --- Rasterizer backend ---
+
+    /// <summary>Which rasterizer backend to use for glyph rendering.</summary>
+    public RasterizerBackend Backend { get; init; } = RasterizerBackend.FreeType;
 
     // --- TTC face selection ---
 

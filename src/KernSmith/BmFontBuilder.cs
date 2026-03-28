@@ -420,6 +420,11 @@ public sealed class BmFontBuilder
     /// <returns>This builder.</returns>
     public BmFontBuilder WithCollectMetrics(bool collect = true) { _options.CollectMetrics = collect; return this; }
 
+    /// <summary>Sets the rasterizer backend to use for glyph rendering.</summary>
+    /// <param name="backend">The backend to use.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithBackend(RasterizerBackend backend) { _options.Backend = backend; return this; }
+
     private void CopyOptions(FontGeneratorOptions source)
     {
         _options.Size = source.Size;

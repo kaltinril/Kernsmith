@@ -2,6 +2,7 @@ using System.Diagnostics;
 using KernSmith.Cli.Config;
 using KernSmith.Cli.Utilities;
 using KernSmith.Output;
+using KernSmith.Rasterizer;
 
 namespace KernSmith.Cli.Commands;
 
@@ -56,6 +57,15 @@ internal sealed class GenerateCommand
             if (options.FontPath != null && !File.Exists(options.FontPath))
             {
                 ConsoleOutput.WriteError($"Font file not found: {options.FontPath}");
+                return ExitCodes.InvalidArguments;
+            }
+
+            // Validate rasterizer backend
+            var available = RasterizerFactory.GetAvailableBackends();
+            if (!available.Contains(options.Backend))
+            {
+                var list = string.Join(", ", available.Select(b => b.ToString().ToLowerInvariant()));
+                ConsoleOutput.WriteError($"Rasterizer backend '{options.Backend.ToString().ToLowerInvariant()}' is not available on this platform. Available: {list}");
                 return ExitCodes.InvalidArguments;
             }
 
@@ -185,6 +195,7 @@ internal sealed class GenerateCommand
             Dpi = options.Dpi,
             FaceIndex = options.FaceIndex,
             ChannelPacking = options.ChannelPacking,
+            Backend = options.Backend,
             SuperSampleLevel = options.SuperSampleLevel,
             FallbackCharacter = options.FallbackCharacter,
             EnableHinting = options.EnableHinting ?? true,
@@ -495,6 +506,16 @@ internal sealed class GenerateCommand
                 case "--super-sample":
                     options.SuperSampleLevel = int.Parse(NextArg(args, ref i, args[i]));
                     break;
+                case "--rasterizer":
+                    var backendStr = NextArg(args, ref i, args[i]);
+                    options.Backend = backendStr.ToLowerInvariant() switch
+                    {
+                        "freetype" => RasterizerBackend.FreeType,
+                        "gdi" => RasterizerBackend.Gdi,
+                        "directwrite" => RasterizerBackend.DirectWrite,
+                        _ => throw new ArgumentException($"Unknown rasterizer backend: '{backendStr}'. Valid: freetype, gdi, directwrite")
+                    };
+                    break;
                 case "--fallback-char":
                     var fbArg = NextArg(args, ref i, args[i]);
                     options.FallbackCharacter = fbArg.Length == 1 ? fbArg[0] : (char)int.Parse(fbArg);
@@ -619,6 +640,7 @@ internal sealed class GenerateCommand
         if (cli.MatchCharHeight) config.MatchCharHeight = true;
         if (cli.ColorFont) config.ColorFont = true;
         if (cli.ColorPaletteIndex != 0) config.ColorPaletteIndex = cli.ColorPaletteIndex;
+        if (cli.Backend != RasterizerBackend.FreeType) config.Backend = cli.Backend;
         if (cli.SuperSampleLevel != 1) config.SuperSampleLevel = cli.SuperSampleLevel;
         if (cli.FallbackCharacter.HasValue) config.FallbackCharacter = cli.FallbackCharacter;
         if (cli.TextureFormat != null) config.TextureFormat = cli.TextureFormat;
@@ -793,6 +815,7 @@ internal sealed class GenerateCommand
               --sdf                       Enable Signed Distance Field rendering
               --mono                      Disable anti-aliasing (alias for --aa none)
               --super-sample <n>          Super sampling level 1-4 (default: 1)
+              --rasterizer <backend>      Rasterizer backend: freetype (default), gdi, directwrite
               --hinting / --no-hinting    Enable/disable FreeType hinting (default: on)
               --height-percent <n>        Vertical height scaling percentage (default: 100)
               --match-char-height         Match rendered height to requested pixel height
