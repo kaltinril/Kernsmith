@@ -26,6 +26,8 @@
 
   <ItemGroup>
     <PackageReference Include="Gum.KNI" />
+    <PackageReference Include="nkast.Xna.Framework" PrivateAssets="All" />
+    <PackageReference Include="nkast.Xna.Framework.Graphics" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>

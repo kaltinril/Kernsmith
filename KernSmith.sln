@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+# Visual Studio Version 18
+VisualStudioVersion = 18.4.11620.152 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
@@ -42,8 +42,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KernSmith.MonoGameGum", "integrations\KernSmith.MonoGameGum\KernSmith.MonoGameGum.csproj", "{459B4B57-55B4-4768-9017-5DFBD4093309}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KernSmith.KniGum", "integrations\KernSmith.KniGum\KernSmith.KniGum.csproj", "{3B0D263E-7C23-4FDD-8FF8-7D549D391BB2}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KernSmith.FnaGum", "integrations\KernSmith.FnaGum\KernSmith.FnaGum.csproj", "{3BA756A3-4A27-4185-B960-BDE6E7F8F3B9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -211,18 +209,6 @@ Global
 		{3B0D263E-7C23-4FDD-8FF8-7D549D391BB2}.Release|x64.Build.0 = Release|Any CPU
 		{3B0D263E-7C23-4FDD-8FF8-7D549D391BB2}.Release|x86.ActiveCfg = Release|Any CPU
 		{3B0D263E-7C23-4FDD-8FF8-7D549D391BB2}.Release|x86.Build.0 = Release|Any CPU
-		{3BA756A3-4A27-4185-B960-BDE6E7F8F3B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3BA756A3-4A27-4185-B960-BDE6E7F8F3B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3BA756A3-4A27-4185-B960-BDE6E7F8F3B9}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{3BA756A3-4A27-4185-B960-BDE6E7F8F3B9}.Debug|x64.Build.0 = Debug|Any CPU
-		{3BA756A3-4A27-4185-B960-BDE6E7F8F3B9}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{3BA756A3-4A27-4185-B960-BDE6E7F8F3B9}.Debug|x86.Build.0 = Debug|Any CPU
-		{3BA756A3-4A27-4185-B960-BDE6E7F8F3B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3BA756A3-4A27-4185-B960-BDE6E7F8F3B9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3BA756A3-4A27-4185-B960-BDE6E7F8F3B9}.Release|x64.ActiveCfg = Release|Any CPU
-		{3BA756A3-4A27-4185-B960-BDE6E7F8F3B9}.Release|x64.Build.0 = Release|Any CPU
-		{3BA756A3-4A27-4185-B960-BDE6E7F8F3B9}.Release|x86.ActiveCfg = Release|Any CPU
-		{3BA756A3-4A27-4185-B960-BDE6E7F8F3B9}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -241,6 +227,5 @@ Global
 		{E86DBBA1-3258-43F2-ABA8-647E05E9C1FA} = {4958D7D8-4791-2CCE-6FFA-082B65933577}
 		{459B4B57-55B4-4768-9017-5DFBD4093309} = {4958D7D8-4791-2CCE-6FFA-082B65933577}
 		{3B0D263E-7C23-4FDD-8FF8-7D549D391BB2} = {4958D7D8-4791-2CCE-6FFA-082B65933577}
-		{3BA756A3-4A27-4185-B960-BDE6E7F8F3B9} = {4958D7D8-4791-2CCE-6FFA-082B65933577}
 	EndGlobalSection
 EndGlobal
