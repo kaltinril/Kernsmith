@@ -130,6 +130,12 @@ RasterizerFactory.Register(RasterizerBackend.DirectWrite, () => new DirectWriteR
 | `src/KernSmith.Rasterizers.DirectWrite.TerraFX/DirectWriteRegistration.cs` | New -- factory registration |
 | `src/KernSmith/Rasterizer/IRasterizer.cs` | Promote `SetVariationAxes()` and `SelectColorPalette()` from FreeType downcasts to interface methods with default no-op implementations |
 
+## Comparison Tools
+
+Multi-backend visual comparison tools for validating output across rasterizers:
+- `tests/bmfont-compare/GenerateAll/` -- generates atlas PNGs + .fnt files from FreeType, GDI, and DirectWrite with fire-effect and plain configs. Usage: `dotnet run --framework net10.0-windows -- <output-dir>`
+- `tests/bmfont-compare/CompareGlyphs/` -- extracts individual glyphs using .fnt coordinates and produces side-by-side comparison PNGs (comparison.png, comparison2.png). Also compares against BMFont64 if its output is present. Usage: `dotnet run --framework net10.0-windows -- <data-dir>`
+
 ## Testing
 
 - **Windows-only CI runner** required
