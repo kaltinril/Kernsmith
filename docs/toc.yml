@@ -4,3 +4,7 @@
   href: cli/
 - name: UI Application
   href: ui/
+- name: Integrations
+  href: integrations/
+- name: Alternative Rasterizers
+  href: rasterizers/
