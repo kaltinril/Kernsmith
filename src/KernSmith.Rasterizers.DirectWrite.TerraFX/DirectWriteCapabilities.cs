@@ -7,11 +7,11 @@ namespace KernSmith.Rasterizers.DirectWrite.TerraFX;
 /// </summary>
 internal sealed class DirectWriteCapabilities : IRasterizerCapabilities
 {
-    public bool SupportsColorFonts => true;
-    public bool SupportsVariableFonts => true;
+    public bool SupportsColorFonts => false;  // Stubbed only — no TranslateColorGlyphRun impl yet
+    public bool SupportsVariableFonts => false;  // Stubbed only — no IDWriteFontFace5 axis impl yet
     public bool SupportsSdf => false;
     public bool SupportsOutlineStroke => false;
-    public bool HandlesOwnSizing => true;
+    public bool HandlesOwnSizing => false;
     public bool SupportsSystemFonts => true;
 
     public IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; } =

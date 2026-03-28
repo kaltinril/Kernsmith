@@ -1,8 +1,9 @@
 # Phase 78C -- DirectWrite Rasterizer Backend
 
-> **Status**: In Progress
+> **Status**: In Progress (core rasterization working, sizing fixed, color/variable fonts stubbed)
 > **Size**: Medium-Large
 > **Created**: 2026-03-25
+> **Updated**: 2026-03-27
 > **Dependencies**: Phase 78A (foundation), Phase 78B recommended (proves the abstraction with GDI first)
 > **Parent**: [Phase 78 -- Pluggable Rasterizer Backends](phase-78-pluggable-rasterizers.md)
 > **Goal**: Implement a DirectWrite-based rasterizer backend for modern Windows rendering with color font and variable font support.
@@ -135,6 +136,51 @@ RasterizerFactory.Register(RasterizerBackend.DirectWrite, () => new DirectWriteR
 Multi-backend visual comparison tools for validating output across rasterizers:
 - `tests/bmfont-compare/GenerateAll/` -- generates atlas PNGs + .fnt files from FreeType, GDI, and DirectWrite with fire-effect and plain configs. Usage: `dotnet run --framework net10.0-windows -- <output-dir>`
 - `tests/bmfont-compare/CompareGlyphs/` -- extracts individual glyphs using .fnt coordinates and produces side-by-side comparison PNGs (comparison.png, comparison2.png). Also compares against BMFont64 if its output is present. Usage: `dotnet run --framework net10.0-windows -- <data-dir>`
+
+## Current Status (2026-03-27)
+
+### What's Working
+
+- Core glyph rasterization via `IDWriteGlyphRunAnalysis` (simpler than planned D2D approach)
+- Font loading from bytes (in-memory via `IDWriteFactory5.CreateInMemoryFontFileLoader`)
+- System font loading via `IDWriteFactory.GetSystemFontCollection`
+- Factory registration via `[ModuleInitializer]`
+- Supersampling support
+- Anti-aliasing (None, Grayscale via ClearType→grayscale conversion)
+- Effects pipeline compatibility (outline, shadow, gradient via shared post-processors)
+- COM lifetime management via `ComPtr<T>` helper
+- Proper disposal with finalizer pattern
+
+### Sizing Fix Applied
+
+Original implementation had `HandlesOwnSizing=true` but did not perform cell-height-to-ppem conversion, causing **~14% glyph size inflation** (e.g., lineHeight=64 instead of 56 for Georgia size 56). Fixed by setting `HandlesOwnSizing=false` so the shared pipeline handles the conversion, and `GetFontMetrics()` returns null to use the shared OS/2 table metrics path.
+
+### 15-Font Comparison Results (DirectWrite vs BMFont64)
+
+After the sizing fix, tested across 15 Gum UI font configs (various fonts, sizes, styles):
+- **lineHeight**: 8/15 exact match (remaining 7 are +1, caused by `Math.Ceiling` vs BMFont's `MulDiv` rounding in shared pipeline code)
+- **base**: 8/15 exact match (same ±1 rounding cause)
+- **xadvance**: Most fonts match or differ by ±1
+- **kerning pairs**: All shared pairs match exactly
+- **yoffset**: Largest variance due to different hinting/rendering pipelines
+
+For comparison, GDI matches BMFont on 14/15 lineHeight and 15/15 base because both use Windows GDI APIs internally. The ±1 DirectWrite differences are irreducible without an architectural change to make rasterizers fully own their sizing pipeline.
+
+### Known Gaps
+
+1. **Color font rendering (Task 5)**: `SupportsColorFonts` set to `false`. `SelectColorPalette()` stores palette index but no `TranslateColorGlyphRun` implementation exists. Would require adding D2D dependency.
+2. **Variable font support (Task 6)**: `SupportsVariableFonts` set to `false`. `SetVariationAxes()` stores axes but no `IDWriteFontFace5` axis manipulation exists.
+3. **Synthetic bold/italic**: Not implemented. FreeType applies these via `FT_GlyphSlot_Embolden`/`FT_GlyphSlot_Oblique`; DirectWrite equivalent would be `DWRITE_FONT_SIMULATIONS_BOLD`/`DWRITE_FONT_SIMULATIONS_OBLIQUE`.
+4. **Native DirectWrite kerning**: `GetKerningPairs()` returns null, delegating to the shared GPOS/kern table parser instead of using `IDWriteFontFace1.GetKerningPairAdjustments`.
+5. **No dedicated unit tests**: Only factory registration tests exist. Comparison tools in `tests/bmfont-compare/` provide visual validation.
+6. **Architecture deviation**: Implementation uses `IDWriteGlyphRunAnalysis` instead of planned `ID2D1BitmapRenderTarget + DrawGlyphRun`. Simpler but blocks color font rendering without adding D2D later.
+
+### Comparison Tools
+
+- `tests/bmfont-compare/GenerateAll/` -- generates fire-effect and plain atlas comparisons across FreeType, GDI, DirectWrite
+- `tests/bmfont-compare/GenerateDirectWrite/` -- generates DirectWrite output for all 15 Gum UI .bmfc configs
+- `tests/bmfont-compare/CompareGlyphs/` -- produces side-by-side glyph comparison PNGs
+- `tests/bmfont-compare/diff_all_fonts.py` -- metrics diff across any two backend output directories
 
 ## Testing
 

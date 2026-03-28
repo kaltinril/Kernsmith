@@ -274,28 +274,12 @@ public sealed unsafe class DirectWriteRasterizer : IRasterizer
     }
 
     /// <summary>
-    /// Returns font-level metrics (ascent, descent, line height) from DirectWrite.
+    /// Returns null to use the shared OS/2 table metrics path. DirectWrite's own
+    /// DWRITE_FONT_METRICS uses hhea typographic values (not OS/2 WinAscent/WinDescent),
+    /// which produce incorrect lineHeight for many fonts. The shared path uses OS/2
+    /// values with Math.Ceiling, which matches BMFont64 to ±1 pixel.
     /// </summary>
-    public RasterizerFontMetrics? GetFontMetrics(RasterOptions options)
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        EnsureFontLoaded();
-
-        int aa = Math.Max(1, options.SuperSample);
-        float fontSize = ComputeFontEmSize(options, aa);
-
-        DWRITE_FONT_METRICS metrics;
-        _fontFace.Get->GetMetrics(&metrics);
-
-        float scale = fontSize / metrics.designUnitsPerEm;
-
-        return new RasterizerFontMetrics
-        {
-            Ascent = (int)Math.Ceiling(metrics.ascent * scale / aa),
-            Descent = (int)Math.Ceiling(metrics.descent * scale / aa),
-            LineHeight = (int)Math.Ceiling((metrics.ascent + metrics.descent + metrics.lineGap) * scale / aa)
-        };
-    }
+    public RasterizerFontMetrics? GetFontMetrics(RasterOptions options) => null;
 
     /// <summary>
     /// Returns null to delegate to the shared GPOS/kern table parser.

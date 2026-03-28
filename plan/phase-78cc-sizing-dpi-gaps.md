@@ -51,9 +51,11 @@ BMFont's "scale font size up to fill texture" feature is not currently supported
 - **Con**: Niche feature, inverse of what most users want (they pick a size and want the right texture)
 - **Decision**: TBD -- may belong in a future phase if there is user demand
 
-### Investigate GDI/DirectWrite lineHeight=65 vs FreeType/BMFont lineHeight=56
+### ~~Investigate GDI/DirectWrite lineHeight=65 vs FreeType/BMFont lineHeight=56~~ RESOLVED
 
-For Georgia size 56 at 72 DPI, GDI and DirectWrite both produce `lineHeight=65` while FreeType and BMFont produce `lineHeight=56`. This is related to the Phase 78BB findings about GDI/DirectWrite sizing differences and is tracked there.
+**Root cause found and fixed (2026-03-27):** DirectWrite had `HandlesOwnSizing=true` but did not perform cell-height-to-ppem conversion internally. This caused it to render at the full em-square size (~14% too large). Fix: set `HandlesOwnSizing=false` so the shared pipeline handles the conversion, and `GetFontMetrics()` returns null. After the fix, DirectWrite produces `lineHeight=56` matching FreeType and BMFont. GDI was already correct (it handles sizing internally via Windows TEXTMETRIC APIs).
+
+**Remaining ±1 rounding differences:** DirectWrite still shows ±1 lineHeight/base on ~7/15 test fonts vs BMFont64. This is caused by the shared OS/2 metrics path using `Math.Ceiling` while BMFont64/GDI use Windows `MulDiv` (round-to-nearest) internally. Fixing this would require either changing shared pipeline code (affects FreeType) or making DirectWrite fully own its sizing pipeline (architectural change). Accepted as a known limitation.
 
 ### Consider Space Outline Rendering
 
