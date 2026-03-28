@@ -108,7 +108,7 @@ public class GumFontGeneratorTests
     public void Generate_DefaultBmfcSave_ProducesValidResult()
     {
         if (!OperatingSystem.IsWindows())
-            Assert.Skip("Requires system font 'Arial' (not available on Linux CI runners)");
+            return; // Requires system font 'Arial' (not available on Linux CI runners)
 
         // Arrange
         BmfcSave bmfcSave = new BmfcSave();
@@ -132,7 +132,7 @@ public class GumFontGeneratorTests
     public void Generate_WithOutline_ProducesValidResult()
     {
         if (!OperatingSystem.IsWindows())
-            Assert.Skip("Requires system font 'Arial' (not available on Linux CI runners)");
+            return; // Requires system font 'Arial' (not available on Linux CI runners)
 
         // Arrange
         BmfcSave bmfcSave = new BmfcSave();
