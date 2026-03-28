@@ -1,6 +1,6 @@
 # Phase 78C -- DirectWrite Rasterizer Backend
 
-> **Status**: Planning
+> **Status**: In Progress
 > **Size**: Medium-Large
 > **Created**: 2026-03-25
 > **Dependencies**: Phase 78A (foundation), Phase 78B recommended (proves the abstraction with GDI first)
@@ -11,7 +11,7 @@
 
 ## Overview
 
-DirectWrite is the modern Windows text rendering API. It provides higher-quality rendering than GDI, supports color fonts (COLR/CPAL), variable fonts, and subpixel positioning. This backend uses Vortice.Windows for .NET interop.
+DirectWrite is the modern Windows text rendering API. It provides higher-quality rendering than GDI, supports color fonts (COLR/CPAL), variable fonts, and subpixel positioning. This backend uses TerraFX.Interop.Windows for .NET interop.
 
 ### Priority and Scope
 
@@ -19,9 +19,9 @@ DirectWrite is the modern Windows text rendering API. It provides higher-quality
 
 DirectWrite does NOT produce BMFont-identical output. It uses different hinting algorithms and metrics calculations than GDI/BMFont. Users who need exact BMFont parity should use the GDI backend.
 
-### Why Vortice.Windows
+### Why TerraFX.Interop.Windows
 
-Vortice.Windows is a community .NET wrapper for Windows native APIs (DirectX, Direct2D, DirectWrite). It's actively maintained and targets modern .NET. However, it's a heavy dependency (pulls in DirectX/Direct2D interop), which is a key reason this backend is an optional NuGet add-on rather than bundled in core.
+TerraFX.Interop.Windows provides raw 1:1 COM bindings generated directly from Windows SDK metadata. It is maintained by Tanner Gooding, a member of the Microsoft .NET team, and is MIT licensed. It offers complete DirectWrite API coverage with zero abstraction overhead, making it ideal for precise COM interop. Unlike higher-level wrappers, TerraFX generates bindings mechanically so they stay in sync with the Windows SDK. The package targets net10.0 only, which aligns with our TFM. Note: because TerraFX exposes raw COM pointers, a `ComPtr<T>` helper is needed for safe COM reference-counting and lifetime management.
 
 ## Prerequisites from Phase 78A Deferrals
 
@@ -41,11 +41,11 @@ Vortice.Windows is a community .NET wrapper for Windows native APIs (DirectX, Di
 
 ### 1. New Project
 
-- Path: `src/KernSmith.Rasterizers.DirectWrite/KernSmith.Rasterizers.DirectWrite.csproj`
-- TFM: `net10.0-windows` (Windows-only)
-- Namespace: `KernSmith.Rasterizers.DirectWrite`
+- Path: `src/KernSmith.Rasterizers.DirectWrite.TerraFX/KernSmith.Rasterizers.DirectWrite.TerraFX.csproj`
+- TFM: `net10.0-windows` only (Windows-only, no net8.0)
+- Namespace: `KernSmith.Rasterizers.DirectWrite.TerraFX`
 - Separate NuGet package
-- Dependencies: `Vortice.DirectWrite`, `Vortice.Direct2D1`
+- Dependencies: `TerraFX.Interop.Windows`
 - References `KernSmith` core library
 
 ### 2. Implement `DirectWriteRasterizer : IRasterizer`
@@ -118,16 +118,16 @@ RasterizerFactory.Register(RasterizerBackend.DirectWrite, () => new DirectWriteR
 
 - Release `IDWriteFactory`, `IDWriteFontFace`, `ID2D1Factory` COM objects
 - Release any custom font loaders/streams
-- Use `Dispose` pattern appropriate for COM interop (Vortice handles via `IDisposable`)
+- Use `ComPtr<T>` helper to ensure deterministic release of all COM references
 
 ## Files Created/Changed
 
 | File | Change |
 |------|--------|
-| `src/KernSmith.Rasterizers.DirectWrite/KernSmith.Rasterizers.DirectWrite.csproj` | New project file |
-| `src/KernSmith.Rasterizers.DirectWrite/DirectWriteRasterizer.cs` | New -- main rasterizer implementation |
-| `src/KernSmith.Rasterizers.DirectWrite/DirectWriteFontLoader.cs` | New -- custom font file loader for in-memory fonts |
-| `src/KernSmith.Rasterizers.DirectWrite/DirectWriteRegistration.cs` | New -- factory registration |
+| `src/KernSmith.Rasterizers.DirectWrite.TerraFX/KernSmith.Rasterizers.DirectWrite.TerraFX.csproj` | New project file |
+| `src/KernSmith.Rasterizers.DirectWrite.TerraFX/DirectWriteRasterizer.cs` | New -- main rasterizer implementation |
+| `src/KernSmith.Rasterizers.DirectWrite.TerraFX/DirectWriteFontLoader.cs` | New -- custom font file loader for in-memory fonts |
+| `src/KernSmith.Rasterizers.DirectWrite.TerraFX/DirectWriteRegistration.cs` | New -- factory registration |
 | `src/KernSmith/Rasterizer/IRasterizer.cs` | Promote `SetVariationAxes()` and `SelectColorPalette()` from FreeType downcasts to interface methods with default no-op implementations |
 
 ## Testing
@@ -142,11 +142,12 @@ RasterizerFactory.Register(RasterizerBackend.DirectWrite, () => new DirectWriteR
 
 ## Reference
 
-### DirectWrite from .NET via Vortice.Windows
+### DirectWrite from .NET via TerraFX.Interop.Windows
 
-Vortice.Windows is actively maintained and targets .NET 9/10:
-- `Vortice.DirectWrite` -- font face, metrics, glyph outlines
-- `Vortice.Direct2D1` -- bitmap rasterization via render targets
+TerraFX provides raw 1:1 COM bindings generated from Windows SDK metadata:
+- Complete DirectWrite API coverage (IDWriteFactory, IDWriteFontFace, etc.)
+- Complete Direct2D API coverage (ID2D1Factory, ID2D1BitmapRenderTarget, etc.)
 - Three measuring modes: Natural, GDI Classic, GDI Natural
 - Color font support via `IDWriteFactory4` and later interfaces
 - Variable font support via `IDWriteFontFace5` and later interfaces
+- Requires a `ComPtr<T>` helper for COM lifetime management (prevent leaks)

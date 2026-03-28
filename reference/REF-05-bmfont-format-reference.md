@@ -429,9 +429,51 @@ These are separate concepts that are commonly confused:
 
 **Rule of thumb**: Use padding >= outline thickness. Use spacing >= 1 when bilinear filtering is enabled.
 
+### Font Size Sign Convention (.bmfc `fontSize`)
+
+The `fontSize` field in `.bmfc` config files and the `fontSize` field in the `.fnt` info block use a sign convention:
+
+| Value | Meaning | Example |
+|-------|---------|---------|
+| **Positive** (e.g., `fontSize=56`) | Size in **points**. Actual pixel size depends on DPI: `pixels = points * DPI / 72`. | `fontSize=56` at 96 DPI = 74.67px |
+| **Negative** (e.g., `fontSize=-56`) | Size in **pixels** (absolute pixel height). Maps to BMFont's "Match char height" checkbox. | `fontSize=-56` = exactly 56px regardless of DPI |
+
+In BMFont's UI, the "Match char height" option corresponds to negative `fontSize`. When enabled, the font is sized so that the character height matches the specified pixel value exactly.
+
+> **KernSmith mapping**: `FontGeneratorOptions.MatchCharHeight = true` corresponds to negative `fontSize` in `.bmfc` files. `BmfcConfigReader` already parses this sign convention.
+
 ### Autofit and Adaptive Padding
 
 BMFont (v1.14+) supports an **autofit** feature that calculates the maximum font size that fits within a defined texture size. When autofit is active, **adaptive padding** scales padding proportionally to font size, calculated as: `average character width * padding factor + standard padding`. This ensures padding remains appropriate as font size changes.
+
+#### autoFitNumPages
+
+The `autoFitNumPages` setting in `.bmfc` config files controls the autofit behavior:
+
+| Value | Behavior |
+|-------|----------|
+| `autoFitNumPages=0` | **No auto-fitting.** The `fontSize` value is used as-is. This is the default. |
+| `autoFitNumPages=1` | **Auto-fit to 1 page.** BMFont searches for the **maximum** font size that fits all selected characters into a single texture page. |
+| `autoFitNumPages=N` | **Auto-fit to N pages.** Same as above but allows up to N texture pages. |
+
+When autofit is active, BMFont **scales the font size UP** (not down) -- it finds the largest size that fits within the texture constraints. The `fontSize` value in the config serves as a starting point or minimum, not the final rendered size.
+
+Related `.bmfc` settings that constrain the autofit search:
+
+| Setting | Purpose |
+|---------|---------|
+| `autoFitFontSizeMin` | Minimum font size the auto-fitter will consider |
+| `autoFitFontSizeMax` | Maximum font size the auto-fitter will consider |
+| `autoFitMarginBottom` | Bottom margin reserved during auto-fit calculations |
+| `autoFitMarginTop` | Top margin reserved during auto-fit calculations |
+| `autoFitMarginLeft` | Left margin reserved during auto-fit calculations |
+| `autoFitMarginRight` | Right margin reserved during auto-fit calculations |
+
+> **Warning -- KernSmith vs BMFont autofit**: KernSmith's `AutofitTexture` option is NOT equivalent to BMFont's `autoFitNumPages`. They are essentially opposite operations:
+> - **BMFont `autoFitNumPages`**: Grows the **font size** to fill a fixed-size texture.
+> - **KernSmith `AutofitTexture`**: Shrinks the **texture** to fit glyphs at a fixed font size.
+>
+> A `.bmfc` config with `autoFitNumPages=1` and `fontSize=56` will NOT produce a size-56 font -- BMFont will search for the largest size that fits, potentially much larger than 56. To get an exact size-56 font from BMFont, set `autoFitNumPages=0`.
 
 ### Cell Height Equalization
 

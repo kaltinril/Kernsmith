@@ -92,7 +92,7 @@ Output Layer
 | 78 | [Pluggable Rasterizer Backends](phase-78-pluggable-rasterizers.md) | Pluggable rasterizer architecture with GDI and DirectWrite backends | In Progress |
 | 78A | [Rasterizer Foundation](done/phase-78a-rasterizer-foundation.md) | IRasterizer interface, factory, capability system | Complete |
 | 78B | [GDI Backend](done/phase-78b-gdi-backend.md) | GDI-based rasterizer for BMFont output parity (Windows-only) | Complete |
-| 78C | [DirectWrite Backend](phase-78c-directwrite-backend.md) | DirectWrite-based rasterizer (Windows-only) | Planning |
+| 78C | [DirectWrite Backend](phase-78c-directwrite-backend.md) | DirectWrite-based rasterizer (Windows-only) | In Progress |
 | 78D | [CLI & UI Integration](phase-78d-cli-ui-integration.md) | Wire rasterizer selection into CLI and UI | Planning |
 | 78E | [Plugin Template](phase-78e-plugin-template.md) | Template for third-party rasterizer plugins | Planning (deferred) |
 | 99 | [BMFont Parity Remaining Gaps](phase-99-bmfont-parity-gaps.md) | Investigate and close remaining metrics differences from Phase 78BB | Planning |

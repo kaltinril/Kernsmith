@@ -323,7 +323,7 @@ public sealed class GdiRasterizer : IRasterizer
         int size = sizeOverride ?? options.Size;
         var logFont = new LOGFONTW
         {
-            LfHeight = (int)(-(long)size * options.Dpi / 72),
+            LfHeight = (int)((long)size * options.Dpi / 72),
             LfWidth = 0,
             LfEscapement = 0,
             LfOrientation = 0,

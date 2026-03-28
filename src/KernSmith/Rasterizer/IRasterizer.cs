@@ -1,3 +1,5 @@
+using KernSmith.Font.Tables;
+
 namespace KernSmith.Rasterizer;
 
 /// <summary>
@@ -57,4 +59,19 @@ public interface IRasterizer : IDisposable
     /// Returns null to fall back to TTF GPOS/kern table parser.
     /// </summary>
     IReadOnlyList<Font.Models.ScaledKerningPair>? GetKerningPairs(RasterOptions options) => null;
+
+    /// <summary>
+    /// Applies variable font axis values. Only called when
+    /// <see cref="IRasterizerCapabilities.SupportsVariableFonts"/> is true.
+    /// </summary>
+    /// <param name="fvarAxes">The axes defined in the font's fvar table, in order.</param>
+    /// <param name="userAxes">User-specified axis tag/value pairs (e.g., "wght" = 700).</param>
+    void SetVariationAxes(IReadOnlyList<VariationAxis> fvarAxes, Dictionary<string, float> userAxes) { }
+
+    /// <summary>
+    /// Selects a color palette by index for color font rendering. Only called when
+    /// <see cref="IRasterizerCapabilities.SupportsColorFonts"/> is true.
+    /// </summary>
+    /// <param name="paletteIndex">Zero-based palette index.</param>
+    void SelectColorPalette(int paletteIndex) { }
 }

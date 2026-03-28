@@ -58,7 +58,7 @@ internal sealed class FreeTypeRasterizer : IRasterizer
     /// Must be called after <see cref="LoadFont"/> and before rasterization.
     /// </summary>
     /// <param name="paletteIndex">Zero-based palette index.</param>
-    internal unsafe void SelectColorPalette(int paletteIndex)
+    public unsafe void SelectColorPalette(int paletteIndex)
     {
         if (_face == null)
             throw new InvalidOperationException("Font not loaded. Call LoadFont first.");
@@ -74,7 +74,7 @@ internal sealed class FreeTypeRasterizer : IRasterizer
     /// </summary>
     /// <param name="fvarAxes">The axes defined in the font's fvar table, in order.</param>
     /// <param name="userAxes">User-specified axis tag/value pairs (e.g., "wght" = 700).</param>
-    internal unsafe void SetVariationAxes(
+    public unsafe void SetVariationAxes(
         IReadOnlyList<VariationAxis> fvarAxes,
         Dictionary<string, float> userAxes)
     {
