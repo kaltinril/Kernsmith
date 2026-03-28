@@ -39,9 +39,10 @@ Third-party packages can implement `IRasterizer` + `IRasterizerCapabilities` and
 | [78A](phase-78a-rasterizer-foundation.md) | Foundation | Small | `IRasterizerCapabilities`, `RasterizerBackend` enum, `RasterizerFactory`, wire into `BmFont.cs` |
 | [78B](done/phase-78b-gdi-backend.md) | GDI Backend | Medium | `GdiRasterizer` via Win32 P/Invoke -- highest-value backend, matches BMFont output. **Complete.** |
 | [78BB](done/phase-78bb-gdi-parity.md) | GDI Parity Fixes | Medium | GDI parity fixes -- metrics from GDI TEXTMETRIC, kerning from GetKerningPairs, sizing bypass. **Complete.** |
-| [78C](phase-78c-directwrite-backend.md) | DirectWrite Backend | Medium-Large | `DirectWriteRasterizer` via Vortice.Windows -- color fonts, variable fonts, modern rendering |
+| [78C](phase-78c-directwrite-backend.md) | DirectWrite Backend | Medium-Large | `DirectWriteRasterizer` via TerraFX.Interop.Windows -- core rasterization working, color/variable fonts deferred. **Complete.** |
 | [78D](phase-78d-cli-ui-integration.md) | CLI and UI Integration | Small | `--rasterizer` flag, UI dropdown, capability-aware option graying |
 | [78E](phase-78e-plugin-template.md) | Plugin Template | Small (deferred) | `dotnet new` template and docs for custom backends -- only after 2+ backends exist |
+| [78G](phase-78g-remaining-issues.md) | Remaining Issues | Small-Medium | Color fonts, variable fonts, synthetic bold/italic, GDI MatchCharHeight bug, rounding differences, channel-based outlines, tool consolidation |
 
 ## Key Design Decisions
 
@@ -69,7 +70,7 @@ Third-party packages can implement `IRasterizer` + `IRasterizerCapabilities` and
 
 12. **Plugin contract is intentionally minimal.** Just two interfaces: `IRasterizer` and `IRasterizerCapabilities`. Phase 78E (template + docs) makes it easier but doesn't gate it.
 
-13. **DirectWrite uses Vortice.Windows** -- a community .NET wrapper for Windows native APIs (DirectX, Direct2D, DirectWrite). It's a heavy dependency, which is another reason it's an optional add-on, not bundled in core.
+13. **DirectWrite uses TerraFX.Interop.Windows** -- raw 1:1 COM bindings generated from Windows SDK metadata by Tanner Gooding (Microsoft .NET team). It's a heavy dependency, which is another reason it's an optional add-on, not bundled in core.
 
 14. **`RasterizerBackend` enum**: `FreeType`, `Gdi`, `DirectWrite` (extensible for future backends). No `Auto` value — users explicitly choose their backend, defaulting to FreeType.
 

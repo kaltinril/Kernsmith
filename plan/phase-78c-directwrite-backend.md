@@ -1,8 +1,9 @@
 # Phase 78C -- DirectWrite Rasterizer Backend
 
-> **Status**: Planning
+> **Status**: Complete (core rasterization working, sizing fixed, color/variable fonts deferred to Phase 78G)
 > **Size**: Medium-Large
 > **Created**: 2026-03-25
+> **Updated**: 2026-03-27
 > **Dependencies**: Phase 78A (foundation), Phase 78B recommended (proves the abstraction with GDI first)
 > **Parent**: [Phase 78 -- Pluggable Rasterizer Backends](phase-78-pluggable-rasterizers.md)
 > **Goal**: Implement a DirectWrite-based rasterizer backend for modern Windows rendering with color font and variable font support.
@@ -11,7 +12,7 @@
 
 ## Overview
 
-DirectWrite is the modern Windows text rendering API. It provides higher-quality rendering than GDI, supports color fonts (COLR/CPAL), variable fonts, and subpixel positioning. This backend uses Vortice.Windows for .NET interop.
+DirectWrite is the modern Windows text rendering API. It provides higher-quality rendering than GDI, supports color fonts (COLR/CPAL), variable fonts, and subpixel positioning. This backend uses TerraFX.Interop.Windows for .NET interop.
 
 ### Priority and Scope
 
@@ -19,9 +20,9 @@ DirectWrite is the modern Windows text rendering API. It provides higher-quality
 
 DirectWrite does NOT produce BMFont-identical output. It uses different hinting algorithms and metrics calculations than GDI/BMFont. Users who need exact BMFont parity should use the GDI backend.
 
-### Why Vortice.Windows
+### Why TerraFX.Interop.Windows
 
-Vortice.Windows is a community .NET wrapper for Windows native APIs (DirectX, Direct2D, DirectWrite). It's actively maintained and targets modern .NET. However, it's a heavy dependency (pulls in DirectX/Direct2D interop), which is a key reason this backend is an optional NuGet add-on rather than bundled in core.
+TerraFX.Interop.Windows provides raw 1:1 COM bindings generated directly from Windows SDK metadata. It is maintained by Tanner Gooding, a member of the Microsoft .NET team, and is MIT licensed. It offers complete DirectWrite API coverage with zero abstraction overhead, making it ideal for precise COM interop. Unlike higher-level wrappers, TerraFX generates bindings mechanically so they stay in sync with the Windows SDK. The package targets net10.0 only, which aligns with our TFM. Note: because TerraFX exposes raw COM pointers, a `ComPtr<T>` helper is needed for safe COM reference-counting and lifetime management.
 
 ## Prerequisites from Phase 78A Deferrals
 
@@ -29,15 +30,23 @@ Vortice.Windows is a community .NET wrapper for Windows native APIs (DirectX, Di
 
 `SetVariationAxes()` and `SelectColorPalette()` in `BmFont.cs` are currently called via `rasterizer is FreeTypeRasterizer` downcast. DirectWrite supports both variable fonts and color palettes, so these capabilities must be promoted to `IRasterizer` (as optional methods with default no-op implementations) or extracted into a new `IRasterizerConfiguration` interface BEFORE the DirectWrite backend can use them. This does NOT block Phase 78B since GDI reports `false` for both `SupportsColorFonts` and `SupportsVariableFonts`.
 
+## Lessons from 78B/78BB
+
+- **IRasterizer interface grew in 78BB**: DirectWrite must implement these new members added in 78BB: `GetFontMetrics(RasterOptions)` returning `RasterizerFontMetrics`, `GetKerningPairs(RasterOptions)` returning `ScaledKerningPair[]?`, `LoadSystemFont(string familyName)`, plus capabilities `HandlesOwnSizing` and `SupportsSystemFonts`. Also `SuperSample` property exists on `RasterOptions`.
+- **Don't chase BMFont parity**: 78BB proved rendering path differences are architectural (8x supersample was attempted and reverted because BMFont uses GGO_NATIVE + polygon fill vs GDI's GGO_GRAY8_BITMAP). DirectWrite uses its own rendering pipeline -- don't try to match BMFont or GDI output pixel-for-pixel.
+- **Default interface methods are the proven pattern**: 78BB successfully extended IRasterizer with default implementations (returning null/false) so FreeType was completely unaffected (330/330 tests pass). Use the same pattern for any DirectWrite-specific extensions.
+- **Pipeline captures metrics/kerning before disposal**: BmFont.cs now calls `GetFontMetrics()` and `GetKerningPairs()` on the rasterizer and stores results before disposing it. DirectWrite should implement both -- DirectWrite's DWRITE_FONT_METRICS are high-quality and its kerning via IDWriteFontFace1.GetKerningPairAdjustments is authoritative.
+- **FreeType downcast resolution pattern is proven**: 78BB added optional interface methods with defaults. Apply the same approach to promote `SetVariationAxes()` and `SelectColorPalette()` to `IRasterizer` before starting DirectWrite.
+
 ## Tasks
 
 ### 1. New Project
 
-- Path: `src/KernSmith.Rasterizers.DirectWrite/KernSmith.Rasterizers.DirectWrite.csproj`
-- TFM: `net10.0-windows` (Windows-only)
-- Namespace: `KernSmith.Rasterizers.DirectWrite`
+- Path: `src/KernSmith.Rasterizers.DirectWrite.TerraFX/KernSmith.Rasterizers.DirectWrite.TerraFX.csproj`
+- TFM: `net10.0-windows` only (Windows-only, no net8.0)
+- Namespace: `KernSmith.Rasterizers.DirectWrite.TerraFX`
 - Separate NuGet package
-- Dependencies: `Vortice.DirectWrite`, `Vortice.Direct2D1`
+- Dependencies: `TerraFX.Interop.Windows`
 - References `KernSmith` core library
 
 ### 2. Implement `DirectWriteRasterizer : IRasterizer`
@@ -97,20 +106,81 @@ Same as GDI backend: DirectWrite produces compatible `RasterizedGlyph` output wi
 RasterizerFactory.Register(RasterizerBackend.DirectWrite, () => new DirectWriteRasterizer());
 ```
 
-### 11. Disposal
+### 11. Implement 78BB IRasterizer Members
+
+- Implement `GetFontMetrics(RasterOptions)` using DWRITE_FONT_METRICS (ascent, descent, lineGap, unitsPerEm, etc.)
+- Implement `GetKerningPairs(RasterOptions)` using IDWriteFontFace1.GetKerningPairAdjustments
+- Implement `LoadSystemFont(string familyName)` using IDWriteFactory.GetSystemFontCollection
+- Set `HandlesOwnSizing = true` (DirectWrite handles its own sizing like GDI does)
+- Set `SupportsSystemFonts = true`
+- Handle `SuperSample` from RasterOptions if applicable to DirectWrite rendering
+
+### 12. Disposal
 
 - Release `IDWriteFactory`, `IDWriteFontFace`, `ID2D1Factory` COM objects
 - Release any custom font loaders/streams
-- Use `Dispose` pattern appropriate for COM interop (Vortice handles via `IDisposable`)
+- Use `ComPtr<T>` helper to ensure deterministic release of all COM references
 
 ## Files Created/Changed
 
 | File | Change |
 |------|--------|
-| `src/KernSmith.Rasterizers.DirectWrite/KernSmith.Rasterizers.DirectWrite.csproj` | New project file |
-| `src/KernSmith.Rasterizers.DirectWrite/DirectWriteRasterizer.cs` | New -- main rasterizer implementation |
-| `src/KernSmith.Rasterizers.DirectWrite/DirectWriteFontLoader.cs` | New -- custom font file loader for in-memory fonts |
-| `src/KernSmith.Rasterizers.DirectWrite/DirectWriteRegistration.cs` | New -- factory registration |
+| `src/KernSmith.Rasterizers.DirectWrite.TerraFX/KernSmith.Rasterizers.DirectWrite.TerraFX.csproj` | New project file |
+| `src/KernSmith.Rasterizers.DirectWrite.TerraFX/DirectWriteRasterizer.cs` | New -- main rasterizer implementation |
+| `src/KernSmith.Rasterizers.DirectWrite.TerraFX/DirectWriteFontLoader.cs` | New -- custom font file loader for in-memory fonts |
+| `src/KernSmith.Rasterizers.DirectWrite.TerraFX/DirectWriteRegistration.cs` | New -- factory registration |
+| `src/KernSmith/Rasterizer/IRasterizer.cs` | Promote `SetVariationAxes()` and `SelectColorPalette()` from FreeType downcasts to interface methods with default no-op implementations |
+
+## Comparison Tools
+
+Multi-backend visual comparison tools for validating output across rasterizers:
+- `tests/bmfont-compare/GenerateAll/` -- generates atlas PNGs + .fnt files from FreeType, GDI, and DirectWrite with fire-effect and plain configs. Usage: `dotnet run --framework net10.0-windows -- <output-dir>`
+- `tests/bmfont-compare/CompareGlyphs/` -- extracts individual glyphs using .fnt coordinates and produces side-by-side comparison PNGs (comparison.png, comparison2.png). Also compares against BMFont64 if its output is present. Usage: `dotnet run --framework net10.0-windows -- <data-dir>`
+
+## Current Status (2026-03-27)
+
+### What's Working
+
+- Core glyph rasterization via `IDWriteGlyphRunAnalysis` (simpler than planned D2D approach)
+- Font loading from bytes (in-memory via `IDWriteFactory5.CreateInMemoryFontFileLoader`)
+- System font loading via `IDWriteFactory.GetSystemFontCollection`
+- Factory registration via `[ModuleInitializer]`
+- Supersampling support
+- Anti-aliasing (None, Grayscale via ClearType→grayscale conversion)
+- Effects pipeline compatibility (outline, shadow, gradient via shared post-processors)
+- COM lifetime management via `ComPtr<T>` helper
+- Proper disposal with finalizer pattern
+
+### Sizing Fix Applied
+
+Original implementation had `HandlesOwnSizing=true` but did not perform cell-height-to-ppem conversion, causing **~14% glyph size inflation** (e.g., lineHeight=64 instead of 56 for Georgia size 56). Fixed by setting `HandlesOwnSizing=false` so the shared pipeline handles the conversion, and `GetFontMetrics()` returns null to use the shared OS/2 table metrics path.
+
+### 15-Font Comparison Results (DirectWrite vs BMFont64)
+
+After the sizing fix, tested across 15 Gum UI font configs (various fonts, sizes, styles):
+- **lineHeight**: 8/15 exact match (remaining 7 are +1, caused by `Math.Ceiling` vs BMFont's `MulDiv` rounding in shared pipeline code)
+- **base**: 8/15 exact match (same ±1 rounding cause)
+- **xadvance**: Most fonts match or differ by ±1
+- **kerning pairs**: All shared pairs match exactly
+- **yoffset**: Largest variance due to different hinting/rendering pipelines
+
+For comparison, GDI matches BMFont on 14/15 lineHeight and 15/15 base because both use Windows GDI APIs internally. The ±1 DirectWrite differences are irreducible without an architectural change to make rasterizers fully own their sizing pipeline.
+
+### Known Gaps
+
+1. **Color font rendering (Task 5)**: `SupportsColorFonts` set to `false`. `SelectColorPalette()` stores palette index but no `TranslateColorGlyphRun` implementation exists. Would require adding D2D dependency.
+2. **Variable font support (Task 6)**: `SupportsVariableFonts` set to `false`. `SetVariationAxes()` stores axes but no `IDWriteFontFace5` axis manipulation exists.
+3. **Synthetic bold/italic**: Not implemented. FreeType applies these via `FT_GlyphSlot_Embolden`/`FT_GlyphSlot_Oblique`; DirectWrite equivalent would be `DWRITE_FONT_SIMULATIONS_BOLD`/`DWRITE_FONT_SIMULATIONS_OBLIQUE`.
+4. **Native DirectWrite kerning**: `GetKerningPairs()` returns null, delegating to the shared GPOS/kern table parser instead of using `IDWriteFontFace1.GetKerningPairAdjustments`.
+5. **No dedicated unit tests**: Only factory registration tests exist. Comparison tools in `tests/bmfont-compare/` provide visual validation.
+6. **Architecture deviation**: Implementation uses `IDWriteGlyphRunAnalysis` instead of planned `ID2D1BitmapRenderTarget + DrawGlyphRun`. Simpler but blocks color font rendering without adding D2D later.
+
+### Comparison Tools
+
+- `tests/bmfont-compare/GenerateAll/` -- generates fire-effect and plain atlas comparisons across FreeType, GDI, DirectWrite
+- `tests/bmfont-compare/GenerateDirectWrite/` -- generates DirectWrite output for all 15 Gum UI .bmfc configs
+- `tests/bmfont-compare/CompareGlyphs/` -- produces side-by-side glyph comparison PNGs
+- `tests/bmfont-compare/diff_all_fonts.py` -- metrics diff across any two backend output directories
 
 ## Testing
 
@@ -124,11 +194,12 @@ RasterizerFactory.Register(RasterizerBackend.DirectWrite, () => new DirectWriteR
 
 ## Reference
 
-### DirectWrite from .NET via Vortice.Windows
+### DirectWrite from .NET via TerraFX.Interop.Windows
 
-Vortice.Windows is actively maintained and targets .NET 9/10:
-- `Vortice.DirectWrite` -- font face, metrics, glyph outlines
-- `Vortice.Direct2D1` -- bitmap rasterization via render targets
+TerraFX provides raw 1:1 COM bindings generated from Windows SDK metadata:
+- Complete DirectWrite API coverage (IDWriteFactory, IDWriteFontFace, etc.)
+- Complete Direct2D API coverage (ID2D1Factory, ID2D1BitmapRenderTarget, etc.)
 - Three measuring modes: Natural, GDI Classic, GDI Natural
 - Color font support via `IDWriteFactory4` and later interfaces
 - Variable font support via `IDWriteFontFace5` and later interfaces
+- Requires a `ComPtr<T>` helper for COM lifetime management (prevent leaks)

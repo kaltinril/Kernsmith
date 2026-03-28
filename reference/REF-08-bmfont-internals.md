@@ -356,6 +356,8 @@ When `fourChnlPacked=true` and `outBitDepth=32`:
 | 3 | Set to zero |
 | 4 | Set to one |
 
+> **Note (2026-03-27):** BMFont64 uses these channel settings to control outline rendering -- there is no explicit "outline color" setting. A typical outlined font uses `alphaChnl=1` (outline data in alpha), `redChnl=0, greenChnl=0, blueChnl=0` (glyph data in RGB). The pixel shader then renders in two passes: first the outline using the alpha channel with the outline color, then the glyph body using the RGB channels with the text color. KernSmith's `outlineColor` extension provides explicit color control instead of relying on channel encoding.
+
 ---
 
 ## 11. Output Formats

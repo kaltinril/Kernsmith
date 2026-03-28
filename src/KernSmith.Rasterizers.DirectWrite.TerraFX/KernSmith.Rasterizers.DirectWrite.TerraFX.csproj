@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0-windows</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>KernSmith.Rasterizers.DirectWrite.TerraFX</PackageId>
+    <Description>DirectWrite rasterizer backend for KernSmith using TerraFX.Interop.Windows. Windows-only. Supports color fonts and variable fonts.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="TerraFX.Interop.Windows" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KernSmith\KernSmith.csproj" />
+  </ItemGroup>
+</Project>

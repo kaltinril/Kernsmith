@@ -8,6 +8,7 @@
     <PackageVersion Include="NativeFileDialogNET" Version="2.0.2" />
     <PackageVersion Include="StbImageSharp" Version="2.30.15" />
     <PackageVersion Include="StbImageWriteSharp" Version="1.16.7" />
+    <PackageVersion Include="TerraFX.Interop.Windows" Version="10.0.26100.6" />
     <!-- SourceLink -->
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.102" />
     <!-- Test dependencies -->

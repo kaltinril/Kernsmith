@@ -14,6 +14,11 @@
 - **Only show backends that are actually available** -- based on installed packages AND current platform. Use `RasterizerFactory.GetAvailableBackends()` for runtime discovery.
 - **Linux users see FreeType only.** There is no separate "Linux native" backend -- native on Linux IS FreeType. The UI/CLI should not present a misleading "Native" option that resolves to the same thing.
 
+## Lessons from 78B/78BB
+
+- **SuperSampleLevel needs CLI exposure**: 78BB added `SuperSampleLevel` to `FontGeneratorOptions` and the bmfc `aa` key now maps to it. The CLI needs a `--supersample` flag (integer, default 1).
+- **System font loading path exists**: 78BB added `LoadSystemFont(string familyName)` for backends that support it. CLI may benefit from a `--system-font <name>` flag that uses the system font path instead of requiring a TTF file path. UI should offer a system font picker when the selected backend supports it (`SupportsSystemFonts` capability).
+
 ## Tasks
 
 ### 1. CLI: `--rasterizer` Flag
@@ -68,7 +73,33 @@ When `Native` or `Auto` resolves to FreeType on Linux, show an informational mes
 - "Native rasterizer on Linux uses FreeType (same as the default)"
 - Non-blocking info, not an error
 
-### 7. Validation
+### 7. CLI: `--supersample` Flag
+
+File: `tools/KernSmith.Cli/Commands/GenerateCommand.cs`
+
+Add `--supersample <level>` option:
+- Integer value, default 1 (no supersampling)
+- Maps to `FontGeneratorOptions.SuperSampleLevel`
+- Validate: must be >= 1
+
+### 8. CLI: `--system-font` Flag
+
+File: `tools/KernSmith.Cli/Commands/GenerateCommand.cs`
+
+Add `--system-font <name>` option as an alternative to the positional font file path:
+- Mutually exclusive with the font file path argument
+- Only valid when the selected backend reports `SupportsSystemFonts = true`
+- Error with a clear message if the backend does not support system fonts
+
+### 9. UI: System Font Picker
+
+File: `apps/KernSmith.Ui/` (font config panel)
+
+- When the selected backend reports `SupportsSystemFonts = true`, show a system font picker
+- Allow the user to choose between loading from file or selecting a system font
+- Disable system font picker when the backend does not support it
+
+### 10. Validation
 
 Both CLI and UI should validate early:
 - If the requested backend is not available (package not installed or wrong platform), error immediately with a helpful message
@@ -82,6 +113,8 @@ Both CLI and UI should validate early:
 | `tools/KernSmith.Cli/Commands/GenerateCommand.cs` | Add `--rasterizer` and `--list-rasterizers` options |
 | `apps/KernSmith.Ui/` (font config panel) | Add rasterizer dropdown, capability-aware option disabling |
 | `apps/KernSmith.Ui/` (project service) | Persist rasterizer selection |
+| `tools/KernSmith.Cli/Commands/GenerateCommand.cs` | Add `--supersample` and `--system-font` options |
+| `apps/KernSmith.Ui/` (font config panel) | Add system font picker when backend supports it |
 
 ## Testing
 
@@ -90,3 +123,6 @@ Both CLI and UI should validate early:
 - CLI: verify `--list-rasterizers` output is correct
 - UI: verify dropdown populates with available backends
 - UI: verify capability-dependent options are disabled/enabled correctly when switching backends
+- CLI: verify `--supersample 4` sets SuperSampleLevel correctly
+- CLI: verify `--system-font "Arial"` works with GDI backend and errors with FreeType backend
+- UI: verify system font picker is shown/hidden based on backend SupportsSystemFonts capability

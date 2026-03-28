@@ -85,18 +85,17 @@ public static class BmFont
             else
                 rasterizer.LoadFont(fontData, options.FaceIndex);
 
-            if (rasterizer is FreeTypeRasterizer ftRasterizer)
+            if (rasterizer.Capabilities.SupportsVariableFonts
+                && options.VariationAxes is { Count: > 0 }
+                && fontInfo.VariationAxes is { Count: > 0 })
             {
-                if (options.VariationAxes is { Count: > 0 }
-                    && fontInfo.VariationAxes is { Count: > 0 })
-                {
-                    ftRasterizer.SetVariationAxes(fontInfo.VariationAxes, options.VariationAxes);
-                }
+                rasterizer.SetVariationAxes(fontInfo.VariationAxes, options.VariationAxes);
+            }
 
-                if (options.ColorFont && options.ColorPaletteIndex != 0)
-                {
-                    ftRasterizer.SelectColorPalette(options.ColorPaletteIndex);
-                }
+            if (rasterizer.Capabilities.SupportsColorFonts
+                && options.ColorFont && options.ColorPaletteIndex != 0)
+            {
+                rasterizer.SelectColorPalette(options.ColorPaletteIndex);
             }
 
             var rasterOptions = RasterOptions.FromGeneratorOptions(options);
@@ -630,11 +629,11 @@ public static class BmFont
             rasterizer.LoadFont(fontData, options.FaceIndex);
 
             // Apply variable font axes if specified.
-            if (rasterizer is FreeTypeRasterizer ftRasterizer
+            if (rasterizer.Capabilities.SupportsVariableFonts
                 && options.VariationAxes is { Count: > 0 }
                 && fontInfo.VariationAxes is { Count: > 0 })
             {
-                ftRasterizer.SetVariationAxes(fontInfo.VariationAxes, options.VariationAxes);
+                rasterizer.SetVariationAxes(fontInfo.VariationAxes, options.VariationAxes);
             }
 
             var rasterOptions = RasterOptions.FromGeneratorOptions(options);

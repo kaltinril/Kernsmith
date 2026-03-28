@@ -41,6 +41,20 @@ GPOS class 0 fix reduced but didn't fully resolve this. The remaining missing pa
 
 KernSmith ignores `alphaChnl`/`redChnl`/`greenChnl`/`blueChnl` from .bmfc configs. Produces white-on-black instead of BMFont's white-on-alpha. Not a metrics issue -- tracked separately.
 
+### 7. GDI lfHeight sign -- cell height vs em height (FIXED in Phase 78C)
+
+**Root cause**: Our GDI backend was passing negative `lfHeight` to `CreateFontIndirectW` (em height mode), while BMFont passes positive `lfHeight` (cell height mode). For Georgia at size 56, this produced `tmHeight=65` (negative/em) vs `tmHeight=56` (positive/cell) because negative lfHeight excludes internal leading.
+
+**Fix**: Changed `LfHeight = -(size * dpi / 72)` to `LfHeight = (size * dpi / 72)` in `GdiRasterizer.CreateHFont()`. This makes `lineHeight` and `base` match BMFont exactly for all tested fonts.
+
+**Status**: Fixed in Phase 78C branch.
+
+### 8. Anti-aliasing gradient -- GGO_GRAY8_BITMAP vs GGO_NATIVE polygon fill
+
+**Root cause**: Our GDI backend uses `GGO_GRAY8_BITMAP` which produces smooth anti-aliasing with many intermediate gray levels (GDI's 65-level grayscale remapped to 0-255). BMFont uses `GGO_NATIVE` to extract vector outlines and rasterizes polygons itself with an 8x internal supersample, producing sharper edges with fewer intermediate gray values. Side-by-side character comparison (Phase 78C testing) shows visibly more anti-aliasing tones in our output vs BMFont's crisper edges.
+
+**Status**: Not fixable without implementing BMFont's `GGO_NATIVE` polygon extraction and manual scanline rasterization (Path A: `DrawGlyphFromOutline`). Same root cause as gaps 1-2 (xoffset/yoffset). This is the fundamental architectural difference between our approach and BMFont's.
+
 ## Comparison Tooling
 
 Reference the existing comparison tools:
@@ -48,6 +62,8 @@ Reference the existing comparison tools:
 - `tests/bmfont-compare/diff_fnt.py` -- single-font comparison
 - `tests/bmfont-compare/diff_images.py` -- visual atlas comparison
 - `tests/bmfont-compare/GenerateGdi/` -- regenerate KernSmith GDI output
+- `tests/bmfont-compare/GenerateAll/` -- generates atlas PNGs from all 3 backends (FreeType, GDI, DirectWrite) with both fire-effect and plain configs. Usage: `dotnet run --framework net10.0-windows -- <output-dir>`
+- `tests/bmfont-compare/CompareGlyphs/` -- character-by-character visual comparison across all backends + BMFont64, outputs `comparison.png` (fire effects) and `comparison2.png` (plain white). Usage: `dotnet run --framework net10.0-windows -- <data-dir>`. Gracefully skips missing backends.
 
 ## Potential Approaches
 
