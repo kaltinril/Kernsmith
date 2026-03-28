@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>KernSmith.KniGum</PackageId>
+    <Description>Runtime bitmap font generation for KNI + Gum games using KernSmith. Generates BitmapFont instances entirely in memory — no disk I/O required.</Description>
+    <PackageProjectUrl>https://github.com/kaltinril/KernSmith</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Authors>Kaltinril (Jeremy Swartwood)</Authors>
+    <PackageTags>kernsmith;gum;kni;bitmap-font;font-generation;game-dev;runtime</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\KernSmith.MonoGameGum\KernSmithFontCreator.cs" Link="KernSmithFontCreator.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KernSmith.GumCommon\KernSmith.GumCommon.csproj" />
+    <!-- TODO: Switch to NuGet PackageReference once Gum publishes a version with IInMemoryFontCreator -->
+    <ProjectReference Include="..\..\..\Gum\MonoGameGum\KniGum\KniGum.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="nkast.Xna.Framework" />
+    <PackageReference Include="nkast.Xna.Framework.Graphics" />
+  </ItemGroup>
+
+</Project>
