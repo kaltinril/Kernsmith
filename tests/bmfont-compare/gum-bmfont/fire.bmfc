@@ -26,9 +26,14 @@ forceZero=0
 # output file
 outWidth=1024
 outHeight=1024
+outBitDepth=32
 fontDescFormat=0
 textureFormat=png
 fourChnlPacked=0
+alphaChnl=1
+redChnl=0
+greenChnl=0
+blueChnl=0
 
 # outline
 outlineThickness=4
