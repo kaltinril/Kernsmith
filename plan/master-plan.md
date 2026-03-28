@@ -96,6 +96,7 @@ Output Layer
 | 78D | [CLI & UI Integration](phase-78d-cli-ui-integration.md) | Wire rasterizer selection into CLI and UI | Planning |
 | 78E | [Plugin Template](phase-78e-plugin-template.md) | Template for third-party rasterizer plugins | Planning (deferred) |
 | 99 | [BMFont Parity Remaining Gaps](phase-99-bmfont-parity-gaps.md) | Investigate and close remaining metrics differences from Phase 78BB | Planning |
+| 90 | [Native AOT Compliance](phase-90-aot-compliance.md) | Research and implement Native AOT / trimming compatibility for core library | Planning |
 | 100 | [Hiero Advanced Features](phase-100-hiero-advanced-features.md) | Advanced Hiero features requiring new KernSmith properties | Future |
 
 ---
