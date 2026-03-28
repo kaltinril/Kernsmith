@@ -1,85 +1,168 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using KernSmith;
+using KernSmith.Rasterizer;
 
 // Force assembly load so module initializers run
 RuntimeHelpers.RunClassConstructor(typeof(KernSmith.Rasterizers.Gdi.GdiRasterizer).TypeHandle);
 RuntimeHelpers.RunClassConstructor(typeof(KernSmith.Rasterizers.DirectWrite.TerraFX.DirectWriteRasterizer).TypeHandle);
 
-// Output to the current working directory (run from tests/bmfont-compare/)
-var outDir = args.Length > 0 ? args[0] : ".";
+// Usage: GenerateAll <bmfc-dir> <output-dir>
+//   bmfc-dir:   directory containing .bmfc files (default: gum-bmfont/)
+//   output-dir: directory for generated output (default: current directory)
+var bmfcDir = args.Length > 0
+    ? args[0]
+    : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "gum-bmfont"));
+
+var outDir = args.Length > 1
+    ? args[1]
+    : ".";
+
+if (!Directory.Exists(bmfcDir))
+{
+    Console.Error.WriteLine($"ERROR: bmfc directory not found: {bmfcDir}");
+    return 1;
+}
+
 Directory.CreateDirectory(outDir);
 
-var backends = new[] { RasterizerBackend.FreeType, RasterizerBackend.Gdi, RasterizerBackend.DirectWrite };
+var bmfcFiles = Directory.GetFiles(bmfcDir, "*.bmfc").OrderBy(f => f).ToArray();
+Console.WriteLine($"Found {bmfcFiles.Length} .bmfc files in {bmfcDir}");
+Console.WriteLine($"Output directory: {outDir}");
 
-foreach (var backend in backends)
+// Find bmfont64.exe for reference output
+var bmfont64Path = FindBmFont64();
+if (bmfont64Path != null)
+    Console.WriteLine($"BMFont64: {bmfont64Path}");
+else
+    Console.WriteLine("BMFont64: not found (skipping bmfont backend)");
+
+var backends = new (string Name, Func<IRasterizer> Factory)[]
 {
-    var name = backend.ToString().ToLowerInvariant();
-    Console.WriteLine($"Generating with {name}...");
+    ("freetype", () => RasterizerFactory.Create(RasterizerBackend.FreeType)),
+    ("gdi", () => new KernSmith.Rasterizers.Gdi.GdiRasterizer()),
+    ("directwrite", () => new KernSmith.Rasterizers.DirectWrite.TerraFX.DirectWriteRasterizer()),
+};
 
-    // Fire version (with effects)
-    var fireOptions = new FontGeneratorOptions
-    {
-        Size = 56,
-        AntiAlias = AntiAliasMode.Grayscale,
-        EnableHinting = true,
-        Characters = CharacterSet.Ascii,
-        MaxTextureWidth = 1024,
-        MaxTextureHeight = 1024,
-        TextureFormat = TextureFormat.Png,
-        Outline = 4,
-        OutlineR = 0x1A,
-        OutlineG = 0x05,
-        OutlineB = 0x00,
-        GradientStartR = 0xFF,
-        GradientStartG = 0x00,
-        GradientStartB = 0x00,
-        GradientEndR = 0xFF,
-        GradientEndG = 0xD7,
-        GradientEndB = 0x00,
-        ShadowOffsetX = 3,
-        ShadowOffsetY = 3,
-        ShadowBlur = 3,
-        AutofitTexture = true,
-        Backend = backend,
-    };
+int totalSucceeded = 0;
+int totalFailed = 0;
 
-    var fireResult = BmFont.GenerateFromSystem("Georgia", fireOptions);
-    var fireFntPath = Path.Combine(outDir, $"fire-{name}.fnt");
-    File.WriteAllText(fireFntPath, fireResult.FntText);
-    Console.WriteLine($"  Wrote {fireFntPath}");
-    var firePngs = fireResult.GetPngData();
-    for (int i = 0; i < firePngs.Length; i++)
+foreach (var bmfcPath in bmfcFiles)
+{
+    var configName = Path.GetFileNameWithoutExtension(bmfcPath);
+    Console.WriteLine($"\n--- {configName} ---");
+
+    // KernSmith backends
+    foreach (var (backendName, factory) in backends)
     {
-        var pngPath = Path.Combine(outDir, $"fire-{name}_{i}.png");
-        File.WriteAllBytes(pngPath, firePngs[i]);
-        Console.WriteLine($"  Wrote {pngPath} ({new FileInfo(pngPath).Length} bytes)");
+        Console.Write($"  {backendName} ... ");
+
+        try
+        {
+            var result = BmFont.Builder()
+                .FromConfig(bmfcPath)
+                .WithRasterizer(factory())
+                .Build();
+
+            var baseName = $"{configName}-{backendName}";
+            var fntPath = Path.Combine(outDir, $"{baseName}.fnt");
+            File.WriteAllText(fntPath, result.FntText);
+
+            var pngs = result.GetPngData();
+            for (int i = 0; i < pngs.Length; i++)
+            {
+                var pngPath = Path.Combine(outDir, $"{baseName}_{i}.png");
+                File.WriteAllBytes(pngPath, pngs[i]);
+            }
+
+            Console.WriteLine("OK");
+            totalSucceeded++;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"FAILED: {ex.Message}");
+            totalFailed++;
+        }
     }
 
-    // Plain version (no effects)
-    var plainOptions = new FontGeneratorOptions
+    // BMFont64.exe reference output
+    if (bmfont64Path != null)
     {
-        Size = 56,
-        AntiAlias = AntiAliasMode.Grayscale,
-        EnableHinting = true,
-        Characters = CharacterSet.Ascii,
-        MaxTextureWidth = 1024,
-        MaxTextureHeight = 1024,
-        TextureFormat = TextureFormat.Png,
-        AutofitTexture = true,
-        Backend = backend,
-    };
+        Console.Write("  bmfont ... ");
 
-    var plainResult = BmFont.GenerateFromSystem("Georgia", plainOptions);
-    var plainFntPath = Path.Combine(outDir, $"plain-{name}.fnt");
-    File.WriteAllText(plainFntPath, plainResult.FntText);
-    Console.WriteLine($"  Wrote {plainFntPath}");
-    var plainPngs = plainResult.GetPngData();
-    for (int i = 0; i < plainPngs.Length; i++)
-    {
-        var pngPath = Path.Combine(outDir, $"plain-{name}_{i}.png");
-        File.WriteAllBytes(pngPath, plainPngs[i]);
-        Console.WriteLine($"  Wrote {pngPath} ({new FileInfo(pngPath).Length} bytes)");
+        try
+        {
+            var bmfontOutPath = Path.Combine(outDir, $"{configName}-bmfont.fnt");
+            var psi = new ProcessStartInfo
+            {
+                FileName = bmfont64Path,
+                Arguments = $"-c \"{bmfcPath}\" -o \"{bmfontOutPath}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            };
+
+            using var proc = Process.Start(psi)!;
+            proc.WaitForExit(30_000);
+
+            if (proc.ExitCode == 0 && File.Exists(bmfontOutPath))
+            {
+                Console.WriteLine("OK");
+                totalSucceeded++;
+            }
+            else
+            {
+                var stderr = proc.StandardError.ReadToEnd().Trim();
+                Console.WriteLine($"FAILED: exit={proc.ExitCode} {stderr}");
+                totalFailed++;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"FAILED: {ex.Message}");
+            totalFailed++;
+        }
     }
 }
 
-Console.WriteLine("Done!");
+Console.WriteLine($"\nDone. {totalSucceeded} succeeded, {totalFailed} failed.");
+return totalFailed > 0 ? 1 : 0;
+
+static string? FindBmFont64()
+{
+    // Check known locations
+    var candidates = new[]
+    {
+        @"c:\tools\bmfont64.exe",
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "bmfont64.exe"),
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "bmfont64_1.14b_beta", "bmfont64.exe"),
+    };
+
+    foreach (var path in candidates)
+    {
+        if (File.Exists(path))
+            return path;
+    }
+
+    // Check PATH
+    try
+    {
+        var psi = new ProcessStartInfo
+        {
+            FileName = "where",
+            Arguments = "bmfont64.exe",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            CreateNoWindow = true,
+        };
+        using var proc = Process.Start(psi)!;
+        var output = proc.StandardOutput.ReadToEnd().Trim();
+        proc.WaitForExit(5_000);
+        if (proc.ExitCode == 0 && !string.IsNullOrEmpty(output))
+            return output.Split('\n')[0].Trim();
+    }
+    catch { }
+
+    return null;
+}

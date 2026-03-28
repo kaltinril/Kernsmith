@@ -1,6 +1,6 @@
 # Phase 78C -- DirectWrite Rasterizer Backend
 
-> **Status**: In Progress (core rasterization working, sizing fixed, color/variable fonts stubbed)
+> **Status**: Complete (core rasterization working, sizing fixed, color/variable fonts deferred to Phase 78G)
 > **Size**: Medium-Large
 > **Created**: 2026-03-25
 > **Updated**: 2026-03-27

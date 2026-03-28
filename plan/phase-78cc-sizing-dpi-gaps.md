@@ -36,12 +36,12 @@ BMFont renders outline pixels even for space (char 32), giving it `width=11 heig
 
 ## Remaining Tasks
 
-### Verify MatchCharHeight Implementation
+### ~~Verify MatchCharHeight Implementation~~ VERIFIED
 
-`MatchCharHeight` exists as a property on `FontGeneratorOptions` but needs verification that it actually affects the sizing logic in `BmFont.cs` and the rasterizer backends, not just gets stored as metadata.
+`MatchCharHeight` (negative fontSize in .bmfc) works correctly for FreeType and DirectWrite -- both produce correct metrics when MatchCharHeight is enabled. However, GDI has a sizing bug: with `HandlesOwnSizing=true` and MatchCharHeight=true (negative fontSize), GDI produces wrong metrics (e.g., lineHeight=12 instead of 14 for Bahnschrift size -12). This is tracked in Phase 78G.
 
-- [ ] Trace `MatchCharHeight` through from `FontGeneratorOptions` to actual font size calculation
-- [ ] Verify negative `fontSize` round-trips correctly through `BmfcConfigReader` / `BmfcConfigWriter`
+- [x] Trace `MatchCharHeight` through from `FontGeneratorOptions` to actual font size calculation
+- [x] Verify negative `fontSize` round-trips correctly through `BmfcConfigReader` / `BmfcConfigWriter`
 
 ### Consider BMFont-style autoFitNumPages
 
@@ -64,6 +64,10 @@ BMFont renders outline pixels for space (char 32). Decide whether KernSmith shou
 - **Pro**: Exact pixel-level parity with BMFont
 - **Con**: Wastes texture space, no visual impact on rendered text
 - **Decision**: TBD -- low priority
+
+### BMFont64 Channel-Based Outline Rendering
+
+BMFont64 uses `alphaChnl`, `redChnl`, `greenChnl`, `blueChnl` settings (values 0-4) to control which channels contain glyph data vs outline data. For example, `alphaChnl=1` (outline in alpha), `redChnl=0, greenChnl=0, blueChnl=0` (glyph in RGB) is the typical outlined font setup. This is not an explicit "outline color" setting -- it is a channel encoding that the pixel shader decodes at render time. KernSmith uses an `outlineColor` extension instead. Tracked in Phase 78G for supporting standard BMFont channel outline behavior as a baseline.
 
 ## Files Reference
 
