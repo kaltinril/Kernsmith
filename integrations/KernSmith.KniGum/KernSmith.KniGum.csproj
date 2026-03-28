@@ -22,13 +22,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\KernSmith.GumCommon\KernSmith.GumCommon.csproj" />
-    <!-- TODO: Switch to NuGet PackageReference once Gum publishes a version with IInMemoryFontCreator -->
-    <ProjectReference Include="..\..\..\Gum\MonoGameGum\KniGum\KniGum.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="nkast.Xna.Framework" />
-    <PackageReference Include="nkast.Xna.Framework.Graphics" />
+    <PackageReference Include="Gum.KNI" />
   </ItemGroup>
 
 </Project>

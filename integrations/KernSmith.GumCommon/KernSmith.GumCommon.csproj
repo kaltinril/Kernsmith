@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KernSmith\KernSmith.csproj" />
+    <ProjectReference Include="..\..\src\KernSmith\KernSmith.csproj" />
   </ItemGroup>
 
   <ItemGroup>

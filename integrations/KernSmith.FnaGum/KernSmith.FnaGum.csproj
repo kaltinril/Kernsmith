@@ -22,9 +22,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\KernSmith.GumCommon\KernSmith.GumCommon.csproj" />
-    <!-- TODO: Switch to NuGet PackageReference once Gum publishes a version with IInMemoryFontCreator -->
-    <ProjectReference Include="..\..\..\Gum\MonoGameGum\FnaGum\FnaGum.csproj" />
-    <ProjectReference Include="..\..\..\Gum\fna\FNA.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Gum.FNA" />
   </ItemGroup>
 
 </Project>
