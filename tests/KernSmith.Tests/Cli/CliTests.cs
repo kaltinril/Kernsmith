@@ -5,13 +5,20 @@ namespace KernSmith.Tests.Cli;
 
 public class CliTests : IDisposable
 {
-    private static readonly string ProjectPath = Path.GetFullPath(
-        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "tools", "KernSmith.Cli", "KernSmith.Cli.csproj"));
+    private static readonly string CliDllPath;
 
     private static readonly string FontPath = Path.Combine(
         AppContext.BaseDirectory, "Fixtures", "Roboto-Regular.ttf");
 
     private readonly string _tempDir;
+
+    static CliTests()
+    {
+        var baseDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
+        var repoRoot = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", "..", ".."));
+        var tfm = Path.GetFileName(baseDir);
+        CliDllPath = Path.Combine(repoRoot, "tools", "KernSmith.Cli", "bin", "Debug", tfm, "KernSmith.Cli.dll");
+    }
 
     public CliTests()
     {
@@ -36,22 +43,23 @@ public class CliTests : IDisposable
             CreateNoWindow = true
         };
 
-        psi.ArgumentList.Add("run");
-        psi.ArgumentList.Add("--project");
-        psi.ArgumentList.Add(ProjectPath);
-        psi.ArgumentList.Add("--framework");
-        psi.ArgumentList.Add("net10.0");
-        psi.ArgumentList.Add("--");
+        psi.ArgumentList.Add("exec");
+        psi.ArgumentList.Add(CliDllPath);
 
         foreach (var arg in args)
             psi.ArgumentList.Add(arg);
 
         using var process = Process.Start(psi)!;
-        var stdout = process.StandardOutput.ReadToEnd();
-        var stderr = process.StandardError.ReadToEnd();
-        process.WaitForExit(TimeSpan.FromSeconds(60));
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
 
-        return (process.ExitCode, stdout, stderr);
+        if (!process.WaitForExit(30_000))
+        {
+            process.Kill(entireProcessTree: true);
+            throw new TimeoutException($"CLI process timed out after 30s");
+        }
+
+        return (process.ExitCode, stdoutTask.Result, stderrTask.Result);
     }
 
     // -- Help and usage --
