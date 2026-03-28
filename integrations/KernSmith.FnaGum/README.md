@@ -26,4 +26,4 @@ CustomSetPropertyOnRenderable.InMemoryFontCreator = new KernSmithFontCreator(Gra
 dotnet build integrations/KernSmith.FnaGum/KernSmith.FnaGum.csproj
 ```
 
-See the [root README](../../README.md) for full project documentation.
+See the [KernSmith repository](https://github.com/kaltinril/KernSmith) for full project documentation.

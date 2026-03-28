@@ -98,7 +98,7 @@ jobs:
             KernSmith-CLI-${{ matrix.rid }}.*
             KernSmith-UI-${{ matrix.rid }}.*
 
-  publish-nuget:
+  pack-cross-platform:
     needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -113,7 +113,52 @@ jobs:
       - run: dotnet build --configuration Release --no-restore
       - run: dotnet test --configuration Release --no-build --blame-hang --blame-hang-timeout 3m
         continue-on-error: true
-      - run: dotnet pack src/KernSmith/KernSmith.csproj --configuration Release --no-build --output ./nupkg
+      - name: Pack cross-platform packages
+        run: |
+          dotnet pack src/KernSmith/KernSmith.csproj --configuration Release --no-build --output ./nupkg
+          dotnet pack integrations/KernSmith.GumCommon/KernSmith.GumCommon.csproj --configuration Release --no-build --output ./nupkg
+          dotnet pack integrations/KernSmith.MonoGameGum/KernSmith.MonoGameGum.csproj --configuration Release --no-build --output ./nupkg
+          dotnet pack integrations/KernSmith.KniGum/KernSmith.KniGum.csproj --configuration Release --no-build --output ./nupkg
+          # KernSmith.FnaGum excluded until build issues are resolved
+      - uses: actions/upload-artifact@v7
+        with:
+          name: nupkg-cross-platform
+          path: ./nupkg/*.nupkg
+
+  pack-windows:
+    needs: validate
+    runs-on: windows-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet restore
+      - run: dotnet build --configuration Release --no-restore
+      - name: Pack Windows-only packages
+        run: |
+          dotnet pack src/KernSmith.Rasterizers.Gdi/KernSmith.Rasterizers.Gdi.csproj --configuration Release --no-build --output ./nupkg
+          dotnet pack src/KernSmith.Rasterizers.DirectWrite.TerraFX/KernSmith.Rasterizers.DirectWrite.TerraFX.csproj --configuration Release --no-build --output ./nupkg
+      - uses: actions/upload-artifact@v7
+        with:
+          name: nupkg-windows
+          path: ./nupkg/*.nupkg
+
+  publish-nuget:
+    needs: [pack-cross-platform, pack-windows]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: nupkg
+          pattern: nupkg-*
+          merge-multiple: true
       - run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
   create-release:
@@ -146,7 +191,14 @@ jobs:
           draft: false
           append_body: true
           body: |
-            **NuGet**: [KernSmith ${{ needs.validate.outputs.version }}](https://www.nuget.org/packages/KernSmith/${{ needs.validate.outputs.version }})
+            **NuGet Packages** (v${{ needs.validate.outputs.version }}):
+            - [KernSmith](https://www.nuget.org/packages/KernSmith/${{ needs.validate.outputs.version }})
+            - [KernSmith.Rasterizers.Gdi](https://www.nuget.org/packages/KernSmith.Rasterizers.Gdi/${{ needs.validate.outputs.version }})
+            - [KernSmith.Rasterizers.DirectWrite.TerraFX](https://www.nuget.org/packages/KernSmith.Rasterizers.DirectWrite.TerraFX/${{ needs.validate.outputs.version }})
+            - [KernSmith.GumCommon](https://www.nuget.org/packages/KernSmith.GumCommon/${{ needs.validate.outputs.version }})
+            - [KernSmith.MonoGameGum](https://www.nuget.org/packages/KernSmith.MonoGameGum/${{ needs.validate.outputs.version }})
+            - [KernSmith.KniGum](https://www.nuget.org/packages/KernSmith.KniGum/${{ needs.validate.outputs.version }})
+            <!-- KernSmith.FnaGum excluded until build issues are resolved -->
             **Docs**: [kaltinril.github.io/Kernsmith](https://kaltinril.github.io/Kernsmith/)
           files: |
             artifacts/**/*.zip

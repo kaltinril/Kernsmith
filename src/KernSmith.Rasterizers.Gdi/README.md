@@ -32,4 +32,4 @@ The rasterizer auto-registers via `[ModuleInitializer]`, so referencing the pack
 dotnet build src/KernSmith.Rasterizers.Gdi/KernSmith.Rasterizers.Gdi.csproj
 ```
 
-See the [root README](../../README.md) for full project documentation.
+See the [KernSmith repository](https://github.com/kaltinril/KernSmith) for full project documentation.

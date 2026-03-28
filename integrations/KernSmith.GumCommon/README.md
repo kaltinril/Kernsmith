@@ -16,4 +16,4 @@ By isolating the shared logic here, each platform package only needs to handle f
 dotnet build integrations/KernSmith.GumCommon/KernSmith.GumCommon.csproj
 ```
 
-See the [root README](../../README.md) for full project documentation.
+See the [KernSmith repository](https://github.com/kaltinril/KernSmith) for full project documentation.

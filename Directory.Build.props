@@ -27,8 +27,8 @@
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
   </ItemGroup>
 
-  <!-- Non-library projects are not packable by default -->
-  <PropertyGroup Condition="'$(MSBuildProjectName)' != 'KernSmith'">
+  <!-- Library projects opt in via <IsPackable>true</IsPackable> in their .csproj -->
+  <PropertyGroup>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 

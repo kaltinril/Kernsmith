@@ -26,4 +26,4 @@ Once wired up, Gum will use KernSmith to generate any bitmap fonts it needs on t
 dotnet build integrations/KernSmith.MonoGameGum/KernSmith.MonoGameGum.csproj
 ```
 
-See the [root README](../../README.md) for full project documentation.
+See the [KernSmith repository](https://github.com/kaltinril/KernSmith) for full project documentation.
