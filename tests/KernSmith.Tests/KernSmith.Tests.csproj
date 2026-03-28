@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\KernSmith\KernSmith.csproj" />
+    <ProjectReference Include="..\..\src\KernSmith.GumCommon\KernSmith.GumCommon.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.Gdi\KernSmith.Rasterizers.Gdi.csproj"
                       Condition="$(TargetFramework.Contains('-windows'))" />
   </ItemGroup>
