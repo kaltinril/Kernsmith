@@ -30,12 +30,15 @@ public class KernSmithFontCreator : IInMemoryFontCreator
     {
         BmFontResult result = GumFontGenerator.Generate(bmfcSave);
 
+        string baseName = System.IO.Path.GetFileNameWithoutExtension(bmfcSave.FontCacheFileName);
+
         Texture2D[] textures = new Texture2D[result.Pages.Count];
         for (int i = 0; i < result.Pages.Count; i++)
         {
             AtlasPage page = result.Pages[i];
             Texture2D texture = new Texture2D(_graphicsDevice, page.Width, page.Height,
                 false, SurfaceFormat.Color);
+            texture.Name = $"{baseName}_{i}";
             texture.SetData(page.PixelData);
             textures[i] = texture;
         }

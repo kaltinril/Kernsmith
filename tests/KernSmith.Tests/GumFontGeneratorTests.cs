@@ -1,4 +1,5 @@
 using KernSmith.Gum;
+using KernSmith.Output;
 using RenderingLibrary.Graphics.Fonts;
 using Shouldly;
 
@@ -101,5 +102,46 @@ public class GumFontGeneratorTests
         // Assert
         options.Characters.ShouldNotBeNull();
         options.Characters.Count.ShouldBe(191);
+    }
+
+    [Fact]
+    public void Generate_DefaultBmfcSave_ProducesValidResult()
+    {
+        // Arrange
+        BmfcSave bmfcSave = new BmfcSave();
+        bmfcSave.FontName = "Arial";
+        bmfcSave.FontSize = 20;
+
+        // Act
+        BmFontResult result = GumFontGenerator.Generate(bmfcSave);
+
+        // Assert
+        result.ShouldNotBeNull();
+        result.FntText.ShouldNotBeNullOrWhiteSpace();
+        result.FntText.ShouldContain("face=\"Arial\"");
+        result.Pages.Count.ShouldBeGreaterThan(0);
+        result.Pages[0].PixelData.Length.ShouldBeGreaterThan(0);
+        result.Pages[0].Width.ShouldBeGreaterThan(0);
+        result.Pages[0].Height.ShouldBeGreaterThan(0);
+    }
+
+    [Fact]
+    public void Generate_WithOutline_ProducesValidResult()
+    {
+        // Arrange
+        BmfcSave bmfcSave = new BmfcSave();
+        bmfcSave.FontName = "Arial";
+        bmfcSave.FontSize = 20;
+        bmfcSave.OutlineThickness = 2;
+
+        // Act
+        BmFontResult result = GumFontGenerator.Generate(bmfcSave);
+
+        // Assert
+        result.ShouldNotBeNull();
+        result.FntText.ShouldNotBeNullOrWhiteSpace();
+        result.FntText.ShouldContain("outline=2");
+        result.Pages.Count.ShouldBeGreaterThan(0);
+        result.Pages[0].PixelData.Length.ShouldBeGreaterThan(0);
     }
 }
