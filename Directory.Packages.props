@@ -21,7 +21,12 @@
     <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
     <!-- UI dependencies -->
     <PackageVersion Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
-    <PackageVersion Include="Gum.MonoGame" Version="2026.3.23.1" />
+    <PackageVersion Include="nkast.Xna.Framework" Version="4.2.9001" />
+    <PackageVersion Include="nkast.Xna.Framework.Graphics" Version="4.2.9001" />
+    <PackageVersion Include="FlatRedBall.GumCommon" Version="2026.3.28.2" />
+    <PackageVersion Include="Gum.MonoGame" Version="2026.3.28.2" />
+    <PackageVersion Include="Gum.KNI" Version="2026.3.28.2" />
+    <PackageVersion Include="Gum.FNA" Version="2026.3.28.2" />
     <PackageVersion Include="MonoGame.Extended" Version="5.4.0" />
     <PackageVersion Include="NativeFileDialogSharp" Version="0.5.0" />
   </ItemGroup>

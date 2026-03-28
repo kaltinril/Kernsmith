@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>KernSmith.GumCommon</PackageId>
+    <Description>Bridges KernSmith bitmap font generation with Gum's BmfcSave font descriptor. Provides shared mapping logic used by platform-specific packages (KernSmith.MonoGameGum, KernSmith.KniGum, etc.) to generate fonts at runtime.</Description>
+    <PackageProjectUrl>https://github.com/kaltinril/KernSmith</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Authors>Kaltinril (Jeremy Swartwood)</Authors>
+    <PackageTags>kernsmith;gum;bitmap-font;font-generation;game-dev</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\KernSmith\KernSmith.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FlatRedBall.GumCommon" />
+  </ItemGroup>
+
+</Project>
