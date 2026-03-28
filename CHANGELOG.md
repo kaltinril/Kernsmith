@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-03-28
+
+### Added
+
+- Multi-package NuGet publishing — all packages (core, rasterizers, integrations) publish from a single workflow
+- Split publish workflow into parallel ubuntu/windows pack jobs for faster CI
+- NuGet metadata (readme, tags, authors, URL) for rasterizer packages
+- Updated RELEASING.md with multi-package architecture docs
+
+### Changed
+
+- Directory.Build.props defaults IsPackable=false; each package opts in explicitly
+- Package READMEs use absolute GitHub URL instead of relative file path
+- KniGum uses TargetFrameworks (plural) to fix pack failure
+- FnaGum excluded from packing until build issues resolved
+
 ## [0.9.6] - 2026-03-28
 
 ### Added
