@@ -88,8 +88,9 @@ public class FontConfigViewModel : ViewModel
             BackendSupportsSdf = caps.SupportsSdf;
             BackendSupportsSystemFonts = caps.SupportsSystemFonts;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Failed to load {SelectedBackend} backend capabilities: {ex.Message}");
             BackendSupportsColorFonts = false;
             BackendSupportsVariableFonts = false;
             BackendSupportsSdf = false;

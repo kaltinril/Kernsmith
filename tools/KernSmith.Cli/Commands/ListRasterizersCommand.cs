@@ -19,15 +19,39 @@ internal static class ListRasterizersCommand
         ConsoleOutput.WriteLine("Available rasterizer backends:");
         ConsoleOutput.WriteLine();
 
-        var rows = new List<(string Name, string Platform, string Status, string Capabilities)>
+        var platformMap = new Dictionary<RasterizerBackend, string>
         {
-            ("freetype",    "All platforms", available.Contains(RasterizerBackend.FreeType)    ? "(default)"       : "(not available)", "Color, Variable, SDF, Outline"),
-            ("gdi",         "Windows only",  available.Contains(RasterizerBackend.Gdi)         ? "(available)"     : "(not available)", "Grayscale only"),
-            ("directwrite", "Windows only",  available.Contains(RasterizerBackend.DirectWrite) ? "(available)"     : "(not available)", "Color, Variable"),
+            [RasterizerBackend.FreeType] = "All platforms",
+            [RasterizerBackend.Gdi] = "Windows only",
+            [RasterizerBackend.DirectWrite] = "Windows only",
         };
 
-        foreach (var (name, platform, status, caps) in rows)
-            ConsoleOutput.WriteLine($"  {name,-15} {status,-15} {platform,-20} {caps}");
+        foreach (var backend in Enum.GetValues<RasterizerBackend>())
+        {
+            var name = backend.ToString().ToLowerInvariant();
+            var platform = platformMap.GetValueOrDefault(backend, "Unknown");
+
+            if (available.Contains(backend))
+            {
+                var status = backend == RasterizerBackend.FreeType ? "(default)" : "(available)";
+
+                using var rasterizer = RasterizerFactory.Create(backend);
+                var caps = rasterizer.Capabilities;
+                var capList = new List<string>();
+                if (caps.SupportsColorFonts) capList.Add("Color");
+                if (caps.SupportsVariableFonts) capList.Add("Variable");
+                if (caps.SupportsSdf) capList.Add("SDF");
+                if (caps.SupportsOutlineStroke) capList.Add("Outline");
+                if (caps.SupportsSystemFonts) capList.Add("System Fonts");
+                var capStr = capList.Count > 0 ? string.Join(", ", capList) : "Grayscale";
+
+                ConsoleOutput.WriteLine($"  {name,-15} {status,-15} {platform,-20} {capStr}");
+            }
+            else
+            {
+                ConsoleOutput.WriteLine($"  {name,-15} {"(not available)",-15} {platform,-20}");
+            }
+        }
 
         return ExitCodes.Success;
     }

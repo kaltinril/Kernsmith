@@ -72,10 +72,10 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Publish CLI
-        run: dotnet publish tools/KernSmith.Cli/KernSmith.Cli.csproj -c Release -f net10.0 -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=false -o ./publish/cli
+        run: dotnet publish tools/KernSmith.Cli/KernSmith.Cli.csproj -c Release -f ${{ runner.os == 'Windows' && 'net10.0-windows' || 'net10.0' }} -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=false -o ./publish/cli
 
       - name: Publish UI
-        run: dotnet publish apps/KernSmith.Ui/KernSmith.Ui.csproj -c Release -f net10.0 -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=false -o ./publish/ui
+        run: dotnet publish apps/KernSmith.Ui/KernSmith.Ui.csproj -c Release -f ${{ runner.os == 'Windows' && 'net10.0-windows' || 'net10.0' }} -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=false -o ./publish/ui
 
       - name: Archive (zip)
         if: matrix.archive == 'zip'

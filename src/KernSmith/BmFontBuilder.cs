@@ -481,6 +481,7 @@ public sealed class BmFontBuilder
         _options.CollectMetrics = source.CollectMetrics;
         _options.CustomGlyphs = source.CustomGlyphs != null ? new Dictionary<int, CustomGlyph>(source.CustomGlyphs) : null;
         _options.PostProcessors = source.PostProcessors?.ToList();
+        _options.Backend = source.Backend;
         _options.Rasterizer = source.Rasterizer;
         _options.Packer = source.Packer;
         _options.AtlasEncoder = source.AtlasEncoder;
