@@ -1,3 +1,4 @@
+using System.Linq;
 using Gum.DataTypes;
 using Gum.Forms.Controls;
 using KernSmith.Ui.Models;
@@ -135,14 +136,12 @@ public class FontConfigPanel : Panel
 
         var familyLabel = new Label();
         familyLabel.Text = "System Font:";
-        familyLabel.IsVisible = _fontConfig.BackendSupportsSystemFonts;
         stack.Children.Add(familyLabel.Visual);
         TooltipService.SetTooltip(familyLabel, "Choose an installed system font");
 
         var familyCombo = new ComboBox();
         familyCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
         familyCombo.Visual.Width = 0;
-        familyCombo.IsVisible = _fontConfig.BackendSupportsSystemFonts;
         stack.Children.Add(familyCombo.Visual);
 
         // Wire system font combo
@@ -150,16 +149,9 @@ public class FontConfigPanel : Panel
         {
             if (e.PropertyName == nameof(FontConfigViewModel.SystemFonts) && _fontConfig.SystemFonts != null)
             {
-                familyCombo.Items.Clear();
-                foreach (var group in _fontConfig.SystemFonts)
-                    familyCombo.Items.Add(group.FamilyName);
+                familyCombo.Items = _fontConfig.SystemFonts.Select(g => (object)g.FamilyName).ToList();
             }
 
-            if (e.PropertyName == nameof(FontConfigViewModel.BackendSupportsSystemFonts))
-            {
-                familyLabel.IsVisible = _fontConfig.BackendSupportsSystemFonts;
-                familyCombo.IsVisible = _fontConfig.BackendSupportsSystemFonts;
-            }
         };
 
         familyCombo.SelectionChanged += (_, _) =>
