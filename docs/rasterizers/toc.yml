@@ -1,2 +1,8 @@
 - name: Overview
   href: index.md
+- name: FreeType (Default)
+  href: freetype.md
+- name: GDI
+  href: gdi.md
+- name: DirectWrite
+  href: directwrite.md

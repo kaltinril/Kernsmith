@@ -1,4 +1,4 @@
-- name: Core Library
+- name: KernSmith
   href: core/index.md
 - name: CLI Tool
   href: cli/index.md
@@ -9,5 +9,21 @@
   href: ui/index.md
 - name: Integrations
   href: integrations/index.md
-- name: Alternative Rasterizers
+  items:
+    - name: MonoGameGum
+      href: integrations/monogamegum.md
+    - name: KniGum
+      href: integrations/knigum.md
+    - name: FnaGum
+      href: integrations/fnagum.md
+    - name: GumCommon
+      href: integrations/gumcommon.md
+- name: Rasterizers
   href: rasterizers/index.md
+  items:
+    - name: FreeType (Default)
+      href: rasterizers/freetype.md
+    - name: GDI
+      href: rasterizers/gdi.md
+    - name: DirectWrite
+      href: rasterizers/directwrite.md

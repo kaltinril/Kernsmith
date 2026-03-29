@@ -1,4 +1,15 @@
 - name: Docs
-  href: docs/
+  href: docs/index.md
+  items:
+    - name: Core Library
+      href: docs/core/index.md
+    - name: CLI Tool
+      href: docs/cli/index.md
+    - name: UI Guide
+      href: docs/ui/index.md
+    - name: Integrations
+      href: docs/integrations/index.md
+    - name: Alternative Rasterizers
+      href: docs/rasterizers/index.md
 - name: API Reference
   href: api/
