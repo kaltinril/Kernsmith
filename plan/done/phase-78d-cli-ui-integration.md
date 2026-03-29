@@ -1,6 +1,6 @@
 # Phase 78D -- CLI and UI Integration
 
-> **Status**: In Progress
+> **Status**: Complete
 > **Size**: Small
 > **Created**: 2026-03-25
 > **Dependencies**: Phase 78A (foundation), at least one backend (78B or 78C) for meaningful testing
@@ -48,8 +48,10 @@ During implementation we identified that adding project references to the backen
 ```csharp
 #if WINDOWS
 // Force assembly load so [ModuleInitializer] registers the backends
-_ = typeof(KernSmith.Rasterizers.Gdi.GdiRasterizer);
-_ = typeof(KernSmith.Rasterizers.DirectWrite.TerraFX.DirectWriteRasterizer);
+System.Runtime.CompilerServices.RuntimeHelpers.RunModuleConstructor(
+    typeof(KernSmith.Rasterizers.Gdi.GdiRasterizer).Module.ModuleHandle);
+System.Runtime.CompilerServices.RuntimeHelpers.RunModuleConstructor(
+    typeof(KernSmith.Rasterizers.DirectWrite.TerraFX.DirectWriteRasterizer).Module.ModuleHandle);
 #endif
 ```
 
@@ -115,12 +117,12 @@ System font ComboBox already existed in `FontConfigPanel`. Now its visibility is
 - CLI: early validation in `Execute()` checks requested backend against `GetAvailableBackends()`, errors with list of alternatives
 - UI: dropdown only shows available backends (invalid selection impossible)
 
-### 11. Backend Assembly Wiring (NEW)
+### 11. Backend Assembly Wiring ✅
 
 Both UI and CLI `.csproj` files need:
-- [ ] Conditional TFM: `net10.0-windows` on Windows, `net10.0` elsewhere
-- [ ] Windows-only project references to GDI and DirectWrite backend packages
-- [ ] `#if WINDOWS` type reference in startup to force `[ModuleInitializer]` execution
+- [x] Conditional TFM: `net10.0-windows` on Windows, `net10.0` elsewhere
+- [x] Windows-only project references to GDI and DirectWrite backend packages
+- [x] `#if WINDOWS` type reference in startup to force `[ModuleInitializer]` execution
 
 See "Design Decision: Backend Assembly Loading" section above for implementation pattern.
 
@@ -146,11 +148,13 @@ See "Design Decision: Backend Assembly Loading" section above for implementation
 | `apps/KernSmith.Ui/ViewModels/MainViewModel.cs` | Capability propagation FontConfigVM→EffectsVM, Backend in GenerationRequest | ✅ |
 | `apps/KernSmith.Ui/Models/GenerationRequest.cs` | Added `Backend` property | ✅ |
 | `apps/KernSmith.Ui/Services/GenerationService.cs` | `.WithBackend(request.Backend)` in builder chain | ✅ |
-| `apps/KernSmith.Ui/KernSmith.Ui.csproj` | Conditional TFM + Windows backend references | TODO |
-| `tools/KernSmith.Cli/KernSmith.Cli.csproj` | Conditional TFM + Windows backend references | TODO |
-| UI/CLI startup code | `#if WINDOWS` type references to force backend loading | TODO |
+| `apps/KernSmith.Ui/KernSmith.Ui.csproj` | Conditional TFM + Windows backend references | ✅ |
+| `tools/KernSmith.Cli/KernSmith.Cli.csproj` | Conditional TFM + Windows backend references | ✅ |
+| UI/CLI startup code | `#if WINDOWS` type references to force backend loading | ✅ |
 
 ## Review Findings (2026-03-28)
+
+**All issues below were resolved in implementation (verified 2026-03-28).**
 
 Issues discovered during QA review of implemented code:
 
@@ -180,13 +184,13 @@ Issues discovered during QA review of implemented code:
 
 ## Testing
 
-- [ ] CLI: verify `--rasterizer freetype` produces output (same as default)
-- [ ] CLI: verify `--rasterizer gdi` works on Windows (errors on non-Windows)
-- [ ] CLI: verify `--rasterizer directwrite` works on Windows (errors on non-Windows)
-- [ ] CLI: verify `--rasterizer invalid` errors with helpful message listing available backends
-- [ ] CLI: verify `--list-rasterizers` output is correct on Windows (shows all 3) and Linux (shows FreeType only)
-- [ ] UI: verify dropdown populates with available backends per platform
-- [ ] UI: verify capability-dependent options disable/enable correctly when switching backends
-- [ ] UI: verify system font picker visibility toggles with backend SupportsSystemFonts
-- [ ] Build: verify `dotnet build` succeeds on Windows (all backends compiled)
-- [ ] Build: verify `dotnet build` succeeds on Linux (backends excluded, no errors)
+- [x] CLI: verify `--rasterizer freetype` produces output (same as default)
+- [x] CLI: verify `--rasterizer gdi` works on Windows (errors on non-Windows)
+- [x] CLI: verify `--rasterizer directwrite` works on Windows (errors on non-Windows)
+- [x] CLI: verify `--rasterizer invalid` errors with helpful message listing available backends
+- [x] CLI: verify `--list-rasterizers` output is correct on Windows (shows all 3) and Linux (shows FreeType only)
+- [x] UI: verify dropdown populates with available backends per platform
+- [x] UI: verify capability-dependent options disable/enable correctly when switching backends
+- [x] UI: verify system font picker visibility toggles with backend SupportsSystemFonts
+- [x] Build: verify `dotnet build` succeeds on Windows (all backends compiled)
+- [x] Build: verify `dotnet build` succeeds on Linux (backends excluded, no errors)

@@ -27,3 +27,5 @@
       href: rasterizers/gdi.md
     - name: DirectWrite
       href: rasterizers/directwrite.md
+    - name: Writing a Custom Backend
+      href: rasterizers/custom-backend.md

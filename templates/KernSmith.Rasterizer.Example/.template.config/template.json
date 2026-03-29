@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "KernSmith",
+  "classifications": ["Library", "Font", "Rasterizer"],
+  "identity": "KernSmith.Rasterizer.Example",
+  "name": "KernSmith Rasterizer Backend",
+  "shortName": "kernsmith-rasterizer",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "MyRasterizer",
+  "preferNameDirectory": true,
+  "symbols": {
+    "backendId": {
+      "type": "parameter",
+      "datatype": "int",
+      "defaultValue": "100",
+      "description": "Numeric RasterizerBackend enum value (use 100+ to avoid collisions with built-in backends)"
+    }
+  }
+}
