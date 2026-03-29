@@ -119,11 +119,11 @@ public class KernSmithGame : Game
             }
         };
 
-        // Load system fonts in background
+        // Load system fonts in background, marshal result to UI thread
         Task.Run(() =>
         {
             var fonts = fontDiscoveryService.GetSystemFonts();
-            _mainViewModel.FontConfig.SystemFonts = fonts;
+            RunOnMainThread(() => _mainViewModel.FontConfig.SystemFonts = fonts);
         });
 
         base.Initialize();

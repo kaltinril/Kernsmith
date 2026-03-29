@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using KernSmith.Font.Models;
@@ -318,7 +319,308 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
         return fallback;
     }
 
+    /// <summary>
+    /// Tries platform-specific fast discovery first, falling back to the slow
+    /// directory scan if the fast path fails or returns no results.
+    /// </summary>
     private static List<SystemFontInfo> ScanSystemFonts()
+    {
+        try
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                var results = TryScanFromRegistry();
+                if (results is { Count: > 0 })
+                    return results;
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+                     || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                var results = TryScanFromFcList();
+                if (results is { Count: > 0 })
+                    return results;
+            }
+        }
+        catch
+        {
+            // Fast path failed — fall through to slow scan.
+        }
+
+        return ScanFontDirectories();
+    }
+
+    /// <summary>
+    /// Enumerates all fonts from the Windows registry, avoiding the expensive
+    /// full directory scan with TtfParser.
+    /// </summary>
+    private static List<SystemFontInfo>? TryScanFromRegistry()
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            return null;
+
+        try
+        {
+            return TryScanFromRegistryCore();
+        }
+        catch (Exception ex) when (ex is PlatformNotSupportedException
+                                     or System.Security.SecurityException
+                                     or IOException
+                                     or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Core registry enumeration logic for font discovery on Windows.
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    private static List<SystemFontInfo>? TryScanFromRegistryCore()
+    {
+        const string fontsRegistryKey = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts";
+        var fontDirs = GetFontDirectories();
+        var results = new List<SystemFontInfo>();
+
+        // Enumerate both system-wide and per-user font registry keys.
+        using (RegistryKey? systemKey = Registry.LocalMachine.OpenSubKey(fontsRegistryKey))
+        {
+            EnumerateRegistryFonts(systemKey, fontDirs, results);
+        }
+
+        using (RegistryKey? userKey = Registry.CurrentUser.OpenSubKey(fontsRegistryKey))
+        {
+            EnumerateRegistryFonts(userKey, fontDirs, results);
+        }
+
+        return results.Count > 0 ? results : null;
+    }
+
+    /// <summary>
+    /// Reads all font entries from a single registry key and adds them to the results list.
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    private static void EnumerateRegistryFonts(RegistryKey? key, List<string> fontDirs, List<SystemFontInfo> results)
+    {
+        if (key == null)
+            return;
+
+        string[] valueNames = key.GetValueNames();
+
+        foreach (string name in valueNames)
+        {
+            string? fileName = key.GetValue(name) as string;
+            if (string.IsNullOrEmpty(fileName))
+                continue;
+
+            // Strip the suffix in parentheses, e.g., "(TrueType)" or "(OpenType)".
+            string displayPart = name;
+            int parenIndex = name.IndexOf('(');
+            if (parenIndex > 0)
+            {
+                displayPart = name.Substring(0, parenIndex).TrimEnd();
+            }
+
+            // Only include TrueType/OpenType fonts (skip bitmap, vector, etc.)
+            string ext = Path.GetExtension(fileName);
+            if (!IsFontExtension(ext))
+                continue;
+
+            // Resolve the filename to a full path.
+            string? fullPath = ResolveRegistryFontPath(fileName, fontDirs);
+            if (fullPath == null)
+                continue;
+
+            // Handle bundled TTC entries with " & " separators.
+            if (displayPart.Contains(" & "))
+            {
+                string[] segments = displayPart.Split(new[] { " & " }, StringSplitOptions.None);
+                for (int i = 0; i < segments.Length; i++)
+                {
+                    ParseRegistryDisplayName(segments[i], out string family, out string style);
+                    if (!string.IsNullOrWhiteSpace(family))
+                    {
+                        results.Add(new SystemFontInfo
+                        {
+                            FamilyName = family,
+                            StyleName = style,
+                            FilePath = fullPath,
+                            FaceIndex = i
+                        });
+                    }
+                }
+            }
+            else
+            {
+                ParseRegistryDisplayName(displayPart, out string family, out string style);
+                if (!string.IsNullOrWhiteSpace(family))
+                {
+                    results.Add(new SystemFontInfo
+                    {
+                        FamilyName = family,
+                        StyleName = style,
+                        FilePath = fullPath,
+                        FaceIndex = 0
+                    });
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Parses a registry display name like "Arial Bold Italic" into family and style.
+    /// Known style keywords (Bold, Italic, Light, Medium, etc.) at the end of the
+    /// name are treated as the style; everything before them is the family name.
+    /// </summary>
+    private static void ParseRegistryDisplayName(string displayName, out string familyName, out string styleName)
+    {
+        displayName = displayName.Trim();
+
+        if (string.IsNullOrEmpty(displayName))
+        {
+            familyName = "";
+            styleName = "Regular";
+            return;
+        }
+
+        // Known style tokens that appear at the end of registry display names.
+        string[] knownStyles = { "Bold Italic", "Bold", "Italic", "Light Italic", "Light",
+                                  "Medium Italic", "Medium", "SemiBold Italic", "SemiBold",
+                                  "Thin Italic", "Thin", "ExtraBold Italic", "ExtraBold",
+                                  "ExtraLight Italic", "ExtraLight", "Black Italic", "Black",
+                                  "DemiBold Italic", "DemiBold", "Regular" };
+
+        foreach (string token in knownStyles)
+        {
+            if (displayName.EndsWith(" " + token, StringComparison.OrdinalIgnoreCase))
+            {
+                familyName = displayName.Substring(0, displayName.Length - token.Length - 1).Trim();
+                styleName = token;
+                return;
+            }
+
+            if (string.Equals(displayName, token, StringComparison.OrdinalIgnoreCase))
+            {
+                // The entire display name is a style keyword — treat it as the family.
+                familyName = displayName;
+                styleName = "Regular";
+                return;
+            }
+        }
+
+        // No known style suffix found — it's a Regular font.
+        familyName = displayName;
+        styleName = "Regular";
+    }
+
+    /// <summary>
+    /// Resolves a registry font filename to a full file path using the known font directories.
+    /// </summary>
+    private static string? ResolveRegistryFontPath(string fileName, List<string> fontDirs)
+    {
+        if (Path.IsPathFullyQualified(fileName))
+        {
+            return File.Exists(fileName) ? fileName : null;
+        }
+
+        foreach (string dir in fontDirs)
+        {
+            string candidate = Path.Combine(dir, fileName);
+            if (File.Exists(candidate))
+                return candidate;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Enumerates system fonts using the <c>fc-list</c> command, available on
+    /// Linux and optionally macOS (via Homebrew fontconfig).
+    /// </summary>
+    private static List<SystemFontInfo>? TryScanFromFcList()
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "fc-list",
+                Arguments = "--format=%{family}|%{style}|%{file}|%{index}\\n",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(startInfo);
+            if (process == null)
+                return null;
+
+            string output = process.StandardOutput.ReadToEnd();
+
+            if (!process.WaitForExit(5000))
+            {
+                try { process.Kill(); } catch { /* best effort */ }
+                return null;
+            }
+
+            if (process.ExitCode != 0)
+                return null;
+
+            if (string.IsNullOrWhiteSpace(output))
+                return null;
+
+            var results = new List<SystemFontInfo>();
+            var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (string line in lines)
+            {
+                string trimmed = line.Trim();
+                if (string.IsNullOrEmpty(trimmed))
+                    continue;
+
+                string[] parts = trimmed.Split('|');
+                if (parts.Length < 3)
+                    continue;
+
+                // fc-list may return comma-separated values; use the first one.
+                string family = parts[0].Split(',')[0].Trim();
+                string style = parts[1].Split(',')[0].Trim();
+                string filePath = parts[2].Trim();
+                int faceIndex = 0;
+
+                if (parts.Length >= 4 && int.TryParse(parts[3].Trim(), out int parsed))
+                {
+                    faceIndex = parsed;
+                }
+
+                if (string.IsNullOrWhiteSpace(family) || string.IsNullOrWhiteSpace(filePath))
+                    continue;
+
+                if (string.IsNullOrWhiteSpace(style))
+                    style = "Regular";
+
+                results.Add(new SystemFontInfo
+                {
+                    FamilyName = family,
+                    StyleName = style,
+                    FilePath = filePath,
+                    FaceIndex = faceIndex
+                });
+            }
+
+            return results.Count > 0 ? results : null;
+        }
+        catch
+        {
+            // fc-list not found or any other error — fall back to directory scan.
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Slow fallback: scans all platform font directories and parses every font
+    /// file with <see cref="TtfParser"/> to extract metadata.
+    /// </summary>
+    private static List<SystemFontInfo> ScanFontDirectories()
     {
         var directories = GetFontDirectories();
         var results = new List<SystemFontInfo>();
