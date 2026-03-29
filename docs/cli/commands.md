@@ -260,6 +260,22 @@ kernsmith list-fonts --json
 
 ---
 
+## list-rasterizers
+
+List available rasterizer backends on the current platform. Shows each backend's availability, platform support, and capabilities (color fonts, variable fonts, SDF, outline, system fonts).
+
+```
+kernsmith list-rasterizers
+```
+
+FreeType is the default backend and is available on all platforms. The GDI and DirectWrite backends are Windows-only alternatives.
+
+```bash
+kernsmith list-rasterizers
+```
+
+---
+
 ## info
 
 Show metadata from a font file (TTF, OTF, WOFF). Displays family name, style, glyph count, kerning pairs, variation axes, named instances, and Unicode coverage.

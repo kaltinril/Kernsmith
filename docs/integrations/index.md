@@ -15,6 +15,8 @@ For initial Gum project setup, see the [Gum documentation](https://docs.flatredb
 
 All three framework packages share the same `KernSmithFontCreator` class and depend on `KernSmith.GumCommon` for the shared generation logic.
 
+> **Note:** `KernSmith.FnaGum` is planned but not yet available on NuGet. The project files are maintained in the repository.
+
 ## How It Works
 
 The integration has two layers:
