@@ -40,7 +40,7 @@
       "_enableSearch": true,
       "_appLogoPath": "assets/icon-favicon-48.png",
       "_appFaviconPath": "assets/icon-favicon-32.png",
-      "_appLogoUrl": "index.html"
+      "_appLogoUrl": "/Kernsmith/"
     },
     "template": ["default", "modern"]
   }
