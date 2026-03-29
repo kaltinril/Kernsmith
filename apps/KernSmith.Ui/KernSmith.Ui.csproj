@@ -2,10 +2,21 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>KernSmith.Ui</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Override inherited TFMs to add Windows variant for backend rasterizers -->
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <TargetFrameworks>net10.0;net10.0-windows</TargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup Condition="!$([MSBuild]::IsOSPlatform('Windows'))">
+    <TargetFrameworks>net10.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(TargetFramework.Contains('-windows'))">
+    <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +28,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\KernSmith\KernSmith.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(TargetFramework.Contains('-windows'))">
+    <ProjectReference Include="..\..\src\KernSmith.Rasterizers.Gdi\KernSmith.Rasterizers.Gdi.csproj" />
+    <ProjectReference Include="..\..\src\KernSmith.Rasterizers.DirectWrite.TerraFX\KernSmith.Rasterizers.DirectWrite.TerraFX.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,11 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net8.0-windows;net10.0-windows</TargetFrameworks>
+    <IsPackable>true</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>KernSmith.Rasterizers.Gdi</PackageId>
     <Description>GDI rasterizer backend for KernSmith. Windows-only. Matches BMFont output for pixel-perfect parity.</Description>
+    <PackageProjectUrl>https://github.com/kaltinril/KernSmith</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Authors>Kaltinril (Jeremy Swartwood)</Authors>
+    <PackageTags>kernsmith;gdi;rasterizer;bitmap-font;game-dev;windows</PackageTags>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\KernSmith\KernSmith.csproj" />

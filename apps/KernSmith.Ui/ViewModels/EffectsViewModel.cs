@@ -50,6 +50,14 @@ public class EffectsViewModel : ViewModel
 
     // Variable Font
     public bool HasVariationAxes { get => Get<bool>(); set => Set(value); }
+
+    // Backend capabilities (propagated from FontConfigViewModel when SelectedBackend changes)
+    /// <summary>Whether the selected rasterizer backend supports color fonts.</summary>
+    public bool BackendSupportsColorFonts { get => Get<bool>(); set => Set(value); }
+    /// <summary>Whether the selected rasterizer backend supports variable fonts.</summary>
+    public bool BackendSupportsVariableFonts { get => Get<bool>(); set => Set(value); }
+    /// <summary>Whether the selected rasterizer backend supports SDF rendering.</summary>
+    public bool BackendSupportsSdf { get => Get<bool>(); set => Set(value); }
     public IReadOnlyList<VariationAxis>? VariationAxesList { get => Get<IReadOnlyList<VariationAxis>?>(); set => Set(value); }
     public Dictionary<string, float> VariationAxisValues { get; } = new();
 
@@ -71,6 +79,9 @@ public class EffectsViewModel : ViewModel
         GradientEndColor = "#000000";
         GradientAngle = 90;
         FallbackCharacter = "?";
+        BackendSupportsColorFonts = true;
+        BackendSupportsVariableFonts = true;
+        BackendSupportsSdf = true;
     }
 
     /// <summary>Parses a hex color string (#RRGGBB) into R, G, B bytes. Returns black on invalid input.</summary>

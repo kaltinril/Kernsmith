@@ -31,7 +31,8 @@ public class GenerationService
                 .WithHinting(request.Hinting)
                 .WithSuperSampling(request.SuperSampleLevel)
                 .WithSdf(request.SdfEnabled)
-                .WithColorFont(request.ColorFontEnabled);
+                .WithColorFont(request.ColorFontEnabled)
+                .WithBackend(request.Backend);
 
             if (request.OutlineEnabled)
                 builder.WithOutline(request.OutlineWidth, request.OutlineColorR, request.OutlineColorG, request.OutlineColorB);

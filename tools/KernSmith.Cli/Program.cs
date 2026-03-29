@@ -1,6 +1,16 @@
 using KernSmith.Cli.Commands;
 using KernSmith.Cli.Utilities;
 
+#if WINDOWS
+// Force backend assembly loading so [ModuleInitializer] registers them with RasterizerFactory
+System.Runtime.CompilerServices.RuntimeHelpers.RunModuleConstructor(
+    typeof(KernSmith.Rasterizers.Gdi.GdiRasterizer).Module.ModuleHandle);
+#endif
+#if DIRECTWRITE
+System.Runtime.CompilerServices.RuntimeHelpers.RunModuleConstructor(
+    typeof(KernSmith.Rasterizers.DirectWrite.TerraFX.DirectWriteRasterizer).Module.ModuleHandle);
+#endif
+
 // Handle global flags before command dispatch
 var filtered = new List<string>();
 foreach (var arg in args)
@@ -29,6 +39,7 @@ return processedArgs switch
     ["inspect", .. var rest] => InspectCommand.Execute(rest),
     ["convert", .. var rest] => ConvertCommand.Execute(rest),
     ["list-fonts", .. var rest] => ListFontsCommand.Execute(rest),
+    ["list-rasterizers", .. var rest] => ListRasterizersCommand.Execute(rest),
     ["info", .. var rest] => InfoCommand.Execute(rest),
     _ => UnknownCommand(processedArgs[0])
 };
@@ -46,6 +57,7 @@ static int ShowHelp()
           kernsmith inspect <path>
           kernsmith convert <input> -o <output> [--format <text|xml|binary>]
           kernsmith list-fonts [--filter <pattern>]
+          kernsmith list-rasterizers
           kernsmith info <path>
           kernsmith --help
 
@@ -56,8 +68,9 @@ static int ShowHelp()
           benchmark     Benchmark font generation performance
           inspect       Inspect an existing .fnt file
           convert       Convert between BMFont formats (text/xml/binary)
-          list-fonts    List system-installed fonts
-          info          Show font file metadata (TTF/OTF/WOFF)
+          list-fonts        List system-installed fonts
+          list-rasterizers  List available rasterizer backends on this platform
+          info              Show font file metadata (TTF/OTF/WOFF)
 
         Generate options:
           -f, --font <path>            Font file path (required)
@@ -83,6 +96,7 @@ static int ShowHelp()
           -b, --bold                   Enable synthetic bold
           -i, --italic                 Enable synthetic italic
           --super-sample <n>           Super sampling 1-4 (default: 1)
+          --rasterizer <backend>       Rasterizer backend: freetype (default), gdi, directwrite
           --hinting / --no-hinting     Enable/disable hinting (default: on)
           --height-percent <n>         Height scaling percentage (default: 100)
           --match-char-height          Match rendered to pixel height

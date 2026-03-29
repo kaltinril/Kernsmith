@@ -1,11 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net10.0-windows</TargetFrameworks>
+    <IsPackable>true</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>KernSmith.Rasterizers.DirectWrite.TerraFX</PackageId>
     <Description>DirectWrite rasterizer backend for KernSmith using TerraFX.Interop.Windows. Windows-only. Supports color fonts and variable fonts.</Description>
+    <PackageProjectUrl>https://github.com/kaltinril/KernSmith</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Authors>Kaltinril (Jeremy Swartwood)</Authors>
+    <PackageTags>kernsmith;directwrite;rasterizer;bitmap-font;game-dev;windows;color-font;variable-font</PackageTags>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="TerraFX.Interop.Windows" />

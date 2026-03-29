@@ -285,6 +285,7 @@ public class EffectsPanel : Panel
         var sdfCheck = new CheckBox();
         sdfCheck.Text = "SDF";
         sdfCheck.Width = 220;
+        sdfCheck.IsEnabled = _effects.BackendSupportsSdf;
         sdfCheck.Checked += (_, _) => _effects.SdfEnabled = true;
         sdfCheck.Unchecked += (_, _) => _effects.SdfEnabled = false;
         stack.Children.Add(sdfCheck.Visual);
@@ -300,7 +301,7 @@ public class EffectsPanel : Panel
         var colorCheck = new CheckBox();
         colorCheck.Text = "Color Font";
         colorCheck.Width = 220;
-        colorCheck.IsEnabled = _effects.HasColorGlyphs;
+        colorCheck.IsEnabled = _effects.HasColorGlyphs && _effects.BackendSupportsColorFonts;
         colorCheck.Checked += (_, _) => _effects.ColorFontEnabled = true;
         colorCheck.Unchecked += (_, _) => _effects.ColorFontEnabled = false;
         stack.Children.Add(colorCheck.Visual);
@@ -317,7 +318,7 @@ public class EffectsPanel : Panel
         bool updatingSdfCheck = false;
         bool updatingColorCheck = false;
 
-        // Wire up validation, SDF auto-disable, and color/gradient mutual exclusion
+        // Wire up validation, SDF auto-disable, color/gradient mutual exclusion, and backend capability gating
         _effects.PropertyChanged += (_, e) =>
         {
             // --- Issue #9: SDF auto-disable when incompatible options are active ---
@@ -383,9 +384,26 @@ public class EffectsPanel : Panel
                 colorGradientWarning.Visible = false;
             }
 
-            // Enable/disable color font checkbox based on whether font has color tables
-            if (e.PropertyName is nameof(EffectsViewModel.HasColorGlyphs))
-                colorCheck.IsEnabled = _effects.HasColorGlyphs;
+            // Enable/disable color font checkbox based on font color tables and backend capability
+            if (e.PropertyName is nameof(EffectsViewModel.HasColorGlyphs)
+                or nameof(EffectsViewModel.BackendSupportsColorFonts))
+                colorCheck.IsEnabled = _effects.HasColorGlyphs && _effects.BackendSupportsColorFonts;
+
+            // Enable/disable SDF checkbox based on backend capability
+            if (e.PropertyName is nameof(EffectsViewModel.BackendSupportsSdf))
+            {
+                sdfCheck.IsEnabled = _effects.BackendSupportsSdf;
+                if (!_effects.BackendSupportsSdf && _effects.SdfEnabled)
+                {
+                    _effects.SdfEnabled = false;
+                    if (!updatingSdfCheck)
+                    {
+                        updatingSdfCheck = true;
+                        sdfCheck.IsChecked = false;
+                        updatingSdfCheck = false;
+                    }
+                }
+            }
         };
     }
 
@@ -427,13 +445,22 @@ public class EffectsPanel : Panel
         varFontContainer.IsVisible = false;
         stack.Children.Add(varFontContainer.Visual);
 
+        var varFontUnsupportedWarning = new TextRuntime();
+        varFontUnsupportedWarning.Text = "Rasterizer does not support variable fonts";
+        varFontUnsupportedWarning.Color = Theme.Warning;
+        varFontUnsupportedWarning.Visible = false;
+        stack.Children.Add(varFontUnsupportedWarning);
+
         _effects.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(EffectsViewModel.HasVariationAxes))
+            if (e.PropertyName is nameof(EffectsViewModel.HasVariationAxes)
+                or nameof(EffectsViewModel.BackendSupportsVariableFonts))
             {
                 var hasAxes = _effects.HasVariationAxes;
+                var backendSupports = _effects.BackendSupportsVariableFonts;
                 varFontHeader.IsVisible = hasAxes;
                 varFontContainer.IsVisible = hasAxes;
+                varFontUnsupportedWarning.Visible = hasAxes && !backendSupports;
 
                 // Rebuild axis sliders
                 varFontContainer.Visual.Children.Clear();
@@ -462,6 +489,7 @@ public class EffectsPanel : Panel
                         axisSlider.Maximum = axis.MaxValue;
                         axisSlider.Value = axis.DefaultValue;
                         axisSlider.Width = 100;
+                        axisSlider.IsEnabled = backendSupports;
                         // Use tick frequency of 1 for integer-like axes, finer for float axes
                         axisSlider.TicksFrequency = (axis.MaxValue - axis.MinValue) > 100 ? 1 : 0.1;
                         axisSlider.IsSnapToTickEnabled = (axis.MaxValue - axis.MinValue) > 100;

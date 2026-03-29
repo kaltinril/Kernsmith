@@ -18,6 +18,7 @@ public class FontConfigPanel : Panel
     private readonly MainViewModel _mainViewModel;
     private readonly FontConfigViewModel _fontConfig;
     private readonly AtlasConfigViewModel _atlasConfig;
+    private ComboBox? _rasterizerCombo;
 
     public FontConfigPanel(MainViewModel mainViewModel, FontConfigViewModel fontConfig, AtlasConfigViewModel atlasConfig)
     {
@@ -134,12 +135,14 @@ public class FontConfigPanel : Panel
 
         var familyLabel = new Label();
         familyLabel.Text = "System Font:";
+        familyLabel.IsVisible = _fontConfig.BackendSupportsSystemFonts;
         stack.Children.Add(familyLabel.Visual);
         TooltipService.SetTooltip(familyLabel, "Choose an installed system font");
 
         var familyCombo = new ComboBox();
         familyCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
         familyCombo.Visual.Width = 0;
+        familyCombo.IsVisible = _fontConfig.BackendSupportsSystemFonts;
         stack.Children.Add(familyCombo.Visual);
 
         // Wire system font combo
@@ -150,6 +153,12 @@ public class FontConfigPanel : Panel
                 familyCombo.Items.Clear();
                 foreach (var group in _fontConfig.SystemFonts)
                     familyCombo.Items.Add(group.FamilyName);
+            }
+
+            if (e.PropertyName == nameof(FontConfigViewModel.BackendSupportsSystemFonts))
+            {
+                familyLabel.IsVisible = _fontConfig.BackendSupportsSystemFonts;
+                familyCombo.IsVisible = _fontConfig.BackendSupportsSystemFonts;
             }
         };
 
@@ -247,6 +256,22 @@ public class FontConfigPanel : Panel
         ptLabel.Text = "pt";
         sizeRow.AddChild(ptLabel);
 
+        // --- RASTERIZER section ---
+        var rasterizerLabel = new Label();
+        rasterizerLabel.Text = "Rasterizer:";
+        stack.Children.Add(rasterizerLabel.Visual);
+        TooltipService.SetTooltip(rasterizerLabel, "Rasterizer backend for glyph rendering");
+
+        _rasterizerCombo = new ComboBox();
+        _rasterizerCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        _rasterizerCombo.Visual.Width = 0;
+        foreach (var backend in _fontConfig.AvailableBackends)
+            _rasterizerCombo.Items.Add(backend.ToString());
+        _rasterizerCombo.SelectedIndex = _fontConfig.AvailableBackends.ToList().IndexOf(_fontConfig.SelectedBackend);
+        if (_rasterizerCombo.SelectedIndex < 0) _rasterizerCombo.SelectedIndex = 0;
+        _rasterizerCombo.SelectionChanged += (_, _) => OnRasterizerComboSelectionChanged();
+        stack.Children.Add(_rasterizerCombo.Visual);
+
         AddDivider(stack);
 
         // --- GENERATE button (primary action, visually distinct) ---
@@ -292,6 +317,14 @@ public class FontConfigPanel : Panel
         AddDivider(stack);
         AddSectionHeader(stack, "OUTPUT");
         BuildOutputSection(stack);
+    }
+
+    private void OnRasterizerComboSelectionChanged()
+    {
+        if (_rasterizerCombo == null) return;
+        var idx = _rasterizerCombo.SelectedIndex;
+        if (idx >= 0 && idx < _fontConfig.AvailableBackends.Count)
+            _fontConfig.SelectedBackend = _fontConfig.AvailableBackends[idx];
     }
 
     private static void AddSectionHeader(Gum.Wireframe.GraphicalUiElement parent, string text)

@@ -104,9 +104,12 @@ public sealed class ApiUsabilityTests : IDisposable
     // FromConfig — system font name
     // ------------------------------------------------------------------
 
-    [Fact(Skip = "Requires system font 'Arial' which is not available on Linux CI runners")]
+    [Fact]
     public void FromConfig_SystemFontName_ProducesResult()
     {
+        if (!OperatingSystem.IsWindows())
+            return; // Requires system font 'Arial' (not available on Linux CI runners)
+
         // Arrange
         var config = new BmfcConfig
         {
