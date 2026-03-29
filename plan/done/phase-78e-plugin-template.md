@@ -94,13 +94,12 @@ This replaces the original plan to publish as a NuGet template package -- the te
 
 | File | Change |
 |------|--------|
-| `templates/KernSmith.Rasterizer.Example/` | New -- `dotnet new` template content |
-| `templates/KernSmith.Rasterizer.Example/.template.config/template.json` | New -- template configuration |
-| `templates/KernSmith.Rasterizer.Example/MyRasterizer.cs` | New -- skeleton IRasterizer |
-| `templates/KernSmith.Rasterizer.Example/MyRasterizerCapabilities.cs` | New -- skeleton IRasterizerCapabilities |
-| `templates/KernSmith.Rasterizer.Example/MyRasterizerRegistration.cs` | New -- ModuleInitializer registration |
-| `templates/KernSmith.Rasterizer.Example/KernSmith.Rasterizers.MyRasterizer.csproj` | New -- project file |
-| `templates/KernSmith.Rasterizer.Example/README.md` | New -- step-by-step guide for copying and customizing the template |
+| `samples/KernSmith.Rasterizer.Example/` | New -- copyable example project |
+| `samples/KernSmith.Rasterizer.Example/MyRasterizer.cs` | New -- skeleton IRasterizer |
+| `samples/KernSmith.Rasterizer.Example/MyRasterizerCapabilities.cs` | New -- skeleton IRasterizerCapabilities |
+| `samples/KernSmith.Rasterizer.Example/MyRasterizerRegistration.cs` | New -- ModuleInitializer registration |
+| `samples/KernSmith.Rasterizer.Example/KernSmith.Rasterizers.MyRasterizer.csproj` | New -- project file |
+| `samples/KernSmith.Rasterizer.Example/README.md` | New -- step-by-step guide for copying and customizing the example |
 | `docs/rasterizers/custom-backend.md` | New -- "Writing a Custom Rasterizer Backend" guide |
 | `docs/rasterizers/toc.yml` | Updated -- add custom backend entry |
 | `docs/toc.yml` | Updated -- add custom backend under Rasterizers |

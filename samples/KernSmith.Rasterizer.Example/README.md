@@ -17,7 +17,7 @@ Follow these steps to turn this skeleton into a working rasterizer backend.
 
 ### Step 1: Copy and Rename
 
-Copy the entire `templates/KernSmith.Rasterizer.Example/` directory to a new location in your solution (e.g. `src/KernSmith.Rasterizers.Skia/`).
+Copy the entire `samples/KernSmith.Rasterizer.Example/` directory to a new location in your solution (e.g. `src/KernSmith.Rasterizers.Skia/`).
 
 Rename the files, replacing `MyRasterizer` with your backend name:
 

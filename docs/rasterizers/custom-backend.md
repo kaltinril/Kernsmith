@@ -4,14 +4,13 @@ KernSmith's rasterizer system is pluggable. Any library that implements two inte
 
 ## Quick Start
 
-The fastest way to get started is the `dotnet new` template:
+The fastest way to get started is to copy the example project:
 
 ```bash
-dotnet new install templates/KernSmith.Rasterizer.Example
-dotnet new kernsmith-rasterizer -n MyRasterizer
+cp -r samples/KernSmith.Rasterizer.Example MyRasterizer
 ```
 
-This generates a skeleton project with all required interfaces stubbed out.
+This gives you a skeleton project with all required interfaces stubbed out. See the example's [README](../../samples/KernSmith.Rasterizer.Example/README.md) for a step-by-step customization guide.
 
 ## The Plugin Contract
 
