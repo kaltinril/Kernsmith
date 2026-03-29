@@ -1,6 +1,6 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-21, 55, 60-69, 72-77, 77B, 79, 80 complete. Phase 30 (WASM) is future/exploratory. Phase 78A, 78B, 78BB, 78C, 78CC, 78D, 78E complete. Phase 78G, 78S planned. Phase 99 planning.
+> **Status**: Phases 1-21, 55, 60-69, 72-77, 77B, 79, 80 complete. Phase 30 (WASM) is future/exploratory. Phase 78A, 78B, 78BB, 78C, 78CC, 78D, 78E complete. Phase 78G, 78S planned. Phase 95, 99 planning.
 > **Date**: 2026-03-24
 
 ---
@@ -95,6 +95,7 @@ Output Layer
 | 78C | [DirectWrite Backend](phase-78c-directwrite-backend.md) | DirectWrite-based rasterizer (Windows-only) | In Progress |
 | 78D | [CLI & UI Integration](done/phase-78d-cli-ui-integration.md) | Wire rasterizer selection into CLI and UI | Complete |
 | 78E | [Plugin Template](done/phase-78e-plugin-template.md) | Template for third-party rasterizer plugins | Complete |
+| 95 | [Performance Optimization & Bug Fixes](phase-95-performance-and-bugs.md) | Fix confirmed bugs (outline field, batch encoding, options mutation) and optimize generation performance | Planning |
 | 99 | [BMFont Parity Remaining Gaps](phase-99-bmfont-parity-gaps.md) | Investigate and close remaining metrics differences from Phase 78BB | Planning |
 | 90 | [Native AOT Compliance](phase-90-aot-compliance.md) | Research and implement Native AOT / trimming compatibility for core library | Planning |
 | 100 | [Hiero Advanced Features](phase-100-hiero-advanced-features.md) | Advanced Hiero features requiring new KernSmith properties | Future |

@@ -14,8 +14,10 @@ public class RegressionBaseline
 
     private static readonly Lazy<byte[]> FontData = new(() => File.ReadAllBytes(FontPath));
 
+    private static readonly string Tfm = Path.GetFileName(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar));
+
     private static readonly string BaselineDir = Path.Combine(
-        AppContext.BaseDirectory, "..", "..", "..", "..", "..", "output", "baseline-regression");
+        AppContext.BaseDirectory, "..", "..", "..", "..", "..", "output", $"baseline-regression-{Tfm}");
 
     private record BaselineConfig(string Name, Action<BmFontBuilder> Configure);
 

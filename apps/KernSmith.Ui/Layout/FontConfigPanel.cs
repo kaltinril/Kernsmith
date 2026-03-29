@@ -101,6 +101,7 @@ public class FontConfigPanel : Panel
         faceSelectionRow.AddChild(faceLabel);
 
         var faceCombo = new ComboBox();
+        faceCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         faceCombo.Width = 80;
         faceSelectionRow.AddChild(faceCombo);
 
@@ -140,6 +141,7 @@ public class FontConfigPanel : Panel
         TooltipService.SetTooltip(familyLabel, "Choose an installed system font");
 
         var familyCombo = new ComboBox();
+        familyCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         familyCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
         familyCombo.Visual.Width = 0;
         stack.Children.Add(familyCombo.Visual);
@@ -255,6 +257,7 @@ public class FontConfigPanel : Panel
         TooltipService.SetTooltip(rasterizerLabel, "Rasterizer backend for glyph rendering");
 
         _rasterizerCombo = new ComboBox();
+        _rasterizerCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         _rasterizerCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
         _rasterizerCombo.Visual.Width = 0;
         foreach (var backend in _fontConfig.AvailableBackends)
@@ -386,6 +389,7 @@ public class FontConfigPanel : Panel
         TooltipService.SetTooltip(sizeLabel, "Atlas texture size in pixels");
 
         var maxWidthCombo = new ComboBox();
+        maxWidthCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         maxWidthCombo.Width = 80;
         foreach (var s in sizes) maxWidthCombo.Items.Add(s.ToString());
         maxWidthCombo.SelectedIndex = Array.IndexOf(sizes, _atlasConfig.MaxWidth);
@@ -402,6 +406,7 @@ public class FontConfigPanel : Panel
         maxSizeGrid.AddChild(xLabel, row: 0, column: 2);
 
         var maxHeightCombo = new ComboBox();
+        maxHeightCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         maxHeightCombo.Width = 80;
         foreach (var s in sizes) maxHeightCombo.Items.Add(s.ToString());
         maxHeightCombo.SelectedIndex = Array.IndexOf(sizes, _atlasConfig.MaxHeight);
@@ -438,6 +443,7 @@ public class FontConfigPanel : Panel
         TooltipService.SetTooltip(packAlgoLabel, "Glyph packing algorithm for the atlas");
 
         var packAlgoCombo = new ComboBox();
+        packAlgoCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         packAlgoCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
         packAlgoCombo.Visual.Width = 0;
         packAlgoCombo.Items.Add("MaxRects");
