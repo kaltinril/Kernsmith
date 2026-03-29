@@ -6,3 +6,5 @@
   href: gdi.md
 - name: DirectWrite
   href: directwrite.md
+- name: Writing a Custom Backend
+  href: custom-backend.md
