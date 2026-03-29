@@ -13,7 +13,7 @@ The `KernSmith` NuGet package is the core library that powers bitmap font genera
 
 | Namespace | Purpose |
 |-----------|---------|
-| `KernSmith` | Entry point (<xref:KernSmith.BmFont>), configuration types, exceptions, enums |
+| `KernSmith` | Entry point (<xref:KernSmith.BmFont>), configuration types (<xref:KernSmith.FontGeneratorOptions>, <xref:KernSmith.CharacterSet>, <xref:KernSmith.Padding>, <xref:KernSmith.Spacing>, <xref:KernSmith.ChannelConfig>, <xref:KernSmith.BmfcConfig>, <xref:KernSmith.AtlasSizeConstraints>, <xref:KernSmith.AntiAliasMode>, <xref:KernSmith.OutputFormat>, <xref:KernSmith.TextureFormat>), exceptions, enums |
 | `KernSmith.Font` | Font reading and TTF table parsing |
 | `KernSmith.Font.Models` | Data models: <xref:KernSmith.Font.Models.FontInfo>, <xref:KernSmith.Font.Models.KerningPair>, <xref:KernSmith.Font.Models.GlyphMetrics> |
 | `KernSmith.Font.Tables` | Parsed table structures: <xref:KernSmith.Font.Tables.HeadTable>, <xref:KernSmith.Font.Tables.HheaTable>, <xref:KernSmith.Font.Tables.Os2Metrics>, <xref:KernSmith.Font.Tables.NameInfo> |

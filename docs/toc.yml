@@ -1,10 +1,13 @@
 - name: Core Library
-  href: core/
+  href: core/index.md
 - name: CLI Tool
-  href: cli/
-- name: UI Application
-  href: ui/
+  href: cli/index.md
+  items:
+    - name: Command Reference
+      href: cli/commands.md
+- name: UI Guide
+  href: ui/index.md
 - name: Integrations
-  href: integrations/
+  href: integrations/index.md
 - name: Alternative Rasterizers
-  href: rasterizers/
+  href: rasterizers/index.md

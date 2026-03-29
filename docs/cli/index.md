@@ -37,6 +37,7 @@ kernsmith generate --system-font "Arial" -s 32
 | [inspect](commands.md#inspect) | Inspect an existing `.fnt` file |
 | [convert](commands.md#convert) | Convert between `.fnt` formats (text, XML, binary) |
 | [list-fonts](commands.md#list-fonts) | List system-installed fonts |
+| [list-rasterizers](commands.md#list-rasterizers) | List available rasterizer backends |
 | [info](commands.md#info) | Show metadata from a font file |
 
 See the [Command Reference](commands.md) for full details on every command and flag.

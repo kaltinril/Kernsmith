@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Split publish workflow into parallel ubuntu/windows pack jobs for faster CI
 - NuGet metadata (readme, tags, authors, URL) for rasterizer packages
 - Updated RELEASING.md with multi-package architecture docs
+- Comprehensive UI guide for docs site (layout, workflows, shortcuts, all features)
+- Docs for `list-rasterizers` CLI command
+- Integrations and Rasterizers sections on docs landing page
+
+### Fixed
+
+- Docs site logo now links to site root from any page
+- Docs sidebar shows all sections instead of hiding behind section scoping
+- CLI tests use `dotnet exec` instead of `dotnet run` — fixes net10.0 test host hang and speeds up tests ~20x
 
 ### Changed
 
