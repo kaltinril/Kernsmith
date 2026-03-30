@@ -737,10 +737,10 @@ internal sealed class GenerateCommand
         Console.WriteLine($"[dry-run] Atlas:     max {options.MaxTextureSize}x{options.MaxTextureSize}, {(options.PackingAlgorithm == PackingAlgorithm.MaxRects ? "maxrects" : "skyline")} packer");
 
         var effects = new List<string>();
-        if (options.Bold) effects.Add("bold");
-        if (options.Italic) effects.Add("italic");
         if (options.ForceSyntheticBold) effects.Add("synthetic-bold");
+        else if (options.Bold) effects.Add("bold");
         if (options.ForceSyntheticItalic) effects.Add("synthetic-italic");
+        else if (options.Italic) effects.Add("italic");
         if (options.Sdf) effects.Add("SDF");
         if (options.Outline > 0) effects.Add($"outline {options.Outline}px");
         if (options.GradientTop != null) effects.Add($"gradient {options.GradientTop}->{options.GradientBottom}");

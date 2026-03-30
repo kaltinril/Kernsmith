@@ -17,6 +17,8 @@ internal sealed class CliOptions
     public bool Sdf { get; set; }
     public bool Bold { get; set; }
     public bool Italic { get; set; }
+    public bool ForceSyntheticBold { get; set; }
+    public bool ForceSyntheticItalic { get; set; }
 
     // Characters
     public string? CharsetPreset { get; set; } = "ascii";
