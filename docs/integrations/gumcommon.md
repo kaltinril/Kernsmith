@@ -39,6 +39,19 @@ options.SuperSampleLevel = 2; // Add 2x super sampling
 BmFontResult result = BmFont.GenerateFromSystem(bmfcSave.FontName, options);
 ```
 
+## Font Registration
+
+`GumFontGenerator.Generate()` calls `BmFont.GenerateFromSystem()` internally. On platforms without system font access, register font data first so that family names resolve correctly:
+
+```csharp
+using KernSmith;
+
+BmFont.RegisterFont("Arial", arialFontData);
+BmFont.RegisterFont("Arial", arialBoldData, style: "Bold");
+```
+
+See the [MonoGameGum](monogamegum.md) or [KniGum](knigum.md) integration pages for full setup examples.
+
 ## Channel Configuration
 
 `GumFontGenerator` automatically configures texture channels to match BMFont's conventions:
