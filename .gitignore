@@ -398,3 +398,6 @@ FodyWeavers.xsd
 # Environment files
 .env
 **/.env
+
+# Temporary test output
+/temp-test/

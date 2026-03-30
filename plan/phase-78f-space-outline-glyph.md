@@ -1,6 +1,6 @@
 # Phase 78F -- Space Character Outline Rendering
 
-> **Status**: Planning
+> **Status**: Complete
 > **Size**: Small
 > **Created**: 2026-03-27
 > **Dependencies**: None
@@ -29,11 +29,11 @@ When outline = 0, space should remain width=0 height=0 (no pixels needed).
 
 ## Tasks
 
-- [ ] Identify where zero-size glyphs are skipped in the rasterization/effects pipeline
-- [ ] When outline > 0, generate an outline bitmap for glyphs that have advance width but no visible pixels
-- [ ] Verify all rasterizer backends (FreeType, GDI, DirectWrite) produce consistent results
-- [ ] Test with various outline thicknesses and font sizes
-- [ ] Compare output against BMFont64 for space character
+- [x] Identify where zero-size glyphs are skipped in the rasterization/effects pipeline
+- [x] When outline > 0, generate an outline bitmap for glyphs that have advance width but no visible pixels
+- [x] Verify all rasterizer backends (FreeType, GDI, DirectWrite) produce consistent results
+- [x] Test with various outline thicknesses and font sizes
+- [x] Compare output against BMFont64 for space character
 
 ## Files to Investigate
 
@@ -42,3 +42,11 @@ When outline = 0, space should remain width=0 height=0 (no pixels needed).
 | `src/KernSmith/BmFont.cs` | Main pipeline -- likely where zero-size glyphs are filtered out |
 | `src/KernSmith/Rasterizer/GlyphCompositor.cs` | Effects pipeline -- outline applied here |
 | `src/KernSmith/Rasterizer/FreeTypeRasterizer.cs` | May return null/empty for space |
+
+## Resolution
+
+Zero-size glyphs with advance > 0 now get a synthetic transparent bitmap of size `1 + 2*outlineThickness` when outline > 0. The change was made in `BmFont.cs` `GenerateCore()` after rasterization but before atlas packing -- glyphs that came back with no pixel data but a nonzero advance width are given a transparent bitmap so the outline/effects pipeline has something to work with.
+
+This matches open-source BMFont behavior, where `DrawGlyphFromOutline` creates a 1x1 bitmap and then `AddOutline` expands it by the outline thickness on all sides.
+
+There is a minor width discrepancy versus BMFont64: KernSmith produces 9x9 while BMFont64 produces 11x9 for outline=4. This is documented in Phase 78G issue #9. There is no visual impact -- the atlas area occupied by these glyphs is entirely transparent.
