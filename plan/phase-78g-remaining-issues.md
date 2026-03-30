@@ -38,6 +38,7 @@ Each issue is ranked 1 (low) to 5 (high) on three dimensions:
 | 16 | UI controls for ForceSynthetic | 3 | 1 | 3 | Open |
 | 17 | Documentation for bold/italic | 4 | 1 | 3 | Open |
 | 18 | DW synthetic bold strength | — | — | — | **Accepted** (DW limitation) |
+| 19 | File vs system font bold/italic behavior | 4 | 1 | 4 | Open (document) |
 
 **Legend**: Ease = ease to implement (5=easy). Break Risk = chance of breaking other things (5=high risk). Importance = importance to implement (5=critical).
 
@@ -154,6 +155,16 @@ Missing documentation:
 ### 18. DW synthetic bold strength — Accepted limitation
 
 DirectWrite's `DWRITE_FONT_SIMULATIONS_BOLD` has a fixed internal strength that cannot be tuned. It produces lighter synthetic bold than FreeType's `ppem/24`. Users who want heavier text can use an outline with matching color as a workaround.
+
+### 19. Bold/italic behavior differs between file-based and system font paths — Document
+
+> Ease: 4 | Break Risk: 1 | Importance: 4
+
+When using `--font path.ttf`, bold/italic is always synthetic (FreeType emboldening/oblique on the provided file). The tool won't search for sibling bold/italic font files. `--bold` and `--synthetic-bold` produce identical results because there's no native bold face to distinguish from.
+
+When using `--system-font FamilyName`, bold/italic tries the native face first (e.g., "Georgia Bold"), falling back to synthetic. `--synthetic-bold` forces synthetic on the regular face, skipping the native lookup.
+
+This needs to be clearly documented in CLI help text, docs, and UI tooltips so users understand: use `--system-font` for real bold/italic face selection, use `--font` for direct file control (synthetic only).
 
 ## Files Reference
 
