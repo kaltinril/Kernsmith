@@ -330,23 +330,16 @@ if (compare)
     var allBackendNames = new[] { "freetype", "gdi", "directwrite", "bmfont" };
     var allBackendLabels = new[] { "FreeType", "GDI", "DW", "BMFont" };
 
-    var synBackendNames = new[] { "freetype", "gdi", "directwrite", "bmfont" };
-    var synBackendLabels = new[] { "FreeType", "GDI", "DW", "BMFont (real)" };
-
     var mixBoldBackendNames = new[] { "ft-norm", "ft-real", "ft-syn", "gdi-norm", "gdi-real", "gdi-syn", "dw-norm", "dw-real", "dw-syn", "bmf-norm", "bmf-style" };
     var mixBoldBackendLabels = new[] { "FT", "FT real", "FT syn", "GDI", "GDI real", "GDI syn", "DW", "DW real", "DW syn", "BMF", "BMF style" };
 
-    // Fixed comparison outputs matching the original CompareGlyphs naming
+    // Fixed comparison outputs
     var comparisons = new (string Prefix, string OutputName, string[] Backends, string[] Labels, string Title)[]
     {
         ("fire", "comparison.png", allBackendNames, allBackendLabels, "Fire config — outlined font, all backends"),
         ("plain", "comparison2.png", allBackendNames, allBackendLabels, "Plain config — Georgia 56pt regular, all backends"),
-        ("plain-bold", "comparison3.png", allBackendNames, allBackendLabels, "Real bold — Georgia Bold 56pt (native bold face)"),
-        ("plain-italic", "comparison4.png", allBackendNames, allBackendLabels, "Real italic — Georgia Italic 56pt (native italic face)"),
-        ("plain-synbold", "comparison5.png", synBackendNames, synBackendLabels, "Synthetic bold — Georgia 56pt regular + synthetic emboldening"),
-        ("plain-synitalic", "comparison6.png", synBackendNames, synBackendLabels, "Synthetic italic — Georgia 56pt regular + synthetic oblique"),
-        ("mix-bold", "comparison7.png", mixBoldBackendNames, mixBoldBackendLabels, "Bold — normal vs real face vs synthetic per backend"),
-        ("mix-italic", "comparison8.png", mixBoldBackendNames, mixBoldBackendLabels, "Italic — normal vs real face vs synthetic per backend"),
+        ("mix-bold", "comparison3.png", mixBoldBackendNames, mixBoldBackendLabels, "Bold — normal vs real face vs synthetic per backend"),
+        ("mix-italic", "comparison4.png", mixBoldBackendNames, mixBoldBackendLabels, "Italic — normal vs real face vs synthetic per backend"),
     };
 
     // Create mix comparison files by copying/linking existing outputs

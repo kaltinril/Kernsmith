@@ -558,10 +558,11 @@ internal sealed class FreeTypeRasterizer : IRasterizer
     /// </summary>
     private static unsafe void EmboldenGlyph(FT_GlyphSlotRec_* slot, FT_FaceRec_* face)
     {
-        // GDI's synthetic bold is lighter than FreeType's default (ppem/24).
-        // Use ppem/36 as a closer approximation: ~0.9px at 32, ~1.3px at 48, ~2px at 72.
+        // Use FreeType's default emboldening strength (ppem/24) for visible synthetic bold.
+        // ~1.3px at 32, ~2px at 48, ~3px at 72. Heavier than GDI's ~1px but more
+        // clearly distinguishable from regular weight.
         var ppem = (int)face->size->metrics.y_ppem;
-        var strength = Math.Max(32, ppem * 64 / 36); // 26.6 fixed-point, minimum 0.5px
+        var strength = Math.Max(32, ppem * 64 / 24); // 26.6 fixed-point, minimum 0.5px
 
         // Only embolden outline glyphs; bitmap glyphs would need FT_Bitmap_Embolden.
         if (slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_OUTLINE)
