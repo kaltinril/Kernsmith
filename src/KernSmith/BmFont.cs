@@ -85,6 +85,21 @@ public static class BmFont
             else
                 rasterizer.LoadFont(fontData, options.FaceIndex);
 
+            // Guard: don't apply synthetic bold/italic on fonts that are already styled.
+            // FreeType checks style_flags internally, but GDI and DirectWrite don't —
+            // this ensures consistent behavior across all backends.
+            // ForceSynthetic overrides: the user explicitly wants synthetic on top.
+            if (fontInfo.IsBold && options.Bold && !options.ForceSyntheticBold)
+            {
+                options.Bold = false;
+                options.ForceSyntheticBold = false;
+            }
+            if (fontInfo.IsItalic && options.Italic && !options.ForceSyntheticItalic)
+            {
+                options.Italic = false;
+                options.ForceSyntheticItalic = false;
+            }
+
             if (rasterizer.Capabilities.SupportsVariableFonts
                 && options.VariationAxes is { Count: > 0 }
                 && fontInfo.VariationAxes is { Count: > 0 })
