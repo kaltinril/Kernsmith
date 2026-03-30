@@ -34,6 +34,10 @@ Each issue is ranked 1 (low) to 5 (high) on three dimensions:
 | 12 | ForceSyntheticBold/Italic API | — | — | — | **Resolved** |
 | 13 | DW system font simulations bug | — | — | — | **Resolved** |
 | 14 | GDI synthetic italic via MAT2 | — | — | — | **Resolved** |
+| 15 | CLI flags for ForceSynthetic | 4 | 1 | 3 | Open |
+| 16 | UI controls for ForceSynthetic | 3 | 1 | 3 | Open |
+| 17 | Documentation for bold/italic | 4 | 1 | 3 | Open |
+| 18 | DW synthetic bold strength | — | — | — | **Accepted** (DW limitation) |
 
 **Legend**: Ease = ease to implement (5=easy). Break Risk = chance of breaking other things (5=high risk). Importance = importance to implement (5=critical).
 
@@ -97,7 +101,7 @@ KernSmith produces **9x9** for outline=4 (formula: `1 + 2*thickness`), matching 
 
 ### 10. ~~Comparison Tool Consolidation~~ — Resolved
 
-CompareGlyphs logic merged into GenerateAll. Produces 8 fixed comparison images (comparison.png through comparison8.png) plus per-config comparisons. Output goes to `tests/bmfont-compare/output/`. Supports `--no-compare` and `--config` flags. Includes bold/italic comparisons: real face vs synthetic per backend.
+CompareGlyphs logic merged into GenerateAll. Produces 4 fixed comparison images plus per-config comparisons. Output goes to `tests/bmfont-compare/output/`. Supports `--no-compare` and `--config` flags. comparison3/4 show bold/italic with 11 columns: normal vs real face vs synthetic per backend (FT, GDI, DW, BMFont).
 
 ### 11. ~~FromConfig bold/italic bug~~ — Resolved
 
@@ -114,6 +118,42 @@ Added `ForceSyntheticBold` and `ForceSyntheticItalic` to `FontGeneratorOptions`,
 ### 14. ~~GDI synthetic italic via MAT2~~ — Resolved
 
 GDI has no built-in synthetic oblique API like FreeType's `FT_GlyphSlot_Oblique`. When `ForceSyntheticItalic` is set, `LfItalic` is set to 0 (preventing GDI font mapper from selecting the real italic face) and a horizontal shear transform is applied via `MAT2.EM21` in `GetGlyphOutlineW` (~20° slant, `tan(20°) ≈ 0.364`).
+
+## Remaining Work
+
+### 15. CLI flags for ForceSynthetic — Open
+
+> Ease: 4 | Break Risk: 1 | Importance: 3
+
+CLI has `-b`/`--bold` and `-i`/`--italic` but no `--synthetic-bold` or `--synthetic-italic` flags. Add these to `GenerateCommand.cs`.
+
+### 16. UI controls for ForceSynthetic — Open
+
+> Ease: 3 | Break Risk: 1 | Importance: 3
+
+UI has Bold/Italic checkboxes but no synthetic option. Add a second column of checkboxes:
+
+```
+[ ] Bold      [ ] Synthetic bold
+[ ] Italic    [ ] Synthetic italic
+[ ] AA        [ ] Hinting
+```
+
+"Synthetic bold/italic" auto-checks Bold/Italic when enabled. Unchecking Bold/Italic disables the synthetic checkbox. Tooltips explain native face vs synthetic emboldening/oblique.
+
+### 17. Documentation for bold/italic and ForceSynthetic — Open
+
+> Ease: 4 | Break Risk: 1 | Importance: 3
+
+Missing documentation:
+- CLI docs (`tools/KernSmith.Cli/README.md`, `docs/cli/commands.md`) describe `-b`/`-i` as "synthetic" when the actual behavior is "native face with synthetic fallback"
+- Root `README.md` has no examples of `.WithBold()`, `.WithForceSyntheticBold()`
+- Core docs (`docs/core/index.md`) don't mention bold/italic API at all
+- `.bmfc` config roundtrip for `ForceSyntheticBold`/`ForceSyntheticItalic` not implemented in `BmfcConfigReader`/`BmfcConfigWriter`
+
+### 18. DW synthetic bold strength — Accepted limitation
+
+DirectWrite's `DWRITE_FONT_SIMULATIONS_BOLD` has a fixed internal strength that cannot be tuned. It produces lighter synthetic bold than FreeType's `ppem/24`. Users who want heavier text can use an outline with matching color as a workaround.
 
 ## Files Reference
 
