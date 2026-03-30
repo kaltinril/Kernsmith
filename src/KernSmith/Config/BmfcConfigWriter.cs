@@ -146,6 +146,10 @@ public static class BmfcConfigWriter
             extensions.AppendLine("autofit=1");
         if (options.Backend != RasterizerBackend.FreeType)
             extensions.AppendLine($"rasterizer={options.Backend.ToString().ToLowerInvariant()}");
+        if (options.ForceSyntheticBold)
+            extensions.AppendLine("forceSyntheticBold=1");
+        if (options.ForceSyntheticItalic)
+            extensions.AppendLine("forceSyntheticItalic=1");
 
         if (extensions.Length > 0)
         {

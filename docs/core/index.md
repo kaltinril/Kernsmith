@@ -49,6 +49,17 @@ The output of font generation. Provides access to:
 
 Configuration for the generation pipeline: font size, character set, effects (outline, gradient, shadow), atlas settings, SDF, super sampling, variable font axes, and more.
 
+#### Bold / Italic Properties
+
+| Property | Description |
+|----------|-------------|
+| `Bold` | Request bold -- uses native bold face when available (system fonts), falls back to synthetic |
+| `Italic` | Request italic -- uses native italic face when available (system fonts), falls back to synthetic |
+| `ForceSyntheticBold` | Force synthetic bold, skip native bold face lookup |
+| `ForceSyntheticItalic` | Force synthetic italic, skip native italic face lookup |
+
+When loading from a file path, bold/italic is always synthetic -- `Bold` and `ForceSyntheticBold` produce identical results. Use `GenerateFromSystem()` or `WithSystemFont()` for native face resolution. GDI backend limitation: cannot apply synthetic bold when a native bold face exists -- use FreeType or DirectWrite.
+
 ### CharacterSet
 
 Defines which Unicode codepoints to include. Provides presets (`Ascii`, `ExtendedAscii`, `Latin`) and factory methods (`FromChars`, `FromRanges`, `Union`).

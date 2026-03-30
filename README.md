@@ -105,6 +105,30 @@ var result = BmFont.Builder()
 result.ToFile("output/myfont");
 ```
 
+### Bold and Italic
+
+```csharp
+var result = BmFont.Builder()
+    .WithSystemFont("Arial")
+    .WithSize(32)
+    .WithBold()                   // Uses native bold face, falls back to synthetic
+    .WithItalic()                 // Uses native italic face, falls back to synthetic
+    .Build();
+
+// Force synthetic styling (skip native face lookup)
+var result2 = BmFont.Builder()
+    .WithSystemFont("Arial")
+    .WithSize(32)
+    .WithForceSyntheticBold()     // Always applies synthetic bold
+    .WithForceSyntheticItalic()   // Always applies synthetic italic
+    .Build();
+```
+
+- `WithBold()` / `WithItalic()` use the native bold/italic face when available (system fonts), falling back to synthetic
+- `WithForceSyntheticBold()` / `WithForceSyntheticItalic()` always apply synthetic styling, skipping native face lookup
+- When using a file path (not a system font), bold/italic is always synthetic -- `WithBold()` and `WithForceSyntheticBold()` produce identical results
+- For native vs synthetic distinction, use `WithSystemFont()` so the font family can be searched for a matching face
+
 You can also start the builder from a `.bmfc` config and override individual settings:
 
 ```csharp

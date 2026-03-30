@@ -35,10 +35,14 @@ kernsmith generate -f <font> -s <size> [options]
 
 | Flag | Description |
 |------|-------------|
-| `-b, --bold` | Enable synthetic bold |
-| `-i, --italic` | Enable synthetic italic |
+| `-b, --bold` | Enable bold (uses native face when available, falls back to synthetic) |
+| `-i, --italic` | Enable italic (uses native face when available, falls back to synthetic) |
+| `--synthetic-bold` | Force synthetic bold, skip native bold face lookup |
+| `--synthetic-italic` | Force synthetic italic, skip native italic face lookup |
 | `--color-font` | Enable color font rendering (COLR/CPAL) |
 | `--color-palette <n>` | Color palette index (default: 0) |
+
+With `--font` (file path), `--bold` and `--synthetic-bold` produce identical results since there is no font family to search. With `--system-font`, `--bold` tries the native bold face first; `--synthetic-bold` forces synthetic on the regular face. GDI backend limitation: cannot apply synthetic bold when a native bold face exists -- use FreeType or DirectWrite.
 
 ### Character Set
 

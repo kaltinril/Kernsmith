@@ -108,6 +108,12 @@ public static class BmfcConfigReader
                     case "isItalic":
                         options.Italic = value == "1";
                         break;
+                    case "forceSyntheticBold":
+                        options.ForceSyntheticBold = value == "1";
+                        break;
+                    case "forceSyntheticItalic":
+                        options.ForceSyntheticItalic = value == "1";
+                        break;
                     case "useSmoothing":
                         if (value == "0")
                             options.AntiAlias = AntiAliasMode.None;
