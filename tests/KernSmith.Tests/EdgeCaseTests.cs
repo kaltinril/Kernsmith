@@ -428,4 +428,78 @@ public class EdgeCaseTests
     }
 
     #endregion
+
+    #region B4.6 — Phase 78F: Space glyph outline sizing
+
+    [Fact]
+    public void Generate_WithOutline4_SpaceCharHasExpectedSize()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+        var outlineThickness = 4;
+        var expectedSize = 1 + 2 * outlineThickness; // 9
+
+        // Act
+        var result = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars(" A"),
+            Outline = outlineThickness
+        });
+
+        // Assert — space (char 32) should get a synthetic bitmap of 1 + 2*outline
+        var space = result.Model.Characters.First(c => c.Id == 32);
+        space.Width.ShouldBe(expectedSize,
+            "space with outline=4 should have width = 1 + 2*4 = 9");
+        space.Height.ShouldBe(expectedSize,
+            "space with outline=4 should have height = 1 + 2*4 = 9");
+    }
+
+    [Fact]
+    public void Generate_WithOutline0_SpaceCharRemainsZeroSize()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars(" A"),
+            Outline = 0
+        });
+
+        // Assert — without outline, space should have no bitmap
+        var space = result.Model.Characters.First(c => c.Id == 32);
+        space.Width.ShouldBe(0,
+            "space without outline should have width = 0");
+        space.Height.ShouldBe(0,
+            "space without outline should have height = 0");
+    }
+
+    [Fact]
+    public void Generate_WithOutline2_SpaceCharHasExpectedSize()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+        var outlineThickness = 2;
+        var expectedSize = 1 + 2 * outlineThickness; // 5
+
+        // Act
+        var result = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars(" A"),
+            Outline = outlineThickness
+        });
+
+        // Assert — space with outline=2 should get width/height = 1 + 2*2 = 5
+        var space = result.Model.Characters.First(c => c.Id == 32);
+        space.Width.ShouldBe(expectedSize,
+            "space with outline=2 should have width = 1 + 2*2 = 5");
+        space.Height.ShouldBe(expectedSize,
+            "space with outline=2 should have height = 1 + 2*2 = 5");
+    }
+
+    #endregion
 }

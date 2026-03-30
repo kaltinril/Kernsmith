@@ -54,7 +54,15 @@ BMFont64 uses `alphaChnl`/`redChnl`/`greenChnl`/`blueChnl` settings (values 0-4)
 
 KernSmith uses an `outlineColor` extension instead of the standard channel encoding. Need to support the standard BMFont channel outline behavior as a baseline, with KernSmith extensions overriding when present. See `reference/REF-08-bmfont-internals.md` sections 3 and 13 for the channel encoding spec.
 
-### 9. Comparison Tool Consolidation
+### 9. Space Outline Width Discrepancy vs BMFont64
+
+Phase 78F added empty atlas entries for space (char 32) when outline > 0, using a `1 + 2*outlineThickness` base matching the open-source BMFont `DrawGlyphFromOutline` logic (1x1 transparent image expanded by `AddOutline`). KernSmith produces **9x9** for outline=4, but BMFont64.exe produces **11x9** (width=11, height=9) with identical settings (padding=0, aa=1, forceZero=0).
+
+Investigation traced through the full open-source BMFont pipeline (`DrawGlyphFromOutline` → `TrimLeftAndRight` → AA downscale → empty scanline removal → `AddOutline` → `AddChar` with padding) and confirmed it should produce 9x9. GDI `GetGlyphOutlineW` returns `gmBlackBoxX=1` for Georgia space at size 56, and `GetCharABCWidthsW` returns `abcB=1`. The 2px width difference is unexplained from the open-source code (SourceForge trunk and GitHub mirrors both show the same 1x1 early return). BMFont64 is the same codebase (64-bit build, not a fork), so the difference may be a version-specific change not yet in the public source.
+
+The content is entirely transparent, so the difference has no visual impact. Low priority unless a consumer depends on exact width matching.
+
+### 10. Comparison Tool Consolidation
 
 `CompareGlyphs` is still a separate tool from `GenerateAll` in `tests/bmfont-compare/`. Per the user's step 1-5 workflow, these should be merged into a single tool that generates output from all backends and produces comparison images in one run.
 
@@ -66,5 +74,6 @@ KernSmith uses an `outlineColor` extension instead of the standard channel encod
 | `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs` | Issue 6 |
 | `src/KernSmith/BmFont.cs` | Issue 7 (shared metrics pipeline) |
 | `src/KernSmith/Atlas/AtlasBuilder.cs` | Issue 8 (channel encoding) |
-| `tests/bmfont-compare/` | Issues 5, 9 |
+| `src/KernSmith/BmFont.cs` | Issue 9 (Phase 78F space outline logic) |
+| `tests/bmfont-compare/` | Issues 5, 10 |
 | `reference/REF-08-bmfont-internals.md` | Issue 8 (channel encoding spec) |

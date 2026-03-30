@@ -214,6 +214,32 @@ public static class BmFont
         var glyphs = rasterResult.Glyphs;
         var failedCodepoints = rasterResult.FailedCodepoints;
 
+        // Phase 78F: BMFont creates a 1x1 transparent image for glyphs with no
+        // contours (e.g. space), then AddOutline expands it to (1 + 2*thickness).
+        // Match that behavior so the atlas reserves space and the .fnt has correct dims.
+        if (options.Outline > 0)
+        {
+            var outlineSize = 1 + options.Outline * 2;
+            glyphs = glyphs.Select(g =>
+            {
+                if (g.Width == 0 && g.Height == 0 && g.Metrics.Advance > 0)
+                {
+                    return new RasterizedGlyph
+                    {
+                        Codepoint = g.Codepoint,
+                        GlyphIndex = g.GlyphIndex,
+                        Width = outlineSize,
+                        Height = outlineSize,
+                        Pitch = outlineSize,
+                        BitmapData = new byte[outlineSize * outlineSize],
+                        Metrics = g.Metrics,
+                        Format = g.Format,
+                    };
+                }
+                return g;
+            }).ToList();
+        }
+
         // 5. Pack into atlas
         var packer = options.Packer ?? (options.PackingAlgorithm == PackingAlgorithm.Skyline
             ? new SkylinePacker()
