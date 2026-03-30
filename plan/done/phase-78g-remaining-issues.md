@@ -1,11 +1,11 @@
 # Phase 78G -- Remaining Rasterizer Issues
 
-> **Status**: In Progress
+> **Status**: Complete
 > **Size**: Small-Medium
 > **Created**: 2026-03-27
 > **Updated**: 2026-03-29
 > **Dependencies**: Phase 78C (DirectWrite backend)
-> **Parent**: [Phase 78 -- Pluggable Rasterizer Backends](phase-78-pluggable-rasterizers.md)
+> **Parent**: [Phase 78 -- Pluggable Rasterizer Backends](../phase-78-pluggable-rasterizers.md)
 > **Goal**: Track and resolve remaining open issues discovered during Phase 78C DirectWrite work.
 
 ---
@@ -20,12 +20,12 @@ Each issue is ranked 1 (low) to 5 (high) on three dimensions:
 
 | # | Issue | Ease | Break Risk | Importance | Status |
 |---|-------|------|------------|------------|--------|
-| 1 | Color Font Rendering (DW) | 1 | 2 | 2 | Open |
-| 2 | Variable Font Support (DW) | 2 | 2 | 2 | Open |
+| 1 | Color Font Rendering (DW) | 1 | 2 | 2 | **Deferred** → Phase 150 |
+| 2 | Variable Font Support (DW) | 2 | 2 | 2 | **Deferred** → Phase 150 |
 | 3 | Synthetic Bold/Italic (DW) | 4 | 1 | 3 | **Resolved** |
-| 4 | Native DW Kerning | 3 | 2 | 1 | Open |
+| 4 | Native DW Kerning | 3 | 2 | 1 | **Deferred** → Phase 150 |
 | 5 | DirectWrite Unit Tests | 4 | 1 | 4 | **Resolved** |
-| 6 | GDI MatchCharHeight Bug | 2 | 3 | 2 | Open (needs re-validation) |
+| 6 | GDI MatchCharHeight Bug | 2 | 3 | 2 | **Deferred** → Phase 150 |
 | 7 | Rounding Differences | 1 | 5 | 1 | Accepted limitation |
 | 8 | Channel-Based Outline Rendering | — | — | — | **Resolved** |
 | 9 | Space Outline Width Discrepancy | — | — | — | **Accepted** (no visual impact) |
@@ -49,13 +49,13 @@ Each issue is ranked 1 (low) to 5 (high) on three dimensions:
 
 ## Issues
 
-### 1. Color Font Rendering (DirectWrite) — Open
+### 1. Color Font Rendering (DirectWrite) — Deferred → Phase 150
 
 > Ease: 1 | Break Risk: 2 | Importance: 2
 
 `SupportsColorFonts` is set to `false`. `SelectColorPalette()` stores the palette index in `_colorPaletteIndex` but it is never used during rasterization. Implementing color font support requires `IDWriteFactory4.TranslateColorGlyphRun` to decompose COLR/CPAL color glyphs into layered runs, plus a D2D dependency to render each color layer with the appropriate brush color. The current `IDWriteGlyphRunAnalysis` approach cannot render color glyphs.
 
-### 2. Variable Font Support (DirectWrite) — Open
+### 2. Variable Font Support (DirectWrite) — Deferred → Phase 150
 
 > Ease: 2 | Break Risk: 2 | Importance: 2
 
@@ -65,7 +65,7 @@ Each issue is ranked 1 (low) to 5 (high) on three dimensions:
 
 DirectWrite now caches font faces per simulation combo (None, Bold, Oblique, Bold|Oblique). `GetFontFaceForOptions()` maps `options.Bold` → `DWRITE_FONT_SIMULATIONS_BOLD`, `options.Italic` → `DWRITE_FONT_SIMULATIONS_OBLIQUE`. For system fonts, the font file is extracted via `GetFiles()` so simulated variants can be created. All cached faces are disposed in `Cleanup()`.
 
-### 4. Native DirectWrite Kerning — Open
+### 4. Native DirectWrite Kerning — Deferred → Phase 150
 
 > Ease: 3 | Break Risk: 2 | Importance: 1
 
@@ -75,7 +75,7 @@ DirectWrite now caches font faces per simulation combo (None, Bold, Oblique, Bol
 
 13 DirectWrite unit tests added in `DirectWriteRasterizerTests.cs`, mirroring the GDI test patterns: factory registration, font loading, glyph rasterization, metrics, capabilities, disposal, pixel format. Gated with `#if DIRECTWRITE` for `net10.0-windows` only (TerraFX package constraint).
 
-### 6. GDI MatchCharHeight Bug — Open (needs re-validation)
+### 6. GDI MatchCharHeight Bug — Deferred → Phase 150
 
 > Ease: 2 | Break Risk: 3 | Importance: 2
 
