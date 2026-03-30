@@ -75,6 +75,8 @@ public class ProjectService
         // Effects
         effects.Bold = options.Bold;
         effects.Italic = options.Italic;
+        effects.ForceSyntheticBold = options.ForceSyntheticBold;
+        effects.ForceSyntheticItalic = options.ForceSyntheticItalic;
         effects.AntiAlias = options.AntiAlias != AntiAliasMode.None;
         effects.Hinting = options.EnableHinting;
         effects.SuperSampleLevel = options.SuperSampleLevel;
@@ -141,6 +143,8 @@ public class ProjectService
             Kerning = atlasConfig.IncludeKerning,
             Bold = effects.Bold,
             Italic = effects.Italic,
+            ForceSyntheticBold = effects.ForceSyntheticBold,
+            ForceSyntheticItalic = effects.ForceSyntheticItalic,
             AntiAlias = effects.AntiAlias ? AntiAliasMode.Grayscale : AntiAliasMode.None,
             EnableHinting = effects.Hinting,
             SuperSampleLevel = effects.SuperSampleLevel,

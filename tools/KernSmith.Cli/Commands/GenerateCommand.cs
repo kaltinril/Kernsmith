@@ -69,6 +69,15 @@ internal sealed class GenerateCommand
                 return ExitCodes.InvalidArguments;
             }
 
+            // Warn if --synthetic-bold/italic is used with a font file (no effect)
+            if (options.FontPath != null)
+            {
+                if (options.ForceSyntheticBold)
+                    ConsoleOutput.WriteWarning("--synthetic-bold has no additional effect with --font (file-based fonts always use synthetic bold). Use --system-font for native bold face selection.");
+                if (options.ForceSyntheticItalic)
+                    ConsoleOutput.WriteWarning("--synthetic-italic has no additional effect with --font (file-based fonts always use synthetic italic). Use --system-font for native italic face selection.");
+            }
+
             // Build character set
             var characters = BuildCharacterSet(options);
 
@@ -181,8 +190,10 @@ internal sealed class GenerateCommand
         {
             Size = options.Size!.Value,
             Characters = characters,
-            Bold = options.Bold,
-            Italic = options.Italic,
+            Bold = options.Bold || options.ForceSyntheticBold,
+            Italic = options.Italic || options.ForceSyntheticItalic,
+            ForceSyntheticBold = options.ForceSyntheticBold,
+            ForceSyntheticItalic = options.ForceSyntheticItalic,
             AntiAlias = options.AntiAlias,
             MaxTextureSize = options.MaxTextureSize,
             Padding = options.Padding,
@@ -437,6 +448,12 @@ internal sealed class GenerateCommand
                 case "--italic":
                     options.Italic = true;
                     break;
+                case "--synthetic-bold":
+                    options.ForceSyntheticBold = true;
+                    break;
+                case "--synthetic-italic":
+                    options.ForceSyntheticItalic = true;
+                    break;
                 case "--outline":
                     var outlineArg = NextArg(args, ref i, args[i]);
                     if (outlineArg.Contains(','))
@@ -626,6 +643,8 @@ internal sealed class GenerateCommand
         // This is imperfect but practical: the CLI user must use the flag to override.
         if (cli.Bold) config.Bold = true;
         if (cli.Italic) config.Italic = true;
+        if (cli.ForceSyntheticBold) config.ForceSyntheticBold = true;
+        if (cli.ForceSyntheticItalic) config.ForceSyntheticItalic = true;
         if (cli.Sdf) config.Sdf = true;
         if (cli.DryRun) config.DryRun = true;
         if (cli.Verbose) config.Verbose = true;
@@ -718,8 +737,10 @@ internal sealed class GenerateCommand
         Console.WriteLine($"[dry-run] Atlas:     max {options.MaxTextureSize}x{options.MaxTextureSize}, {(options.PackingAlgorithm == PackingAlgorithm.MaxRects ? "maxrects" : "skyline")} packer");
 
         var effects = new List<string>();
-        if (options.Bold) effects.Add("bold");
-        if (options.Italic) effects.Add("italic");
+        if (options.ForceSyntheticBold) effects.Add("synthetic-bold");
+        else if (options.Bold) effects.Add("bold");
+        if (options.ForceSyntheticItalic) effects.Add("synthetic-italic");
+        else if (options.Italic) effects.Add("italic");
         if (options.Sdf) effects.Add("SDF");
         if (options.Outline > 0) effects.Add($"outline {options.Outline}px");
         if (options.GradientTop != null) effects.Add($"gradient {options.GradientTop}->{options.GradientBottom}");
@@ -824,6 +845,8 @@ internal sealed class GenerateCommand
             Style:
               -b, --bold                  Enable synthetic bold
               -i, --italic                Enable synthetic italic
+              --synthetic-bold            Force synthetic bold instead of native bold face
+              --synthetic-italic          Force synthetic italic instead of native italic face
               --color-font                Enable color font rendering (COLR/CPAL)
               --color-palette <n>         Color palette index (default: 0)
 

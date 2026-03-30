@@ -20,6 +20,8 @@ public sealed class GdiRasterizer : IRasterizer
     private IntPtr _fontResourceHandle;
     private GCHandle _pinnedFontData;
     private string? _familyName;
+    private int _fontWeight; // OS/2 usWeightClass (400=normal, 700=bold) from loaded font data
+    private bool _fontIsItalic; // Detected from OS/2 fsSelection or name table
     private bool _disposed;
 
     /// <summary>
@@ -67,7 +69,10 @@ public sealed class GdiRasterizer : IRasterizer
             if (_fontResourceHandle == IntPtr.Zero)
                 throw new InvalidOperationException("AddFontMemResourceEx failed to register the font.");
 
-            _familyName = ParseFamilyName(fontBytes);
+            var parsed = ParseFontIdentity(fontBytes);
+            _familyName = parsed.FamilyName;
+            _fontWeight = parsed.Weight;
+            _fontIsItalic = parsed.IsItalic;
 
             if (string.IsNullOrEmpty(_familyName))
                 throw new InvalidOperationException("Could not read font family name from the TTF name table.");
@@ -185,7 +190,7 @@ public sealed class GdiRasterizer : IRasterizer
 
             try
             {
-                var mat2 = MAT2.Identity;
+                var mat2 = GetMat2(options);
                 var size = GetGlyphOutlineW(
                     hdc,
                     (uint)codepoint,
@@ -327,8 +332,11 @@ public sealed class GdiRasterizer : IRasterizer
             LfWidth = 0,
             LfEscapement = 0,
             LfOrientation = 0,
-            LfWeight = options.Bold ? FW_BOLD : FW_NORMAL,
-            LfItalic = (byte)(options.Italic ? 1 : 0),
+            // Use the font's intrinsic weight/italic when loaded from file data,
+            // so GDI's font mapper selects the correct face even if options.Bold was
+            // cleared by the core guard (issue #20). options.Bold adds synthetic on top.
+            LfWeight = Math.Max(_fontWeight > 0 ? _fontWeight : FW_NORMAL, options.Bold ? FW_BOLD : FW_NORMAL),
+            LfItalic = (byte)((_fontIsItalic || (options.Italic && !options.ForceSyntheticItalic)) ? 1 : 0),
             LfUnderline = 0,
             LfStrikeOut = 0,
             LfCharSet = DEFAULT_CHARSET,
@@ -348,9 +356,25 @@ public sealed class GdiRasterizer : IRasterizer
         return hFont;
     }
 
-    private static RasterizedGlyph? RasterizeGlyphCore(IntPtr hdc, int codepoint, RasterOptions options, int aa)
+    /// <summary>
+    /// Returns a MAT2 with synthetic italic shear when ForceSyntheticItalic is set.
+    /// Uses a 0.2126 horizontal shear (~12°) to match FreeType's FT_GlyphSlot_Oblique.
+    /// </summary>
+    private static MAT2 GetMat2(RasterOptions options)
     {
         var mat2 = MAT2.Identity;
+        if (options.Italic && options.ForceSyntheticItalic)
+        {
+            // GDI synthetic italic uses ~20° slant. tan(20°) ≈ 0.364.
+            // 0.364 * 65536 ≈ 23855. EM21 shears X based on Y (italic slant).
+            mat2.EM21 = new FIXED(0, 23855);
+        }
+        return mat2;
+    }
+
+    private static RasterizedGlyph? RasterizeGlyphCore(IntPtr hdc, int codepoint, RasterOptions options, int aa)
+    {
+        var mat2 = GetMat2(options);
 
         // First call: get the required buffer size.
         var bufferSize = GetGlyphOutlineW(
@@ -583,6 +607,61 @@ public sealed class GdiRasterizer : IRasterizer
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Parses font identity (family name, weight, italic) from TTF data.
+    /// Weight comes from OS/2 usWeightClass, italic from OS/2 fsSelection bit 0.
+    /// </summary>
+    private static (string? FamilyName, int Weight, bool IsItalic) ParseFontIdentity(byte[] fontData, int faceIndex = 0)
+    {
+        var familyName = ParseFamilyName(fontData, faceIndex);
+        int weight = FW_NORMAL;
+        bool isItalic = false;
+
+        // Find the OS/2 table for weight and italic detection.
+        if (fontData.Length >= 12)
+        {
+            int fontOffset = 0;
+            if (fontData.Length >= 16 &&
+                fontData[0] == (byte)'t' && fontData[1] == (byte)'t' &&
+                fontData[2] == (byte)'c' && fontData[3] == (byte)'f')
+            {
+                uint numFonts = ReadUInt32BE(fontData, 8);
+                if (faceIndex >= 0 && (uint)faceIndex < numFonts)
+                {
+                    int offsetArrayPos = 12 + faceIndex * 4;
+                    if (offsetArrayPos + 4 <= fontData.Length)
+                        fontOffset = (int)ReadUInt32BE(fontData, offsetArrayPos);
+                }
+            }
+
+            int numTables = ReadUInt16BE(fontData, fontOffset + 4);
+            for (int i = 0; i < numTables; i++)
+            {
+                int entryOffset = fontOffset + 12 + i * 16;
+                if (entryOffset + 16 > fontData.Length)
+                    break;
+
+                var tag = Encoding.ASCII.GetString(fontData, entryOffset, 4);
+                if (tag == "OS/2")
+                {
+                    int tableOffset = (int)ReadUInt32BE(fontData, entryOffset + 8);
+                    // usWeightClass is at offset 4 in the OS/2 table
+                    if (tableOffset + 6 <= fontData.Length)
+                        weight = ReadUInt16BE(fontData, tableOffset + 4);
+                    // fsSelection is at offset 62 in the OS/2 table; bit 0 = italic
+                    if (tableOffset + 64 <= fontData.Length)
+                    {
+                        int fsSelection = ReadUInt16BE(fontData, tableOffset + 62);
+                        isItalic = (fsSelection & 0x01) != 0;
+                    }
+                    break;
+                }
+            }
+        }
+
+        return (familyName, weight, isItalic);
     }
 
     private static ushort ReadUInt16BE(byte[] data, int offset)

@@ -104,7 +104,10 @@ public class EffectsPanel : Panel
     {
         AddSectionHeader(stack, "FONT STYLE");
 
-        // Horizontal row: Bold/Italic on left, Anti-Alias/Hinting on right
+        // Two-column, three-row layout:
+        // Row 1: Bold | Synthetic
+        // Row 2: Italic | Synthetic
+        // Row 3: Hinting | Anti-Alias
         var styleRow = new ContainerRuntime();
         styleRow.WidthUnits = DimensionUnitType.RelativeToParent;
         styleRow.Width = 0;
@@ -114,7 +117,7 @@ public class EffectsPanel : Panel
         styleRow.StackSpacing = 4;
         stack.Children.Add(styleRow);
 
-        // Left column: Bold, Italic
+        // Left column: Bold, Italic, Hinting
         var leftCol = new ContainerRuntime();
         leftCol.WidthUnits = DimensionUnitType.Ratio;
         leftCol.Width = 1;
@@ -126,19 +129,23 @@ public class EffectsPanel : Panel
 
         var boldCheck = new CheckBox();
         boldCheck.Text = "Bold";
-        boldCheck.Checked += (_, _) => _effects.Bold = true;
-        boldCheck.Unchecked += (_, _) => _effects.Bold = false;
         leftCol.Children.Add(boldCheck.Visual);
-        TooltipService.SetTooltip(boldCheck, "Bold variant, or synthetic if unavailable");
+        TooltipService.SetTooltip(boldCheck, "Use the native bold face if available, otherwise apply synthetic emboldening");
 
         var italicCheck = new CheckBox();
         italicCheck.Text = "Italic";
-        italicCheck.Checked += (_, _) => _effects.Italic = true;
-        italicCheck.Unchecked += (_, _) => _effects.Italic = false;
         leftCol.Children.Add(italicCheck.Visual);
-        TooltipService.SetTooltip(italicCheck, "Italic variant, or synthetic if unavailable");
+        TooltipService.SetTooltip(italicCheck, "Use the native italic face if available, otherwise apply synthetic oblique");
 
-        // Right column: Anti-Alias, Hinting
+        var hintCheck = new CheckBox();
+        hintCheck.Text = "Hinting";
+        hintCheck.IsChecked = true;
+        hintCheck.Checked += (_, _) => _effects.Hinting = true;
+        hintCheck.Unchecked += (_, _) => _effects.Hinting = false;
+        leftCol.Children.Add(hintCheck.Visual);
+        TooltipService.SetTooltip(hintCheck, "Font hinting for sharper small sizes");
+
+        // Right column: Synthetic, Synthetic, Anti-Alias
         var rightCol = new ContainerRuntime();
         rightCol.WidthUnits = DimensionUnitType.Ratio;
         rightCol.Width = 1;
@@ -148,6 +155,18 @@ public class EffectsPanel : Panel
         rightCol.StackSpacing = 4;
         styleRow.Children.Add(rightCol);
 
+        var synBoldCheck = new CheckBox();
+        synBoldCheck.Text = "Synthetic";
+        synBoldCheck.IsEnabled = false;
+        rightCol.Children.Add(synBoldCheck.Visual);
+        TooltipService.SetTooltip(synBoldCheck, "Force synthetic bold, skip native face lookup");
+
+        var synItalicCheck = new CheckBox();
+        synItalicCheck.Text = "Synthetic";
+        synItalicCheck.IsEnabled = false;
+        rightCol.Children.Add(synItalicCheck.Visual);
+        TooltipService.SetTooltip(synItalicCheck, "Force synthetic italic, skip native face lookup");
+
         var aaCheck = new CheckBox();
         aaCheck.Text = "Anti-Alias";
         aaCheck.IsChecked = true;
@@ -156,13 +175,158 @@ public class EffectsPanel : Panel
         rightCol.Children.Add(aaCheck.Visual);
         TooltipService.SetTooltip(aaCheck, "Smooth glyph edges with anti-aliasing");
 
-        var hintCheck = new CheckBox();
-        hintCheck.Text = "Hinting";
-        hintCheck.IsChecked = true;
-        hintCheck.Checked += (_, _) => _effects.Hinting = true;
-        hintCheck.Unchecked += (_, _) => _effects.Hinting = false;
-        rightCol.Children.Add(hintCheck.Visual);
-        TooltipService.SetTooltip(hintCheck, "Font hinting for sharper small sizes");
+        // Guard flag to prevent recursive property change loops
+        var updatingSyntheticChecks = false;
+
+        void UpdateSynBoldState()
+        {
+            if (!_effects.Bold)
+            {
+                // Bold unchecked: disable and uncheck synthetic
+                synBoldCheck.IsEnabled = false;
+                if (synBoldCheck.IsChecked == true)
+                {
+                    updatingSyntheticChecks = true;
+                    synBoldCheck.IsChecked = false;
+                    updatingSyntheticChecks = false;
+                    _effects.ForceSyntheticBold = false;
+                }
+                TooltipService.SetTooltip(synBoldCheck, "Check Bold first to enable synthetic");
+            }
+            else if (!_effects.FontHasBoldVariant)
+            {
+                // Font has no bold variant: bold IS synthetic, show as checked + disabled
+                synBoldCheck.IsEnabled = false;
+                if (synBoldCheck.IsChecked != true)
+                {
+                    updatingSyntheticChecks = true;
+                    synBoldCheck.IsChecked = true;
+                    updatingSyntheticChecks = false;
+                }
+                _effects.ForceSyntheticBold = true;
+                TooltipService.SetTooltip(synBoldCheck, "This font has no native bold face — bold is always synthetic");
+            }
+            else if (_effects.BackendIsGdi)
+            {
+                // GDI + font has bold: can't do synthetic, disable
+                synBoldCheck.IsEnabled = false;
+                if (synBoldCheck.IsChecked == true)
+                {
+                    updatingSyntheticChecks = true;
+                    synBoldCheck.IsChecked = false;
+                    updatingSyntheticChecks = false;
+                    _effects.ForceSyntheticBold = false;
+                }
+                TooltipService.SetTooltip(synBoldCheck, "GDI cannot apply synthetic bold when a native bold face exists. Use FreeType or DirectWrite.");
+            }
+            else
+            {
+                // FreeType/DW + font has bold: user can choose
+                synBoldCheck.IsEnabled = true;
+                TooltipService.SetTooltip(synBoldCheck, "Force synthetic bold, skip native face lookup");
+            }
+        }
+
+        void UpdateSynItalicState()
+        {
+            if (!_effects.Italic)
+            {
+                synItalicCheck.IsEnabled = false;
+                if (synItalicCheck.IsChecked == true)
+                {
+                    updatingSyntheticChecks = true;
+                    synItalicCheck.IsChecked = false;
+                    updatingSyntheticChecks = false;
+                    _effects.ForceSyntheticItalic = false;
+                }
+                TooltipService.SetTooltip(synItalicCheck, "Check Italic first to enable synthetic");
+            }
+            else if (!_effects.FontHasItalicVariant)
+            {
+                // Font has no italic variant: italic IS synthetic, show as checked + disabled
+                synItalicCheck.IsEnabled = false;
+                if (synItalicCheck.IsChecked != true)
+                {
+                    updatingSyntheticChecks = true;
+                    synItalicCheck.IsChecked = true;
+                    updatingSyntheticChecks = false;
+                }
+                _effects.ForceSyntheticItalic = true;
+                TooltipService.SetTooltip(synItalicCheck, "This font has no native italic face — italic is always synthetic");
+            }
+            else
+            {
+                // Font has italic variant: user can choose
+                synItalicCheck.IsEnabled = true;
+                TooltipService.SetTooltip(synItalicCheck, "Force synthetic italic, skip native face lookup");
+            }
+        }
+
+        // Bold checkbox
+        boldCheck.Checked += (_, _) =>
+        {
+            _effects.Bold = true;
+            UpdateSynBoldState();
+        };
+        boldCheck.Unchecked += (_, _) =>
+        {
+            _effects.Bold = false;
+            _effects.ForceSyntheticBold = false;
+            UpdateSynBoldState();
+        };
+
+        // Italic checkbox
+        italicCheck.Checked += (_, _) =>
+        {
+            _effects.Italic = true;
+            UpdateSynItalicState();
+        };
+        italicCheck.Unchecked += (_, _) =>
+        {
+            _effects.Italic = false;
+            _effects.ForceSyntheticItalic = false;
+            UpdateSynItalicState();
+        };
+
+        // React to backend or font family changes
+        _effects.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(EffectsViewModel.BackendIsGdi)
+                or nameof(EffectsViewModel.FontHasBoldVariant)
+                or nameof(EffectsViewModel.FontHasItalicVariant))
+            {
+                UpdateSynBoldState();
+                UpdateSynItalicState();
+            }
+        };
+
+        // Synthetic bold: when checked, auto-check Bold (synthetic implies bold)
+        synBoldCheck.Checked += (_, _) =>
+        {
+            _effects.ForceSyntheticBold = true;
+            if (boldCheck.IsChecked != true)
+            {
+                updatingSyntheticChecks = true;
+                boldCheck.IsChecked = true;
+                updatingSyntheticChecks = false;
+                _effects.Bold = true;
+            }
+        };
+        synBoldCheck.Unchecked += (_, _) => _effects.ForceSyntheticBold = false;
+
+        // Synthetic italic: when checked, auto-check Italic (synthetic implies italic)
+        synItalicCheck.Checked += (_, _) =>
+        {
+            _effects.ForceSyntheticItalic = true;
+            if (italicCheck.IsChecked != true)
+            {
+                updatingSyntheticChecks = true;
+                italicCheck.IsChecked = true;
+                updatingSyntheticChecks = false;
+                _effects.Italic = true;
+            }
+        };
+        synItalicCheck.Unchecked += (_, _) => _effects.ForceSyntheticItalic = false;
 
         // Super sampling
         var ssLabel = new Label();

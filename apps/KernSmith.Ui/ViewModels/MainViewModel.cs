@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Gum.Mvvm;
+using KernSmith;
 using KernSmith.Output;
 using KernSmith.Ui.Layout;
 using KernSmith.Ui.Models;
@@ -83,6 +84,16 @@ public class MainViewModel : ViewModel
                 Effects.BackendSupportsColorFonts = FontConfig.BackendSupportsColorFonts;
                 Effects.BackendSupportsVariableFonts = FontConfig.BackendSupportsVariableFonts;
                 Effects.BackendSupportsSdf = FontConfig.BackendSupportsSdf;
+                Effects.BackendIsGdi = FontConfig.SelectedBackend == RasterizerBackend.Gdi;
+            }
+
+            if (e.PropertyName is nameof(FontConfigViewModel.CurrentFontGroup))
+            {
+                var group = FontConfig.CurrentFontGroup;
+                Effects.FontHasBoldVariant = group?.Styles.Any(s =>
+                    s.StyleName.Contains("Bold", StringComparison.OrdinalIgnoreCase)) == true;
+                Effects.FontHasItalicVariant = group?.Styles.Any(s =>
+                    s.StyleName.Contains("Italic", StringComparison.OrdinalIgnoreCase)) == true;
             }
         };
 
@@ -104,12 +115,16 @@ public class MainViewModel : ViewModel
         {
             MarkDirty();
 
-            // When Bold/Italic changes, try to load the real font variant file
-            if (e.PropertyName is nameof(EffectsViewModel.Bold) or nameof(EffectsViewModel.Italic))
+            // When Bold/Italic/ForceSynthetic changes, try to load the appropriate font variant.
+            // ForceSynthetic overrides: load the regular face so the rasterizer applies synthetic styling.
+            if (e.PropertyName is nameof(EffectsViewModel.Bold) or nameof(EffectsViewModel.Italic)
+                or nameof(EffectsViewModel.ForceSyntheticBold) or nameof(EffectsViewModel.ForceSyntheticItalic))
             {
                 if (FontConfig.FontSourceKind == Models.FontSourceKind.System && FontConfig.CurrentFontGroup != null)
                 {
-                    var loaded = FontConfig.TryLoadStyleVariant(Effects.Bold, Effects.Italic);
+                    var wantBold = Effects.Bold && !Effects.ForceSyntheticBold;
+                    var wantItalic = Effects.Italic && !Effects.ForceSyntheticItalic;
+                    var loaded = FontConfig.TryLoadStyleVariant(wantBold, wantItalic);
                     if (loaded)
                     {
                         StatusBar.StatusText = $"Loaded {FontConfig.FamilyName} {FontConfig.StyleName}";
@@ -219,12 +234,13 @@ public class MainViewModel : ViewModel
             {
                 FontData = FontConfig.FontData,
                 FontFilePath = FontConfig.FontFilePath,
-                // When we've loaded a specific style variant file, use it directly
-                // instead of letting the library pick via family name
-                SystemFontFamily = null,
-                SourceKind = FontConfig.FontFilePath != null
-                    ? FontSourceKind.File
-                    : FontConfig.FontSourceKind,
+                // For system fonts, pass the family name so the core library handles
+                // bold/italic variant resolution (including ForceSynthetic logic).
+                // For file-based fonts, SystemFontFamily stays null.
+                SystemFontFamily = FontConfig.FontSourceKind == FontSourceKind.System
+                    ? FontConfig.FamilyName
+                    : null,
+                SourceKind = FontConfig.FontSourceKind,
                 FontSize = FontConfig.FontSize,
                 Characters = CharacterGrid.ToCharacterSet(),
                 MaxWidth = AtlasConfig.MaxWidth,
@@ -238,9 +254,10 @@ public class MainViewModel : ViewModel
                 SpacingH = AtlasConfig.SpacingH,
                 SpacingV = AtlasConfig.SpacingV,
                 IncludeKerning = AtlasConfig.IncludeKerning,
-                // Only apply synthetic bold/italic if the font file doesn't already have it
-                Bold = Effects.Bold && !FontConfig.LoadedAsBold,
-                Italic = Effects.Italic && !FontConfig.LoadedAsItalic,
+                Bold = Effects.Bold,
+                Italic = Effects.Italic,
+                ForceSyntheticBold = Effects.ForceSyntheticBold,
+                ForceSyntheticItalic = Effects.ForceSyntheticItalic,
                 AntiAlias = Effects.AntiAlias,
                 Hinting = Effects.Hinting,
                 SuperSampleLevel = Effects.SuperSampleLevel,

@@ -16,6 +16,8 @@ public class GenerationService
     {
         return await Task.Run(() =>
         {
+            System.Diagnostics.Debug.WriteLine($"[GEN] Source={request.SourceKind} Path={request.FontFilePath} Bold={request.Bold} ForceSynBold={request.ForceSyntheticBold} Italic={request.Italic} ForceSynItalic={request.ForceSyntheticItalic}");
+
             var builder = BmFont.Builder()
                 .WithSize(request.FontSize)
                 .WithCharacters(request.Characters)
@@ -56,6 +58,11 @@ public class GenerationService
                 builder.WithChannelPacking();
 
             builder.WithPackingAlgorithm((PackingAlgorithm)request.PackingAlgorithmIndex);
+
+            if (request.ForceSyntheticBold)
+                builder.WithForceSyntheticBold();
+            if (request.ForceSyntheticItalic)
+                builder.WithForceSyntheticItalic();
 
             if (request.FaceIndex > 0)
                 builder.WithFaceIndex(request.FaceIndex);

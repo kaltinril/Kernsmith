@@ -16,11 +16,17 @@ public class FontGeneratorOptions
     /// <summary>Character set to include in the generated font.</summary>
     public CharacterSet Characters { get; set; } = CharacterSet.Ascii;
 
-    /// <summary>If true, applies synthetic bold.</summary>
+    /// <summary>If true, requests bold. Uses a native bold face when available, falling back to synthetic emboldening.</summary>
     public bool Bold { get; set; }
 
-    /// <summary>If true, applies synthetic italic.</summary>
+    /// <summary>If true, requests italic. Uses a native italic face when available, falling back to synthetic oblique.</summary>
     public bool Italic { get; set; }
+
+    /// <summary>If true, forces synthetic bold even when a native bold face exists.</summary>
+    public bool ForceSyntheticBold { get; set; }
+
+    /// <summary>If true, forces synthetic italic even when a native italic face exists.</summary>
+    public bool ForceSyntheticItalic { get; set; }
 
     /// <summary>Anti-aliasing mode. Default is grayscale.</summary>
     public AntiAliasMode AntiAlias { get; set; } = AntiAliasMode.Grayscale;
