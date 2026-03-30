@@ -33,6 +33,24 @@ Gum will now use KernSmith to generate fonts on demand whenever a `BmfcSave` is 
 3. `KernSmithFontCreator` converts atlas pages into MonoGame `Texture2D` objects
 4. A `BitmapFont` is constructed and returned to Gum
 
+## Registering Fonts
+
+Registering font data explicitly is recommended for all platforms to ensure consistent cross-platform rendering. Some targets may not have access to system fonts, but even on desktop this guarantees identical results regardless of what is installed on the OS. Register font data before initializing `KernSmithFontCreator`:
+
+```csharp
+using KernSmith;
+
+byte[] robotoData = File.ReadAllBytes("Content/Fonts/Roboto-Regular.ttf");
+byte[] robotoBoldData = File.ReadAllBytes("Content/Fonts/Roboto-Bold.ttf");
+
+BmFont.RegisterFont("Roboto", robotoData);
+BmFont.RegisterFont("Roboto", robotoBoldData, style: "Bold");
+```
+
+Registered fonts take priority over system fonts, with automatic fallback to the OS font store. Register all font families and style variants your Gum layouts reference (Regular, Bold, Italic, Bold Italic).
+
+On platforms without system fonts (Blazor WASM, mobile, containers) registration is required. On desktop it is not strictly necessary but is recommended so that every build renders identical fonts.
+
 ## Dependencies
 
 This package automatically pulls in:

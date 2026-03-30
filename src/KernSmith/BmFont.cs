@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using KernSmith.Atlas;
 using KernSmith.Font;
@@ -15,6 +16,62 @@ public static class BmFont
 
     /// <summary>Shared system font provider, used by FontCache.</summary>
     internal static DefaultSystemFontProvider SystemFontProvider => s_systemFontProvider.Value;
+
+    // Key: "FamilyName" or "FamilyName|Style" (lowercase)
+    private static readonly ConcurrentDictionary<string, FontLoadResult> s_fontRegistry = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Registers raw font data (TTF/OTF/WOFF) under a family name so that
+    /// <see cref="GenerateFromSystem(string, FontGeneratorOptions?)"/> can resolve it without accessing system fonts.
+    /// This is essential on platforms where system fonts are unavailable (e.g., Blazor WASM)
+    /// and recommended for cross-platform consistency.
+    /// </summary>
+    /// <param name="familyName">Font family name (e.g., "Arial").</param>
+    /// <param name="fontData">Raw font file bytes.</param>
+    /// <param name="style">
+    /// Optional style name (e.g., "Bold", "Italic", "Bold Italic").
+    /// When null, registers as the default/regular variant.
+    /// </param>
+    /// <param name="faceIndex">TTC face index (0 for single-face font files).</param>
+    public static void RegisterFont(string familyName, byte[] fontData, string? style = null, int faceIndex = 0)
+    {
+        ArgumentNullException.ThrowIfNull(familyName);
+        ArgumentNullException.ThrowIfNull(fontData);
+
+        var key = style == null ? familyName : $"{familyName}|{style}";
+        s_fontRegistry[key] = new FontLoadResult(fontData, faceIndex);
+    }
+
+    /// <summary>
+    /// Removes a previously registered font. Returns true if a font was removed.
+    /// </summary>
+    /// <param name="familyName">Font family name.</param>
+    /// <param name="style">Optional style name, or null for the default variant.</param>
+    public static bool UnregisterFont(string familyName, string? style = null)
+    {
+        ArgumentNullException.ThrowIfNull(familyName);
+        var key = style == null ? familyName : $"{familyName}|{style}";
+        return s_fontRegistry.TryRemove(key, out _);
+    }
+
+    /// <summary>
+    /// Removes all registered fonts.
+    /// </summary>
+    public static void ClearRegisteredFonts() => s_fontRegistry.Clear();
+
+    /// <summary>
+    /// Attempts to load a font from the registry.
+    /// </summary>
+    private static FontLoadResult? LoadFromRegistry(string familyName, string? styleName = null)
+    {
+        if (styleName != null && s_fontRegistry.TryGetValue($"{familyName}|{styleName}", out var styled))
+            return styled;
+
+        if (s_fontRegistry.TryGetValue(familyName, out var regular))
+            return regular;
+
+        return null;
+    }
 
     /// <summary>Generates a BMFont from raw font bytes.</summary>
     /// <param name="fontData">Raw TTF/OTF/WOFF file bytes.</param>
@@ -532,29 +589,57 @@ public static class BmFont
         FontLoadResult? fontResult = null;
         bool loadedStyledVariant = false;
 
+        // Check the font registry first (registered fonts take priority over system fonts).
         if (lookupBold && lookupItalic)
         {
-            fontResult = s_systemFontProvider.Value.LoadFont(fontFamily, "Bold Italic");
+            fontResult = LoadFromRegistry(fontFamily, "Bold Italic");
             if (fontResult != null)
                 loadedStyledVariant = true;
         }
 
         if (fontResult == null && lookupBold)
         {
-            fontResult = s_systemFontProvider.Value.LoadFont(fontFamily, "Bold");
+            fontResult = LoadFromRegistry(fontFamily, "Bold");
             if (fontResult != null)
                 loadedStyledVariant = true;
         }
 
         if (fontResult == null && lookupItalic)
         {
-            fontResult = s_systemFontProvider.Value.LoadFont(fontFamily, "Italic");
+            fontResult = LoadFromRegistry(fontFamily, "Italic");
             if (fontResult != null)
                 loadedStyledVariant = true;
         }
 
-        fontResult ??= s_systemFontProvider.Value.LoadFont(fontFamily)
-            ?? throw new FontParsingException($"System font '{fontFamily}' not found");
+        fontResult ??= LoadFromRegistry(fontFamily);
+
+        // Fall back to system font provider if nothing was registered.
+        if (fontResult == null)
+        {
+            if (lookupBold && lookupItalic)
+            {
+                fontResult = s_systemFontProvider.Value.LoadFont(fontFamily, "Bold Italic");
+                if (fontResult != null)
+                    loadedStyledVariant = true;
+            }
+
+            if (fontResult == null && lookupBold)
+            {
+                fontResult = s_systemFontProvider.Value.LoadFont(fontFamily, "Bold");
+                if (fontResult != null)
+                    loadedStyledVariant = true;
+            }
+
+            if (fontResult == null && lookupItalic)
+            {
+                fontResult = s_systemFontProvider.Value.LoadFont(fontFamily, "Italic");
+                if (fontResult != null)
+                    loadedStyledVariant = true;
+            }
+
+            fontResult ??= s_systemFontProvider.Value.LoadFont(fontFamily)
+                ?? throw new FontParsingException($"System font '{fontFamily}' not found");
+        }
 
         options.FaceIndex = fontResult.FaceIndex;
 
