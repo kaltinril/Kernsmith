@@ -96,15 +96,25 @@ public sealed class BmFontBuilder
     /// <returns>This builder.</returns>
     public BmFontBuilder WithCharacters(CharacterSet characters) { _options.Characters = characters; return this; }
 
-    /// <summary>If true, applies synthetic bold.</summary>
+    /// <summary>Requests bold. Uses a native bold face when available, falling back to synthetic.</summary>
     /// <param name="bold">Enable bold.</param>
     /// <returns>This builder.</returns>
     public BmFontBuilder WithBold(bool bold = true) { _options.Bold = bold; return this; }
 
-    /// <summary>If true, applies synthetic italic.</summary>
+    /// <summary>Requests italic. Uses a native italic face when available, falling back to synthetic.</summary>
     /// <param name="italic">Enable italic.</param>
     /// <returns>This builder.</returns>
     public BmFontBuilder WithItalic(bool italic = true) { _options.Italic = italic; return this; }
+
+    /// <summary>Forces synthetic bold even when a native bold face exists.</summary>
+    /// <param name="force">Enable forced synthetic bold.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithForceSyntheticBold(bool force = true) { _options.Bold = true; _options.ForceSyntheticBold = force; return this; }
+
+    /// <summary>Forces synthetic italic even when a native italic face exists.</summary>
+    /// <param name="force">Enable forced synthetic italic.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithForceSyntheticItalic(bool force = true) { _options.Italic = true; _options.ForceSyntheticItalic = force; return this; }
 
     /// <summary>Sets the anti-aliasing mode.</summary>
     /// <param name="mode">Anti-aliasing mode.</param>
@@ -431,6 +441,8 @@ public sealed class BmFontBuilder
         _options.Characters = source.Characters;
         _options.Bold = source.Bold;
         _options.Italic = source.Italic;
+        _options.ForceSyntheticBold = source.ForceSyntheticBold;
+        _options.ForceSyntheticItalic = source.ForceSyntheticItalic;
         _options.AntiAlias = source.AntiAlias;
         _options.MaxTextureWidth = source.MaxTextureWidth;
         _options.MaxTextureHeight = source.MaxTextureHeight;

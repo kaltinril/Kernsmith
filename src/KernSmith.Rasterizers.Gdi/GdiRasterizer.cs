@@ -185,7 +185,7 @@ public sealed class GdiRasterizer : IRasterizer
 
             try
             {
-                var mat2 = MAT2.Identity;
+                var mat2 = GetMat2(options);
                 var size = GetGlyphOutlineW(
                     hdc,
                     (uint)codepoint,
@@ -328,7 +328,7 @@ public sealed class GdiRasterizer : IRasterizer
             LfEscapement = 0,
             LfOrientation = 0,
             LfWeight = options.Bold ? FW_BOLD : FW_NORMAL,
-            LfItalic = (byte)(options.Italic ? 1 : 0),
+            LfItalic = (byte)((options.Italic && !options.ForceSyntheticItalic) ? 1 : 0),
             LfUnderline = 0,
             LfStrikeOut = 0,
             LfCharSet = DEFAULT_CHARSET,
@@ -348,9 +348,25 @@ public sealed class GdiRasterizer : IRasterizer
         return hFont;
     }
 
-    private static RasterizedGlyph? RasterizeGlyphCore(IntPtr hdc, int codepoint, RasterOptions options, int aa)
+    /// <summary>
+    /// Returns a MAT2 with synthetic italic shear when ForceSyntheticItalic is set.
+    /// Uses a 0.2126 horizontal shear (~12°) to match FreeType's FT_GlyphSlot_Oblique.
+    /// </summary>
+    private static MAT2 GetMat2(RasterOptions options)
     {
         var mat2 = MAT2.Identity;
+        if (options.Italic && options.ForceSyntheticItalic)
+        {
+            // GDI synthetic italic uses ~20° slant. tan(20°) ≈ 0.364.
+            // 0.364 * 65536 ≈ 23855. EM21 shears X based on Y (italic slant).
+            mat2.EM21 = new FIXED(0, 23855);
+        }
+        return mat2;
+    }
+
+    private static RasterizedGlyph? RasterizeGlyphCore(IntPtr hdc, int codepoint, RasterOptions options, int aa)
+    {
+        var mat2 = GetMat2(options);
 
         // First call: get the required buffer size.
         var bufferSize = GetGlyphOutlineW(

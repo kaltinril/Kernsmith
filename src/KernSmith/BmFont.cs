@@ -508,41 +508,53 @@ public static class BmFont
         // Try to load a style-specific variant (e.g., "Bold", "Italic", "Bold Italic")
         // to match GDI behavior: if the font family has a dedicated bold face, use it
         // directly without synthetic emboldening. If no styled variant exists, fall back
-        // to the regular face and let FreeType apply synthetic bold/italic.
+        // to the regular face and let the rasterizer apply synthetic bold/italic.
+        // ForceSyntheticBold/ForceSyntheticItalic skip the variant lookup for that axis,
+        // always using the regular face with synthetic styling.
+        bool lookupBold = options.Bold && !options.ForceSyntheticBold;
+        bool lookupItalic = options.Italic && !options.ForceSyntheticItalic;
+
         FontLoadResult? fontResult = null;
-        if (options.Bold && options.Italic)
+        bool loadedStyledVariant = false;
+
+        if (lookupBold && lookupItalic)
         {
             fontResult = s_systemFontProvider.Value.LoadFont(fontFamily, "Bold Italic");
             if (fontResult != null)
-            {
-                options.Bold = false;
-                options.Italic = false;
-            }
+                loadedStyledVariant = true;
         }
 
-        if (fontResult == null && options.Bold)
+        if (fontResult == null && lookupBold)
         {
             fontResult = s_systemFontProvider.Value.LoadFont(fontFamily, "Bold");
             if (fontResult != null)
-            {
-                options.Bold = false;
-            }
+                loadedStyledVariant = true;
         }
 
-        if (fontResult == null && options.Italic)
+        if (fontResult == null && lookupItalic)
         {
             fontResult = s_systemFontProvider.Value.LoadFont(fontFamily, "Italic");
             if (fontResult != null)
-            {
-                options.Italic = false;
-            }
+                loadedStyledVariant = true;
         }
 
         fontResult ??= s_systemFontProvider.Value.LoadFont(fontFamily)
             ?? throw new FontParsingException($"System font '{fontFamily}' not found");
 
         options.FaceIndex = fontResult.FaceIndex;
-        return GenerateCore(fontResult.Data, options, sourceFontFile: null, sourceFontName: fontFamily, systemFontFamily: fontFamily);
+
+        // When a styled variant was found (e.g., Georgia Bold), use LoadFont(data) so the
+        // rasterizer gets the actual bold font bytes. Don't clear options.Bold/Italic --
+        // rasterizers need them (GDI uses them in LOGFONTW to select the correct face,
+        // FreeType checks style_flags to avoid double-applying, DirectWrite ignores
+        // redundant simulations on already-styled faces).
+        //
+        // When ForceSynthetic is set, also use LoadFont(data) with the regular face so
+        // rasterizers apply synthetic styling on the regular font rather than GDI's font
+        // mapper silently selecting the real bold/italic face via the system font path.
+        bool forceSynthetic = options.ForceSyntheticBold || options.ForceSyntheticItalic;
+        var sysFamily = (loadedStyledVariant || forceSynthetic) ? null : fontFamily;
+        return GenerateCore(fontResult.Data, options, sourceFontFile: null, sourceFontName: fontFamily, systemFontFamily: sysFamily);
     }
 
     /// <summary>Generates a BMFont from a system-installed font at the given size.</summary>
@@ -760,10 +772,7 @@ public static class BmFont
 
         if (!string.IsNullOrEmpty(config.FontName))
         {
-            var fontResult = s_systemFontProvider.Value.LoadFont(config.FontName)
-                ?? throw new FontParsingException($"System font '{config.FontName}' not found");
-            config.Options.FaceIndex = fontResult.FaceIndex;
-            return GenerateCore(fontResult.Data, config.Options, sourceFontFile: null, sourceFontName: config.FontName, systemFontFamily: config.FontName);
+            return GenerateFromSystem(config.FontName, config.Options);
         }
 
         throw new InvalidOperationException(

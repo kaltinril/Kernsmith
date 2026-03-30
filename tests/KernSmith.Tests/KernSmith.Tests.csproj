@@ -9,6 +9,11 @@
     <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
   </PropertyGroup>
 
+  <!-- DirectWrite rasterizer is net10.0-windows only (TerraFX requires it) -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <DefineConstants>$(DefineConstants);DIRECTWRITE</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Shouldly" />
@@ -26,6 +31,8 @@
     <ProjectReference Include="..\..\integrations\KernSmith.GumCommon\KernSmith.GumCommon.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.Gdi\KernSmith.Rasterizers.Gdi.csproj"
                       Condition="$(TargetFramework.Contains('-windows'))" />
+    <ProjectReference Include="..\..\src\KernSmith.Rasterizers.DirectWrite.TerraFX\KernSmith.Rasterizers.DirectWrite.TerraFX.csproj"
+                      Condition="'$(TargetFramework)' == 'net10.0-windows'" />
   </ItemGroup>
 
   <ItemGroup>

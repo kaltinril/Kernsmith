@@ -14,11 +14,17 @@ public sealed record RasterOptions
     /// <summary>Anti-aliasing mode. Default is grayscale.</summary>
     public AntiAliasMode AntiAlias { get; init; } = AntiAliasMode.Grayscale;
 
-    /// <summary>If true, applies synthetic bold by thickening glyph strokes.</summary>
+    /// <summary>If true, applies bold (native face or synthetic).</summary>
     public bool Bold { get; init; }
 
-    /// <summary>If true, applies synthetic italic by slanting glyph outlines.</summary>
+    /// <summary>If true, applies italic (native face or synthetic).</summary>
     public bool Italic { get; init; }
+
+    /// <summary>If true, forces synthetic bold even on natively-bold fonts or system font paths.</summary>
+    public bool ForceSyntheticBold { get; init; }
+
+    /// <summary>If true, forces synthetic italic even on natively-italic fonts or system font paths.</summary>
+    public bool ForceSyntheticItalic { get; init; }
 
     /// <summary>If true, render as signed distance fields instead of regular bitmaps.</summary>
     public bool Sdf { get; init; }
@@ -54,6 +60,8 @@ public sealed record RasterOptions
             AntiAlias = options.AntiAlias,
             Bold = options.Bold,
             Italic = options.Italic,
+            ForceSyntheticBold = options.ForceSyntheticBold,
+            ForceSyntheticItalic = options.ForceSyntheticItalic,
             Sdf = options.Sdf,
             ColorFont = options.ColorFont,
             ColorPaletteIndex = options.ColorPaletteIndex,

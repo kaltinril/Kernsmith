@@ -30,6 +30,14 @@ public sealed unsafe class DirectWriteRasterizer : IRasterizer
     private int _colorPaletteIndex;
     private Dictionary<string, float>? _variationAxes;
 
+    // Font face creation parameters (needed to create simulation variants).
+    private ComPtr<IDWriteFontFile> _fontFile;
+    private DWRITE_FONT_FACE_TYPE _faceType;
+    private uint _faceIndex;
+
+    // Cached font faces per simulation flag combo (up to 4 variants).
+    private readonly Dictionary<DWRITE_FONT_SIMULATIONS, ComPtr<IDWriteFontFace>> _simulatedFaces = new();
+
     /// <inheritdoc />
     public void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0)
     {
@@ -72,40 +80,38 @@ public sealed unsafe class DirectWriteRasterizer : IRasterizer
                 &fontFile);
             ThrowIfFailed(hr, "CreateInMemoryFontFileReference");
 
-            try
-            {
-                // Determine if font file is supported.
-                BOOL isSupported;
-                DWRITE_FONT_FILE_TYPE fileType;
-                DWRITE_FONT_FACE_TYPE faceType;
-                uint numberOfFaces;
-                hr = fontFile->Analyze(&isSupported, &fileType, &faceType, &numberOfFaces);
-                ThrowIfFailed(hr, "Analyze");
+            // Determine if font file is supported.
+            BOOL isSupported;
+            DWRITE_FONT_FILE_TYPE fileType;
+            DWRITE_FONT_FACE_TYPE faceType;
+            uint numberOfFaces;
+            hr = fontFile->Analyze(&isSupported, &fileType, &faceType, &numberOfFaces);
+            ThrowIfFailed(hr, "Analyze");
 
-                if (!isSupported)
-                    throw new InvalidOperationException("Font file format is not supported by DirectWrite.");
+            if (!isSupported)
+                throw new InvalidOperationException("Font file format is not supported by DirectWrite.");
 
-                if (faceIndex < 0 || (uint)faceIndex >= numberOfFaces)
-                    throw new ArgumentOutOfRangeException(nameof(faceIndex),
-                        $"Face index {faceIndex} is out of range. Font has {numberOfFaces} face(s).");
+            if (faceIndex < 0 || (uint)faceIndex >= numberOfFaces)
+                throw new ArgumentOutOfRangeException(nameof(faceIndex),
+                    $"Face index {faceIndex} is out of range. Font has {numberOfFaces} face(s).");
 
-                // Create the font face.
-                IDWriteFontFace* fontFace;
-                IDWriteFontFile** fontFiles = &fontFile;
-                hr = factory5->CreateFontFace(
-                    faceType,
-                    1, // numberOfFiles
-                    fontFiles,
-                    (uint)faceIndex,
-                    DWRITE_FONT_SIMULATIONS.DWRITE_FONT_SIMULATIONS_NONE,
-                    &fontFace);
-                ThrowIfFailed(hr, "CreateFontFace");
-                _fontFace = new ComPtr<IDWriteFontFace>(fontFace);
-            }
-            finally
-            {
-                fontFile->Release();
-            }
+            // Keep font file alive for creating simulation variants later.
+            _fontFile = new ComPtr<IDWriteFontFile>(fontFile);
+            _faceType = faceType;
+            _faceIndex = (uint)faceIndex;
+
+            // Create the default (no-simulation) font face.
+            IDWriteFontFace* fontFace;
+            IDWriteFontFile* pFontFile = fontFile;
+            hr = factory5->CreateFontFace(
+                faceType,
+                1, // numberOfFiles
+                &pFontFile,
+                (uint)faceIndex,
+                DWRITE_FONT_SIMULATIONS.DWRITE_FONT_SIMULATIONS_NONE,
+                &fontFace);
+            ThrowIfFailed(hr, "CreateFontFace");
+            _fontFace = new ComPtr<IDWriteFontFace>(fontFace);
 
             _familyName = "InMemoryFont";
         }
@@ -184,6 +190,22 @@ public sealed unsafe class DirectWriteRasterizer : IRasterizer
                         hr = font->CreateFontFace(&fontFace);
                         ThrowIfFailed(hr, "CreateFontFace");
                         _fontFace = new ComPtr<IDWriteFontFace>(fontFace);
+
+                        // Extract the font file and face metadata so GetFontFaceForOptions
+                        // can recreate the face with bold/italic simulations.
+                        _faceType = fontFace->GetType();
+                        _faceIndex = fontFace->GetIndex();
+
+                        uint fileCount = 0;
+                        hr = fontFace->GetFiles(&fileCount, null);
+                        ThrowIfFailed(hr, "GetFiles (count)");
+                        if (fileCount > 0)
+                        {
+                            IDWriteFontFile* fontFile;
+                            hr = fontFace->GetFiles(&fileCount, &fontFile);
+                            ThrowIfFailed(hr, "GetFiles");
+                            _fontFile = new ComPtr<IDWriteFontFile>(fontFile);
+                        }
                     }
                     finally
                     {
@@ -201,6 +223,7 @@ public sealed unsafe class DirectWriteRasterizer : IRasterizer
             }
 
             _familyName = familyName;
+
         }
         catch
         {
@@ -244,16 +267,18 @@ public sealed unsafe class DirectWriteRasterizer : IRasterizer
         int aa = Math.Max(1, options.SuperSample);
         float fontSize = ComputeFontEmSize(options, aa);
 
+        IDWriteFontFace* fontFace = GetFontFaceForOptions(options);
+
         ushort glyphIndex = MapCodepointToGlyphIndex(codepoint);
         if (glyphIndex == 0)
             return null;
 
         DWRITE_FONT_METRICS fontMetrics;
-        _fontFace.Get->GetMetrics(&fontMetrics);
+        fontFace->GetMetrics(&fontMetrics);
 
         DWRITE_GLYPH_METRICS glyphMetrics;
         BOOL isSideways = false;
-        HRESULT hr = _fontFace.Get->GetDesignGlyphMetrics(&glyphIndex, 1, &glyphMetrics, isSideways);
+        HRESULT hr = fontFace->GetDesignGlyphMetrics(&glyphIndex, 1, &glyphMetrics, isSideways);
         if (hr.FAILED)
             return null;
 
@@ -336,6 +361,50 @@ public sealed unsafe class DirectWriteRasterizer : IRasterizer
     }
 
     /// <summary>
+    /// Gets the appropriate font face for the given bold/italic options.
+    /// Returns the base font face when no simulations are needed, or a cached
+    /// simulated variant when bold/italic is requested.
+    /// For system fonts (where we don't have the font file), simulations are
+    /// not supported and the base font face is always returned.
+    /// </summary>
+    private IDWriteFontFace* GetFontFaceForOptions(RasterOptions options)
+    {
+        var simulations = DWRITE_FONT_SIMULATIONS.DWRITE_FONT_SIMULATIONS_NONE;
+        if (options.Bold)
+            simulations |= DWRITE_FONT_SIMULATIONS.DWRITE_FONT_SIMULATIONS_BOLD;
+        if (options.Italic)
+            simulations |= DWRITE_FONT_SIMULATIONS.DWRITE_FONT_SIMULATIONS_OBLIQUE;
+
+        // No simulations needed — use the default font face.
+        if (simulations == DWRITE_FONT_SIMULATIONS.DWRITE_FONT_SIMULATIONS_NONE)
+            return _fontFace.Get;
+
+        // If we don't have the font file (shouldn't happen), fall back to base face.
+        if (_fontFile.Get == null)
+            return _fontFace.Get;
+
+        // Check cache.
+        if (_simulatedFaces.TryGetValue(simulations, out var cached))
+            return cached.Get;
+
+        // Create a new font face with the requested simulations.
+        IDWriteFontFace* simulatedFace;
+        IDWriteFontFile* pFontFile = _fontFile.Get;
+        HRESULT hr = ((IDWriteFactory*)_factory.Get)->CreateFontFace(
+            _faceType,
+            1,
+            &pFontFile,
+            _faceIndex,
+            simulations,
+            &simulatedFace);
+        ThrowIfFailed(hr, $"CreateFontFace (simulations={simulations})");
+
+        var comPtr = new ComPtr<IDWriteFontFace>(simulatedFace);
+        _simulatedFaces[simulations] = comPtr;
+        return comPtr.Get;
+    }
+
+    /// <summary>
     /// Computes the DirectWrite em size from the RasterOptions.
     /// DirectWrite font size is in DIPs (device-independent pixels).
     /// Points to pixels: emSize = pointSize * dpi / 72.
@@ -359,6 +428,7 @@ public sealed unsafe class DirectWriteRasterizer : IRasterizer
     {
         int aa = Math.Max(1, options.SuperSample);
         float fontSize = ComputeFontEmSize(options, aa);
+        IDWriteFontFace* fontFace = GetFontFaceForOptions(options);
 
         ushort glyphIndex = MapCodepointToGlyphIndex(codepoint);
         if (glyphIndex == 0)
@@ -366,11 +436,11 @@ public sealed unsafe class DirectWriteRasterizer : IRasterizer
 
         // Get design metrics for positioning.
         DWRITE_FONT_METRICS fontMetrics;
-        _fontFace.Get->GetMetrics(&fontMetrics);
+        fontFace->GetMetrics(&fontMetrics);
 
         DWRITE_GLYPH_METRICS designMetrics;
         BOOL isSideways = false;
-        HRESULT hr = _fontFace.Get->GetDesignGlyphMetrics(&glyphIndex, 1, &designMetrics, isSideways);
+        HRESULT hr = fontFace->GetDesignGlyphMetrics(&glyphIndex, 1, &designMetrics, isSideways);
         if (hr.FAILED)
             return null;
 
@@ -385,7 +455,7 @@ public sealed unsafe class DirectWriteRasterizer : IRasterizer
         DWRITE_GLYPH_OFFSET glyphOffset = default;
 
         DWRITE_GLYPH_RUN glyphRun;
-        glyphRun.fontFace = _fontFace.Get;
+        glyphRun.fontFace = fontFace;
         glyphRun.fontEmSize = fontSize;
         glyphRun.glyphCount = 1;
         glyphRun.glyphIndices = &glyphIndex;
@@ -544,8 +614,20 @@ public sealed unsafe class DirectWriteRasterizer : IRasterizer
 
     private void Cleanup()
     {
+        // Release cached simulation font face variants.
+        foreach (var kvp in _simulatedFaces)
+        {
+            var face = kvp.Value;
+            if (!face.IsNull)
+                face.Release();
+        }
+        _simulatedFaces.Clear();
+
         if (!_fontFace.IsNull)
             _fontFace.Release();
+
+        if (!_fontFile.IsNull)
+            _fontFile.Release();
 
         if (!_inMemoryLoader.IsNull && !_factory.IsNull)
         {
