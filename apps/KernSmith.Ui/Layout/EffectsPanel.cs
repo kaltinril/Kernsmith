@@ -178,42 +178,126 @@ public class EffectsPanel : Panel
         // Guard flag to prevent recursive property change loops
         var updatingSyntheticChecks = false;
 
-        // Bold checkbox: when checked, enable synthetic bold; when unchecked, disable and uncheck synthetic bold
+        void UpdateSynBoldState()
+        {
+            if (!_effects.Bold)
+            {
+                // Bold unchecked: disable and uncheck synthetic
+                synBoldCheck.IsEnabled = false;
+                if (synBoldCheck.IsChecked == true)
+                {
+                    updatingSyntheticChecks = true;
+                    synBoldCheck.IsChecked = false;
+                    updatingSyntheticChecks = false;
+                    _effects.ForceSyntheticBold = false;
+                }
+                TooltipService.SetTooltip(synBoldCheck, "Check Bold first to enable synthetic");
+            }
+            else if (!_effects.FontHasBoldVariant)
+            {
+                // Font has no bold variant: bold IS synthetic, show as checked + disabled
+                synBoldCheck.IsEnabled = false;
+                if (synBoldCheck.IsChecked != true)
+                {
+                    updatingSyntheticChecks = true;
+                    synBoldCheck.IsChecked = true;
+                    updatingSyntheticChecks = false;
+                }
+                _effects.ForceSyntheticBold = true;
+                TooltipService.SetTooltip(synBoldCheck, "This font has no native bold face — bold is always synthetic");
+            }
+            else if (_effects.BackendIsGdi)
+            {
+                // GDI + font has bold: can't do synthetic, disable
+                synBoldCheck.IsEnabled = false;
+                if (synBoldCheck.IsChecked == true)
+                {
+                    updatingSyntheticChecks = true;
+                    synBoldCheck.IsChecked = false;
+                    updatingSyntheticChecks = false;
+                    _effects.ForceSyntheticBold = false;
+                }
+                TooltipService.SetTooltip(synBoldCheck, "GDI cannot apply synthetic bold when a native bold face exists. Use FreeType or DirectWrite.");
+            }
+            else
+            {
+                // FreeType/DW + font has bold: user can choose
+                synBoldCheck.IsEnabled = true;
+                TooltipService.SetTooltip(synBoldCheck, "Force synthetic bold, skip native face lookup");
+            }
+        }
+
+        void UpdateSynItalicState()
+        {
+            if (!_effects.Italic)
+            {
+                synItalicCheck.IsEnabled = false;
+                if (synItalicCheck.IsChecked == true)
+                {
+                    updatingSyntheticChecks = true;
+                    synItalicCheck.IsChecked = false;
+                    updatingSyntheticChecks = false;
+                    _effects.ForceSyntheticItalic = false;
+                }
+                TooltipService.SetTooltip(synItalicCheck, "Check Italic first to enable synthetic");
+            }
+            else if (!_effects.FontHasItalicVariant)
+            {
+                // Font has no italic variant: italic IS synthetic, show as checked + disabled
+                synItalicCheck.IsEnabled = false;
+                if (synItalicCheck.IsChecked != true)
+                {
+                    updatingSyntheticChecks = true;
+                    synItalicCheck.IsChecked = true;
+                    updatingSyntheticChecks = false;
+                }
+                _effects.ForceSyntheticItalic = true;
+                TooltipService.SetTooltip(synItalicCheck, "This font has no native italic face — italic is always synthetic");
+            }
+            else
+            {
+                // Font has italic variant: user can choose
+                synItalicCheck.IsEnabled = true;
+                TooltipService.SetTooltip(synItalicCheck, "Force synthetic italic, skip native face lookup");
+            }
+        }
+
+        // Bold checkbox
         boldCheck.Checked += (_, _) =>
         {
             _effects.Bold = true;
-            synBoldCheck.IsEnabled = true;
+            UpdateSynBoldState();
         };
         boldCheck.Unchecked += (_, _) =>
         {
             _effects.Bold = false;
-            if (!updatingSyntheticChecks)
-            {
-                updatingSyntheticChecks = true;
-                synBoldCheck.IsChecked = false;
-                updatingSyntheticChecks = false;
-            }
-            synBoldCheck.IsEnabled = false;
             _effects.ForceSyntheticBold = false;
+            UpdateSynBoldState();
         };
 
-        // Italic checkbox: when checked, enable synthetic italic; when unchecked, disable and uncheck synthetic italic
+        // Italic checkbox
         italicCheck.Checked += (_, _) =>
         {
             _effects.Italic = true;
-            synItalicCheck.IsEnabled = true;
+            UpdateSynItalicState();
         };
         italicCheck.Unchecked += (_, _) =>
         {
             _effects.Italic = false;
-            if (!updatingSyntheticChecks)
-            {
-                updatingSyntheticChecks = true;
-                synItalicCheck.IsChecked = false;
-                updatingSyntheticChecks = false;
-            }
-            synItalicCheck.IsEnabled = false;
             _effects.ForceSyntheticItalic = false;
+            UpdateSynItalicState();
+        };
+
+        // React to backend or font family changes
+        _effects.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(EffectsViewModel.BackendIsGdi)
+                or nameof(EffectsViewModel.FontHasBoldVariant)
+                or nameof(EffectsViewModel.FontHasItalicVariant))
+            {
+                UpdateSynBoldState();
+                UpdateSynItalicState();
+            }
         };
 
         // Synthetic bold: when checked, auto-check Bold (synthetic implies bold)

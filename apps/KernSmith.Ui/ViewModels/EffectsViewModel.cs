@@ -60,6 +60,12 @@ public class EffectsViewModel : ViewModel
     public bool BackendSupportsVariableFonts { get => Get<bool>(); set => Set(value); }
     /// <summary>Whether the selected rasterizer backend supports SDF rendering.</summary>
     public bool BackendSupportsSdf { get => Get<bool>(); set => Set(value); }
+    /// <summary>Whether the selected backend is GDI (which cannot do true synthetic bold when a real bold face exists).</summary>
+    public bool BackendIsGdi { get => Get<bool>(); set => Set(value); }
+    /// <summary>Whether the current font family has a native bold variant.</summary>
+    public bool FontHasBoldVariant { get => Get<bool>(); set => Set(value); }
+    /// <summary>Whether the current font family has a native italic variant.</summary>
+    public bool FontHasItalicVariant { get => Get<bool>(); set => Set(value); }
     public IReadOnlyList<VariationAxis>? VariationAxesList { get => Get<IReadOnlyList<VariationAxis>?>(); set => Set(value); }
     public Dictionary<string, float> VariationAxisValues { get; } = new();
 
