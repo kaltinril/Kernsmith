@@ -104,12 +104,16 @@ public class MainViewModel : ViewModel
         {
             MarkDirty();
 
-            // When Bold/Italic changes, try to load the real font variant file
-            if (e.PropertyName is nameof(EffectsViewModel.Bold) or nameof(EffectsViewModel.Italic))
+            // When Bold/Italic/ForceSynthetic changes, try to load the appropriate font variant.
+            // ForceSynthetic overrides: load the regular face so the rasterizer applies synthetic styling.
+            if (e.PropertyName is nameof(EffectsViewModel.Bold) or nameof(EffectsViewModel.Italic)
+                or nameof(EffectsViewModel.ForceSyntheticBold) or nameof(EffectsViewModel.ForceSyntheticItalic))
             {
                 if (FontConfig.FontSourceKind == Models.FontSourceKind.System && FontConfig.CurrentFontGroup != null)
                 {
-                    var loaded = FontConfig.TryLoadStyleVariant(Effects.Bold, Effects.Italic);
+                    var wantBold = Effects.Bold && !Effects.ForceSyntheticBold;
+                    var wantItalic = Effects.Italic && !Effects.ForceSyntheticItalic;
+                    var loaded = FontConfig.TryLoadStyleVariant(wantBold, wantItalic);
                     if (loaded)
                     {
                         StatusBar.StatusText = $"Loaded {FontConfig.FamilyName} {FontConfig.StyleName}";
@@ -241,6 +245,8 @@ public class MainViewModel : ViewModel
                 // Only apply synthetic bold/italic if the font file doesn't already have it
                 Bold = Effects.Bold && !FontConfig.LoadedAsBold,
                 Italic = Effects.Italic && !FontConfig.LoadedAsItalic,
+                ForceSyntheticBold = Effects.ForceSyntheticBold,
+                ForceSyntheticItalic = Effects.ForceSyntheticItalic,
                 AntiAlias = Effects.AntiAlias,
                 Hinting = Effects.Hinting,
                 SuperSampleLevel = Effects.SuperSampleLevel,

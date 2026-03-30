@@ -13,6 +13,8 @@ public class EffectsViewModel : ViewModel
     // Font Style (always active)
     public bool Bold { get => Get<bool>(); set => Set(value); }
     public bool Italic { get => Get<bool>(); set => Set(value); }
+    public bool ForceSyntheticBold { get => Get<bool>(); set => Set(value); }
+    public bool ForceSyntheticItalic { get => Get<bool>(); set => Set(value); }
     public bool AntiAlias { get => Get<bool>(); set => Set(value); }
     public bool Hinting { get => Get<bool>(); set => Set(value); }
     public int SuperSampleLevel { get => Get<int>(); set => Set(value); }

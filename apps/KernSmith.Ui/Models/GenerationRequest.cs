@@ -55,6 +55,10 @@ public record GenerationRequest
     public bool Bold { get; init; }
     /// <summary>Apply synthetic italic (only when the loaded font file is not already italic).</summary>
     public bool Italic { get; init; }
+    /// <summary>Force synthetic bold, skipping native bold face lookup.</summary>
+    public bool ForceSyntheticBold { get; init; }
+    /// <summary>Force synthetic italic, skipping native italic face lookup.</summary>
+    public bool ForceSyntheticItalic { get; init; }
     /// <summary>Enable grayscale anti-aliasing for glyph rasterization.</summary>
     public bool AntiAlias { get; init; } = true;
     /// <summary>Enable font hinting for sharper rendering at small sizes.</summary>

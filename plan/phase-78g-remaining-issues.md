@@ -34,12 +34,14 @@ Each issue is ranked 1 (low) to 5 (high) on three dimensions:
 | 12 | ForceSyntheticBold/Italic API | — | — | — | **Resolved** |
 | 13 | DW system font simulations bug | — | — | — | **Resolved** |
 | 14 | GDI synthetic italic via MAT2 | — | — | — | **Resolved** |
-| 15 | CLI flags for ForceSynthetic | 4 | 1 | 3 | Open |
-| 16 | UI controls for ForceSynthetic | 3 | 1 | 3 | Open |
+| 15 | CLI flags for ForceSynthetic | — | — | — | **Resolved** |
+| 16 | UI controls for ForceSynthetic | 3 | 1 | 3 | **Resolved** |
 | 17 | Documentation for bold/italic | 4 | 1 | 3 | Open |
 | 18 | DW synthetic bold strength | — | — | — | **Accepted** (DW limitation) |
 | 19 | File vs system font bold/italic behavior | 4 | 1 | 4 | Open (document) |
 | 20 | Core guard: skip bold/italic on already-styled fonts | — | — | — | **Resolved** |
+| 21 | CLI warning for --synthetic with --font | — | — | — | **Resolved** |
+| 22 | GDI synthetic bold limitation | — | — | — | **Accepted** (GDI limitation) |
 
 **Legend**: Ease = ease to implement (5=easy). Break Risk = chance of breaking other things (5=high risk). Importance = importance to implement (5=critical).
 
@@ -123,39 +125,74 @@ GDI has no built-in synthetic oblique API like FreeType's `FT_GlyphSlot_Oblique`
 
 ## Remaining Work
 
-### 15. CLI flags for ForceSynthetic — Open
+### 15. ~~CLI flags for ForceSynthetic~~ — Resolved
 
-> Ease: 4 | Break Risk: 1 | Importance: 3
+`--synthetic-bold` and `--synthetic-italic` flags added to CLI. Maps to `ForceSyntheticBold`/`ForceSyntheticItalic` on `FontGeneratorOptions`. Also auto-sets `Bold`/`Italic` to true.
 
-CLI has `-b`/`--bold` and `-i`/`--italic` but no `--synthetic-bold` or `--synthetic-italic` flags. Add these to `GenerateCommand.cs`.
+### 16. ~~UI controls for ForceSynthetic~~ — Resolved
 
-### 16. UI controls for ForceSynthetic — Open
+FONT STYLE section restructured from 2x2 to 2x3 grid:
+- Left column: Bold, Italic, Anti-Alias
+- Right column: Synthetic bold, Synthetic italic, Hinting
 
-> Ease: 3 | Break Risk: 1 | Importance: 3
+Cross-dependency logic: checking "Synthetic bold" auto-checks "Bold"; unchecking "Bold" unchecks and disables "Synthetic bold" (same for italic pair). Uses guard flag to prevent recursive loops (matches existing SDF pattern). Tooltips note that synthetic only differs from regular when using a system font.
 
-UI has Bold/Italic checkboxes but no synthetic option. Add a second column of checkboxes:
-
-```
-[ ] Bold      [ ] Synthetic bold
-[ ] Italic    [ ] Synthetic italic
-[ ] AA        [ ] Hinting
-```
-
-"Synthetic bold/italic" auto-checks Bold/Italic when enabled. Unchecking Bold/Italic disables the synthetic checkbox. Tooltips explain native face vs synthetic emboldening/oblique.
+**Files changed:**
+- `EffectsViewModel.cs`: Added `ForceSyntheticBold` and `ForceSyntheticItalic` properties
+- `EffectsPanel.cs`: Restructured FONT STYLE section, added checkboxes with cross-dependency logic
+- `ProjectService.cs`: Wired ForceSynthetic properties in both load and build directions
 
 ### 17. Documentation for bold/italic and ForceSynthetic — Open
 
 > Ease: 4 | Break Risk: 1 | Importance: 3
 
-Missing documentation:
-- CLI docs (`tools/KernSmith.Cli/README.md`, `docs/cli/commands.md`) describe `-b`/`-i` as "synthetic" when the actual behavior is "native face with synthetic fallback"
-- Root `README.md` has no examples of `.WithBold()`, `.WithForceSyntheticBold()`
-- Core docs (`docs/core/index.md`) don't mention bold/italic API at all
-- `.bmfc` config roundtrip for `ForceSyntheticBold`/`ForceSyntheticItalic` not implemented in `BmfcConfigReader`/`BmfcConfigWriter`
+Missing documentation across all surfaces. Must cover bold/italic behavior, ForceSynthetic API, and GDI limitations.
+
+**What to document everywhere:**
+
+1. **Bold/Italic behavior by font source:**
+   - `--system-font` / `WithSystemFont()`: tries native bold/italic face first, falls back to synthetic
+   - `--font` / file path: always synthetic (no family lookup). `--bold` and `--synthetic-bold` produce identical results
+   - Recommend `--system-font` when users want native vs synthetic distinction
+
+2. **ForceSynthetic API:**
+   - `WithForceSyntheticBold()` / `WithForceSyntheticItalic()` forces synthetic styling, skipping native face lookup
+   - CLI: `--synthetic-bold`, `--synthetic-italic`
+   - UI: "Synthetic bold" / "Synthetic italic" checkboxes
+
+3. **GDI synthetic bold/italic limitation:**
+   - GDI cannot apply true synthetic emboldening when the font family has a real bold variant — GDI's font mapper always selects the real bold face
+   - GDI synthetic italic has the same limitation — if a real italic exists, GDI picks it. KernSmith works around this with a MAT2 shear transform, but synthetic bold has no equivalent workaround
+   - For fonts **without** a bold variant, GDI synthetic bold works correctly
+   - Users who need guaranteed synthetic bold should use FreeType or DirectWrite
+
+4. **DW synthetic bold strength:**
+   - DirectWrite's synthetic bold is lighter than FreeType's. This is a fixed DW API behavior, not tunable
+   - Workaround: use an outline with matching color for heavier text
+
+**Where to document:**
+- [ ] Root `README.md` — builder examples, backend comparison table
+- [ ] CLI README (`tools/KernSmith.Cli/README.md`) — flag descriptions, behavioral notes
+- [ ] CLI commands doc (`docs/cli/commands.md`) — flag table, examples
+- [ ] Core API docs (`docs/core/index.md`) — `WithBold`, `WithForceSyntheticBold`, backend differences
+- [ ] XML doc comments — `FontGeneratorOptions.Bold` and `ForceSyntheticBold` summaries should mention GDI caveat
+- [ ] UI tooltips — "Synthetic bold" tooltip should note GDI limitation
+- [ ] GitHub.io / DocFX API reference — auto-generated from XML docs, so fixing XML docs covers this
+- [ ] `.bmfc` config roundtrip — add `forceSyntheticBold`/`forceSyntheticItalic` to `BmfcConfigReader`/`BmfcConfigWriter`
 
 ### 18. DW synthetic bold strength — Accepted limitation
 
 DirectWrite's `DWRITE_FONT_SIMULATIONS_BOLD` has a fixed internal strength that cannot be tuned. It produces lighter synthetic bold than FreeType's `ppem/24`. Users who want heavier text can use an outline with matching color as a workaround.
+
+### 22. GDI synthetic bold limitation — Accepted limitation
+
+GDI's `ForceSyntheticBold` cannot produce true synthetic emboldening on fonts that have a real bold variant. `AddFontMemResourceEx` (used to register font data in memory) doesn't isolate from system fonts, so GDI's font mapper always finds and uses the system-installed bold face when `LfWeight = FW_BOLD`, regardless of which font data was registered.
+
+**Behavior by scenario:**
+- Font has **no** bold variant: `--bold` and `--synthetic-bold` both work — GDI applies its own synthetic emboldening via the font mapper. Results are identical.
+- Font **has** a bold variant: `--bold` uses the real bold face (correct). `--synthetic-bold` also uses the real bold face (limitation) — there's no GDI API to force synthetic emboldening while bypassing the font mapper's face selection.
+
+This limitation is specific to the GDI backend. FreeType and DirectWrite both support true synthetic bold regardless of whether the font has a native bold variant. Users who need guaranteed synthetic bold should use FreeType or DirectWrite.
 
 ### 19. Bold/italic behavior differs between file-based and system font paths — Document
 
@@ -170,6 +207,10 @@ This needs to be clearly documented in CLI help text, docs, and UI tooltips so u
 ### 20. ~~Core guard: skip bold/italic on already-styled fonts~~ — Resolved
 
 Added a guard in `BmFont.GenerateCore()` after font loading that checks `fontInfo.IsBold`/`fontInfo.IsItalic`. If the font is already bold/italic and `ForceSynthetic` is not set, clears the bold/italic flags so no backend applies redundant synthetic styling. This ensures consistent behavior across FreeType (which already had its own `style_flags` check), GDI, and DirectWrite (which didn't).
+
+### 21. ~~CLI warning for --synthetic with --font~~ — Resolved
+
+CLI now warns when `--synthetic-bold` or `--synthetic-italic` is used with `--font` (file path), since file-based fonts always use synthetic styling and the flag has no additional effect. Advises using `--system-font` for native vs synthetic distinction.
 
 ## Files Reference
 
