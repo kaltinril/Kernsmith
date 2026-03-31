@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Synthetic bold/italic CLI flags (`--synthetic-bold`, `--synthetic-italic`) and UI controls (Phase 78G)
 - Guard against double bold/italic when font file is already styled (Phase 78G)
 - DirectWrite synthetic bold/italic support (Phase 78G)
+- Font registration API: `BmFont.RegisterFont()` for registering raw font data by family name, enabling `GenerateFromSystem()` on platforms without system font access (Blazor WASM, mobile, containers)
+- `BmFont.UnregisterFont()` and `BmFont.ClearRegisteredFonts()` for managing registrations
+- Registered fonts take priority over system fonts with automatic fallback
 
 ### Fixed
 

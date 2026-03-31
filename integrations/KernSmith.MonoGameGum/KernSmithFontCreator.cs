@@ -25,6 +25,35 @@ public class KernSmithFontCreator : IInMemoryFontCreator
         _graphicsDevice = graphicsDevice ?? throw new ArgumentNullException(nameof(graphicsDevice));
     }
 
+    /// <summary>
+    /// Registers raw font data (TTF/OTF/WOFF) under a family name so that
+    /// font generation can resolve it without accessing system fonts.
+    /// </summary>
+    /// <param name="familyName">Font family name (e.g., "Arial").</param>
+    /// <param name="fontData">Raw font file bytes.</param>
+    /// <param name="style">
+    /// Optional style name (e.g., "Bold", "Italic", "Bold Italic").
+    /// When null, registers as the default/regular variant.
+    /// </param>
+    /// <param name="faceIndex">TTC face index (0 for single-face font files).</param>
+    public static void RegisterFont(string familyName, byte[] fontData, string? style = null, int faceIndex = 0)
+        => BmFont.RegisterFont(familyName, fontData, style, faceIndex);
+
+    /// <summary>
+    /// Removes a previously registered font.
+    /// </summary>
+    /// <param name="familyName">Font family name.</param>
+    /// <param name="style">Optional style name, or null for the default variant.</param>
+    /// <returns>True if a font was removed.</returns>
+    public static bool UnregisterFont(string familyName, string? style = null)
+        => BmFont.UnregisterFont(familyName, style);
+
+    /// <summary>
+    /// Removes all registered fonts.
+    /// </summary>
+    public static void ClearRegisteredFonts()
+        => BmFont.ClearRegisteredFonts();
+
     /// <inheritdoc/>
     public BitmapFont? TryCreateFont(BmfcSave bmfcSave)
     {

@@ -28,7 +28,7 @@
 - **Texture formats** -- PNG (default), TGA, and DDS atlas output
 - **Reading BMFont files** -- load and parse existing `.fnt` files (auto-detects text/XML/binary)
 - **Fluent builder API** -- chainable configuration as an alternative to options objects
-- **System font loading** -- generate from installed fonts by family name
+- **System font loading** -- generate from installed fonts by family name, with a font registry for platforms without system font access
 - **Fully in-memory** -- entire pipeline runs without touching disk unless you call `ToFile()`
 - **Batch generation** -- parallel multi-font generation with font caching
 - **Pipeline metrics** -- stage-level timing breakdown for profiling
@@ -187,6 +187,43 @@ var result = BmFont.Builder()
     .WithCharacters(CharacterSet.Latin)
     .Build();
 ```
+
+## Font Registration
+
+On platforms without system font access (Blazor WASM, mobile, containers), `GenerateFromSystem()` cannot find installed fonts. Register raw font data to make it available by family name:
+
+```csharp
+byte[] arialData = File.ReadAllBytes("fonts/Arial.ttf");
+BmFont.RegisterFont("Arial", arialData);
+
+// Now GenerateFromSystem works with the registered font
+var result = BmFont.GenerateFromSystem("Arial", new FontGeneratorOptions
+{
+    Size = 32,
+    Characters = CharacterSet.Ascii
+});
+```
+
+Register style variants separately:
+
+```csharp
+BmFont.RegisterFont("Arial", arialRegularData);
+BmFont.RegisterFont("Arial", arialBoldData, style: "Bold");
+BmFont.RegisterFont("Arial", arialItalicData, style: "Italic");
+BmFont.RegisterFont("Arial", arialBoldItalicData, style: "Bold Italic");
+```
+
+Registered fonts take priority over system fonts. If a registered font is not found, `GenerateFromSystem()` falls back to system font lookup automatically. The Bold/Italic/Bold Italic cascade is also applied -- requesting bold will check for a registered "Bold" style before falling back.
+
+Remove registrations when no longer needed:
+
+```csharp
+BmFont.UnregisterFont("Arial");               // Remove default style
+BmFont.UnregisterFont("Arial", style: "Bold"); // Remove specific style
+BmFont.ClearRegisteredFonts();                 // Remove all registrations
+```
+
+Registering fonts explicitly also ensures cross-platform consistency -- the same fonts render identically everywhere regardless of what the OS has installed.
 
 ## Batch Generation
 
