@@ -34,6 +34,9 @@ The main entry point. Provides static methods for font generation:
 - <xref:KernSmith.BmFont>.Builder() -- start a fluent builder chain
 - <xref:KernSmith.BmFont>.Load() -- load an existing `.fnt` file with atlas pages
 - <xref:KernSmith.BmFont>.GenerateBatch() -- parallel batch generation
+- <xref:KernSmith.BmFont>.RegisterFont() -- register raw font data for use with `GenerateFromSystem()` on platforms without system font access
+- <xref:KernSmith.BmFont>.UnregisterFont() -- remove a previously registered font
+- <xref:KernSmith.BmFont>.ClearRegisteredFonts() -- remove all registered fonts
 
 ### BmFontResult
 
