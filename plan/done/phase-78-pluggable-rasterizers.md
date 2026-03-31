@@ -1,6 +1,6 @@
 # Phase 78 -- Pluggable Rasterizer Backends (Overview)
 
-> **Status**: In Progress
+> **Status**: Complete
 > **Created**: 2026-03-22
 > **Updated**: 2026-03-25
 > **Goal**: Make the rasterizer backend pluggable so users can choose FreeType (cross-platform default), GDI (BMFont parity), DirectWrite (modern Windows), or custom backends.
@@ -36,7 +36,7 @@ Third-party packages can implement `IRasterizer` + `IRasterizerCapabilities` and
 
 | Phase | Name | Size | Description |
 |-------|------|------|-------------|
-| [78A](phase-78a-rasterizer-foundation.md) | Foundation | Small | `IRasterizerCapabilities`, `RasterizerBackend` enum, `RasterizerFactory`, wire into `BmFont.cs` |
+| [78A](done/phase-78a-rasterizer-foundation.md) | Foundation | Small | `IRasterizerCapabilities`, `RasterizerBackend` enum, `RasterizerFactory`, wire into `BmFont.cs`. **Complete.** |
 | [78B](done/phase-78b-gdi-backend.md) | GDI Backend | Medium | `GdiRasterizer` via Win32 P/Invoke -- highest-value backend, matches BMFont output. **Complete.** |
 | [78BB](done/phase-78bb-gdi-parity.md) | GDI Parity Fixes | Medium | GDI parity fixes -- metrics from GDI TEXTMETRIC, kerning from GetKerningPairs, sizing bypass. **Complete.** |
 | [78C](done/phase-78c-directwrite-backend.md) | DirectWrite Backend | Medium-Large | `DirectWriteRasterizer` via TerraFX.Interop.Windows -- core rasterization working, color/variable fonts deferred. **Complete.** |
