@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.3] - 2026-03-30
+
 ### Added
 
 - Rasterizer plugin template and sample project for custom backends (Phase 78E)
@@ -16,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Font registration API: `BmFont.RegisterFont()` for registering raw font data by family name, enabling `GenerateFromSystem()` on platforms without system font access (Blazor WASM, mobile, containers)
 - `BmFont.UnregisterFont()` and `BmFont.ClearRegisteredFonts()` for managing registrations
 - Registered fonts take priority over system fonts with automatic fallback
+- Phase 78S documentation pass: updated tooltips, READMEs, DocFX docs, CHANGELOG, reference doc, NuGet descriptions
 
 ### Fixed
 
