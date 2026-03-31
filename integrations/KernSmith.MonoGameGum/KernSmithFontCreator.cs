@@ -1,5 +1,6 @@
 using KernSmith.Atlas;
 using KernSmith.Output;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using RenderingLibrary.Graphics;
 using RenderingLibrary.Graphics.Fonts;
@@ -38,6 +39,38 @@ public class KernSmithFontCreator : IInMemoryFontCreator
     /// <param name="faceIndex">TTC face index (0 for single-face font files).</param>
     public static void RegisterFont(string familyName, byte[] fontData, string? style = null, int faceIndex = 0)
         => BmFont.RegisterFont(familyName, fontData, style, faceIndex);
+
+    /// <summary>
+    /// Registers a font file under a family name by reading it via
+    /// TitleContainer.OpenStream, which resolves content files correctly
+    /// on all platforms (desktop, Android, iOS, consoles).
+    /// </summary>
+    /// <param name="familyName">Font family name (e.g., "Arial").</param>
+    /// <param name="filePath">
+    /// Path to a .ttf, .otf, or .woff font file, relative to the
+    /// title container root (typically the Content directory).
+    /// </param>
+    /// <param name="style">
+    /// Optional style name (e.g., "Bold", "Italic", "Bold Italic").
+    /// When null, registers as the default/regular variant.
+    /// </param>
+    /// <param name="faceIndex">TTC face index (0 for single-face font files).</param>
+    public static void RegisterFont(string familyName, string filePath,
+        string? style = null, int faceIndex = 0)
+    {
+        ArgumentNullException.ThrowIfNull(familyName);
+        ArgumentNullException.ThrowIfNull(filePath);
+
+        byte[] fontData;
+        using (Stream stream = TitleContainer.OpenStream(filePath))
+        using (MemoryStream ms = new())
+        {
+            stream.CopyTo(ms);
+            fontData = ms.ToArray();
+        }
+
+        BmFont.RegisterFont(familyName, fontData, style, faceIndex);
+    }
 
     /// <summary>
     /// Removes a previously registered font.
