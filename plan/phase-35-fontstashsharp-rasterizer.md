@@ -94,7 +94,7 @@ public sealed class FontStashSharpCapabilities : IRasterizerCapabilities
     public bool SupportsSystemFonts => false;
     public bool HandlesOwnSizing => false;
     public IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes =>
-        [AntiAliasMode.None, AntiAliasMode.Normal];
+        [AntiAliasMode.None, AntiAliasMode.Grayscale];
 }
 ```
 

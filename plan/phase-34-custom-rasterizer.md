@@ -1,4 +1,4 @@
-# Phase 34 --- Custom Pure C# Rasterizer (From Scratch)
+# Phase 34 — Custom Pure C# Rasterizer (From Scratch)
 
 > **Status**: Future / Research
 > **Created**: 2026-03-30
@@ -11,10 +11,10 @@ Investigate and potentially implement a fully custom, pure C# TTF rasterizer own
 
 ## Motivation
 
-- **Zero dependencies** --- no StbTrueTypeSharp, no FreeTypeSharp, no licensing concerns whatsoever
-- **Full control** --- optimize specifically for bitmap font atlas generation (not general-purpose text rendering)
-- **Educational value** --- deep understanding of the rasterization pipeline
-- **Customization** --- can add KernSmith-specific optimizations (batch glyph rendering, atlas-aware rasterization)
+- **Zero dependencies** — no StbTrueTypeSharp, no FreeTypeSharp, no licensing concerns whatsoever
+- **Full control** — optimize specifically for bitmap font atlas generation (not general-purpose text rendering)
+- **Educational value** — deep understanding of the rasterization pipeline
+- **Customization** — can add KernSmith-specific optimizations (batch glyph rendering, atlas-aware rasterization)
 
 ## Scope Boundary
 
@@ -28,12 +28,12 @@ Investigate and potentially implement a fully custom, pure C# TTF rasterizer own
 
 ### OUT of scope (explicit)
 
-- **CFF/CFF2 outlines** (cubic beziers, Type 2 charstrings) --- throw `RasterizationException` with clear message for .otf with OTTO magic
-- **Hinting/grid-fitting** --- skip entirely (matches stb_truetype approach)
+- **CFF/CFF2 outlines** (cubic beziers, Type 2 charstrings) — throw `RasterizationException` with clear message for .otf with OTTO magic
+- **Hinting/grid-fitting** — skip entirely (matches stb_truetype approach)
 - **Variable font axis application**
 - **Color fonts** (COLR/CPAL)
 - **SDF rendering** (defer to post-processors or other backends)
-- **Synthetic bold/italic** (outline dilation/shear --- complex, defer)
+- **Synthetic bold/italic** (outline dilation/shear — complex, defer)
 
 ## IRasterizerCapabilities Mapping
 
@@ -50,19 +50,19 @@ SupportedAntiAliasModes = [None, Grayscale]
 ## What KernSmith Already Has
 
 KernSmith's TTF parser already handles these tables:
-- `head` --- font header, units per em
-- `hhea` --- horizontal header, ascent/descent
-- `hmtx` --- horizontal metrics (advance widths, left side bearings)
-- `cmap` --- character-to-glyph mapping
-- `kern` --- legacy kerning pairs
-- `GPOS` --- OpenType kerning pairs
-- `OS/2` --- weight class, panose, typo metrics, x-height, cap height
-- `name` --- font family name, style, version strings
+- `head` — font header, units per em
+- `hhea` — horizontal header, ascent/descent
+- `hmtx` — horizontal metrics (advance widths, left side bearings)
+- `cmap` — character-to-glyph mapping
+- `kern` — legacy kerning pairs
+- `GPOS` — OpenType kerning pairs
+- `OS/2` — weight class, panose, typo metrics, x-height, cap height
+- `name` — font family name, style, version strings
 
 **What's missing for rasterization:**
-- `glyf` --- glyph outline data (quadratic bezier contours, composite glyphs)
-- `loca` --- glyph data offsets (index into `glyf` table)
-- `maxp` --- glyph count, max points/contours, max component depth
+- `glyf` — glyph outline data (quadratic bezier contours, composite glyphs)
+- `loca` — glyph data offsets (index into `glyf` table)
+- `maxp` — glyph count, max points/contours, max component depth
 - Scanline rasterizer / coverage calculation
 - Composite glyph assembly (glyphs made of other glyphs with transforms)
 
@@ -113,9 +113,9 @@ TrueType = Y-up, bitmap output = Y-down (must flip).
 | Scanline rasterizer | 1-2 weeks | 500-1000 | The core algorithm. See Approach B below. |
 | Composite glyphs | 3-5 days | 200-300 | Recursive glyph assembly with affine transforms |
 | Font scaling/metrics | 2-3 days | 100-200 | Convert from font units to pixel coordinates |
-| Anti-aliasing | Included | --- | Both rasterizer approaches produce AA output naturally |
+| Anti-aliasing | Included | — | Both rasterizer approaches produce AA output naturally |
 | **Total (no hinting)** | **3-5 weeks** | **~1500-2500** | Optimistic for first-time implementation. stb_truetype.h rasterization core alone is ~800 lines of dense C. |
-| TrueType hinting VM | 3-6 months | 15,000+ | **NOT recommended** --- enormous complexity |
+| TrueType hinting VM | 3-6 months | 15,000+ | **NOT recommended** — enormous complexity |
 
 ## Rasterization Approaches
 
@@ -129,19 +129,19 @@ TrueType = Y-up, bitmap output = Y-down (must flip).
 **Pros:** Simple to understand and implement
 **Cons:** Higher memory usage (N^2 per glyph), slower than exact coverage
 
-### Approach B: Signed-Area Trapezoid (stb_truetype approach) --- RECOMMENDED
+### Approach B: Signed-Area Trapezoid (stb_truetype approach) — RECOMMENDED
 
 1. Gather directed edges from glyph outlines, sort by top vertex
 2. For each pixel-tall scanline, maintain an active edge list
 3. For each active edge, compute signed-trapezoid areas extending rightward
-4. Coverage values accumulate via cumulative sum --- no oversampling needed
+4. Coverage values accumulate via cumulative sum — no oversampling needed
 
 **Pros:** Exact coverage, single pass, memory efficient, battle-tested algorithm
 **Cons:** More complex math, harder to debug
 
-**Recommendation:** Approach B --- it's what stb_truetype uses and produces superior quality at the same performance cost.
+**Recommendation:** Approach B — it's what stb_truetype uses and produces superior quality at the same performance cost.
 
-## Core Algorithm Pseudocode (Approach B --- Signed-Area Trapezoid)
+## Core Algorithm Pseudocode (Approach B — Signed-Area Trapezoid)
 
 ### Edge generation
 - For each contour, iterate points. Lines produce one edge. Quadratic beziers flatten via adaptive subdivision (tolerance: 0.5 pixels).
@@ -198,7 +198,7 @@ TrueType hinting is a full bytecode virtual machine (~40 opcodes) that modifies 
 - Use stb_truetype.h as reference (~800 lines of core algorithm code)
 
 ### Step 4: IRasterizer implementation (Sub-phase 34D)
-- Create `KernSmith.Rasterizers.Native/` project (or similar name)
+- Create `KernSmith.Rasterizers.Custom/` project
 - Implement full `IRasterizer` interface
 - Register via `[ModuleInitializer]`
 
@@ -280,14 +280,14 @@ Render fixed glyphs at fixed sizes, save as reference.
 
 ## Other References
 
-- [Coding Adventure: Rendering Text (Sebastian Lague)](https://www.youtube.com/watch?v=LaYPoMPRSlk) --- Visual walkthrough of TTF parsing and bezier rasterization
-- [How Do Fonts Work? (Reducible)](https://www.youtube.com/watch?v=SO83KQuuZvg) --- Deep dive into font rasterization algorithms
-- [Implementing a Font Reader and Rasterizer from Scratch](https://handmade.network/forums/articles/t/7330-implementing_a_font_reader_and_rasterizer_from_scratch%252C_part_1__ttf_font_reader.) --- Step-by-step TTF parser and rasterizer tutorial
-- [NRasterizer](https://github.com/vidstige/NRasterizer) --- Simple pure C# TTF rasterizer (Apache-2.0)
-- [VectSharp Text Rendering](https://giorgiobianchini.com/VectSharp/text.html) --- C# vector graphics library with font rendering
-- [FontStashSharp](https://github.com/FontStashSharp/FontStashSharp) --- Production reference for StbTrueTypeSharp usage patterns
-- [Adobe Community: Font Parsing Algorithms](https://community.adobe.com/questions-94/where-can-i-find-font-parsing-or-text-rasterization-algorithm-1502180) --- Discussion of rasterization algorithm resources
-- [Efficient Text Rendering in C# (StackOverflow)](https://stackoverflow.com/questions/61584477/efficient-text-rendering-on-bitmap-in-c-sharp-with-system-drawing) --- Performance techniques
-- [Font Rasterization (Wikipedia)](https://en.wikipedia.org/wiki/Font_rasterization) --- Overview of rasterization techniques, hinting, anti-aliasing
-- [stb_truetype.h](https://github.com/nothings/stb/blob/master/stb_truetype.h) --- Original C reference (~5,000 lines, extremely well-commented)
-- [Sean Barrett's Rasterizer Algorithm](https://nothings.org/gamedev/rasterize/) --- Algorithm explanation by stb author
+- [Coding Adventure: Rendering Text (Sebastian Lague)](https://www.youtube.com/watch?v=LaYPoMPRSlk) — Visual walkthrough of TTF parsing and bezier rasterization
+- [How Do Fonts Work? (Reducible)](https://www.youtube.com/watch?v=SO83KQuuZvg) — Deep dive into font rasterization algorithms
+- [Implementing a Font Reader and Rasterizer from Scratch](https://handmade.network/forums/articles/t/7330-implementing_a_font_reader_and_rasterizer_from_scratch%252C_part_1__ttf_font_reader.) — Step-by-step TTF parser and rasterizer tutorial
+- [NRasterizer](https://github.com/vidstige/NRasterizer) — Simple pure C# TTF rasterizer (Apache-2.0)
+- [VectSharp Text Rendering](https://giorgiobianchini.com/VectSharp/text.html) — C# vector graphics library with font rendering
+- [FontStashSharp](https://github.com/FontStashSharp/FontStashSharp) — Production reference for StbTrueTypeSharp usage patterns
+- [Adobe Community: Font Parsing Algorithms](https://community.adobe.com/questions-94/where-can-i-find-font-parsing-or-text-rasterization-algorithm-1502180) — Discussion of rasterization algorithm resources
+- [Efficient Text Rendering in C# (StackOverflow)](https://stackoverflow.com/questions/61584477/efficient-text-rendering-on-bitmap-in-c-sharp-with-system-drawing) — Performance techniques
+- [Font Rasterization (Wikipedia)](https://en.wikipedia.org/wiki/Font_rasterization) — Overview of rasterization techniques, hinting, anti-aliasing
+- [stb_truetype.h](https://github.com/nothings/stb/blob/master/stb_truetype.h) — Original C reference (~5,000 lines, extremely well-commented)
+- [Sean Barrett's Rasterizer Algorithm](https://nothings.org/gamedev/rasterize/) — Algorithm explanation by stb author

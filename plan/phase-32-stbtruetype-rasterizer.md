@@ -125,6 +125,8 @@ public sealed class StbTrueTypeCapabilities : IRasterizerCapabilities
     public bool SupportsOutlineStroke => false;    // Use EDT outline effect instead
     public bool SupportsSystemFonts => false;
     public bool HandlesOwnSizing => false;
+    public IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes =>
+        [AntiAliasMode.None, AntiAliasMode.Grayscale];
 }
 ```
 
