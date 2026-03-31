@@ -1,6 +1,7 @@
 using KernSmith.Font;
 using KernSmith.Font.Tables;
 using KernSmith.Rasterizer;
+using KernSmith.Rasterizers.FreeType;
 using Shouldly;
 
 namespace KernSmith.Tests.Rasterizer;

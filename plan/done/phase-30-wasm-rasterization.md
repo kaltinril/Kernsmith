@@ -1,6 +1,6 @@
 # Phase 30 — Extract FreeType Rasterizer to Plugin
 
-> **Status**: Planning
+> **Status**: Complete
 > **Created**: 2026-03-20
 > **Updated**: 2026-03-30
 > **Related**: [GitHub Issue #39](https://github.com/kaltinril/Kernsmith/issues/39), Phase 32 (StbTrueType plugin), Phase 33 (WASM validation)
@@ -130,12 +130,12 @@ This is a **breaking change** for existing consumers:
 
 ## Success Criteria
 
-- [ ] `KernSmith.csproj` has zero native dependencies
-- [ ] `FreeTypeRasterizer` lives in `KernSmith.Rasterizers.FreeType` project
-- [ ] GDI, DirectWrite, and FreeType plugins all follow identical registration pattern
-- [ ] All existing tests pass with the new project structure
-- [ ] CLI, UI, samples, benchmarks all work unchanged
-- [ ] Core library can be referenced on WASM without `PlatformNotSupportedException`
+- [x] `KernSmith.csproj` has zero native dependencies
+- [x] `FreeTypeRasterizer` lives in `KernSmith.Rasterizers.FreeType` project
+- [x] GDI, DirectWrite, and FreeType plugins all follow identical registration pattern
+- [x] All existing tests pass with the new project structure
+- [x] CLI, UI, samples, benchmarks all work unchanged
+- [x] Core library can be referenced on WASM without `PlatformNotSupportedException`
 
 ## Risk Assessment
 

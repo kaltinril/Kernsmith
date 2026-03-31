@@ -1,8 +1,10 @@
 using KernSmith.Cli.Commands;
 using KernSmith.Cli.Utilities;
 
-#if WINDOWS
 // Force backend assembly loading so [ModuleInitializer] registers them with RasterizerFactory
+System.Runtime.CompilerServices.RuntimeHelpers.RunModuleConstructor(
+    typeof(KernSmith.Rasterizers.FreeType.FreeTypeRasterizer).Module.ModuleHandle);
+#if WINDOWS
 System.Runtime.CompilerServices.RuntimeHelpers.RunModuleConstructor(
     typeof(KernSmith.Rasterizers.Gdi.GdiRasterizer).Module.ModuleHandle);
 #endif

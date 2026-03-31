@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>CS1591</NoWarn>
+    <PackageId>KernSmith.Rasterizers.FreeType</PackageId>
+    <Description>FreeType rasterizer backend for KernSmith. Cross-platform. Supports color fonts, variable fonts, SDF, and outline effects.</Description>
+    <PackageProjectUrl>https://github.com/kaltinril/KernSmith</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Authors>Kaltinril (Jeremy Swartwood)</Authors>
+    <PackageTags>kernsmith;freetype;rasterizer;bitmap-font;game-dev;cross-platform;color-font;variable-font;sdf</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KernSmith.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FreeTypeSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KernSmith\KernSmith.csproj" />
+  </ItemGroup>
+</Project>

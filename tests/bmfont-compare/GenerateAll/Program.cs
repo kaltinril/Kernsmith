@@ -7,6 +7,7 @@ using KernSmith;
 using KernSmith.Rasterizer;
 
 // Force assembly load so module initializers run
+RuntimeHelpers.RunClassConstructor(typeof(KernSmith.Rasterizers.FreeType.FreeTypeRasterizer).TypeHandle);
 RuntimeHelpers.RunClassConstructor(typeof(KernSmith.Rasterizers.Gdi.GdiRasterizer).TypeHandle);
 RuntimeHelpers.RunClassConstructor(typeof(KernSmith.Rasterizers.DirectWrite.TerraFX.DirectWriteRasterizer).TypeHandle);
 

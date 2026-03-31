@@ -1,11 +1,12 @@
 using System.Runtime.InteropServices;
 using KernSmith.Font.Models;
 using KernSmith.Font.Tables;
+using KernSmith.Rasterizer;
 using FreeTypeSharp;
 
-namespace KernSmith.Rasterizer;
+namespace KernSmith.Rasterizers.FreeType;
 
-internal sealed class FreeTypeRasterizer : IRasterizer
+public sealed class FreeTypeRasterizer : IRasterizer
 {
     private static readonly IRasterizerCapabilities FreeTypeCapabilitiesInstance = new FreeTypeCapabilities();
 

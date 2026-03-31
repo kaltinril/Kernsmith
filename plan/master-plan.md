@@ -1,6 +1,6 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-21, 55, 60-69, 72-78, 77B, 79, 80 complete. Phases 30-35 (rasterizer plugins, WASM) are planning/future. Phase 95, 99, 150 planning.
+> **Status**: Phases 1-21, 30, 55, 60-69, 72-78, 77B, 79, 80 complete. Phases 31-35 (rasterizer plugins, WASM) are planning/future. Phase 95, 99, 150 planning.
 > **Date**: 2026-03-30
 
 ---
@@ -79,7 +79,7 @@ Output Layer
 
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
-| 30 | [Extract FreeType Rasterizer to Plugin](phase-30-wasm-rasterization.md) | Extract FreeTypeRasterizer from core library into standalone plugin package | Planning |
+| 30 | [Extract FreeType Rasterizer to Plugin](done/phase-30-wasm-rasterization.md) | Extract FreeTypeRasterizer from core library into standalone plugin package | Complete |
 | 31 | [WASM Platform Restrictions Research](phase-31-wasm-restrictions-research.md) | Research WASM/AOT platform restrictions affecting rasterizer strategy | Planning |
 | 32 | [StbTrueType Managed Rasterizer](phase-32-stbtruetype-rasterizer.md) | Pure C# rasterizer plugin using StbTrueTypeSharp for WASM/AOT support | Planning |
 | 33 | [WASM Integration and Validation](phase-33-wasm-validation.md) | Validate KernSmith + StbTrueType works in Blazor WASM | Future |
