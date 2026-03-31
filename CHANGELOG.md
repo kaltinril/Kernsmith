@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Rasterizer plugin template and sample project for custom backends (Phase 78E)
+- Synthetic bold/italic CLI flags (`--synthetic-bold`, `--synthetic-italic`) and UI controls (Phase 78G)
+- Guard against double bold/italic when font file is already styled (Phase 78G)
+- DirectWrite synthetic bold/italic support (Phase 78G)
+
+### Fixed
+
+- Space character now gets a transparent atlas entry when outline > 0, matching BMFont behavior (Phase 78F)
+- Deferred 4 remaining rasterizer issues to Phase 150 (color fonts, variable fonts, channel-based outlines, GDI MatchCharHeight)
+
 ## [0.10.2] - 2026-03-28
 
 ### Changed
@@ -26,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- CLI `--rasterizer` flag to select backend (freetype, gdi, directwrite) (Phase 78D)
+- CLI `list-rasterizers` command showing available backends and capabilities (Phase 78D)
+- UI rasterizer dropdown with capability-aware option disabling (Phase 78D)
 - Multi-package NuGet publishing — all packages (core, rasterizers, integrations) publish from a single workflow
 - Split publish workflow into parallel ubuntu/windows pack jobs for faster CI
 - NuGet metadata (readme, tags, authors, URL) for rasterizer packages
@@ -51,8 +68,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Pluggable rasterizer architecture — IRasterizer, IRasterizerCapabilities, RasterizerFactory, RasterizerBackend enum (Phase 78A)
+- GDI rasterizer backend for BMFont pixel-perfect parity via Win32 P/Invoke (Windows-only) (Phase 78B)
+- GDI parity fixes — TEXTMETRIC metrics, GetKerningPairs kerning, LoadSystemFont support (Phase 78BB)
 - DirectWrite rasterizer backend with sizing fixes (Phase 78C)
-- Rasterizer abstraction foundation — pluggable IRasterizer backends (Phase 78A)
+- Font sizing and DPI parity verification across all backends (Phase 78CC)
+- Super-sampling support across all rasterizer backends (Phase 78BB)
 - README for bmfont comparison tools
 
 ### Changed

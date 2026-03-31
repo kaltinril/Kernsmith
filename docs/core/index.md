@@ -5,7 +5,7 @@ The `KernSmith` NuGet package is the core library that powers bitmap font genera
 ## Pipeline Flow
 
 1. **Font reading** -- parse TTF/OTF/WOFF tables (cmap, head, hhea, OS/2, GPOS) for the requested codepoints
-2. **Rasterization** -- render glyphs via FreeTypeSharp with optional effects (outline, gradient, shadow)
+2. **Rasterization** -- render glyphs via a [pluggable rasterizer backend](../rasterizers/index.md) (FreeType by default, with GDI and DirectWrite alternatives) with optional effects (outline, gradient, shadow)
 3. **Atlas packing** -- arrange glyphs into texture pages using MaxRects or Skyline algorithms
 4. **Output formatting** -- produce BMFont `.fnt` descriptors (text, XML, or binary) and encoded atlas images
 

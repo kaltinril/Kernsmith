@@ -28,6 +28,16 @@ dotnet build apps/KernSmith.Ui
 dotnet run --project apps/KernSmith.Ui
 ```
 
+## Features
+
+- Font file loading and system font selection
+- Real-time bitmap font preview
+- Full effects configuration (outline, gradient, shadow)
+- Atlas packing and texture settings
+- Character set selection with Unicode block browser
+- Rasterizer backend selection — choose between FreeType, GDI, or DirectWrite from a dropdown. Available backends depend on the current platform and installed NuGet packages.
+- Project save/load and session persistence
+
 ## Dependencies
 
 - **MonoGame.Framework.DesktopGL** — rendering, input, windowing

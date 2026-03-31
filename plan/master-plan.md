@@ -1,6 +1,6 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-21, 55, 60-69, 72-77, 77B, 78G, 79, 80 complete. Phase 30 (WASM) is future/exploratory. Phase 78A, 78B, 78BB, 78C, 78CC, 78D, 78E complete. Phase 78S planned. Phase 95, 99, 150 planning.
+> **Status**: Phases 1-21, 55, 60-69, 72-77, 77B, 78G, 79, 80 complete. Phase 30 (WASM) is future/exploratory. Phase 78A, 78B, 78BB, 78C, 78CC, 78D, 78E, 78S complete. Phase 95, 99, 150 planning.
 > **Date**: 2026-03-24
 
 ---

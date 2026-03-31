@@ -138,7 +138,7 @@ public class FontConfigPanel : Panel
         var familyLabel = new Label();
         familyLabel.Text = "System Font:";
         stack.Children.Add(familyLabel.Visual);
-        TooltipService.SetTooltip(familyLabel, "Choose an installed system font");
+        TooltipService.SetTooltip(familyLabel, "Pick an installed system font. Requires a backend that supports system fonts (GDI or DirectWrite).");
 
         var familyCombo = new ComboBox();
         familyCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
@@ -254,7 +254,7 @@ public class FontConfigPanel : Panel
         var rasterizerLabel = new Label();
         rasterizerLabel.Text = "Rasterizer:";
         stack.Children.Add(rasterizerLabel.Visual);
-        TooltipService.SetTooltip(rasterizerLabel, "Rasterizer backend for glyph rendering");
+        TooltipService.SetTooltip(rasterizerLabel, "Glyph rasterizer backend. FreeType: cross-platform default. GDI: Windows-only, matches BMFont output. DirectWrite: Windows-only, modern rendering with color/variable font support.");
 
         _rasterizerCombo = new ComboBox();
         _rasterizerCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
