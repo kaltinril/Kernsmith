@@ -1,9 +1,10 @@
-# Phase 31 — StbTrueType Managed Rasterizer Plugin
+# Phase 32 — StbTrueType Managed Rasterizer Plugin
 
 > **Status**: Planning
 > **Created**: 2026-03-30
-> **Depends on**: Phase 30 (FreeType extraction)
-> **Related**: [GitHub Issue #39](https://github.com/kaltinril/Kernsmith/issues/39), Phase 32 (WASM validation)
+> **Depends on**: Phase 30 (FreeType extraction), Phase 31 (WASM restrictions research)
+> **Blocks**: Phase 33 (WASM validation)
+> **Related**: [GitHub Issue #39](https://github.com/kaltinril/Kernsmith/issues/39), Phase 33 (WASM validation)
 
 ## Goal
 
@@ -37,7 +38,7 @@ Add a pure C# rasterizer backend using **StbTrueTypeSharp** so KernSmith can gen
 
 **NRasterizer / LunarFonts**: Too small/incomplete/abandoned for production use.
 
-### References for Rolling Our Own (Future — Phase 33)
+### References for Rolling Our Own (Future — Phase 34)
 
 - [FontStashSharp](https://github.com/FontStashSharp/FontStashSharp) — Production C# font rendering using StbTrueTypeSharp, reference architecture
 - [Coding Adventure: Rendering Text (Sebastian Lague)](https://www.youtube.com/watch?v=LaYPoMPRSlk) — Visual walkthrough of TTF parsing and bezier rasterization
@@ -63,13 +64,13 @@ Add a pure C# rasterizer backend using **StbTrueTypeSharp** so KernSmith can gen
 | Synthetic bold/italic | Yes | No | Must implement in post-processing or skip |
 | COLR/CPAL color fonts | Yes | No | Feature gap — acceptable for fallback |
 | Variable font axes | Yes | No | Feature gap — acceptable for fallback |
-| SDF rendering | Yes | No | Must implement via post-processing or skip |
+| SDF rendering | Yes | Yes | None — StbTrueTypeSharp supports SDF via `stbtt_GetCodepointSDF()` and `stbtt_GetGlyphSDF()` |
 | Outline stroking | Yes (FT_Stroker) | No | Use EDT-based outline (already exists) |
 | OTF/CFF outlines | Yes | No | TTF only — acceptable for fallback |
 | System font loading | Yes | No | `SupportsSystemFonts = false` |
 | TTC multi-face | Yes | Yes | None |
 
-**Key insight**: KernSmith's own TTF parser already handles GPOS kerning, so StbTrueType's lack of GPOS is not a gap. The main gaps (hinting, color fonts, variable fonts, SDF) are acceptable for a "works everywhere" fallback — users needing those features use the FreeType backend.
+**Key insight**: KernSmith's own TTF parser already handles GPOS kerning, so StbTrueType's lack of GPOS is not a gap. The main gaps (hinting, color fonts, variable fonts) are acceptable for a "works everywhere" fallback — users needing those features use the FreeType backend.
 
 ## Implementation Plan
 
@@ -80,29 +81,37 @@ src/KernSmith.Rasterizers.StbTrueType/
 ├── KernSmith.Rasterizers.StbTrueType.csproj
 ├── StbTrueTypeRasterizer.cs
 ├── StbTrueTypeCapabilities.cs
-└── StbTrueTypeRegistration.cs
+├── StbTrueTypeRegistration.cs
+└── README.md
 ```
 
 **Project file:**
 - Target: `net8.0;net10.0`
-- Dependencies: `KernSmith` (core) + `StbTrueTypeSharp` (latest)
+- Dependencies: `KernSmith` (core) + `StbTrueTypeSharp` (1.26.12)
 - NuGet package: `KernSmith.Rasterizers.StbTrueType`
 - Namespace: `KernSmith.Rasterizers.StbTrueType`
-- No `AllowUnsafeBlocks` needed (pure managed)
+- `<AllowUnsafeBlocks>true</AllowUnsafeBlocks>` — StbTrueTypeSharp is pure C# (no native P/Invoke) but uses unsafe pointer arithmetic extensively. AllowUnsafeBlocks is required.
+- Add project to `KernSmith.sln`
+- Create `README.md` for NuGet package (follow GDI plugin pattern)
 
 ### Step 2: Implement `IRasterizer`
 
+> **Note:** C# method names in StbTrueTypeSharp may differ from the C API names (e.g., `stbtt_GetCodepointBitmap`). Study [FontStashSharp.Rasterizers.StbTrueTypeSharp](https://github.com/FontStashSharp/FontStashSharp) source for correct C# API usage patterns.
+
 ```csharp
-public sealed class StbTrueTypeRasterizer : IRasterizer
+public sealed class StbTrueTypeRasterizer : IRasterizer, IDisposable
 {
     // LoadFont — parse TTF bytes via StbTrueType.CreateFont()
     // RasterizeGlyph — StbTrueType.GetCodepointBitmap() for greyscale
-    // GetGlyphMetrics — StbTrueType.GetCodepointHMetrics() + bbox
+    // RasterizeAll(IEnumerable<int>, RasterOptions) — loop over codepoints
+    // GetGlyphMetrics — StbTrueType.GetCodepointHMetrics() + bbox (avoid full rasterization)
     // GetFontMetrics — StbTrueType.GetFontVMetrics()
     // GetKerningPairs — return null (KernSmith handles GPOS separately)
     // LoadSystemFont — throw NotSupportedException
     // SetVariationAxes — throw NotSupportedException
     // SelectColorPalette — throw NotSupportedException
+    // Dispose — IRasterizer requires IDisposable; StbTrueType.FontInfo doesn't need
+    //           disposal but implement proper dispose pattern for the interface contract
 }
 ```
 
@@ -112,8 +121,8 @@ public sealed class StbTrueTypeCapabilities : IRasterizerCapabilities
 {
     public bool SupportsColorFonts => false;
     public bool SupportsVariableFonts => false;
-    public bool SupportsSdf => false;         // Could add post-process SDF later
-    public bool SupportsOutlineStroke => false; // Use EDT outline effect instead
+    public bool SupportsSdf => true;              // Via stbtt_GetCodepointSDF() / stbtt_GetGlyphSDF()
+    public bool SupportsOutlineStroke => false;    // Use EDT outline effect instead
     public bool SupportsSystemFonts => false;
     public bool HandlesOwnSizing => false;
 }
@@ -122,6 +131,7 @@ public sealed class StbTrueTypeCapabilities : IRasterizerCapabilities
 ### Step 3: Add `[ModuleInitializer]` registration
 
 ```csharp
+#pragma warning disable CA2255 // The 'ModuleInitializer' attribute should not be used in libraries
 internal static class StbTrueTypeRegistration
 {
     [ModuleInitializer]
@@ -130,39 +140,126 @@ internal static class StbTrueTypeRegistration
         RasterizerFactory.Register(RasterizerBackend.StbTrueType, () => new StbTrueTypeRasterizer());
     }
 }
+#pragma warning restore CA2255
 ```
 
 ### Step 4: Add `StbTrueType` to `RasterizerBackend` enum
 
 Add a new enum value to `RasterizerBackend` in the core library.
 
-### Step 5: Backend auto-detection
+### Step 5: Testing
 
-Update `RasterizerFactory` to support auto-detection:
-- If user specifies `Backend = RasterizerBackend.Auto`, prefer FreeType when available, fall back to StbTrueType
-- Clear error if no backend is registered
+See expanded testing strategy below.
 
-### Step 6: Testing
+## Implementation Details
 
-- Run existing test suite with `Backend = RasterizerBackend.StbTrueType`
-- Add comparison tests: FreeType vs StbTrueType output for same font/size
-- Document expected differences (hinting, anti-aliasing quality)
-- Test with `Roboto-Regular.ttf` fixture
+### Memory Pinning
+
+`ReadOnlyMemory<byte>` from `LoadFont` must be pinned or copied to a `byte[]` that outlives the stb `FontInfo` lifetime. The font data buffer must remain valid for the entire lifetime of the rasterizer instance. Use `GCHandle.Alloc(..., GCHandleType.Pinned)` or copy to a long-lived array.
+
+### Scale Factor
+
+Use `stbtt_ScaleForMappingEmToPixels` (not `stbtt_ScaleForPixelHeight`) for FreeType parity. This gives ppem-based scaling that matches FreeType's `FT_Set_Char_Size` behavior.
+
+### Coordinate System
+
+stb_truetype uses a y-up coordinate system (y increases upward), while KernSmith `GlyphMetrics` expects screen coordinates. Ensure correct `BearingX` / `BearingY` mapping:
+- `BearingX` = `ix0` (left side bearing in pixels)
+- `BearingY` = `-iy0` (negate because stb y-up vs screen y-down)
+
+### SuperSample
+
+Render at `Size * SuperSample` scale, then downscale the resulting bitmap using box filter averaging. This matches the FreeType rasterizer's super-sampling approach.
+
+### AntiAliasMode.None
+
+stb_truetype always produces grayscale output. For `AntiAliasMode.None`, threshold the grayscale bitmap to 1-bit: any pixel >= 128 becomes 255, otherwise 0.
+
+### EnableHinting
+
+stb_truetype has no hinting support. When `EnableHinting` is set, ignore silently. The capabilities object reports this limitation so callers can check before relying on hinting.
+
+### Bold / Italic
+
+Synthetic bold and italic are not supported by stb_truetype. Check capabilities before applying. Throw `NotSupportedException` if bold/italic is requested and the capability is not available.
+
+### Bitmap Data Ownership
+
+stb_truetype allocates bitmap memory internally. Copy the bitmap data from stb-allocated memory to a managed `byte[]` before the stb allocation is freed. Do not return pointers to stb-owned memory.
+
+## Testing Strategy
+
+### Factory Registration Tests
+- Follow `GdiRasterizerTests.cs` pattern with `[Collection("RasterizerFactory")]`
+- Verify `RasterizerFactory.Create(RasterizerBackend.StbTrueType)` returns correct type
+- Verify registration via `[ModuleInitializer]`
+
+### Capabilities Verification Tests
+- `SupportsSdf` returns `true`
+- `SupportsColorFonts` returns `false`
+- `SupportsVariableFonts` returns `false`
+- `SupportsSystemFonts` returns `false`
+- `SupportsOutlineStroke` returns `false`
+
+### Font Loading Tests
+- Load `Roboto-Regular.ttf` from test fixtures
+- Reject invalid/corrupt font data gracefully
+- Handle TTC files (multi-face)
+- `LoadSystemFont` throws `NotSupportedException`
+
+### Glyph Rasterization Tests
+- Rasterize ASCII 'A' — verify non-empty bitmap with expected dimensions
+- Missing codepoint — verify returns empty/null glyph data
+- Space character — verify zero-width bitmap with correct advance
+
+### Metrics Accuracy Tests
+- Compare glyph metrics against FreeType baseline
+- Tolerance: +/-1 pixel for dimensions, +/-1 pixel for bearings
+- Verify font-level metrics (ascent, descent, line gap)
+
+### SDF Rendering Tests
+- Rasterize glyph with SDF enabled
+- Verify output contains distance field values (not just binary/grayscale)
+
+### End-to-End Tests
+- `BmFont.Generate()` with `Backend = RasterizerBackend.StbTrueType`
+- Verify valid BMFont .fnt output
+- Verify atlas PNG is generated
+
+### Unsupported Feature Handling
+- Bold style — verify appropriate error/exception
+- ColorFont options — verify appropriate error/exception
+- VariationAxes — verify `NotSupportedException`
+
+## Risks
+
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| Memory management with unsafe pointers | High | Must pin font data for stb lifetime; use `GCHandle` or dedicated copy |
+| Thread safety | Medium | StbTrueType FontInfo is not safe for concurrent use; document single-threaded requirement |
+| Bitmap data ownership | Medium | Always copy stb-allocated bitmap to managed `byte[]` before freeing |
+| Coordinate system mapping errors | High | This is the #1 source of bugs; thorough testing against FreeType baseline |
+| API name differences from C | Low | Study FontStashSharp source for correct C# API patterns |
 
 ## Success Criteria
 
-- [ ] `StbTrueTypeRasterizer` implements full `IRasterizer` interface
+- [ ] `StbTrueTypeRasterizer` implements full `IRasterizer` interface (including `IDisposable`)
+- [ ] `RasterizeAll` loop implementation works for batch rasterization
+- [ ] `GetGlyphMetrics` implemented for performance (avoids full rasterization)
 - [ ] Registered via `[ModuleInitializer]` (same pattern as GDI/DirectWrite)
 - [ ] Generates valid BMFont output for ASCII + extended Unicode
 - [ ] No native dependencies — runs on any .NET platform
 - [ ] Glyph metrics are within acceptable tolerance of FreeType output
+- [ ] SDF rendering works via `stbtt_GetCodepointSDF()` / `stbtt_GetGlyphSDF()`
 - [ ] All existing non-FreeType-specific tests pass
 
-## Sources
+## References
 
+- [StbTrueTypeSharp on NuGet](https://www.nuget.org/packages/StbTrueTypeSharp) — version 1.26.12, Public Domain
 - [StbTrueTypeSharp on GitHub](https://github.com/StbSharp/StbTrueTypeSharp) — Public Domain C# port
-- [StbTrueTypeSharp on NuGet](https://www.nuget.org/packages/StbTrueTypeSharp)
 - [FontStashSharp](https://github.com/FontStashSharp/FontStashSharp) — Production validation of StbTrueTypeSharp
-- [stb_truetype.h](https://github.com/nothings/stb/blob/master/stb_truetype.h) — Original C implementation
+- [FontStashSharp.Rasterizers.StbTrueTypeSharp](https://github.com/FontStashSharp/FontStashSharp) — Reference implementation for C# API usage patterns
+- [stb_truetype.h](https://github.com/nothings/stb/blob/master/stb_truetype.h) — Original C implementation (~5,000 lines)
+- [StbTrueTypeSharp SDF support](https://github.com/StbSharp/StbTrueTypeSharp/issues/1) — SDF API discussion
 - [GitHub Issue #39](https://github.com/kaltinril/Kernsmith/issues/39) — Feature request
 - [Phase 78E — Plugin Template](done/phase-78e-plugin-template.md) — Plugin pattern to follow

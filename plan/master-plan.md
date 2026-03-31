@@ -1,7 +1,7 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-21, 55, 60-69, 72-78, 77B, 79, 80 complete. Phases 30-34 (rasterizer plugins, WASM) are planning/future. Phase 95, 99, 150 planning.
-> **Date**: 2026-03-24
+> **Status**: Phases 1-21, 55, 60-69, 72-78, 77B, 79, 80 complete. Phases 30-35 (rasterizer plugins, WASM) are planning/future. Phase 95, 99, 150 planning.
+> **Date**: 2026-03-30
 
 ---
 
@@ -79,11 +79,12 @@ Output Layer
 
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
-| 30 | [Extract FreeType to Plugin](phase-30-wasm-rasterization.md) | Extract FreeTypeRasterizer from core library into standalone plugin package | Planning |
-| 31 | [StbTrueType Rasterizer](phase-31-stbtruetype-rasterizer.md) | Pure C# rasterizer plugin using StbTrueTypeSharp for WASM/AOT support | Planning |
-| 32 | [WASM Validation](phase-32-wasm-validation.md) | Validate KernSmith + StbTrueType works in Blazor WASM | Future |
-| 33 | [Custom Rasterizer](phase-33-custom-rasterizer.md) | Research/prototype a fully custom pure C# TTF rasterizer from scratch | Future |
-| 34 | [FontStashSharp Rasterizer](phase-34-fontstashsharp-rasterizer.md) | Rasterizer plugin backed by FontStashSharp library | Future |
+| 30 | [Extract FreeType Rasterizer to Plugin](phase-30-wasm-rasterization.md) | Extract FreeTypeRasterizer from core library into standalone plugin package | Planning |
+| 31 | [WASM Platform Restrictions Research](phase-31-wasm-restrictions-research.md) | Research WASM/AOT platform restrictions affecting rasterizer strategy | Planning |
+| 32 | [StbTrueType Managed Rasterizer](phase-32-stbtruetype-rasterizer.md) | Pure C# rasterizer plugin using StbTrueTypeSharp for WASM/AOT support | Planning |
+| 33 | [WASM Integration and Validation](phase-33-wasm-validation.md) | Validate KernSmith + StbTrueType works in Blazor WASM | Future |
+| 34 | [Custom Pure C# Rasterizer](phase-34-custom-rasterizer.md) | Research/prototype a fully custom pure C# TTF rasterizer from scratch | Future |
+| 35 | [FontStashSharp Rasterizer](phase-35-fontstashsharp-rasterizer.md) | Rasterizer plugin backed by FontStashSharp library — Recommended: Defer indefinitely | Future |
 | 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
 | 77B | [Force Size & Remove Presets](done/phase-77b-atlas-size-auto-mode.md) | Replace engine presets with Force Size checkbox | Complete |
 | 80 | [Atlas Preview Rendering](done/phase-80-atlas-preview-rendering.md) | Fix atlas preview rendering quality in UI to match saved PNG | Complete |

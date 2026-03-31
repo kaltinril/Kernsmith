@@ -3,7 +3,7 @@
 > **Status**: Planning
 > **Created**: 2026-03-20
 > **Updated**: 2026-03-30
-> **Related**: [GitHub Issue #39](https://github.com/kaltinril/Kernsmith/issues/39), Phase 31 (StbTrueType plugin), Phase 32 (WASM validation)
+> **Related**: [GitHub Issue #39](https://github.com/kaltinril/Kernsmith/issues/39), Phase 32 (StbTrueType plugin), Phase 33 (WASM validation)
 
 ## Problem
 
@@ -62,30 +62,43 @@ src/KernSmith.Rasterizers.FreeType/
 ### Step 2: Move FreeType files out of core
 
 1. Move `FreeTypeRasterizer.cs` and `FreeTypeNative.cs` to the new project
-2. Change `FreeTypeRasterizer` from `internal sealed` to `public sealed`
-3. Remove `FreeTypeSharp` dependency from `KernSmith.csproj`
-4. Remove `AllowUnsafeBlocks` from `KernSmith.csproj` (if no other unsafe code remains)
-5. Add `[ModuleInitializer]` registration in `FreeTypeRegistration.cs`
+2. Move or extract the `FreeTypeCapabilities` inner class (currently a `private sealed class` nested inside `FreeTypeRasterizer`) into its own file
+3. Check `FreeTypeException` — it is only used inside `FreeTypeRasterizer.cs`, so move it to the new plugin project
+4. Change `FreeTypeRasterizer` from `internal sealed` to `public sealed`
+5. Update namespace from `KernSmith.Rasterizer` to `KernSmith.Rasterizers.FreeType`
+6. Add `using KernSmith.Rasterizer;` for core interfaces (`IRasterizer`, `IRasterizerCapabilities`, etc.)
+7. Remove `FreeTypeSharp` dependency from `KernSmith.csproj`
+8. Remove `AllowUnsafeBlocks` from `KernSmith.csproj` (if no other unsafe code remains)
+9. Add `[ModuleInitializer]` registration in `FreeTypeRegistration.cs`
+10. Add `[assembly: InternalsVisibleTo("KernSmith.Tests")]` on the new project so tests can access internals
 
 ### Step 3: Update `RasterizerFactory`
 
 - Remove FreeType pre-registration from static constructor
+- **Fix `ResetForTesting()`** — lines 58-62 currently hardcode FreeType re-registration (`Backends[RasterizerBackend.FreeType] = () => new FreeTypeRasterizer()`). After extraction, the factory must NOT reference `FreeTypeRasterizer`. Change `ResetForTesting()` to simply clear all backends without re-registering any
+- After extraction, the factory starts **EMPTY**. Backends only register via `[ModuleInitializer]` when their assembly loads
 - Add auto-detection: if no backends are registered, throw a clear error message explaining which plugin packages to install
-- Default `RasterizerBackend` enum value should remain `FreeType` for backward compatibility
+- Default `RasterizerBackend.FreeType` enum value remains for backward compatibility, but the factory will not have it pre-registered
 
-### Step 4: Handle `CompositeWithFtStroker`
+### Step 4: Remove `CompositeWithFtStroker` dead code
 
-The `BmFont.cs` outline stroking code calls FreeType-specific methods. Options:
-- Move outline stroking to `IRasterizer` capability (preferred — `SupportsOutlineStroke` already exists in capabilities)
-- Or move the compositing code to the FreeType plugin and expose via an interface
+Verify `CompositeWithFtStroker` is dead code (never called anywhere in the codebase — it has been disabled since Phase 12 with `useFtStroker = false`), then delete it from `BmFont.cs`. This eliminates the FreeType coupling entirely rather than trying to abstract it.
+
+### Step 4A: Update solution file
+
+Add the new `KernSmith.Rasterizers.FreeType` project to `KernSmith.sln`.
 
 ### Step 5: Update consumers
 
-- **CLI**: Add project reference to `KernSmith.Rasterizers.FreeType` + module initializer trigger (same pattern as GDI/DirectWrite)
-- **Tests**: Add project reference, update direct `FreeTypeRasterizer` instantiations
+For consumers to trigger the `[ModuleInitializer]`, they need a `<ProjectReference>` to the plugin project. The project reference causes the assembly to load at startup, which fires the module initializer automatically. This is the same pattern already working for GDI and DirectWrite plugins.
+
+- **CLI**: Add project reference to `KernSmith.Rasterizers.FreeType`
+- **Tests**: Add project reference, update direct `FreeTypeRasterizer` instantiations, update `using` directives
 - **Samples**: Add project reference
 - **UI**: Add project reference
 - **Benchmarks**: Add project reference
+
+In `FreeTypeRegistration.cs`, add `#pragma warning disable CA2255` / `#pragma warning restore CA2255` around the `[ModuleInitializer]` attribute (matching the GDI and DirectWrite registration pattern).
 
 ### Step 6: Update NuGet packaging
 
@@ -107,6 +120,14 @@ This is a **breaking change** for existing consumers:
 2. **Clear error message** — If no rasterizer is registered, throw: "No rasterizer backend registered. Install KernSmith.Rasterizers.FreeType or another rasterizer plugin."
 3. **Migration guide** — Document in CHANGELOG and README
 
+## Testing Strategy
+
+- **Factory empty state**: `RasterizerFactory.Create(RasterizerBackend.FreeType)` should throw `InvalidOperationException` when the FreeType plugin assembly is NOT loaded/referenced
+- **Factory with plugin**: `RasterizerFactory.Create(RasterizerBackend.FreeType)` should succeed when FreeType plugin assembly is referenced (project reference triggers `[ModuleInitializer]`)
+- **Regression test matrix**: Run the full existing test suite — `ColorFontTests`, `VariableFontTests`, `RasterizerFactoryTests`, and all other tests that exercise rasterization
+- **NuGet packaging test**: Build the `KernSmith.Rasterizers.FreeType` package, verify it contains the correct managed assemblies AND native FreeType binaries
+- **WASM smoke test**: Verify the core `KernSmith` library loads without `PlatformNotSupportedException` when no FreeType plugin is referenced (validates the extraction worked)
+
 ## Success Criteria
 
 - [ ] `KernSmith.csproj` has zero native dependencies
@@ -121,9 +142,24 @@ This is a **breaking change** for existing consumers:
 | Risk | Severity | Mitigation |
 |------|----------|------------|
 | Breaking change for existing NuGet consumers | Medium | Meta-package + clear error messages |
-| `CompositeWithFtStroker` coupling | Low | Move to IRasterizer capability |
+| `CompositeWithFtStroker` coupling | Low | Delete dead code (disabled since Phase 12) |
 | Test refactoring scope | Low | Straightforward reference additions |
 | InternalsVisibleTo changes | Low | FreeType types become public in plugin |
+| Module initializer ordering | Low | If multiple plugins load, order is undefined; last to register for a given enum value wins. Document this behavior |
+| Assembly loading in WASM | Medium | `[ModuleInitializer]` pattern should work in WASM but needs validation in Phase 33 |
+| FreeTypeSharp native binary packaging | Medium | After extraction, native binaries must ship with the **plugin** NuGet package, not core. Verify with NuGet packaging test |
+| Backward compatibility — namespace change | Medium | Code using `using KernSmith.Rasterizer; new FreeTypeRasterizer()` will break due to namespace change to `KernSmith.Rasterizers.FreeType`. Document in migration guide |
+
+## Downstream Corrections (for Phase 32 — StbTrueType Plugin)
+
+- StbTrueTypeSharp **REQUIRES** `AllowUnsafeBlocks` — it is not pure safe managed code
+- StbTrueTypeSharp **DOES** support SDF via `stbtt_GetGlyphSDF()` / `stbtt_GetCodepointSDF()`
+
+## References
+
+- [FreeTypeSharp NuGet](https://www.nuget.org/packages/FreeTypeSharp) — version 3.1.0
+- [.NET Module Initializer docs](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-9.0/module-initializers)
+- [FontStashSharp plugin architecture](https://github.com/FontStashSharp/FontStashSharp) — reference for plugin pattern
 
 ## Sources
 
