@@ -1,6 +1,6 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-21, 55, 60-69, 72-77, 77B, 79, 80 complete. Phase 30 (WASM) is future/exploratory. Phase 78A, 78B, 78BB, 78C, 78CC, 78D, 78E complete. Phase 78G, 78S planned. Phase 95, 99 planning.
+> **Status**: Phases 1-21, 55, 60-69, 72-78, 77B, 79, 80 complete. Phase 30 (WASM) is future/exploratory. Phase 95, 99, 150 planning.
 > **Date**: 2026-03-24
 
 ---
@@ -89,16 +89,11 @@ Output Layer
 | 84 | [Hiero CLI Changes](phase-84-hiero-cli-changes.md) | Update CLI for `.hiero` format auto-detection and batch support | Planning |
 | 85 | [Hiero Documentation](phase-85-hiero-documentation.md) | Document `.hiero` support in README, CLI docs, samples | Planning |
 | 79 | [Replace FluentAssertions with Shouldly](done/phase-79-replace-fluentassertions.md) | Replace FluentAssertions (paid licensing) with Shouldly across test suite | Complete |
-| 78 | [Pluggable Rasterizer Backends](phase-78-pluggable-rasterizers.md) | Pluggable rasterizer architecture with GDI and DirectWrite backends | In Progress |
-| 78A | [Rasterizer Foundation](done/phase-78a-rasterizer-foundation.md) | IRasterizer interface, factory, capability system | Complete |
-| 78B | [GDI Backend](done/phase-78b-gdi-backend.md) | GDI-based rasterizer for BMFont output parity (Windows-only) | Complete |
-| 78C | [DirectWrite Backend](phase-78c-directwrite-backend.md) | DirectWrite-based rasterizer (Windows-only) | In Progress |
-| 78D | [CLI & UI Integration](done/phase-78d-cli-ui-integration.md) | Wire rasterizer selection into CLI and UI | Complete |
-| 78E | [Plugin Template](done/phase-78e-plugin-template.md) | Template for third-party rasterizer plugins | Complete |
 | 95 | [Performance Optimization & Bug Fixes](phase-95-performance-and-bugs.md) | Fix confirmed bugs (outline field, batch encoding, options mutation) and optimize generation performance | Planning |
 | 99 | [BMFont Parity Remaining Gaps](phase-99-bmfont-parity-gaps.md) | Investigate and close remaining metrics differences from Phase 78BB | Planning |
 | 90 | [Native AOT Compliance](phase-90-aot-compliance.md) | Research and implement Native AOT / trimming compatibility for core library | Planning |
 | 100 | [Hiero Advanced Features](phase-100-hiero-advanced-features.md) | Advanced Hiero features requiring new KernSmith properties | Future |
+| 150 | [Deferred Rasterizer Issues](phase-150-deferred-rasterizer-issues.md) | Color fonts, variable fonts, native DW kerning, GDI MatchCharHeight bug (deferred from Phase 78G) | Planning |
 
 ---
 
@@ -147,6 +142,17 @@ Output Layer
 | 76 | [Metrics Parity with BMFont](done/phase-76-metrics-parity.md) | Investigate and fix glyph metric differences between KernSmith and BMFont output |
 | 76B | [Outline and Italic Fixes](done/phase-76b-outline-and-italic-fixes.md) | Fix outline rendering and italic glyph clipping issues |
 | 77 | [Color Picker Dialog](done/phase-77-color-picker-dialog.md) | Build a reusable color picker dialog that opens when clicking a color swatch |
+| 78 | [Pluggable Rasterizer Backends](done/phase-78-pluggable-rasterizers.md) | Pluggable rasterizer architecture with GDI and DirectWrite backends |
+| 78A | [Rasterizer Foundation](done/phase-78a-rasterizer-foundation.md) | IRasterizer interface, factory, capability system |
+| 78B | [GDI Backend](done/phase-78b-gdi-backend.md) | GDI-based rasterizer for BMFont output parity (Windows-only) |
+| 78BB | [GDI Parity Fixes](done/phase-78bb-gdi-parity.md) | GDI parity fixes -- metrics, kerning, sizing bypass |
+| 78C | [DirectWrite Backend](done/phase-78c-directwrite-backend.md) | DirectWrite-based rasterizer (Windows-only) |
+| 78CC | [Font Sizing & DPI Gaps](done/phase-78cc-sizing-dpi-gaps.md) | Verified sizing/DPI parity across backends |
+| 78D | [CLI & UI Integration](done/phase-78d-cli-ui-integration.md) | Wire rasterizer selection into CLI and UI |
+| 78E | [Plugin Template](done/phase-78e-plugin-template.md) | Template for third-party rasterizer plugins |
+| 78F | [Space Outline Rendering](done/phase-78f-space-outline-glyph.md) | Space gets transparent atlas entry when outline > 0 |
+| 78G | [Remaining Issues](done/phase-78g-remaining-issues.md) | Color fonts, variable fonts, synthetic bold/italic, rounding differences |
+| 78S | [Documentation & Code Quality](done/phase-78s-documentation.md) | XML doc comments, UI tooltips, CLI help text, READMEs |
 
 ### Topical Plan Docs (archived in `done/`)
 

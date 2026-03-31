@@ -57,6 +57,7 @@ kernsmith generate -f <font> -s <size> [options]
 | `--sdf` | Enable Signed Distance Field rendering |
 | `--super-sample <n>` | Super sampling level 1-4 (default: 1) |
 | `--hinting / --no-hinting` | Enable/disable FreeType hinting (default: on) |
+| `--rasterizer <name>` | Rasterizer backend: `freetype` (default), `gdi`, `directwrite` |
 | `--height-percent <n>` | Vertical height scaling percentage (default: 100) |
 | `--match-char-height` | Match rendered height to requested pixel height |
 | `--fallback-char <char>` | Fallback character for missing glyphs (char or codepoint) |
@@ -65,10 +66,14 @@ kernsmith generate -f <font> -s <size> [options]
 
 | Flag | Description |
 |------|-------------|
-| `-b, --bold` | Enable synthetic bold |
-| `-i, --italic` | Enable synthetic italic |
+| `-b, --bold` | Enable bold (uses native face when available, falls back to synthetic) |
+| `-i, --italic` | Enable italic (uses native face when available, falls back to synthetic) |
+| `--synthetic-bold` | Force synthetic bold, skip native bold face lookup |
+| `--synthetic-italic` | Force synthetic italic, skip native italic face lookup |
 | `--color-font` | Enable color font rendering (COLR/CPAL) |
 | `--color-palette <n>` | Color palette index (default: 0) |
+
+With `--font` (file path), `--bold` and `--synthetic-bold` produce identical results since there is no font family to search. With `--system-font`, `--bold` tries the native bold face first; `--synthetic-bold` forces synthetic on the regular face. GDI backend limitation: cannot apply synthetic bold when a native bold face exists -- use FreeType or DirectWrite.
 
 #### Character Set
 
@@ -288,6 +293,39 @@ kernsmith list-fonts --json
 
 ---
 
+### list-rasterizers
+
+List available rasterizer backends and their capabilities.
+
+```
+kernsmith list-rasterizers [--json]
+```
+
+```
+# Human-readable table
+kernsmith list-rasterizers
+
+# JSON output
+kernsmith list-rasterizers --json
+```
+
+Shows each installed backend with its platform support, color font capability, and variable font support.
+
+#### Rasterizer Examples
+
+```
+# Use GDI for BMFont-parity rendering (Windows only)
+kernsmith generate -f font.ttf -s 32 --rasterizer gdi
+
+# Use DirectWrite for color/variable font support (Windows only)
+kernsmith generate -f font.ttf -s 32 --rasterizer directwrite --color-font
+
+# Default (FreeType, cross-platform)
+kernsmith generate -f font.ttf -s 32
+```
+
+---
+
 ### info
 
 Show metadata from a font file (TTF, OTF, WOFF). Displays family name, style, glyph count, kerning pairs, variation axes, named instances, and Unicode coverage.
@@ -446,6 +484,7 @@ face-index = 0
 [rendering]
 size = 32
 dpi = 72
+rasterizer = freetype
 anti-alias = grayscale
 bold = false
 italic = false

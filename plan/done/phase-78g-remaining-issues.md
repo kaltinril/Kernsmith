@@ -1,11 +1,11 @@
 # Phase 78G -- Remaining Rasterizer Issues
 
-> **Status**: In Progress
+> **Status**: Complete
 > **Size**: Small-Medium
 > **Created**: 2026-03-27
 > **Updated**: 2026-03-29
 > **Dependencies**: Phase 78C (DirectWrite backend)
-> **Parent**: [Phase 78 -- Pluggable Rasterizer Backends](phase-78-pluggable-rasterizers.md)
+> **Parent**: [Phase 78 -- Pluggable Rasterizer Backends](../phase-78-pluggable-rasterizers.md)
 > **Goal**: Track and resolve remaining open issues discovered during Phase 78C DirectWrite work.
 
 ---
@@ -20,12 +20,12 @@ Each issue is ranked 1 (low) to 5 (high) on three dimensions:
 
 | # | Issue | Ease | Break Risk | Importance | Status |
 |---|-------|------|------------|------------|--------|
-| 1 | Color Font Rendering (DW) | 1 | 2 | 2 | Open |
-| 2 | Variable Font Support (DW) | 2 | 2 | 2 | Open |
+| 1 | Color Font Rendering (DW) | 1 | 2 | 2 | **Deferred** → Phase 150 |
+| 2 | Variable Font Support (DW) | 2 | 2 | 2 | **Deferred** → Phase 150 |
 | 3 | Synthetic Bold/Italic (DW) | 4 | 1 | 3 | **Resolved** |
-| 4 | Native DW Kerning | 3 | 2 | 1 | Open |
+| 4 | Native DW Kerning | 3 | 2 | 1 | **Deferred** → Phase 150 |
 | 5 | DirectWrite Unit Tests | 4 | 1 | 4 | **Resolved** |
-| 6 | GDI MatchCharHeight Bug | 2 | 3 | 2 | Open (needs re-validation) |
+| 6 | GDI MatchCharHeight Bug | 2 | 3 | 2 | **Deferred** → Phase 150 |
 | 7 | Rounding Differences | 1 | 5 | 1 | Accepted limitation |
 | 8 | Channel-Based Outline Rendering | — | — | — | **Resolved** |
 | 9 | Space Outline Width Discrepancy | — | — | — | **Accepted** (no visual impact) |
@@ -36,9 +36,9 @@ Each issue is ranked 1 (low) to 5 (high) on three dimensions:
 | 14 | GDI synthetic italic via MAT2 | — | — | — | **Resolved** |
 | 15 | CLI flags for ForceSynthetic | — | — | — | **Resolved** |
 | 16 | UI controls for ForceSynthetic | 3 | 1 | 3 | **Resolved** |
-| 17 | Documentation for bold/italic | 4 | 1 | 3 | Open |
+| 17 | Documentation for bold/italic | 4 | 1 | 3 | **Resolved** |
 | 18 | DW synthetic bold strength | — | — | — | **Accepted** (DW limitation) |
-| 19 | File vs system font bold/italic behavior | 4 | 1 | 4 | Open (document) |
+| 19 | File vs system font bold/italic behavior | 4 | 1 | 4 | **Resolved** |
 | 20 | Core guard: skip bold/italic on already-styled fonts | — | — | — | **Resolved** |
 | 21 | CLI warning for --synthetic with --font | — | — | — | **Resolved** |
 | 22 | GDI synthetic bold limitation | — | — | — | **Accepted** (GDI limitation) |
@@ -49,13 +49,13 @@ Each issue is ranked 1 (low) to 5 (high) on three dimensions:
 
 ## Issues
 
-### 1. Color Font Rendering (DirectWrite) — Open
+### 1. Color Font Rendering (DirectWrite) — Deferred → Phase 150
 
 > Ease: 1 | Break Risk: 2 | Importance: 2
 
 `SupportsColorFonts` is set to `false`. `SelectColorPalette()` stores the palette index in `_colorPaletteIndex` but it is never used during rasterization. Implementing color font support requires `IDWriteFactory4.TranslateColorGlyphRun` to decompose COLR/CPAL color glyphs into layered runs, plus a D2D dependency to render each color layer with the appropriate brush color. The current `IDWriteGlyphRunAnalysis` approach cannot render color glyphs.
 
-### 2. Variable Font Support (DirectWrite) — Open
+### 2. Variable Font Support (DirectWrite) — Deferred → Phase 150
 
 > Ease: 2 | Break Risk: 2 | Importance: 2
 
@@ -65,7 +65,7 @@ Each issue is ranked 1 (low) to 5 (high) on three dimensions:
 
 DirectWrite now caches font faces per simulation combo (None, Bold, Oblique, Bold|Oblique). `GetFontFaceForOptions()` maps `options.Bold` → `DWRITE_FONT_SIMULATIONS_BOLD`, `options.Italic` → `DWRITE_FONT_SIMULATIONS_OBLIQUE`. For system fonts, the font file is extracted via `GetFiles()` so simulated variants can be created. All cached faces are disposed in `Cleanup()`.
 
-### 4. Native DirectWrite Kerning — Open
+### 4. Native DirectWrite Kerning — Deferred → Phase 150
 
 > Ease: 3 | Break Risk: 2 | Importance: 1
 
@@ -75,7 +75,7 @@ DirectWrite now caches font faces per simulation combo (None, Bold, Oblique, Bol
 
 13 DirectWrite unit tests added in `DirectWriteRasterizerTests.cs`, mirroring the GDI test patterns: factory registration, font loading, glyph rasterization, metrics, capabilities, disposal, pixel format. Gated with `#if DIRECTWRITE` for `net10.0-windows` only (TerraFX package constraint).
 
-### 6. GDI MatchCharHeight Bug — Open (needs re-validation)
+### 6. GDI MatchCharHeight Bug — Deferred → Phase 150
 
 > Ease: 2 | Break Risk: 3 | Importance: 2
 
@@ -142,43 +142,9 @@ Cross-dependency logic: checking "Synthetic bold" auto-checks "Bold"; unchecking
 - `EffectsPanel.cs`: Restructured FONT STYLE section, added checkboxes with cross-dependency logic
 - `ProjectService.cs`: Wired ForceSynthetic properties in both load and build directions
 
-### 17. Documentation for bold/italic and ForceSynthetic — Open
+### 17. ~~Documentation for bold/italic and ForceSynthetic~~ — Resolved
 
-> Ease: 4 | Break Risk: 1 | Importance: 3
-
-Missing documentation across all surfaces. Must cover bold/italic behavior, ForceSynthetic API, and GDI limitations.
-
-**What to document everywhere:**
-
-1. **Bold/Italic behavior by font source:**
-   - `--system-font` / `WithSystemFont()`: tries native bold/italic face first, falls back to synthetic
-   - `--font` / file path: always synthetic (no family lookup). `--bold` and `--synthetic-bold` produce identical results
-   - Recommend `--system-font` when users want native vs synthetic distinction
-
-2. **ForceSynthetic API:**
-   - `WithForceSyntheticBold()` / `WithForceSyntheticItalic()` forces synthetic styling, skipping native face lookup
-   - CLI: `--synthetic-bold`, `--synthetic-italic`
-   - UI: "Synthetic bold" / "Synthetic italic" checkboxes
-
-3. **GDI synthetic bold/italic limitation:**
-   - GDI cannot apply true synthetic emboldening when the font family has a real bold variant — GDI's font mapper always selects the real bold face
-   - GDI synthetic italic has the same limitation — if a real italic exists, GDI picks it. KernSmith works around this with a MAT2 shear transform, but synthetic bold has no equivalent workaround
-   - For fonts **without** a bold variant, GDI synthetic bold works correctly
-   - Users who need guaranteed synthetic bold should use FreeType or DirectWrite
-
-4. **DW synthetic bold strength:**
-   - DirectWrite's synthetic bold is lighter than FreeType's. This is a fixed DW API behavior, not tunable
-   - Workaround: use an outline with matching color for heavier text
-
-**Where to document:**
-- [ ] Root `README.md` — builder examples, backend comparison table
-- [ ] CLI README (`tools/KernSmith.Cli/README.md`) — flag descriptions, behavioral notes
-- [ ] CLI commands doc (`docs/cli/commands.md`) — flag table, examples
-- [ ] Core API docs (`docs/core/index.md`) — `WithBold`, `WithForceSyntheticBold`, backend differences
-- [ ] XML doc comments — `FontGeneratorOptions.Bold` and `ForceSyntheticBold` summaries should mention GDI caveat
-- [ ] UI tooltips — "Synthetic bold" tooltip should note GDI limitation
-- [ ] GitHub.io / DocFX API reference — auto-generated from XML docs, so fixing XML docs covers this
-- [ ] `.bmfc` config roundtrip — add `forceSyntheticBold`/`forceSyntheticItalic` to `BmfcConfigReader`/`BmfcConfigWriter`
+Documented bold/italic behavior and ForceSynthetic API across all surfaces: root README (builder examples), CLI README and docs/cli/commands.md (flag descriptions, behavioral notes), docs/core/index.md (properties table with backend differences). XML doc comments and UI tooltips were already complete. Added `forceSyntheticBold`/`forceSyntheticItalic` to BmfcConfigReader/BmfcConfigWriter for .bmfc roundtrip.
 
 ### 18. DW synthetic bold strength — Accepted limitation
 
@@ -194,13 +160,9 @@ GDI's `ForceSyntheticBold` cannot produce true synthetic emboldening on fonts th
 
 This limitation is specific to the GDI backend. FreeType and DirectWrite both support true synthetic bold regardless of whether the font has a native bold variant. Users who need guaranteed synthetic bold should use FreeType or DirectWrite.
 
-### 19. Bold/italic behavior differs between file-based and system font paths — Document
+### 19. ~~Bold/italic behavior differs between file-based and system font paths~~ — Resolved
 
-> Ease: 4 | Break Risk: 1 | Importance: 4
-
-When using `--font path.ttf`, bold/italic is always synthetic (FreeType emboldening/oblique on the provided file). The tool won't search for sibling bold/italic font files. `--bold` and `--synthetic-bold` produce identical results because there's no native bold face to distinguish from.
-
-When using `--system-font FamilyName`, bold/italic tries the native face first (e.g., "Georgia Bold"), falling back to synthetic. `--synthetic-bold` forces synthetic on the regular face, skipping the native lookup.
+Documented in root README, CLI README, docs/cli/commands.md, and docs/core/index.md. Each surface explains that `--font` (file path) always uses synthetic styling while `--system-font` tries the native face first.
 
 This needs to be clearly documented in CLI help text, docs, and UI tooltips so users understand: use `--system-font` for real bold/italic face selection, use `--font` for direct file control (synthetic only).
 

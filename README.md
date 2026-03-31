@@ -33,6 +33,34 @@
 - **Batch generation** -- parallel multi-font generation with font caching
 - **Pipeline metrics** -- stage-level timing breakdown for profiling
 - **Cross-platform** -- Windows, Linux, macOS via .NET 10.0
+- **Pluggable rasterizers** -- swap rendering backends to match your platform and feature needs
+
+## Rasterizer Backends
+
+KernSmith supports pluggable rasterizer backends. The core package includes FreeType; optional NuGet packages add Windows-native backends.
+
+| Backend | Package | Platform | Notes |
+|---------|---------|----------|-------|
+| **FreeType** | included in `KernSmith` | Windows, Linux, macOS | Default. Cross-platform, full feature support. |
+| **GDI** | `KernSmith.Rasterizers.Gdi` | Windows only | Matches BMFont reference output for pixel-perfect parity. |
+| **DirectWrite** | `KernSmith.Rasterizers.DirectWrite.TerraFX` | Windows only | Color font (COLR/CPAL) and variable font rendering via DirectWrite. |
+
+Install an optional backend:
+
+```
+dotnet add package KernSmith.Rasterizers.Gdi
+dotnet add package KernSmith.Rasterizers.DirectWrite.TerraFX
+```
+
+Select a backend when generating:
+
+```csharp
+var result = BmFont.Builder()
+    .WithFont("font.ttf")
+    .WithSize(32)
+    .WithRasterizer("gdi")
+    .Build();
+```
 
 ## Installation
 
@@ -104,6 +132,30 @@ var result = BmFont.Builder()
 
 result.ToFile("output/myfont");
 ```
+
+### Bold and Italic
+
+```csharp
+var result = BmFont.Builder()
+    .WithSystemFont("Arial")
+    .WithSize(32)
+    .WithBold()                   // Uses native bold face, falls back to synthetic
+    .WithItalic()                 // Uses native italic face, falls back to synthetic
+    .Build();
+
+// Force synthetic styling (skip native face lookup)
+var result2 = BmFont.Builder()
+    .WithSystemFont("Arial")
+    .WithSize(32)
+    .WithForceSyntheticBold()     // Always applies synthetic bold
+    .WithForceSyntheticItalic()   // Always applies synthetic italic
+    .Build();
+```
+
+- `WithBold()` / `WithItalic()` use the native bold/italic face when available (system fonts), falling back to synthetic
+- `WithForceSyntheticBold()` / `WithForceSyntheticItalic()` always apply synthetic styling, skipping native face lookup
+- When using a file path (not a system font), bold/italic is always synthetic -- `WithBold()` and `WithForceSyntheticBold()` produce identical results
+- For native vs synthetic distinction, use `WithSystemFont()` so the font family can be searched for a matching face
 
 You can also start the builder from a `.bmfc` config and override individual settings:
 
@@ -445,7 +497,7 @@ var model2 = BmFont.LoadModel(fntTextContent);
 
 A reference command-line tool is included in `tools/KernSmith.Cli/`. See the [CLI README](tools/KernSmith.Cli/README.md) for usage.
 
-Available commands: `generate`, `init`, `batch`, `benchmark`, `inspect`, `convert`, `list-fonts`, `info`.
+Available commands: `generate`, `init`, `batch`, `benchmark`, `inspect`, `convert`, `list-fonts`, `list-rasterizers`, `info`.
 
 The `init` command generates a `.bmfc` config file from CLI flags without rendering a font, so you can scaffold a config and tweak it by hand.
 

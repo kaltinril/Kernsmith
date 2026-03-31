@@ -2,7 +2,7 @@
 
 Windows GDI rasterizer backend for KernSmith. Produces output that closely matches BMFont's built-in rasterizer for pixel-perfect compatibility.
 
-## Install
+## Installation
 
 ```
 dotnet add package KernSmith.Rasterizers.Gdi
@@ -20,6 +20,18 @@ var options = new FontGeneratorOptions
     Size = 32,
     RasterizerBackend = RasterizerBackend.Gdi
 };
+
+var result = BmFont.Generate("path/to/font.ttf", options);
+```
+
+For system fonts, use `GenerateFromSystem`:
+
+```csharp
+var result = BmFont.GenerateFromSystem("Arial", new FontGeneratorOptions
+{
+    Size = 32,
+    RasterizerBackend = RasterizerBackend.Gdi
+});
 ```
 
 ## Capabilities
@@ -27,6 +39,15 @@ var options = new FontGeneratorOptions
 - Pixel-perfect BMFont.exe compatibility
 - System font loading by family name (e.g., "Arial", "Batang")
 - Uses `GetGlyphOutlineW` with `GGO_GRAY8_BITMAP`
+
+## Limitations
+
+- Windows only -- will not load on Linux or macOS
+- No SDF rendering support
+- No color font support
+- No variable font axis support
+- No outline stroke support
+- Cannot apply synthetic bold when a native bold face exists for the same family -- use FreeType or DirectWrite if you need to force synthetic bold in that scenario
 
 ## When to Use
 

@@ -332,7 +332,7 @@ public class EffectsPanel : Panel
         var ssLabel = new Label();
         ssLabel.Text = "Super Sample:";
         stack.Children.Add(ssLabel.Visual);
-        TooltipService.SetTooltip(ssLabel, "Supersample then downscale for smoother glyphs");
+        TooltipService.SetTooltip(ssLabel, "Render at higher resolution then downscale for smoother edges. Available with all backends. Higher values improve quality but increase generation time.");
 
         var ssGroup = new StackPanel();
         ssGroup.Orientation = Orientation.Horizontal;
@@ -453,7 +453,7 @@ public class EffectsPanel : Panel
         sdfCheck.Checked += (_, _) => _effects.SdfEnabled = true;
         sdfCheck.Unchecked += (_, _) => _effects.SdfEnabled = false;
         stack.Children.Add(sdfCheck.Visual);
-        TooltipService.SetTooltip(sdfCheck, "Scalable SDF rendering; incompatible with effects");
+        TooltipService.SetTooltip(sdfCheck, "Signed Distance Field rendering for resolution-independent scaling. Only supported by the FreeType backend.");
 
         // SDF incompatibility warning (covers super-sample, outline, shadow, gradient)
         var sdfWarning = new TextRuntime();
@@ -469,7 +469,7 @@ public class EffectsPanel : Panel
         colorCheck.Checked += (_, _) => _effects.ColorFontEnabled = true;
         colorCheck.Unchecked += (_, _) => _effects.ColorFontEnabled = false;
         stack.Children.Add(colorCheck.Visual);
-        TooltipService.SetTooltip(colorCheck, "Render color glyphs (emoji) — requires a font with color tables");
+        TooltipService.SetTooltip(colorCheck, "Render color glyphs (emoji). Requires DirectWrite backend and a font with color tables (COLR/CPAL or CBDT/CBLC).");
 
         // Color font + Gradient mutual exclusion feedback
         var colorGradientWarning = new TextRuntime();
@@ -603,6 +603,7 @@ public class EffectsPanel : Panel
         varFontHeader.Text = "VARIABLE FONT";
         varFontHeader.IsVisible = false;
         stack.Children.Add(varFontHeader.Visual);
+        TooltipService.SetTooltip(varFontHeader, "Variable font axis controls. Requires DirectWrite backend and a variable font (with fvar table).");
 
         var varFontContainer = new StackPanel();
         varFontContainer.Spacing = 4;

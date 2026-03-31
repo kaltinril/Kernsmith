@@ -5,7 +5,7 @@ The `KernSmith` NuGet package is the core library that powers bitmap font genera
 ## Pipeline Flow
 
 1. **Font reading** -- parse TTF/OTF/WOFF tables (cmap, head, hhea, OS/2, GPOS) for the requested codepoints
-2. **Rasterization** -- render glyphs via FreeTypeSharp with optional effects (outline, gradient, shadow)
+2. **Rasterization** -- render glyphs via a [pluggable rasterizer backend](../rasterizers/index.md) (FreeType by default, with GDI and DirectWrite alternatives) with optional effects (outline, gradient, shadow)
 3. **Atlas packing** -- arrange glyphs into texture pages using MaxRects or Skyline algorithms
 4. **Output formatting** -- produce BMFont `.fnt` descriptors (text, XML, or binary) and encoded atlas images
 
@@ -34,6 +34,9 @@ The main entry point. Provides static methods for font generation:
 - <xref:KernSmith.BmFont>.Builder() -- start a fluent builder chain
 - <xref:KernSmith.BmFont>.Load() -- load an existing `.fnt` file with atlas pages
 - <xref:KernSmith.BmFont>.GenerateBatch() -- parallel batch generation
+- <xref:KernSmith.BmFont>.RegisterFont() -- register raw font data for use with `GenerateFromSystem()` on platforms without system font access
+- <xref:KernSmith.BmFont>.UnregisterFont() -- remove a previously registered font
+- <xref:KernSmith.BmFont>.ClearRegisteredFonts() -- remove all registered fonts
 
 ### BmFontResult
 
@@ -48,6 +51,17 @@ The output of font generation. Provides access to:
 ### FontGeneratorOptions
 
 Configuration for the generation pipeline: font size, character set, effects (outline, gradient, shadow), atlas settings, SDF, super sampling, variable font axes, and more.
+
+#### Bold / Italic Properties
+
+| Property | Description |
+|----------|-------------|
+| `Bold` | Request bold -- uses native bold face when available (system fonts), falls back to synthetic |
+| `Italic` | Request italic -- uses native italic face when available (system fonts), falls back to synthetic |
+| `ForceSyntheticBold` | Force synthetic bold, skip native bold face lookup |
+| `ForceSyntheticItalic` | Force synthetic italic, skip native italic face lookup |
+
+When loading from a file path, bold/italic is always synthetic -- `Bold` and `ForceSyntheticBold` produce identical results. Use `GenerateFromSystem()` or `WithSystemFont()` for native face resolution. GDI backend limitation: cannot apply synthetic bold when a native bold face exists -- use FreeType or DirectWrite.
 
 ### CharacterSet
 
