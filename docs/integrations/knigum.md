@@ -29,15 +29,22 @@ The `KernSmithFontCreator` class and namespace are the same as the MonoGame pack
 Some KNI targets (such as Blazor WASM) may not have access to system fonts. Registering font data explicitly is recommended for all platforms to ensure consistent cross-platform rendering. Register font data before initializing `KernSmithFontCreator`:
 
 ```csharp
-using KernSmith;
+using KernSmith.Gum;
 
-// Load font bytes from embedded resources, content pipeline, etc.
-byte[] robotoData = LoadEmbeddedResource("Fonts.Roboto-Regular.ttf");
-byte[] robotoBoldData = LoadEmbeddedResource("Fonts.Roboto-Bold.ttf");
+// Recommended — uses TitleContainer.OpenStream, works on all platforms
+KernSmithFontCreator.RegisterFont("Roboto", "Content/Fonts/Roboto-Regular.ttf");
+KernSmithFontCreator.RegisterFont("Roboto", "Content/Fonts/Roboto-Bold.ttf", style: "Bold");
+```
 
-// Register before Gum initialization
-BmFont.RegisterFont("Roboto", robotoData);
-BmFont.RegisterFont("Roboto", robotoBoldData, style: "Bold");
+The file-path overload uses `TitleContainer.OpenStream` internally, so the path is relative to the title container root (typically the Content directory). This is the simplest approach and works on all KNI platforms.
+
+For fonts loaded from embedded resources, archives, or HTTP, use the `byte[]` overload instead:
+
+```csharp
+using KernSmith.Gum;
+
+byte[] fontData = LoadEmbeddedResource("Fonts.Roboto-Regular.ttf");
+KernSmithFontCreator.RegisterFont("Roboto", fontData);
 ```
 
 With fonts registered, `GenerateFromSystem()` (used internally by `KernSmithFontCreator`) will find them by family name. Registered fonts take priority over system fonts, with automatic fallback to the OS font store on platforms that support it.
@@ -45,10 +52,10 @@ With fonts registered, `GenerateFromSystem()` (used internally by `KernSmithFont
 Register all font families and style variants your Gum layouts reference. A typical setup covers Regular, Bold, Italic, and Bold Italic:
 
 ```csharp
-BmFont.RegisterFont("Roboto", robotoRegular);
-BmFont.RegisterFont("Roboto", robotoBold, style: "Bold");
-BmFont.RegisterFont("Roboto", robotoItalic, style: "Italic");
-BmFont.RegisterFont("Roboto", robotoBoldItalic, style: "Bold Italic");
+KernSmithFontCreator.RegisterFont("Roboto", "Content/Fonts/Roboto-Regular.ttf");
+KernSmithFontCreator.RegisterFont("Roboto", "Content/Fonts/Roboto-Bold.ttf", style: "Bold");
+KernSmithFontCreator.RegisterFont("Roboto", "Content/Fonts/Roboto-Italic.ttf", style: "Italic");
+KernSmithFontCreator.RegisterFont("Roboto", "Content/Fonts/Roboto-BoldItalic.ttf", style: "Bold Italic");
 ```
 
 On Blazor WASM this is required -- without registration, font generation will fail because there are no system fonts to discover. On desktop platforms it is recommended for consistency so that every build renders identical fonts regardless of what is installed on the OS.
