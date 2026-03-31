@@ -162,6 +162,7 @@ Output Layer
 | 78S | [Documentation & Code Quality](done/phase-78s-documentation.md) | XML doc comments, UI tooltips, CLI help text, READMEs |
 | 79 | [Replace FluentAssertions with Shouldly](done/phase-79-replace-fluentassertions.md) | Replace FluentAssertions (paid licensing) with Shouldly across test suite |
 | 80 | [Atlas Preview Rendering](done/phase-80-atlas-preview-rendering.md) | Fix atlas preview rendering quality in UI to match saved PNG |
+| 86 | [RegisterFont File-Path Overload](done/phase-86-register-font-file-path-overload.md) | Add string filePath overload to KernSmithFontCreator.RegisterFont using TitleContainer.OpenStream |
 
 ### Topical Plan Docs (archived in `done/`)
 

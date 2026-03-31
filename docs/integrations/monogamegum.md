@@ -35,16 +35,25 @@ Gum will now use KernSmith to generate fonts on demand whenever a `BmfcSave` is 
 
 ## Registering Fonts
 
-Registering font data explicitly is recommended for all platforms to ensure consistent cross-platform rendering. Some targets may not have access to system fonts, but even on desktop this guarantees identical results regardless of what is installed on the OS. Register font data before initializing `KernSmithFontCreator`:
+Registering font data explicitly is recommended for all platforms to ensure consistent cross-platform rendering. Some targets may not have access to system fonts, but even on desktop this guarantees identical results regardless of what is installed on the OS. Register fonts before initializing `KernSmithFontCreator`:
 
 ```csharp
-using KernSmith;
+using KernSmith.Gum;
 
-byte[] robotoData = File.ReadAllBytes("Content/Fonts/Roboto-Regular.ttf");
-byte[] robotoBoldData = File.ReadAllBytes("Content/Fonts/Roboto-Bold.ttf");
+// Recommended — uses TitleContainer.OpenStream, works on all platforms
+KernSmithFontCreator.RegisterFont("Roboto", "Content/Fonts/Roboto-Regular.ttf");
+KernSmithFontCreator.RegisterFont("Roboto", "Content/Fonts/Roboto-Bold.ttf", style: "Bold");
+```
 
-BmFont.RegisterFont("Roboto", robotoData);
-BmFont.RegisterFont("Roboto", robotoBoldData, style: "Bold");
+The file-path overload uses `TitleContainer.OpenStream` internally, so the path is relative to the title container root (typically the Content directory). This is the simplest approach and works on all MonoGame platforms.
+
+For fonts loaded from embedded resources, archives, or HTTP, use the `byte[]` overload instead:
+
+```csharp
+using KernSmith.Gum;
+
+byte[] fontData = File.ReadAllBytes("path/to/font.ttf");
+KernSmithFontCreator.RegisterFont("MyFont", fontData);
 ```
 
 Registered fonts take priority over system fonts, with automatic fallback to the OS font store. Register all font families and style variants your Gum layouts reference (Regular, Bold, Italic, Bold Italic).
