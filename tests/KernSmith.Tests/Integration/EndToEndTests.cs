@@ -1,12 +1,19 @@
 using KernSmith.Atlas;
 using KernSmith.Output.Model;
 using KernSmith.Rasterizer;
+using KernSmith.Rasterizers.FreeType;
 using Shouldly;
 
 namespace KernSmith.Tests.Integration;
 
 public class EndToEndTests
 {
+    public EndToEndTests()
+    {
+        if (!RasterizerFactory.GetAvailableBackends().Contains(RasterizerBackend.FreeType))
+            RasterizerFactory.Register(RasterizerBackend.FreeType, () => new FreeTypeRasterizer());
+    }
+
     private static byte[] LoadTestFont() =>
         File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Roboto-Regular.ttf"));
 
