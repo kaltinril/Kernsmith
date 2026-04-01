@@ -135,6 +135,7 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
             return TryLoadFontFromRegistryCore(familyName, styleName, out fontResult, out familyFound);
         }
         catch (Exception ex) when (ex is PlatformNotSupportedException
+                                     or TypeLoadException
                                      or System.Security.SecurityException
                                      or IOException
                                      or UnauthorizedAccessException)
@@ -363,6 +364,7 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
             return TryScanFromRegistryCore();
         }
         catch (Exception ex) when (ex is PlatformNotSupportedException
+                                     or TypeLoadException
                                      or System.Security.SecurityException
                                      or IOException
                                      or UnauthorizedAccessException)

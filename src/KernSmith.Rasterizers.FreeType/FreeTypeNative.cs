@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using FreeTypeSharp;
 
-namespace KernSmith.Rasterizer;
+namespace KernSmith.Rasterizers.FreeType;
 
 /// <summary>
 /// Custom P/Invoke declarations for FreeType functions not exposed by FreeTypeSharp.

@@ -17,7 +17,7 @@ The `KernSmith` NuGet package is the core library that powers bitmap font genera
 | `KernSmith.Font` | Font reading and TTF table parsing |
 | `KernSmith.Font.Models` | Data models: <xref:KernSmith.Font.Models.FontInfo>, <xref:KernSmith.Font.Models.KerningPair>, <xref:KernSmith.Font.Models.GlyphMetrics> |
 | `KernSmith.Font.Tables` | Parsed table structures: <xref:KernSmith.Font.Tables.HeadTable>, <xref:KernSmith.Font.Tables.HheaTable>, <xref:KernSmith.Font.Tables.Os2Metrics>, <xref:KernSmith.Font.Tables.NameInfo> |
-| `KernSmith.Rasterizer` | <xref:KernSmith.Rasterizer.IRasterizer>, <xref:KernSmith.Rasterizer.FreeTypeRasterizer>, glyph effects (<xref:KernSmith.Rasterizer.IGlyphEffect>), <xref:KernSmith.Rasterizer.GlyphCompositor> |
+| `KernSmith.Rasterizer` | <xref:KernSmith.Rasterizer.IRasterizer>, glyph effects (<xref:KernSmith.Rasterizer.IGlyphEffect>), <xref:KernSmith.Rasterizer.GlyphCompositor> |
 | `KernSmith.Atlas` | <xref:KernSmith.Atlas.IAtlasPacker>, packing algorithms, texture encoders (PNG/TGA/DDS), <xref:KernSmith.Atlas.AtlasBuilder> |
 | `KernSmith.Output` | BMFont formatters, <xref:KernSmith.Output.FileWriter>, <xref:KernSmith.Output.BmFontResult>, <xref:KernSmith.Output.BmFontReader> |
 | `KernSmith.Output.Model` | BMFont data model: <xref:KernSmith.Output.Model.BmFontModel>, <xref:KernSmith.Output.Model.InfoBlock>, <xref:KernSmith.Output.Model.CommonBlock> |
@@ -66,3 +66,16 @@ When loading from a file path, bold/italic is always synthetic -- `Bold` and `Fo
 ### CharacterSet
 
 Defines which Unicode codepoints to include. Provides presets (`Ascii`, `ExtendedAscii`, `Latin`) and factory methods (`FromChars`, `FromRanges`, `Union`).
+
+## Platform Notes
+
+### Blazor WASM
+
+The core library works in Blazor WebAssembly when paired with the StbTrueType rasterizer backend. Key constraints:
+
+- Use `KernSmith.Rasterizers.StbTrueType` — FreeType requires native binaries unavailable in WASM
+- Use in-memory APIs (`FntText`, `GetPngData()`) instead of `ToFile()`
+- System font loading returns empty results — use `BmFont.RegisterFont()` to provide font data
+- Enable `<RunAOTCompilation>true</RunAOTCompilation>` for production performance
+
+See the [Blazor WASM sample](https://github.com/kaltinril/KernSmith/tree/main/samples/KernSmith.Samples.BlazorWasm) for a complete working example.

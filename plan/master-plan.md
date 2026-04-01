@@ -1,7 +1,7 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-21, 55, 60-69, 72-78, 77B, 79, 80 complete. Phase 30 (WASM) is future/exploratory. Phase 95, 99, 150 planning.
-> **Date**: 2026-03-24
+> **Status**: Phases 1-21, 30-33, 32B, 55, 60-69, 72-78, 77B, 79, 80 complete. Phases 32d, 34-36 (rasterizer plugins, bold/italic) are planning/future. Phase 95, 99, 110, 111, 150 planning.
+> **Date**: 2026-03-31
 
 ---
 
@@ -79,22 +79,29 @@ Output Layer
 
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
-| 30 | [WASM Rasterization](phase-30-wasm-rasterization.md) | Live investigation of WASM-compatible rasterizers (prior research was preliminary) | Future |
+| 31 | [WASM Platform Restrictions Research](done/phase-31-wasm-restrictions-research.md) | Research WASM/AOT platform restrictions affecting rasterizer strategy | Complete |
+| 32 | [StbTrueType Managed Rasterizer](done/phase-32-stbtruetype-rasterizer.md) | Pure C# rasterizer plugin using StbTrueTypeSharp for WASM/AOT support | Complete |
+| 32b | [StbTrueType Docs & Publishing](done/phase-32b-stbtruetype-docs-publishing.md) | Documentation, DocFX pages, and CI/CD publishing for StbTrueType plugin | Complete |
+| 32c | [StbTrueType Validation Fixes](done/phase-32c-stbtruetype-fixes.md) | Bug fixes, missing guards, and test gaps from Phase 30-32 validation | Complete |
+| 32d | [StbTrueType Synthetic Bold & Italic](phase-32d-stbtruetype-synthetic-bold-italic.md) | Outline-level synthetic bold/italic using stb_truetype shape API | Planning |
+| 33 | [WASM Integration and Validation](done/phase-33-wasm-validation.md) | Validate KernSmith + StbTrueType works in Blazor WASM | Complete |
+| 34 | [Custom Pure C# Rasterizer](phase-34-custom-rasterizer.md) | Research/prototype a fully custom pure C# TTF rasterizer from scratch | Future |
+| 35 | [FontStashSharp Rasterizer](phase-35-fontstashsharp-rasterizer.md) | Rasterizer plugin backed by FontStashSharp library -- Recommended: Defer indefinitely | Future |
+| 36 | [Bitmap Bold & Italic Post-Processing](phase-36-bitmap-bold-italic-postprocessing.md) | Stackable bitmap-level bold/italic effects for any rasterizer backend | Planning |
 | 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
-| 77B | [Force Size & Remove Presets](done/phase-77b-atlas-size-auto-mode.md) | Replace engine presets with Force Size checkbox | Complete |
-| 80 | [Atlas Preview Rendering](done/phase-80-atlas-preview-rendering.md) | Fix atlas preview rendering quality in UI to match saved PNG | Complete |
 | 81 | [Hiero Format Support](phase-81-hiero-format-support.md) | Hiero `.hiero` config format specification and design decisions | Planning |
 | 82 | [Hiero Core Library](phase-82-hiero-core-library.md) | Add `.hiero` config read/write to the NuGet library | Planning |
 | 83 | [Hiero UI Changes](phase-83-hiero-ui-changes.md) | Update UI for `.hiero` file dialogs, drag-drop, project service | Planning |
 | 84 | [Hiero CLI Changes](phase-84-hiero-cli-changes.md) | Update CLI for `.hiero` format auto-detection and batch support | Planning |
 | 85 | [Hiero Documentation](phase-85-hiero-documentation.md) | Document `.hiero` support in README, CLI docs, samples | Planning |
-| 86 | [RegisterFont File-Path Overload](done/phase-86-register-font-file-path-overload.md) | Add string filePath overload to KernSmithFontCreator.RegisterFont using TitleContainer.OpenStream | Complete |
-| 79 | [Replace FluentAssertions with Shouldly](done/phase-79-replace-fluentassertions.md) | Replace FluentAssertions (paid licensing) with Shouldly across test suite | Complete |
+| 90 | [Native AOT Compliance](phase-90-aot-compliance.md) | Research and implement Native AOT / trimming compatibility for core library | Planning |
 | 95 | [Performance Optimization & Bug Fixes](phase-95-performance-and-bugs.md) | Fix confirmed bugs (outline field, batch encoding, options mutation) and optimize generation performance | Planning |
 | 99 | [BMFont Parity Remaining Gaps](phase-99-bmfont-parity-gaps.md) | Investigate and close remaining metrics differences from Phase 78BB | Planning |
-| 90 | [Native AOT Compliance](phase-90-aot-compliance.md) | Research and implement Native AOT / trimming compatibility for core library | Planning |
 | 100 | [Hiero Advanced Features](phase-100-hiero-advanced-features.md) | Advanced Hiero features requiring new KernSmith properties | Future |
+| 110 | [Post-Processing Enhancements](phase-110-post-processing-enhancements.md) | Exploratory plan for post-processing pipeline enhancements | Exploratory |
+| 111 | [Texture Fill for Glyphs](phase-111-texture-fill.md) | Exploratory plan for texture/pattern fill effects on glyphs | Exploratory |
 | 150 | [Deferred Rasterizer Issues](phase-150-deferred-rasterizer-issues.md) | Color fonts, variable fonts, native DW kerning, GDI MatchCharHeight bug (deferred from Phase 78G) | Planning |
+| 200 | [FontCrafter & Platform Rasterizers](phase-200-fontcrafter-and-platform-rasterizers.md) | FontCrafter product concept and platform-specific rasterizer distribution | Idea |
 
 ---
 
@@ -113,20 +120,18 @@ Output Layer
 | 09 | [Outline Overhaul](done/phase-09-outline-overhaul.md) | EDT-based anti-aliased outlines with outline color support |
 | 10 | [Layered Rendering](done/phase-10-layered-rendering.md) | IGlyphEffect compositing replacing order-dependent post-processor chain |
 | 11 | [Solution Restructure](done/phase-11-solution-restructure.md) | Multi-project foundation, net10.0 migration, CLI promotion, app scaffolding |
+| 12 | [Pre-Ship Polish](done/phase-12-pre-ship-polish.md) | Security hardening, 65 tests, NuGet packaging, XML docs, API polish |
 | 13 | [Batch CLI](done/phase-13-batch-cli.md) | Batch command, .bmfc multi-file processing, collision detection |
 | 14 | [Benchmarking & Profiling](done/phase-14-benchmarking-profiling.md) | 50+ benchmarks, PipelineMetrics, CLI --time/--profile, benchmark command |
 | 15 | [Library Performance](done/phase-15-library-performance.md) | FontCache, GenerateBatch API, static SystemFontProvider -- 18 fonts in 196ms |
-| 12 | [Pre-Ship Polish](done/phase-12-pre-ship-polish.md) | Security hardening, 65 tests, NuGet packaging, XML docs, API polish |
 | 16 | [BMFont .bmfc Compatibility](done/phase-16-bmfc-compatibility.md) | Standard BMFont key=value format, drop legacy INI, same files work in both tools |
 | 17 | [Rebrand to KernSmith](done/phase-17-rebrand-kernsmith.md) | Full project rename from bmfontier to KernSmith |
 | 18 | [API Usability](done/phase-18-api-usability.md) | FromConfig, convenience properties, GetPngData, ToBmfc, Builder.FromConfig, init CLI command |
 | 20 | [Release Readiness](done/phase-20-release-readiness.md) | Version alignment, package icon, dotnet pack, CI verification, GitHub polish, first NuGet publish |
 | 21 | [Atlas Output Modes](done/phase-21-atlas-output-modes.md) | Combined batch atlas, render-to-existing-PNG, atlas size query & constraints |
+| 21R | [Atlas Output Modes Review](done/phase-21-review-findings.md) | Code review findings from Phase 21 implementation |
+| 30 | [WASM Rasterization](done/phase-30-wasm-rasterization.md) | Extract FreeTypeRasterizer from core library into standalone plugin package |
 | 55 | [UI Core Library Prerequisites](done/phase-55-ui-core-library-prerequisites.md) | API additions needed by the UI: font reader, builder methods, FontInfo expansion |
-| 69 | [Final Polish & Release Prep](done/phase-69-ui-final-polish.md) | UI consistency, about dialog, status bar, accent headers, panel backgrounds |
-| 72 | [UI Issues Round 2](done/phase-72-ui-issues-round2.md) | Fix remaining UI issues from manual testing — 21 issues resolved |
-| 74 | [MIT License](done/phase-74-mit-license.md) | Switch all license references to MIT |
-| 75 | [DocFX Docs Site Fixes](done/phase-75-docs-site-fixes.md) | Fix issues found on the deployed DocFX documentation site |
 | 60 | [UI MVP](done/phase-60-ui-mvp.md) | MonoGame + GUM UI app: project scaffold, three-panel layout, font loading, basic generation |
 | 61 | [Font Loading & Character Selection](done/phase-61-ui-font-character-selection.md) | System font browser, BMFont-style character grid, Unicode block sidebar, text-based selection |
 | 62 | [Effects System UI](done/phase-62-ui-effects-system.md) | Outline, shadow, gradient controls with interactive angle/offset pads, channel config |
@@ -136,13 +141,18 @@ Output Layer
 | 66 | [Advanced Features](done/phase-66-ui-advanced-features.md) | Variable fonts, SDF, custom glyphs, batch generation, font inspector, color fonts |
 | 67 | [Workflow & UX Polish](done/phase-67-ui-workflow-ux-polish.md) | Guided workflow, engine presets, contextual help, drag-and-drop, themes |
 | 68 | [Platform, Performance & Accessibility](done/phase-68-ui-platform-performance.md) | Background generation, cross-platform, keyboard accessibility, error handling, packaging |
+| 69 | [Final Polish & Release Prep](done/phase-69-ui-final-polish.md) | UI consistency, about dialog, status bar, accent headers, panel backgrounds |
 | 70 | [UI Manual Review](done/phase-70-ui-manual-review.md) | Manual review and testing of UI application |
 | 71 | [UI Stabilization](done/phase-71-ui-stabilization.md) | UI bug fixes and stabilization |
+| 72 | [UI Issues Round 2](done/phase-72-ui-issues-round2.md) | Fix remaining UI issues from manual testing -- 21 issues resolved |
 | 73 | [Documentation Review](done/phase-73-documentation-review.md) | XML doc comments, class/method summaries, README gaps across library, CLI, and UI |
-| 74 | [MIT License](phase-74-mit-license.md) | Switch all license references from proprietary to MIT |
+| 74 | [MIT License](done/phase-74-mit-license.md) | Switch all license references to MIT |
+| 75 | [DocFX Docs Site Fixes](done/phase-75-docs-site-fixes.md) | Fix issues found on the deployed DocFX documentation site |
+| 75L | [DocFX Logo Fix](done/phase-docfx-logo-fix.md) | Fix oversized navbar logo on DocFX documentation site |
 | 76 | [Metrics Parity with BMFont](done/phase-76-metrics-parity.md) | Investigate and fix glyph metric differences between KernSmith and BMFont output |
 | 76B | [Outline and Italic Fixes](done/phase-76b-outline-and-italic-fixes.md) | Fix outline rendering and italic glyph clipping issues |
 | 77 | [Color Picker Dialog](done/phase-77-color-picker-dialog.md) | Build a reusable color picker dialog that opens when clicking a color swatch |
+| 77B | [Force Size & Remove Presets](done/phase-77b-atlas-size-auto-mode.md) | Replace engine presets with Force Size checkbox |
 | 78 | [Pluggable Rasterizer Backends](done/phase-78-pluggable-rasterizers.md) | Pluggable rasterizer architecture with GDI and DirectWrite backends |
 | 78A | [Rasterizer Foundation](done/phase-78a-rasterizer-foundation.md) | IRasterizer interface, factory, capability system |
 | 78B | [GDI Backend](done/phase-78b-gdi-backend.md) | GDI-based rasterizer for BMFont output parity (Windows-only) |
@@ -154,6 +164,9 @@ Output Layer
 | 78F | [Space Outline Rendering](done/phase-78f-space-outline-glyph.md) | Space gets transparent atlas entry when outline > 0 |
 | 78G | [Remaining Issues](done/phase-78g-remaining-issues.md) | Color fonts, variable fonts, synthetic bold/italic, rounding differences |
 | 78S | [Documentation & Code Quality](done/phase-78s-documentation.md) | XML doc comments, UI tooltips, CLI help text, READMEs |
+| 79 | [Replace FluentAssertions with Shouldly](done/phase-79-replace-fluentassertions.md) | Replace FluentAssertions (paid licensing) with Shouldly across test suite |
+| 80 | [Atlas Preview Rendering](done/phase-80-atlas-preview-rendering.md) | Fix atlas preview rendering quality in UI to match saved PNG |
+| 86 | [RegisterFont File-Path Overload](done/phase-86-register-font-file-path-overload.md) | Add string filePath overload to KernSmithFontCreator.RegisterFont using TitleContainer.OpenStream |
 
 ### Topical Plan Docs (archived in `done/`)
 
@@ -193,8 +206,11 @@ These detailed docs were used during implementation and remain as reference mate
 | REF-05 | [BMFont Format Reference](../reference/REF-05-bmfont-format-reference.md) | BMFont file format specification |
 | REF-06 | [Texture Packing Reference](../reference/REF-06-texture-packing-reference.md) | Rectangle packing algorithm research |
 | REF-07 | [GUM Forms Cheatsheet](../reference/REF-07-gum-forms-cheatsheet.md) | GUM/Forms UI framework quick reference |
+| REF-08 | [BMFont Internals](../reference/REF-08-bmfont-internals.md) | BMFont internals documentation |
 | REF-09 | [Font Metrics and Sizing](../reference/REF-09-font-metrics-and-sizing.md) | Font metrics, sizing, synthetic bold/italic, outline rendering |
 | REF-10 | [Hiero Format Reference](../reference/REF-10-hiero-format-reference.md) | Hiero `.hiero` configuration file format specification |
+| REF-11 | [WASM Restrictions](../reference/REF-11-wasm-restrictions.md) | WASM/AOT platform restrictions research |
+| REF-12 | [Rasterizer Backends](../reference/REF-12-rasterizer-backends.md) | Rasterizer backends documentation |
 
 ---
 

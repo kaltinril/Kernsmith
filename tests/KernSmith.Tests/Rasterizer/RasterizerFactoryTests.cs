@@ -1,4 +1,5 @@
 using KernSmith.Rasterizer;
+using KernSmith.Rasterizers.FreeType;
 using Shouldly;
 
 namespace KernSmith.Tests.Rasterizer;
@@ -25,7 +26,7 @@ public class RasterizerFactoryTests
     [Fact]
     public void Create_UnregisteredBackend_ThrowsInvalidOperationException()
     {
-        // Reset to known state so only FreeType is registered.
+        // Reset to empty state so no backends are registered.
         RasterizerFactory.ResetForTesting();
         try
         {
@@ -36,7 +37,9 @@ public class RasterizerFactoryTests
         }
         finally
         {
-            RasterizerFactory.ResetForTesting();
+            // Re-register FreeType since ResetForTesting() clears all backends
+            // and [ModuleInitializer] only fires once per assembly load.
+            FreeTypeRegistration.Register();
         }
     }
 

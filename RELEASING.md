@@ -29,8 +29,10 @@ dependencies on sibling packages; extension packages depend on the core
 
 ```
 KernSmith                                    (core — no sibling deps)
+├── KernSmith.Rasterizers.FreeType          → KernSmith
 ├── KernSmith.Rasterizers.Gdi               → KernSmith
 ├── KernSmith.Rasterizers.DirectWrite.TerraFX → KernSmith
+├── KernSmith.Rasterizers.StbTrueType       → KernSmith
 ├── KernSmith.GumCommon                     → KernSmith
 │   ├── KernSmith.FnaGum                    → GumCommon (gets KernSmith transitively)
 │   ├── KernSmith.KniGum                    → GumCommon

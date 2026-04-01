@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using KernSmith.Output.Model;
 
 namespace KernSmith.Output;
@@ -173,14 +172,7 @@ internal sealed class BmFontBinaryFormatter : IBmFontBinaryFormatter
         WriteBlock(writer, 5, ms.ToArray());
     }
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false
-    };
-
-    private static void WriteExtendedBlock(BinaryWriter writer, ExtendedMetadata extended)
+private static void WriteExtendedBlock(BinaryWriter writer, ExtendedMetadata extended)
     {
         // Build a dictionary of non-null fields for clean JSON output.
         var dict = new Dictionary<string, object>
@@ -199,7 +191,40 @@ internal sealed class BmFontBinaryFormatter : IBmFontBinaryFormatter
         if (extended.ColorFont is true) dict["colorFont"] = true;
         if (extended.VariationAxes is { Count: > 0 }) dict["variationAxes"] = extended.VariationAxes;
 
-        var json = JsonSerializer.Serialize(dict, JsonOptions);
+        using var stream = new MemoryStream();
+        using (var jsonWriter = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = false }))
+        {
+            jsonWriter.WriteStartObject();
+            foreach (var (key, value) in dict)
+            {
+                switch (value)
+                {
+                    case int i:
+                        jsonWriter.WriteNumber(key, i);
+                        break;
+                    case float f:
+                        jsonWriter.WriteNumber(key, f);
+                        break;
+                    case double d:
+                        jsonWriter.WriteNumber(key, d);
+                        break;
+                    case bool b:
+                        jsonWriter.WriteBoolean(key, b);
+                        break;
+                    case string s:
+                        jsonWriter.WriteString(key, s);
+                        break;
+                    case Dictionary<string, float> axes:
+                        jsonWriter.WriteStartObject(key);
+                        foreach (var (axisKey, axisValue) in axes)
+                            jsonWriter.WriteNumber(axisKey, axisValue);
+                        jsonWriter.WriteEndObject();
+                        break;
+                }
+            }
+            jsonWriter.WriteEndObject();
+        }
+        var json = Encoding.UTF8.GetString(stream.ToArray());
         var jsonBytes = Encoding.UTF8.GetBytes(json);
 
         // Null-terminated UTF-8 JSON payload

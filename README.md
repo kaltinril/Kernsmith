@@ -5,7 +5,7 @@
 <p align="center">
   <a href="LICENSE">License</a> &middot;
   <a href="CHANGELOG.md">Changelog</a> &middot;
-  <a href="samples/KernSmith.Samples/">Samples</a>
+  <a href="samples/">Samples</a>
 </p>
 
 ## Features
@@ -37,19 +37,21 @@
 
 ## Rasterizer Backends
 
-KernSmith supports pluggable rasterizer backends. The core package includes FreeType; optional NuGet packages add Windows-native backends.
+KernSmith supports pluggable rasterizer backends. The core package includes FreeType; optional NuGet packages add alternative backends.
 
 | Backend | Package | Platform | Notes |
 |---------|---------|----------|-------|
 | **FreeType** | included in `KernSmith` | Windows, Linux, macOS | Default. Cross-platform, full feature support. |
 | **GDI** | `KernSmith.Rasterizers.Gdi` | Windows only | Matches BMFont reference output for pixel-perfect parity. |
 | **DirectWrite** | `KernSmith.Rasterizers.DirectWrite.TerraFX` | Windows only | Color font (COLR/CPAL) and variable font rendering via DirectWrite. |
+| **StbTrueType** | `KernSmith.Rasterizers.StbTrueType` | Cross-platform | Pure C#, no native dependencies. Ideal for WASM, AOT, serverless. |
 
 Install an optional backend:
 
 ```
 dotnet add package KernSmith.Rasterizers.Gdi
 dotnet add package KernSmith.Rasterizers.DirectWrite.TerraFX
+dotnet add package KernSmith.Rasterizers.StbTrueType
 ```
 
 Select a backend when generating:
@@ -61,6 +63,29 @@ var result = BmFont.Builder()
     .WithRasterizer("gdi")
     .Build();
 ```
+
+### Blazor WASM
+
+KernSmith runs entirely client-side in Blazor WebAssembly using the StbTrueType backend. See the [Blazor WASM sample](samples/KernSmith.Samples.BlazorWasm/) for a working example.
+
+```csharp
+// In Program.cs — force assembly load to prevent trimming
+RuntimeHelpers.RunClassConstructor(
+    typeof(KernSmith.Rasterizers.StbTrueType.StbTrueTypeRasterizer).TypeHandle);
+
+// Generate in-browser
+var result = BmFont.Generate(fontBytes, new FontGeneratorOptions
+{
+    Size = 32,
+    Characters = CharacterSet.Ascii,
+    Backend = RasterizerBackend.StbTrueType
+});
+
+string fntText = result.FntText;
+byte[] pngData = result.GetPngData(0);
+```
+
+AOT compilation (`RunAOTCompilation=true`) is recommended for production performance.
 
 ## Installation
 
@@ -594,6 +619,10 @@ var result = BmFont.Generate("font.ttf", new FontGeneratorOptions
     TextureFormat = TextureFormat.Tga  // Also: TextureFormat.Png, TextureFormat.Dds
 });
 ```
+
+## How KernSmith Compares
+
+See [COMPARISON.md](COMPARISON.md) for a detailed feature comparison with BMFont, Hiero, msdf-atlas-gen, and other bitmap font generators.
 
 ## License
 

@@ -116,6 +116,8 @@ jobs:
       - name: Pack cross-platform packages
         run: |
           dotnet pack src/KernSmith/KernSmith.csproj --configuration Release --no-build --output ./nupkg
+          dotnet pack src/KernSmith.Rasterizers.FreeType/KernSmith.Rasterizers.FreeType.csproj --configuration Release --no-build --output ./nupkg
+          dotnet pack src/KernSmith.Rasterizers.StbTrueType/KernSmith.Rasterizers.StbTrueType.csproj --configuration Release --no-build --output ./nupkg
           dotnet pack integrations/KernSmith.GumCommon/KernSmith.GumCommon.csproj --configuration Release --no-build --output ./nupkg
           dotnet pack integrations/KernSmith.MonoGameGum/KernSmith.MonoGameGum.csproj --configuration Release --no-build --output ./nupkg
           dotnet pack integrations/KernSmith.KniGum/KernSmith.KniGum.csproj --configuration Release --no-build --output ./nupkg
@@ -195,6 +197,8 @@ jobs:
             - [KernSmith](https://www.nuget.org/packages/KernSmith/${{ needs.validate.outputs.version }})
             - [KernSmith.Rasterizers.Gdi](https://www.nuget.org/packages/KernSmith.Rasterizers.Gdi/${{ needs.validate.outputs.version }})
             - [KernSmith.Rasterizers.DirectWrite.TerraFX](https://www.nuget.org/packages/KernSmith.Rasterizers.DirectWrite.TerraFX/${{ needs.validate.outputs.version }})
+            - [KernSmith.Rasterizers.FreeType](https://www.nuget.org/packages/KernSmith.Rasterizers.FreeType/${{ needs.validate.outputs.version }})
+            - [KernSmith.Rasterizers.StbTrueType](https://www.nuget.org/packages/KernSmith.Rasterizers.StbTrueType/${{ needs.validate.outputs.version }})
             - [KernSmith.GumCommon](https://www.nuget.org/packages/KernSmith.GumCommon/${{ needs.validate.outputs.version }})
             - [KernSmith.MonoGameGum](https://www.nuget.org/packages/KernSmith.MonoGameGum/${{ needs.validate.outputs.version }})
             - [KernSmith.KniGum](https://www.nuget.org/packages/KernSmith.KniGum/${{ needs.validate.outputs.version }})

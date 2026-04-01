@@ -4,16 +4,11 @@ namespace KernSmith.Rasterizer;
 
 /// <summary>
 /// Thread-safe factory for creating rasterizer instances by backend type.
-/// FreeType is pre-registered.
+/// Backends register themselves via <see cref="Register"/> (typically from a [ModuleInitializer]).
 /// </summary>
 public static class RasterizerFactory
 {
     private static readonly ConcurrentDictionary<RasterizerBackend, Func<IRasterizer>> Backends = new();
-
-    static RasterizerFactory()
-    {
-        Backends[RasterizerBackend.FreeType] = () => new FreeTypeRasterizer();
-    }
 
     /// <summary>
     /// Registers a factory function for the specified backend.
@@ -36,7 +31,7 @@ public static class RasterizerFactory
         throw new InvalidOperationException(
             $"Rasterizer backend '{backend}' is not registered. " +
             $"Available backends: {string.Join(", ", GetAvailableBackends())}. " +
-            $"Call RasterizerFactory.Register to add a backend.");
+            $"Install the corresponding NuGet package (e.g., KernSmith.Rasterizers.StbTrueType) and ensure it is referenced by your project.");
     }
 
     /// <summary>
@@ -57,6 +52,5 @@ public static class RasterizerFactory
     internal static void ResetForTesting()
     {
         Backends.Clear();
-        Backends[RasterizerBackend.FreeType] = () => new FreeTypeRasterizer();
     }
 }

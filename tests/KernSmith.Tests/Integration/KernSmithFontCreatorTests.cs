@@ -1,5 +1,7 @@
 using KernSmith.Font;
 using KernSmith.Gum;
+using KernSmith.Rasterizer;
+using KernSmith.Rasterizers.FreeType;
 using Shouldly;
 
 namespace KernSmith.Tests.Integration;
@@ -10,6 +12,12 @@ namespace KernSmith.Tests.Integration;
 public sealed class KernSmithFontCreatorTests : IDisposable
 {
     private const string TestFontPath = "Fixtures/Roboto-Regular.ttf";
+
+    public KernSmithFontCreatorTests()
+    {
+        if (!RasterizerFactory.GetAvailableBackends().Contains(RasterizerBackend.FreeType))
+            RasterizerFactory.Register(RasterizerBackend.FreeType, () => new FreeTypeRasterizer());
+    }
 
     public void Dispose() => KernSmithFontCreator.ClearRegisteredFonts();
 

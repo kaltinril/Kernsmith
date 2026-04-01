@@ -7,8 +7,10 @@ using KernSmith;
 using KernSmith.Rasterizer;
 
 // Force assembly load so module initializers run
+RuntimeHelpers.RunClassConstructor(typeof(KernSmith.Rasterizers.FreeType.FreeTypeRasterizer).TypeHandle);
 RuntimeHelpers.RunClassConstructor(typeof(KernSmith.Rasterizers.Gdi.GdiRasterizer).TypeHandle);
 RuntimeHelpers.RunClassConstructor(typeof(KernSmith.Rasterizers.DirectWrite.TerraFX.DirectWriteRasterizer).TypeHandle);
+RuntimeHelpers.RunClassConstructor(typeof(KernSmith.Rasterizers.StbTrueType.StbTrueTypeRasterizer).TypeHandle);
 
 // Parse flags
 bool compare = true;
@@ -70,6 +72,7 @@ var backends = new (string Name, Func<IRasterizer> Factory)[]
     ("freetype", () => RasterizerFactory.Create(RasterizerBackend.FreeType)),
     ("gdi", () => new KernSmith.Rasterizers.Gdi.GdiRasterizer()),
     ("directwrite", () => new KernSmith.Rasterizers.DirectWrite.TerraFX.DirectWriteRasterizer()),
+    ("stbtruetype", () => RasterizerFactory.Create(RasterizerBackend.StbTrueType)),
 };
 
 int totalSucceeded = 0;
@@ -327,11 +330,11 @@ if (compare)
 {
     Console.WriteLine("\n=== Generating comparison images ===");
 
-    var allBackendNames = new[] { "freetype", "gdi", "directwrite", "bmfont" };
-    var allBackendLabels = new[] { "FreeType", "GDI", "DW", "BMFont" };
+    var allBackendNames = new[] { "freetype", "gdi", "directwrite", "stbtruetype", "bmfont" };
+    var allBackendLabels = new[] { "FreeType", "GDI", "DW", "StbTT", "BMFont" };
 
-    var mixBoldBackendNames = new[] { "ft-norm", "ft-real", "ft-syn", "gdi-norm", "gdi-real", "gdi-syn", "dw-norm", "dw-real", "dw-syn", "bmf-norm", "bmf-style" };
-    var mixBoldBackendLabels = new[] { "FT", "FT real", "FT syn", "GDI", "GDI real", "GDI syn", "DW", "DW real", "DW syn", "BMF", "BMF style" };
+    var mixBoldBackendNames = new[] { "ft-norm", "ft-real", "ft-syn", "gdi-norm", "gdi-real", "gdi-syn", "dw-norm", "dw-real", "dw-syn", "stb-norm", "stb-real", "stb-syn", "bmf-norm", "bmf-style" };
+    var mixBoldBackendLabels = new[] { "FT", "FT real", "FT syn", "GDI", "GDI real", "GDI syn", "DW", "DW real", "DW syn", "StbTT", "StbTT real", "StbTT syn", "BMF", "BMF style" };
 
     // Fixed comparison outputs
     var comparisons = new (string Prefix, string OutputName, string[] Backends, string[] Labels, string Title)[]
@@ -356,6 +359,9 @@ if (compare)
             ("dw-norm", "plain", "directwrite"),
             ("dw-real", "plain-bold", "directwrite"),
             ("dw-syn", "plain-synbold", "directwrite"),
+            ("stb-norm", "plain", "stbtruetype"),
+            ("stb-real", "plain-bold", "stbtruetype"),
+            ("stb-syn", "plain-synbold", "stbtruetype"),
             ("bmf-norm", "plain", "bmfont"),
             ("bmf-style", "plain-bold", "bmfont"),
         }),
@@ -370,6 +376,9 @@ if (compare)
             ("dw-norm", "plain", "directwrite"),
             ("dw-real", "plain-italic", "directwrite"),
             ("dw-syn", "plain-synitalic", "directwrite"),
+            ("stb-norm", "plain", "stbtruetype"),
+            ("stb-real", "plain-italic", "stbtruetype"),
+            ("stb-syn", "plain-synitalic", "stbtruetype"),
             ("bmf-norm", "plain", "bmfont"),
             ("bmf-style", "plain-italic", "bmfont"),
         }),
@@ -395,7 +404,7 @@ if (compare)
                 allFound = false;
             }
         }
-        if (allFound) generatedConfigs.Add(mixPrefix);
+        generatedConfigs.Add(mixPrefix);
     }
 
     // Also generate per-config comparisons for any remaining configs
@@ -476,15 +485,12 @@ static void GenerateComparison(string basePath, string prefix, string outputName
         return;
     }
 
-    var activeBackends = backendNames.Where(b => atlasImages.ContainsKey(b)).ToArray();
-    var activeLabels = backendNames
-        .Select((b, i) => (b, backendLabels[i]))
-        .Where(x => atlasImages.ContainsKey(x.b))
-        .Select(x => x.Item2)
-        .ToArray();
+    // Show all requested backends — missing ones render as red cells
+    var activeBackends = backendNames;
+    var activeLabels = backendLabels;
 
     var codepoints = Enumerable.Range(32, 95)
-        .Where(cp => activeBackends.Any(b => allChars[b].TryGetValue(cp, out var c) && c.Width > 0 && c.Height > 0))
+        .Where(cp => activeBackends.Any(b => allChars.TryGetValue(b, out var chars) && chars.TryGetValue(cp, out var c) && c.Width > 0 && c.Height > 0))
         .OrderBy(cp => cp)
         .ToList();
 
@@ -535,7 +541,7 @@ static void GenerateComparison(string basePath, string prefix, string outputName
         int maxW = 0, maxH = 0;
         foreach (var backend in activeBackends)
         {
-            if (allChars[backend].TryGetValue(cp, out var ci) && ci.Width > 0 && ci.Height > 0)
+            if (allChars.TryGetValue(backend, out var chars) && chars.TryGetValue(cp, out var ci) && ci.Width > 0 && ci.Height > 0)
             {
                 maxW = Math.Max(maxW, ci.Width);
                 maxH = Math.Max(maxH, ci.Height);
@@ -554,13 +560,13 @@ static void GenerateComparison(string basePath, string prefix, string outputName
             int x = labelColWidth + col * glyphColWidth + padding;
             var backend = activeBackends[col];
 
-            if (!allChars[backend].TryGetValue(cp, out var ci) || ci.Width == 0 || ci.Height == 0)
+            if (!allChars.TryGetValue(backend, out var backendChars) || !backendChars.TryGetValue(cp, out var ci) || ci.Width == 0 || ci.Height == 0)
             {
                 g.FillRectangle(redBrush, x, y, glyphColWidth - padding, glyphColHeight - 2);
                 continue;
             }
 
-            var atlas = atlasImages[backend];
+            if (!atlasImages.TryGetValue(backend, out var atlas)) continue;
             int sw = Math.Min(ci.Width, atlas.Width - ci.X);
             int sh = Math.Min(ci.Height, atlas.Height - ci.Y);
             if (sw <= 0 || sh <= 0) continue;

@@ -146,15 +146,20 @@ public static class BmFont
             // FreeType checks style_flags internally, but GDI and DirectWrite don't —
             // this ensures consistent behavior across all backends.
             // ForceSynthetic overrides: the user explicitly wants synthetic on top.
-            if (fontInfo.IsBold && options.Bold && !options.ForceSyntheticBold)
+            var effectiveBold = options.Bold;
+            var effectiveForceSyntheticBold = options.ForceSyntheticBold;
+            var effectiveItalic = options.Italic;
+            var effectiveForceSyntheticItalic = options.ForceSyntheticItalic;
+
+            if (fontInfo.IsBold && effectiveBold && !effectiveForceSyntheticBold)
             {
-                options.Bold = false;
-                options.ForceSyntheticBold = false;
+                effectiveBold = false;
+                effectiveForceSyntheticBold = false;
             }
-            if (fontInfo.IsItalic && options.Italic && !options.ForceSyntheticItalic)
+            if (fontInfo.IsItalic && effectiveItalic && !effectiveForceSyntheticItalic)
             {
-                options.Italic = false;
-                options.ForceSyntheticItalic = false;
+                effectiveItalic = false;
+                effectiveForceSyntheticItalic = false;
             }
 
             if (rasterizer.Capabilities.SupportsVariableFonts
@@ -170,7 +175,20 @@ public static class BmFont
                 rasterizer.SelectColorPalette(options.ColorPaletteIndex);
             }
 
-            var rasterOptions = RasterOptions.FromGeneratorOptions(options);
+            if (options.Sdf && !rasterizer.Capabilities.SupportsSdf)
+            {
+                throw new NotSupportedException(
+                    $"Rasterizer backend does not support SDF rendering. " +
+                    $"Use a backend that reports SupportsSdf = true (e.g., FreeType or StbTrueType).");
+            }
+
+            var rasterOptions = RasterOptions.FromGeneratorOptions(options) with
+            {
+                Bold = effectiveBold,
+                ForceSyntheticBold = effectiveForceSyntheticBold,
+                Italic = effectiveItalic,
+                ForceSyntheticItalic = effectiveForceSyntheticItalic
+            };
 
             // BMFont treats fontSize as cell height (usWinAscent + usWinDescent scaled),
             // not as em-square size (ppem). Compute the effective ppem that produces the
@@ -1205,107 +1223,6 @@ public static class BmFont
         };
     }
 
-    /// <summary>Draws the outline behind the glyph using FreeType's stroker. Falls back to the original on failure.</summary>
-    private static RasterizedGlyph CompositeWithFtStroker(
-        FreeTypeRasterizer rasterizer, RasterizedGlyph glyph,
-        RasterOptions rasterOptions, int outlineWidth,
-        byte outlineR, byte outlineG, byte outlineB)
-    {
-        if (glyph.Width == 0 || glyph.Height == 0 || glyph.BitmapData.Length == 0)
-            return glyph;
-
-        RasterizedGlyph? outlineGlyph;
-        try
-        {
-            outlineGlyph = rasterizer.RasterizeOutline(
-                glyph.Codepoint, rasterOptions, outlineWidth, outlineR, outlineG, outlineB);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
-        {
-            // FT_Stroker can fail for certain glyph types; fall back gracefully.
-            return glyph;
-        }
-
-        if (outlineGlyph == null || outlineGlyph.Width == 0 || outlineGlyph.Height == 0)
-            return glyph;
-
-        // The outline bitmap is larger than the glyph bitmap.
-        // Use the outline as the base canvas, then composite the glyph on top.
-        var dstW = outlineGlyph.Width;
-        var dstH = outlineGlyph.Height;
-        var dst = new byte[dstW * dstH * 4];
-
-        // Copy outline layer.
-        Array.Copy(outlineGlyph.BitmapData, dst, Math.Min(outlineGlyph.BitmapData.Length, dst.Length));
-
-        // Compute offset to center the glyph within the outline.
-        var offsetX = outlineGlyph.Metrics.BearingX - glyph.Metrics.BearingX;
-        var offsetY = glyph.Metrics.BearingY - outlineGlyph.Metrics.BearingY;
-
-        // Composite original glyph on top using alpha-over.
-        var srcW = glyph.Width;
-        var srcH = glyph.Height;
-
-        for (var y = 0; y < srcH; y++)
-        {
-            for (var x = 0; x < srcW; x++)
-            {
-                byte srcR, srcG, srcB, srcA;
-
-                if (glyph.Format == PixelFormat.Rgba32)
-                {
-                    var si = y * glyph.Pitch + x * 4;
-                    if (si + 3 >= glyph.BitmapData.Length) continue;
-                    srcR = glyph.BitmapData[si];
-                    srcG = glyph.BitmapData[si + 1];
-                    srcB = glyph.BitmapData[si + 2];
-                    srcA = glyph.BitmapData[si + 3];
-                }
-                else
-                {
-                    var si = y * glyph.Pitch + x;
-                    if (si >= glyph.BitmapData.Length) continue;
-                    srcR = 255;
-                    srcG = 255;
-                    srcB = 255;
-                    srcA = glyph.BitmapData[si];
-                }
-
-                if (srcA == 0) continue;
-
-                var dx = x + offsetX;
-                var dy = y + offsetY;
-                if (dx < 0 || dx >= dstW || dy < 0 || dy >= dstH) continue;
-
-                var di = (dy * dstW + dx) * 4;
-                var dstA = dst[di + 3];
-                var sA = srcA / 255f;
-                var dA = dstA / 255f;
-                var outA = sA + dA * (1f - sA);
-
-                if (outA > 0)
-                {
-                    dst[di + 0] = (byte)((srcR * sA + dst[di + 0] * dA * (1f - sA)) / outA);
-                    dst[di + 1] = (byte)((srcG * sA + dst[di + 1] * dA * (1f - sA)) / outA);
-                    dst[di + 2] = (byte)((srcB * sA + dst[di + 2] * dA * (1f - sA)) / outA);
-                    dst[di + 3] = (byte)Math.Min(255, (int)(outA * 255));
-                }
-            }
-        }
-
-        return new RasterizedGlyph
-        {
-            Codepoint = glyph.Codepoint,
-            GlyphIndex = glyph.GlyphIndex,
-            BitmapData = dst,
-            Width = dstW,
-            Height = dstH,
-            Pitch = dstW * 4,
-            Metrics = outlineGlyph.Metrics,
-            Format = PixelFormat.Rgba32
-        };
-    }
-
     /// <summary>Generates multiple BMFonts in batch, with optional parallelism and font caching.</summary>
     /// <param name="jobs">The batch jobs to run.</param>
     /// <param name="options">Batch options, or null for sequential execution.</param>
@@ -1353,12 +1270,20 @@ public static class BmFont
         }
         else
         {
-            // Parallel
-            var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxParallelism };
-            Parallel.For(0, jobs.Count, parallelOptions, i =>
+            // Parallel — falls back to sequential if platform doesn't support threading (e.g., WASM).
+            try
             {
-                results[i] = RunBatchJob(i, jobs[i], cache);
-            });
+                var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxParallelism };
+                Parallel.For(0, jobs.Count, parallelOptions, i =>
+                {
+                    results[i] = RunBatchJob(i, jobs[i], cache);
+                });
+            }
+            catch (PlatformNotSupportedException)
+            {
+                for (int i = 0; i < jobs.Count; i++)
+                    results[i] = RunBatchJob(i, jobs[i], cache);
+            }
         }
 
         totalSw.Stop();
