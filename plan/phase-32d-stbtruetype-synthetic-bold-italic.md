@@ -1,6 +1,6 @@
 # Phase 32d — StbTrueType Synthetic Bold & Italic
 
-> **Status**: Planning (research complete, decision needed on SDF + bold/italic)
+> **Status**: Planning (research complete, SDF decision pending — bold/italic implementation is confirmed must-have)
 > **Created**: 2026-03-31
 > **Depends on**: Phase 32 (StbTrueType rasterizer), Phase 32c (validation fixes)
 > **Related**: Phase 36 (bitmap-level bold/italic post-processing)
@@ -179,25 +179,26 @@ Cons: Maintenance burden, NuGet dependency changes, overkill for one function.
 
 ### Recommendation
 
-Option 1 (vendor one function) for the best quality with minimal risk. Fall back to Option 2 (descope) if the vendored code is not worth maintaining. Option 3 sounds appealing but bitmap dilation on SDF values is fundamentally the wrong math.
+Option 1 (vendor one function) is strongly recommended. SDF rendering is one of StbTrueType's key advertised capabilities and a primary reason users choose it over bitmap-only alternatives. On WASM — where StbTrueType is the only available rasterizer — descoping SDF + bold/italic would create an awkward gap: the backend's headline feature cannot be combined with basic text styling. The vendored code is ~250-350 lines of Public Domain C# with stable upstream; the maintenance cost is low relative to the user-facing value. Option 3 sounds appealing but bitmap dilation on SDF values is fundamentally the wrong math.
 
-## Alternative: Skip Synthetic Bold/Italic Entirely
+## Platform Reality: Why This Is a Must-Have
 
-An alternative to all of this work: only support bold/italic when the font file itself has native bold/italic faces. The StbTrueType comparison image columns stay red for synthetic — that is the documented feature gap. Users who need synthetic bold/italic use FreeType.
+Since Phase 33 (Blazor WASM validation) landed, WASM is a first-class platform for KernSmith. On Blazor WASM, StbTrueType is the **only** available rasterizer — FreeType has no native binary, and GDI/DirectWrite are Windows-only. This fundamentally changes the calculus around synthetic bold/italic: throwing `NotSupportedException` means WASM consumers simply cannot produce styled text.
 
-This is a valid architectural choice. stb_truetype is a lightweight fallback for WASM/AOT platforms, not a full-featured replacement for FreeType. FontStashSharp (the most popular StbTrueTypeSharp consumer) also has no synthetic bold/italic.
+### Alternatives Investigated
 
-**Pros:**
-- Zero implementation effort
-- No vendored SDF code
-- No complex bold algorithm to port and maintain
-- Clearly documented capability gap between backends
+| Alternative | Why It Is Not Viable |
+|-------------|---------------------|
+| **FreeType via WASM interop** | No official Emscripten build of FreeTypeSharp. P/Invoke into a manually compiled WASM binary is fragile, adds a native dependency (defeating the purpose of a pure-C# backend), and has no community precedent. |
+| **SixLabors.Fonts** | Split license (Apache 2.0 for open source, paid for commercial). Excluded from KernSmith's dependency list per project policy. |
+| **SkiaSharp** | Full Skia native binary (~5-10 MB WASM payload). Disproportionate weight for a font rasterization library. Also requires native WASM compilation. |
+| **Typography.OpenFont / NOpenType** | Limited rasterization capabilities. Neither provides production-quality glyph rendering comparable to StbTrueType, and neither has synthetic bold/italic support either. |
 
-**Cons:**
-- WASM/AOT users have no path to bold/italic at all
-- The feature gap remains the biggest practical limitation of the StbTrueType backend
+### Conclusion
 
-**Decision needed**: This option should be discussed before committing to the full implementation.
+Synthetic bold/italic on the StbTrueType backend is a **hard requirement**, not an optional enhancement. The project's philosophy is "it should just work" — users on WASM should not have to discover at runtime that styled text is unsupported on their platform. FontStashSharp's lack of this feature is not a relevant precedent; FontStashSharp is a text rendering library with different goals, not a BMFont generator targeting cross-platform parity.
+
+The only remaining decision is the SDF approach: Option 1 (vendor `stbtt_GetGlyphSDF`) or Option 2 (descope SDF + bold/italic). The bold/italic implementation itself is confirmed.
 
 ## Implementation Plan
 
