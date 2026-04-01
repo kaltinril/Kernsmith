@@ -595,6 +595,10 @@ var result = BmFont.Generate("font.ttf", new FontGeneratorOptions
 });
 ```
 
+## How KernSmith Compares
+
+See [COMPARISON.md](COMPARISON.md) for a detailed feature comparison with BMFont, Hiero, msdf-atlas-gen, and other bitmap font generators.
+
 ## License
 
 MIT. See [LICENSE](LICENSE) for details.
