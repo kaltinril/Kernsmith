@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `KernSmithFontCreator` now accepts an optional `RasterizerBackend` in the constructor, enabling Blazor WASM and other platforms to use StbTrueType without reimplementing the class (Phase 33b)
+- `GumFontGenerator.Generate()` now accepts an optional `RasterizerBackend` parameter to override the default backend
+
 ## [0.11.0] - 2026-04-01
 
 ### Added

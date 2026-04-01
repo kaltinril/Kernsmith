@@ -28,12 +28,21 @@ bmfcSave.FontSize = 24;
 BmFontResult result = GumFontGenerator.Generate(bmfcSave);
 ```
 
+### Select a rasterizer backend
+
+Pass a `RasterizerBackend` to use a specific backend instead of the default (FreeType). This is required on platforms where native libraries are unavailable, such as Blazor WASM:
+
+```csharp
+BmFontResult result = GumFontGenerator.Generate(bmfcSave, RasterizerBackend.StbTrueType);
+```
+
 ### Customize options
 
 Use `BuildOptions()` to get a `FontGeneratorOptions` instance, modify it, then generate manually:
 
 ```csharp
 FontGeneratorOptions options = GumFontGenerator.BuildOptions(bmfcSave);
+options.Backend = RasterizerBackend.StbTrueType;
 options.SuperSampleLevel = 2; // Add 2x super sampling
 
 BmFontResult result = BmFont.GenerateFromSystem(bmfcSave.FontName, options);
@@ -71,6 +80,7 @@ See the [MonoGameGum](monogamegum.md) or [KniGum](knigum.md) integration pages f
 | SpacingHorizontal/Vertical | Spacing |
 | OutputWidth/Height | MaxTextureWidth/Height |
 | Character ranges | Characters (CharacterSet) |
+| (backend parameter) | Backend |
 
 ## Architecture
 

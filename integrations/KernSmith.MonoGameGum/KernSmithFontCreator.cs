@@ -14,6 +14,7 @@ namespace KernSmith.Gum;
 public class KernSmithFontCreator : IInMemoryFontCreator
 {
     private readonly GraphicsDevice _graphicsDevice;
+    private readonly RasterizerBackend? _backend;
 
     /// <summary>
     /// Initializes a new instance of <see cref="KernSmithFontCreator"/>.
@@ -21,9 +22,15 @@ public class KernSmithFontCreator : IInMemoryFontCreator
     /// <param name="graphicsDevice">
     /// The graphics device used to create font textures.
     /// </param>
-    public KernSmithFontCreator(GraphicsDevice graphicsDevice)
+    /// <param name="backend">
+    /// Optional rasterizer backend override. When null, uses the default (FreeType).
+    /// Use <see cref="RasterizerBackend.StbTrueType"/> on platforms where native
+    /// libraries are unavailable (e.g., Blazor WASM).
+    /// </param>
+    public KernSmithFontCreator(GraphicsDevice graphicsDevice, RasterizerBackend? backend = null)
     {
         _graphicsDevice = graphicsDevice ?? throw new ArgumentNullException(nameof(graphicsDevice));
+        _backend = backend;
     }
 
     /// <summary>
@@ -90,7 +97,7 @@ public class KernSmithFontCreator : IInMemoryFontCreator
     /// <inheritdoc/>
     public BitmapFont? TryCreateFont(BmfcSave bmfcSave)
     {
-        BmFontResult result = GumFontGenerator.Generate(bmfcSave);
+        BmFontResult result = GumFontGenerator.Generate(bmfcSave, _backend);
 
         string baseName = System.IO.Path.GetFileNameWithoutExtension(bmfcSave.FontCacheFileName);
 
