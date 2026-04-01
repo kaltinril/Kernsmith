@@ -79,7 +79,7 @@ Output Layer
 
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
-| 31 | [WASM Platform Restrictions Research](phase-31-wasm-restrictions-research.md) | Research WASM/AOT platform restrictions affecting rasterizer strategy | Planning |
+| 31 | [WASM Platform Restrictions Research](done/phase-31-wasm-restrictions-research.md) | Research WASM/AOT platform restrictions affecting rasterizer strategy | Complete |
 | 32 | [StbTrueType Managed Rasterizer](phase-32-stbtruetype-rasterizer.md) | Pure C# rasterizer plugin using StbTrueTypeSharp for WASM/AOT support | Planning |
 | 33 | [WASM Integration and Validation](phase-33-wasm-validation.md) | Validate KernSmith + StbTrueType works in Blazor WASM | Future |
 | 34 | [Custom Pure C# Rasterizer](phase-34-custom-rasterizer.md) | Research/prototype a fully custom pure C# TTF rasterizer from scratch | Future |

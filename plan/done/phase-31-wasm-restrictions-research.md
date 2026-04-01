@@ -1,6 +1,6 @@
 # Phase 31 — WASM Platform Restrictions Research
 
-> **Status**: Planning
+> **Status**: Done
 > **Created**: 2026-03-30
 > **Depends on**: Phase 30 (FreeType extraction — needed so core is native-free)
 > **Blocks**: Phase 32 (StbTrueType rasterizer), Phase 33 (WASM validation)
