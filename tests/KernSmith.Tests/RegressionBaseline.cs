@@ -7,6 +7,7 @@ namespace KernSmith.Tests;
 /// Generates baseline font outputs for regression testing.
 /// Run once BEFORE making changes, then run the comparison tests AFTER.
 /// </summary>
+[Collection("RasterizerFactory")]
 public class RegressionBaseline
 {
     private static readonly string FontPath = Path.Combine(

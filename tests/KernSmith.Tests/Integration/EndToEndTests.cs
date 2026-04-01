@@ -6,6 +6,7 @@ using Shouldly;
 
 namespace KernSmith.Tests.Integration;
 
+[Collection("RasterizerFactory")]
 public class EndToEndTests
 {
     public EndToEndTests()

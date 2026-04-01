@@ -7,6 +7,7 @@ namespace KernSmith.Tests;
 /// Tests for the BmFont font registry: RegisterFont, UnregisterFont,
 /// ClearRegisteredFonts, and registry-priority behavior in GenerateFromSystem.
 /// </summary>
+[Collection("RasterizerFactory")]
 public sealed class FontRegistryTests : IDisposable
 {
     private static byte[] LoadTestFont() =>

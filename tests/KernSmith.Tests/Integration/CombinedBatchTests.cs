@@ -5,6 +5,7 @@ using Shouldly;
 
 namespace KernSmith.Tests.Integration;
 
+[Collection("RasterizerFactory")]
 public class CombinedBatchTests
 {
     public CombinedBatchTests()

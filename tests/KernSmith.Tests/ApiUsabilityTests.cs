@@ -7,6 +7,7 @@ namespace KernSmith.Tests;
 /// Tests for the API usability features: FromConfig, convenience properties,
 /// GetPngData/GetTgaData/GetDdsData, ToBmfc, Builder.FromConfig, and AtlasPage helpers.
 /// </summary>
+[Collection("RasterizerFactory")]
 public sealed class ApiUsabilityTests : IDisposable
 {
     private static readonly string TestFontPath =
