@@ -21,7 +21,7 @@ jobs:
       - run: dotnet restore
       - run: dotnet build --no-restore
       - name: Test
-        run: dotnet test --no-build --verbosity normal --blame-hang --blame-hang-timeout 3m
+        run: dotnet test tests/KernSmith.Tests/KernSmith.Tests.csproj --no-build --verbosity normal --blame-hang --blame-hang-timeout 3m
         continue-on-error: ${{ matrix.os == 'ubuntu-latest' }}
       - name: Verify tests passed (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
