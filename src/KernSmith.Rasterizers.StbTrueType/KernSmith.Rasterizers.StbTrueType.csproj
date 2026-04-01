@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>CS1591</NoWarn>
+    <IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <IsAotCompatible>true</IsAotCompatible>
+    <PackageId>KernSmith.Rasterizers.StbTrueType</PackageId>
+    <Description>StbTrueType rasterizer backend for KernSmith. Pure C#, cross-platform. No native dependencies. Ideal for Blazor WASM, iOS AOT, and serverless.</Description>
+    <PackageProjectUrl>https://github.com/kaltinril/KernSmith</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Authors>Kaltinril (Jeremy Swartwood)</Authors>
+    <PackageTags>kernsmith;stbtruetype;rasterizer;bitmap-font;game-dev;cross-platform;wasm;pure-csharp;sdf</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="KernSmith.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="StbTrueTypeSharp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\KernSmith\KernSmith.csproj" />
+  </ItemGroup>
+</Project>

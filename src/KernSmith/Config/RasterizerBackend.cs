@@ -12,5 +12,8 @@ public enum RasterizerBackend
     Gdi,
 
     /// <summary>DirectWrite rasterizer. Windows-only, high quality.</summary>
-    DirectWrite
+    DirectWrite,
+
+    /// <summary>StbTrueType rasterizer. Pure C#, cross-platform. No native dependencies.</summary>
+    StbTrueType
 }

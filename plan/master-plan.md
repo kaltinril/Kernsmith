@@ -1,6 +1,6 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-21, 30, 55, 60-69, 72-78, 77B, 79, 80 complete. Phases 31-35 (rasterizer plugins, WASM) are planning/future. Phase 95, 99, 110, 111, 150 planning.
+> **Status**: Phases 1-21, 30-32, 55, 60-69, 72-78, 77B, 79, 80 complete. Phases 33-35 (rasterizer plugins, WASM) are planning/future. Phase 95, 99, 110, 111, 150 planning.
 > **Date**: 2026-03-31
 
 ---
@@ -80,7 +80,7 @@ Output Layer
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
 | 31 | [WASM Platform Restrictions Research](done/phase-31-wasm-restrictions-research.md) | Research WASM/AOT platform restrictions affecting rasterizer strategy | Complete |
-| 32 | [StbTrueType Managed Rasterizer](phase-32-stbtruetype-rasterizer.md) | Pure C# rasterizer plugin using StbTrueTypeSharp for WASM/AOT support | Planning |
+| 32 | [StbTrueType Managed Rasterizer](done/phase-32-stbtruetype-rasterizer.md) | Pure C# rasterizer plugin using StbTrueTypeSharp for WASM/AOT support | Complete |
 | 33 | [WASM Integration and Validation](phase-33-wasm-validation.md) | Validate KernSmith + StbTrueType works in Blazor WASM | Future |
 | 34 | [Custom Pure C# Rasterizer](phase-34-custom-rasterizer.md) | Research/prototype a fully custom pure C# TTF rasterizer from scratch | Future |
 | 35 | [FontStashSharp Rasterizer](phase-35-fontstashsharp-rasterizer.md) | Rasterizer plugin backed by FontStashSharp library -- Recommended: Defer indefinitely | Future |

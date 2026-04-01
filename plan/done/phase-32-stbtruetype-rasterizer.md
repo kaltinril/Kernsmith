@@ -1,6 +1,6 @@
 # Phase 32 — StbTrueType Managed Rasterizer Plugin
 
-> **Status**: Planning
+> **Status**: Complete
 > **Created**: 2026-03-30
 > **Depends on**: Phase 30 (FreeType extraction), Phase 31 (WASM restrictions research)
 > **Blocks**: Phase 33 (WASM validation)
@@ -263,15 +263,15 @@ These constraints apply to the rasterizer implementation itself. Blazor UI code 
 
 ## Success Criteria
 
-- [ ] `StbTrueTypeRasterizer` implements full `IRasterizer` interface (including `IDisposable`)
-- [ ] `RasterizeAll` loop implementation works for batch rasterization
-- [ ] `GetGlyphMetrics` implemented for performance (avoids full rasterization)
-- [ ] Registered via `[ModuleInitializer]` (same pattern as GDI/DirectWrite)
-- [ ] Generates valid BMFont output for ASCII + extended Unicode
-- [ ] No native dependencies — runs on any .NET platform
-- [ ] Glyph metrics are within acceptable tolerance of FreeType output
-- [ ] SDF rendering works via `stbtt_GetCodepointSDF()` / `stbtt_GetGlyphSDF()`
-- [ ] All existing non-FreeType-specific tests pass
+- [x] `StbTrueTypeRasterizer` implements full `IRasterizer` interface (including `IDisposable`)
+- [x] `RasterizeAll` loop implementation works for batch rasterization
+- [x] `GetGlyphMetrics` implemented for performance (avoids full rasterization)
+- [x] Registered via `[ModuleInitializer]` (same pattern as GDI/DirectWrite)
+- [x] Generates valid BMFont output for ASCII + extended Unicode
+- [x] No native dependencies — runs on any .NET platform
+- [x] Glyph metrics are within acceptable tolerance of FreeType output
+- [x] SDF rendering works via `stbtt_GetCodepointSDF()` / `stbtt_GetGlyphSDF()`
+- [x] All existing non-FreeType-specific tests pass
 
 ## References
 
