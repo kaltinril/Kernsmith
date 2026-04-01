@@ -1,6 +1,6 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-21, 30-32, 32B, 55, 60-69, 72-78, 77B, 79, 80 complete. Phases 32d, 33-36 (rasterizer plugins, WASM, bold/italic) are planning/future. Phase 95, 99, 110, 111, 150 planning.
+> **Status**: Phases 1-21, 30-33, 32B, 55, 60-69, 72-78, 77B, 79, 80 complete. Phases 32d, 34-36 (rasterizer plugins, bold/italic) are planning/future. Phase 95, 99, 110, 111, 150 planning.
 > **Date**: 2026-03-31
 
 ---
@@ -84,7 +84,7 @@ Output Layer
 | 32b | [StbTrueType Docs & Publishing](done/phase-32b-stbtruetype-docs-publishing.md) | Documentation, DocFX pages, and CI/CD publishing for StbTrueType plugin | Complete |
 | 32c | [StbTrueType Validation Fixes](done/phase-32c-stbtruetype-fixes.md) | Bug fixes, missing guards, and test gaps from Phase 30-32 validation | Complete |
 | 32d | [StbTrueType Synthetic Bold & Italic](phase-32d-stbtruetype-synthetic-bold-italic.md) | Outline-level synthetic bold/italic using stb_truetype shape API | Planning |
-| 33 | [WASM Integration and Validation](phase-33-wasm-validation.md) | Validate KernSmith + StbTrueType works in Blazor WASM | Future |
+| 33 | [WASM Integration and Validation](done/phase-33-wasm-validation.md) | Validate KernSmith + StbTrueType works in Blazor WASM | Complete |
 | 34 | [Custom Pure C# Rasterizer](phase-34-custom-rasterizer.md) | Research/prototype a fully custom pure C# TTF rasterizer from scratch | Future |
 | 35 | [FontStashSharp Rasterizer](phase-35-fontstashsharp-rasterizer.md) | Rasterizer plugin backed by FontStashSharp library -- Recommended: Defer indefinitely | Future |
 | 36 | [Bitmap Bold & Italic Post-Processing](phase-36-bitmap-bold-italic-postprocessing.md) | Stackable bitmap-level bold/italic effects for any rasterizer backend | Planning |

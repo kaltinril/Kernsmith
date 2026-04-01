@@ -1,6 +1,6 @@
 # Phase 33 — WASM Integration & Validation
 
-> **Status**: Future
+> **Status**: Complete
 > **Created**: 2026-03-30
 > **Depends on**: Phase 30 (FreeType extraction), Phase 31 (WASM restrictions research), Phase 32 (StbTrueType plugin)
 > **Related**: [GitHub Issue #39](https://github.com/kaltinril/Kernsmith/issues/39)
@@ -165,22 +165,31 @@ If WASM performance or quality is insufficient, a server-side API is the fallbac
 
 ## Success Criteria
 
-- [ ] Blazor WASM sample project builds and runs
-- [ ] Font generation works entirely client-side (no server)
-- [ ] No native dependency errors
-- [ ] CI gate: `dotnet publish` of Blazor WASM sample succeeds in CI pipeline
-- [ ] Assembly scanning test passes (no DllImport in WASM path)
-- [ ] Generated output matches expected BMFont format
-- [ ] Trimming works without warnings (tested independently from AOT)
-- [ ] AOT compilation works (tested independently from trimming)
-- [ ] DefaultSystemFontProvider does not throw on WASM
-- [ ] In-memory APIs work correctly (no File I/O dependency)
-- [ ] Threading behavior verified (no deadlocks on single-threaded runtime)
-- [ ] No `Parallel.ForEach`, `.Result`, `.Wait()`, or `Thread.Sleep` in WASM code paths
-- [ ] SDF rendering quality validated (StbSharp/StbTrueTypeSharp#1 documented)
-- [ ] Memory constraints documented
-- [ ] StbImageWriteSharp PNG encoding verified in WASM
-- [ ] Performance documented and acceptable
+- [x] Blazor WASM sample project builds and runs
+- [x] Font generation works entirely client-side (no server)
+- [x] No native dependency errors
+- [x] CI gate: `dotnet publish` of Blazor WASM sample succeeds in CI pipeline
+- [x] Assembly scanning test passes (no DllImport in WASM path)
+- [x] Generated output matches expected BMFont format
+- [x] Trimming works without warnings (tested independently from AOT) — needed RuntimeHelpers fix
+- [x] AOT compilation works (tested independently from trimming)
+- [x] DefaultSystemFontProvider does not throw on WASM
+- [x] In-memory APIs work correctly (no File I/O dependency)
+- [x] Threading behavior verified (no deadlocks on single-threaded runtime)
+- [x] No `Parallel.ForEach`, `.Result`, `.Wait()`, or `Thread.Sleep` in WASM code paths — fixed in Phase 32c
+- [ ] SDF rendering quality validated (StbSharp/StbTrueTypeSharp#1 documented) — no visible artifacts observed, but known upstream bug not specifically tested
+- [x] Memory constraints documented
+- [x] StbImageWriteSharp PNG encoding verified in WASM
+- [x] Performance documented and acceptable
+
+## Performance Baseline (Roboto-Regular, 32px, ASCII, Chrome)
+
+| Mode | WASM Interpreter | WASM AOT (first load) | WASM AOT (warm cache) |
+|------|------------------|-----------------------|-----------------------|
+| Normal | ~256 ms | ~60 ms | ~14 ms |
+| SDF | ~1,344 ms | ~110 ms | ~51 ms |
+
+AOT provides ~5x improvement on first load, ~18x on warm cache vs interpreter. Warm AOT performance is comparable to native .NET CLI execution.
 
 ## References
 

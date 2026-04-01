@@ -1,0 +1,233 @@
+@page "/"
+@using System.Diagnostics
+@using KernSmith
+@using KernSmith.Font
+@using KernSmith.Rasterizer
+@inject IJSRuntime JS
+
+<h1>KernSmith - Blazor WASM Validation</h1>
+
+<h2>Automated Checks</h2>
+
+@if (_checks is null)
+{
+    <p><em>Running checks...</em></p>
+}
+else
+{
+    <table border="1" cellpadding="4" cellspacing="0">
+        <thead><tr><th>Check</th><th>Result</th></tr></thead>
+        <tbody>
+            @foreach (var (name, result) in _checks)
+            {
+                <tr>
+                    <td>@name</td>
+                    <td style="color: @(result.StartsWith("PASS") ? "green" : "red")">@result</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<hr />
+
+<h2>Font Generation</h2>
+
+<div>
+    <label>Upload TTF/OTF file (max 20 MB):</label><br />
+    <InputFile OnChange="OnFileSelected" accept=".ttf,.otf,.woff" />
+</div>
+
+<div style="margin-top: 8px;">
+    <label>Size: </label>
+    <input type="number" @bind="_fontSize" min="8" max="200" style="width: 60px;" />
+    <label style="margin-left: 12px;">
+        <input type="checkbox" @bind="_sdf" /> SDF
+    </label>
+</div>
+
+<div style="margin-top: 8px;">
+    <button @onclick="Generate" disabled="@(_fontData is null || _generating)">
+        @(_generating ? "Generating..." : "Generate")
+    </button>
+</div>
+
+@if (_error is not null)
+{
+    <p style="color: red;">Error: @_error</p>
+}
+
+@if (_elapsed is not null)
+{
+    <p>Elapsed: @_elapsed.Value.TotalMilliseconds.ToString("F1") ms</p>
+}
+
+@if (_fntPreview is not null)
+{
+    <h3>.fnt preview (first 20 lines)</h3>
+    <pre style="background: #f0f0f0; padding: 8px; overflow-x: auto; max-width: 900px;">@_fntPreview</pre>
+
+    <div style="margin-top: 8px;">
+        <button @onclick="DownloadFnt">Download .fnt</button>
+        <button @onclick="DownloadPng" style="margin-left: 8px;">Download .png</button>
+    </div>
+}
+
+@if (_atlasDataUrl is not null)
+{
+    <h3>Atlas PNG</h3>
+    <img src="@_atlasDataUrl" style="border: 1px solid #ccc; max-width: 100%;" alt="Atlas" />
+}
+
+@code {
+    private List<(string Name, string Result)>? _checks;
+    private byte[]? _fontData;
+    private string? _fileName;
+    private int _fontSize = 32;
+    private bool _sdf;
+    private bool _generating;
+    private string? _error;
+    private TimeSpan? _elapsed;
+    private string? _fntPreview;
+    private string? _fntText;
+    private byte[]? _pngData;
+    private string? _atlasDataUrl;
+
+    protected override void OnInitialized()
+    {
+        RunChecks();
+    }
+
+    private void RunChecks()
+    {
+        var results = new List<(string, string)>();
+
+        // Check StbTrueType registration
+        bool stbRegistered = RasterizerFactory.IsRegistered(RasterizerBackend.StbTrueType);
+        results.Add(("StbTrueType registered", stbRegistered ? "PASS" : "FAIL - not registered"));
+
+        // Check FreeType is NOT registered (no native leak)
+        bool ftRegistered = RasterizerFactory.IsRegistered(RasterizerBackend.FreeType);
+        results.Add(("FreeType NOT registered", !ftRegistered ? "PASS" : "FAIL - FreeType is registered"));
+
+        // List available backends
+        var backends = RasterizerFactory.GetAvailableBackends();
+        results.Add(("Available backends", $"PASS - [{string.Join(", ", backends)}]"));
+
+        // Create a StbTrueType rasterizer and verify capabilities
+        try
+        {
+            using var rasterizer = RasterizerFactory.Create(RasterizerBackend.StbTrueType);
+            var caps = rasterizer.Capabilities;
+            results.Add(("Create StbTrueType rasterizer", "PASS"));
+            results.Add(("Capabilities - SDF", $"PASS - {caps.SupportsSdf}"));
+            results.Add(("Capabilities - Color", $"PASS - {caps.SupportsColorFonts}"));
+            results.Add(("Capabilities - Variable", $"PASS - {caps.SupportsVariableFonts}"));
+            results.Add(("Capabilities - Outline", $"PASS - {caps.SupportsOutlineStroke}"));
+        }
+        catch (Exception ex)
+        {
+            results.Add(("Create StbTrueType rasterizer", $"FAIL - {ex.Message}"));
+        }
+
+        // System font provider - should return empty, not throw
+        try
+        {
+            var provider = new DefaultSystemFontProvider();
+            var fonts = provider.GetInstalledFonts();
+            results.Add(("System font provider", $"PASS - {fonts.Count} fonts (expected 0 in WASM)"));
+        }
+        catch (Exception ex)
+        {
+            results.Add(("System font provider", $"FAIL - threw: {ex.Message}"));
+        }
+
+        _checks = results;
+    }
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        _error = null;
+        _fntPreview = null;
+        _fntText = null;
+        _pngData = null;
+        _atlasDataUrl = null;
+        _elapsed = null;
+
+        var file = e.File;
+        if (file.Size > 20 * 1024 * 1024)
+        {
+            _error = "File too large (max 20 MB).";
+            return;
+        }
+
+        using var ms = new MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: 20 * 1024 * 1024).CopyToAsync(ms);
+        _fontData = ms.ToArray();
+        _fileName = Path.GetFileNameWithoutExtension(file.Name);
+    }
+
+    private void Generate()
+    {
+        if (_fontData is null) return;
+
+        _generating = true;
+        _error = null;
+        _fntPreview = null;
+        _fntText = null;
+        _pngData = null;
+        _atlasDataUrl = null;
+        _elapsed = null;
+
+        try
+        {
+            var options = new FontGeneratorOptions
+            {
+                Size = _fontSize,
+                Characters = CharacterSet.Ascii,
+                Backend = RasterizerBackend.StbTrueType,
+                Sdf = _sdf
+            };
+
+            var sw = Stopwatch.StartNew();
+            var result = BmFont.Generate(_fontData, options);
+            sw.Stop();
+
+            _elapsed = sw.Elapsed;
+            _fntText = result.FntText;
+
+            // First 20 lines
+            var lines = _fntText.Split('\n');
+            _fntPreview = string.Join('\n', lines.Take(20));
+
+            // Atlas PNG (first page)
+            if (result.Pages.Count > 0)
+            {
+                _pngData = result.GetPngData(0);
+                _atlasDataUrl = $"data:image/png;base64,{Convert.ToBase64String(_pngData)}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.ToString();
+        }
+        finally
+        {
+            _generating = false;
+        }
+    }
+
+    private async Task DownloadFnt()
+    {
+        if (_fntText is null) return;
+        var base64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(_fntText));
+        await JS.InvokeVoidAsync("downloadFile", $"{_fileName ?? "font"}.fnt", "application/octet-stream", base64);
+    }
+
+    private async Task DownloadPng()
+    {
+        if (_pngData is null) return;
+        var base64 = Convert.ToBase64String(_pngData);
+        await JS.InvokeVoidAsync("downloadFile", $"{_fileName ?? "font"}_0.png", "image/png", base64);
+    }
+}

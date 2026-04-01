@@ -47,6 +47,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KernSmith.KniGum", "integra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KernSmith.Rasterizers.StbTrueType", "src\KernSmith.Rasterizers.StbTrueType\KernSmith.Rasterizers.StbTrueType.csproj", "{6A41E23D-8656-4845-98C8-E4D7686C64B4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KernSmith.Samples.BlazorWasm", "samples\KernSmith.Samples.BlazorWasm\KernSmith.Samples.BlazorWasm.csproj", "{6D926642-FD4F-4845-94D5-0D200D0DD244}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -237,6 +239,18 @@ Global
 		{6A41E23D-8656-4845-98C8-E4D7686C64B4}.Release|x64.Build.0 = Release|Any CPU
 		{6A41E23D-8656-4845-98C8-E4D7686C64B4}.Release|x86.ActiveCfg = Release|Any CPU
 		{6A41E23D-8656-4845-98C8-E4D7686C64B4}.Release|x86.Build.0 = Release|Any CPU
+		{6D926642-FD4F-4845-94D5-0D200D0DD244}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D926642-FD4F-4845-94D5-0D200D0DD244}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D926642-FD4F-4845-94D5-0D200D0DD244}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6D926642-FD4F-4845-94D5-0D200D0DD244}.Debug|x64.Build.0 = Debug|Any CPU
+		{6D926642-FD4F-4845-94D5-0D200D0DD244}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6D926642-FD4F-4845-94D5-0D200D0DD244}.Debug|x86.Build.0 = Debug|Any CPU
+		{6D926642-FD4F-4845-94D5-0D200D0DD244}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D926642-FD4F-4845-94D5-0D200D0DD244}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D926642-FD4F-4845-94D5-0D200D0DD244}.Release|x64.ActiveCfg = Release|Any CPU
+		{6D926642-FD4F-4845-94D5-0D200D0DD244}.Release|x64.Build.0 = Release|Any CPU
+		{6D926642-FD4F-4845-94D5-0D200D0DD244}.Release|x86.ActiveCfg = Release|Any CPU
+		{6D926642-FD4F-4845-94D5-0D200D0DD244}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -257,5 +271,6 @@ Global
 		{459B4B57-55B4-4768-9017-5DFBD4093309} = {4958D7D8-4791-2CCE-6FFA-082B65933577}
 		{3B0D263E-7C23-4FDD-8FF8-7D549D391BB2} = {4958D7D8-4791-2CCE-6FFA-082B65933577}
 		{6A41E23D-8656-4845-98C8-E4D7686C64B4} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{6D926642-FD4F-4845-94D5-0D200D0DD244} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
 	EndGlobalSection
 EndGlobal

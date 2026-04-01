@@ -37,6 +37,24 @@ The rasterizer auto-registers via `[ModuleInitializer]`, so referencing the pack
 
 For these features, use the FreeType backend.
 
+## Blazor WASM
+
+This is the recommended backend for Blazor WebAssembly — zero native dependencies, works with trimming and AOT compilation.
+
+```csharp
+// Program.cs — prevent trimmer from stripping the assembly
+RuntimeHelpers.RunClassConstructor(
+    typeof(StbTrueTypeRasterizer).TypeHandle);
+```
+
+Enable AOT for production performance:
+
+```xml
+<RunAOTCompilation>true</RunAOTCompilation>
+```
+
+See the [Blazor WASM sample](https://github.com/kaltinril/KernSmith/tree/main/samples/KernSmith.Samples.BlazorWasm) for a complete working example.
+
 ## Build
 
 ```

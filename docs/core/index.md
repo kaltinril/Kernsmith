@@ -66,3 +66,16 @@ When loading from a file path, bold/italic is always synthetic -- `Bold` and `Fo
 ### CharacterSet
 
 Defines which Unicode codepoints to include. Provides presets (`Ascii`, `ExtendedAscii`, `Latin`) and factory methods (`FromChars`, `FromRanges`, `Union`).
+
+## Platform Notes
+
+### Blazor WASM
+
+The core library works in Blazor WebAssembly when paired with the StbTrueType rasterizer backend. Key constraints:
+
+- Use `KernSmith.Rasterizers.StbTrueType` — FreeType requires native binaries unavailable in WASM
+- Use in-memory APIs (`FntText`, `GetPngData()`) instead of `ToFile()`
+- System font loading returns empty results — use `BmFont.RegisterFont()` to provide font data
+- Enable `<RunAOTCompilation>true</RunAOTCompilation>` for production performance
+
+See the [Blazor WASM sample](https://github.com/kaltinril/KernSmith/tree/main/samples/KernSmith.Samples.BlazorWasm) for a complete working example.

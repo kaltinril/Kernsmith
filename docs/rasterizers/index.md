@@ -40,7 +40,7 @@ Use this decision tree to pick the right backend:
 3. **Need color fonts or variable font axes?** Use [DirectWrite](directwrite.md) -- it is the only backend with COLR/CPAL and fvar support.
 4. **Need SDF (Signed Distance Field) output?** Use [FreeType](freetype.md) -- it is the only backend with SDF rendering.
 5. **Need cross-platform SDF without native binaries?** Use [StbTrueType](stbtruetype.md) -- it also supports SDF and runs fully managed.
-6. **Need WASM/Blazor or NativeAOT without native binaries?** Use [StbTrueType](stbtruetype.md) -- it is the only fully managed backend with zero native dependencies.
+6. **Need WASM/Blazor or NativeAOT without native binaries?** Use [StbTrueType](stbtruetype.md) -- it is the only fully managed backend with zero native dependencies. See the [Blazor WASM sample](https://github.com/kaltinril/KernSmith/tree/main/samples/KernSmith.Samples.BlazorWasm) for a working example. Enable AOT compilation for production performance.
 7. **Not sure?** Start with FreeType. It covers the majority of use cases and requires no additional packages.
 
 ## Selecting a Backend in Code

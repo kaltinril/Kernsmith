@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - StbTrueType rasterizer backend -- pure C#, cross-platform, no native dependencies. Supports SDF rendering. Ideal for Blazor WASM, iOS AOT, and serverless (Phase 32)
+- Blazor WASM sample and validation — client-side font generation with StbTrueType backend, AOT compilation support, CI publish gate, native dependency scanning tests (Phase 33)
 
 ## [0.10.4] - 2026-03-31
 

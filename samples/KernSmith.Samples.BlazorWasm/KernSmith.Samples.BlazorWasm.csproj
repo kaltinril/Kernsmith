@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+  <PropertyGroup>
+    <!-- Override Directory.Build.props multi-targeting; Blazor WASM requires single TFM -->
+    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks />
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RunAOTCompilation>true</RunAOTCompilation>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.5" PrivateAssets="all" />
+    <!-- Version required here because this project opts out of Central Package Management -->
+    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="10.0.201" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\KernSmith\KernSmith.csproj" />
+    <ProjectReference Include="..\..\src\KernSmith.Rasterizers.StbTrueType\KernSmith.Rasterizers.StbTrueType.csproj" />
+  </ItemGroup>
+</Project>

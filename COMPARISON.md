@@ -9,7 +9,7 @@ How does KernSmith compare to other bitmap font generators?
 | **Windows** | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
 | **macOS** | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Linux** | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| **Web/WASM** | 🔜 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Web/WASM** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **License** | MIT | Free | Apache 2.0 | MIT | $9.99 | Paid | Free |
 | **Open Source** | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ⚠️ |
 | **Still Maintained** | ✅ | ⚠️ | ⚠️ | ✅ | ❌ | ⚠️ | ❌ |

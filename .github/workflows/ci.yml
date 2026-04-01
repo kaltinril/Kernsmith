@@ -26,3 +26,30 @@ jobs:
       - name: Verify tests passed (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: echo "Ubuntu test step completed (may have been force-killed due to known .NET test host hang)"
+
+  wasm-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - name: Install wasm-tools workload
+        run: dotnet workload install wasm-tools
+      - name: Publish Blazor WASM sample
+        run: dotnet publish samples/KernSmith.Samples.BlazorWasm/KernSmith.Samples.BlazorWasm.csproj -c Release
+      - name: Verify no native binaries in output
+        run: |
+          WASM_DIR=$(find . -path "*/bin/Release/*/publish/wwwroot/_framework" -type d | head -1)
+          if [ -z "$WASM_DIR" ]; then
+            echo "::error::WASM publish output not found"
+            exit 1
+          fi
+          echo "WASM framework files:"
+          ls -la "$WASM_DIR"
+          if ls "$WASM_DIR"/*.so 2>/dev/null || ls "$WASM_DIR"/libfreetype* 2>/dev/null; then
+            echo "::error::Native binaries found in WASM output"
+            exit 1
+          fi
+          echo "No native binaries found — WASM output is clean"

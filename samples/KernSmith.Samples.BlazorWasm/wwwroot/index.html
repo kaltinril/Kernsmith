@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KernSmith Blazor WASM Validation</title>
+    <base href="/" />
+</head>
+<body>
+    <div id="app">Loading...</div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+    </div>
+
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script>
+        window.downloadFile = function (fileName, contentType, base64Data) {
+            var link = document.createElement('a');
+            link.download = fileName;
+            link.href = 'data:' + contentType + ';base64,' + base64Data;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+    </script>
+</body>
+</html>

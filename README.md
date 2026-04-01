@@ -5,7 +5,7 @@
 <p align="center">
   <a href="LICENSE">License</a> &middot;
   <a href="CHANGELOG.md">Changelog</a> &middot;
-  <a href="samples/KernSmith.Samples/">Samples</a>
+  <a href="samples/">Samples</a>
 </p>
 
 ## Features
@@ -63,6 +63,29 @@ var result = BmFont.Builder()
     .WithRasterizer("gdi")
     .Build();
 ```
+
+### Blazor WASM
+
+KernSmith runs entirely client-side in Blazor WebAssembly using the StbTrueType backend. See the [Blazor WASM sample](samples/KernSmith.Samples.BlazorWasm/) for a working example.
+
+```csharp
+// In Program.cs — force assembly load to prevent trimming
+RuntimeHelpers.RunClassConstructor(
+    typeof(KernSmith.Rasterizers.StbTrueType.StbTrueTypeRasterizer).TypeHandle);
+
+// Generate in-browser
+var result = BmFont.Generate(fontBytes, new FontGeneratorOptions
+{
+    Size = 32,
+    Characters = CharacterSet.Ascii,
+    Backend = RasterizerBackend.StbTrueType
+});
+
+string fntText = result.FntText;
+byte[] pngData = result.GetPngData(0);
+```
+
+AOT compilation (`RunAOTCompilation=true`) is recommended for production performance.
 
 ## Installation
 
