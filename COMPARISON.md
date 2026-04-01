@@ -185,6 +185,54 @@ KernSmith reads `.bmfc` (BMFont) configs natively and plans to support `.hiero` 
 | Target region | ❌ | ❌ | 🔜 |
 | Collect metrics | ❌ | ❌ | 🔜 |
 
+## Rasterizer Backend Comparison
+
+KernSmith supports four pluggable rasterizer backends. Each has different platform support, feature coverage, and trade-offs.
+
+### Platform Support
+
+| | FreeType | GDI | DirectWrite | StbTrueType |
+|---|:---:|:---:|:---:|:---:|
+| **Windows** | ✅ | ✅ | ✅ | ✅ |
+| **Linux** | ✅ | ❌ | ❌ | ✅ |
+| **macOS** | ✅ | ❌ | ❌ | ✅ |
+| **Blazor WASM** | ❌ | ❌ | ❌ | ✅ |
+| **NativeAOT** | ⚠️ | ⚠️ | ⚠️ | ✅ |
+| **Android** | ✅ | ❌ | ❌ | ✅ |
+| **iOS** | ⚠️ | ❌ | ❌ | ✅ |
+| **Serverless / Containers** | ✅ | ❌ | ❌ | ✅ |
+| **Console (Xbox/PS/Switch)** | ❌ | ❌ | ❌ | ✅ |
+| **Native Dependencies** | FreeType native libs | Win32 GDI | Win32 DirectWrite | None |
+| **Trimming Safe** | ⚠️ | N/A | N/A | ✅ |
+| **AOT Compatible** | ⚠️ | N/A | N/A | ✅ |
+
+### Feature Support
+
+| | FreeType | GDI | DirectWrite | StbTrueType |
+|---|:---:|:---:|:---:|:---:|
+| **TTF** | ✅ | ✅ | ✅ | ✅ |
+| **OTF (CFF)** | ✅ | ✅ | ✅ | ❌ |
+| **WOFF / WOFF2** | ✅ | ❌ | ✅ | ❌ |
+| **TTC (font collections)** | ✅ | ❌ | ✅ | ✅ |
+| **Anti-aliasing** | Grayscale, Light, LCD, None | Grayscale, None | Grayscale, ClearType | Grayscale, None |
+| **SDF Rendering** | ✅ | ❌ | ❌ | ✅ |
+| **Hinting** | ✅ | ✅ | ✅ | ❌ |
+| **Synthetic Bold** | ✅ | ✅ | ✅ | ❌ |
+| **Synthetic Italic** | ✅ | ✅ | ✅ | ❌ |
+| **Outline Stroke** | ✅ | ❌ | ❌ | ❌ |
+| **Super Sampling** | ✅ | ✅ | ✅ | ✅ |
+| **Color Fonts (COLR/CPAL)** | ❌ | ❌ | ✅ | ❌ |
+| **Variable Fonts** | ❌ | ❌ | ✅ | ❌ |
+| **System Font Loading** | ❌ | ✅ | ✅ | ❌ |
+| **BMFont.exe Parity** | ❌ | ✅ | ❌ | ❌ |
+
+### When to Use
+
+- **FreeType** -- Default for most use cases. Cross-platform, full-featured, industry-standard quality.
+- **GDI** -- Pixel-perfect BMFont.exe compatibility on Windows. Use for validating against BMFont reference output.
+- **DirectWrite** -- Color fonts, variable fonts, or ClearType on Windows. Highest quality Windows rendering.
+- **StbTrueType** -- Blazor WASM, NativeAOT, iOS, consoles, or anywhere native libraries are unavailable. Pure C#, zero dependencies.
+
 ## Tool Descriptions
 
 - **[KernSmith](https://github.com/kernsmith/kernsmith)** -- Cross-platform .NET library and CLI for generating BMFont-compatible bitmap fonts. In-memory API, pluggable rasterizers, layered effects. MIT licensed.
