@@ -15,9 +15,17 @@ public static class GumFontGenerator
     /// Generates a <see cref="BmFontResult"/> from a Gum <see cref="BmfcSave"/> font descriptor.
     /// The result contains .fnt metadata and texture page pixel data entirely in memory.
     /// </summary>
-    public static BmFontResult Generate(BmfcSave bmfcSave)
+    /// <param name="bmfcSave">The Gum font descriptor to generate from.</param>
+    /// <param name="backend">
+    /// Optional rasterizer backend override. When null, uses the default (FreeType).
+    /// Use <see cref="RasterizerBackend.StbTrueType"/> on platforms where native
+    /// libraries are unavailable (e.g., Blazor WASM).
+    /// </param>
+    public static BmFontResult Generate(BmfcSave bmfcSave, RasterizerBackend? backend = null)
     {
         FontGeneratorOptions options = BuildOptions(bmfcSave);
+        if (backend.HasValue)
+            options.Backend = backend.Value;
         return BmFont.GenerateFromSystem(bmfcSave.FontName, options);
     }
 

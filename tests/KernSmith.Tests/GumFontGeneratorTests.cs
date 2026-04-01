@@ -1,12 +1,26 @@
+using System.Runtime.CompilerServices;
 using KernSmith.Gum;
 using KernSmith.Output;
+using KernSmith.Rasterizer;
+using KernSmith.Rasterizers.StbTrueType;
 using RenderingLibrary.Graphics.Fonts;
 using Shouldly;
 
 namespace KernSmith.Tests;
 
-public class GumFontGeneratorTests
+[Collection("RasterizerFactory")]
+public class GumFontGeneratorTests : IDisposable
 {
+    private const string TestFontPath = "Fixtures/Roboto-Regular.ttf";
+
+    public GumFontGeneratorTests()
+    {
+        RuntimeHelpers.RunClassConstructor(typeof(StbTrueTypeRasterizer).TypeHandle);
+        if (!RasterizerFactory.GetAvailableBackends().Contains(RasterizerBackend.StbTrueType))
+            RasterizerFactory.Register(RasterizerBackend.StbTrueType, () => new StbTrueTypeRasterizer());
+    }
+
+    public void Dispose() => BmFont.ClearRegisteredFonts();
     [Fact]
     public void BuildOptions_MapsBasicProperties()
     {
@@ -105,6 +119,17 @@ public class GumFontGeneratorTests
     }
 
     [Fact]
+    public void BuildOptions_DoesNotSetBackend()
+    {
+        // BuildOptions should leave Backend at its default so Generate() can override it.
+        BmfcSave bmfcSave = new BmfcSave();
+
+        FontGeneratorOptions options = GumFontGenerator.BuildOptions(bmfcSave);
+
+        options.Backend.ShouldBe(RasterizerBackend.FreeType); // default
+    }
+
+    [Fact]
     public void Generate_DefaultBmfcSave_ProducesValidResult()
     {
         if (!OperatingSystem.IsWindows())
@@ -147,6 +172,28 @@ public class GumFontGeneratorTests
         result.ShouldNotBeNull();
         result.FntText.ShouldNotBeNullOrWhiteSpace();
         result.FntText.ShouldContain("outline=2");
+        result.Pages.Count.ShouldBeGreaterThan(0);
+        result.Pages[0].PixelData.Length.ShouldBeGreaterThan(0);
+    }
+
+    [Fact]
+    public void Generate_WithBackendOverride_UsesSpecifiedBackend()
+    {
+        // Arrange — register a font so we don't depend on system fonts
+        byte[] fontData = File.ReadAllBytes(TestFontPath);
+        BmFont.RegisterFont("Roboto", fontData);
+
+        BmfcSave bmfcSave = new BmfcSave();
+        bmfcSave.FontName = "Roboto";
+        bmfcSave.FontSize = 20;
+
+        // Act — generate using StbTrueType backend explicitly
+        BmFontResult result = GumFontGenerator.Generate(bmfcSave, RasterizerBackend.StbTrueType);
+
+        // Assert
+        result.ShouldNotBeNull();
+        result.FntText.ShouldNotBeNullOrWhiteSpace();
+        result.FntText.ShouldContain("face=\"Roboto\"");
         result.Pages.Count.ShouldBeGreaterThan(0);
         result.Pages[0].PixelData.Length.ShouldBeGreaterThan(0);
     }

@@ -24,6 +24,15 @@ CustomSetPropertyOnRenderable.InMemoryFontCreator =
 
 Gum will now use KernSmith to generate fonts on demand whenever a `BmfcSave` is loaded. No `.fnt` or `.png` files need to exist on disk.
 
+### Selecting a rasterizer backend
+
+By default, `KernSmithFontCreator` uses FreeType. On platforms where native libraries are unavailable (e.g., Blazor WASM), pass a backend explicitly:
+
+```csharp
+CustomSetPropertyOnRenderable.InMemoryFontCreator =
+    new KernSmithFontCreator(GraphicsDevice, RasterizerBackend.StbTrueType);
+```
+
 ## How It Works
 
 `KernSmithFontCreator` implements Gum's `IInMemoryFontCreator` interface. When Gum requests a font:

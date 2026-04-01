@@ -1,6 +1,6 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-21, 30-33, 32B, 55, 60-69, 72-78, 77B, 79, 80 complete. Phases 32d, 34-36 (rasterizer plugins, bold/italic) are planning/future. Phase 95, 99, 110, 111, 150 planning.
+> **Status**: Phases 1-21, 30-33, 33B, 32B, 55, 60-69, 72-78, 77B, 79, 80 complete. Phases 32d, 34-36 (rasterizer plugins, bold/italic) are planning/future. Phase 95, 99, 110, 111, 150 planning.
 > **Date**: 2026-03-31
 
 ---
