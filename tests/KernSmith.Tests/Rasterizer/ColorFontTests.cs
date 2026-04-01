@@ -13,6 +13,7 @@ namespace KernSmith.Tests.Rasterizer;
 /// Some tests require a color font fixture (TTF with COLR/sbix/CBDT tables).
 /// These are skipped if no color font is available.
 /// </summary>
+[Collection("RasterizerFactory")]
 public class ColorFontTests : IDisposable
 {
     private static readonly string FixturesDir =

@@ -35,7 +35,7 @@ dotnet run --project apps/KernSmith.Ui
 - Full effects configuration (outline, gradient, shadow)
 - Atlas packing and texture settings
 - Character set selection with Unicode block browser
-- Rasterizer backend selection — choose between FreeType, GDI, or DirectWrite from a dropdown. Available backends depend on the current platform and installed NuGet packages.
+- Rasterizer backend selection — choose between FreeType, GDI, DirectWrite, or StbTrueType from a dropdown. Available backends depend on the current platform and installed NuGet packages.
 - Project save/load and session persistence
 
 ## Dependencies

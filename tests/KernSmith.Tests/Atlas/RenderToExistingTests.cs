@@ -3,6 +3,7 @@ using Shouldly;
 
 namespace KernSmith.Tests.Atlas;
 
+[Collection("RasterizerFactory")]
 public class RenderToExistingTests
 {
     private static readonly byte[] FontData = LoadTestFont();

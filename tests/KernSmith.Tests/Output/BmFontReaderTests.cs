@@ -4,6 +4,7 @@ using Shouldly;
 
 namespace KernSmith.Tests.Output;
 
+[Collection("RasterizerFactory")]
 public sealed class KernSmithReaderTests
 {
     private static byte[] LoadTestFont() =>

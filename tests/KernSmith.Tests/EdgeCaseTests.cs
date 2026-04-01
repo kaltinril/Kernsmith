@@ -6,6 +6,7 @@ namespace KernSmith.Tests;
 /// <summary>
 /// Track B4 — Feature edge case tests from Phase 12 pre-ship polish plan.
 /// </summary>
+[Collection("RasterizerFactory")]
 public class EdgeCaseTests
 {
     private static byte[] LoadTestFont() =>

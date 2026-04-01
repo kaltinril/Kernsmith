@@ -3,6 +3,7 @@ using Shouldly;
 
 namespace KernSmith.Tests.Font;
 
+[Collection("RasterizerFactory")]
 public class SubsettingTests
 {
     private static byte[] LoadTestFont() =>

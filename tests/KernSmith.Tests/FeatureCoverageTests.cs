@@ -9,6 +9,7 @@ namespace KernSmith.Tests;
 /// <summary>
 /// Track B3 — Feature coverage tests from Phase 12 pre-ship polish plan.
 /// </summary>
+[Collection("RasterizerFactory")]
 public sealed class FeatureCoverageTests
 {
     private static byte[] LoadTestFont() =>

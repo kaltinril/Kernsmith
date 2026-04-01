@@ -12,6 +12,7 @@ namespace KernSmith.Tests.Rasterizer;
 /// if no variable font is available. Tests that verify graceful behavior with non-variable
 /// fonts use Roboto-Regular.ttf.
 /// </summary>
+[Collection("RasterizerFactory")]
 public class VariableFontTests : IDisposable
 {
     private static readonly string FixturesDir =

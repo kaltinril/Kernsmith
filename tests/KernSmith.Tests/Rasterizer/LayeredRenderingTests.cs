@@ -3,6 +3,7 @@ using Shouldly;
 
 namespace KernSmith.Tests.Rasterizer;
 
+[Collection("RasterizerFactory")]
 public class LayeredRenderingTests
 {
     private static byte[] LoadTestFont() =>

@@ -2,6 +2,7 @@ using Shouldly;
 
 namespace KernSmith.Tests;
 
+[Collection("RasterizerFactory")]
 public class InputValidationTests
 {
     private static byte[] LoadTestFont() =>

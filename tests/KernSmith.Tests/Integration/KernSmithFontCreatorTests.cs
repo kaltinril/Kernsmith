@@ -9,6 +9,7 @@ namespace KernSmith.Tests.Integration;
 /// <summary>
 /// Tests for the KernSmithFontCreator.RegisterFont file-path overload.
 /// </summary>
+[Collection("RasterizerFactory")]
 public sealed class KernSmithFontCreatorTests : IDisposable
 {
     private const string TestFontPath = "Fixtures/Roboto-Regular.ttf";

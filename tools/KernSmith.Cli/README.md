@@ -57,7 +57,7 @@ kernsmith generate -f <font> -s <size> [options]
 | `--sdf` | Enable Signed Distance Field rendering |
 | `--super-sample <n>` | Super sampling level 1-4 (default: 1) |
 | `--hinting / --no-hinting` | Enable/disable FreeType hinting (default: on) |
-| `--rasterizer <name>` | Rasterizer backend: `freetype` (default), `gdi`, `directwrite` |
+| `--rasterizer <name>` | Rasterizer backend: `freetype` (default), `gdi`, `directwrite`, `stbtruetype` |
 | `--height-percent <n>` | Vertical height scaling percentage (default: 100) |
 | `--match-char-height` | Match rendered height to requested pixel height |
 | `--fallback-char <char>` | Fallback character for missing glyphs (char or codepoint) |
