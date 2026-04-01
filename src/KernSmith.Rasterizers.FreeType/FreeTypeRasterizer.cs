@@ -625,6 +625,8 @@ public sealed class FreeTypeRasterizer : IRasterizer
         public bool SupportsSdf => true;
         public bool SupportsOutlineStroke => true;
         public bool HandlesOwnSizing => false;
+        public bool SupportsSyntheticBold => true;
+        public bool SupportsSyntheticItalic => true;
 
         public IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; } =
             Enum.GetValues<AntiAliasMode>();

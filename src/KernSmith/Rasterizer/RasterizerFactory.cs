@@ -31,7 +31,7 @@ public static class RasterizerFactory
         throw new InvalidOperationException(
             $"Rasterizer backend '{backend}' is not registered. " +
             $"Available backends: {string.Join(", ", GetAvailableBackends())}. " +
-            $"Call RasterizerFactory.Register to add a backend.");
+            $"Install the corresponding NuGet package (e.g., KernSmith.Rasterizers.StbTrueType) and ensure it is referenced by your project.");
     }
 
     /// <summary>

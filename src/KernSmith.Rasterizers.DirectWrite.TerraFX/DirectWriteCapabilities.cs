@@ -13,6 +13,8 @@ internal sealed class DirectWriteCapabilities : IRasterizerCapabilities
     public bool SupportsOutlineStroke => false;
     public bool HandlesOwnSizing => false;
     public bool SupportsSystemFonts => true;
+    public bool SupportsSyntheticBold => true;
+    public bool SupportsSyntheticItalic => true;
 
     public IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; } =
     [

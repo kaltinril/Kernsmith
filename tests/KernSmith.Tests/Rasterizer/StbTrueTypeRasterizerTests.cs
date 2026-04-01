@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using KernSmith.Font.Tables;
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.FreeType;
 using KernSmith.Rasterizers.StbTrueType;
@@ -273,6 +274,153 @@ public class StbTrueTypeRasterizerTests : IDisposable
 
         Should.Throw<NotSupportedException>(
             () => rasterizer.LoadSystemFont("Arial"));
+    }
+
+    // -- 17. SuperSample path -----------------------------------------------
+
+    [Fact]
+    public void RasterizeGlyph_SuperSample2_ProducesValidBitmap()
+    {
+        _rasterizer = CreateAndLoadRasterizer();
+        var options = new RasterOptions { Size = 32, SuperSample = 2 };
+
+        var glyph = _rasterizer.RasterizeGlyph(65, options); // 'A'
+
+        glyph.ShouldNotBeNull();
+        glyph.Width.ShouldBeGreaterThan(0);
+        glyph.Height.ShouldBeGreaterThan(0);
+        glyph.Metrics.Advance.ShouldBeGreaterThan(0);
+    }
+
+    // -- 18. AntiAliasMode.None produces binary bitmap --------------------
+
+    [Fact]
+    public void RasterizeGlyph_AntiAliasNone_ProducesBinaryBitmap()
+    {
+        _rasterizer = CreateAndLoadRasterizer();
+        var options = new RasterOptions { Size = 32, AntiAlias = AntiAliasMode.None };
+
+        var glyph = _rasterizer.RasterizeGlyph(65, options);
+
+        glyph.ShouldNotBeNull();
+        glyph.BitmapData.ShouldAllBe(b => b == 0 || b == 255);
+    }
+
+    // -- 19. Invalid/corrupt font data ------------------------------------
+
+    [Fact]
+    public void LoadFont_InvalidData_ThrowsFontParsingException()
+    {
+        _rasterizer = new StbTrueTypeRasterizer();
+        var garbage = new byte[] { 0xFF, 0xFE, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05 };
+
+        Should.Throw<FontParsingException>(() => _rasterizer.LoadFont(garbage));
+    }
+
+    // -- 20. Double LoadFont throws ---------------------------------------
+
+    [Fact]
+    public void LoadFont_CalledTwice_ThrowsInvalidOperationException()
+    {
+        _rasterizer = CreateAndLoadRasterizer();
+
+        Should.Throw<InvalidOperationException>(() => _rasterizer.LoadFont(LoadTestFont()));
+    }
+
+    // -- 21. Bold rejection -----------------------------------------------
+
+    [Fact]
+    public void RasterizeGlyph_Bold_ThrowsNotSupportedException()
+    {
+        _rasterizer = CreateAndLoadRasterizer();
+        var options = new RasterOptions { Size = 32, Bold = true };
+
+        Should.Throw<NotSupportedException>(() => _rasterizer.RasterizeGlyph(65, options));
+    }
+
+    // -- 22. Italic rejection ---------------------------------------------
+
+    [Fact]
+    public void RasterizeGlyph_Italic_ThrowsNotSupportedException()
+    {
+        _rasterizer = CreateAndLoadRasterizer();
+        var options = new RasterOptions { Size = 32, Italic = true };
+
+        Should.Throw<NotSupportedException>(() => _rasterizer.RasterizeGlyph(65, options));
+    }
+
+    // -- 23. ColorFont rejection ------------------------------------------
+
+    [Fact]
+    public void RasterizeGlyph_ColorFont_ThrowsNotSupportedException()
+    {
+        _rasterizer = CreateAndLoadRasterizer();
+        var options = new RasterOptions { Size = 32, ColorFont = true };
+
+        Should.Throw<NotSupportedException>(() => _rasterizer.RasterizeGlyph(65, options));
+    }
+
+    // -- 24. SetVariationAxes rejection -----------------------------------
+
+    [Fact]
+    public void SetVariationAxes_ThrowsNotSupportedException()
+    {
+        _rasterizer = CreateAndLoadRasterizer();
+
+        Should.Throw<NotSupportedException>(() =>
+            _rasterizer.SetVariationAxes(Array.Empty<VariationAxis>(), new Dictionary<string, float>()));
+    }
+
+    // -- 25. SelectColorPalette rejection ---------------------------------
+
+    [Fact]
+    public void SelectColorPalette_ThrowsNotSupportedException()
+    {
+        _rasterizer = CreateAndLoadRasterizer();
+
+        Should.Throw<NotSupportedException>(() => _rasterizer.SelectColorPalette(0));
+    }
+
+    // -- 26. Dispose then GetFontMetrics ----------------------------------
+
+    [Fact]
+    public void Dispose_ThenGetFontMetrics_ThrowsObjectDisposedException()
+    {
+        var rasterizer = CreateAndLoadRasterizer();
+        rasterizer.Dispose();
+
+        Should.Throw<ObjectDisposedException>(
+            () => rasterizer.GetFontMetrics(DefaultOptions));
+    }
+
+    // -- 27. Dispose idempotency ------------------------------------------
+
+    [Fact]
+    public void Dispose_CalledTwice_DoesNotThrow()
+    {
+        var rasterizer = CreateAndLoadRasterizer();
+        rasterizer.Dispose();
+
+        Should.NotThrow(() => rasterizer.Dispose());
+    }
+
+    // -- 28. End-to-end BmFont.Generate with StbTrueType ------------------
+
+    [Fact]
+    public void BmFont_Generate_WithStbTrueType_ProducesValidOutput()
+    {
+        EnsureStbTrueTypeRegistered();
+
+        var result = BmFont.Generate(LoadTestFont(), new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.Ascii,
+            Backend = RasterizerBackend.StbTrueType
+        });
+
+        result.ShouldNotBeNull();
+        result.FntText.ShouldNotBeNullOrEmpty();
+        result.Pages.Count.ShouldBeGreaterThan(0);
     }
 
     // -- Helpers ----------------------------------------------------------

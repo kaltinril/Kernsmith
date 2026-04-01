@@ -31,4 +31,14 @@ public interface IRasterizerCapabilities
     /// via <see cref="IRasterizer.LoadSystemFont"/> instead of requiring font bytes.
     /// </summary>
     bool SupportsSystemFonts => false;
+
+    /// <summary>
+    /// When true, the rasterizer can apply synthetic bold (emboldening) to glyph outlines.
+    /// </summary>
+    bool SupportsSyntheticBold => false;
+
+    /// <summary>
+    /// When true, the rasterizer can apply synthetic italic (oblique/shear) to glyph outlines.
+    /// </summary>
+    bool SupportsSyntheticItalic => false;
 }

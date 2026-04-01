@@ -146,15 +146,20 @@ public static class BmFont
             // FreeType checks style_flags internally, but GDI and DirectWrite don't —
             // this ensures consistent behavior across all backends.
             // ForceSynthetic overrides: the user explicitly wants synthetic on top.
-            if (fontInfo.IsBold && options.Bold && !options.ForceSyntheticBold)
+            var effectiveBold = options.Bold;
+            var effectiveForceSyntheticBold = options.ForceSyntheticBold;
+            var effectiveItalic = options.Italic;
+            var effectiveForceSyntheticItalic = options.ForceSyntheticItalic;
+
+            if (fontInfo.IsBold && effectiveBold && !effectiveForceSyntheticBold)
             {
-                options.Bold = false;
-                options.ForceSyntheticBold = false;
+                effectiveBold = false;
+                effectiveForceSyntheticBold = false;
             }
-            if (fontInfo.IsItalic && options.Italic && !options.ForceSyntheticItalic)
+            if (fontInfo.IsItalic && effectiveItalic && !effectiveForceSyntheticItalic)
             {
-                options.Italic = false;
-                options.ForceSyntheticItalic = false;
+                effectiveItalic = false;
+                effectiveForceSyntheticItalic = false;
             }
 
             if (rasterizer.Capabilities.SupportsVariableFonts
@@ -170,7 +175,20 @@ public static class BmFont
                 rasterizer.SelectColorPalette(options.ColorPaletteIndex);
             }
 
-            var rasterOptions = RasterOptions.FromGeneratorOptions(options);
+            if (options.Sdf && !rasterizer.Capabilities.SupportsSdf)
+            {
+                throw new NotSupportedException(
+                    $"Rasterizer backend does not support SDF rendering. " +
+                    $"Use a backend that reports SupportsSdf = true (e.g., FreeType or StbTrueType).");
+            }
+
+            var rasterOptions = RasterOptions.FromGeneratorOptions(options) with
+            {
+                Bold = effectiveBold,
+                ForceSyntheticBold = effectiveForceSyntheticBold,
+                Italic = effectiveItalic,
+                ForceSyntheticItalic = effectiveForceSyntheticItalic
+            };
 
             // BMFont treats fontSize as cell height (usWinAscent + usWinDescent scaled),
             // not as em-square size (ppem). Compute the effective ppem that produces the
@@ -1252,12 +1270,20 @@ public static class BmFont
         }
         else
         {
-            // Parallel
-            var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxParallelism };
-            Parallel.For(0, jobs.Count, parallelOptions, i =>
+            // Parallel — falls back to sequential if platform doesn't support threading (e.g., WASM).
+            try
             {
-                results[i] = RunBatchJob(i, jobs[i], cache);
-            });
+                var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxParallelism };
+                Parallel.For(0, jobs.Count, parallelOptions, i =>
+                {
+                    results[i] = RunBatchJob(i, jobs[i], cache);
+                });
+            }
+            catch (PlatformNotSupportedException)
+            {
+                for (int i = 0; i < jobs.Count; i++)
+                    results[i] = RunBatchJob(i, jobs[i], cache);
+            }
         }
 
         totalSw.Stop();
