@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.DirectWrite.TerraFX;
+using KernSmith.Rasterizers.FreeType;
 using Shouldly;
 
 namespace KernSmith.Tests.Rasterizer;
@@ -72,15 +73,20 @@ public class DirectWriteRasterizerTests : IDisposable
 
         RasterizerFactory.ResetForTesting();
 
-        // After reset, only FreeType should remain.
-        RasterizerFactory.GetAvailableBackends().ShouldNotContain(RasterizerBackend.DirectWrite);
+        try
+        {
+            // After reset, ALL backends are cleared (including FreeType).
+            RasterizerFactory.GetAvailableBackends().ShouldBeEmpty();
 
-        var act = () => RasterizerFactory.Create(RasterizerBackend.DirectWrite);
-        Should.Throw<InvalidOperationException>(act);
-
-        // Re-register to restore state for other tests.
-        RasterizerFactory.Register(RasterizerBackend.DirectWrite, () => new DirectWriteRasterizer());
-        RasterizerFactory.GetAvailableBackends().ShouldContain(RasterizerBackend.DirectWrite);
+            var act = () => RasterizerFactory.Create(RasterizerBackend.DirectWrite);
+            Should.Throw<InvalidOperationException>(act);
+        }
+        finally
+        {
+            // Re-register all backends to restore state for other tests.
+            FreeTypeRegistration.Register();
+            RasterizerFactory.Register(RasterizerBackend.DirectWrite, () => new DirectWriteRasterizer());
+        }
     }
 
     // -- 3. LoadFont succeeds --------------------------------------------

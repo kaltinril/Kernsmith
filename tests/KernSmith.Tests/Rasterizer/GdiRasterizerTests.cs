@@ -1,6 +1,7 @@
 #if WINDOWS
 using System.Runtime.CompilerServices;
 using KernSmith.Rasterizer;
+using KernSmith.Rasterizers.FreeType;
 using KernSmith.Rasterizers.Gdi;
 using Shouldly;
 
@@ -72,15 +73,20 @@ public class GdiRasterizerTests : IDisposable
 
         RasterizerFactory.ResetForTesting();
 
-        // After reset, only FreeType should remain.
-        RasterizerFactory.GetAvailableBackends().ShouldNotContain(RasterizerBackend.Gdi);
+        try
+        {
+            // After reset, ALL backends are cleared (including FreeType).
+            RasterizerFactory.GetAvailableBackends().ShouldBeEmpty();
 
-        var act = () => RasterizerFactory.Create(RasterizerBackend.Gdi);
-        Should.Throw<InvalidOperationException>(act);
-
-        // Re-register to restore state for other tests.
-        RasterizerFactory.Register(RasterizerBackend.Gdi, () => new GdiRasterizer());
-        RasterizerFactory.GetAvailableBackends().ShouldContain(RasterizerBackend.Gdi);
+            var act = () => RasterizerFactory.Create(RasterizerBackend.Gdi);
+            Should.Throw<InvalidOperationException>(act);
+        }
+        finally
+        {
+            // Re-register all backends to restore state for other tests.
+            FreeTypeRegistration.Register();
+            RasterizerFactory.Register(RasterizerBackend.Gdi, () => new GdiRasterizer());
+        }
     }
 
     // ── 3. LoadFont succeeds ────────────────────────────────────────
