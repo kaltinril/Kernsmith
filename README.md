@@ -37,19 +37,21 @@
 
 ## Rasterizer Backends
 
-KernSmith supports pluggable rasterizer backends. The core package includes FreeType; optional NuGet packages add Windows-native backends.
+KernSmith supports pluggable rasterizer backends. The core package includes FreeType; optional NuGet packages add alternative backends.
 
 | Backend | Package | Platform | Notes |
 |---------|---------|----------|-------|
 | **FreeType** | included in `KernSmith` | Windows, Linux, macOS | Default. Cross-platform, full feature support. |
 | **GDI** | `KernSmith.Rasterizers.Gdi` | Windows only | Matches BMFont reference output for pixel-perfect parity. |
 | **DirectWrite** | `KernSmith.Rasterizers.DirectWrite.TerraFX` | Windows only | Color font (COLR/CPAL) and variable font rendering via DirectWrite. |
+| **StbTrueType** | `KernSmith.Rasterizers.StbTrueType` | Cross-platform | Pure C#, no native dependencies. Ideal for WASM, AOT, serverless. |
 
 Install an optional backend:
 
 ```
 dotnet add package KernSmith.Rasterizers.Gdi
 dotnet add package KernSmith.Rasterizers.DirectWrite.TerraFX
+dotnet add package KernSmith.Rasterizers.StbTrueType
 ```
 
 Select a backend when generating:

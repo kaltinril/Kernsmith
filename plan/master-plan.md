@@ -1,6 +1,6 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-21, 30-32, 55, 60-69, 72-78, 77B, 79, 80 complete. Phases 33-35 (rasterizer plugins, WASM) are planning/future. Phase 95, 99, 110, 111, 150 planning.
+> **Status**: Phases 1-21, 30-32, 32B, 55, 60-69, 72-78, 77B, 79, 80 complete. Phases 33-35 (rasterizer plugins, WASM) are planning/future. Phase 95, 99, 110, 111, 150 planning.
 > **Date**: 2026-03-31
 
 ---
@@ -81,6 +81,7 @@ Output Layer
 |---|----------|-------------|--------|
 | 31 | [WASM Platform Restrictions Research](done/phase-31-wasm-restrictions-research.md) | Research WASM/AOT platform restrictions affecting rasterizer strategy | Complete |
 | 32 | [StbTrueType Managed Rasterizer](done/phase-32-stbtruetype-rasterizer.md) | Pure C# rasterizer plugin using StbTrueTypeSharp for WASM/AOT support | Complete |
+| 32b | [StbTrueType Docs & Publishing](done/phase-32b-stbtruetype-docs-publishing.md) | Documentation, DocFX pages, and CI/CD publishing for StbTrueType plugin | Complete |
 | 33 | [WASM Integration and Validation](phase-33-wasm-validation.md) | Validate KernSmith + StbTrueType works in Blazor WASM | Future |
 | 34 | [Custom Pure C# Rasterizer](phase-34-custom-rasterizer.md) | Research/prototype a fully custom pure C# TTF rasterizer from scratch | Future |
 | 35 | [FontStashSharp Rasterizer](phase-35-fontstashsharp-rasterizer.md) | Rasterizer plugin backed by FontStashSharp library -- Recommended: Defer indefinitely | Future |
@@ -202,8 +203,11 @@ These detailed docs were used during implementation and remain as reference mate
 | REF-05 | [BMFont Format Reference](../reference/REF-05-bmfont-format-reference.md) | BMFont file format specification |
 | REF-06 | [Texture Packing Reference](../reference/REF-06-texture-packing-reference.md) | Rectangle packing algorithm research |
 | REF-07 | [GUM Forms Cheatsheet](../reference/REF-07-gum-forms-cheatsheet.md) | GUM/Forms UI framework quick reference |
+| REF-08 | [BMFont Internals](../reference/REF-08-bmfont-internals.md) | BMFont internals documentation |
 | REF-09 | [Font Metrics and Sizing](../reference/REF-09-font-metrics-and-sizing.md) | Font metrics, sizing, synthetic bold/italic, outline rendering |
 | REF-10 | [Hiero Format Reference](../reference/REF-10-hiero-format-reference.md) | Hiero `.hiero` configuration file format specification |
+| REF-11 | [WASM Restrictions](../reference/REF-11-wasm-restrictions.md) | WASM/AOT platform restrictions research |
+| REF-12 | [Rasterizer Backends](../reference/REF-12-rasterizer-backends.md) | Rasterizer backends documentation |
 
 ---
 
