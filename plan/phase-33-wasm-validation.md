@@ -87,6 +87,7 @@ samples/KernSmith.Samples.BlazorWasm/
 - Call `BmFont.Generate()` with `Backend = RasterizerBackend.StbTrueType`
 - Display the generated atlas PNG in the browser
 - Offer `.fnt` + `.png` download via JS interop
+- Test SDF rendering specifically — known StbTrueTypeSharp SDF quality bug (StbSharp/StbTrueTypeSharp#1, open since 2020); document any visual artifacts
 
 ### Step 7: Performance baseline
 
@@ -99,12 +100,15 @@ samples/KernSmith.Samples.BlazorWasm/
 
 - Blazor WASM is single-threaded by default
 - `WasmEnableThreads` requires `SharedArrayBuffer` + COOP/COEP headers on the server
-- Check if KernSmith uses `Parallel.ForEach` or `Task.Run` internally — these could deadlock on single-threaded WASM
+- Audit KernSmith for `Parallel.ForEach` or `Task.Run` usage — `Parallel.ForEach` throws `PlatformNotSupportedException` in WASM and `Task.Run` does not offload to a real thread
+- `Parallel.ForEach` throws `PlatformNotSupportedException` in WASM (dotnet/runtime#43411) — any usage must be replaced with sequential `foreach`
+- `.Result`, `.Wait()`, `.WaitAll()`, and `Thread.Sleep` deadlock the single browser thread — audit and remove from all WASM code paths
+- For UI responsiveness during long rasterization, yield every N glyphs via `Task.Delay(1)` — do NOT use `Task.Yield()` as it does not reliably yield to the browser render pipeline
 - Verify pipeline threading behavior and document any issues
 
 ### Step 9: Memory constraints
 
-- WASM default heap: 256 MB
+- WASM default heap: ~127 MB (grows dynamically, configurable via `EmccMaximumHeapSize`, practical limit ~1.7-2 GB). Mobile Safari may cap at 256-512 MB total.
 - Large CJK fonts (20,000+ glyphs) at high resolution could exhaust the heap
 - Document limits and recommend subsetting for WASM users
 
@@ -172,6 +176,8 @@ If WASM performance or quality is insufficient, a server-side API is the fallbac
 - [ ] DefaultSystemFontProvider does not throw on WASM
 - [ ] In-memory APIs work correctly (no File I/O dependency)
 - [ ] Threading behavior verified (no deadlocks on single-threaded runtime)
+- [ ] No `Parallel.ForEach`, `.Result`, `.Wait()`, or `Thread.Sleep` in WASM code paths
+- [ ] SDF rendering quality validated (StbSharp/StbTrueTypeSharp#1 documented)
 - [ ] Memory constraints documented
 - [ ] StbImageWriteSharp PNG encoding verified in WASM
 - [ ] Performance documented and acceptable

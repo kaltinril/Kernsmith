@@ -91,6 +91,8 @@ src/KernSmith.Rasterizers.StbTrueType/
 - NuGet package: `KernSmith.Rasterizers.StbTrueType`
 - Namespace: `KernSmith.Rasterizers.StbTrueType`
 - `<AllowUnsafeBlocks>true</AllowUnsafeBlocks>` — StbTrueTypeSharp is pure C# (no native P/Invoke) but uses unsafe pointer arithmetic extensively. AllowUnsafeBlocks is required.
+- `<IsTrimmable>true</IsTrimmable>` and `<EnableTrimAnalyzer>true</EnableTrimAnalyzer>` — required for Blazor WASM trimming compatibility
+- `<IsAotCompatible>true</IsAotCompatible>` — enables AOT analyzers; AOT is critical for acceptable WASM performance (interpreter mode is extremely slow)
 - Add project to `KernSmith.sln`
 - Create `README.md` for NuGet package (follow GDI plugin pattern)
 
@@ -159,6 +161,8 @@ See expanded testing strategy below.
 
 `ReadOnlyMemory<byte>` from `LoadFont` must be pinned or copied to a `byte[]` that outlives the stb `FontInfo` lifetime. The font data buffer must remain valid for the entire lifetime of the rasterizer instance. Use `GCHandle.Alloc(..., GCHandleType.Pinned)` or copy to a long-lived array.
 
+In WASM, `GCHandle.Alloc(Pinned)` fragments the heap permanently (WASM linear memory never shrinks). Prefer `ArrayPool<byte>` for glyph bitmap buffers to enable buffer reuse and prevent permanent heap growth.
+
 ### Scale Factor
 
 Use `stbtt_ScaleForMappingEmToPixels` (not `stbtt_ScaleForPixelHeight`) for FreeType parity. This gives ppem-based scaling that matches FreeType's `FT_Set_Char_Size` behavior.
@@ -187,7 +191,17 @@ Synthetic bold and italic are not supported by stb_truetype. Check capabilities 
 
 ### Bitmap Data Ownership
 
-stb_truetype allocates bitmap memory internally. Copy the bitmap data from stb-allocated memory to a managed `byte[]` before the stb allocation is freed. Do not return pointers to stb-owned memory.
+stb_truetype allocates bitmap memory internally via `Marshal.AllocHGlobal`. Wrap every allocation in `try/finally` with `Marshal.FreeHGlobal` to prevent leaks — especially critical in WASM where the heap never shrinks. Copy the bitmap data to a managed `byte[]` before freeing the unmanaged buffer. Do not return pointers to stb-owned memory.
+
+### Threading Constraints
+
+The StbTrueType rasterizer must not use any blocking or parallel primitives:
+- No `Parallel.ForEach` — throws `PlatformNotSupportedException` in single-threaded WASM (dotnet/runtime#43411)
+- No `.Result`, `.Wait()`, `.WaitAll()` — deadlocks the single browser thread
+- No `Thread.Sleep` — deadlocks the browser tab
+- `Task.Run` does not offload to a separate thread in WASM — it schedules on the same thread
+
+These constraints apply to the rasterizer implementation itself. Blazor UI code calling the rasterizer should yield periodically via `Task.Delay(1)` (not `Task.Yield()`, which does not reliably yield to the browser render pipeline).
 
 ## Testing Strategy
 
@@ -222,6 +236,7 @@ stb_truetype allocates bitmap memory internally. Copy the bitmap data from stb-a
 ### SDF Rendering Tests
 - Rasterize glyph with SDF enabled
 - Verify output contains distance field values (not just binary/grayscale)
+- Validate against known StbTrueTypeSharp SDF bug (StbSharp/StbTrueTypeSharp#1) — check for visual artifacts at glyph edges
 
 ### End-to-End Tests
 - `BmFont.Generate()` with `Backend = RasterizerBackend.StbTrueType`
@@ -241,6 +256,9 @@ stb_truetype allocates bitmap memory internally. Copy the bitmap data from stb-a
 | Thread safety | Medium | StbTrueType FontInfo is not safe for concurrent use; document single-threaded requirement |
 | Bitmap data ownership | Medium | Always copy stb-allocated bitmap to managed `byte[]` before freeing |
 | Coordinate system mapping errors | High | This is the #1 source of bugs; thorough testing against FreeType baseline |
+| StbTrueTypeSharp SDF quality bug | Medium | Known open bug (StbSharp/StbTrueTypeSharp#1, since 2020). Test SDF output quality early and document any visual artifacts |
+| No WASM community validation | Medium | KernSmith would be the first known user of StbTrueTypeSharp in Blazor WASM. Budget time for discovering platform-specific issues |
+| WASM interpreter performance | Medium | Interpreter mode is extremely slow (5-10s for simple ops). Recommend AOT compilation for consumers doing heavy rasterization |
 | API name differences from C | Low | Study FontStashSharp source for correct C# API patterns |
 
 ## Success Criteria
