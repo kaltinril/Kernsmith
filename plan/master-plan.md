@@ -82,6 +82,7 @@ Output Layer
 | 31 | [WASM Platform Restrictions Research](done/phase-31-wasm-restrictions-research.md) | Research WASM/AOT platform restrictions affecting rasterizer strategy | Complete |
 | 32 | [StbTrueType Managed Rasterizer](done/phase-32-stbtruetype-rasterizer.md) | Pure C# rasterizer plugin using StbTrueTypeSharp for WASM/AOT support | Complete |
 | 32b | [StbTrueType Docs & Publishing](done/phase-32b-stbtruetype-docs-publishing.md) | Documentation, DocFX pages, and CI/CD publishing for StbTrueType plugin | Complete |
+| 32c | [StbTrueType Validation Fixes](phase-32c-stbtruetype-fixes.md) | Bug fixes, missing guards, and test gaps from Phase 30-32 validation | Planning |
 | 33 | [WASM Integration and Validation](phase-33-wasm-validation.md) | Validate KernSmith + StbTrueType works in Blazor WASM | Future |
 | 34 | [Custom Pure C# Rasterizer](phase-34-custom-rasterizer.md) | Research/prototype a fully custom pure C# TTF rasterizer from scratch | Future |
 | 35 | [FontStashSharp Rasterizer](phase-35-fontstashsharp-rasterizer.md) | Rasterizer plugin backed by FontStashSharp library -- Recommended: Defer indefinitely | Future |
