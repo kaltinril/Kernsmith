@@ -58,7 +58,7 @@ Review and add/update tooltips in the Gum UI for rasterizer-related controls:
 ### 5. Reference Documents
 
 - [x] `reference/` — reviewed existing reference docs for accuracy with new multi-backend architecture
-- [x] Created `reference/REF-rasterizer-backends.md` — comparison table sourced from actual code
+- [x] Created `reference/REF-12-rasterizer-backends.md` — comparison table sourced from actual code
 
 ### 6. GitHub.io Documentation (DocFX)
 

@@ -104,7 +104,7 @@ Phase 30 extracts FreeType from core, and Phase 32 builds a managed rasterizer. 
 
 ## Deliverables
 
-1. **Research document** — `reference/wasm-restrictions.md` with all findings organized by category
+1. **Research document** — `reference/REF-11-wasm-restrictions.md` with all findings organized by category
 2. **KernSmith impact assessment** — which specific files/APIs are affected and how
 3. **Design constraints checklist** — concrete requirements for Phase 32 (StbTrueType rasterizer) and Phase 33 (WASM validation)
 4. **CI gate proposal** — how to prevent native dependency regressions in CI

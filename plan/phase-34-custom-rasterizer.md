@@ -47,6 +47,17 @@ SupportsSystemFonts = false
 SupportedAntiAliasModes = [None, Grayscale]
 ```
 
+## WASM Constraints
+
+The custom rasterizer must satisfy the same WASM constraints as Phase 32 (see Phase 31 research — `reference/REF-11-wasm-restrictions.md`):
+
+- **No native dependencies** — pure C# only (already the goal)
+- **No `Parallel.ForEach`** — throws `PlatformNotSupportedException` in single-threaded WASM
+- **No `.Result` / `.Wait()` / `Thread.Sleep`** — deadlocks the browser thread
+- **Use `ArrayPool<byte>`** for glyph bitmap buffers — WASM heap never shrinks, so buffer reuse prevents permanent growth
+- **Set `IsTrimmable` and `IsAotCompatible`** in the csproj — required for Blazor WASM publishing
+- **No `Reflection.Emit` or `DynamicMethod`** — blocked in AOT
+
 ## What KernSmith Already Has
 
 KernSmith's TTF parser already handles these tables:
@@ -201,6 +212,7 @@ TrueType hinting is a full bytecode virtual machine (~40 opcodes) that modifies 
 - Create `KernSmith.Rasterizers.Custom/` project
 - Implement full `IRasterizer` interface
 - Register via `[ModuleInitializer]`
+- Set `<IsTrimmable>true</IsTrimmable>`, `<EnableTrimAnalyzer>true</EnableTrimAnalyzer>`, and `<IsAotCompatible>true</IsAotCompatible>` in the csproj
 
 ### Step 5: Validation (Sub-phase 34E)
 - Compare output against FreeType and StbTrueType baselines
@@ -267,6 +279,7 @@ Render fixed glyphs at fixed sizes, save as reference.
 - StbTrueTypeSharp works well enough (most likely scenario)
 - The 3-5 week effort is better spent on user-facing features
 - We don't need capabilities beyond what stb_truetype provides
+- Phase 34 does not include SDF rendering (out of scope), making it less capable than Phase 32's StbTrueType backend for SDF use cases
 
 ## Specification References
 
