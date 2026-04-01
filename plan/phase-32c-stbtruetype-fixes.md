@@ -1,6 +1,6 @@
 # Phase 32c — StbTrueType Validation Fixes
 
-> **Status**: Planning
+> **Status**: Partial
 > **Created**: 2026-03-31
 > **Depends on**: Phase 32 (StbTrueType rasterizer), Phase 32b (docs/publishing)
 > **Related**: Phase 30, Phase 33 (WASM validation)
@@ -134,11 +134,11 @@ Add these tests to `tests/KernSmith.Tests/Rasterizer/StbTrueTypeRasterizerTests.
 
 ## Success Criteria
 
-- [ ] Integer truncation fixed — advance/bearings use rounded division when `aa > 1`
-- [ ] SDF ignores SuperSample (renders at base size)
-- [ ] ColorFont = true throws NotSupportedException
-- [ ] DownscaleBitmap handles non-multiple dimensions
-- [ ] ObjectDisposedException checks added to all public methods
+- [x] Integer truncation fixed — advance/bearings use rounded division when `aa > 1`
+- [x] SDF ignores SuperSample (renders at base size)
+- [x] ColorFont = true throws NotSupportedException
+- [x] DownscaleBitmap handles non-multiple dimensions
+- [x] ObjectDisposedException checks added to all public methods
 - [ ] SDF capability guard added to BmFont.cs pipeline
 - [ ] ModuleInitializer trimmer-safe for AOT/WASM publish
 - [ ] JsonSerializer AOT-compatible in BmFontBinaryFormatter

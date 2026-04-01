@@ -57,9 +57,12 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
     /// <summary>
     /// Not supported. StbTrueType cannot load system fonts by name.
     /// </summary>
-    public void LoadSystemFont(string familyName) =>
+    public void LoadSystemFont(string familyName)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         throw new NotSupportedException(
             "StbTrueType rasterizer does not support loading system fonts by name. Use LoadFont with font bytes instead.");
+    }
 
     /// <inheritdoc />
     public unsafe RasterizedGlyph? RasterizeGlyph(int codepoint, RasterOptions options)
@@ -71,8 +74,11 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
             throw new NotSupportedException("StbTrueType rasterizer does not support bold rendering.");
         if (options.Italic)
             throw new NotSupportedException("StbTrueType rasterizer does not support italic rendering.");
+        if (options.ColorFont)
+            throw new NotSupportedException("StbTrueType rasterizer does not support color font rendering.");
 
-        int aa = Math.Max(1, options.SuperSample);
+        // SDF is resolution-independent; supersampling is meaningless for distance fields.
+        int aa = options.Sdf ? 1 : Math.Max(1, options.SuperSample);
         float effectiveSize = options.Size * options.Dpi / 72.0f * aa;
         float scale = Stb.stbtt_ScaleForMappingEmToPixels(_fontInfo!, effectiveSize);
 
@@ -90,9 +96,9 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         int ix0, iy0, ix1, iy1;
         Stb.stbtt_GetCodepointBitmapBox(_fontInfo!, codepoint, scale, scale, &ix0, &iy0, &ix1, &iy1);
 
-        int bearingX = ix0 / aa;
-        int bearingY = -iy0 / aa;
-        int scaledAdvance = (int)Math.Round(advance * scale) / aa;
+        int bearingX = (int)Math.Round((double)ix0 / aa);
+        int bearingY = (int)Math.Round((double)-iy0 / aa);
+        int scaledAdvance = (int)Math.Round(advance * scale / aa);
 
         // Rasterize the glyph bitmap.
         int width, height, xoff, yoff;
@@ -200,11 +206,11 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         Stb.stbtt_GetCodepointBitmapBox(_fontInfo!, codepoint, scale, scale, &ix0, &iy0, &ix1, &iy1);
 
         return new GlyphMetrics(
-            BearingX: ix0 / aa,
-            BearingY: -iy0 / aa,
-            Advance: (int)Math.Round(advance * scale) / aa,
-            Width: (ix1 - ix0) / aa,
-            Height: (iy1 - iy0) / aa);
+            BearingX: (int)Math.Round((double)ix0 / aa),
+            BearingY: (int)Math.Round((double)-iy0 / aa),
+            Advance: (int)Math.Round(advance * scale / aa),
+            Width: (int)Math.Round((double)(ix1 - ix0) / aa),
+            Height: (int)Math.Round((double)(iy1 - iy0) / aa));
     }
 
     /// <inheritdoc />
@@ -231,19 +237,29 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
     /// <summary>
     /// Returns null to let the shared GPOS/kern parser handle kerning scaling.
     /// </summary>
-    public IReadOnlyList<ScaledKerningPair>? GetKerningPairs(RasterOptions options) => null;
+    public IReadOnlyList<ScaledKerningPair>? GetKerningPairs(RasterOptions options)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return null;
+    }
 
     /// <summary>
     /// Not supported. StbTrueType does not support variable fonts.
     /// </summary>
-    public void SetVariationAxes(IReadOnlyList<VariationAxis> fvarAxes, Dictionary<string, float> userAxes) =>
+    public void SetVariationAxes(IReadOnlyList<VariationAxis> fvarAxes, Dictionary<string, float> userAxes)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         throw new NotSupportedException("StbTrueType rasterizer does not support variable fonts.");
+    }
 
     /// <summary>
     /// Not supported. StbTrueType does not support color fonts.
     /// </summary>
-    public void SelectColorPalette(int paletteIndex) =>
+    public void SelectColorPalette(int paletteIndex)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         throw new NotSupportedException("StbTrueType rasterizer does not support color fonts.");
+    }
 
     /// <inheritdoc />
     public void Dispose()
@@ -296,9 +312,9 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
                 Height = 0,
                 Pitch = 0,
                 Metrics = new GlyphMetrics(
-                    BearingX: (int)Math.Round(lsb * scale) / aa,
+                    BearingX: (int)Math.Round(lsb * scale / aa),
                     BearingY: 0,
-                    Advance: (int)Math.Round(advance * scale) / aa,
+                    Advance: (int)Math.Round(advance * scale / aa),
                     Width: 0,
                     Height: 0),
                 Format = PixelFormat.Grayscale8
@@ -310,9 +326,9 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
             var bitmapData = new byte[width * height];
             new ReadOnlySpan<byte>(bitmap, width * height).CopyTo(bitmapData);
 
-            int bearingX = xoff / aa;
-            int bearingY = -yoff / aa;
-            int scaledAdvance = (int)Math.Round(advance * scale) / aa;
+            int bearingX = (int)Math.Round((double)xoff / aa);
+            int bearingY = (int)Math.Round((double)-yoff / aa);
+            int scaledAdvance = (int)Math.Round(advance * scale / aa);
 
             // Downscale bitmap by averaging aa x aa blocks when supersampling.
             if (aa > 1)
@@ -343,20 +359,31 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
 
     private static byte[] DownscaleBitmap(byte[] source, ref int width, ref int height, int aa)
     {
-        int newWidth = width / aa;
-        int newHeight = height / aa;
+        // Use ceiling division so remainder pixels on right/bottom edges are included.
+        int newWidth = (width + aa - 1) / aa;
+        int newHeight = (height + aa - 1) / aa;
         var downscaled = new byte[newWidth * newHeight];
-        int aaSq = aa * aa;
 
         for (int dy = 0; dy < newHeight; dy++)
         {
             for (int dx = 0; dx < newWidth; dx++)
             {
                 int sum = 0;
+                int count = 0;
                 for (int sy = 0; sy < aa; sy++)
+                {
+                    int srcY = dy * aa + sy;
+                    if (srcY >= height) break;
                     for (int sx = 0; sx < aa; sx++)
-                        sum += source[(dy * aa + sy) * width + (dx * aa + sx)];
-                downscaled[dy * newWidth + dx] = (byte)(sum / aaSq);
+                    {
+                        int srcX = dx * aa + sx;
+                        if (srcX >= width) break;
+                        sum += source[srcY * width + srcX];
+                        count++;
+                    }
+                }
+
+                downscaled[dy * newWidth + dx] = count > 0 ? (byte)(sum / count) : (byte)0;
             }
         }
 
