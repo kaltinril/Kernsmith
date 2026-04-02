@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-04-02
+
+### Fixed
+
+- StbTrueType synthetic bold collapsing counters (hollow sections in A, B, 4, e, @) — rewrote `EmboldenContour` to faithfully port FreeType's `FT_Outline_EmboldenXY` algorithm: halved strength with uniform offset, unnormalized bisector for natural damping at sharp angles, and min-segment/sin clamping to prevent thin feature collapse
+
 ## [0.12.0] - 2026-04-01
 
 ### Added
