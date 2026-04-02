@@ -132,8 +132,12 @@ public class MainViewModel : ViewModel
                 }
             }
 
-            // Debounce to allow batched updates (e.g. color picker sets R, G, B sequentially)
-            RequestAutoRegenerateDebounced();
+            // Regenerate immediately for all effects changes. Generation is fast (8-30ms)
+            // so debouncing just adds perceived lag. DO NOT add a debounce here — it was
+            // originally 300ms to batch color picker R/G/B changes, but colors are now single
+            // hex strings (one event per pick). If slider drag ever causes excessive regeneration,
+            // consider a small debounce (10-50ms) on slider properties only.
+            RequestAutoRegenerate();
         };
     }
 
@@ -480,7 +484,10 @@ public class MainViewModel : ViewModel
     }
 
     /// <summary>
-    /// Debounced auto-regeneration with 300ms delay (for text input changes).
+    /// Debounced auto-regeneration with 10ms delay. Originally 300ms to batch color picker
+    /// R/G/B changes, but colors are now single hex strings. Kept as a minimal coalescing
+    /// window for FontSize/AtlasConfig changes that may fire multiple events in sequence.
+    /// Consider removing entirely if generation stays fast (8-30ms).
     /// </summary>
     public void RequestAutoRegenerateDebounced()
     {
@@ -490,7 +497,7 @@ public class MainViewModel : ViewModel
         _autoRegenCts = new CancellationTokenSource();
         var token = _autoRegenCts.Token;
 
-        Task.Delay(300, token).ContinueWith(async _ =>
+        Task.Delay(10, token).ContinueWith(async _ =>
         {
             if (!token.IsCancellationRequested)
                 await GenerateAsync();

@@ -52,13 +52,12 @@ public class PreviewViewModel : ViewModel
 
         for (int i = 0; i < result.Pages.Count; i++)
         {
-            var pngBytes = result.GetPngData(i);
             var page = result.Pages[i];
 
             pages.Add(new PreviewPage
             {
                 PageIndex = i,
-                PngData = pngBytes,
+                PixelData = page.PixelData,
                 Width = page.Width,
                 Height = page.Height,
                 Label = $"Page {i} ({page.Width}x{page.Height})",
