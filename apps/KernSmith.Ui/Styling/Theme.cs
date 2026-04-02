@@ -13,13 +13,13 @@ public static class Theme
     public static readonly Color Panel = new(37, 37, 38);
     /// <summary>Panel border and divider color (#3C3C3C).</summary>
     public static readonly Color PanelBorder = new(60, 60, 60);
-    /// <summary>Primary text color (#CCCCCC).</summary>
-    public static readonly Color Text = new(204, 204, 204);
-    /// <summary>Muted/secondary text color (#888888).</summary>
-    public static readonly Color TextMuted = new(136, 136, 136);
-    /// <summary>Accent color for buttons, section headers, and selection highlights (#0078D4).</summary>
+    /// <summary>Primary text color.</summary>
+    public static readonly Color Text = new(200, 200, 200);
+    /// <summary>Muted/secondary text color.</summary>
+    public static readonly Color TextMuted = new(128, 128, 128);
+    /// <summary>Accent color — interactive elements only (buttons, selected controls).</summary>
     public static readonly Color Accent = new(0, 120, 212);
-    /// <summary>Accent hover state (#1A8AD4).</summary>
+    /// <summary>Accent hover state.</summary>
     public static readonly Color AccentHover = new(26, 138, 212);
     /// <summary>Error text and indicator color (#F44747).</summary>
     public static readonly Color Error = new(244, 71, 71);
@@ -34,10 +34,12 @@ public static class Theme
     public static Color CheckerDark = new(45, 45, 45);
 
     // Layout constants
-    /// <summary>Section header background color.</summary>
-    public static readonly Color SectionHeaderBg = new(50, 50, 55);
-    /// <summary>Background for collapsible content areas.</summary>
-    public static readonly Color CollapsibleContentBg = new(40, 40, 44);
+    /// <summary>Section header text — plain, not accent-colored.</summary>
+    public static readonly Color SectionHeaderText = new(200, 200, 200);
+    /// <summary>Section header background — subtle, barely distinct from panel.</summary>
+    public static readonly Color SectionHeaderBg = new(42, 42, 46);
+    /// <summary>Background for collapsible content areas — matches panel for minimal layering.</summary>
+    public static readonly Color CollapsibleContentBg = new(37, 37, 38);
     /// <summary>Standard spacing between sections in a stack (px).</summary>
     public const int SectionSpacing = 8;
     /// <summary>Standard horizontal padding inside panels (px).</summary>

@@ -66,19 +66,19 @@ public class KernSmithGame : Game
         var defaultSpriteSheet = Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle.SpriteSheet;
         var darkStyle = new Gum.Forms.DefaultVisuals.V3.Styling(defaultSpriteSheet, useDefaults: true);
 
-        // VS Code / dark IDE inspired palette
-        darkStyle.Colors.Primary = new Color(0, 122, 204);       // blue buttons/accents
-        darkStyle.Colors.Accent = new Color(0, 122, 204);        // selection highlights
-        darkStyle.Colors.InputBackground = new Color(60, 60, 60); // input fields
-        darkStyle.Colors.SurfaceVariant = new Color(50, 50, 50);  // scrollbar tracks
-        darkStyle.Colors.TextPrimary = new Color(212, 212, 212);  // main text
+        // Dark palette — accent blue for interactive elements only, quiet chrome
+        darkStyle.Colors.Primary = new Color(0, 122, 204);        // blue for buttons/active controls
+        darkStyle.Colors.Accent = new Color(0, 122, 204);         // selection highlights
+        darkStyle.Colors.InputBackground = new Color(50, 50, 54); // input fields (darker than old)
+        darkStyle.Colors.SurfaceVariant = new Color(42, 42, 46);  // scrollbar tracks
+        darkStyle.Colors.TextPrimary = new Color(200, 200, 200);  // main text
         darkStyle.Colors.TextMuted = new Color(128, 128, 128);    // placeholder/muted
-        darkStyle.Colors.IconDefault = new Color(200, 200, 200);  // icons
+        darkStyle.Colors.IconDefault = new Color(170, 170, 170);  // icons
         darkStyle.Colors.Black = new Color(30, 30, 30);           // deep background
-        darkStyle.Colors.DarkGray = new Color(45, 45, 48);        // panel fills
-        darkStyle.Colors.Gray = new Color(70, 70, 74);            // borders/dividers
-        darkStyle.Colors.LightGray = new Color(150, 150, 150);    // secondary text
-        darkStyle.Colors.White = new Color(230, 230, 230);        // bright text/icons
+        darkStyle.Colors.DarkGray = new Color(37, 37, 38);        // panel fills (match Theme.Panel)
+        darkStyle.Colors.Gray = new Color(55, 55, 58);            // borders/dividers (subtler)
+        darkStyle.Colors.LightGray = new Color(140, 140, 140);    // secondary text
+        darkStyle.Colors.White = new Color(220, 220, 220);        // bright text/icons
         darkStyle.Colors.Success = new Color(78, 201, 176);       // success green
         darkStyle.Colors.Warning = new Color(220, 170, 50);       // warning amber
         darkStyle.Colors.Danger = new Color(244, 71, 71);         // error red

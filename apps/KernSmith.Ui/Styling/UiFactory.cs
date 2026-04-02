@@ -35,7 +35,7 @@ public static class UiFactory
 
         var header = new TextRuntime();
         header.Text = text;
-        header.Color = Theme.Accent;
+        header.Color = Theme.SectionHeaderText;
         header.X = 6;
         header.Y = 4;
         container.Children.Add(header);
@@ -83,7 +83,7 @@ public static class UiFactory
 
         var headerText = new TextRuntime();
         headerText.Text = title;
-        headerText.Color = Theme.Accent;
+        headerText.Color = Theme.SectionHeaderText;
         headerText.X = 20;
         headerText.Y = 4;
         headerContainer.Children.Add(headerText);
