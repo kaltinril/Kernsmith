@@ -7,10 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-04-01
+
 ### Added
 
 - `KernSmithFontCreator` now accepts an optional `RasterizerBackend` in the constructor, enabling Blazor WASM and other platforms to use StbTrueType without reimplementing the class (Phase 33b)
 - `GumFontGenerator.Generate()` now accepts an optional `RasterizerBackend` parameter to override the default backend
+- Synthetic bold/italic bitmap post-processors (`BoldPostProcessor`, `ItalicPostProcessor`) for any rasterizer backend (Phase 32d)
+- Outline-level synthetic bold/italic for StbTrueType rasterizer via stb_truetype shape API (Phase 32d)
+- Pixel-diff comparison tool for regression detection (`tests/bmfont-compare/diff_comparisons.py`)
+- FontStashSharp technique insights distilled into native rasterizer phases 160-180
+
+### Fixed
+
+- SDF `GetFontMetrics` inconsistency — `aa` calculation now matches `RasterizeGlyph`/`GetGlyphMetrics` when SDF + SuperSample are both set (Phase 37)
+- `ItalicPostProcessor` now adjusts advance width to prevent glyph overlap (Phase 37)
+- Double-bold/italic guard when both `options.Bold` and `BoldPostProcessor` are active (Phase 37)
+- WOFF decompressor: destination bounds check and integer overflow on offset+length (Phase 37)
+- Cmap Format 12: entry limit (200k) and numGroups overflow guard to prevent resource exhaustion (Phase 37)
+- Table directory offset/length validation against file bounds (Phase 37)
+- GPOS parser: slice bounds checks on untrusted offsets (Phase 37)
+- Kern table: infinite loop guard when subtableLength == 0 (Phase 37)
+- CLI: sanitize font family name in output path to prevent path traversal (Phase 37)
+
+### Changed
+
+- BoldPostProcessor kernel falloff precomputed once per glyph, eliminating per-pixel `MathF.Sqrt` calls (Phase 37)
+- Generation pipeline consolidated from 6 `.Select().ToList()` chains into a single for-loop (Phase 37)
+- UI preview: raw pixel data uploaded directly to GPU via `Texture2D.SetData()`, eliminating PNG encode/decode round-trip (~800ms savings)
+- UI effects toggles regenerate immediately (removed 300ms debounce); remaining debounce reduced to 10ms
+- UI texture caching: atlas textures decoded once per generation, not per page/tab switch
+- SDF no longer auto-disables when outline/shadow/gradient are enabled; shows informational warning instead
+- Phases 35 (FontStashSharp) rejected and 36 (bitmap bold/italic) superseded by Phase 110
 
 ## [0.11.0] - 2026-04-01
 
