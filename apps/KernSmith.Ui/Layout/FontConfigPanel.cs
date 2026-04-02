@@ -56,17 +56,22 @@ public class FontConfigPanel : Panel
         scrollViewer.Visual.Width = 0;
         scrollViewer.Visual.HeightUnits = DimensionUnitType.RelativeToParent;
         scrollViewer.Visual.Height = 0;
-        var scrollBg = scrollViewer.Visual.GetGraphicalUiElementByName("Background");
-        if (scrollBg is ColoredRectangleRuntime scrollRect)
-            scrollRect.Color = Microsoft.Xna.Framework.Color.Transparent;
+        // Make ScrollViewer borderless: solid background matching panel,
+        // and inject margin overrides into states so Gum's state system applies them
+        if (scrollViewer.Visual is Gum.Forms.DefaultVisuals.V3.ScrollViewerVisual scrollVisual)
+        {
+            scrollVisual.Background.ApplyState(Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle.NineSlice.Solid);
+            scrollVisual.BackgroundColor = Theme.Panel;
+            StripScrollViewerMargins(scrollVisual);
+        }
         scrollArea.Children.Add(scrollViewer.Visual);
 
         var inner = new ContainerRuntime();
         inner.WidthUnits = DimensionUnitType.RelativeToParent;
         inner.HeightUnits = DimensionUnitType.RelativeToChildren;
-        inner.Width = -(Theme.PanelPadding * 2);
+        inner.Width = 0;
         inner.Height = 0;
-        inner.X = Theme.PanelPadding;
+        inner.X = 0;
         inner.Y = Theme.ControlSpacing;
         inner.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
         inner.StackSpacing = Theme.SectionSpacing;
@@ -210,7 +215,8 @@ public class FontConfigPanel : Panel
             content.Children.Add(glyphRow.Visual);
 
             var glyphLbl = new Label();
-            glyphLbl.Text = "Glyphs in font:";
+            glyphLbl.Text = "Glyphs:";
+            glyphLbl.Width = Theme.LabelWidth;
             glyphRow.AddChild(glyphLbl);
 
             var glyphCount = new Label();
@@ -255,7 +261,8 @@ public class FontConfigPanel : Panel
             content.Children.Add(sizeRow.Visual);
 
             var sizeLabel = new Label();
-            sizeLabel.Text = "Font Size:";
+            sizeLabel.Text = "Size:";
+            sizeLabel.Width = Theme.LabelWidth;
             sizeRow.AddChild(sizeLabel);
             TooltipService.SetTooltip(sizeLabel, "Font size in points (4-500)");
 
@@ -310,8 +317,8 @@ public class FontConfigPanel : Panel
     private void BuildGenerateBar(ContainerRuntime parent)
     {
         var bottomBar = new ContainerRuntime();
-        bottomBar.Height = 60;
-        bottomBar.HeightUnits = DimensionUnitType.Absolute;
+        bottomBar.HeightUnits = DimensionUnitType.RelativeToChildren;
+        bottomBar.Height = 0;
         bottomBar.WidthUnits = DimensionUnitType.RelativeToParent;
         bottomBar.Width = 0;
         bottomBar.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
@@ -331,7 +338,6 @@ public class FontConfigPanel : Panel
         barInner.WidthUnits = DimensionUnitType.RelativeToParent;
         barInner.Width = -(Theme.PanelPadding * 2);
         barInner.X = Theme.PanelPadding;
-        barInner.Y = Theme.ControlSpacing;
         barInner.HeightUnits = DimensionUnitType.RelativeToChildren;
         barInner.Height = 0;
         barInner.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
@@ -452,7 +458,7 @@ public class FontConfigPanel : Panel
         };
 
         var packAlgoLabel = new Label();
-        packAlgoLabel.Text = "Packing Algorithm:";
+        packAlgoLabel.Text = "Packing:";
         stack.Children.Add(packAlgoLabel.Visual);
         TooltipService.SetTooltip(packAlgoLabel, "Glyph packing algorithm for the atlas");
 
@@ -639,6 +645,42 @@ public class FontConfigPanel : Panel
             if (e.PropertyName == nameof(AtlasConfigViewModel.IncludeKerning))
                 kerningCb.IsChecked = _atlasConfig.IncludeKerning;
         };
+    }
+
+    /// <summary>
+    /// Removes the 2px border margins from the ScrollViewer's clip container
+    /// by injecting zero-margin variables into all states so the state system
+    /// applies them rather than resetting to defaults.
+    /// </summary>
+    internal static void StripScrollViewerMargins(Gum.Forms.DefaultVisuals.V3.ScrollViewerVisual visual)
+    {
+        // Set the values directly
+        visual.ClipContainerInstance.X = 0;
+        visual.ClipContainerInstance.Width = 0;
+        visual.ClipContainerInstance.Y = 0;
+        visual.ClipContainerInstance.Height = 0;
+
+        // Also inject into all states so state application doesn't reset them
+        var marginVars = new (string Name, object Value)[]
+        {
+            ("ClipContainerInstance.X", 0f),
+            ("ClipContainerInstance.Y", 0f),
+            ("ClipContainerInstance.Width", 0f),
+            ("ClipContainerInstance.Height", 0f),
+        };
+
+        // Add to the Enabled and Focused states
+        foreach (var state in new[] { visual.States.Enabled, visual.States.Focused })
+        {
+            foreach (var (name, value) in marginVars)
+            {
+                state.Variables.Add(new Gum.DataTypes.Variables.VariableSave
+                {
+                    Name = name,
+                    Value = value
+                });
+            }
+        }
     }
 
     private static TextBox CreateSmallIntBox(int initialValue, Action<int> onChanged)

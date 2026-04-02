@@ -27,6 +27,12 @@ public class CharacterSelectionPanel : Panel
         var scrollViewer = new ScrollViewer();
         scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
         scrollViewer.Dock(Gum.Wireframe.Dock.Fill);
+        if (scrollViewer.Visual is Gum.Forms.DefaultVisuals.V3.ScrollViewerVisual scrollVisual)
+        {
+            scrollVisual.Background.ApplyState(Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle.NineSlice.Solid);
+            scrollVisual.BackgroundColor = Styling.Theme.Panel;
+            FontConfigPanel.StripScrollViewerMargins(scrollVisual);
+        }
         this.AddChild(scrollViewer);
 
         var stack = scrollViewer.InnerPanel;

@@ -56,8 +56,9 @@ public static class UiFactory
         Action<Gum.Wireframe.GraphicalUiElement> buildContent,
         bool startExpanded = true)
     {
-        // Header bar (clickable)
+        // Header bar (clickable) — breaks out of parent's PanelPadding to go edge-to-edge
         var headerContainer = new ContainerRuntime();
+        headerContainer.X = 0;
         headerContainer.Width = 0;
         headerContainer.WidthUnits = DimensionUnitType.RelativeToParent;
         headerContainer.Height = Theme.SectionHeaderHeight;
@@ -151,8 +152,9 @@ public static class UiFactory
         bool startExpanded = false,
         string? tooltip = null)
     {
-        // Header bar with checkbox
+        // Header bar with checkbox — breaks out of parent's PanelPadding to go edge-to-edge
         var headerContainer = new ContainerRuntime();
+        headerContainer.X = 0;
         headerContainer.Width = 0;
         headerContainer.WidthUnits = DimensionUnitType.RelativeToParent;
         headerContainer.Height = Theme.SectionHeaderHeight;
@@ -360,19 +362,22 @@ public static class UiFactory
         scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
         scrollViewer.Dock(Gum.Wireframe.Dock.Fill);
 
-        // Make ScrollViewer background transparent so the panel background color shows through
-        var scrollBg = scrollViewer.Visual.GetGraphicalUiElementByName("Background");
-        if (scrollBg is ColoredRectangleRuntime scrollRect)
-            scrollRect.Color = Color.Transparent;
+        // Make ScrollViewer borderless and remove clip container margins
+        if (scrollViewer.Visual is Gum.Forms.DefaultVisuals.V3.ScrollViewerVisual scrollVisual)
+        {
+            scrollVisual.Background.ApplyState(Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle.NineSlice.Solid);
+            scrollVisual.BackgroundColor = Theme.Panel;
+            FontConfigPanel.StripScrollViewerMargins(scrollVisual);
+        }
 
         panel.AddChild(scrollViewer);
 
         var inner = new ContainerRuntime();
         inner.WidthUnits = DimensionUnitType.RelativeToParent;
         inner.HeightUnits = DimensionUnitType.RelativeToChildren;
-        inner.Width = -(Theme.PanelPadding * 2);
+        inner.Width = 0;
         inner.Height = 0;
-        inner.X = Theme.PanelPadding;
+        inner.X = 0;
         inner.Y = Theme.ControlSpacing;
         inner.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
         inner.StackSpacing = Theme.SectionSpacing;
