@@ -275,7 +275,7 @@ public class PreviewPanel : Panel
         // --- Page navigation row (below toolbar) ---
         _navRow = new StackPanel();
         _navRow.Orientation = Orientation.Horizontal;
-        _navRow.Spacing = 4;
+        _navRow.Spacing = Theme.SectionSpacing;
         _navRow.X = 4;
         _navRow.Y = ToolbarHeight + 4;
         _navRow.Height = 24;

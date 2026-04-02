@@ -83,7 +83,7 @@ public class EffectsPanel : Panel
             styleRow.HeightUnits = DimensionUnitType.RelativeToChildren;
             styleRow.Height = 0;
             styleRow.ChildrenLayout = Gum.Managers.ChildrenLayout.LeftToRightStack;
-            styleRow.StackSpacing = 4;
+            styleRow.StackSpacing = Theme.SectionSpacing;
             content.Children.Add(styleRow);
 
             // Left column: Bold, Italic, Hinting
@@ -93,7 +93,7 @@ public class EffectsPanel : Panel
             leftCol.HeightUnits = DimensionUnitType.RelativeToChildren;
             leftCol.Height = 0;
             leftCol.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
-            leftCol.StackSpacing = 4;
+            leftCol.StackSpacing = 8;
             styleRow.Children.Add(leftCol);
 
             var boldCheck = new CheckBox();
@@ -121,7 +121,7 @@ public class EffectsPanel : Panel
             rightCol.HeightUnits = DimensionUnitType.RelativeToChildren;
             rightCol.Height = 0;
             rightCol.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
-            rightCol.StackSpacing = 4;
+            rightCol.StackSpacing = 8;
             styleRow.Children.Add(rightCol);
 
             var synBoldCheck = new CheckBox();
@@ -297,16 +297,16 @@ public class EffectsPanel : Panel
             };
             synItalicCheck.Unchecked += (_, _) => _effects.ForceSyntheticItalic = false;
 
-            // Super sampling
+            // Super sampling — label and radio buttons on one row
+            var ssRow = new StackPanel();
+            ssRow.Orientation = Orientation.Horizontal;
+            ssRow.Spacing = Theme.ControlSpacing;
+            content.Children.Add(ssRow.Visual);
+
             var ssLabel = new Label();
             ssLabel.Text = "Super Sample:";
-            content.Children.Add(ssLabel.Visual);
+            ssRow.AddChild(ssLabel);
             TooltipService.SetTooltip(ssLabel, "Render at higher resolution then downscale for smoother edges. Available with all backends. Higher values improve quality but increase generation time.");
-
-            var ssGroup = new StackPanel();
-            ssGroup.Orientation = Orientation.Horizontal;
-            ssGroup.Spacing = 4;
-            content.Children.Add(ssGroup.Visual);
 
             foreach (var level in new[] { 1, 2, 4 })
             {
@@ -316,7 +316,7 @@ public class EffectsPanel : Panel
                 if (level == 1) rb.IsChecked = true;
                 var capturedLevel = level;
                 rb.Checked += (_, _) => _effects.SuperSampleLevel = capturedLevel;
-                ssGroup.AddChild(rb);
+                ssRow.AddChild(rb);
             }
         });
     }
@@ -540,7 +540,7 @@ public class EffectsPanel : Panel
         {
             var fallbackRow = new StackPanel();
             fallbackRow.Orientation = Orientation.Horizontal;
-            fallbackRow.Spacing = 4;
+            fallbackRow.Spacing = Theme.ControlSpacing;
             content.Children.Add(fallbackRow.Visual);
 
             var fallbackLabel = new Label();

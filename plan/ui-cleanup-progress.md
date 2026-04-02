@@ -53,6 +53,14 @@
 - Remove remaining redundant dividers
 - Fine-tune section header sizing
 
+### Phase 6: Visual Refinement (egui-inspired)
+- Reduce font size for denser, more professional feel
+- Tone down section header colors — muted gray/white instead of bright blue accent
+- Reduce or remove section header background bars (less visual weight)
+- Mute checkbox/radio accent colors
+- Reduce overall contrast — fewer distinct background shades
+- Goal: quiet, professional UI that lets content speak (reference: egui default style)
+
 ## Key Decisions Made
 - **Padding/Spacing layout:** Keep cross/compass layout, just clean up labels and alignment
 - **All sections start expanded** (user preference)

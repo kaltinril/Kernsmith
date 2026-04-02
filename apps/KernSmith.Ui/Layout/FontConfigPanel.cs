@@ -120,7 +120,7 @@ public class FontConfigPanel : Panel
             // --- TTC Face Selection (hidden unless a .ttc font collection is loaded) ---
             var faceSelectionRow = new StackPanel();
             faceSelectionRow.Orientation = Orientation.Horizontal;
-            faceSelectionRow.Spacing = 4;
+            faceSelectionRow.Spacing = Theme.ControlSpacing;
             faceSelectionRow.IsVisible = false;
             content.Children.Add(faceSelectionRow.Visual);
 
@@ -211,7 +211,7 @@ public class FontConfigPanel : Panel
             // --- Glyph count (only useful non-redundant info) ---
             var glyphRow = new StackPanel();
             glyphRow.Orientation = Orientation.Horizontal;
-            glyphRow.Spacing = 4;
+            glyphRow.Spacing = Theme.ControlSpacing;
             content.Children.Add(glyphRow.Visual);
 
             var glyphLbl = new Label();
@@ -257,7 +257,7 @@ public class FontConfigPanel : Panel
         {
             var sizeRow = new StackPanel();
             sizeRow.Orientation = Orientation.Horizontal;
-            sizeRow.Spacing = 4;
+            sizeRow.Spacing = Theme.ControlSpacing;
             content.Children.Add(sizeRow.Visual);
 
             var sizeLabel = new Label();
@@ -611,7 +611,7 @@ public class FontConfigPanel : Panel
         TooltipService.SetTooltip(formatLabel, "Output format: Text, XML, or Binary");
 
         var formatGroup = new StackPanel();
-        formatGroup.Spacing = 2;
+        formatGroup.Spacing = Theme.ControlSpacing;
         stack.Children.Add(formatGroup.Visual);
 
         var formatRadios = new List<(RadioButton rb, OutputFormat fmt)>();

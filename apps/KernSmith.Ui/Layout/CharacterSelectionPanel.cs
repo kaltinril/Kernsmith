@@ -36,7 +36,7 @@ public class CharacterSelectionPanel : Panel
         this.AddChild(scrollViewer);
 
         var stack = scrollViewer.InnerPanel;
-        stack.StackSpacing = 6;
+        stack.StackSpacing = Theme.SectionSpacing;
 
         // --- Preset RadioButtons ---
         UiFactory.AddCollapsibleHeader(stack, "CHARACTER SET PRESET", content =>
@@ -76,7 +76,7 @@ public class CharacterSelectionPanel : Panel
         {
             var textInputRow = new StackPanel();
             textInputRow.Orientation = Orientation.Horizontal;
-            textInputRow.Spacing = 4;
+            textInputRow.Spacing = Theme.ControlSpacing;
             content.Children.Add(textInputRow.Visual);
 
             var textBox = new TextBox();
@@ -113,7 +113,7 @@ public class CharacterSelectionPanel : Panel
             content.Children.Add(blockScroll.Visual);
 
             var blockStack = blockScroll.InnerPanel;
-            blockStack.StackSpacing = 2;
+            blockStack.StackSpacing = Theme.ControlSpacing;
 
             foreach (var block in UnicodeBlock.StandardBlocks)
             {
