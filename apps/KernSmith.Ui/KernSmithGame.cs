@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
-using Gum.Wireframe;
+using global::Gum.Wireframe;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using MonoGameGum;
-using Gum.Forms;
+using global::Gum.Forms;
 using KernSmith.Ui.Layout;
 using KernSmith.Ui.ViewModels;
 using KernSmith.Ui.Services;
@@ -62,9 +62,13 @@ public class KernSmithGame : Game
     {
         GumService.Default.Initialize(this, DefaultVisualsVersion.V3);
 
+        // Use KernSmith for dynamic font generation (enables custom fonts at runtime)
+        CustomSetPropertyOnRenderable.InMemoryFontCreator =
+            new KernSmith.Gum.KernSmithFontCreator(GraphicsDevice);
+
         // Build a dark theme using the existing sprite sheet, then set as active
-        var defaultSpriteSheet = Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle.SpriteSheet;
-        var darkStyle = new Gum.Forms.DefaultVisuals.V3.Styling(defaultSpriteSheet, useDefaults: true);
+        var defaultSpriteSheet = global::Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle.SpriteSheet;
+        var darkStyle = new global::Gum.Forms.DefaultVisuals.V3.Styling(defaultSpriteSheet, useDefaults: true);
 
         // Dark palette — accent blue for interactive elements only, quiet chrome
         darkStyle.Colors.Primary = new Color(0, 122, 204);        // blue for buttons/active controls
@@ -83,7 +87,7 @@ public class KernSmithGame : Game
         darkStyle.Colors.Warning = new Color(220, 170, 50);       // warning amber
         darkStyle.Colors.Danger = new Color(244, 71, 71);         // error red
 
-        Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle = darkStyle;
+        global::Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle = darkStyle;
 
         var fontDiscoveryService = new FontDiscoveryService();
         var generationService = new GenerationService();
@@ -149,7 +153,7 @@ public class KernSmithGame : Game
         var shiftHeld = kbState.IsKeyDown(Keys.LeftShift) || kbState.IsKeyDown(Keys.RightShift);
 
         // Only process keyboard shortcuts when no text input has focus
-        if (Gum.Wireframe.InteractiveGue.CurrentInputReceiver == null)
+        if (global::Gum.Wireframe.InteractiveGue.CurrentInputReceiver == null)
         {
             if (ctrlHeld && IsKeyPressed(Keys.O, kbState))
                 _mainViewModel?.OpenFont();

@@ -1,6 +1,6 @@
 using System.Linq;
-using Gum.DataTypes;
-using Gum.Forms.Controls;
+using global::Gum.DataTypes;
+using global::Gum.Forms.Controls;
 using KernSmith.Ui.Models;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
@@ -38,7 +38,7 @@ public class FontConfigPanel : Panel
         root.Width = 0;
         root.HeightUnits = DimensionUnitType.RelativeToParent;
         root.Height = 0;
-        root.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
+        root.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
         this.Visual.Children.Add(root);
 
         // Scroll area wrapper (ratio height = fills remaining space above bottom bar)
@@ -58,9 +58,9 @@ public class FontConfigPanel : Panel
         scrollViewer.Visual.Height = 0;
         // Make ScrollViewer borderless: solid background matching panel,
         // and inject margin overrides into states so Gum's state system applies them
-        if (scrollViewer.Visual is Gum.Forms.DefaultVisuals.V3.ScrollViewerVisual scrollVisual)
+        if (scrollViewer.Visual is global::Gum.Forms.DefaultVisuals.V3.ScrollViewerVisual scrollVisual)
         {
-            scrollVisual.Background.ApplyState(Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle.NineSlice.Solid);
+            scrollVisual.Background.ApplyState(global::Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle.NineSlice.Solid);
             scrollVisual.BackgroundColor = Theme.Panel;
             StripScrollViewerMargins(scrollVisual);
         }
@@ -73,7 +73,7 @@ public class FontConfigPanel : Panel
         inner.Height = 0;
         inner.X = 0;
         inner.Y = Theme.ControlSpacing;
-        inner.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
+        inner.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
         inner.StackSpacing = Theme.SectionSpacing;
         scrollViewer.InnerPanel.Children.Add(inner);
 
@@ -321,7 +321,7 @@ public class FontConfigPanel : Panel
         bottomBar.Height = 0;
         bottomBar.WidthUnits = DimensionUnitType.RelativeToParent;
         bottomBar.Width = 0;
-        bottomBar.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
+        bottomBar.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
         bottomBar.StackSpacing = Theme.ControlSpacing;
         parent.Children.Add(bottomBar);
 
@@ -340,7 +340,7 @@ public class FontConfigPanel : Panel
         barInner.X = Theme.PanelPadding;
         barInner.HeightUnits = DimensionUnitType.RelativeToChildren;
         barInner.Height = 0;
-        barInner.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
+        barInner.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
         barInner.StackSpacing = Theme.ControlSpacing;
         bottomBar.Children.Add(barInner);
 
@@ -377,7 +377,7 @@ public class FontConfigPanel : Panel
             _fontConfig.SelectedBackend = _fontConfig.AvailableBackends[idx];
     }
 
-    private void BuildAtlasSection(Gum.Wireframe.GraphicalUiElement stack)
+    private void BuildAtlasSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
         bool updatingFromVm = false;
 
@@ -482,7 +482,7 @@ public class FontConfigPanel : Panel
         padSpaceRow.Width = 0;
         padSpaceRow.HeightUnits = DimensionUnitType.RelativeToChildren;
         padSpaceRow.Height = 0;
-        padSpaceRow.ChildrenLayout = Gum.Managers.ChildrenLayout.LeftToRightStack;
+        padSpaceRow.ChildrenLayout = global::Gum.Managers.ChildrenLayout.LeftToRightStack;
         padSpaceRow.StackSpacing = 8;
         stack.Children.Add(padSpaceRow);
 
@@ -492,7 +492,7 @@ public class FontConfigPanel : Panel
         padContainer.Width = 0;
         padContainer.HeightUnits = DimensionUnitType.RelativeToChildren;
         padContainer.Height = 0;
-        padContainer.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
+        padContainer.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
         padContainer.StackSpacing = 2;
         padSpaceRow.Children.Add(padContainer);
 
@@ -544,7 +544,7 @@ public class FontConfigPanel : Panel
         spaceContainer.Width = 0;
         spaceContainer.HeightUnits = DimensionUnitType.RelativeToChildren;
         spaceContainer.Height = 0;
-        spaceContainer.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
+        spaceContainer.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
         spaceContainer.StackSpacing = 2;
         padSpaceRow.Children.Add(spaceContainer);
 
@@ -603,7 +603,7 @@ public class FontConfigPanel : Panel
         };
     }
 
-    private void BuildOutputSection(Gum.Wireframe.GraphicalUiElement stack)
+    private void BuildOutputSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
         var formatLabel = new Label();
         formatLabel.Text = "Descriptor Format:";
@@ -652,7 +652,7 @@ public class FontConfigPanel : Panel
     /// by injecting zero-margin variables into all states so the state system
     /// applies them rather than resetting to defaults.
     /// </summary>
-    internal static void StripScrollViewerMargins(Gum.Forms.DefaultVisuals.V3.ScrollViewerVisual visual)
+    internal static void StripScrollViewerMargins(global::Gum.Forms.DefaultVisuals.V3.ScrollViewerVisual visual)
     {
         // Set the values directly
         visual.ClipContainerInstance.X = 0;
@@ -674,7 +674,7 @@ public class FontConfigPanel : Panel
         {
             foreach (var (name, value) in marginVars)
             {
-                state.Variables.Add(new Gum.DataTypes.Variables.VariableSave
+                state.Variables.Add(new global::Gum.DataTypes.Variables.VariableSave
                 {
                     Name = name,
                     Value = value

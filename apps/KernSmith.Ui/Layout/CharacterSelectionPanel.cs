@@ -1,5 +1,5 @@
-using Gum.DataTypes;
-using Gum.Forms.Controls;
+using global::Gum.DataTypes;
+using global::Gum.Forms.Controls;
 using KernSmith.Ui.Models;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
@@ -26,10 +26,10 @@ public class CharacterSelectionPanel : Panel
     {
         var scrollViewer = new ScrollViewer();
         scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
-        scrollViewer.Dock(Gum.Wireframe.Dock.Fill);
-        if (scrollViewer.Visual is Gum.Forms.DefaultVisuals.V3.ScrollViewerVisual scrollVisual)
+        scrollViewer.Dock(global::Gum.Wireframe.Dock.Fill);
+        if (scrollViewer.Visual is global::Gum.Forms.DefaultVisuals.V3.ScrollViewerVisual scrollVisual)
         {
-            scrollVisual.Background.ApplyState(Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle.NineSlice.Solid);
+            scrollVisual.Background.ApplyState(global::Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle.NineSlice.Solid);
             scrollVisual.BackgroundColor = Styling.Theme.Panel;
             FontConfigPanel.StripScrollViewerMargins(scrollVisual);
         }
@@ -83,7 +83,7 @@ public class CharacterSelectionPanel : Panel
             textBox.Width = 300;
             textBox.Height = 100;
             textBox.Placeholder = "Paste or type characters here...";
-            textBox.TextWrapping = Gum.Forms.TextWrapping.Wrap;
+            textBox.TextWrapping = global::Gum.Forms.TextWrapping.Wrap;
             textBox.AcceptsReturn = true;
             textInputRow.AddChild(textBox);
 

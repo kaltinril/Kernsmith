@@ -1,5 +1,5 @@
-using Gum.DataTypes;
-using Gum.Forms.Controls;
+using global::Gum.DataTypes;
+using global::Gum.Forms.Controls;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using Microsoft.Xna.Framework.Graphics;
@@ -69,7 +69,7 @@ public class EffectsPanel : Panel
 
     }
 
-    private void BuildFontStyleSection(Gum.Wireframe.GraphicalUiElement stack)
+    private void BuildFontStyleSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
         UiFactory.AddCollapsibleHeader(stack, "FONT STYLE", content =>
         {
@@ -82,7 +82,7 @@ public class EffectsPanel : Panel
             styleRow.Width = 0;
             styleRow.HeightUnits = DimensionUnitType.RelativeToChildren;
             styleRow.Height = 0;
-            styleRow.ChildrenLayout = Gum.Managers.ChildrenLayout.LeftToRightStack;
+            styleRow.ChildrenLayout = global::Gum.Managers.ChildrenLayout.LeftToRightStack;
             styleRow.StackSpacing = Theme.SectionSpacing;
             content.Children.Add(styleRow);
 
@@ -92,7 +92,7 @@ public class EffectsPanel : Panel
             leftCol.Width = 1;
             leftCol.HeightUnits = DimensionUnitType.RelativeToChildren;
             leftCol.Height = 0;
-            leftCol.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
+            leftCol.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
             leftCol.StackSpacing = 8;
             styleRow.Children.Add(leftCol);
 
@@ -120,7 +120,7 @@ public class EffectsPanel : Panel
             rightCol.Width = 1;
             rightCol.HeightUnits = DimensionUnitType.RelativeToChildren;
             rightCol.Height = 0;
-            rightCol.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
+            rightCol.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
             rightCol.StackSpacing = 8;
             styleRow.Children.Add(rightCol);
 
@@ -321,7 +321,7 @@ public class EffectsPanel : Panel
         });
     }
 
-    private void BuildOutlineContent(Gum.Wireframe.GraphicalUiElement contentPanel)
+    private void BuildOutlineContent(global::Gum.Wireframe.GraphicalUiElement contentPanel)
     {
         var widthGrid = new Grid();
         widthGrid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -363,7 +363,7 @@ public class EffectsPanel : Panel
             _effects.OutlineColor, hex => _effects.OutlineColor = hex);
     }
 
-    private void BuildShadowContent(Gum.Wireframe.GraphicalUiElement contentPanel)
+    private void BuildShadowContent(global::Gum.Wireframe.GraphicalUiElement contentPanel)
     {
         UiFactory.AddSliderRow(contentPanel, "Offset X:", -10, 10, 2,
             val => _effects.ShadowOffsetX = val);
@@ -390,7 +390,7 @@ public class EffectsPanel : Panel
         contentPanel.Children.Add(hardShadowCheck.Visual);
     }
 
-    private void BuildGradientContent(Gum.Wireframe.GraphicalUiElement contentPanel)
+    private void BuildGradientContent(global::Gum.Wireframe.GraphicalUiElement contentPanel)
     {
         UiFactory.AddColorRow(_graphicsDevice, contentPanel, "Start:",
             _effects.GradientStartColor, hex => _effects.GradientStartColor = hex);
@@ -402,7 +402,7 @@ public class EffectsPanel : Panel
             val => _effects.GradientAngle = val);
     }
 
-    private void BuildChannelsContent(Gum.Wireframe.GraphicalUiElement contentPanel)
+    private void BuildChannelsContent(global::Gum.Wireframe.GraphicalUiElement contentPanel)
     {
         var packingCheck = new CheckBox();
         packingCheck.Text = "Channel Packing";
@@ -412,7 +412,7 @@ public class EffectsPanel : Panel
         contentPanel.Children.Add(packingCheck.Visual);
     }
 
-    private void BuildAdvancedSection(Gum.Wireframe.GraphicalUiElement stack)
+    private void BuildAdvancedSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
         UiFactory.AddCollapsibleHeader(stack, "ADVANCED", content =>
         {
@@ -534,7 +534,7 @@ public class EffectsPanel : Panel
         });
     }
 
-    private void BuildFallbackSection(Gum.Wireframe.GraphicalUiElement stack)
+    private void BuildFallbackSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
         UiFactory.AddCollapsibleHeader(stack, "FALLBACK CHARACTER", content =>
         {
@@ -561,7 +561,7 @@ public class EffectsPanel : Panel
         });
     }
 
-    private void BuildVariableFontSection(Gum.Wireframe.GraphicalUiElement stack)
+    private void BuildVariableFontSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
         var varFontHeader = new Label();
         varFontHeader.Text = "VARIABLE FONT";

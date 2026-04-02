@@ -1,7 +1,7 @@
-using Gum.DataTypes;
-using Gum.Forms;
-using Gum.Forms.Controls;
-using Gum.Wireframe;
+using global::Gum.DataTypes;
+using global::Gum.Forms;
+using global::Gum.Forms.Controls;
+using global::Gum.Wireframe;
 using KernSmith.Ui.Styling;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -80,14 +80,14 @@ public class ColorPickerDialog
     private void Build(Action<Color> onColorSelected)
     {
         _window = new Window();
-        _window.Anchor(Gum.Wireframe.Anchor.Center);
+        _window.Anchor(global::Gum.Wireframe.Anchor.Center);
         _window.Width = 370;
         _window.Height = 236;
         _window.ResizeMode = ResizeMode.NoResize;
         FrameworkElement.ModalRoot.Children.Add(_window.Visual);
 
         // Title
-        var windowVisual = _window.Visual as Gum.Forms.DefaultVisuals.V3.WindowVisual;
+        var windowVisual = _window.Visual as global::Gum.Forms.DefaultVisuals.V3.WindowVisual;
         if (windowVisual?.TitleBarInstance != null)
         {
             var titleLabel = new Label();
@@ -104,7 +104,7 @@ public class ColorPickerDialog
         outerStack.Height = 0;
         outerStack.X = 8;
         outerStack.Y = 32;
-        outerStack.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
+        outerStack.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
         outerStack.StackSpacing = 4;
         _window.AddChild(outerStack);
 
@@ -125,7 +125,7 @@ public class ColorPickerDialog
         row.Width = 0;
         row.HeightUnits = DimensionUnitType.RelativeToChildren;
         row.Height = 0;
-        row.ChildrenLayout = Gum.Managers.ChildrenLayout.LeftToRightStack;
+        row.ChildrenLayout = global::Gum.Managers.ChildrenLayout.LeftToRightStack;
         row.StackSpacing = 2;
         parent.Children.Add(row);
 
@@ -182,7 +182,7 @@ public class ColorPickerDialog
         mainRow.Width = 0;
         mainRow.HeightUnits = DimensionUnitType.Absolute;
         mainRow.Height = SvSize;
-        mainRow.ChildrenLayout = Gum.Managers.ChildrenLayout.LeftToRightStack;
+        mainRow.ChildrenLayout = global::Gum.Managers.ChildrenLayout.LeftToRightStack;
         mainRow.StackSpacing = 4;
         parent.Children.Add(mainRow);
 
@@ -203,7 +203,7 @@ public class ColorPickerDialog
         rightPanel.Width = 0;
         rightPanel.HeightUnits = DimensionUnitType.RelativeToParent;
         rightPanel.Height = 0;
-        rightPanel.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
+        rightPanel.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
         rightPanel.StackSpacing = 4;
         parent.Children.Add(rightPanel);
 
@@ -250,7 +250,7 @@ public class ColorPickerDialog
         buttonRow.Width = 0;
         buttonRow.HeightUnits = DimensionUnitType.RelativeToChildren;
         buttonRow.Height = 0;
-        buttonRow.ChildrenLayout = Gum.Managers.ChildrenLayout.LeftToRightStack;
+        buttonRow.ChildrenLayout = global::Gum.Managers.ChildrenLayout.LeftToRightStack;
         buttonRow.StackSpacing = 4;
         rightPanel.Children.Add(buttonRow);
 
@@ -361,7 +361,7 @@ public class ColorPickerDialog
         _svSprite.HeightUnits = DimensionUnitType.Absolute;
         _svSprite.Width = SvSize - 2;
         _svSprite.Height = SvSize - 2;
-        _svSprite.TextureAddress = Gum.Managers.TextureAddress.EntireTexture;
+        _svSprite.TextureAddress = global::Gum.Managers.TextureAddress.EntireTexture;
         svContainer.Children.Add(_svSprite);
 
         RegenerateSvTexture();
@@ -427,7 +427,7 @@ public class ColorPickerDialog
         _hueBarSprite.HeightUnits = DimensionUnitType.Absolute;
         _hueBarSprite.Width = HueBarWidth - 2;
         _hueBarSprite.Height = HueBarHeight - 2;
-        _hueBarSprite.TextureAddress = Gum.Managers.TextureAddress.EntireTexture;
+        _hueBarSprite.TextureAddress = global::Gum.Managers.TextureAddress.EntireTexture;
         hueContainer.Children.Add(_hueBarSprite);
 
         GenerateHueBarTexture();

@@ -1,13 +1,13 @@
-using Gum.DataTypes;
-using Gum.Forms;
-using Gum.Forms.Controls;
+using global::Gum.DataTypes;
+using global::Gum.Forms;
+using global::Gum.Forms.Controls;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using Microsoft.Xna.Framework.Graphics;
-using Gum.Wireframe;
+using global::Gum.Wireframe;
 using MonoGameGum;
 using MonoGameGum.GueDeriving;
-using Gum.Forms.DefaultVisuals.V3;
+using global::Gum.Forms.DefaultVisuals.V3;
 
 namespace KernSmith.Ui.Layout;
 
@@ -31,7 +31,7 @@ public class MainLayout : ContainerRuntime
         _viewModel = viewModel;
         _graphicsDevice = graphicsDevice;
 
-        this.Dock(Gum.Wireframe.Dock.Fill);
+        this.Dock(global::Gum.Wireframe.Dock.Fill);
 
         CreateMenu();
         CreateBody();
@@ -155,7 +155,7 @@ public class MainLayout : ContainerRuntime
         // Splitter between left and center
         var leftSplitter = new Splitter();
         leftSplitter.Width = 5;
-        leftSplitter.Dock(Gum.Wireframe.Dock.FillVertically);
+        leftSplitter.Dock(global::Gum.Wireframe.Dock.FillVertically);
         AddSplitterBackground(leftSplitter);
         body.AddChild(leftSplitter);
 
@@ -175,7 +175,7 @@ public class MainLayout : ContainerRuntime
         // Splitter between center and right
         var rightSplitter = new Splitter();
         rightSplitter.Width = 5;
-        rightSplitter.Dock(Gum.Wireframe.Dock.FillVertically);
+        rightSplitter.Dock(global::Gum.Wireframe.Dock.FillVertically);
         AddSplitterBackground(rightSplitter);
         body.AddChild(rightSplitter);
 
@@ -197,7 +197,7 @@ public class MainLayout : ContainerRuntime
     {
         var statusBar = new StatusBar(_viewModel.StatusBar);
         // Pin to bottom of screen with explicit positioning
-        statusBar.Visual.YUnits = Gum.Converters.GeneralUnitType.PixelsFromLarge;
+        statusBar.Visual.YUnits = global::Gum.Converters.GeneralUnitType.PixelsFromLarge;
         statusBar.Visual.YOrigin = RenderingLibrary.Graphics.VerticalAlignment.Bottom;
         statusBar.Visual.Y = 0;
         statusBar.Height = 24;
@@ -243,7 +243,7 @@ public class MainLayout : ContainerRuntime
     {
         var bg = new ColoredRectangleRuntime();
         bg.Color = Theme.PanelBorder;
-        bg.Dock(Gum.Wireframe.Dock.Fill);
+        bg.Dock(global::Gum.Wireframe.Dock.Fill);
         splitter.Visual.Children.Insert(0, bg);
     }
 
@@ -251,7 +251,7 @@ public class MainLayout : ContainerRuntime
     {
         var bg = new ColoredRectangleRuntime();
         bg.Color = color;
-        bg.Dock(Gum.Wireframe.Dock.Fill);
+        bg.Dock(global::Gum.Wireframe.Dock.Fill);
         // Insert as first child so it renders behind other content
         panel.Visual.Children.Insert(0, bg);
     }
@@ -259,7 +259,7 @@ public class MainLayout : ContainerRuntime
     private void ShowAboutDialog()
     {
         var window = new Window();
-        window.Anchor(Gum.Wireframe.Anchor.Center);
+        window.Anchor(global::Gum.Wireframe.Anchor.Center);
         window.Width = 340;
         window.Height = 260;
         FrameworkElement.ModalRoot.AddChild(window);
@@ -292,7 +292,7 @@ public class MainLayout : ContainerRuntime
 
         var okButton = new Button();
         okButton.Text = "OK";
-        okButton.Anchor(Gum.Wireframe.Anchor.Bottom);
+        okButton.Anchor(global::Gum.Wireframe.Anchor.Bottom);
         okButton.Y = -10;
         okButton.Width = 80;
         window.AddChild(okButton.Visual);

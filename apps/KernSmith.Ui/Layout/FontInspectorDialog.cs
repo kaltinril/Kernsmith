@@ -1,6 +1,6 @@
-using Gum.DataTypes;
-using Gum.Forms;
-using Gum.Forms.Controls;
+using global::Gum.DataTypes;
+using global::Gum.Forms;
+using global::Gum.Forms.Controls;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 
@@ -28,7 +28,7 @@ public class FontInspectorDialog
             return;
 
         var window = new Window();
-        window.Anchor(Gum.Wireframe.Anchor.Center);
+        window.Anchor(global::Gum.Wireframe.Anchor.Center);
         window.Width = 460;
         window.Height = 500;
         FrameworkElement.ModalRoot.Children.Add(window.Visual);
@@ -113,7 +113,7 @@ public class FontInspectorDialog
 
         var okButton = new Button();
         okButton.Text = "Close";
-        okButton.Anchor(Gum.Wireframe.Anchor.Bottom);
+        okButton.Anchor(global::Gum.Wireframe.Anchor.Bottom);
         okButton.Y = -10;
         okButton.Width = 80;
         window.AddChild(okButton.Visual);

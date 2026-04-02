@@ -1,6 +1,6 @@
-using Gum.DataTypes;
-using Gum.Managers;
-using Gum.Forms.Controls;
+using global::Gum.DataTypes;
+using global::Gum.Managers;
+using global::Gum.Forms.Controls;
 using KernSmith.Output.Model;
 using KernSmith.Ui.Models;
 using KernSmith.Ui.Styling;
@@ -319,7 +319,7 @@ public class PreviewPanel : Panel
         // Placeholder text centered
         _placeholder = new Label();
         _placeholder.Text = "Drop a font file here or use Browse to get started";
-        _placeholder.Anchor(Gum.Wireframe.Anchor.Center);
+        _placeholder.Anchor(global::Gum.Wireframe.Anchor.Center);
         _previewContent.AddChild(_placeholder);
 
         // Clipped container for atlas sprites — prevents them from overlapping the toolbar/nav
@@ -339,7 +339,7 @@ public class PreviewPanel : Panel
         _checkerSprite.Y = 0;
         _checkerSprite.WidthUnits = DimensionUnitType.Absolute;
         _checkerSprite.HeightUnits = DimensionUnitType.Absolute;
-        _checkerSprite.TextureAddress = Gum.Managers.TextureAddress.EntireTexture;
+        _checkerSprite.TextureAddress = global::Gum.Managers.TextureAddress.EntireTexture;
         _atlasContentArea.Children.Add(_checkerSprite);
 
         // Atlas sprite (hidden initially)
@@ -349,7 +349,7 @@ public class PreviewPanel : Panel
         _atlasSprite.Y = 0;
         _atlasSprite.WidthUnits = DimensionUnitType.Absolute;
         _atlasSprite.HeightUnits = DimensionUnitType.Absolute;
-        _atlasSprite.TextureAddress = Gum.Managers.TextureAddress.EntireTexture;
+        _atlasSprite.TextureAddress = global::Gum.Managers.TextureAddress.EntireTexture;
         _atlasContentArea.Children.Add(_atlasSprite);
 
         // Listen for result changes
@@ -412,7 +412,7 @@ public class PreviewPanel : Panel
     private static void StyleTab(Button? btn, bool isActive)
     {
         if (btn == null) return;
-        var buttonVisual = (Gum.Forms.DefaultVisuals.V3.ButtonVisual)btn.Visual;
+        var buttonVisual = (global::Gum.Forms.DefaultVisuals.V3.ButtonVisual)btn.Visual;
 
         var activeColor = Theme.Accent;
         var activeHover = Theme.AccentHover;
@@ -657,7 +657,7 @@ public class PreviewPanel : Panel
         // Placeholder when no result is available
         var samplePlaceholder = new Label();
         samplePlaceholder.Text = "Generate a bitmap font first to preview sample text";
-        samplePlaceholder.Anchor(Gum.Wireframe.Anchor.Center);
+        samplePlaceholder.Anchor(global::Gum.Wireframe.Anchor.Center);
         _sampleTextContent.AddChild(samplePlaceholder);
 
         // Container for per-glyph sprites

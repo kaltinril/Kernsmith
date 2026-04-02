@@ -1,5 +1,5 @@
-using Gum.DataTypes;
-using Gum.Forms.Controls;
+using global::Gum.DataTypes;
+using global::Gum.Forms.Controls;
 using KernSmith.Ui.Layout;
 using KernSmith.Ui.ViewModels;
 using Microsoft.Xna.Framework;
@@ -16,7 +16,7 @@ public static class UiFactory
     /// <summary>
     /// Creates a section header with background bar and accent-colored text.
     /// </summary>
-    public static void AddSectionHeader(Gum.Wireframe.GraphicalUiElement parent, string text)
+    public static void AddSectionHeader(global::Gum.Wireframe.GraphicalUiElement parent, string text)
     {
         var container = new ContainerRuntime();
         container.Width = 0;
@@ -51,9 +51,9 @@ public static class UiFactory
     /// <param name="startExpanded">Whether the section starts expanded (default: true).</param>
     /// <returns>The content container, in case the caller needs to toggle visibility externally.</returns>
     public static ContainerRuntime AddCollapsibleHeader(
-        Gum.Wireframe.GraphicalUiElement parent,
+        global::Gum.Wireframe.GraphicalUiElement parent,
         string title,
-        Action<Gum.Wireframe.GraphicalUiElement> buildContent,
+        Action<global::Gum.Wireframe.GraphicalUiElement> buildContent,
         bool startExpanded = true)
     {
         // Header bar (clickable) — breaks out of parent's PanelPadding to go edge-to-edge
@@ -130,7 +130,7 @@ public static class UiFactory
     /// <summary>
     /// Creates a 1px horizontal divider line.
     /// </summary>
-    public static void AddDivider(Gum.Wireframe.GraphicalUiElement parent)
+    public static void AddDivider(global::Gum.Wireframe.GraphicalUiElement parent)
     {
         var divider = new ColoredRectangleRuntime();
         divider.Width = 0;
@@ -145,9 +145,9 @@ public static class UiFactory
     /// and fires an enable/disable callback. Used for effect sections (outline, shadow, etc.).
     /// </summary>
     public static void AddCollapsibleSection(
-        Gum.Wireframe.GraphicalUiElement parent,
+        global::Gum.Wireframe.GraphicalUiElement parent,
         string title,
-        Action<Gum.Wireframe.GraphicalUiElement> buildContent,
+        Action<global::Gum.Wireframe.GraphicalUiElement> buildContent,
         Action<bool> enableChanged,
         bool startExpanded = false,
         string? tooltip = null)
@@ -225,7 +225,7 @@ public static class UiFactory
     /// Creates a grid row with label | slider | value display for integer ranges.
     /// </summary>
     public static Slider AddSliderRow(
-        Gum.Wireframe.GraphicalUiElement parent,
+        global::Gum.Wireframe.GraphicalUiElement parent,
         string label, int min, int max, int defaultVal,
         Action<int> onChanged)
     {
@@ -272,7 +272,7 @@ public static class UiFactory
     /// </summary>
     public static void AddColorRow(
         GraphicsDevice graphicsDevice,
-        Gum.Wireframe.GraphicalUiElement parent,
+        global::Gum.Wireframe.GraphicalUiElement parent,
         string label, string initialHex,
         Action<string> onColorChanged)
     {
@@ -360,12 +360,12 @@ public static class UiFactory
     {
         var scrollViewer = new ScrollViewer();
         scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
-        scrollViewer.Dock(Gum.Wireframe.Dock.Fill);
+        scrollViewer.Dock(global::Gum.Wireframe.Dock.Fill);
 
         // Make ScrollViewer borderless and remove clip container margins
-        if (scrollViewer.Visual is Gum.Forms.DefaultVisuals.V3.ScrollViewerVisual scrollVisual)
+        if (scrollViewer.Visual is global::Gum.Forms.DefaultVisuals.V3.ScrollViewerVisual scrollVisual)
         {
-            scrollVisual.Background.ApplyState(Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle.NineSlice.Solid);
+            scrollVisual.Background.ApplyState(global::Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle.NineSlice.Solid);
             scrollVisual.BackgroundColor = Theme.Panel;
             FontConfigPanel.StripScrollViewerMargins(scrollVisual);
         }
@@ -379,7 +379,7 @@ public static class UiFactory
         inner.Height = 0;
         inner.X = 0;
         inner.Y = Theme.ControlSpacing;
-        inner.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
+        inner.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
         inner.StackSpacing = Theme.SectionSpacing;
         scrollViewer.InnerPanel.Children.Add(inner);
 
