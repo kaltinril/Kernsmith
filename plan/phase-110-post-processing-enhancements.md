@@ -1,6 +1,6 @@
 # Phase 110 — Post-Processing Enhancements
 
-> **Status**: Exploratory
+> **Status**: Exploratory (partially addressed by Phase 32d)
 > **Created**: 2026-03-30
 > **Depends on**: Core rasterizer + atlas pipeline
 > **Goal**: Enable post-generation modifications to bitmap font atlas PNGs — applying shaders, recoloring, stretching, bolding, and other transformations to already-rendered glyph textures.
@@ -16,6 +16,34 @@ Many use cases would benefit from post-processing existing PNGs:
 - Iterating on visual style without re-rasterizing (which is the slow step)
 - Batch-processing existing atlas libraries with new effects
 - Applying game-specific visual treatments that weren't available at generation time
+
+## Relationship to Phase 32d
+
+Phase 32d (StbTrueType Synthetic Bold & Italic) implements the first two post-processors that fit this phase's vision:
+
+- **`BoldPostProcessor`** — morphological dilation for bitmap-level bold
+- **`ItalicPostProcessor`** — pixel-level shear for bitmap-level italic
+
+These use the existing `IGlyphPostProcessor` interface (`src/KernSmith/Rasterizer/IGlyphPostProcessor.cs`), which already has four implementations:
+- `GradientPostProcessor` — two-color linear gradient
+- `OutlinePostProcessor` — colored outline via EDT
+- `ShadowPostProcessor` — configurable drop shadow
+- `HeightStretchPostProcessor` — vertical scaling
+
+The `IGlyphPostProcessor` pattern is already the "plugin-like" architecture this phase envisions. Each processor takes a `RasterizedGlyph` and returns a modified one. They chain naturally in sequence. No new abstraction is needed — just more implementations.
+
+### What Phase 32d Covers (remove from Phase 110 scope)
+- Bold / Thicken (bitmap-level dilation)
+- Skew / Italicize (pixel-level shear)
+
+### What Remains for Phase 110
+- PNG Import Pipeline (load existing .fnt + .png for modification)
+- Colorization beyond what GradientPostProcessor does (hue shift, channel remap)
+- Shader-like effects (blur, sharpen, emboss, glow, pixelate, edge detect, noise)
+- Compositing operations (layer blending, masks)
+- Batch processing CLI
+- Thin / Erode (morphological erosion — inverse of BoldPostProcessor)
+- Outline extraction from filled glyphs
 
 ## Proposed Capabilities
 

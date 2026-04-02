@@ -12,6 +12,8 @@ internal sealed class StbTrueTypeCapabilities : IRasterizerCapabilities
     public bool SupportsSdf => true;
     public bool SupportsOutlineStroke => false;
     public bool SupportsSystemFonts => false;
+    public bool SupportsSyntheticBold => true;
+    public bool SupportsSyntheticItalic => true;
 
     public IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; } =
         [AntiAliasMode.None, AntiAliasMode.Grayscale];

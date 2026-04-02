@@ -327,26 +327,44 @@ public class StbTrueTypeRasterizerTests : IDisposable
         Should.Throw<InvalidOperationException>(() => _rasterizer.LoadFont(LoadTestFont()));
     }
 
-    // -- 21. Bold rejection -----------------------------------------------
+    // -- 21. Bold support ---------------------------------------------------
 
     [Fact]
-    public void RasterizeGlyph_Bold_ThrowsNotSupportedException()
+    public void RasterizeGlyph_Bold_ReturnsWiderGlyph()
     {
         _rasterizer = CreateAndLoadRasterizer();
-        var options = new RasterOptions { Size = 32, Bold = true };
+        var normal = new RasterOptions { Size = 32 };
+        var bold = new RasterOptions { Size = 32, Bold = true };
 
-        Should.Throw<NotSupportedException>(() => _rasterizer.RasterizeGlyph(65, options));
+        var normalGlyph = _rasterizer.RasterizeGlyph(65, normal);
+        var boldGlyph = _rasterizer.RasterizeGlyph(65, bold);
+
+        normalGlyph.ShouldNotBeNull();
+        boldGlyph.ShouldNotBeNull();
+        boldGlyph.BitmapData.Length.ShouldBeGreaterThan(0);
+        // Bold glyph should have more "ink" (higher sum of pixel values) than normal.
+        var normalInk = normalGlyph.BitmapData.Sum(b => (long)b);
+        var boldInk = boldGlyph.BitmapData.Sum(b => (long)b);
+        boldInk.ShouldBeGreaterThan(normalInk);
     }
 
-    // -- 22. Italic rejection ---------------------------------------------
+    // -- 22. Italic support -----------------------------------------------
 
     [Fact]
-    public void RasterizeGlyph_Italic_ThrowsNotSupportedException()
+    public void RasterizeGlyph_Italic_ReturnsShearedGlyph()
     {
         _rasterizer = CreateAndLoadRasterizer();
-        var options = new RasterOptions { Size = 32, Italic = true };
+        var normal = new RasterOptions { Size = 32 };
+        var italic = new RasterOptions { Size = 32, Italic = true };
 
-        Should.Throw<NotSupportedException>(() => _rasterizer.RasterizeGlyph(65, options));
+        var normalGlyph = _rasterizer.RasterizeGlyph(65, normal);
+        var italicGlyph = _rasterizer.RasterizeGlyph(65, italic);
+
+        normalGlyph.ShouldNotBeNull();
+        italicGlyph.ShouldNotBeNull();
+        italicGlyph.BitmapData.Length.ShouldBeGreaterThan(0);
+        // Italic shear should produce a wider glyph due to the horizontal shift.
+        italicGlyph.Width.ShouldBeGreaterThanOrEqualTo(normalGlyph.Width);
     }
 
     // -- 23. ColorFont rejection ------------------------------------------
