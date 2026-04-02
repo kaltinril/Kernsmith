@@ -55,7 +55,34 @@ dotnet run --project tests/bmfont-compare/GenerateDirectWrite/ --framework net10
 
 ### Python Diff Scripts
 
+#### diff_comparisons.py — Pixel-diff regression detection
+
+Compares baseline vs current comparison PNGs and produces magenta-highlighted diff images. Identical pixels are dimmed, different pixels are bright magenta (#FF00FF) for easy visual inspection.
+
 ```bash
+# Compare main_comparison*.png vs comparison*.png in the same directory
+python tests/bmfont-compare/diff_comparisons.py --dir tests/bmfont-compare/output
+
+# Compare two separate directories
+python tests/bmfont-compare/diff_comparisons.py --baseline dir_a --current dir_b --output diffs/
+
+# With per-channel tolerance (e.g., for antialiasing differences)
+python tests/bmfont-compare/diff_comparisons.py --dir tests/bmfont-compare/output --tolerance 1
+```
+
+Exit codes: `0` = all identical, `1` = differences found, `2` = error.
+
+**Typical workflow** for verifying a performance optimization doesn't change output:
+1. On `main`: generate comparisons, copy as `main_comparison*.png`
+2. On feature branch: generate comparisons
+3. Run `diff_comparisons.py --dir output/` to verify pixel-identical output
+
+#### diff_images.py / diff_fnt.py / diff_all_fonts.py — Atlas and metrics diffs
+
+```bash
+# Compare PNG atlas textures between two directories (4x amplified diff)
+python tests/bmfont-compare/diff_images.py [dir_a] [dir_b] --output-dir diffs/
+
 # Compare metrics across all 15 fonts between two backend output dirs
 python tests/bmfont-compare/diff_all_fonts.py
 
@@ -74,4 +101,5 @@ python tests/bmfont-compare/diff_fnt.py <file_a.fnt> <file_b.fnt>
 
 - Windows (GDI and DirectWrite are Windows-only)
 - .NET 10.0
+- Python 3 + Pillow (`pip install Pillow`) for diff scripts
 - BMFont64.exe at `c:\tools\bmfont64.exe` (optional, for reference output)
