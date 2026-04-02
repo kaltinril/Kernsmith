@@ -485,7 +485,7 @@ public class EffectsPanel : Panel
         // Wire up validation, SDF auto-disable, color/gradient mutual exclusion, and backend capability gating
         _effects.PropertyChanged += (_, e) =>
         {
-            // --- Issue #9: SDF auto-disable when incompatible options are active ---
+            // --- SDF compatibility warning (informational only, does NOT auto-disable) ---
             if (e.PropertyName is nameof(EffectsViewModel.SdfEnabled)
                 or nameof(EffectsViewModel.SuperSampleLevel)
                 or nameof(EffectsViewModel.OutlineEnabled)
@@ -502,15 +502,7 @@ public class EffectsPanel : Panel
 
                     if (incompatible.Count > 0)
                     {
-                        // Auto-disable SDF
-                        _effects.SdfEnabled = false;
-                        if (!updatingSdfCheck)
-                        {
-                            updatingSdfCheck = true;
-                            sdfCheck.IsChecked = false;
-                            updatingSdfCheck = false;
-                        }
-                        sdfWarning.Text = $"SDF disabled \u2014 not compatible with {string.Join(", ", incompatible)}";
+                        sdfWarning.Text = $"SDF + {string.Join(", ", incompatible)} \u2014 effects applied to SDF bitmap";
                         sdfWarning.Visible = true;
                     }
                     else
