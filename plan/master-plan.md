@@ -85,9 +85,10 @@ Output Layer
 | 32c | [StbTrueType Validation Fixes](done/phase-32c-stbtruetype-fixes.md) | Bug fixes, missing guards, and test gaps from Phase 30-32 validation | Complete |
 | 32d | [StbTrueType Synthetic Bold & Italic](done/phase-32d-stbtruetype-synthetic-bold-italic.md) | Outline-level synthetic bold/italic using stb_truetype shape API | Complete |
 | 33 | [WASM Integration and Validation](done/phase-33-wasm-validation.md) | Validate KernSmith + StbTrueType works in Blazor WASM | Complete |
-| 34 | [Custom Pure C# Rasterizer](phase-34-custom-rasterizer.md) | Research/prototype a fully custom pure C# TTF rasterizer from scratch | Future |
+| 34 | [Custom Pure C# Rasterizer](done/phase-34-custom-rasterizer.md) | Research/prototype a fully custom pure C# TTF rasterizer from scratch | Future |
 | 35 | [FontStashSharp Rasterizer](done/phase-35-fontstashsharp-rasterizer.md) | Rejected — FontStashSharp is just a stbTrueTypeSharp wrapper; useful techniques distilled into Phases 160-180 | Done |
 | 36 | [Bitmap Bold & Italic Post-Processing](done/phase-36-bitmap-bold-italic-postprocessing.md) | Superseded — absorbed into Phase 110 | Done |
+| 37 | [QA, Security & Performance Fixes](done/phase-37-qa-security-perf-fixes.md) | Correctness, security hardening, and perf fixes from full codebase review | Complete |
 | 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
 | 81 | [Hiero Format Support](phase-81-hiero-format-support.md) | Hiero `.hiero` config format specification and design decisions | Planning |
 | 82 | [Hiero Core Library](phase-82-hiero-core-library.md) | Add `.hiero` config read/write to the NuGet library | Planning |

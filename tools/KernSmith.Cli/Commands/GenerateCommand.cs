@@ -162,6 +162,9 @@ internal sealed class GenerateCommand
         else
             baseName = options.SystemFontName!.Replace(" ", "");
 
+        // Sanitize to prevent path traversal via malicious font names
+        baseName = string.Join("_", baseName.Split(Path.GetInvalidFileNameChars()));
+
         var outputPath = options.OutputPath;
         if (outputPath == null)
         {

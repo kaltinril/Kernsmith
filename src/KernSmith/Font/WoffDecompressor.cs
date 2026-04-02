@@ -85,6 +85,9 @@ internal static class WoffDecompressor
                 CompLength: (int)BinaryPrimitives.ReadUInt32BigEndian(woffData.Slice(entryOffset + 8)),
                 OrigLength: (int)BinaryPrimitives.ReadUInt32BigEndian(woffData.Slice(entryOffset + 12)),
                 OrigChecksum: BinaryPrimitives.ReadUInt32BigEndian(woffData.Slice(entryOffset + 16)));
+
+            if (entries[i].Offset < 0 || entries[i].CompLength < 0 || entries[i].OrigLength < 0)
+                throw new FontParsingException($"WOFF table at index {i} has invalid size fields.");
         }
 
         // Build the sfnt output
@@ -122,9 +125,14 @@ internal static class WoffDecompressor
             dataOffset = (dataOffset + 3) & ~3;
 
             // Validate source data bounds
-            if (entry.Offset + entry.CompLength > woffData.Length)
+            if ((long)entry.Offset + entry.CompLength > woffData.Length)
                 throw new FontParsingException(
                     $"WOFF table at index {i} (tag 0x{entry.Tag:X8}) references data beyond file bounds.");
+
+            // Validate destination bounds
+            if ((long)dataOffset + entry.OrigLength > result.Length)
+                throw new FontParsingException(
+                    $"WOFF table at index {i} overflows totalSfntSize ({result.Length} bytes).");
 
             // Decompress or copy table data
             var sourceData = woffData.Slice(entry.Offset, entry.CompLength);

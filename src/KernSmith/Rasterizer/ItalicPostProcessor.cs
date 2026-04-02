@@ -77,7 +77,7 @@ public sealed class ItalicPostProcessor : IGlyphPostProcessor
         var newMetrics = new GlyphMetrics(
             BearingX: metrics.BearingX,
             BearingY: metrics.BearingY,
-            Advance: metrics.Advance,
+            Advance: metrics.Advance + extraWidth,
             Width: dstW,
             Height: dstH);
 

@@ -201,32 +201,43 @@ public sealed class ShadowPostProcessor : IGlyphPostProcessor
         var kernelSize = radius * 2 + 1;
         var invKernel = 1f / kernelSize;
 
-        // Horizontal pass.
+        // Horizontal pass — sliding window across each row.
         for (var y = 0; y < height; y++)
         {
-            for (var x = 0; x < width; x++)
+            var rowOffset = y * width;
+
+            // Build initial sum for x = 0: sum of src[clamp(k, 0, width-1)] for k in -radius..radius.
+            // Negative indices clamp to 0, so src[0] is counted (radius) extra times.
+            float sum = src[rowOffset] * radius;
+            for (var k = 0; k <= radius; k++)
+                sum += src[rowOffset + Math.Min(k, width - 1)];
+
+            temp[rowOffset] = sum * invKernel;
+
+            // Slide across remaining pixels.
+            for (var x = 1; x < width; x++)
             {
-                float sum = 0;
-                for (var k = -radius; k <= radius; k++)
-                {
-                    var sx = Math.Clamp(x + k, 0, width - 1);
-                    sum += src[y * width + sx];
-                }
-                temp[y * width + x] = sum * invKernel;
+                sum += src[rowOffset + Math.Min(x + radius, width - 1)];
+                sum -= src[rowOffset + Math.Clamp(x - radius - 1, 0, width - 1)];
+                temp[rowOffset + x] = sum * invKernel;
             }
         }
 
-        // Vertical pass.
-        for (var y = 0; y < height; y++)
+        // Vertical pass — sliding window down each column.
+        for (var x = 0; x < width; x++)
         {
-            for (var x = 0; x < width; x++)
+            // Build initial sum for y = 0: sum of temp[clamp(k, 0, height-1) * width + x] for k in -radius..radius.
+            float sum = temp[x] * radius;
+            for (var k = 0; k <= radius; k++)
+                sum += temp[Math.Min(k, height - 1) * width + x];
+
+            dst[x] = sum * invKernel;
+
+            // Slide down remaining pixels.
+            for (var y = 1; y < height; y++)
             {
-                float sum = 0;
-                for (var k = -radius; k <= radius; k++)
-                {
-                    var sy = Math.Clamp(y + k, 0, height - 1);
-                    sum += temp[sy * width + x];
-                }
+                sum += temp[Math.Min(y + radius, height - 1) * width + x];
+                sum -= temp[Math.Clamp(y - radius - 1, 0, height - 1) * width + x];
                 dst[y * width + x] = sum * invKernel;
             }
         }

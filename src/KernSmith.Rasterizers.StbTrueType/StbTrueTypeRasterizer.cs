@@ -275,7 +275,7 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
 
-        int aa = Math.Max(1, options.SuperSample);
+        int aa = options.Sdf ? 1 : Math.Max(1, options.SuperSample);
         float effectiveSize = options.Size * options.Dpi / 72.0f * aa;
         float scale = Stb.stbtt_ScaleForMappingEmToPixels(_fontInfo!, effectiveSize);
 

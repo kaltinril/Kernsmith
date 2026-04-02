@@ -40,6 +40,21 @@ public sealed class BoldPostProcessor : IGlyphPostProcessor
         // Precompute squared strength for circular neighborhood test.
         var strengthSq = s * s;
 
+        // Precompute kernel entries — shape and falloff are constant for all pixels.
+        var kernelEntries = new List<(int kx, int ky, float falloff)>();
+        for (var ky = -s; ky <= s; ky++)
+        {
+            for (var kx = -s; kx <= s; kx++)
+            {
+                var distSq = kx * kx + ky * ky;
+                if (distSq > strengthSq)
+                    continue;
+                var dist = MathF.Sqrt(distSq);
+                var falloff = 1f - dist / (s + 1f);
+                kernelEntries.Add((kx, ky, falloff));
+            }
+        }
+
         for (var dy = 0; dy < dstH; dy++)
         {
             for (var dx = 0; dx < dstW; dx++)
@@ -53,35 +68,26 @@ public sealed class BoldPostProcessor : IGlyphPostProcessor
                     // Grayscale: find maximum alpha in circular neighborhood with distance falloff.
                     float bestAlpha = 0;
 
-                    for (var ky = -s; ky <= s; ky++)
+                    foreach (var (kx, ky, falloff) in kernelEntries)
                     {
-                        for (var kx = -s; kx <= s; kx++)
-                        {
-                            var distSq = kx * kx + ky * ky;
-                            if (distSq > strengthSq)
-                                continue;
+                        var sx = cx + kx;
+                        var sy = cy + ky;
 
-                            var sx = cx + kx;
-                            var sy = cy + ky;
+                        if (sx < 0 || sx >= srcW || sy < 0 || sy >= srcH)
+                            continue;
 
-                            if (sx < 0 || sx >= srcW || sy < 0 || sy >= srcH)
-                                continue;
+                        var srcIdx = sy * glyph.Pitch + sx;
+                        if (srcIdx >= glyph.BitmapData.Length)
+                            continue;
 
-                            var srcIdx = sy * glyph.Pitch + sx;
-                            if (srcIdx >= glyph.BitmapData.Length)
-                                continue;
+                        var srcAlpha = glyph.BitmapData[srcIdx];
+                        if (srcAlpha == 0)
+                            continue;
 
-                            var srcAlpha = glyph.BitmapData[srcIdx];
-                            if (srcAlpha == 0)
-                                continue;
+                        var effective = srcAlpha * falloff;
 
-                            var dist = MathF.Sqrt(distSq);
-                            var falloff = 1f - dist / (s + 1f);
-                            var effective = srcAlpha * falloff;
-
-                            if (effective > bestAlpha)
-                                bestAlpha = effective;
-                        }
+                        if (effective > bestAlpha)
+                            bestAlpha = effective;
                     }
 
                     dst[dy * dstPitch + dx] = (byte)Math.Min(255, (int)(bestAlpha + 0.5f));
@@ -95,43 +101,35 @@ public sealed class BoldPostProcessor : IGlyphPostProcessor
                     var bestB = (byte)0;
                     var bestDistSq = int.MaxValue;
 
-                    for (var ky = -s; ky <= s; ky++)
+                    foreach (var (kx, ky, falloff) in kernelEntries)
                     {
-                        for (var kx = -s; kx <= s; kx++)
+                        var sx = cx + kx;
+                        var sy = cy + ky;
+
+                        if (sx < 0 || sx >= srcW || sy < 0 || sy >= srcH)
+                            continue;
+
+                        var srcIdx = sy * glyph.Pitch + sx * 4;
+                        if (srcIdx + 3 >= glyph.BitmapData.Length)
+                            continue;
+
+                        var srcAlpha = glyph.BitmapData[srcIdx + 3];
+                        if (srcAlpha == 0)
+                            continue;
+
+                        var effective = srcAlpha * falloff;
+
+                        if (effective > bestAlpha)
+                            bestAlpha = effective;
+
+                        // Track nearest non-zero pixel for RGB propagation.
+                        var distSq = kx * kx + ky * ky;
+                        if (distSq < bestDistSq)
                         {
-                            var distSq = kx * kx + ky * ky;
-                            if (distSq > strengthSq)
-                                continue;
-
-                            var sx = cx + kx;
-                            var sy = cy + ky;
-
-                            if (sx < 0 || sx >= srcW || sy < 0 || sy >= srcH)
-                                continue;
-
-                            var srcIdx = sy * glyph.Pitch + sx * 4;
-                            if (srcIdx + 3 >= glyph.BitmapData.Length)
-                                continue;
-
-                            var srcAlpha = glyph.BitmapData[srcIdx + 3];
-                            if (srcAlpha == 0)
-                                continue;
-
-                            var dist = MathF.Sqrt(distSq);
-                            var falloff = 1f - dist / (s + 1f);
-                            var effective = srcAlpha * falloff;
-
-                            if (effective > bestAlpha)
-                                bestAlpha = effective;
-
-                            // Track nearest non-zero pixel for RGB propagation.
-                            if (distSq < bestDistSq)
-                            {
-                                bestDistSq = distSq;
-                                bestR = glyph.BitmapData[srcIdx];
-                                bestG = glyph.BitmapData[srcIdx + 1];
-                                bestB = glyph.BitmapData[srcIdx + 2];
-                            }
+                            bestDistSq = distSq;
+                            bestR = glyph.BitmapData[srcIdx];
+                            bestG = glyph.BitmapData[srcIdx + 1];
+                            bestB = glyph.BitmapData[srcIdx + 2];
                         }
                     }
 

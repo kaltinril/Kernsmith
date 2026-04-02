@@ -217,41 +217,63 @@ public static class BmFont
 
             var glyphs = rasterizer.RasterizeAll(codepoints, effectiveRasterOptions).ToList();
 
+            // HeightStretch first (before custom glyphs, matching original order)
             if (options.HeightPercent != 100)
             {
                 var stretch = new HeightStretchPostProcessor(options.HeightPercent);
-                glyphs = glyphs.Select(g => stretch.Process(g)).ToList();
+                for (var i = 0; i < glyphs.Count; i++)
+                    glyphs[i] = stretch.Process(glyphs[i]);
             }
 
+            // Custom glyphs (after stretch, before effects - matching original order)
             if (options.CustomGlyphs is { Count: > 0 })
             {
                 glyphs = ApplyCustomGlyphs(glyphs, options.CustomGlyphs, codepoints);
             }
 
+            // Pre-compute transform parameters once
             var effects = BuildEffects(options);
-            if (effects.Count > 0)
-                glyphs = glyphs.Select(g => GlyphCompositor.Composite(g, effects)).ToList();
-
+            var hasEffects = effects.Count > 0;
+            List<IGlyphPostProcessor>? activePostProcessors = null;
             if (options.PostProcessors != null)
             {
                 foreach (var processor in options.PostProcessors)
                 {
                     if (processor is OutlinePostProcessor or GradientPostProcessor or ShadowPostProcessor)
                         continue;
+                    if (processor is BoldPostProcessor && options.Bold)
+                        continue;
+                    if (processor is ItalicPostProcessor && options.Italic)
+                        continue;
 
-                    glyphs = glyphs.Select(g => processor.Process(g)).ToList();
+                    activePostProcessors ??= [];
+                    activePostProcessors.Add(processor);
                 }
             }
+            var needsDownscale = ssLevel > 1;
 
-            if (ssLevel > 1)
+            // Apply remaining per-glyph transforms in a single pass
+            if (hasEffects || activePostProcessors != null || needsDownscale)
             {
-                glyphs = glyphs.Select(g => SuperSampleDownscale(g, ssLevel)).ToList();
+                for (var i = 0; i < glyphs.Count; i++)
+                {
+                    var g = glyphs[i];
+                    if (hasEffects) g = GlyphCompositor.Composite(g, effects);
+                    if (activePostProcessors != null)
+                    {
+                        foreach (var processor in activePostProcessors)
+                            g = processor.Process(g);
+                    }
+                    if (needsDownscale) g = SuperSampleDownscale(g, ssLevel);
+                    glyphs[i] = g;
+                }
             }
 
             if (options.EqualizeCellHeights && glyphs.Count > 0)
             {
                 var maxHeight = glyphs.Max(g => g.Height);
-                glyphs = glyphs.Select(g => EqualizeCellHeight(g, maxHeight)).ToList();
+                for (var i = 0; i < glyphs.Count; i++)
+                    glyphs[i] = EqualizeCellHeight(glyphs[i], maxHeight);
             }
 
             var rasterizedCodepoints = new HashSet<int>(glyphs.Select(g => g.Codepoint));

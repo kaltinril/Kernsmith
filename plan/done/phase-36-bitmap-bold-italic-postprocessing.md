@@ -1,6 +1,6 @@
 # Phase 36 — Bitmap-Level Bold & Italic Post-Processing
 
-> **Status**: Superseded — absorbed into [Phase 110](../plan/phase-110-post-processing-enhancements.md)
+> **Status**: Superseded — absorbed into [Phase 110](../phase-110-post-processing-enhancements.md)
 > **Created**: 2026-03-31
 > **Superseded**: 2026-04-01
 

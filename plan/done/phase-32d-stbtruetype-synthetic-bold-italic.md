@@ -4,7 +4,7 @@
 > **Created**: 2026-03-31
 > **Updated**: 2026-04-01
 > **Depends on**: Phase 32 (StbTrueType rasterizer), Phase 32c (validation fixes)
-> **Related**: Phase 36 (bitmap-level bold/italic post-processing), Phase 110 (post-processing enhancements)
+> **Related**: Phase 36 (superseded — absorbed into Phase 110), Phase 110 (post-processing enhancements)
 
 ## Goal
 
