@@ -17,9 +17,9 @@ Many use cases would benefit from post-processing existing PNGs:
 - Batch-processing existing atlas libraries with new effects
 - Applying game-specific visual treatments that weren't available at generation time
 
-## Relationship to Phase 32d
+## Relationship to Phase 32d & Phase 36
 
-Phase 32d (StbTrueType Synthetic Bold & Italic) implements the first two post-processors that fit this phase's vision:
+Phase 32d (StbTrueType Synthetic Bold & Italic) implements the first two post-processors that fit this phase's vision. Phase 36 (Bitmap-Level Bold & Italic Post-Processing) has been **superseded and absorbed** into this phase — its algorithmic detail and API design insights are captured in Section 3 below.
 
 - **`BoldPostProcessor`** — morphological dilation for bitmap-level bold
 - **`ItalicPostProcessor`** — pixel-level shear for bitmap-level italic

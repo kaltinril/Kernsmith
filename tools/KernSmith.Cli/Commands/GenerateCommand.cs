@@ -528,9 +528,10 @@ internal sealed class GenerateCommand
                     options.Backend = backendStr.ToLowerInvariant() switch
                     {
                         "freetype" => RasterizerBackend.FreeType,
+                        "stbtruetype" => RasterizerBackend.StbTrueType,
                         "gdi" => RasterizerBackend.Gdi,
                         "directwrite" => RasterizerBackend.DirectWrite,
-                        _ => throw new ArgumentException($"Unknown rasterizer backend: '{backendStr}'. Valid: freetype, gdi, directwrite")
+                        _ => throw new ArgumentException($"Unknown rasterizer backend: '{backendStr}'. Valid: freetype, stbtruetype, gdi, directwrite")
                     };
                     break;
                 case "--fallback-char":
@@ -836,7 +837,7 @@ internal sealed class GenerateCommand
               --sdf                       Enable Signed Distance Field rendering
               --mono                      Disable anti-aliasing (alias for --aa none)
               --super-sample <n>          Super sampling level 1-4 (default: 1)
-              --rasterizer <backend>      Rasterizer backend: freetype (default), gdi, directwrite
+              --rasterizer <backend>      Rasterizer backend: freetype (default), stbtruetype, gdi, directwrite
               --hinting / --no-hinting    Enable/disable FreeType hinting (default: on)
               --height-percent <n>        Vertical height scaling percentage (default: 100)
               --match-char-height         Match rendered height to requested pixel height

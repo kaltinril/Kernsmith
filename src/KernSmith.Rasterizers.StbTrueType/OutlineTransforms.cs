@@ -272,7 +272,7 @@ internal static class OutlineTransforms
 
     /// <summary>
     /// Computes the signed area of a contour using the shoelace formula.
-    /// Positive = clockwise (outer contour in TrueType), negative = counter-clockwise (hole).
+    /// Negative = clockwise (outer contour in TrueType y-up), positive = counter-clockwise (hole).
     /// </summary>
     private static unsafe float ComputeSignedArea(Stb.stbtt_vertex* vertices, int start, int end)
     {

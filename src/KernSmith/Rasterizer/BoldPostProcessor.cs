@@ -148,7 +148,7 @@ public sealed class BoldPostProcessor : IGlyphPostProcessor
         var newMetrics = new GlyphMetrics(
             BearingX: metrics.BearingX - s,
             BearingY: metrics.BearingY + s,
-            Advance: metrics.Advance,
+            Advance: metrics.Advance + Strength,
             Width: metrics.Width + 2 * s,
             Height: metrics.Height + 2 * s);
 

@@ -4,6 +4,8 @@ using KernSmith.Cli.Utilities;
 // Force backend assembly loading so [ModuleInitializer] registers them with RasterizerFactory
 System.Runtime.CompilerServices.RuntimeHelpers.RunModuleConstructor(
     typeof(KernSmith.Rasterizers.FreeType.FreeTypeRasterizer).Module.ModuleHandle);
+System.Runtime.CompilerServices.RuntimeHelpers.RunModuleConstructor(
+    typeof(KernSmith.Rasterizers.StbTrueType.StbTrueTypeRasterizer).Module.ModuleHandle);
 #if WINDOWS
 System.Runtime.CompilerServices.RuntimeHelpers.RunModuleConstructor(
     typeof(KernSmith.Rasterizers.Gdi.GdiRasterizer).Module.ModuleHandle);
@@ -98,7 +100,7 @@ static int ShowHelp()
           -b, --bold                   Enable synthetic bold
           -i, --italic                 Enable synthetic italic
           --super-sample <n>           Super sampling 1-4 (default: 1)
-          --rasterizer <backend>       Rasterizer backend: freetype (default), gdi, directwrite
+          --rasterizer <backend>       Rasterizer backend: freetype (default), stbtruetype, gdi, directwrite
           --hinting / --no-hinting     Enable/disable hinting (default: on)
           --height-percent <n>         Height scaling percentage (default: 100)
           --match-char-height          Match rendered to pixel height
