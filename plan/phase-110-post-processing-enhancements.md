@@ -1,6 +1,6 @@
 # Phase 110 — Post-Processing Enhancements
 
-> **Status**: Exploratory
+> **Status**: Exploratory (partially addressed by Phase 32d)
 > **Created**: 2026-03-30
 > **Depends on**: Core rasterizer + atlas pipeline
 > **Goal**: Enable post-generation modifications to bitmap font atlas PNGs — applying shaders, recoloring, stretching, bolding, and other transformations to already-rendered glyph textures.
@@ -16,6 +16,34 @@ Many use cases would benefit from post-processing existing PNGs:
 - Iterating on visual style without re-rasterizing (which is the slow step)
 - Batch-processing existing atlas libraries with new effects
 - Applying game-specific visual treatments that weren't available at generation time
+
+## Relationship to Phase 32d & Phase 36
+
+Phase 32d (StbTrueType Synthetic Bold & Italic) implements the first two post-processors that fit this phase's vision. Phase 36 (Bitmap-Level Bold & Italic Post-Processing) has been **superseded and absorbed** into this phase — its algorithmic detail and API design insights are captured in Section 3 below.
+
+- **`BoldPostProcessor`** — morphological dilation for bitmap-level bold
+- **`ItalicPostProcessor`** — pixel-level shear for bitmap-level italic
+
+These use the existing `IGlyphPostProcessor` interface (`src/KernSmith/Rasterizer/IGlyphPostProcessor.cs`), which already has four implementations:
+- `GradientPostProcessor` — two-color linear gradient
+- `OutlinePostProcessor` — colored outline via EDT
+- `ShadowPostProcessor` — configurable drop shadow
+- `HeightStretchPostProcessor` — vertical scaling
+
+The `IGlyphPostProcessor` pattern is already the "plugin-like" architecture this phase envisions. Each processor takes a `RasterizedGlyph` and returns a modified one. They chain naturally in sequence. No new abstraction is needed — just more implementations.
+
+### What Phase 32d Covers (remove from Phase 110 scope)
+- Bold / Thicken (bitmap-level dilation)
+- Skew / Italicize (pixel-level shear)
+
+### What Remains for Phase 110
+- PNG Import Pipeline (load existing .fnt + .png for modification)
+- Colorization beyond what GradientPostProcessor does (hue shift, channel remap)
+- Shader-like effects (blur, sharpen, emboss, glow, pixelate, edge detect, noise)
+- Compositing operations (layer blending, masks)
+- Batch processing CLI
+- Thin / Erode (morphological erosion — inverse of BoldPostProcessor)
+- Outline extraction from filled glyphs
 
 ## Proposed Capabilities
 
@@ -42,12 +70,20 @@ Apply color transformations to existing glyph textures.
 
 Modify glyph shapes in the pixel domain.
 
-- **Bold / Thicken**: Dilate glyph pixels (morphological dilation) to simulate bolder weight
+- **Bold / Thicken**: Dilate glyph pixels (morphological dilation) to simulate bolder weight. Algorithm: separable max filter — horizontal pass then vertical pass, each using a sliding window of width `2*radius + 1`. Use an O(n) deque-based sliding window max for efficiency (cost is independent of radius). Grayscale dilation produces smooth expanded edges, which is superior to binary dilation. Metrics adjustment: `Width += 2 * radius`, `Height += 2 * radius`, `BearingX -= radius`, `Advance += 2 * radius`, pitch updated to match new width.
 - **Thin / Erode**: Erode glyph pixels for a lighter appearance
 - **Stretch / Scale**: Non-uniform scaling (stretch horizontally for wide, vertically for tall)
-- **Skew / Italicize**: Apply shear transform to simulate italic
+- **Skew / Italicize**: Apply shear transform to simulate italic. Shear formula: for each row y from baseline, `shift_x = (y - baseline) * shear_factor`. Default shear factor: `tan(12°) ≈ 0.2126` for FreeType parity (configurable). For fractional shift values, use sub-pixel bilinear interpolation between adjacent pixels for smooth results. Metrics adjustment: `Width += abs(total_shear)`, `BearingX` adjusted for shear direction, height unchanged.
 - **Outline extraction**: Generate outline-only version from filled glyphs
 - These operations would need to update the .fnt metrics (xadvance, width, height, offsets) to match the modified glyph dimensions
+
+### Stacking & Composability
+
+Post-processors can be stacked and composed freely:
+
+- **Stacking**: Multiple instances of the same post-processor chain naturally (e.g., `.Bold().Bold().Bold()` applies dilation three times for progressively bolder glyphs). Each processor operates on the output of the previous one.
+- **Composing with outline-level effects**: Bitmap-level bold/italic (this phase) and outline-level bold/italic (Phase 32d) are independent. Both can be applied together — outline bold modifies the glyph shape before rasterization, then bitmap bold dilates the rendered result. A user could also skip outline bold entirely and use only bitmap bold (lower quality but backend-agnostic).
+- **Backend-agnostic**: Because bitmap post-processors operate after rasterization, they work with any rasterizer backend (FreeType, GDI, DirectWrite, StbTrueType, or future custom rasterizers).
 
 ### 4. Shader-Like Effects
 
@@ -120,6 +156,7 @@ If post-processing changes glyph dimensions (bold, stretch), the atlas may need 
 4. **Lossy round-trip**: Loading a PNG, processing it, and saving again introduces compression artifacts. Should we support lossless intermediate formats (raw RGBA buffers, TGA)?
 5. **Per-glyph vs. whole-atlas**: Some effects look different when applied per-glyph vs. to the whole atlas (e.g., blur at glyph edges vs. blur that bleeds between adjacent glyphs). Need clear semantics.
 6. **Integration with existing effects**: Could the existing `IGlyphEffect` implementations (outline, shadow, gradient) be reused as post-processors with an adapter?
+7. **SDF + bitmap bold**: Applying bitmap dilation to SDF fonts is semantically wrong — it operates on distance values, not pixel intensities. Either skip bitmap bold for SDF, or implement distance-field-aware dilation that correctly expands the zero-isosurface in the distance field.
 
 ## Non-Goals (for this phase)
 

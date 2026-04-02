@@ -54,6 +54,10 @@ public class PreviewPanel : Panel
     private Label? _sampleZoomValueLabel;
     private float _sampleZoomLevel = 1.0f;
 
+    // Texture caches — avoid re-decoding PNGs on every page switch / tab switch
+    private readonly Dictionary<int, Texture2D> _previewTextureCache = new();
+    private readonly Dictionary<int, Texture2D> _sampleTextureCache = new();
+
     // Sample text pan state
     private float _samplePanOffsetX, _samplePanOffsetY;
     private float _baseSampleX = 8, _baseSampleY = 72;
@@ -353,8 +357,8 @@ public class PreviewPanel : Panel
         {
             if (e.PropertyName == nameof(PreviewViewModel.HasResult))
             {
-                // Invalidate cached atlas page textures for sample text rendering
-                DisposeAtlasPageTextures();
+                // Invalidate all texture caches on new generation
+                ClearAllTextureCaches();
 
                 if (_preview.HasResult)
                 {
@@ -481,18 +485,14 @@ public class PreviewPanel : Panel
         if (_placeholder != null)
             _placeholder.IsVisible = false;
 
-        // Unset sprite texture BEFORE disposing to avoid GUM referencing a disposed texture
-        if (_atlasSprite != null)
-            _atlasSprite.Texture = null;
+        // Use cached texture if available; otherwise create from raw pixel data
+        if (!_previewTextureCache.TryGetValue(page.PageIndex, out var texture))
+        {
+            texture = CreateTextureFromPixels(page);
+            _previewTextureCache[page.PageIndex] = texture;
+        }
 
-        var oldTexture = _currentAtlasTexture;
-
-        using var stream = new MemoryStream(page.PngData);
-        var texture = Texture2D.FromStream(_graphicsDevice, stream);
         _currentAtlasTexture = texture;
-
-        // Dispose the old texture AFTER creating the new one
-        oldTexture?.Dispose();
 
         // Auto-fit on first display only; preserve user's zoom on regenerate
         if (!_hasUserZoom)
@@ -502,11 +502,14 @@ public class PreviewPanel : Panel
         var scaledWidth = (int)Math.Round(texture.Width * zoom);
         var scaledHeight = (int)Math.Round(texture.Height * zoom);
 
-        // Show checkered background behind atlas (sized to match)
+        // Show checkered background behind atlas (sized to match); only recreate when dimensions change
         if (_checkerSprite != null)
         {
-            _checkerTexture?.Dispose();
-            _checkerTexture = CreateCheckerTexture(texture.Width, texture.Height);
+            if (_checkerTexture == null || _checkerTexture.Width != texture.Width || _checkerTexture.Height != texture.Height)
+            {
+                _checkerTexture?.Dispose();
+                _checkerTexture = CreateCheckerTexture(texture.Width, texture.Height);
+            }
             _checkerSprite.Texture = _checkerTexture;
             _checkerSprite.Width = scaledWidth;
             _checkerSprite.Height = scaledHeight;
@@ -702,31 +705,43 @@ public class PreviewPanel : Panel
                 kerningMap[(kp.First, kp.Second)] = kp.Amount;
         }
 
-        // Load atlas page textures if not yet loaded
+        // Load atlas page textures if not yet loaded — reuse preview cache where possible
         if (_atlasPageTextures == null || _atlasPageTextures.Count != _preview.Pages.Count)
         {
             DisposeAtlasPageTextures();
             _atlasPageTextures = new List<Texture2D>();
             foreach (var page in _preview.Pages)
             {
-                using var stream = new MemoryStream(page.PngData);
-                var tex = Texture2D.FromStream(_graphicsDevice, stream);
-
-                if (!page.IsRgba)
+                if (page.IsRgba)
                 {
-                    // Grayscale atlas: MonoGame loads as (L,L,L,255). Convert to (L,L,L,L)
-                    // so luminance becomes alpha and black background is transparent.
-                    var pixels = new Color[tex.Width * tex.Height];
-                    tex.GetData(pixels);
-                    for (int i = 0; i < pixels.Length; i++)
+                    // RGBA pages can share the preview cache texture directly
+                    if (!_previewTextureCache.TryGetValue(page.PageIndex, out var tex))
                     {
-                        var l = pixels[i].R;
-                        pixels[i] = new Color(l, l, l, l);
+                        tex = CreateTextureFromPixels(page);
+                        _previewTextureCache[page.PageIndex] = tex;
                     }
-                    tex.SetData(pixels);
+                    _atlasPageTextures.Add(tex);
                 }
-
-                _atlasPageTextures.Add(tex);
+                else
+                {
+                    // Grayscale atlas: pixel luminance IS the alpha channel.
+                    // Remap to (255,255,255,L) so glyph pixels are white with
+                    // correct alpha and background is transparent.
+                    // Cached so conversion only happens once per generation.
+                    if (!_sampleTextureCache.TryGetValue(page.PageIndex, out var tex))
+                    {
+                        tex = new Texture2D(_graphicsDevice, page.Width, page.Height);
+                        var pixels = new Color[page.Width * page.Height];
+                        for (int i = 0; i < page.PixelData.Length; i++)
+                        {
+                            var alpha = page.PixelData[i];
+                            pixels[i] = new Color((byte)255, (byte)255, (byte)255, alpha);
+                        }
+                        tex.SetData(pixels);
+                        _sampleTextureCache[page.PageIndex] = tex;
+                    }
+                    _atlasPageTextures.Add(tex);
+                }
             }
         }
 
@@ -794,12 +809,80 @@ public class PreviewPanel : Panel
 
     private void DisposeAtlasPageTextures()
     {
-        if (_atlasPageTextures != null)
+        // The _atlasPageTextures list references textures owned by the two caches,
+        // so just null the list — actual disposal happens via the caches below.
+        _atlasPageTextures = null;
+    }
+
+    private void ClearAllTextureCaches()
+    {
+        // Unset sprite textures before disposing to avoid referencing disposed GPU resources
+        if (_atlasSprite != null)
+            _atlasSprite.Texture = null;
+        _currentAtlasTexture = null;
+
+        _atlasPageTextures = null;
+
+        foreach (var tex in _previewTextureCache.Values)
+            tex.Dispose();
+        _previewTextureCache.Clear();
+
+        foreach (var tex in _sampleTextureCache.Values)
+            tex.Dispose();
+        _sampleTextureCache.Clear();
+    }
+
+    /// <summary>Creates a Texture2D directly from raw pixel data, avoiding PNG encode/decode.
+    /// RGBA data is premultiplied to match MonoGame's expected format for alpha blending.</summary>
+    private Texture2D CreateTextureFromPixels(PreviewPage page)
+    {
+        var tex = new Texture2D(_graphicsDevice, page.Width, page.Height);
+        if (page.IsRgba)
         {
-            foreach (var tex in _atlasPageTextures)
-                tex.Dispose();
-            _atlasPageTextures = null;
+            // Premultiply alpha — MonoGame's default BlendState.AlphaBlend expects
+            // premultiplied textures. Without this, semi-transparent pixels (shadows,
+            // anti-aliased edges) render incorrectly.
+            var data = new byte[page.PixelData.Length];
+            for (int i = 0; i < data.Length; i += 4)
+            {
+                var a = page.PixelData[i + 3];
+                if (a == 255)
+                {
+                    data[i] = page.PixelData[i];
+                    data[i + 1] = page.PixelData[i + 1];
+                    data[i + 2] = page.PixelData[i + 2];
+                    data[i + 3] = 255;
+                }
+                else if (a == 0)
+                {
+                    // Leave as zero (transparent black)
+                }
+                else
+                {
+                    data[i] = (byte)(page.PixelData[i] * a / 255);
+                    data[i + 1] = (byte)(page.PixelData[i + 1] * a / 255);
+                    data[i + 2] = (byte)(page.PixelData[i + 2] * a / 255);
+                    data[i + 3] = a;
+                }
+            }
+            tex.SetData(data);
         }
+        else
+        {
+            // Grayscale: expand 1-byte-per-pixel to RGBA for the GPU
+            var rgba = new byte[page.Width * page.Height * 4];
+            for (int i = 0; i < page.PixelData.Length; i++)
+            {
+                var v = page.PixelData[i];
+                var j = i * 4;
+                rgba[j] = v;
+                rgba[j + 1] = v;
+                rgba[j + 2] = v;
+                rgba[j + 3] = 255;
+            }
+            tex.SetData(rgba);
+        }
+        return tex;
     }
 
     /// <summary>Increases zoom by 25%, clamped to the active tab's slider range.</summary>

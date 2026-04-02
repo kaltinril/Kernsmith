@@ -22,6 +22,7 @@ internal static class ListRasterizersCommand
         var platformMap = new Dictionary<RasterizerBackend, string>
         {
             [RasterizerBackend.FreeType] = "All platforms",
+            [RasterizerBackend.StbTrueType] = "All platforms",
             [RasterizerBackend.Gdi] = "Windows only",
             [RasterizerBackend.DirectWrite] = "Windows only",
         };
@@ -42,6 +43,8 @@ internal static class ListRasterizersCommand
                 if (caps.SupportsVariableFonts) capList.Add("Variable");
                 if (caps.SupportsSdf) capList.Add("SDF");
                 if (caps.SupportsOutlineStroke) capList.Add("Outline");
+                if (caps.SupportsSyntheticBold) capList.Add("Synthetic Bold");
+                if (caps.SupportsSyntheticItalic) capList.Add("Synthetic Italic");
                 if (caps.SupportsSystemFonts) capList.Add("System Fonts");
                 var capStr = capList.Count > 0 ? string.Join(", ", capList) : "Grayscale";
 

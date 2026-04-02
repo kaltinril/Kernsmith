@@ -30,13 +30,23 @@ var result = BmFont.Generate("path/to/font.ttf", options);
 - Anti-aliasing (Grayscale and None modes)
 - SDF (Signed Distance Field) rendering
 - Super sampling
+- Synthetic bold and italic
+
+### Synthetic Bold and Italic
+
+StbTrueType supports synthetic bold and italic through outline-level post-processors that modify glyph outlines before rasterization. This works with both normal and SDF rendering modes.
+
+- **Synthetic bold** applies emboldening at a strength of ppem/24, matching FreeType's `FT_GlyphSlot_Embolden` algorithm. The post-processor widens glyph outlines and adjusts advance widths and bearings accordingly.
+- **Synthetic italic** applies a horizontal shear of tan(12 degrees) (~0.2126), matching FreeType's `FT_GlyphSlot_Oblique` algorithm. The post-processor skews glyph outlines and adjusts metrics to account for the added width.
+- **SDF support** uses a vendored SDF rasterization function so that bold/italic outline modifications are captured in the distance field output.
+
+This is novel work -- no other StbTrueTypeSharp consumer (including FontStashSharp) implements outline-level synthetic bold or italic.
 
 ## Limitations
 
 - No TrueType hinting (lower quality at small sizes < 16px)
 - No color font support (COLR/CPAL)
 - No variable font axis support
-- No synthetic bold or italic
 - No outline stroke support (use EDT outline effect instead)
 - No system font loading -- provide font file bytes directly
 - TTF only (no OTF/CFF outlines, no WOFF/WOFF2)

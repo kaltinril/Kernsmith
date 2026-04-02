@@ -100,7 +100,8 @@ internal sealed class ShadowEffect : IGlyphEffect
     }
 
     /// <summary>
-    /// Two-pass separable box blur.
+    /// Two-pass separable box blur. Uses naive O(W*H*R) for bit-exact output.
+    /// See ShadowPostProcessor.cs for sliding-window alternative and perf notes.
     /// </summary>
     private static float[] BoxBlur(float[] src, int width, int height, int radius)
     {

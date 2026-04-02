@@ -77,7 +77,7 @@ Alternatively, copy the three fields into local variables and use those locals t
 
 **Fix**: Cache the last-set size/DPI and skip the call when unchanged. Eliminates N-1 redundant native interop calls.
 
-### Perf 2: Merge glyph pipeline into a single in-place pass
+### ~~Perf 2: Merge glyph pipeline into a single in-place pass~~ (DONE — Phase 37)
 
 **File**: `src/KernSmith/BmFont.cs:128-165` (method `RasterizeFont`)
 
@@ -139,7 +139,7 @@ if (options.EqualizeCellHeights && glyphs.Count > 0)
 
 **Note**: `RasterizedGlyph` is a `sealed class` with `required init` properties (effectively immutable after construction). Each transform creates a new instance -- the originals are not mutated. This is safe for the in-place list update pattern above since each `glyphs[i] =` just replaces the reference.
 
-### Perf 3: Parallelize per-glyph post-processing
+### Perf 3: Parallelize per-glyph post-processing (see also Perf 6b)
 
 **File**: `src/KernSmith/BmFont.cs:128-165`
 
@@ -192,7 +192,7 @@ The nested loop is O(n^2) and `List.RemoveAt(i)` is O(n), making it O(n^3) worst
 
 **Constraint**: Must produce identical packing output. The removal order determines which free rects survive, which affects subsequent placements. Use the same iteration order (outer: high-to-low index, inner: high-to-low) and the same containment check priority (remove the contained rect, keep the container).
 
-### Perf 5: Naive O(W*H*R) box blur
+### ~~Perf 5: Naive O(W*H*R) box blur~~ (DONE — Phase 37)
 
 **Files**: `src/KernSmith/Rasterizer/ShadowEffect.cs:105-143`, `src/KernSmith/Rasterizer/ShadowPostProcessor.cs:197-235`
 
@@ -244,6 +244,21 @@ Replace the inner `for k` loop with a sliding-window approach for O(W*H) regardl
 - Each transform creates a new `RasterizedGlyph` with a new `byte[]`, discarding the previous
 - In the merged single-pass loop (Perf 2), return the previous buffer before replacing
 - **Risk**: Final glyph buffers in `BmFontResult` must NOT be pooled -- only intermediate ones during the transform pipeline
+
+### Perf 6b: Parallelize per-glyph effects pipeline
+
+**File**: `src/KernSmith/BmFont.cs` — the consolidated for-loop from Phase 37
+
+Each glyph's transform pipeline (effects, post-processors, downscale) is independent — no shared state between glyphs. This is embarrassingly parallel. On the "Galaxy Swirl" test (64px, 4x SS, outline+gradient+shadow, 224 chars), serial processing takes ~740ms.
+
+**Approach**: Use `Parallel.For` with configurable `MaxDegreeOfParallelism` for the per-glyph effects loop. Must remain serial on WASM (single-threaded runtime). Atlas packing must stay serial (bin-packing has ordering dependencies). Rasterization parallelism depends on backend thread safety — StbTrueType may be safe per-instance, FreeType is not per-face.
+
+**Platform considerations**:
+- **Desktop/Server**: `Parallel.For` or `Task.WhenAll` with `Environment.ProcessorCount`
+- **WASM**: Must fall back to serial. Detect via `OperatingSystem.IsBrowser()` or a build-time flag
+- **AOT**: `Parallel.For` is fully AOT-compatible (no reflection), uses `System.Threading.Tasks`
+
+**Expected impact**: Near-linear speedup on multi-core for effect-heavy configs. The Galaxy Swirl test should drop from ~740ms to ~200ms on a 4-core machine.
 
 ## Performance -- Medium Impact
 

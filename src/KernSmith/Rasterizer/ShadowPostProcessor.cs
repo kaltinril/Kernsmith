@@ -193,6 +193,7 @@ public sealed class ShadowPostProcessor : IGlyphPostProcessor
 
     /// <summary>
     /// Blurs a float buffer using a two-pass box blur (horizontal then vertical).
+    /// Uses the naive O(W*H*R) approach for bit-exact output.
     /// </summary>
     private static float[] BoxBlur(float[] src, int width, int height, int radius)
     {
@@ -233,4 +234,60 @@ public sealed class ShadowPostProcessor : IGlyphPostProcessor
 
         return dst;
     }
+
+    // PERF NOTE: We tried a sliding-window O(W*H) approach here (Phase 37, P2) that
+    // eliminates the inner k-loop by maintaining a running sum: sum += entering - leaving.
+    // It works and is faster for large radii, but float addition is not associative —
+    // the add/subtract accumulation produces different rounding than per-pixel summation.
+    //
+    // Results:
+    //   - float sliding window:  1,635 pixel diffs vs original (0.056%)
+    //   - double sliding window:    51 pixel diffs vs original (0.0017%)
+    //   - double sliding window + double[] temp: likely 0 diffs but doubles memory
+    //
+    // For typical blur radii (1-5), the inner loop is only 3-11 iterations per pixel,
+    // so the O(R) cost is negligible. The sliding window would matter for large radii
+    // (50+) on large bitmaps, which doesn't happen in bitmap font generation.
+    //
+    // If perf becomes an issue, switch to the sliding-window version below and accept
+    // the sub-pixel differences, or use double[] for both temp and sum to eliminate them.
+    //
+    // private static float[] BoxBlurSlidingWindow(float[] src, int width, int height, int radius)
+    // {
+    //     var temp = new float[width * height];
+    //     var dst = new float[width * height];
+    //     var kernelSize = radius * 2 + 1;
+    //     double invKernel = 1.0 / kernelSize;
+    //
+    //     for (var y = 0; y < height; y++)
+    //     {
+    //         var rowOffset = y * width;
+    //         double sum = src[rowOffset] * radius;
+    //         for (var k = 0; k <= radius; k++)
+    //             sum += src[rowOffset + Math.Min(k, width - 1)];
+    //         temp[rowOffset] = (float)(sum * invKernel);
+    //         for (var x = 1; x < width; x++)
+    //         {
+    //             sum += src[rowOffset + Math.Min(x + radius, width - 1)];
+    //             sum -= src[rowOffset + Math.Clamp(x - radius - 1, 0, width - 1)];
+    //             temp[rowOffset + x] = (float)(sum * invKernel);
+    //         }
+    //     }
+    //
+    //     for (var x = 0; x < width; x++)
+    //     {
+    //         double sum = temp[x] * radius;
+    //         for (var k = 0; k <= radius; k++)
+    //             sum += temp[Math.Min(k, height - 1) * width + x];
+    //         dst[x] = (float)(sum * invKernel);
+    //         for (var y = 1; y < height; y++)
+    //         {
+    //             sum += temp[Math.Min(y + radius, height - 1) * width + x];
+    //             sum -= temp[Math.Clamp(y - radius - 1, 0, height - 1) * width + x];
+    //             dst[y * width + x] = (float)(sum * invKernel);
+    //         }
+    //     }
+    //
+    //     return dst;
+    // }
 }

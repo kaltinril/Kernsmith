@@ -70,10 +70,6 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
 
-        if (options.Bold)
-            throw new NotSupportedException("StbTrueType rasterizer does not support bold rendering.");
-        if (options.Italic)
-            throw new NotSupportedException("StbTrueType rasterizer does not support italic rendering.");
         if (options.ColorFont)
             throw new NotSupportedException("StbTrueType rasterizer does not support color font rendering.");
 
@@ -90,7 +86,14 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         Stb.stbtt_GetCodepointHMetrics(_fontInfo!, codepoint, &advance, &lsb);
 
         if (options.Sdf)
+        {
+            if (options.Bold || options.Italic)
+                return RasterizeStyledSdfGlyph(codepoint, glyphIndex, scale, advance, lsb, aa, options);
             return RasterizeSdfGlyph(codepoint, glyphIndex, scale, advance, lsb, aa);
+        }
+
+        if (options.Bold || options.Italic)
+            return RasterizeStyledGlyph(codepoint, glyphIndex, scale, advance, lsb, aa, options);
 
         // Get bitmap box for bearing metrics.
         int ix0, iy0, ix1, iy1;
@@ -191,7 +194,8 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
 
-        int aa = Math.Max(1, options.SuperSample);
+        // SDF is resolution-independent; supersampling is meaningless for distance fields.
+        int aa = options.Sdf ? 1 : Math.Max(1, options.SuperSample);
         float effectiveSize = options.Size * options.Dpi / 72.0f * aa;
         float scale = Stb.stbtt_ScaleForMappingEmToPixels(_fontInfo!, effectiveSize);
 
@@ -201,6 +205,9 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
 
         int advance, lsb;
         Stb.stbtt_GetCodepointHMetrics(_fontInfo!, codepoint, &advance, &lsb);
+
+        if (options.Bold || options.Italic)
+            return GetStyledGlyphMetrics(codepoint, glyphIndex, scale, advance, aa, options);
 
         int ix0, iy0, ix1, iy1;
         Stb.stbtt_GetCodepointBitmapBox(_fontInfo!, codepoint, scale, scale, &ix0, &iy0, &ix1, &iy1);
@@ -213,13 +220,62 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
             Height: (int)Math.Round((double)(iy1 - iy0) / aa));
     }
 
+    private unsafe GlyphMetrics? GetStyledGlyphMetrics(
+        int codepoint, int glyphIndex, float scale, int advance, int aa, RasterOptions options)
+    {
+        Stb.stbtt_vertex* vertices;
+        int numVerts = Stb.stbtt_GetCodepointShape(_fontInfo!, codepoint, &vertices);
+        if (numVerts == 0)
+        {
+            int scaledAdvance = (int)Math.Round(advance * scale / aa);
+            return new GlyphMetrics(BearingX: 0, BearingY: 0, Advance: scaledAdvance, Width: 0, Height: 0);
+        }
+
+        try
+        {
+            float effectiveSize = options.Size * options.Dpi / 72.0f * aa;
+
+            if (options.Bold)
+            {
+                float strengthPixels = effectiveSize / 24.0f;
+                float strengthFontUnits = strengthPixels / scale;
+                OutlineTransforms.ApplyEmbolden(vertices, numVerts, strengthFontUnits);
+            }
+
+            if (options.Italic)
+                OutlineTransforms.ApplyItalicShear(vertices, numVerts);
+
+            var (x0, y0, x1, y1) = OutlineTransforms.ComputeBoundingBox(vertices, numVerts, scale, scale);
+            int width = Math.Max(0, x1 - x0);
+            int height = Math.Max(0, y1 - y0);
+
+            int scaledAdv = (int)Math.Round(advance * scale / aa);
+            if (options.Bold)
+            {
+                float strengthPixels = effectiveSize / 24.0f;
+                scaledAdv += (int)Math.Round(strengthPixels / aa);
+            }
+
+            return new GlyphMetrics(
+                BearingX: (int)Math.Round((double)x0 / aa),
+                BearingY: (int)Math.Round((double)-y0 / aa),
+                Advance: scaledAdv,
+                Width: (int)Math.Round((double)width / aa),
+                Height: (int)Math.Round((double)height / aa));
+        }
+        finally
+        {
+            Stb.stbtt_FreeShape(_fontInfo!, vertices);
+        }
+    }
+
     /// <inheritdoc />
     public unsafe RasterizerFontMetrics? GetFontMetrics(RasterOptions options)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
 
-        int aa = Math.Max(1, options.SuperSample);
+        int aa = options.Sdf ? 1 : Math.Max(1, options.SuperSample);
         float effectiveSize = options.Size * options.Dpi / 72.0f * aa;
         float scale = Stb.stbtt_ScaleForMappingEmToPixels(_fontInfo!, effectiveSize);
 
@@ -354,6 +410,256 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         finally
         {
             Stb.stbtt_FreeSDF(bitmap, null);
+        }
+    }
+
+    private unsafe RasterizedGlyph? RasterizeStyledSdfGlyph(
+        int codepoint, int glyphIndex, float scale, int advance, int lsb, int aa,
+        RasterOptions options)
+    {
+        Stb.stbtt_vertex* vertices;
+        int numVerts = Stb.stbtt_GetCodepointShape(_fontInfo!, codepoint, &vertices);
+        if (numVerts == 0)
+        {
+            // Whitespace glyph: valid advance, zero-size bitmap.
+            int scaledAdvance = (int)Math.Round(advance * scale / aa);
+            return new RasterizedGlyph
+            {
+                Codepoint = codepoint,
+                GlyphIndex = glyphIndex,
+                BitmapData = [],
+                Width = 0,
+                Height = 0,
+                Pitch = 0,
+                Metrics = new GlyphMetrics(
+                    BearingX: 0,
+                    BearingY: 0,
+                    Advance: scaledAdvance,
+                    Width: 0,
+                    Height: 0),
+                Format = PixelFormat.Grayscale8
+            };
+        }
+
+        try
+        {
+            float effectiveSize = options.Size * options.Dpi / 72.0f * aa;
+
+            if (options.Bold)
+            {
+                float strengthPixels = effectiveSize / 24.0f;
+                float strengthFontUnits = strengthPixels / scale;
+                OutlineTransforms.ApplyEmbolden(vertices, numVerts, strengthFontUnits);
+            }
+
+            if (options.Italic)
+                OutlineTransforms.ApplyItalicShear(vertices, numVerts);
+
+            const int padding = 5;
+            const byte onEdgeValue = 128;
+            const float pixelDistScale = 64.0f;
+
+            byte[]? bitmapData = StbTrueTypeSdfVendored.GetGlyphSdfFromVertices(
+                vertices, numVerts, scale, padding, onEdgeValue, pixelDistScale,
+                out int width, out int height, out int xoff, out int yoff);
+
+            if (bitmapData == null || width == 0 || height == 0)
+            {
+                // Empty glyph after SDF rendering.
+                int scaledAdvance = (int)Math.Round(advance * scale / aa);
+                return new RasterizedGlyph
+                {
+                    Codepoint = codepoint,
+                    GlyphIndex = glyphIndex,
+                    BitmapData = [],
+                    Width = 0,
+                    Height = 0,
+                    Pitch = 0,
+                    Metrics = new GlyphMetrics(
+                        BearingX: (int)Math.Round(lsb * scale / aa),
+                        BearingY: 0,
+                        Advance: scaledAdvance,
+                        Width: 0,
+                        Height: 0),
+                    Format = PixelFormat.Grayscale8
+                };
+            }
+
+            int bearingX = (int)Math.Round((double)xoff / aa);
+            int bearingY = (int)Math.Round((double)-yoff / aa);
+            int scaledAdv = (int)Math.Round(advance * scale / aa);
+
+            // Bold increases advance slightly (matches FreeType behavior).
+            if (options.Bold)
+            {
+                float strengthPixels = effectiveSize / 24.0f;
+                scaledAdv += (int)Math.Round(strengthPixels / aa);
+            }
+
+            // Downscale bitmap by averaging aa x aa blocks when supersampling.
+            if (aa > 1)
+                bitmapData = DownscaleBitmap(bitmapData, ref width, ref height, aa);
+
+            return new RasterizedGlyph
+            {
+                Codepoint = codepoint,
+                GlyphIndex = glyphIndex,
+                BitmapData = bitmapData,
+                Width = width,
+                Height = height,
+                Pitch = width,
+                Metrics = new GlyphMetrics(
+                    BearingX: bearingX,
+                    BearingY: bearingY,
+                    Advance: scaledAdv,
+                    Width: width,
+                    Height: height),
+                Format = PixelFormat.Grayscale8
+            };
+        }
+        finally
+        {
+            Stb.stbtt_FreeShape(_fontInfo!, vertices);
+        }
+    }
+
+    private unsafe RasterizedGlyph? RasterizeStyledGlyph(
+        int codepoint, int glyphIndex, float scale, int advance, int lsb, int aa,
+        RasterOptions options)
+    {
+        Stb.stbtt_vertex* vertices;
+        int numVerts = Stb.stbtt_GetCodepointShape(_fontInfo!, codepoint, &vertices);
+        if (numVerts == 0)
+        {
+            // Whitespace glyph (e.g., space): valid advance, zero-size bitmap.
+            int scaledAdvance = (int)Math.Round(advance * scale / aa);
+            return new RasterizedGlyph
+            {
+                Codepoint = codepoint,
+                GlyphIndex = glyphIndex,
+                BitmapData = [],
+                Width = 0,
+                Height = 0,
+                Pitch = 0,
+                Metrics = new GlyphMetrics(
+                    BearingX: 0,
+                    BearingY: 0,
+                    Advance: scaledAdvance,
+                    Width: 0,
+                    Height: 0),
+                Format = PixelFormat.Grayscale8
+            };
+        }
+
+        try
+        {
+            if (options.Bold)
+            {
+                // Bold strength in font units: ppem/24 converted to font units.
+                // FreeType uses ppem/24 in 26.6 fixed point; we compute equivalent font units.
+                float effectiveSize = options.Size * options.Dpi / 72.0f * aa;
+                float strengthPixels = effectiveSize / 24.0f;
+                float strengthFontUnits = strengthPixels / scale;
+                OutlineTransforms.ApplyEmbolden(vertices, numVerts, strengthFontUnits);
+            }
+
+            if (options.Italic)
+            {
+                OutlineTransforms.ApplyItalicShear(vertices, numVerts);
+            }
+
+            // Compute bbox from modified vertices.
+            var (x0, y0, x1, y1) = OutlineTransforms.ComputeBoundingBox(vertices, numVerts, scale, scale);
+
+            int width = x1 - x0;
+            int height = y1 - y0;
+
+            if (width <= 0 || height <= 0)
+            {
+                // Zero-area glyph after transforms.
+                int scaledAdvance = (int)Math.Round(advance * scale / aa);
+                return new RasterizedGlyph
+                {
+                    Codepoint = codepoint,
+                    GlyphIndex = glyphIndex,
+                    BitmapData = [],
+                    Width = 0,
+                    Height = 0,
+                    Pitch = 0,
+                    Metrics = new GlyphMetrics(
+                        BearingX: 0,
+                        BearingY: 0,
+                        Advance: scaledAdvance,
+                        Width: 0,
+                        Height: 0),
+                    Format = PixelFormat.Grayscale8
+                };
+            }
+
+            int bearingX = (int)Math.Round((double)x0 / aa);
+            int bearingY = (int)Math.Round((double)-y0 / aa);
+            int scaledAdv = (int)Math.Round(advance * scale / aa);
+
+            // Bold increases advance slightly (matches FreeType behavior).
+            if (options.Bold)
+            {
+                float effectiveSize = options.Size * options.Dpi / 72.0f * aa;
+                float strengthPixels = effectiveSize / 24.0f;
+                scaledAdv += (int)Math.Round(strengthPixels / aa);
+            }
+
+            // Allocate bitmap and rasterize using the low-level API.
+            var pixels = new byte[width * height];
+            var handle = GCHandle.Alloc(pixels, GCHandleType.Pinned);
+            try
+            {
+                var bitmap = new Stb.stbtt__bitmap();
+                bitmap.w = width;
+                bitmap.h = height;
+                bitmap.stride = width;
+                bitmap.pixels = (byte*)handle.AddrOfPinnedObject();
+
+                Stb.stbtt_Rasterize(&bitmap, 0.35f, vertices, numVerts,
+                    scale, scale, 0, 0, x0, y0, 1, null, false);
+
+                // Anti-alias mode None: threshold at 128.
+                if (options.AntiAlias == AntiAliasMode.None)
+                {
+                    for (int i = 0; i < pixels.Length; i++)
+                        pixels[i] = pixels[i] >= 128 ? (byte)255 : (byte)0;
+                }
+
+                var bitmapData = pixels;
+
+                // Downscale bitmap by averaging aa x aa blocks when supersampling.
+                if (aa > 1)
+                    bitmapData = DownscaleBitmap(bitmapData, ref width, ref height, aa);
+
+                return new RasterizedGlyph
+                {
+                    Codepoint = codepoint,
+                    GlyphIndex = glyphIndex,
+                    BitmapData = bitmapData,
+                    Width = width,
+                    Height = height,
+                    Pitch = width,
+                    Metrics = new GlyphMetrics(
+                        BearingX: bearingX,
+                        BearingY: bearingY,
+                        Advance: scaledAdv,
+                        Width: width,
+                        Height: height),
+                    Format = PixelFormat.Grayscale8
+                };
+            }
+            finally
+            {
+                handle.Free();
+            }
+        }
+        finally
+        {
+            Stb.stbtt_FreeShape(_fontInfo!, vertices);
         }
     }
 

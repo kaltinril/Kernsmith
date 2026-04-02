@@ -136,6 +136,8 @@ internal class TtfParser
             // skip checksum at recOffset + 4
             var tableOffset = (int)BinaryPrimitives.ReadUInt32BigEndian(data.Slice(recOffset + 8));
             var tableLength = (int)BinaryPrimitives.ReadUInt32BigEndian(data.Slice(recOffset + 12));
+            if (tableOffset < 0 || tableLength < 0 || (long)tableOffset + tableLength > data.Length)
+                continue; // Skip invalid table entry
             _tables[tag] = (tableOffset, tableLength);
         }
     }
@@ -567,6 +569,9 @@ internal class TtfParser
 
         var numGroups = (int)BinaryPrimitives.ReadUInt32BigEndian(subtable.Slice(12));
 
+        if (numGroups < 0 || 16L + (long)numGroups * 12 > subtable.Length)
+            return;
+
         for (var i = 0; i < numGroups; i++)
         {
             var groupOffset = 16 + i * 12;
@@ -582,6 +587,9 @@ internal class TtfParser
                 if (_requestedCodepoints != null && !_requestedCodepoints.Contains(c))
                     continue;
                 cmap[c] = startGlyphID + (c - startCharCode);
+
+                if (cmap.Count > 200_000)
+                    throw new FontParsingException("cmap table exceeds maximum entry limit (200,000).");
             }
         }
     }
@@ -680,6 +688,8 @@ internal class TtfParser
 
             // Subtable header: version (uint16), length (uint16), coverage (uint16)
             var subtableLength = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(offset + 2));
+            if (subtableLength < 6)
+                break; // Minimum valid subtable size
             var coverage = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(offset + 4));
 
             // Format is in high byte of coverage; we only handle format 0
@@ -752,6 +762,8 @@ internal class TtfParser
                 continue;
 
             var lookupOffset = BinaryPrimitives.ReadUInt16BigEndian(lookupList.Slice(2 + lookupIndex * 2));
+            if (lookupOffset >= lookupList.Length)
+                continue;
             var lookup = lookupList.Slice(lookupOffset);
             if (lookup.Length < 6)
                 continue;
@@ -777,6 +789,8 @@ internal class TtfParser
                     // format (uint16), extensionLookupType (uint16), extensionOffset (uint32)
                     effectiveType = BinaryPrimitives.ReadUInt16BigEndian(subtable.Slice(2));
                     var extensionOffset = (int)BinaryPrimitives.ReadUInt32BigEndian(subtable.Slice(4));
+                    if (extensionOffset < 0 || (long)subTableOffset + extensionOffset >= lookup.Length)
+                        continue;
                     subtable = lookup.Slice(subTableOffset + extensionOffset);
                 }
 
