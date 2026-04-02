@@ -32,4 +32,20 @@ public static class Theme
     public static Color CheckerLight = new(60, 60, 60);
     /// <summary>Dark checkerboard tile color for the atlas transparency background.</summary>
     public static Color CheckerDark = new(45, 45, 45);
+
+    // Layout constants
+    /// <summary>Section header background color.</summary>
+    public static readonly Color SectionHeaderBg = new(50, 50, 55);
+    /// <summary>Background for collapsible content areas.</summary>
+    public static readonly Color CollapsibleContentBg = new(40, 40, 44);
+    /// <summary>Standard spacing between sections in a stack (px).</summary>
+    public const int SectionSpacing = 8;
+    /// <summary>Standard horizontal padding inside panels (px).</summary>
+    public const int PanelPadding = 8;
+    /// <summary>Standard spacing between label and control in a row (px).</summary>
+    public const int ControlSpacing = 4;
+    /// <summary>Standard label column width for grid layouts (px).</summary>
+    public const int LabelWidth = 70;
+    /// <summary>Section header height (px).</summary>
+    public const int SectionHeaderHeight = 24;
 }

@@ -1,6 +1,7 @@
 using Gum.DataTypes;
 using Gum.Forms;
 using Gum.Forms.Controls;
+using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 
 namespace KernSmith.Ui.Layout;
@@ -69,7 +70,7 @@ public class FontInspectorDialog
 
             if (fontInfo.Head is { } head)
             {
-                AddSectionHeader(scrollViewer, "Head Table");
+                UiFactory.AddSectionHeader(scrollViewer.InnerPanel,"Head Table");
                 AddRow(scrollViewer, "  Bounding Box", $"({head.XMin}, {head.YMin}) to ({head.XMax}, {head.YMax})");
                 AddRow(scrollViewer, "  Lowest Rec PPEM", head.LowestRecPPEM.ToString());
                 AddRow(scrollViewer, "  Created", head.CreatedUtc.ToString("yyyy-MM-dd"));
@@ -78,7 +79,7 @@ public class FontInspectorDialog
 
             if (fontInfo.Hhea is { } hhea)
             {
-                AddSectionHeader(scrollViewer, "Hhea Table");
+                UiFactory.AddSectionHeader(scrollViewer.InnerPanel,"Hhea Table");
                 AddRow(scrollViewer, "  Ascender", hhea.Ascender.ToString());
                 AddRow(scrollViewer, "  Descender", hhea.Descender.ToString());
                 AddRow(scrollViewer, "  Line Gap", hhea.LineGap.ToString());
@@ -88,7 +89,7 @@ public class FontInspectorDialog
 
             if (fontInfo.Os2 is { } os2)
             {
-                AddSectionHeader(scrollViewer, "OS/2 Table");
+                UiFactory.AddSectionHeader(scrollViewer.InnerPanel,"OS/2 Table");
                 AddRow(scrollViewer, "  Weight Class", os2.WeightClass.ToString());
                 AddRow(scrollViewer, "  Width Class", os2.WidthClass.ToString());
                 AddRow(scrollViewer, "  Typo Ascender", os2.TypoAscender.ToString());
@@ -100,7 +101,7 @@ public class FontInspectorDialog
 
             if (fontInfo.VariationAxes is { Count: > 0 } axes)
             {
-                AddSectionHeader(scrollViewer, $"Variation Axes ({axes.Count})");
+                UiFactory.AddSectionHeader(scrollViewer.InnerPanel,$"Variation Axes ({axes.Count})");
                 foreach (var axis in axes)
                 {
                     var name = axis.Name ?? axis.Tag;
@@ -126,10 +127,4 @@ public class FontInspectorDialog
         parent.AddChild(row);
     }
 
-    private static void AddSectionHeader(ScrollViewer parent, string title)
-    {
-        var header = new Label();
-        header.Text = title;
-        parent.AddChild(header);
-    }
 }

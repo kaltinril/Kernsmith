@@ -32,250 +32,311 @@ public class FontConfigPanel : Panel
 
     private void BuildContent()
     {
+        // Root wrapper: vertical stack inside the panel so scroll area and bottom bar share space
+        var root = new ContainerRuntime();
+        root.WidthUnits = DimensionUnitType.RelativeToParent;
+        root.Width = 0;
+        root.HeightUnits = DimensionUnitType.RelativeToParent;
+        root.Height = 0;
+        root.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
+        this.Visual.Children.Add(root);
+
+        // Scroll area wrapper (ratio height = fills remaining space above bottom bar)
+        var scrollArea = new ContainerRuntime();
+        scrollArea.WidthUnits = DimensionUnitType.RelativeToParent;
+        scrollArea.Width = 0;
+        scrollArea.HeightUnits = DimensionUnitType.Ratio;
+        scrollArea.Height = 1;
+        scrollArea.ClipsChildren = true;
+        root.Children.Add(scrollArea);
+
         var scrollViewer = new ScrollViewer();
         scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
-        scrollViewer.Dock(Gum.Wireframe.Dock.Fill);
-        this.AddChild(scrollViewer);
+        scrollViewer.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        scrollViewer.Visual.Width = 0;
+        scrollViewer.Visual.HeightUnits = DimensionUnitType.RelativeToParent;
+        scrollViewer.Visual.Height = 0;
+        var scrollBg = scrollViewer.Visual.GetGraphicalUiElementByName("Background");
+        if (scrollBg is ColoredRectangleRuntime scrollRect)
+            scrollRect.Color = Microsoft.Xna.Framework.Color.Transparent;
+        scrollArea.Children.Add(scrollViewer.Visual);
 
-        // Inner container with padding from panel edges
         var inner = new ContainerRuntime();
         inner.WidthUnits = DimensionUnitType.RelativeToParent;
         inner.HeightUnits = DimensionUnitType.RelativeToChildren;
-        inner.Width = -16; // 8px padding each side
+        inner.Width = -(Theme.PanelPadding * 2);
         inner.Height = 0;
-        inner.X = 8;
-        inner.Y = 4;
+        inner.X = Theme.PanelPadding;
+        inner.Y = Theme.ControlSpacing;
         inner.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
-        inner.StackSpacing = 6;
+        inner.StackSpacing = Theme.SectionSpacing;
         scrollViewer.InnerPanel.Children.Add(inner);
+
         var stack = inner;
 
-        // --- FONT SOURCE section ---
-        AddSectionHeader(stack, "FONT FILE");
-
-        var browseBtn = new Button();
-        browseBtn.Text = "Browse for Font...";
-        browseBtn.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-        browseBtn.Visual.Width = 0;
-        browseBtn.Click += (_, _) =>
+        // --- FONT FILE section (collapsible) ---
+        UiFactory.AddCollapsibleHeader(stack, "FONT FILE", content =>
         {
-            using var dialog = new NativeFileDialog()
-                .SelectFile()
-                .AddFilter("Font Files", "ttf,otf,woff,ttc")
-                .AddFilter("All Files", "*");
-            var result = dialog.Open(out string? path);
-            if (result == DialogResult.Okay && path != null)
-                _mainViewModel.LoadFontFromPath(path);
-        };
-        stack.Children.Add(browseBtn.Visual);
-        TooltipService.SetTooltip(browseBtn, "Browse for a font file");
-
-        var sourceLabel = new Label();
-        sourceLabel.Text = "";
-        sourceLabel.IsVisible = false;
-        stack.Children.Add(sourceLabel.Visual);
-
-        // Only show source label for file-loaded fonts (system font is visible in dropdown)
-        _fontConfig.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(FontConfigViewModel.FontSourceKind) ||
-                e.PropertyName == nameof(FontConfigViewModel.FontSourceDescription))
+            var browseBtn = new Button();
+            browseBtn.Text = "Browse for Font...";
+            browseBtn.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+            browseBtn.Visual.Width = 0;
+            browseBtn.Click += (_, _) =>
             {
-                var isFile = _fontConfig.FontSourceKind == Models.FontSourceKind.File;
-                sourceLabel.IsVisible = isFile;
-                if (isFile)
-                    sourceLabel.Text = _fontConfig.FontSourceDescription;
-            }
-        };
+                using var dialog = new NativeFileDialog()
+                    .SelectFile()
+                    .AddFilter("Font Files", "ttf,otf,woff,ttc")
+                    .AddFilter("All Files", "*");
+                var result = dialog.Open(out string? path);
+                if (result == DialogResult.Okay && path != null)
+                    _mainViewModel.LoadFontFromPath(path);
+            };
+            content.Children.Add(browseBtn.Visual);
+            TooltipService.SetTooltip(browseBtn, "Browse for a font file");
 
-        // --- TTC Face Selection (hidden unless a .ttc font collection is loaded) ---
-        var faceSelectionRow = new StackPanel();
-        faceSelectionRow.Orientation = Orientation.Horizontal;
-        faceSelectionRow.Spacing = 4;
-        faceSelectionRow.IsVisible = false;
-        stack.Children.Add(faceSelectionRow.Visual);
+            var sourceLabel = new Label();
+            sourceLabel.Text = "";
+            sourceLabel.IsVisible = false;
+            content.Children.Add(sourceLabel.Visual);
 
-        var faceLabel = new Label();
-        faceLabel.Text = "Face:";
-        faceLabel.Width = 50;
-        faceSelectionRow.AddChild(faceLabel);
-
-        var faceCombo = new ComboBox();
-        faceCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
-        faceCombo.Width = 80;
-        faceSelectionRow.AddChild(faceCombo);
-
-        var faceCountLabel = new Label();
-        faceCountLabel.Text = "";
-        faceSelectionRow.AddChild(faceCountLabel);
-
-        _fontConfig.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(FontConfigViewModel.IsFontCollection))
+            // Only show source label for file-loaded fonts (system font is visible in dropdown)
+            _fontConfig.PropertyChanged += (_, e) =>
             {
-                faceSelectionRow.IsVisible = _fontConfig.IsFontCollection;
-                if (_fontConfig.IsFontCollection)
+                if (e.PropertyName == nameof(FontConfigViewModel.FontSourceKind) ||
+                    e.PropertyName == nameof(FontConfigViewModel.FontSourceDescription))
                 {
-                    faceCombo.Items.Clear();
-                    for (int i = 0; i < _fontConfig.FaceCount; i++)
-                        faceCombo.Items.Add($"Face {i}");
-                    faceCombo.SelectedIndex = 0;
-                    faceCountLabel.Text = $"of {_fontConfig.FaceCount}";
+                    var isFile = _fontConfig.FontSourceKind == Models.FontSourceKind.File;
+                    sourceLabel.IsVisible = isFile;
+                    if (isFile)
+                        sourceLabel.Text = _fontConfig.FontSourceDescription;
                 }
-            }
-        };
+            };
 
-        faceCombo.SelectionChanged += (_, _) =>
-        {
-            if (faceCombo.SelectedIndex >= 0 && _fontConfig.IsFontCollection)
+            // --- TTC Face Selection (hidden unless a .ttc font collection is loaded) ---
+            var faceSelectionRow = new StackPanel();
+            faceSelectionRow.Orientation = Orientation.Horizontal;
+            faceSelectionRow.Spacing = 4;
+            faceSelectionRow.IsVisible = false;
+            content.Children.Add(faceSelectionRow.Visual);
+
+            var faceLabel = new Label();
+            faceLabel.Text = "Face:";
+            faceLabel.Width = 50;
+            faceSelectionRow.AddChild(faceLabel);
+
+            var faceCombo = new ComboBox();
+            faceCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
+            faceCombo.Width = 80;
+            faceSelectionRow.AddChild(faceCombo);
+
+            var faceCountLabel = new Label();
+            faceCountLabel.Text = "";
+            faceSelectionRow.AddChild(faceCountLabel);
+
+            _fontConfig.PropertyChanged += (_, e) =>
             {
-                _fontConfig.ReloadWithFaceIndex(faceCombo.SelectedIndex);
-            }
-        };
-
-        AddDivider(stack);
-
-        var familyLabel = new Label();
-        familyLabel.Text = "System Font:";
-        stack.Children.Add(familyLabel.Visual);
-        TooltipService.SetTooltip(familyLabel, "Pick an installed system font. Requires a backend that supports system fonts (GDI or DirectWrite).");
-
-        var familyCombo = new ComboBox();
-        familyCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
-        familyCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-        familyCombo.Visual.Width = 0;
-        stack.Children.Add(familyCombo.Visual);
-
-        // Wire system font combo
-        _fontConfig.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(FontConfigViewModel.SystemFonts) && _fontConfig.SystemFonts != null)
-            {
-                familyCombo.Items = _fontConfig.SystemFonts.Select(g => (object)g.FamilyName).ToList();
-            }
-
-        };
-
-        familyCombo.SelectionChanged += (_, _) =>
-        {
-            if (familyCombo.SelectedIndex >= 0 && _fontConfig.SystemFonts != null)
-            {
-                var group = _fontConfig.SystemFonts[familyCombo.SelectedIndex];
-                _fontConfig.SelectedFontFamily = group.FamilyName;
-                _fontConfig.CurrentFontGroup = group;
-                _fontConfig.LoadedAsBold = false;
-                _fontConfig.LoadedAsItalic = false;
-
-                // Auto-load Regular, falling back to first available
-                if (group.Styles.Count > 0)
+                if (e.PropertyName == nameof(FontConfigViewModel.IsFontCollection))
                 {
-                    var font = group.Styles.FirstOrDefault(s =>
-                        s.StyleName.Equals("Regular", StringComparison.OrdinalIgnoreCase))
-                        ?? group.Styles[0];
-                    _fontConfig.SelectedSystemFont = font;
-                    try { _fontConfig.LoadFromSystem(font); }
-                    catch (Exception) { }
+                    faceSelectionRow.IsVisible = _fontConfig.IsFontCollection;
+                    if (_fontConfig.IsFontCollection)
+                    {
+                        faceCombo.Items.Clear();
+                        for (int i = 0; i < _fontConfig.FaceCount; i++)
+                            faceCombo.Items.Add($"Face {i}");
+                        faceCombo.SelectedIndex = 0;
+                        faceCountLabel.Text = $"of {_fontConfig.FaceCount}";
+                    }
                 }
-            }
-        };
+            };
 
-        // --- Glyph count (only useful non-redundant info) ---
-        var glyphRow = new StackPanel();
-        glyphRow.Orientation = Orientation.Horizontal;
-        glyphRow.Spacing = 4;
-        stack.Children.Add(glyphRow.Visual);
-
-        var glyphLbl = new Label();
-        glyphLbl.Text = "Glyphs in font:";
-        glyphRow.AddChild(glyphLbl);
-
-        var glyphCount = new Label();
-        glyphCount.Text = "0";
-        glyphCount.SetBinding(nameof(Label.Text), nameof(FontConfigViewModel.NumGlyphs));
-        glyphCount.Visual.BindingContext = _fontConfig;
-        glyphRow.AddChild(glyphCount);
-
-        // --- Conditional font info: color glyphs ---
-        var colorGlyphLabel = new Label();
-        colorGlyphLabel.Text = "Has color glyphs";
-        colorGlyphLabel.IsVisible = false;
-        stack.Children.Add(colorGlyphLabel.Visual);
-
-        // --- Conditional font info: variable font axes ---
-        var axesLabel = new Label();
-        axesLabel.Text = "";
-        axesLabel.IsVisible = false;
-        stack.Children.Add(axesLabel.Visual);
-
-        _fontConfig.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(FontConfigViewModel.HasColorGlyphs))
-                colorGlyphLabel.IsVisible = _fontConfig.HasColorGlyphs;
-
-            if (e.PropertyName is nameof(FontConfigViewModel.HasVariationAxes)
-                or nameof(FontConfigViewModel.VariationAxesSummary))
+            faceCombo.SelectionChanged += (_, _) =>
             {
-                axesLabel.IsVisible = _fontConfig.HasVariationAxes;
-                if (_fontConfig.HasVariationAxes)
-                    axesLabel.Text = $"Variable axes: {_fontConfig.VariationAxesSummary}";
-            }
-        };
+                if (faceCombo.SelectedIndex >= 0 && _fontConfig.IsFontCollection)
+                {
+                    _fontConfig.ReloadWithFaceIndex(faceCombo.SelectedIndex);
+                }
+            };
 
-        AddDivider(stack);
+            UiFactory.AddDivider(content);
 
-        // --- SIZE section ---
-        AddSectionHeader(stack, "SIZE");
+            var familyLabel = new Label();
+            familyLabel.Text = "System Font:";
+            content.Children.Add(familyLabel.Visual);
+            TooltipService.SetTooltip(familyLabel, "Pick an installed system font. Requires a backend that supports system fonts (GDI or DirectWrite).");
 
-        var sizeRow = new StackPanel();
-        sizeRow.Orientation = Orientation.Horizontal;
-        sizeRow.Spacing = 4;
-        stack.Children.Add(sizeRow.Visual);
+            var familyCombo = new ComboBox();
+            familyCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
+            familyCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+            familyCombo.Visual.Width = 0;
+            content.Children.Add(familyCombo.Visual);
 
-        var sizeLabel = new Label();
-        sizeLabel.Text = "Font Size:";
-        sizeRow.AddChild(sizeLabel);
-        TooltipService.SetTooltip(sizeLabel, "Font size in points (4-500)");
+            // Wire system font combo
+            _fontConfig.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(FontConfigViewModel.SystemFonts) && _fontConfig.SystemFonts != null)
+                {
+                    familyCombo.Items = _fontConfig.SystemFonts.Select(g => (object)g.FamilyName).ToList();
+                }
 
-        var sizeTextBox = new TextBox();
-        sizeTextBox.Width = 42;
-        sizeTextBox.Text = "32";
-        sizeTextBox.TextChanged += (_, _) =>
+            };
+
+            familyCombo.SelectionChanged += (_, _) =>
+            {
+                if (familyCombo.SelectedIndex >= 0 && _fontConfig.SystemFonts != null)
+                {
+                    var group = _fontConfig.SystemFonts[familyCombo.SelectedIndex];
+                    _fontConfig.SelectedFontFamily = group.FamilyName;
+                    _fontConfig.CurrentFontGroup = group;
+                    _fontConfig.LoadedAsBold = false;
+                    _fontConfig.LoadedAsItalic = false;
+
+                    // Auto-load Regular, falling back to first available
+                    if (group.Styles.Count > 0)
+                    {
+                        var font = group.Styles.FirstOrDefault(s =>
+                            s.StyleName.Equals("Regular", StringComparison.OrdinalIgnoreCase))
+                            ?? group.Styles[0];
+                        _fontConfig.SelectedSystemFont = font;
+                        try { _fontConfig.LoadFromSystem(font); }
+                        catch (Exception) { }
+                    }
+                }
+            };
+
+            // --- Glyph count (only useful non-redundant info) ---
+            var glyphRow = new StackPanel();
+            glyphRow.Orientation = Orientation.Horizontal;
+            glyphRow.Spacing = 4;
+            content.Children.Add(glyphRow.Visual);
+
+            var glyphLbl = new Label();
+            glyphLbl.Text = "Glyphs in font:";
+            glyphRow.AddChild(glyphLbl);
+
+            var glyphCount = new Label();
+            glyphCount.Text = "0";
+            glyphCount.SetBinding(nameof(Label.Text), nameof(FontConfigViewModel.NumGlyphs));
+            glyphCount.Visual.BindingContext = _fontConfig;
+            glyphRow.AddChild(glyphCount);
+
+            // --- Conditional font info: color glyphs ---
+            var colorGlyphLabel = new Label();
+            colorGlyphLabel.Text = "Has color glyphs";
+            colorGlyphLabel.IsVisible = false;
+            content.Children.Add(colorGlyphLabel.Visual);
+
+            // --- Conditional font info: variable font axes ---
+            var axesLabel = new Label();
+            axesLabel.Text = "";
+            axesLabel.IsVisible = false;
+            content.Children.Add(axesLabel.Visual);
+
+            _fontConfig.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(FontConfigViewModel.HasColorGlyphs))
+                    colorGlyphLabel.IsVisible = _fontConfig.HasColorGlyphs;
+
+                if (e.PropertyName is nameof(FontConfigViewModel.HasVariationAxes)
+                    or nameof(FontConfigViewModel.VariationAxesSummary))
+                {
+                    axesLabel.IsVisible = _fontConfig.HasVariationAxes;
+                    if (_fontConfig.HasVariationAxes)
+                        axesLabel.Text = $"Variable axes: {_fontConfig.VariationAxesSummary}";
+                }
+            };
+        });
+
+        // --- SIZE section (collapsible) ---
+        UiFactory.AddCollapsibleHeader(stack, "SIZE", content =>
         {
-            if (int.TryParse(sizeTextBox.Text, out var size))
-                _fontConfig.FontSize = Math.Clamp(size, 4, 500);
-        };
-        sizeRow.AddChild(sizeTextBox);
+            var sizeRow = new StackPanel();
+            sizeRow.Orientation = Orientation.Horizontal;
+            sizeRow.Spacing = 4;
+            content.Children.Add(sizeRow.Visual);
 
-        var ptLabel = new Label();
-        ptLabel.Text = "pt";
-        sizeRow.AddChild(ptLabel);
+            var sizeLabel = new Label();
+            sizeLabel.Text = "Font Size:";
+            sizeRow.AddChild(sizeLabel);
+            TooltipService.SetTooltip(sizeLabel, "Font size in points (4-500)");
 
-        // --- RASTERIZER section ---
-        var rasterizerLabel = new Label();
-        rasterizerLabel.Text = "Rasterizer:";
-        stack.Children.Add(rasterizerLabel.Visual);
-        TooltipService.SetTooltip(rasterizerLabel, "Glyph rasterizer backend. FreeType: cross-platform default. GDI: Windows-only, matches BMFont output. DirectWrite: Windows-only, modern rendering with color/variable font support.");
+            var sizeTextBox = new TextBox();
+            sizeTextBox.Width = 42;
+            sizeTextBox.Text = "32";
+            sizeTextBox.TextChanged += (_, _) =>
+            {
+                if (int.TryParse(sizeTextBox.Text, out var size))
+                    _fontConfig.FontSize = Math.Clamp(size, 4, 500);
+            };
+            sizeRow.AddChild(sizeTextBox);
 
-        _rasterizerCombo = new ComboBox();
-        _rasterizerCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
-        _rasterizerCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-        _rasterizerCombo.Visual.Width = 0;
-        foreach (var backend in _fontConfig.AvailableBackends)
-            _rasterizerCombo.Items.Add(backend.ToString());
-        _rasterizerCombo.SelectedIndex = _fontConfig.AvailableBackends.ToList().IndexOf(_fontConfig.SelectedBackend);
-        if (_rasterizerCombo.SelectedIndex < 0) _rasterizerCombo.SelectedIndex = 0;
-        _rasterizerCombo.SelectionChanged += (_, _) => OnRasterizerComboSelectionChanged();
-        stack.Children.Add(_rasterizerCombo.Visual);
+            var ptLabel = new Label();
+            ptLabel.Text = "pt";
+            sizeRow.AddChild(ptLabel);
 
-        AddDivider(stack);
+            // --- RASTERIZER section ---
+            var rasterizerLabel = new Label();
+            rasterizerLabel.Text = "Rasterizer:";
+            content.Children.Add(rasterizerLabel.Visual);
+            TooltipService.SetTooltip(rasterizerLabel, "Glyph rasterizer backend. FreeType: cross-platform default. GDI: Windows-only, matches BMFont output. DirectWrite: Windows-only, modern rendering with color/variable font support.");
 
-        // --- GENERATE button (primary action, visually distinct) ---
-        var generateBtnSpacer = new ColoredRectangleRuntime();
-        generateBtnSpacer.Width = 0;
-        generateBtnSpacer.WidthUnits = DimensionUnitType.RelativeToParent;
-        generateBtnSpacer.Height = 4;
-        generateBtnSpacer.Color = Microsoft.Xna.Framework.Color.Transparent;
-        stack.Children.Add(generateBtnSpacer);
+            _rasterizerCombo = new ComboBox();
+            _rasterizerCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
+            _rasterizerCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+            _rasterizerCombo.Visual.Width = 0;
+            foreach (var backend in _fontConfig.AvailableBackends)
+                _rasterizerCombo.Items.Add(backend.ToString());
+            _rasterizerCombo.SelectedIndex = _fontConfig.AvailableBackends.ToList().IndexOf(_fontConfig.SelectedBackend);
+            if (_rasterizerCombo.SelectedIndex < 0) _rasterizerCombo.SelectedIndex = 0;
+            _rasterizerCombo.SelectionChanged += (_, _) => OnRasterizerComboSelectionChanged();
+            content.Children.Add(_rasterizerCombo.Visual);
+        });
+
+        // --- ATLAS section (collapsible) ---
+        UiFactory.AddCollapsibleHeader(stack, "ATLAS", content =>
+        {
+            BuildAtlasSection(content);
+        });
+
+        // --- OUTPUT section (collapsible) ---
+        UiFactory.AddCollapsibleHeader(stack, "OUTPUT", content =>
+        {
+            BuildOutputSection(content);
+        });
+
+        // --- Fixed bottom bar: Generate button + Auto-regenerate ---
+        BuildGenerateBar(root);
+    }
+
+    private void BuildGenerateBar(ContainerRuntime parent)
+    {
+        var bottomBar = new ContainerRuntime();
+        bottomBar.Height = 60;
+        bottomBar.HeightUnits = DimensionUnitType.Absolute;
+        bottomBar.WidthUnits = DimensionUnitType.RelativeToParent;
+        bottomBar.Width = 0;
+        bottomBar.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
+        bottomBar.StackSpacing = Theme.ControlSpacing;
+        parent.Children.Add(bottomBar);
+
+        // Separator line at top of bar
+        var separator = new ColoredRectangleRuntime();
+        separator.Width = 0;
+        separator.WidthUnits = DimensionUnitType.RelativeToParent;
+        separator.Height = 1;
+        separator.Color = Theme.PanelBorder;
+        bottomBar.Children.Add(separator);
+
+        // Inner padding container
+        var barInner = new ContainerRuntime();
+        barInner.WidthUnits = DimensionUnitType.RelativeToParent;
+        barInner.Width = -(Theme.PanelPadding * 2);
+        barInner.X = Theme.PanelPadding;
+        barInner.Y = Theme.ControlSpacing;
+        barInner.HeightUnits = DimensionUnitType.RelativeToChildren;
+        barInner.Height = 0;
+        barInner.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
+        barInner.StackSpacing = Theme.ControlSpacing;
+        bottomBar.Children.Add(barInner);
 
         var generateBtn = new Button();
         generateBtn.Text = "Generate";
@@ -283,35 +344,23 @@ public class FontConfigPanel : Panel
         generateBtn.Visual.Width = 0;
         generateBtn.IsEnabled = _fontConfig.IsFontLoaded;
         generateBtn.Click += async (_, _) => await _mainViewModel.GenerateAsync();
-        stack.Children.Add(generateBtn.Visual);
+        barInner.Children.Add(generateBtn.Visual);
         TooltipService.SetTooltip(generateBtn, "Generate bitmap font from current settings");
 
-        // Enable/disable Generate button based on font loaded state
         _fontConfig.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(FontConfigViewModel.IsFontLoaded))
                 generateBtn.IsEnabled = _fontConfig.IsFontLoaded;
         };
 
-        // Auto-regenerate toggle
         var autoRegenCb = new CheckBox();
         autoRegenCb.Text = "Auto-regenerate";
         autoRegenCb.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
         autoRegenCb.Visual.Width = 0;
         autoRegenCb.Checked += (_, _) => _mainViewModel.AutoRegenerate = true;
         autoRegenCb.Unchecked += (_, _) => _mainViewModel.AutoRegenerate = false;
-        stack.Children.Add(autoRegenCb.Visual);
+        barInner.Children.Add(autoRegenCb.Visual);
         TooltipService.SetTooltip(autoRegenCb, "Auto-regenerate on settings change");
-
-        // --- ATLAS section ---
-        AddDivider(stack);
-        AddSectionHeader(stack, "ATLAS");
-        BuildAtlasSection(stack);
-
-        // --- OUTPUT section ---
-        AddDivider(stack);
-        AddSectionHeader(stack, "OUTPUT");
-        BuildOutputSection(stack);
     }
 
     private void OnRasterizerComboSelectionChanged()
@@ -320,41 +369,6 @@ public class FontConfigPanel : Panel
         var idx = _rasterizerCombo.SelectedIndex;
         if (idx >= 0 && idx < _fontConfig.AvailableBackends.Count)
             _fontConfig.SelectedBackend = _fontConfig.AvailableBackends[idx];
-    }
-
-    private static void AddSectionHeader(Gum.Wireframe.GraphicalUiElement parent, string text)
-    {
-        var container = new ContainerRuntime();
-        container.Width = 0;
-        container.WidthUnits = DimensionUnitType.RelativeToParent;
-        container.Height = 22;
-        container.HeightUnits = DimensionUnitType.Absolute;
-        parent.Children.Add(container);
-
-        var bg = new ColoredRectangleRuntime();
-        bg.Width = 0;
-        bg.WidthUnits = DimensionUnitType.RelativeToParent;
-        bg.Height = 0;
-        bg.HeightUnits = DimensionUnitType.RelativeToParent;
-        bg.Color = new Microsoft.Xna.Framework.Color(50, 50, 55);
-        container.Children.Add(bg);
-
-        var header = new TextRuntime();
-        header.Text = text;
-        header.Color = Theme.Accent;
-        header.X = 6;
-        header.Y = 2;
-        container.Children.Add(header);
-    }
-
-    private static void AddDivider(Gum.Wireframe.GraphicalUiElement parent)
-    {
-        var divider = new ColoredRectangleRuntime();
-        divider.Width = 0;
-        divider.WidthUnits = DimensionUnitType.RelativeToParent;
-        divider.Height = 1;
-        divider.Color = Theme.PanelBorder;
-        parent.Children.Add(divider);
     }
 
     private void BuildAtlasSection(Gum.Wireframe.GraphicalUiElement stack)
@@ -476,7 +490,7 @@ public class FontConfigPanel : Panel
         padContainer.StackSpacing = 2;
         padSpaceRow.Children.Add(padContainer);
 
-        AddLabeledDivider(padContainer, "Padding");
+        UiFactory.AddSectionHeader(padContainer, "Padding");
 
         var padCross = new StackPanel();
         padCross.Orientation = Orientation.Horizontal;
@@ -528,7 +542,7 @@ public class FontConfigPanel : Panel
         spaceContainer.StackSpacing = 2;
         padSpaceRow.Children.Add(spaceContainer);
 
-        AddLabeledDivider(spaceContainer, "Spacing");
+        UiFactory.AddSectionHeader(spaceContainer, "Spacing");
 
         var spacingGrid = new Grid();
         spacingGrid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -641,11 +655,4 @@ public class FontConfigPanel : Panel
         return box;
     }
 
-    private static void AddLabeledDivider(Gum.Wireframe.GraphicalUiElement parent, string label)
-    {
-        var text = new TextRuntime();
-        text.Text = label;
-        text.Color = Theme.Accent;
-        parent.Children.Add(text);
-    }
 }
