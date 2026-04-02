@@ -11,8 +11,6 @@ internal static class OutlineTransforms
     /// <summary>tan(12 degrees) -- matches FreeType's oblique angle.</summary>
     private const float ItalicShear = 0.2126f;
 
-    /// <summary>Cosine threshold for sharp angle clamping (~160 degrees).</summary>
-    private const float SharpAngleCosine = -0.9397f;
 
     /// <summary>
     /// Applies an italic shear transform to all vertices in the array.
@@ -115,7 +113,10 @@ internal static class OutlineTransforms
     }
 
     /// <summary>
-    /// Emboldens a single contour by computing bisector normals and shifting points.
+    /// Emboldens a single contour. Faithful port of FreeType's FT_Outline_EmboldenXY:
+    /// uses unnormalized bisector with halved strength, plus a uniform half-strength
+    /// offset applied to all points. FreeType's clamping (min-segment / sin) prevents
+    /// thin features like the A's counter apex from collapsing.
     /// </summary>
     private static unsafe void EmboldenContour(
         Stb.stbtt_vertex* vertices, int start, int end, float strength)
@@ -124,18 +125,10 @@ internal static class OutlineTransforms
         if (count < 2)
             return;
 
-        // Compute signed area to determine winding direction.
-        // In TrueType's y-up coordinate system, outer contours are clockwise,
-        // which gives a NEGATIVE signed area from the shoelace formula.
-        // Negative area = clockwise (outer contour) = expand outward.
-        // Positive area = counter-clockwise (hole) = shrink inward.
-        float signedArea = ComputeSignedArea(vertices, start, end);
-        float direction = signedArea < 0 ? 1.0f : -1.0f;
+        // FreeType halves the strength: the bold effect comes from half-strength
+        // lateral shift + half-strength uniform offset on every point.
+        float halfStrength = strength * 0.5f;
 
-        // Collect on-curve point indices for the contour.
-        // We need to compute shifts for each vertex based on its neighbors.
-        // We'll store computed shifts, then apply them all at once to avoid
-        // modifying vertices while iterating.
         var shiftsX = new float[count];
         var shiftsY = new float[count];
 
@@ -145,7 +138,6 @@ internal static class OutlineTransforms
             int prev = start + ((i - 1 + count) % count);
             int next = start + ((i + 1) % count);
 
-            // Get point positions (on-curve points).
             float px = vertices[prev].x;
             float py = vertices[prev].y;
             float cx = vertices[curr].x;
@@ -164,9 +156,12 @@ internal static class OutlineTransforms
             float outLen = MathF.Sqrt(outDx * outDx + outDy * outDy);
 
             if (inLen < 1e-6f && outLen < 1e-6f)
+            {
+                // Degenerate point — still gets the uniform offset below.
                 continue;
+            }
 
-            // Normalize
+            // Normalize edge directions
             if (inLen >= 1e-6f)
             {
                 inDx /= inLen;
@@ -176,6 +171,7 @@ internal static class OutlineTransforms
             {
                 inDx = outDx / outLen;
                 inDy = outDy / outLen;
+                inLen = outLen;
             }
 
             if (outLen >= 1e-6f)
@@ -187,75 +183,63 @@ internal static class OutlineTransforms
             {
                 outDx = inDx;
                 outDy = inDy;
+                outLen = inLen;
             }
 
-            // Unit normals perpendicular to each edge (rotated 90 degrees CCW).
-            float inNx = -inDy;
-            float inNy = inDx;
-            float outNx = -outDy;
-            float outNy = outDx;
+            // dot(in, out) — cosine of angle between edges
+            float dot = inDx * outDx + inDy * outDy;
 
-            // Bisector: average of the two normals
-            float bisX = inNx + outNx;
-            float bisY = inNy + outNy;
-            float bisLen = MathF.Sqrt(bisX * bisX + bisY * bisY);
+            // d = 1 + dot, matching FreeType's (d + 0x10000)
+            float d = 1.0f + dot;
 
-            if (bisLen < 1e-6f)
+            if (d < 0.0625f) // ~160° threshold, matches FreeType's -0xF000
             {
-                // Normals cancel out (180-degree turn). Use incoming normal.
-                bisX = inNx;
-                bisY = inNy;
-                bisLen = 1.0f;
+                // Very sharp angle — zero lateral shift to prevent spikes.
+                // Point still receives the uniform offset.
+                continue;
+            }
+
+            // Unnormalized bisector of the two edge normals (90° CCW rotation).
+            // NOT normalizing is key: the natural magnitude sqrt(2(1+dot)) damps
+            // the shift at sharp angles, preventing counter collapse.
+            float bisX = -inDy + (-outDy); // inNx + outNx
+            float bisY = inDx + outDx;      // inNy + outNy
+
+            // Cross product magnitude |in × out| = |sin(angle)|
+            float q = MathF.Abs(outDx * inDy - outDy * inDx);
+
+            // Minimum adjacent segment length
+            float l = MathF.Min(inLen, outLen);
+
+            // FreeType's clamping: use normal scaling when halfStrength * q <= l * d,
+            // otherwise clamp to l/q to prevent thin segments from collapsing.
+            if (q > 1e-6f && halfStrength * q > l * d)
+            {
+                // Clamped: shift = bisector * l / q
+                float clampScale = l / q;
+                shiftsX[i] = bisX * clampScale;
+                shiftsY[i] = bisY * clampScale;
             }
             else
             {
-                bisX /= bisLen;
-                bisY /= bisLen;
+                // Normal: shift = bisector * halfStrength / d
+                float scale = halfStrength / d;
+                shiftsX[i] = bisX * scale;
+                shiftsY[i] = bisY * scale;
             }
-
-            // Dot product of the two normals determines the miter scaling.
-            float dot = inNx * outNx + inNy * outNy;
-
-            // Scale factor: strength / (1 + dot)
-            // When normals are parallel (dot=1), scale = strength/2 (correct).
-            // When perpendicular (dot=0), scale = strength.
-            // Clamp at sharp angles to prevent spikes.
-            float scale;
-            if (dot < SharpAngleCosine)
-            {
-                // Very sharp angle -- clamp to prevent spike artifacts.
-                scale = strength;
-            }
-            else
-            {
-                scale = strength / (1.0f + dot);
-            }
-
-            // Also clamp to prevent thin segment collapse.
-            // If the shift would exceed half the minimum adjacent segment length,
-            // limit it to prevent self-intersection.
-            float minSegLen = MathF.Min(inLen, outLen);
-            if (minSegLen > 1e-6f && scale > minSegLen * 0.5f)
-            {
-                scale = minSegLen * 0.5f;
-            }
-
-            shiftsX[i] = bisX * scale * direction;
-            shiftsY[i] = bisY * scale * direction;
         }
 
-        // Apply shifts to all vertex fields.
+        // Apply lateral shifts + uniform half-strength offset to all vertices.
+        // The uniform offset matches FreeType's `points[i] += xstrength + shift`.
         for (int i = 0; i < count; i++)
         {
             int idx = start + i;
-            float sx = shiftsX[i];
-            float sy = shiftsY[i];
+            float sx = shiftsX[i] + halfStrength;
+            float sy = shiftsY[i] + halfStrength;
 
             vertices[idx].x = (short)(vertices[idx].x + (int)MathF.Round(sx));
             vertices[idx].y = (short)(vertices[idx].y + (int)MathF.Round(sy));
 
-            // Apply the same shift to control points. For curves, the control points
-            // should move with the on-curve point to maintain the curve shape.
             byte vtype = vertices[idx].type;
             if (vtype == 3 || vtype == 4) // vcurve or vcubic
             {
@@ -270,28 +254,4 @@ internal static class OutlineTransforms
         }
     }
 
-    /// <summary>
-    /// Computes the signed area of a contour using the shoelace formula.
-    /// Negative = clockwise (outer contour in TrueType y-up), positive = counter-clockwise (hole).
-    /// </summary>
-    private static unsafe float ComputeSignedArea(Stb.stbtt_vertex* vertices, int start, int end)
-    {
-        float area = 0;
-        int count = end - start + 1;
-
-        for (int i = 0; i < count; i++)
-        {
-            int curr = start + i;
-            int next = start + ((i + 1) % count);
-
-            float x0 = vertices[curr].x;
-            float y0 = vertices[curr].y;
-            float x1 = vertices[next].x;
-            float y1 = vertices[next].y;
-
-            area += (x0 * y1) - (x1 * y0);
-        }
-
-        return area * 0.5f;
-    }
 }
