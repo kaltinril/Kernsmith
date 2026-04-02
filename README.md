@@ -34,6 +34,7 @@
 - **Pipeline metrics** -- stage-level timing breakdown for profiling
 - **Cross-platform** -- Windows, Linux, macOS via .NET 10.0
 - **Pluggable rasterizers** -- swap rendering backends to match your platform and feature needs
+- **Hardened font parsing** -- bounds validation and resource limits for untrusted font files
 
 ## Rasterizer Backends
 
@@ -181,6 +182,19 @@ var result2 = BmFont.Builder()
 - `WithForceSyntheticBold()` / `WithForceSyntheticItalic()` always apply synthetic styling, skipping native face lookup
 - When using a file path (not a system font), bold/italic is always synthetic -- `WithBold()` and `WithForceSyntheticBold()` produce identical results
 - For native vs synthetic distinction, use `WithSystemFont()` so the font family can be searched for a matching face
+
+### Bitmap Post-Processors
+
+For backends without native bold/italic support, use bitmap-level post-processors:
+
+```csharp
+var result = BmFont.Builder()
+    .WithFont("font.ttf")
+    .WithSize(32)
+    .WithPostProcessor(new BoldPostProcessor(strength: 2))
+    .WithPostProcessor(new ItalicPostProcessor(shear: 0.2f))
+    .Build();
+```
 
 You can also start the builder from a `.bmfc` config and override individual settings:
 
