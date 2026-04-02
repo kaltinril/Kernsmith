@@ -41,7 +41,9 @@ Per-glyph from `hmtx` and rasterized bitmap:
 
 - Parse cmap table to map Unicode codepoints → glyph indices
 - Support Format 4 (BMP, most common) and Format 12 (full Unicode)
-- Cache the lookup table
+- Cache the lookup table (see Int32Map note below)
+
+> **FontStashSharp insight:** FontStashSharp uses a specialized `Int32Map` (integer-keyed hash map) instead of `Dictionary<int, T>` for cmap and glyph lookups. It hashes via `key & int.MaxValue` (no virtual calls), uses static pre-computed primes for bucket sizing, and maintains a free-list for deleted entries to reduce GC pressure. This is most impactful for large glyph sets (CJK, full Unicode). Consider a similar specialized map for the cmap lookup cache.
 
 ### Size Conversion
 

@@ -1,6 +1,6 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-21, 30-33, 33B, 32B, 32d, 55, 60-69, 72-78, 77B, 79, 80 complete. Phases 34-36 (rasterizer plugins, bold/italic) are planning/future. Phase 95, 99, 110, 111, 150 planning.
+> **Status**: Phases 1-21, 30-33, 33B, 32B, 32d, 55, 60-69, 72-78, 77B, 79, 80 complete. Phase 34 (custom rasterizer) is planning/future. Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper). Phase 36 superseded by Phase 110. Phase 95, 99, 110, 111, 150 planning.
 > **Date**: 2026-03-31
 
 ---
@@ -86,8 +86,8 @@ Output Layer
 | 32d | [StbTrueType Synthetic Bold & Italic](done/phase-32d-stbtruetype-synthetic-bold-italic.md) | Outline-level synthetic bold/italic using stb_truetype shape API | Complete |
 | 33 | [WASM Integration and Validation](done/phase-33-wasm-validation.md) | Validate KernSmith + StbTrueType works in Blazor WASM | Complete |
 | 34 | [Custom Pure C# Rasterizer](phase-34-custom-rasterizer.md) | Research/prototype a fully custom pure C# TTF rasterizer from scratch | Future |
-| 35 | [FontStashSharp Rasterizer](phase-35-fontstashsharp-rasterizer.md) | Rasterizer plugin backed by FontStashSharp library -- Recommended: Defer indefinitely | Future |
-| 36 | [Bitmap Bold & Italic Post-Processing](phase-36-bitmap-bold-italic-postprocessing.md) | Stackable bitmap-level bold/italic effects for any rasterizer backend | Planning |
+| 35 | [FontStashSharp Rasterizer](done/phase-35-fontstashsharp-rasterizer.md) | Rejected — FontStashSharp is just a stbTrueTypeSharp wrapper; useful techniques distilled into Phases 160-180 | Done |
+| 36 | [Bitmap Bold & Italic Post-Processing](done/phase-36-bitmap-bold-italic-postprocessing.md) | Superseded — absorbed into Phase 110 | Done |
 | 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
 | 81 | [Hiero Format Support](phase-81-hiero-format-support.md) | Hiero `.hiero` config format specification and design decisions | Planning |
 | 82 | [Hiero Core Library](phase-82-hiero-core-library.md) | Add `.hiero` config read/write to the NuGet library | Planning |

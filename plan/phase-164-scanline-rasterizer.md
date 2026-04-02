@@ -105,6 +105,8 @@ Phase 165 converts `RasterResult` to the public `RasterizedGlyph` type:
 - **Numeric stability**: Use `float` (not `double`) — precision is sufficient and matches reference implementations.
 - **Bitmap padding**: Add 1-pixel border to avoid edge artifacts (trim in final output if needed).
 
+> **FontStashSharp insight:** stb_truetype includes lightweight horizontal/vertical box prefilter kernels (`stbtt__h_prefilter`, `stbtt__v_prefilter`) that blur along one axis as a post-rasterization step for subpixel positioning. This is much cheaper than full supersampling and improves small-size rendering quality. Consider implementing a similar 1D prefilter pass as an optional post-rasterization step, especially for sizes under ~20px where aliasing is most visible.
+
 ## Reference
 
 - stb_truetype.h: `stbtt__rasterize_sorted_edges` (~line 3400)

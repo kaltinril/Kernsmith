@@ -63,6 +63,8 @@ Rationale:
 
 Alternative considered: Oversampled scanline fill — simpler but 4-16x slower and higher memory.
 
+> **FontStashSharp insight:** stb_truetype internally offers two rasterization algorithms (a fast/rough one and a slower/accurate one). Consider exposing a similar quality tier system — e.g., a fast scanline mode for previews and a high-quality coverage mode for final output — selectable via `RasterOptions`.
+
 ## Outline Representation Decision
 
 **Decision**: Universal cubic Bezier representation internally.

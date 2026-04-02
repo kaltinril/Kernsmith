@@ -31,6 +31,8 @@ The main pipeline already supports supersampling (render at Nx, downscale), but 
    ```
 4. Use premultiplied alpha for RGBA downscaling
 
+> **FontStashSharp insight:** stb_truetype includes lightweight 1D box prefilter kernels (`stbtt__h_prefilter`, `stbtt__v_prefilter`) as a cheaper alternative to full NxN supersampling. These blur along a single axis for subpixel positioning quality. Consider offering this as a "light" supersampling option (e.g., `SuperSample = 0` for prefilter-only) that gives most of the quality benefit of 2x supersampling at a fraction of the cost.
+
 **RGSS (Rotated Grid Super Sampling)** — optional enhancement:
 - Instead of regular NxN grid, sample at rotated positions
 - Better diagonal quality with only 2×2 samples (4 samples vs 16 for 4x regular)

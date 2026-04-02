@@ -45,6 +45,10 @@ Before optimizing, establish baselines:
 - **Glyph bbox clipping**: Only allocate bitmap for glyph bounding box, not full em square
 - **Cache cmap lookups**: Build a dictionary for O(1) codepoint→glyphIndex
 
+> **FontStashSharp insight — Kerning Hash Cache:** Pack two glyph IDs into a single `int` key using `((g1 << 16) | (g1 >> 16)) ^ g2` for O(1) kerning pair lookups. This avoids O(n) kern table scans and eliminates the need for a `(int, int)` tuple key (which boxes on dictionary lookup). Apply to both GPOS and kern table caching.
+
+> **FontStashSharp insight — Specialized Int32Map:** Replace `Dictionary<int, T>` in hot paths (cmap cache, glyph cache, kerning cache) with a specialized integer-keyed hash map. Key optimizations: hash via `key & int.MaxValue` (no virtual GetHashCode calls), static pre-computed primes for bucket sizing, free-list for deleted entries (reduces GC). Most impactful for CJK/full Unicode glyph sets.
+
 ### SIMD Acceleration (if measurable benefit)
 
 - **Cumulative sum**: The final scanline pass is a perfect SIMD target
@@ -63,6 +67,8 @@ Before optimizing, establish baselines:
 - **Lazy table parsing**: Only parse tables when first accessed
 - **Glyph cache**: Cache parsed outlines for glyphs requested more than once
 - **Outline pool**: Reuse `GlyphOutline` arrays across rasterization calls
+
+> **FontStashSharp insight — MRU (Most Recently Used) Cache:** Cache the last-accessed glyph storage bucket to skip dictionary lookups when consecutive glyphs share the same effect config or font size. Sequential glyph processing (e.g., rasterizing "Hello" where all glyphs share the same config) hits this cache nearly 100% of the time. Essentially a free optimization — one field storing the last lookup result.
 
 ### Parallel Rasterization (non-WASM only)
 
