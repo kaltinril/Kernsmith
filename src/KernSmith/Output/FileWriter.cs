@@ -70,12 +70,32 @@ internal static class FileWriter
         var directory = Path.GetDirectoryName(outputPath) ?? ".";
         var baseName = Path.GetFileNameWithoutExtension(outputPath);
 
-        foreach (var page in pages)
+        // Encode all pages in parallel (sequential on WASM where threads are unavailable)
+        var encodedPages = new byte[pages.Count][];
+
+        void EncodeSinglePage(int i)
         {
+            var page = pages[i];
+            encodedPages[i] = encoder.Encode(page.PixelData, page.Width, page.Height, page.Format);
+        }
+
+        if (OperatingSystem.IsBrowser())
+        {
+            for (var i = 0; i < pages.Count; i++)
+                EncodeSinglePage(i);
+        }
+        else
+        {
+            Parallel.For(0, pages.Count, EncodeSinglePage);
+        }
+
+        // Write sequentially (I/O bound)
+        for (var i = 0; i < pages.Count; i++)
+        {
+            var page = pages[i];
             var fileName = $"{baseName}_{page.PageIndex}{encoder.FileExtension}";
             var filePath = Path.Combine(directory, fileName);
-            var encoded = encoder.Encode(page.PixelData, page.Width, page.Height, page.Format);
-            File.WriteAllBytes(filePath, encoded);
+            File.WriteAllBytes(filePath, encodedPages[i]);
         }
     }
 }

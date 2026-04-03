@@ -354,7 +354,8 @@ public static class BmFontReader
             Charset: GetString(kvp, "charset"),
             Aa: GetInt(kvp, "aa", 1),
             Padding: padding,
-            Spacing: spacing);
+            Spacing: spacing,
+            Outline: GetInt(kvp, "outline"));
     }
 
     private static CommonBlock ParseCommonFromKvp(Dictionary<string, string> kvp)
@@ -419,7 +420,8 @@ public static class BmFontReader
             Charset: XmlAttrStr(el, "charset"),
             Aa: XmlAttrInt(el, "aa", 1),
             Padding: padding,
-            Spacing: spacing);
+            Spacing: spacing,
+            Outline: XmlAttrInt(el, "outline"));
     }
 
     private static CommonBlock ParseCommonFromXml(XElement el)
@@ -464,7 +466,7 @@ public static class BmFontReader
         var paddingLeft = data[10];
         var spacingH = data[11];
         var spacingV = data[12];
-        // data[13] = outline
+        var outline = data[13];
 
         // Font name: null-terminated string starting at offset 14
         var nameEnd = 14;
@@ -484,7 +486,8 @@ public static class BmFontReader
             Charset: "",
             Aa: aa,
             Padding: new Padding(paddingUp, paddingRight, paddingDown, paddingLeft),
-            Spacing: new Spacing(spacingH, spacingV));
+            Spacing: new Spacing(spacingH, spacingV),
+            Outline: outline);
     }
 
     private static CommonBlock ParseCommonBlockBinary(ReadOnlySpan<byte> data)

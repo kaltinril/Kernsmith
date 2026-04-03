@@ -1,10 +1,28 @@
 # Phase 95 -- Performance Optimization & Bug Fixes
 
-> **Status**: Planning
+> **Status**: Partial
 > **Size**: Large
 > **Created**: 2026-03-29
 > **Origin**: Full codebase audit (efficiency, speed, correctness)
 > **Goal**: Fix confirmed bugs and improve generation performance without changing output.
+>
+> **Completion Notes (2026-04-02)**:
+> - Bugs 1-4: DONE
+> - Perf 1 (FT_Set_Char_Size cache): DONE
+> - Perf 2+3+6b (pipeline merge & parallelize): DONE
+> - Perf 4 (MaxRects O(n^3) to O(n^2)): DONE
+> - Perf 5 (box blur): already DONE in Phase 37
+> - Perf 6 (ArrayPool for glyph/atlas buffers): DEFERRED -- large refactor with lifecycle complexity
+> - Perf 7 (redundant font copies): DONE
+> - Perf 8 (parallel page encoding): DONE
+> - Perf 9 (BGRA swap): DONE
+> - Perf 10 (integer alpha blending): DEFERRED -- risk of byte-level output differences
+> - Perf 11 (format check hoist): DONE
+> - Perf 12 (TextFormatter StringBuilder): DONE
+> - Perf 13 (BmFontResult Lazy<T>): DONE
+> - Perf 14 (MemoryStream pre-alloc): DONE
+> - Perf 15 (EDT ArrayPool): DONE
+> - Perf 16 (HashSet codepoints): SKIPPED -- trivially low impact (called once)
 
 ## Bugs
 

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using KernSmith.Atlas;
 using KernSmith.Font;
 using KernSmith.Output;
@@ -252,10 +253,10 @@ public static class BmFont
             }
             var needsDownscale = ssLevel > 1;
 
-            // Apply remaining per-glyph transforms in a single pass
+            // Apply remaining per-glyph transforms in a single pass (parallelized on non-WASM)
             if (hasEffects || activePostProcessors != null || needsDownscale)
             {
-                for (var i = 0; i < glyphs.Count; i++)
+                void ProcessGlyph(int i)
                 {
                     var g = glyphs[i];
                     if (hasEffects) g = GlyphCompositor.Composite(g, effects);
@@ -267,13 +268,31 @@ public static class BmFont
                     if (needsDownscale) g = SuperSampleDownscale(g, ssLevel);
                     glyphs[i] = g;
                 }
+
+                if (OperatingSystem.IsBrowser())
+                {
+                    for (var i = 0; i < glyphs.Count; i++)
+                        ProcessGlyph(i);
+                }
+                else
+                {
+                    Parallel.For(0, glyphs.Count, ProcessGlyph);
+                }
             }
 
             if (options.EqualizeCellHeights && glyphs.Count > 0)
             {
                 var maxHeight = glyphs.Max(g => g.Height);
-                for (var i = 0; i < glyphs.Count; i++)
-                    glyphs[i] = EqualizeCellHeight(glyphs[i], maxHeight);
+                if (OperatingSystem.IsBrowser())
+                {
+                    for (var i = 0; i < glyphs.Count; i++)
+                        glyphs[i] = EqualizeCellHeight(glyphs[i], maxHeight);
+                }
+                else
+                {
+                    Parallel.For(0, glyphs.Count, i =>
+                        glyphs[i] = EqualizeCellHeight(glyphs[i], maxHeight));
+                }
             }
 
             var rasterizedCodepoints = new HashSet<int>(glyphs.Select(g => g.Codepoint));
@@ -302,8 +321,13 @@ public static class BmFont
         }
     }
 
-    internal static int EncodeCombinedId(int fontIndex, int codepoint) => (fontIndex << 20) | (codepoint & 0xFFFFF);
-    internal static (int FontIndex, int Codepoint) DecodeCombinedId(int combinedId) => (combinedId >> 20, combinedId & 0xFFFFF);
+    internal static int EncodeCombinedId(int fontIndex, int codepoint)
+    {
+        if ((uint)fontIndex > 0x7FF)
+            throw new ArgumentOutOfRangeException(nameof(fontIndex), $"Font index {fontIndex} exceeds the maximum of 2047 for combined ID encoding.");
+        return (fontIndex << 21) | (codepoint & 0x1FFFFF);
+    }
+    internal static (int FontIndex, int Codepoint) DecodeCombinedId(int combinedId) => (combinedId >>> 21, combinedId & 0x1FFFFF);
 
     private static BmFontResult GenerateCore(byte[] fontData, FontGeneratorOptions? options, string? sourceFontFile, string? sourceFontName, string? systemFontFamily = null)
     {
@@ -681,20 +705,28 @@ public static class BmFont
                 ?? throw new FontParsingException($"System font '{fontFamily}' not found");
         }
 
-        options.FaceIndex = fontResult.FaceIndex;
+        var originalFaceIndex = options.FaceIndex;
+        try
+        {
+            options.FaceIndex = fontResult.FaceIndex;
 
-        // When a styled variant was found (e.g., Georgia Bold), use LoadFont(data) so the
-        // rasterizer gets the actual bold font bytes. Don't clear options.Bold/Italic --
-        // rasterizers need them (GDI uses them in LOGFONTW to select the correct face,
-        // FreeType checks style_flags to avoid double-applying, DirectWrite ignores
-        // redundant simulations on already-styled faces).
-        //
-        // When ForceSynthetic is set, also use LoadFont(data) with the regular face so
-        // rasterizers apply synthetic styling on the regular font rather than GDI's font
-        // mapper silently selecting the real bold/italic face via the system font path.
-        bool forceSynthetic = options.ForceSyntheticBold || options.ForceSyntheticItalic;
-        var sysFamily = (loadedStyledVariant || forceSynthetic) ? null : fontFamily;
-        return GenerateCore(fontResult.Data, options, sourceFontFile: null, sourceFontName: fontFamily, systemFontFamily: sysFamily);
+            // When a styled variant was found (e.g., Georgia Bold), use LoadFont(data) so the
+            // rasterizer gets the actual bold font bytes. Don't clear options.Bold/Italic --
+            // rasterizers need them (GDI uses them in LOGFONTW to select the correct face,
+            // FreeType checks style_flags to avoid double-applying, DirectWrite ignores
+            // redundant simulations on already-styled faces).
+            //
+            // When ForceSynthetic is set, also use LoadFont(data) with the regular face so
+            // rasterizers apply synthetic styling on the regular font rather than GDI's font
+            // mapper silently selecting the real bold/italic face via the system font path.
+            bool forceSynthetic = options.ForceSyntheticBold || options.ForceSyntheticItalic;
+            var sysFamily = (loadedStyledVariant || forceSynthetic) ? null : fontFamily;
+            return GenerateCore(fontResult.Data, options, sourceFontFile: null, sourceFontName: fontFamily, systemFontFamily: sysFamily);
+        }
+        finally
+        {
+            options.FaceIndex = originalFaceIndex;
+        }
     }
 
     /// <summary>Generates a BMFont from a system-installed font at the given size.</summary>

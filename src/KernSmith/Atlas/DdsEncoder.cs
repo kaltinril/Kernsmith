@@ -34,6 +34,9 @@ internal sealed class DdsEncoder : IAtlasEncoder
         var bpp = isRgba ? 32 : 8;
         var bytesPerPixel = bpp / 8;
         var pitch = width * bytesPerPixel;
+        var expectedSize = width * height * bytesPerPixel;
+        if (pixelData.Length < expectedSize)
+            throw new ArgumentException($"pixelData length {pixelData.Length} is less than expected {expectedSize} for {width}x{height} at {bytesPerPixel} bytes/pixel.", nameof(pixelData));
 
         // Total size: 4 (magic) + 124 (header) + pixel data
         var result = new byte[4 + HeaderSize + height * pitch];
@@ -92,16 +95,19 @@ internal sealed class DdsEncoder : IAtlasEncoder
             for (var row = 0; row < height; row++)
             {
                 var srcRowOffset = row * width * 4;
+                var rowLen = width * 4;
+
+                // Copy the whole row first (G and A bytes land in the right place).
+                Buffer.BlockCopy(pixelData, srcRowOffset, result, offset, rowLen);
+
+                // Then swap R and B in place.
                 for (var x = 0; x < width; x++)
                 {
-                    var si = srcRowOffset + x * 4;
-                    if (si + 3 >= pixelData.Length) continue;
-
-                    result[offset++] = pixelData[si + 2]; // B
-                    result[offset++] = pixelData[si + 1]; // G
-                    result[offset++] = pixelData[si + 0]; // R
-                    result[offset++] = pixelData[si + 3]; // A
+                    var di = offset + x * 4;
+                    (result[di + 0], result[di + 2]) = (result[di + 2], result[di + 0]);
                 }
+
+                offset += rowLen;
             }
         }
         else

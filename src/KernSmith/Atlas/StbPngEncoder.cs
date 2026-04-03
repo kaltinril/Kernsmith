@@ -18,9 +18,14 @@ internal sealed class StbPngEncoder : IAtlasEncoder
             _ => throw new ArgumentOutOfRangeException(nameof(format), format, "Unsupported pixel format.")
         };
 
-        using var ms = new MemoryStream();
+        // PNG is typically 30-70% of raw size; estimate 50%.
+        var estimatedSize = pixelData.Length / 2;
+        using var ms = new MemoryStream(estimatedSize);
         var writer = new ImageWriter();
         writer.WritePng(pixelData, width, height, components, ms);
+
+        if (ms.TryGetBuffer(out var buffer))
+            return buffer.AsSpan().ToArray();
         return ms.ToArray();
     }
 }

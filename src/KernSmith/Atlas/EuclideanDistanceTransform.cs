@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace KernSmith.Atlas;
 
 /// <summary>
@@ -26,36 +28,45 @@ internal static class EuclideanDistanceTransform
             grid[i] = alphaData[i] > 0 ? 0f : Infinity;
 
         var maxDim = Math.Max(width, height);
-        var f = new float[maxDim];
-        var v = new int[maxDim];
-        var z = new float[maxDim + 1];
-        var d = new float[maxDim];
-
-        // Column-wise 1D EDT.
-        for (var x = 0; x < width; x++)
+        var f = ArrayPool<float>.Shared.Rent(maxDim);
+        var v = ArrayPool<int>.Shared.Rent(maxDim);
+        var z = ArrayPool<float>.Shared.Rent(maxDim + 1);
+        var d = ArrayPool<float>.Shared.Rent(maxDim);
+        try
         {
-            for (var y = 0; y < height; y++)
-                f[y] = grid[y * width + x];
+            // Column-wise 1D EDT.
+            for (var x = 0; x < width; x++)
+            {
+                for (var y = 0; y < height; y++)
+                    f[y] = grid[y * width + x];
 
-            Edt1D(f, height, v, z, d);
+                Edt1D(f, height, v, z, d);
 
+                for (var y = 0; y < height; y++)
+                    grid[y * width + x] = d[y];
+            }
+
+            // Row-wise 1D EDT.
             for (var y = 0; y < height; y++)
-                grid[y * width + x] = d[y];
+            {
+                for (var x = 0; x < width; x++)
+                    f[x] = grid[y * width + x];
+
+                Edt1D(f, width, v, z, d);
+
+                for (var x = 0; x < width; x++)
+                    grid[y * width + x] = d[x];
+            }
+
+            return grid;
         }
-
-        // Row-wise 1D EDT.
-        for (var y = 0; y < height; y++)
+        finally
         {
-            for (var x = 0; x < width; x++)
-                f[x] = grid[y * width + x];
-
-            Edt1D(f, width, v, z, d);
-
-            for (var x = 0; x < width; x++)
-                grid[y * width + x] = d[x];
+            ArrayPool<float>.Shared.Return(f);
+            ArrayPool<int>.Shared.Return(v);
+            ArrayPool<float>.Shared.Return(z);
+            ArrayPool<float>.Shared.Return(d);
         }
-
-        return grid;
     }
 
     /// <summary>

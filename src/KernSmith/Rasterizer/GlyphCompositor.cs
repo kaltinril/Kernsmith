@@ -227,16 +227,22 @@ internal static class GlyphCompositor
         var h = glyph.Height;
         var alpha = new byte[w * h];
 
-        for (var y = 0; y < h; y++)
+        if (glyph.Format == PixelFormat.Rgba32)
         {
-            for (var x = 0; x < w; x++)
+            for (var y = 0; y < h; y++)
             {
-                if (glyph.Format == PixelFormat.Rgba32)
+                for (var x = 0; x < w; x++)
                 {
                     var srcIdx = y * glyph.Pitch + x * 4 + 3;
                     alpha[y * w + x] = srcIdx < glyph.BitmapData.Length ? glyph.BitmapData[srcIdx] : (byte)0;
                 }
-                else
+            }
+        }
+        else
+        {
+            for (var y = 0; y < h; y++)
+            {
+                for (var x = 0; x < w; x++)
                 {
                     var srcIdx = y * glyph.Pitch + x;
                     alpha[y * w + x] = srcIdx < glyph.BitmapData.Length ? glyph.BitmapData[srcIdx] : (byte)0;
