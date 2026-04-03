@@ -48,17 +48,14 @@ internal sealed class TgaEncoder : IAtlasEncoder
                 var srcOffset = row * rowBytes;
                 var dstOffset = 18 + row * rowBytes;
 
+                // Copy the whole row first (G and A bytes land in the right place).
+                Buffer.BlockCopy(pixelData, srcOffset, result, dstOffset, rowBytes);
+
+                // Then swap R and B in place.
                 for (var x = 0; x < width; x++)
                 {
-                    var si = srcOffset + x * 4;
                     var di = dstOffset + x * 4;
-
-                    if (si + 3 >= pixelData.Length) continue;
-
-                    result[di + 0] = pixelData[si + 2]; // B
-                    result[di + 1] = pixelData[si + 1]; // G
-                    result[di + 2] = pixelData[si + 0]; // R
-                    result[di + 3] = pixelData[si + 3]; // A
+                    (result[di + 0], result[di + 2]) = (result[di + 2], result[di + 0]);
                 }
             }
         }

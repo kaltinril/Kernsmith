@@ -33,6 +33,10 @@ public sealed class BmFontResult
     /// <summary>The system font family name used to produce this result, if available.</summary>
     internal string? SourceFontName { get; }
 
+    private readonly Lazy<string> _fntText;
+    private readonly Lazy<string> _fntXml;
+    private readonly Lazy<byte[]> _fntBinary;
+
     internal BmFontResult(
         BmFontModel model,
         IReadOnlyList<AtlasPage> pages,
@@ -49,37 +53,41 @@ public sealed class BmFontResult
         SourceOptions = sourceOptions;
         SourceFontFile = sourceFontFile;
         SourceFontName = sourceFontName;
+
+        _fntText = new Lazy<string>(() => new TextFormatter().FormatText(Model));
+        _fntXml = new Lazy<string>(() => new XmlFormatter().FormatText(Model));
+        _fntBinary = new Lazy<byte[]>(() => new BmFontBinaryFormatter().FormatBinary(Model));
     }
 
     /// <summary>
     /// Returns the BMFont descriptor in text format.
     /// </summary>
-    public override string ToString() => new TextFormatter().FormatText(Model);
+    public override string ToString() => FntText;
 
     /// <summary>
     /// Returns the BMFont descriptor in XML format.
     /// </summary>
-    public string ToXml() => new XmlFormatter().FormatText(Model);
+    public string ToXml() => FntXml;
 
     /// <summary>
     /// Returns the BMFont descriptor in binary format.
     /// </summary>
-    public byte[] ToBinary() => new BmFontBinaryFormatter().FormatBinary(Model);
+    public byte[] ToBinary() => FntBinary;
 
     /// <summary>
     /// Returns the BMFont descriptor in text format.
     /// </summary>
-    public string FntText => new TextFormatter().FormatText(Model);
+    public string FntText => _fntText.Value;
 
     /// <summary>
     /// Returns the BMFont descriptor in XML format.
     /// </summary>
-    public string FntXml => new XmlFormatter().FormatText(Model);
+    public string FntXml => _fntXml.Value;
 
     /// <summary>
     /// Returns the BMFont descriptor in binary format.
     /// </summary>
-    public byte[] FntBinary => new BmFontBinaryFormatter().FormatBinary(Model);
+    public byte[] FntBinary => _fntBinary.Value;
 
     /// <summary>
     /// Encodes all atlas pages as PNG byte arrays.
@@ -216,11 +224,11 @@ public sealed class BmFontResult
     private byte[][] EncodeAllPages(IAtlasEncoder encoder)
     {
         var result = new byte[Pages.Count][];
-        for (int i = 0; i < Pages.Count; i++)
+        Parallel.For(0, Pages.Count, i =>
         {
             var page = Pages[i];
             result[i] = encoder.Encode(page.PixelData, page.Width, page.Height, page.Format);
-        }
+        });
         return result;
     }
 

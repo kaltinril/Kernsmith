@@ -23,6 +23,9 @@ public sealed class FreeTypeRasterizer : IRasterizer
     /// </summary>
     private int[]? _variationCoords;
 
+    private int _lastSetSize;
+    private int _lastSetDpi;
+
     public unsafe void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -47,6 +50,9 @@ public sealed class FreeTypeRasterizer : IRasterizer
                 throw new FreeTypeException(error);
 
             _face = face;
+
+            _lastSetSize = 0;
+            _lastSetDpi = 0;
         }
         catch (Exception ex) when (ex is not FontParsingException and not ObjectDisposedException)
         {
@@ -125,51 +131,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (_face == null || _library == null)
             throw new InvalidOperationException("Font not loaded. Call LoadFont first.");
 
-        // Set character size: FreeType expects size in 26.6 fixed-point (multiply by 64).
-        var sizeF26D6 = (IntPtr)(options.Size * 64);
-        var error = FT.FT_Set_Char_Size(_face, sizeF26D6, sizeF26D6, (uint)options.Dpi, (uint)options.Dpi);
-        if (error != FT_Error.FT_Err_Ok)
-        {
-            // Bitmap-only fonts (e.g., CBDT/CBLC emoji) do not have scalable outlines,
-            // so FT_Set_Char_Size fails with "invalid pixel size". Fall back to selecting
-            // the best available bitmap strike.
-            if (_face->num_fixed_sizes > 0)
-            {
-                var bestIndex = 0;
-                var bestDiff = int.MaxValue;
-                for (var s = 0; s < _face->num_fixed_sizes; s++)
-                {
-                    var strikeHeight = _face->available_sizes[s].height;
-                    var diff = Math.Abs(strikeHeight - options.Size);
-                    if (diff < bestDiff)
-                    {
-                        bestDiff = diff;
-                        bestIndex = s;
-                    }
-                }
-
-                error = FreeTypeNative.FT_Select_Size(_face, bestIndex);
-                if (error != FT_Error.FT_Err_Ok)
-                    throw new FreeTypeException(error);
-            }
-            else
-            {
-                throw new FreeTypeException(error);
-            }
-        }
-
-        // Re-apply variation coordinates after FT_Set_Char_Size, which can reset
-        // variation state in some FreeType builds.
-        if (_variationCoords != null)
-        {
-            fixed (int* coords = _variationCoords)
-            {
-                error = FreeTypeNative.FT_Set_Var_Design_Coordinates(
-                    _face, (uint)_variationCoords.Length, coords);
-                if (error != FT_Error.FT_Err_Ok)
-                    throw new FreeTypeException(error);
-            }
-        }
+        EnsureCharSize(options.Size, options.Dpi);
 
         // Get glyph index for the codepoint.
         var glyphIndex = FT.FT_Get_Char_Index(_face, (UIntPtr)codepoint);
@@ -191,7 +153,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
             loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
 
         // Load the glyph.
-        error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
+        var error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
         if (error != FT_Error.FT_Err_Ok)
             throw new FreeTypeException(error);
 
@@ -324,10 +286,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (_face == null || _library == null)
             throw new InvalidOperationException("Font not loaded. Call LoadFont first.");
 
-        var sizeF26D6 = (IntPtr)(options.Size * 64);
-        var error = FT.FT_Set_Char_Size(_face, sizeF26D6, sizeF26D6, (uint)options.Dpi, (uint)options.Dpi);
-        if (error != FT_Error.FT_Err_Ok)
-            throw new FreeTypeException(error);
+        EnsureCharSize(options.Size, options.Dpi);
 
         var glyphIndex = FT.FT_Get_Char_Index(_face, (UIntPtr)codepoint);
         if (glyphIndex == 0)
@@ -338,7 +297,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (!options.EnableHinting)
             loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
 
-        error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
+        var error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
         if (error != FT_Error.FT_Err_Ok)
             throw new FreeTypeException(error);
 
@@ -459,47 +418,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (_face == null || _library == null)
             throw new InvalidOperationException("Font not loaded. Call LoadFont first.");
 
-        // Set character size: FreeType expects size in 26.6 fixed-point (multiply by 64).
-        var sizeF26D6 = (IntPtr)(options.Size * 64);
-        var error = FT.FT_Set_Char_Size(_face, sizeF26D6, sizeF26D6, (uint)options.Dpi, (uint)options.Dpi);
-        if (error != FT_Error.FT_Err_Ok)
-        {
-            if (_face->num_fixed_sizes > 0)
-            {
-                var bestIndex = 0;
-                var bestDiff = int.MaxValue;
-                for (var s = 0; s < _face->num_fixed_sizes; s++)
-                {
-                    var strikeHeight = _face->available_sizes[s].height;
-                    var diff = Math.Abs(strikeHeight - options.Size);
-                    if (diff < bestDiff)
-                    {
-                        bestDiff = diff;
-                        bestIndex = s;
-                    }
-                }
-
-                error = FreeTypeNative.FT_Select_Size(_face, bestIndex);
-                if (error != FT_Error.FT_Err_Ok)
-                    throw new FreeTypeException(error);
-            }
-            else
-            {
-                throw new FreeTypeException(error);
-            }
-        }
-
-        // Re-apply variation coordinates after FT_Set_Char_Size.
-        if (_variationCoords != null)
-        {
-            fixed (int* coords = _variationCoords)
-            {
-                error = FreeTypeNative.FT_Set_Var_Design_Coordinates(
-                    _face, (uint)_variationCoords.Length, coords);
-                if (error != FT_Error.FT_Err_Ok)
-                    throw new FreeTypeException(error);
-            }
-        }
+        EnsureCharSize(options.Size, options.Dpi);
 
         // Get glyph index for the codepoint.
         var glyphIndex = FT.FT_Get_Char_Index(_face, (UIntPtr)codepoint);
@@ -511,7 +430,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (!options.EnableHinting)
             loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
 
-        error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
+        var error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
         if (error != FT_Error.FT_Err_Ok)
             throw new FreeTypeException(error);
 
@@ -548,6 +467,65 @@ public sealed class FreeTypeRasterizer : IRasterizer
                 results.Add(glyph);
         }
         return results;
+    }
+
+    /// <summary>
+    /// Sets the character size on the FreeType face, skipping the native call when the
+    /// requested size and DPI match what was last set. This avoids redundant per-glyph
+    /// interop overhead since size/DPI never change within a generation run.
+    /// </summary>
+    private unsafe void EnsureCharSize(int size, int dpi)
+    {
+        if (size == _lastSetSize && dpi == _lastSetDpi)
+            return;
+
+        var sizeF26D6 = (IntPtr)(size * 64);
+        var error = FT.FT_Set_Char_Size(_face, sizeF26D6, sizeF26D6, (uint)dpi, (uint)dpi);
+        if (error != FT_Error.FT_Err_Ok)
+        {
+            // Bitmap-only fonts (e.g., CBDT/CBLC emoji) do not have scalable outlines,
+            // so FT_Set_Char_Size fails with "invalid pixel size". Fall back to selecting
+            // the best available bitmap strike.
+            if (_face->num_fixed_sizes > 0)
+            {
+                var bestIndex = 0;
+                var bestDiff = int.MaxValue;
+                for (var s = 0; s < _face->num_fixed_sizes; s++)
+                {
+                    var strikeHeight = _face->available_sizes[s].height;
+                    var diff = Math.Abs(strikeHeight - size);
+                    if (diff < bestDiff)
+                    {
+                        bestDiff = diff;
+                        bestIndex = s;
+                    }
+                }
+
+                error = FreeTypeNative.FT_Select_Size(_face, bestIndex);
+                if (error != FT_Error.FT_Err_Ok)
+                    throw new FreeTypeException(error);
+            }
+            else
+            {
+                throw new FreeTypeException(error);
+            }
+        }
+
+        // Re-apply variation coordinates after FT_Set_Char_Size, which can reset
+        // variation state in some FreeType builds.
+        if (_variationCoords != null)
+        {
+            fixed (int* coords = _variationCoords)
+            {
+                error = FreeTypeNative.FT_Set_Var_Design_Coordinates(
+                    _face, (uint)_variationCoords.Length, coords);
+                if (error != FT_Error.FT_Err_Ok)
+                    throw new FreeTypeException(error);
+            }
+        }
+
+        _lastSetSize = size;
+        _lastSetDpi = dpi;
     }
 
     /// <summary>
