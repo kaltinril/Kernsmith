@@ -34,6 +34,9 @@ internal sealed class DdsEncoder : IAtlasEncoder
         var bpp = isRgba ? 32 : 8;
         var bytesPerPixel = bpp / 8;
         var pitch = width * bytesPerPixel;
+        var expectedSize = width * height * bytesPerPixel;
+        if (pixelData.Length < expectedSize)
+            throw new ArgumentException($"pixelData length {pixelData.Length} is less than expected {expectedSize} for {width}x{height} at {bytesPerPixel} bytes/pixel.", nameof(pixelData));
 
         // Total size: 4 (magic) + 124 (header) + pixel data
         var result = new byte[4 + HeaderSize + height * pitch];

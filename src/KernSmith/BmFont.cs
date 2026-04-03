@@ -321,7 +321,12 @@ public static class BmFont
         }
     }
 
-    internal static int EncodeCombinedId(int fontIndex, int codepoint) => (fontIndex << 21) | (codepoint & 0x1FFFFF);
+    internal static int EncodeCombinedId(int fontIndex, int codepoint)
+    {
+        if ((uint)fontIndex > 0x7FF)
+            throw new ArgumentOutOfRangeException(nameof(fontIndex), $"Font index {fontIndex} exceeds the maximum of 2047 for combined ID encoding.");
+        return (fontIndex << 21) | (codepoint & 0x1FFFFF);
+    }
     internal static (int FontIndex, int Codepoint) DecodeCombinedId(int combinedId) => (combinedId >>> 21, combinedId & 0x1FFFFF);
 
     private static BmFontResult GenerateCore(byte[] fontData, FontGeneratorOptions? options, string? sourceFontFile, string? sourceFontName, string? systemFontFamily = null)

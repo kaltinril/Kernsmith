@@ -479,7 +479,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (size == _lastSetSize && dpi == _lastSetDpi)
             return;
 
-        var sizeF26D6 = (IntPtr)(size * 64);
+        var sizeF26D6 = (IntPtr)checked(size * 64);
         var error = FT.FT_Set_Char_Size(_face, sizeF26D6, sizeF26D6, (uint)dpi, (uint)dpi);
         if (error != FT_Error.FT_Err_Ok)
         {

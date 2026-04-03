@@ -72,7 +72,7 @@ public sealed class BmFontResult
     /// <summary>
     /// Returns the BMFont descriptor in binary format.
     /// </summary>
-    public byte[] ToBinary() => FntBinary;
+    public byte[] ToBinary() => (byte[])FntBinary.Clone();
 
     /// <summary>
     /// Returns the BMFont descriptor in text format.
@@ -224,11 +224,23 @@ public sealed class BmFontResult
     private byte[][] EncodeAllPages(IAtlasEncoder encoder)
     {
         var result = new byte[Pages.Count][];
-        Parallel.For(0, Pages.Count, i =>
+
+        void EncodePage(int i)
         {
             var page = Pages[i];
             result[i] = encoder.Encode(page.PixelData, page.Width, page.Height, page.Format);
-        });
+        }
+
+        if (OperatingSystem.IsBrowser())
+        {
+            for (var i = 0; i < Pages.Count; i++)
+                EncodePage(i);
+        }
+        else
+        {
+            Parallel.For(0, Pages.Count, EncodePage);
+        }
+
         return result;
     }
 

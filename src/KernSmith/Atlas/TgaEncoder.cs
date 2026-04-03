@@ -13,6 +13,10 @@ internal sealed class TgaEncoder : IAtlasEncoder
         // in the image descriptor to indicate top-left origin (bit 5 = 1).
         var bpp = format == PixelFormat.Rgba32 ? 32 : 8;
         var imageType = format == PixelFormat.Rgba32 ? (byte)2 : (byte)3; // 2 = uncompressed true-color, 3 = uncompressed grayscale
+        var bytesPerPixel = bpp / 8;
+        var expectedSize = width * height * bytesPerPixel;
+        if (pixelData.Length < expectedSize)
+            throw new ArgumentException($"pixelData length {pixelData.Length} is less than expected {expectedSize} for {width}x{height} at {bytesPerPixel} bytes/pixel.", nameof(pixelData));
 
         // TGA header is 18 bytes.
         var header = new byte[18];
@@ -35,7 +39,6 @@ internal sealed class TgaEncoder : IAtlasEncoder
         if (format == PixelFormat.Rgba32)
             header[17] = 0x28;      // Top-left origin + 8 alpha bits
 
-        var bytesPerPixel = bpp / 8;
         var rowBytes = width * bytesPerPixel;
         var result = new byte[18 + pixelData.Length];
         Array.Copy(header, 0, result, 0, 18);
