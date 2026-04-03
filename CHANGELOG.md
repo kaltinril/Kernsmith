@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-04-03
+
+### Fixed
+
+- Rasterizer error message now says "No backends have been registered." instead of showing a confusing empty list ("Available backends: .")
+- Gum integration packages (MonoGameGum, KniGum, FnaGum) now include FreeType backend automatically — users no longer need to manually reference KernSmith.Rasterizers.FreeType
+
 ## [0.12.1] - 2026-04-02
 
 ### Fixed
