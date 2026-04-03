@@ -14,31 +14,14 @@ namespace KernSmith.Ui.Styling;
 public static class UiFactory
 {
     /// <summary>
-    /// Creates a section header with background bar and accent-colored text.
+    /// Creates a plain text section header (no background).
     /// </summary>
     public static void AddSectionHeader(global::Gum.Wireframe.GraphicalUiElement parent, string text)
     {
-        var container = new ContainerRuntime();
-        container.Width = 0;
-        container.WidthUnits = DimensionUnitType.RelativeToParent;
-        container.Height = Theme.SectionHeaderHeight;
-        container.HeightUnits = DimensionUnitType.Absolute;
-        parent.Children.Add(container);
-
-        var bg = new ColoredRectangleRuntime();
-        bg.Width = 0;
-        bg.WidthUnits = DimensionUnitType.RelativeToParent;
-        bg.Height = 0;
-        bg.HeightUnits = DimensionUnitType.RelativeToParent;
-        bg.Color = Theme.SectionHeaderBg;
-        container.Children.Add(bg);
-
         var header = new TextRuntime();
         header.Text = text;
         header.Color = Theme.SectionHeaderText;
-        header.X = 6;
-        header.Y = 4;
-        container.Children.Add(header);
+        parent.Children.Add(header);
     }
 
     /// <summary>
@@ -50,81 +33,54 @@ public static class UiFactory
     /// <param name="buildContent">Callback that populates the content container.</param>
     /// <param name="startExpanded">Whether the section starts expanded (default: true).</param>
     /// <returns>The content container, in case the caller needs to toggle visibility externally.</returns>
-    public static ContainerRuntime AddCollapsibleHeader(
+    public static global::Gum.Wireframe.GraphicalUiElement AddCollapsibleHeader(
         global::Gum.Wireframe.GraphicalUiElement parent,
         string title,
         Action<global::Gum.Wireframe.GraphicalUiElement> buildContent,
         bool startExpanded = true)
     {
-        // Header bar (clickable) — breaks out of parent's PanelPadding to go edge-to-edge
+        // Header: just chevron + text, no background bar
         var headerContainer = new ContainerRuntime();
-        headerContainer.X = 0;
-        headerContainer.Width = 0;
         headerContainer.WidthUnits = DimensionUnitType.RelativeToParent;
-        headerContainer.Height = Theme.SectionHeaderHeight;
+        headerContainer.Width = 0;
         headerContainer.HeightUnits = DimensionUnitType.Absolute;
+        headerContainer.Height = Theme.SectionHeaderHeight;
         headerContainer.HasEvents = true;
         parent.Children.Add(headerContainer);
-
-        var bg = new ColoredRectangleRuntime();
-        bg.Width = 0;
-        bg.WidthUnits = DimensionUnitType.RelativeToParent;
-        bg.Height = 0;
-        bg.HeightUnits = DimensionUnitType.RelativeToParent;
-        bg.Color = Theme.SectionHeaderBg;
-        headerContainer.Children.Add(bg);
 
         var chevron = new TextRuntime();
         chevron.Text = startExpanded ? "v" : ">";
         chevron.Color = Theme.TextMuted;
-        chevron.X = 6;
+        chevron.X = Theme.PanelPadding;
         chevron.Y = 4;
         headerContainer.Children.Add(chevron);
 
         var headerText = new TextRuntime();
         headerText.Text = title;
         headerText.Color = Theme.SectionHeaderText;
-        headerText.X = 20;
+        headerText.X = Theme.PanelPadding + 14;
         headerText.Y = 4;
         headerContainer.Children.Add(headerText);
 
-        // Content container with subtle background and indent
-        var contentWrapper = new ContainerRuntime();
-        contentWrapper.X = Theme.PanelPadding;
-        contentWrapper.Width = -Theme.PanelPadding;
-        contentWrapper.WidthUnits = DimensionUnitType.RelativeToParent;
-        contentWrapper.HeightUnits = DimensionUnitType.RelativeToChildren;
-        contentWrapper.Height = Theme.PanelPadding;
-        contentWrapper.Visible = startExpanded;
-        parent.Children.Add(contentWrapper);
-
-        var contentBg = new ColoredRectangleRuntime();
-        contentBg.Width = 0;
-        contentBg.WidthUnits = DimensionUnitType.RelativeToParent;
-        contentBg.Height = 0;
-        contentBg.HeightUnits = DimensionUnitType.RelativeToParent;
-        contentBg.Color = Theme.CollapsibleContentBg;
-        contentWrapper.Children.Add(contentBg);
-
+        // Content: padded StackPanel, no background — sections separated by spacing alone
         var content = new StackPanel();
         content.Spacing = Theme.ControlSpacing;
-        content.Visual.X = Theme.ControlSpacing;
-        content.Visual.Y = Theme.ControlSpacing;
+        content.Visual.X = Theme.PanelPadding;
         content.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-        content.Visual.Width = -(Theme.ControlSpacing * 2);
-        content.IsVisible = true;
-        contentWrapper.Children.Add(content.Visual);
+        content.Visual.Width = -(Theme.PanelPadding * 2);
+        content.IsVisible = startExpanded;
+        parent.Children.Add(content.Visual);
 
         // Toggle on click
         headerContainer.Click += (_, _) =>
         {
-            contentWrapper.Visible = !contentWrapper.Visible;
-            chevron.Text = contentWrapper.Visible ? "v" : ">";
+            content.IsVisible = !content.IsVisible;
+            chevron.Text = content.IsVisible ? "v" : ">";
         };
 
         buildContent(content.Visual);
 
-        return contentWrapper;
+        return content.Visual;
     }
 
     /// <summary>
@@ -152,69 +108,35 @@ public static class UiFactory
         bool startExpanded = false,
         string? tooltip = null)
     {
-        // Header bar with checkbox — breaks out of parent's PanelPadding to go edge-to-edge
-        var headerContainer = new ContainerRuntime();
-        headerContainer.X = 0;
-        headerContainer.Width = 0;
-        headerContainer.WidthUnits = DimensionUnitType.RelativeToParent;
-        headerContainer.Height = Theme.SectionHeaderHeight;
-        headerContainer.HeightUnits = DimensionUnitType.Absolute;
-        parent.Children.Add(headerContainer);
-
-        var headerBg = new ColoredRectangleRuntime();
-        headerBg.Width = 0;
-        headerBg.WidthUnits = DimensionUnitType.RelativeToParent;
-        headerBg.Height = 0;
-        headerBg.HeightUnits = DimensionUnitType.RelativeToParent;
-        headerBg.Color = Theme.SectionHeaderBg;
-        headerContainer.Children.Add(headerBg);
-
+        // Header: checkbox + title, no background bar
         var enableCheck = new CheckBox();
         enableCheck.Text = title;
         enableCheck.Width = 220;
-        enableCheck.Visual.X = 6;
-        enableCheck.Visual.Y = 2;
-        headerContainer.Children.Add(enableCheck.Visual);
+        enableCheck.Visual.X = Theme.PanelPadding;
+        parent.Children.Add(enableCheck.Visual);
         if (tooltip != null)
             TooltipService.SetTooltip(enableCheck, tooltip);
 
-        var contentWrapper = new ContainerRuntime();
-        contentWrapper.X = Theme.PanelPadding;
-        contentWrapper.Width = -Theme.PanelPadding;
-        contentWrapper.WidthUnits = DimensionUnitType.RelativeToParent;
-        contentWrapper.HeightUnits = DimensionUnitType.RelativeToChildren;
-        contentWrapper.Height = Theme.PanelPadding;
-        contentWrapper.Visible = startExpanded;
-        parent.Children.Add(contentWrapper);
-
-        var contentBg = new ColoredRectangleRuntime();
-        contentBg.Width = 0;
-        contentBg.WidthUnits = DimensionUnitType.RelativeToParent;
-        contentBg.Height = 0;
-        contentBg.HeightUnits = DimensionUnitType.RelativeToParent;
-        contentBg.Color = Theme.CollapsibleContentBg;
-        contentWrapper.Children.Add(contentBg);
-
+        // Content: padded StackPanel, no background
         var content = new StackPanel();
         content.Spacing = Theme.ControlSpacing;
-        content.Visual.X = Theme.ControlSpacing;
-        content.Visual.Y = Theme.ControlSpacing;
+        content.Visual.X = Theme.PanelPadding;
         content.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-        content.Visual.Width = -(Theme.ControlSpacing * 2);
-        content.IsVisible = true;
-        contentWrapper.Children.Add(content.Visual);
+        content.Visual.Width = -(Theme.PanelPadding * 2);
+        content.IsVisible = startExpanded;
+        parent.Children.Add(content.Visual);
 
         if (startExpanded)
             enableCheck.IsChecked = true;
 
         enableCheck.Checked += (_, _) =>
         {
-            contentWrapper.Visible = true;
+            content.IsVisible = true;
             enableChanged(true);
         };
         enableCheck.Unchecked += (_, _) =>
         {
-            contentWrapper.Visible = false;
+            content.IsVisible = false;
             enableChanged(false);
         };
 
