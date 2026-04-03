@@ -1,5 +1,7 @@
+using System.Runtime.CompilerServices;
 using KernSmith;
 using KernSmith.Output;
+using KernSmith.Rasterizer;
 using RenderingLibrary.Graphics.Fonts;
 
 namespace KernSmith.Gum;
@@ -23,10 +25,24 @@ public static class GumFontGenerator
     /// </param>
     public static BmFontResult Generate(BmfcSave bmfcSave, RasterizerBackend? backend = null)
     {
+        EnsureFreeTypeRegistered();
         FontGeneratorOptions options = BuildOptions(bmfcSave);
         if (backend.HasValue)
             options.Backend = backend.Value;
         return BmFont.GenerateFromSystem(bmfcSave.FontName, options);
+    }
+
+    /// <summary>
+    /// Forces the FreeType backend assembly to load so its [ModuleInitializer]
+    /// registers with RasterizerFactory. Safe to call multiple times.
+    /// </summary>
+    private static void EnsureFreeTypeRegistered()
+    {
+        if (!RasterizerFactory.IsRegistered(RasterizerBackend.FreeType))
+        {
+            RuntimeHelpers.RunModuleConstructor(
+                typeof(KernSmith.Rasterizers.FreeType.FreeTypeRasterizer).Module.ModuleHandle);
+        }
     }
 
     /// <summary>
