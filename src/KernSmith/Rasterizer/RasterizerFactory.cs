@@ -28,9 +28,14 @@ public static class RasterizerFactory
         if (Backends.TryGetValue(backend, out var factory))
             return factory();
 
+        var available = GetAvailableBackends();
+        var availableText = available.Count > 0
+            ? $"Available backends: {string.Join(", ", available)}."
+            : "No backends have been registered.";
+
         throw new InvalidOperationException(
             $"Rasterizer backend '{backend}' is not registered. " +
-            $"Available backends: {string.Join(", ", GetAvailableBackends())}. " +
+            $"{availableText} " +
             $"Install the corresponding NuGet package (e.g., KernSmith.Rasterizers.StbTrueType) and ensure it is referenced by your project.");
     }
 
