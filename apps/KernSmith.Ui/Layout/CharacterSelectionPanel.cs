@@ -3,7 +3,6 @@ using global::Gum.Forms.Controls;
 using KernSmith.Ui.Models;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
-using MonoGameGum.GueDeriving;
 
 namespace KernSmith.Ui.Layout;
 
@@ -39,12 +38,15 @@ public class CharacterSelectionPanel : Panel
         stack.StackSpacing = Theme.SectionSpacing;
 
         // --- Preset RadioButtons ---
-        UiFactory.AddCollapsibleHeader(stack, "CHARACTER SET PRESET", content =>
+        var presetExpander = new Expander();
+        presetExpander.Header = "CHARACTER SET PRESET";
+        presetExpander.IsExpanded = true;
+        stack.Children.Add(presetExpander.Visual);
         {
             var presetRow = new StackPanel();
             presetRow.Orientation = Orientation.Horizontal;
             presetRow.Spacing = 8;
-            content.Children.Add(presetRow.Visual);
+            presetExpander.AddContent(presetRow);
 
             var presetNames = new[] { "ASCII", "Extended ASCII", "Latin", "Custom" };
             var presetValues = new[]
@@ -69,15 +71,18 @@ public class CharacterSelectionPanel : Panel
                 };
                 presetRow.AddChild(rb);
             }
-        });
+        }
 
         // --- Text input area (Hiero-style) ---
-        UiFactory.AddCollapsibleHeader(stack, "ADD FROM TEXT", content =>
+        var addTextExpander = new Expander();
+        addTextExpander.Header = "ADD FROM TEXT";
+        addTextExpander.IsExpanded = true;
+        stack.Children.Add(addTextExpander.Visual);
         {
             var textInputRow = new StackPanel();
             textInputRow.Orientation = Orientation.Horizontal;
             textInputRow.Spacing = Theme.ControlSpacing;
-            content.Children.Add(textInputRow.Visual);
+            addTextExpander.AddContent(textInputRow);
 
             var textBox = new TextBox();
             textBox.Width = 300;
@@ -100,17 +105,20 @@ public class CharacterSelectionPanel : Panel
                 }
             };
             textInputRow.AddChild(addTextBtn);
-        });
+        }
 
         // --- Unicode block checkboxes ---
-        UiFactory.AddCollapsibleHeader(stack, "UNICODE BLOCKS", content =>
+        var blocksExpander = new Expander();
+        blocksExpander.Header = "UNICODE BLOCKS";
+        blocksExpander.IsExpanded = true;
+        stack.Children.Add(blocksExpander.Visual);
         {
             var blockScroll = new ScrollViewer();
             blockScroll.Width = 0;
             blockScroll.WidthUnits = DimensionUnitType.RelativeToParent;
             blockScroll.Height = 300;
             blockScroll.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
-            content.Children.Add(blockScroll.Visual);
+            blocksExpander.AddContent(blockScroll);
 
             var blockStack = blockScroll.InnerPanel;
             blockStack.StackSpacing = Theme.ControlSpacing;
@@ -121,8 +129,7 @@ public class CharacterSelectionPanel : Panel
                 cb.Text = $"{block.Name} ({block.Count})";
                 cb.Width = 350;
 
-                // Check if the block overlaps with current selection
-                var blockRef = block; // capture for closure
+                var blockRef = block;
                 cb.Checked += (_, _) =>
                 {
                     _gridVm.SelectRange(blockRef.Start, blockRef.End);
@@ -135,7 +142,7 @@ public class CharacterSelectionPanel : Panel
                 };
                 blockScroll.AddChild(cb);
             }
-        });
+        }
 
         // --- Summary + action buttons ---
         var bottomRow = new StackPanel();

@@ -8,6 +8,7 @@ using KernSmith.Ui.Layout;
 using KernSmith.Ui.ViewModels;
 using KernSmith.Ui.Services;
 using KernSmith.Ui.Styling;
+using Gum.Themes.Editor;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace KernSmith.Ui;
@@ -62,32 +63,8 @@ public class KernSmithGame : Game
     {
         GumService.Default.Initialize(this, DefaultVisualsVersion.V3);
 
-        // Use KernSmith for dynamic font generation (enables custom fonts at runtime)
-        CustomSetPropertyOnRenderable.InMemoryFontCreator =
-            new KernSmith.Gum.KernSmithFontCreator(GraphicsDevice);
-
-        // Build a dark theme using the existing sprite sheet, then set as active
-        var defaultSpriteSheet = global::Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle.SpriteSheet;
-        var darkStyle = new global::Gum.Forms.DefaultVisuals.V3.Styling(defaultSpriteSheet, useDefaults: true);
-
-        // Dark palette — accent blue for interactive elements only, quiet chrome
-        darkStyle.Colors.Primary = new Color(0, 122, 204);        // blue for buttons/active controls
-        darkStyle.Colors.Accent = new Color(0, 122, 204);         // selection highlights
-        darkStyle.Colors.InputBackground = new Color(50, 50, 54); // input fields (darker than old)
-        darkStyle.Colors.SurfaceVariant = new Color(42, 42, 46);  // scrollbar tracks
-        darkStyle.Colors.TextPrimary = new Color(200, 200, 200);  // main text
-        darkStyle.Colors.TextMuted = new Color(128, 128, 128);    // placeholder/muted
-        darkStyle.Colors.IconDefault = new Color(170, 170, 170);  // icons
-        darkStyle.Colors.Black = new Color(30, 30, 30);           // deep background
-        darkStyle.Colors.DarkGray = new Color(37, 37, 38);        // panel fills (match Theme.Panel)
-        darkStyle.Colors.Gray = new Color(55, 55, 58);            // borders/dividers (subtler)
-        darkStyle.Colors.LightGray = new Color(140, 140, 140);    // secondary text
-        darkStyle.Colors.White = new Color(220, 220, 220);        // bright text/icons
-        darkStyle.Colors.Success = new Color(78, 201, 176);       // success green
-        darkStyle.Colors.Warning = new Color(220, 170, 50);       // warning amber
-        darkStyle.Colors.Danger = new Color(244, 71, 71);         // error red
-
-        global::Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle = darkStyle;
+        // Apply editor theme — registers styled visuals and sets up KernSmithFontCreator
+        EditorTheme.Apply(GraphicsDevice);
 
         var fontDiscoveryService = new FontDiscoveryService();
         var generationService = new GenerationService();

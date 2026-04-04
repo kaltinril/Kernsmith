@@ -23,8 +23,9 @@
     <PackageReference Include="MonoGame.Framework.DesktopGL" />
     <!-- Temporary: using Gum source instead of NuGet to access unreleased features -->
     <!-- <PackageReference Include="Gum.MonoGame" /> -->
-    <ProjectReference Include="C:\Users\vchel\Documents\GitHub\Gum\MonoGameGum\MonoGameGum.csproj" />
-    <PackageReference Include="NativeFileDialogNET" />
+    <ProjectReference Include="..\..\..\Gum\MonoGameGum\MonoGameGum.csproj" />
+    <ProjectReference Include="..\..\..\Gum\Themes\Gum.Themes.Editor\Gum.Themes.Editor.csproj" />
+<PackageReference Include="NativeFileDialogNET" />
 
   </ItemGroup>
 

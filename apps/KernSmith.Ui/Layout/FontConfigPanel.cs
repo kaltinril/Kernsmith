@@ -1,6 +1,7 @@
 using System.Linq;
 using global::Gum.DataTypes;
 using global::Gum.Forms.Controls;
+using Gum.Themes.Editor;
 using KernSmith.Ui.Models;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
@@ -79,8 +80,11 @@ public class FontConfigPanel : Panel
 
         var stack = inner;
 
-        // --- FONT FILE section (collapsible) ---
-        UiFactory.AddCollapsibleHeader(stack, "FONT FILE", content =>
+        // --- FONT FILE section (expander) ---
+        var fontFileExpander = new Expander();
+        fontFileExpander.Header = "FONT FILE";
+        fontFileExpander.IsExpanded = true;
+        stack.Children.Add(fontFileExpander.Visual);
         {
             var browseBtn = new Button();
             browseBtn.Text = "Browse for Font...";
@@ -96,13 +100,13 @@ public class FontConfigPanel : Panel
                 if (result == DialogResult.Okay && path != null)
                     _mainViewModel.LoadFontFromPath(path);
             };
-            content.Children.Add(browseBtn.Visual);
+            fontFileExpander.AddContent(browseBtn);
             TooltipService.SetTooltip(browseBtn, "Browse for a font file");
 
             var sourceLabel = new Label();
             sourceLabel.Text = "";
             sourceLabel.IsVisible = false;
-            content.Children.Add(sourceLabel.Visual);
+            fontFileExpander.AddContent(sourceLabel);
 
             // Only show source label for file-loaded fonts (system font is visible in dropdown)
             _fontConfig.PropertyChanged += (_, e) =>
@@ -122,7 +126,7 @@ public class FontConfigPanel : Panel
             faceSelectionRow.Orientation = Orientation.Horizontal;
             faceSelectionRow.Spacing = Theme.ControlSpacing;
             faceSelectionRow.IsVisible = false;
-            content.Children.Add(faceSelectionRow.Visual);
+            fontFileExpander.AddContent(faceSelectionRow);
 
             var faceLabel = new Label();
             faceLabel.Text = "Face:";
@@ -162,18 +166,16 @@ public class FontConfigPanel : Panel
                 }
             };
 
-            UiFactory.AddDivider(content);
-
             var familyLabel = new Label();
             familyLabel.Text = "System Font:";
-            content.Children.Add(familyLabel.Visual);
+            fontFileExpander.AddContent(familyLabel);
             TooltipService.SetTooltip(familyLabel, "Pick an installed system font. Requires a backend that supports system fonts (GDI or DirectWrite).");
 
             var familyCombo = new ComboBox();
             familyCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
             familyCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
             familyCombo.Visual.Width = 0;
-            content.Children.Add(familyCombo.Visual);
+            fontFileExpander.AddContent(familyCombo);
 
             // Wire system font combo
             _fontConfig.PropertyChanged += (_, e) =>
@@ -208,34 +210,28 @@ public class FontConfigPanel : Panel
                 }
             };
 
-            // --- Glyph count (only useful non-redundant info) ---
-            var glyphRow = new StackPanel();
-            glyphRow.Orientation = Orientation.Horizontal;
-            glyphRow.Spacing = Theme.ControlSpacing;
-            content.Children.Add(glyphRow.Visual);
-
-            var glyphLbl = new Label();
-            glyphLbl.Text = "Glyphs:";
-            glyphLbl.Width = Theme.LabelWidth;
-            glyphRow.AddChild(glyphLbl);
+            // --- Glyph count via PropertyGridVisual ---
+            var fontInfoGrid = new PropertyGridVisual();
 
             var glyphCount = new Label();
             glyphCount.Text = "0";
             glyphCount.SetBinding(nameof(Label.Text), nameof(FontConfigViewModel.NumGlyphs));
             glyphCount.Visual.BindingContext = _fontConfig;
-            glyphRow.AddChild(glyphCount);
+            fontInfoGrid.AddRow("Glyphs:", glyphCount);
+
+            fontFileExpander.AddContent(fontInfoGrid);
 
             // --- Conditional font info: color glyphs ---
             var colorGlyphLabel = new Label();
             colorGlyphLabel.Text = "Has color glyphs";
             colorGlyphLabel.IsVisible = false;
-            content.Children.Add(colorGlyphLabel.Visual);
+            fontFileExpander.AddContent(colorGlyphLabel);
 
             // --- Conditional font info: variable font axes ---
             var axesLabel = new Label();
             axesLabel.Text = "";
             axesLabel.IsVisible = false;
-            content.Children.Add(axesLabel.Visual);
+            fontFileExpander.AddContent(axesLabel);
 
             _fontConfig.PropertyChanged += (_, e) =>
             {
@@ -250,21 +246,15 @@ public class FontConfigPanel : Panel
                         axesLabel.Text = $"Variable axes: {_fontConfig.VariationAxesSummary}";
                 }
             };
-        });
+        }
 
-        // --- SIZE section (collapsible) ---
-        UiFactory.AddCollapsibleHeader(stack, "SIZE", content =>
+        // --- SIZE section (expander) ---
+        var sizeExpander = new Expander();
+        sizeExpander.Header = "SIZE";
+        sizeExpander.IsExpanded = true;
+        stack.Children.Add(sizeExpander.Visual);
         {
-            var sizeRow = new StackPanel();
-            sizeRow.Orientation = Orientation.Horizontal;
-            sizeRow.Spacing = Theme.ControlSpacing;
-            content.Children.Add(sizeRow.Visual);
-
-            var sizeLabel = new Label();
-            sizeLabel.Text = "Size:";
-            sizeLabel.Width = Theme.LabelWidth;
-            sizeRow.AddChild(sizeLabel);
-            TooltipService.SetTooltip(sizeLabel, "Font size in points (4-500)");
+            var sizeGrid = new PropertyGridVisual();
 
             var sizeTextBox = new TextBox();
             sizeTextBox.Width = 42;
@@ -274,17 +264,8 @@ public class FontConfigPanel : Panel
                 if (int.TryParse(sizeTextBox.Text, out var size))
                     _fontConfig.FontSize = Math.Clamp(size, 4, 500);
             };
-            sizeRow.AddChild(sizeTextBox);
-
-            var ptLabel = new Label();
-            ptLabel.Text = "pt";
-            sizeRow.AddChild(ptLabel);
-
-            // --- RASTERIZER section ---
-            var rasterizerLabel = new Label();
-            rasterizerLabel.Text = "Rasterizer:";
-            content.Children.Add(rasterizerLabel.Visual);
-            TooltipService.SetTooltip(rasterizerLabel, "Glyph rasterizer backend. FreeType: cross-platform default. GDI: Windows-only, matches BMFont output. DirectWrite: Windows-only, modern rendering with color/variable font support.");
+            sizeGrid.AddRow("Size (pt):", sizeTextBox);
+            TooltipService.SetTooltip(sizeTextBox, "Font size in points (4-500)");
 
             _rasterizerCombo = new ComboBox();
             _rasterizerCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
@@ -295,20 +276,25 @@ public class FontConfigPanel : Panel
             _rasterizerCombo.SelectedIndex = _fontConfig.AvailableBackends.ToList().IndexOf(_fontConfig.SelectedBackend);
             if (_rasterizerCombo.SelectedIndex < 0) _rasterizerCombo.SelectedIndex = 0;
             _rasterizerCombo.SelectionChanged += (_, _) => OnRasterizerComboSelectionChanged();
-            content.Children.Add(_rasterizerCombo.Visual);
-        });
+            sizeGrid.AddRow("Rasterizer:", _rasterizerCombo);
+            TooltipService.SetTooltip(_rasterizerCombo, "Glyph rasterizer backend. FreeType: cross-platform default. GDI: Windows-only, matches BMFont output. DirectWrite: Windows-only, modern rendering with color/variable font support.");
 
-        // --- ATLAS section (collapsible) ---
-        UiFactory.AddCollapsibleHeader(stack, "ATLAS", content =>
-        {
-            BuildAtlasSection(content);
-        });
+            sizeExpander.AddContent(sizeGrid);
+        }
 
-        // --- OUTPUT section (collapsible) ---
-        UiFactory.AddCollapsibleHeader(stack, "OUTPUT", content =>
-        {
-            BuildOutputSection(content);
-        });
+        // --- ATLAS section (expander) ---
+        var atlasExpander = new Expander();
+        atlasExpander.Header = "ATLAS";
+        atlasExpander.IsExpanded = true;
+        stack.Children.Add(atlasExpander.Visual);
+        BuildAtlasSection(atlasExpander);
+
+        // --- OUTPUT section (expander) ---
+        var outputExpander = new Expander();
+        outputExpander.Header = "OUTPUT";
+        outputExpander.IsExpanded = true;
+        stack.Children.Add(outputExpander.Visual);
+        BuildOutputSection(outputExpander);
 
         // --- Fixed bottom bar: Generate button + Auto-regenerate ---
         BuildGenerateBar(root);
@@ -377,7 +363,7 @@ public class FontConfigPanel : Panel
             _fontConfig.SelectedBackend = _fontConfig.AvailableBackends[idx];
     }
 
-    private void BuildAtlasSection(global::Gum.Wireframe.GraphicalUiElement stack)
+    private void BuildAtlasSection(Expander expander)
     {
         bool updatingFromVm = false;
 
@@ -389,7 +375,7 @@ public class FontConfigPanel : Panel
         forceSizeCheck.Visual.Width = 0;
         forceSizeCheck.IsChecked = !_atlasConfig.AutofitTexture;
         TooltipService.SetTooltip(forceSizeCheck, "Use exact atlas dimensions instead of auto-fitting");
-        stack.Children.Add(forceSizeCheck.Visual);
+        expander.AddContent(forceSizeCheck);
 
         var maxSizeGrid = new Grid();
         maxSizeGrid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -401,7 +387,7 @@ public class FontConfigPanel : Panel
         maxSizeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         maxSizeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         maxSizeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        stack.Children.Add(maxSizeGrid.Visual);
+        expander.AddContent(maxSizeGrid);
 
         var sizeLabel = new Label();
         sizeLabel.Text = "Size:";
@@ -457,10 +443,7 @@ public class FontConfigPanel : Panel
             }
         };
 
-        var packAlgoLabel = new Label();
-        packAlgoLabel.Text = "Packing:";
-        stack.Children.Add(packAlgoLabel.Visual);
-        TooltipService.SetTooltip(packAlgoLabel, "Glyph packing algorithm for the atlas");
+        var atlasGrid = new PropertyGridVisual();
 
         var packAlgoCombo = new ComboBox();
         packAlgoCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
@@ -474,7 +457,10 @@ public class FontConfigPanel : Panel
             if (!updatingFromVm && packAlgoCombo.SelectedIndex >= 0)
                 _atlasConfig.PackingAlgorithmIndex = packAlgoCombo.SelectedIndex;
         };
-        stack.Children.Add(packAlgoCombo.Visual);
+        atlasGrid.AddRow("Packing:", packAlgoCombo);
+        TooltipService.SetTooltip(packAlgoCombo, "Glyph packing algorithm for the atlas");
+
+        expander.AddContent(atlasGrid);
 
         // --- Padding and Spacing side by side ---
         var padSpaceRow = new ContainerRuntime();
@@ -484,7 +470,7 @@ public class FontConfigPanel : Panel
         padSpaceRow.Height = 0;
         padSpaceRow.ChildrenLayout = global::Gum.Managers.ChildrenLayout.LeftToRightStack;
         padSpaceRow.StackSpacing = 8;
-        stack.Children.Add(padSpaceRow);
+        expander.AddContent(padSpaceRow);
 
         // --- Padding (cross layout using 3 columns) ---
         var padContainer = new ContainerRuntime();
@@ -496,7 +482,13 @@ public class FontConfigPanel : Panel
         padContainer.StackSpacing = 2;
         padSpaceRow.Children.Add(padContainer);
 
-        UiFactory.AddSectionHeader(padContainer, "Padding");
+        var padHeader = new TextRuntime();
+        padHeader.Text = "Padding";
+        padHeader.WidthUnits = DimensionUnitType.RelativeToParent;
+        padHeader.Width = 0;
+        padHeader.HeightUnits = DimensionUnitType.Absolute;
+        padHeader.Height = 20;
+        padContainer.Children.Add(padHeader);
 
         var padCross = new StackPanel();
         padCross.Orientation = Orientation.Horizontal;
@@ -548,7 +540,13 @@ public class FontConfigPanel : Panel
         spaceContainer.StackSpacing = 2;
         padSpaceRow.Children.Add(spaceContainer);
 
-        UiFactory.AddSectionHeader(spaceContainer, "Spacing");
+        var spaceHeader = new TextRuntime();
+        spaceHeader.Text = "Spacing";
+        spaceHeader.WidthUnits = DimensionUnitType.RelativeToParent;
+        spaceHeader.Width = 0;
+        spaceHeader.HeightUnits = DimensionUnitType.Absolute;
+        spaceHeader.Height = 20;
+        spaceContainer.Children.Add(spaceHeader);
 
         var spacingGrid = new Grid();
         spacingGrid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -603,16 +601,16 @@ public class FontConfigPanel : Panel
         };
     }
 
-    private void BuildOutputSection(global::Gum.Wireframe.GraphicalUiElement stack)
+    private void BuildOutputSection(Expander expander)
     {
         var formatLabel = new Label();
         formatLabel.Text = "Descriptor Format:";
-        stack.Children.Add(formatLabel.Visual);
+        expander.AddContent(formatLabel);
         TooltipService.SetTooltip(formatLabel, "Output format: Text, XML, or Binary");
 
         var formatGroup = new StackPanel();
         formatGroup.Spacing = Theme.ControlSpacing;
-        stack.Children.Add(formatGroup.Visual);
+        expander.AddContent(formatGroup);
 
         var formatRadios = new List<(RadioButton rb, OutputFormat fmt)>();
         var formats = new[] { ("Text", OutputFormat.Text), ("XML", OutputFormat.Xml), ("Binary", OutputFormat.Binary) };
@@ -635,7 +633,7 @@ public class FontConfigPanel : Panel
         TooltipService.SetTooltip(kerningCb, "Include kerning pairs for better spacing");
         kerningCb.Checked += (_, _) => _atlasConfig.IncludeKerning = true;
         kerningCb.Unchecked += (_, _) => _atlasConfig.IncludeKerning = false;
-        stack.Children.Add(kerningCb.Visual);
+        expander.AddContent(kerningCb);
 
         _atlasConfig.PropertyChanged += (_, e) =>
         {
