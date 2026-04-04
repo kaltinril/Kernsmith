@@ -9,6 +9,7 @@ using KernSmith.Ui.ViewModels;
 using KernSmith.Ui.Services;
 using KernSmith.Ui.Styling;
 using Gum.Themes.Editor;
+using GumRuntime;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace KernSmith.Ui;
@@ -63,6 +64,8 @@ public class KernSmithGame : Game
     {
         GumService.Default.Initialize(this, DefaultVisualsVersion.V3);
 
+        GraphicalUiElement.IsAllLayoutSuspended = true;
+
         // Apply editor theme — registers styled visuals and sets up KernSmithFontCreator
         EditorTheme.Apply(GraphicsDevice);
 
@@ -107,6 +110,10 @@ public class KernSmithGame : Game
             RunOnMainThread(() => _mainViewModel.FontConfig.SystemFonts = fonts);
         });
 
+        GraphicalUiElement.IsAllLayoutSuspended = false;
+        GumService.Default.Root.UpdateLayout();
+        GumService.Default.Root.UpdateFontRecursive();
+
         base.Initialize();
     }
 
@@ -146,6 +153,14 @@ public class KernSmithGame : Game
                 SetUiScale(_uiScale - UiScaleStep);
             if (ctrlHeld && IsKeyPressed(Keys.D0, kbState))
                 SetUiScale(1.0f);
+            if (IsKeyPressed(Keys.F12, kbState))
+            {
+                var path = System.IO.Path.Combine(
+                    System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)!,
+                    "layout-export.json");
+                GumService.Default.Root.ExportLayoutJson(path);
+                if (_mainViewModel != null) _mainViewModel.StatusBar.StatusText = $"Layout exported to {path}";
+            }
         }
 
         _previousKeyboardState = kbState;

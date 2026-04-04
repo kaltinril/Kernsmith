@@ -130,19 +130,16 @@ public class PreviewPanel : Panel
 
         _previewTabBtn = new Button();
         _previewTabBtn.Text = "Preview";
-        _previewTabBtn.Width = 90;
         _previewTabBtn.Click += (_, _) => SwitchTab(ActiveTab.Preview);
         tabBar.AddChild(_previewTabBtn);
 
         _charactersTabBtn = new Button();
         _charactersTabBtn.Text = "Characters";
-        _charactersTabBtn.Width = 90;
         _charactersTabBtn.Click += (_, _) => SwitchTab(ActiveTab.Characters);
         tabBar.AddChild(_charactersTabBtn);
 
         _sampleTextTabBtn = new Button();
         _sampleTextTabBtn.Text = "Sample";
-        _sampleTextTabBtn.Width = 70;
         _sampleTextTabBtn.Click += (_, _) => SwitchTab(ActiveTab.SampleText);
         tabBar.AddChild(_sampleTextTabBtn);
 

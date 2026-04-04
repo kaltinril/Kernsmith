@@ -39,17 +39,8 @@ public class EffectsPanel : Panel
         // --- FONT STYLE section (always active) ---
         BuildFontStyleSection(stack);
 
-        // --- OUTLINE section ---
-        BuildOutlineSection(stack);
-
-        // --- SHADOW section ---
-        BuildShadowSection(stack);
-
-        // --- GRADIENT section ---
-        BuildGradientSection(stack);
-
-        // --- CHANNELS section ---
-        BuildChannelsSection(stack);
+        // --- EFFECTS section (outline, shadow, gradient, channels) ---
+        BuildEffectsSection(stack);
 
         // --- ADVANCED section (SDF, Color Font, Variable Font) ---
         BuildAdvancedSection(stack);
@@ -291,38 +282,39 @@ public class EffectsPanel : Panel
         };
         synItalicCheck.Unchecked += (_, _) => _effects.ForceSyntheticItalic = false;
 
-        // Super sampling — label and radio buttons on one row
-        var ssRow = new StackPanel();
-        ssRow.Orientation = Orientation.Horizontal;
-        ssRow.Spacing = Theme.ControlSpacing;
-        expander.AddContent(ssRow.Visual);
+        // Super sampling
+        var ssGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        expander.AddContent(ssGrid);
 
-        var ssLabel = new Label();
-        ssLabel.Text = "Super Sample:";
-        ssRow.AddChild(ssLabel);
-        TooltipService.SetTooltip(ssLabel, "Render at higher resolution then downscale for smoother edges. Available with all backends. Higher values improve quality but increase generation time.");
-
-        foreach (var level in new[] { 1, 2, 4 })
+        var ssLevels = new[] { 1, 2, 4 };
+        var ssCombo = new ComboBox();
+        ssCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
+        ssCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        ssCombo.Visual.Width = 0;
+        foreach (var level in ssLevels) ssCombo.Items.Add($"{level}x");
+        ssCombo.SelectedIndex = 0;
+        ssCombo.SelectionChanged += (_, _) =>
         {
-            var rb = new RadioButton();
-            rb.Text = $"{level}x";
-            rb.Width = 50;
-            if (level == 1) rb.IsChecked = true;
-            var capturedLevel = level;
-            rb.Checked += (_, _) => _effects.SuperSampleLevel = capturedLevel;
-            ssRow.AddChild(rb);
-        }
+            if (ssCombo.SelectedIndex >= 0)
+                _effects.SuperSampleLevel = ssLevels[ssCombo.SelectedIndex];
+        };
+        ssGrid.AddRow("Super Sample:", ssCombo);
+        TooltipService.SetTooltip(ssCombo, "Render at higher resolution then downscale for smoother edges. Higher values improve quality but increase generation time.");
     }
 
-    private void BuildOutlineSection(global::Gum.Wireframe.GraphicalUiElement stack)
+    private void BuildEffectsSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
-        var expander = UiFactory.CreateExpander("Outline", isExpanded: false);
+        var expander = UiFactory.CreateExpander("Effects");
         stack.Children.Add(expander.Visual);
-        TooltipService.SetTooltip(expander, "Add an outline border around each glyph");
 
-        var enableCheck = new CheckBox();
-        enableCheck.Text = "Enabled";
-        expander.AddContent(enableCheck);
+        // --- Outline ---
+        var outlineGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        expander.AddContent(outlineGrid);
+
+        var outlineCheck = new CheckBox();
+        outlineCheck.Text = "";
+        outlineGrid.AddRow("Outline:", outlineCheck);
+        TooltipService.SetTooltip(outlineCheck, "Add an outline border around each glyph");
 
         var outlineContent = new ContainerRuntime();
         outlineContent.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -334,27 +326,22 @@ public class EffectsPanel : Panel
         outlineContent.Visible = false;
         expander.AddContent(outlineContent);
 
-        enableCheck.Checked += (_, _) => { outlineContent.Visible = true; _effects.OutlineEnabled = true; };
-        enableCheck.Unchecked += (_, _) => { outlineContent.Visible = false; _effects.OutlineEnabled = false; };
+        outlineCheck.Checked += (_, _) => { outlineContent.Visible = true; _effects.OutlineEnabled = true; };
+        outlineCheck.Unchecked += (_, _) => { outlineContent.Visible = false; _effects.OutlineEnabled = false; };
 
-        // Width slider row
         UiFactory.AddSliderRow(outlineContent, "Width:", 1, 10, 1,
             val => _effects.OutlineWidth = val);
-
-        // Outline color row
         UiFactory.AddColorRow(_graphicsDevice, outlineContent, "Color:",
             _effects.OutlineColor, hex => _effects.OutlineColor = hex);
-    }
 
-    private void BuildShadowSection(global::Gum.Wireframe.GraphicalUiElement stack)
-    {
-        var expander = UiFactory.CreateExpander("Shadow", isExpanded: false);
-        stack.Children.Add(expander.Visual);
-        TooltipService.SetTooltip(expander, "Add a drop shadow behind each glyph");
+        // --- Shadow ---
+        var shadowGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        expander.AddContent(shadowGrid);
 
-        var enableCheck = new CheckBox();
-        enableCheck.Text = "Enabled";
-        expander.AddContent(enableCheck);
+        var shadowCheck = new CheckBox();
+        shadowCheck.Text = "";
+        shadowGrid.AddRow("Shadow:", shadowCheck);
+        TooltipService.SetTooltip(shadowCheck, "Add a drop shadow behind each glyph");
 
         var shadowContent = new ContainerRuntime();
         shadowContent.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -366,8 +353,8 @@ public class EffectsPanel : Panel
         shadowContent.Visible = false;
         expander.AddContent(shadowContent);
 
-        enableCheck.Checked += (_, _) => { shadowContent.Visible = true; _effects.ShadowEnabled = true; };
-        enableCheck.Unchecked += (_, _) => { shadowContent.Visible = false; _effects.ShadowEnabled = false; };
+        shadowCheck.Checked += (_, _) => { shadowContent.Visible = true; _effects.ShadowEnabled = true; };
+        shadowCheck.Unchecked += (_, _) => { shadowContent.Visible = false; _effects.ShadowEnabled = false; };
 
         UiFactory.AddSliderRow(shadowContent, "Offset X:", -10, 10, 2,
             val => _effects.ShadowOffsetX = val);
@@ -375,34 +362,30 @@ public class EffectsPanel : Panel
             val => _effects.ShadowOffsetY = val);
         UiFactory.AddSliderRow(shadowContent, "Blur:", 0, 10, 0,
             val => _effects.ShadowBlur = val);
-
-        // Shadow color row
         UiFactory.AddColorRow(_graphicsDevice, shadowContent, "Color:",
             _effects.ShadowColor, hex => _effects.ShadowColor = hex);
-
-        // Shadow opacity slider
         UiFactory.AddSliderRow(shadowContent, "Opacity:", 0, 100, 100,
             val => _effects.ShadowOpacity = val);
 
+        var shadowChecksGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        shadowContent.Children.Add(shadowChecksGrid);
+
         var hardShadowCheck = new CheckBox();
-        hardShadowCheck.Text = "Hard Shadow";
-        hardShadowCheck.Width = 180;
+        hardShadowCheck.Text = "";
         hardShadowCheck.IsChecked = _effects.HardShadow;
         TooltipService.SetTooltip(hardShadowCheck, "Use a crisp silhouette instead of soft antialiased edges");
         hardShadowCheck.Checked += (_, _) => _effects.HardShadow = true;
         hardShadowCheck.Unchecked += (_, _) => _effects.HardShadow = false;
-        shadowContent.Children.Add(hardShadowCheck.Visual);
-    }
+        shadowChecksGrid.AddRow("Hard Shadow:", hardShadowCheck);
 
-    private void BuildGradientSection(global::Gum.Wireframe.GraphicalUiElement stack)
-    {
-        var expander = UiFactory.CreateExpander("Gradient", isExpanded: false);
-        stack.Children.Add(expander.Visual);
-        TooltipService.SetTooltip(expander, "Apply a color gradient across each glyph");
+        // --- Gradient ---
+        var gradientGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        expander.AddContent(gradientGrid);
 
-        var enableCheck = new CheckBox();
-        enableCheck.Text = "Enabled";
-        expander.AddContent(enableCheck);
+        var gradientCheck = new CheckBox();
+        gradientCheck.Text = "";
+        gradientGrid.AddRow("Gradient:", gradientCheck);
+        TooltipService.SetTooltip(gradientCheck, "Apply a color gradient across each glyph");
 
         var gradientContent = new ContainerRuntime();
         gradientContent.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -414,28 +397,24 @@ public class EffectsPanel : Panel
         gradientContent.Visible = false;
         expander.AddContent(gradientContent);
 
-        enableCheck.Checked += (_, _) => { gradientContent.Visible = true; _effects.GradientEnabled = true; };
-        enableCheck.Unchecked += (_, _) => { gradientContent.Visible = false; _effects.GradientEnabled = false; };
+        gradientCheck.Checked += (_, _) => { gradientContent.Visible = true; _effects.GradientEnabled = true; };
+        gradientCheck.Unchecked += (_, _) => { gradientContent.Visible = false; _effects.GradientEnabled = false; };
 
         UiFactory.AddColorRow(_graphicsDevice, gradientContent, "Start:",
             _effects.GradientStartColor, hex => _effects.GradientStartColor = hex);
-
         UiFactory.AddColorRow(_graphicsDevice, gradientContent, "End:",
             _effects.GradientEndColor, hex => _effects.GradientEndColor = hex);
-
         UiFactory.AddSliderRow(gradientContent, "Angle:", 0, 360, 90,
             val => _effects.GradientAngle = val);
-    }
 
-    private void BuildChannelsSection(global::Gum.Wireframe.GraphicalUiElement stack)
-    {
-        var expander = UiFactory.CreateExpander("Channels", isExpanded: false);
-        stack.Children.Add(expander.Visual);
-        TooltipService.SetTooltip(expander, "Pack glyph data into specific RGBA channels");
+        // --- Channels ---
+        var channelsGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        expander.AddContent(channelsGrid);
 
-        var enableCheck = new CheckBox();
-        enableCheck.Text = "Enabled";
-        expander.AddContent(enableCheck);
+        var channelsCheck = new CheckBox();
+        channelsCheck.Text = "";
+        channelsGrid.AddRow("Channels:", channelsCheck);
+        TooltipService.SetTooltip(channelsCheck, "Pack glyph data into specific RGBA channels");
 
         var channelsContent = new ContainerRuntime();
         channelsContent.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -447,15 +426,17 @@ public class EffectsPanel : Panel
         channelsContent.Visible = false;
         expander.AddContent(channelsContent);
 
-        enableCheck.Checked += (_, _) => { channelsContent.Visible = true; };
-        enableCheck.Unchecked += (_, _) => { channelsContent.Visible = false; };
+        channelsCheck.Checked += (_, _) => { channelsContent.Visible = true; };
+        channelsCheck.Unchecked += (_, _) => { channelsContent.Visible = false; };
+
+        var channelsChecksGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        channelsContent.Children.Add(channelsChecksGrid);
 
         var packingCheck = new CheckBox();
-        packingCheck.Text = "Channel Packing";
-        packingCheck.Width = 180;
+        packingCheck.Text = "";
         packingCheck.Checked += (_, _) => _effects.ChannelPackingEnabled = true;
         packingCheck.Unchecked += (_, _) => _effects.ChannelPackingEnabled = false;
-        channelsContent.Children.Add(packingCheck.Visual);
+        channelsChecksGrid.AddRow("Channel Packing:", packingCheck);
     }
 
     private void BuildAdvancedSection(global::Gum.Wireframe.GraphicalUiElement stack)
@@ -463,13 +444,15 @@ public class EffectsPanel : Panel
         var expander = UiFactory.CreateExpander("Advanced");
         stack.Children.Add(expander.Visual);
 
+        var advancedGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        expander.AddContent(advancedGrid);
+
         var sdfCheck = new CheckBox();
-        sdfCheck.Text = "SDF";
-        sdfCheck.Width = 220;
+        sdfCheck.Text = "";
         sdfCheck.IsEnabled = _effects.BackendSupportsSdf;
         sdfCheck.Checked += (_, _) => _effects.SdfEnabled = true;
         sdfCheck.Unchecked += (_, _) => _effects.SdfEnabled = false;
-        expander.AddContent(sdfCheck);
+        advancedGrid.AddRow("SDF:", sdfCheck);
         TooltipService.SetTooltip(sdfCheck, "Signed Distance Field rendering for resolution-independent scaling. Only supported by the FreeType backend.");
 
         // SDF incompatibility warning (covers super-sample, outline, shadow, gradient)
@@ -480,12 +463,11 @@ public class EffectsPanel : Panel
         expander.AddContent(sdfWarning);
 
         var colorCheck = new CheckBox();
-        colorCheck.Text = "Color Font";
-        colorCheck.Width = 220;
+        colorCheck.Text = "";
         colorCheck.IsEnabled = _effects.HasColorGlyphs && _effects.BackendSupportsColorFonts;
         colorCheck.Checked += (_, _) => _effects.ColorFontEnabled = true;
         colorCheck.Unchecked += (_, _) => _effects.ColorFontEnabled = false;
-        expander.AddContent(colorCheck);
+        advancedGrid.AddRow("Color Font:", colorCheck);
         TooltipService.SetTooltip(colorCheck, "Render color glyphs (emoji). Requires DirectWrite backend and a font with color tables (COLR/CPAL or CBDT/CBLC).");
 
         // Color font + Gradient mutual exclusion feedback

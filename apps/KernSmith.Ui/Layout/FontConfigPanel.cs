@@ -73,7 +73,7 @@ public class FontConfigPanel : Panel
         inner.Width = 0;
         inner.Height = 0;
         inner.X = 0;
-        inner.Y = Theme.ControlSpacing;
+        inner.Y = 0;
         inner.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
         inner.StackSpacing = Theme.SectionSpacing;
         scrollViewer.InnerPanel.Children.Add(inner);
@@ -178,6 +178,8 @@ public class FontConfigPanel : Panel
             // System Font row
             var familyCombo = new ComboBox();
             familyCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
+            ((global::Gum.Forms.DefaultVisuals.V3.ListBoxVisual)familyCombo.ListBox.Visual).MakeHeightFixedSize();
+            familyCombo.ListBox.Visual.Height = 300;
             familyCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
             familyCombo.Visual.Width = 0;
             var fontRow = fontGrid.AddRow("Font:", familyCombo);
@@ -371,30 +373,22 @@ public class FontConfigPanel : Panel
 
         var sizes = new[] { 128, 256, 512, 1024, 2048, 4096, 8192 };
 
+        var atlasChecksGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        expander.AddContent(atlasChecksGrid);
+
         var forceSizeCheck = new CheckBox();
-        forceSizeCheck.Text = "Force Size";
-        forceSizeCheck.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-        forceSizeCheck.Visual.Width = 0;
+        forceSizeCheck.Text = "";
         forceSizeCheck.IsChecked = !_atlasConfig.AutofitTexture;
         TooltipService.SetTooltip(forceSizeCheck, "Use exact atlas dimensions instead of auto-fitting");
-        expander.AddContent(forceSizeCheck);
+        atlasChecksGrid.AddRow("Force Size:", forceSizeCheck);
 
-        var maxSizeGrid = new Grid();
-        maxSizeGrid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-        maxSizeGrid.Visual.Width = 0;
-        maxSizeGrid.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
-        maxSizeGrid.Visual.Height = 0;
-        maxSizeGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        maxSizeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        maxSizeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        maxSizeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        maxSizeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var maxSizeGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
         expander.AddContent(maxSizeGrid);
 
-        var sizeLabel = new Label();
-        sizeLabel.Text = "Size:";
-        maxSizeGrid.AddChild(sizeLabel, row: 0, column: 0);
-        TooltipService.SetTooltip(sizeLabel, "Atlas texture size in pixels");
+        // Size row: [combo] x [combo] as a horizontal stack in the right column
+        var sizeControlRow = new StackPanel();
+        sizeControlRow.Orientation = Orientation.Horizontal;
+        sizeControlRow.Spacing = Theme.ControlSpacing;
 
         var maxWidthCombo = new ComboBox();
         maxWidthCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
@@ -407,11 +401,11 @@ public class FontConfigPanel : Panel
             if (!updatingFromVm && maxWidthCombo.SelectedIndex >= 0)
                 _atlasConfig.MaxWidth = sizes[maxWidthCombo.SelectedIndex];
         };
-        maxSizeGrid.AddChild(maxWidthCombo, row: 0, column: 1);
+        sizeControlRow.AddChild(maxWidthCombo);
 
         var xLabel = new Label();
         xLabel.Text = "x";
-        maxSizeGrid.AddChild(xLabel, row: 0, column: 2);
+        sizeControlRow.AddChild(xLabel);
 
         var maxHeightCombo = new ComboBox();
         maxHeightCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
@@ -424,16 +418,19 @@ public class FontConfigPanel : Panel
             if (!updatingFromVm && maxHeightCombo.SelectedIndex >= 0)
                 _atlasConfig.MaxHeight = sizes[maxHeightCombo.SelectedIndex];
         };
-        maxSizeGrid.AddChild(maxHeightCombo, row: 0, column: 3);
+        sizeControlRow.AddChild(maxHeightCombo);
 
-        maxSizeGrid.Visual.Visible = !_atlasConfig.AutofitTexture;
+        var maxSizeRow = maxSizeGrid.AddRow("Size:", sizeControlRow);
+        TooltipService.SetTooltip(sizeControlRow, "Atlas texture size in pixels");
+
+        maxSizeRow.Visible = !_atlasConfig.AutofitTexture;
 
         forceSizeCheck.Checked += (_, _) =>
         {
             if (!updatingFromVm)
             {
                 _atlasConfig.AutofitTexture = false;
-                maxSizeGrid.Visual.Visible = true;
+                maxSizeRow.Visible = true;
             }
         };
         forceSizeCheck.Unchecked += (_, _) =>
@@ -441,7 +438,7 @@ public class FontConfigPanel : Panel
             if (!updatingFromVm)
             {
                 _atlasConfig.AutofitTexture = true;
-                maxSizeGrid.Visual.Visible = false;
+                maxSizeRow.Visible = false;
             }
         };
 
@@ -484,13 +481,9 @@ public class FontConfigPanel : Panel
         padContainer.StackSpacing = 2;
         padSpaceRow.Children.Add(padContainer);
 
-        var padHeader = new TextRuntime();
+        var padHeader = new Label();
         padHeader.Text = "Padding";
-        padHeader.WidthUnits = DimensionUnitType.RelativeToChildren;
-        padHeader.Width = 0;
-        padHeader.HeightUnits = DimensionUnitType.Absolute;
-        padHeader.Height = 20;
-        padContainer.Children.Add(padHeader);
+        padContainer.Children.Add(padHeader.Visual);
 
         var padCross = new StackPanel();
         padCross.Orientation = Orientation.Horizontal;
@@ -542,33 +535,35 @@ public class FontConfigPanel : Panel
         spaceContainer.StackSpacing = 2;
         padSpaceRow.Children.Add(spaceContainer);
 
-        var spaceHeader = new TextRuntime();
+        var spaceHeader = new Label();
         spaceHeader.Text = "Spacing";
-        spaceHeader.WidthUnits = DimensionUnitType.RelativeToChildren;
-        spaceHeader.Width = 0;
-        spaceHeader.HeightUnits = DimensionUnitType.Absolute;
-        spaceHeader.Height = 20;
-        spaceContainer.Children.Add(spaceHeader);
+        spaceContainer.Children.Add(spaceHeader.Visual);
 
-        var spacingGrid = new Grid();
-        spacingGrid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-        spacingGrid.Visual.Width = 0;
-        spacingGrid.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
-        spacingGrid.Visual.Height = 0;
-        spacingGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        spacingGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        spacingGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        spacingGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        spaceContainer.Children.Add(spacingGrid.Visual);
+        var hRow = new StackPanel();
+        hRow.Orientation = Orientation.Horizontal;
+        hRow.Spacing = Theme.ControlSpacing;
+        spaceContainer.Children.Add(hRow.Visual);
 
         var spcHLabel = new Label(); spcHLabel.Text = "H:";
-        spacingGrid.AddChild(spcHLabel, row: 0, column: 0);
+        spcHLabel.Visual.YOrigin = global::RenderingLibrary.Graphics.VerticalAlignment.Center;
+        spcHLabel.Visual.Y = 0;
+        spcHLabel.Visual.YUnits = global::Gum.Converters.GeneralUnitType.PixelsFromMiddle;
+        hRow.AddChild(spcHLabel);
         var spacingHBox = CreateSmallIntBox(_atlasConfig.SpacingH, v => { if (!updatingFromVm) _atlasConfig.SpacingH = Math.Clamp(v, 0, 32); });
-        spacingGrid.AddChild(spacingHBox, row: 0, column: 1);
+        hRow.AddChild(spacingHBox);
+
+        var vRow = new StackPanel();
+        vRow.Orientation = Orientation.Horizontal;
+        vRow.Spacing = Theme.ControlSpacing;
+        spaceContainer.Children.Add(vRow.Visual);
+
         var spcVLabel = new Label(); spcVLabel.Text = "V:";
-        spacingGrid.AddChild(spcVLabel, row: 1, column: 0);
+        spcVLabel.Visual.YOrigin = global::RenderingLibrary.Graphics.VerticalAlignment.Center;
+        spcVLabel.Visual.Y = 0;
+        spcVLabel.Visual.YUnits = global::Gum.Converters.GeneralUnitType.PixelsFromMiddle;
+        vRow.AddChild(spcVLabel);
         var spacingVBox = CreateSmallIntBox(_atlasConfig.SpacingV, v => { if (!updatingFromVm) _atlasConfig.SpacingV = Math.Clamp(v, 0, 32); });
-        spacingGrid.AddChild(spacingVBox, row: 1, column: 1);
+        vRow.AddChild(spacingVBox);
 
         // Sync UI from ViewModel when preset is applied
         _atlasConfig.PropertyChanged += (_, e) =>
@@ -588,7 +583,7 @@ public class FontConfigPanel : Panel
                         break;
                     case nameof(AtlasConfigViewModel.AutofitTexture):
                         forceSizeCheck.IsChecked = !_atlasConfig.AutofitTexture;
-                        maxSizeGrid.Visual.Visible = !_atlasConfig.AutofitTexture;
+                        maxSizeRow.Visible = !_atlasConfig.AutofitTexture;
                         break;
                     case nameof(AtlasConfigViewModel.PackingAlgorithmIndex): packAlgoCombo.SelectedIndex = _atlasConfig.PackingAlgorithmIndex; break;
                     case nameof(AtlasConfigViewModel.PaddingUp): padUpBox.Text = _atlasConfig.PaddingUp.ToString(); break;
@@ -605,43 +600,40 @@ public class FontConfigPanel : Panel
 
     private void BuildOutputSection(Expander expander)
     {
-        var formatLabel = new Label();
-        formatLabel.Text = "Descriptor Format:";
-        expander.AddContent(formatLabel);
-        TooltipService.SetTooltip(formatLabel, "Output format: Text, XML, or Binary");
+        var outputGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        expander.AddContent(outputGrid);
 
-        var formatGroup = new StackPanel();
-        formatGroup.Spacing = Theme.ControlSpacing;
-        expander.AddContent(formatGroup);
-
-        var formatRadios = new List<(RadioButton rb, OutputFormat fmt)>();
         var formats = new[] { ("Text", OutputFormat.Text), ("XML", OutputFormat.Xml), ("Binary", OutputFormat.Binary) };
-        foreach (var (name, format) in formats)
+        var formatCombo = new ComboBox();
+        formatCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
+        formatCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        formatCombo.Visual.Width = 0;
+        foreach (var (name, _) in formats) formatCombo.Items.Add(name);
+        formatCombo.SelectedIndex = Array.FindIndex(formats, f => f.Item2 == _atlasConfig.DescriptorFormat);
+        if (formatCombo.SelectedIndex < 0) formatCombo.SelectedIndex = 0;
+        formatCombo.SelectionChanged += (_, _) =>
         {
-            var rb = new RadioButton();
-            rb.Text = name;
-            rb.Width = 200;
-            if (format == _atlasConfig.DescriptorFormat) rb.IsChecked = true;
-            var capturedFormat = format;
-            rb.Checked += (_, _) => _atlasConfig.DescriptorFormat = capturedFormat;
-            formatRadios.Add((rb, format));
-            formatGroup.AddChild(rb);
-        }
+            if (formatCombo.SelectedIndex >= 0)
+                _atlasConfig.DescriptorFormat = formats[formatCombo.SelectedIndex].Item2;
+        };
+        outputGrid.AddRow("Format:", formatCombo);
+        TooltipService.SetTooltip(formatCombo, "Output format: Text, XML, or Binary");
 
         var kerningCb = new CheckBox();
-        kerningCb.Text = "Include Kerning";
-        kerningCb.Width = 200;
+        kerningCb.Text = "";
         kerningCb.IsChecked = _atlasConfig.IncludeKerning;
         TooltipService.SetTooltip(kerningCb, "Include kerning pairs for better spacing");
         kerningCb.Checked += (_, _) => _atlasConfig.IncludeKerning = true;
         kerningCb.Unchecked += (_, _) => _atlasConfig.IncludeKerning = false;
-        expander.AddContent(kerningCb);
+        outputGrid.AddRow("Kerning:", kerningCb);
 
         _atlasConfig.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(AtlasConfigViewModel.DescriptorFormat))
-                foreach (var (rb, fmt) in formatRadios)
-                    rb.IsChecked = fmt == _atlasConfig.DescriptorFormat;
+            {
+                var idx = Array.FindIndex(formats, f => f.Item2 == _atlasConfig.DescriptorFormat);
+                if (idx >= 0) formatCombo.SelectedIndex = idx;
+            }
             if (e.PropertyName == nameof(AtlasConfigViewModel.IncludeKerning))
                 kerningCb.IsChecked = _atlasConfig.IncludeKerning;
         };

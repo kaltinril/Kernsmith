@@ -82,7 +82,7 @@ public class ColorPickerDialog
         _window = new Window();
         _window.Anchor(global::Gum.Wireframe.Anchor.Center);
         _window.Width = 370;
-        _window.Height = 236;
+        _window.Height = 230;
         _window.ResizeMode = ResizeMode.NoResize;
         FrameworkElement.ModalRoot.Children.Add(_window.Visual);
 
@@ -97,31 +97,52 @@ public class ColorPickerDialog
             windowVisual.TitleBarInstance.AddChild(titleLabel);
         }
 
-        var outerStack = new ContainerRuntime();
-        outerStack.WidthUnits = DimensionUnitType.RelativeToParent;
-        outerStack.HeightUnits = DimensionUnitType.RelativeToChildren;
-        outerStack.Width = -16;
-        outerStack.Height = 0;
-        outerStack.X = 8;
-        outerStack.Y = 32;
-        outerStack.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
-        outerStack.StackSpacing = 4;
-        _window.AddChild(outerStack);
+        // Outer two-column layout
+        var outer = new ContainerRuntime();
+        outer.WidthUnits = DimensionUnitType.RelativeToParent;
+        outer.HeightUnits = DimensionUnitType.RelativeToParent;
+        outer.Width = -16;
+        outer.Height = -40;
+        outer.X = 8;
+        outer.Y = 32;
+        outer.ChildrenLayout = global::Gum.Managers.ChildrenLayout.LeftToRightStack;
+        outer.StackSpacing = 4;
+        _window.AddChild(outer);
 
-        // --- Row 1: New [swatch] Previous [swatch] Hex: [#hexbox] ---
-        BuildTopRow(outerStack);
+        // --- Left column: swatches + SV square + hue bar ---
+        var leftColumn = new ContainerRuntime();
+        leftColumn.WidthUnits = DimensionUnitType.RelativeToChildren;
+        leftColumn.Width = 0;
+        leftColumn.HeightUnits = DimensionUnitType.RelativeToChildren;
+        leftColumn.Height = 0;
+        leftColumn.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
+        leftColumn.StackSpacing = 4;
+        outer.Children.Add(leftColumn);
 
-        // --- Row 2: [SV square] [Hue bar] [Right panel: inputs + buttons] ---
-        BuildMainRow(outerStack, onColorSelected);
+        BuildSwatchRow(leftColumn);
+        BuildPickerRow(leftColumn);
+
+        // --- Right column: hex, grid, buttons ---
+        var rightColumn = new ContainerRuntime();
+        rightColumn.WidthUnits = DimensionUnitType.Ratio;
+        rightColumn.Width = 1;
+        rightColumn.HeightUnits = DimensionUnitType.RelativeToParent;
+        rightColumn.Height = 0;
+        rightColumn.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
+        rightColumn.StackSpacing = 4;
+        outer.Children.Add(rightColumn);
+
+        BuildRightPanel(rightColumn);
+        BuildButtonRow(rightColumn, onColorSelected);
 
         // Initial sync to populate all fields from the current color
         SyncFromRgb();
     }
 
-    private void BuildTopRow(ContainerRuntime parent)
+    private void BuildSwatchRow(ContainerRuntime parent)
     {
         var row = new ContainerRuntime();
-        row.WidthUnits = DimensionUnitType.RelativeToParent;
+        row.WidthUnits = DimensionUnitType.RelativeToChildren;
         row.Width = 0;
         row.HeightUnits = DimensionUnitType.RelativeToChildren;
         row.Height = 0;
@@ -154,58 +175,56 @@ public class ColorPickerDialog
 
         AddBorderedSwatch(row, 24, 20, out var prevSwatch);
         prevSwatch.Color = _previousColor;
+    }
 
-        // Spacer before hex
-        var spacer2 = new ContainerRuntime();
-        spacer2.Width = 8;
-        spacer2.Height = 1;
-        row.Children.Add(spacer2);
+    private void BuildPickerRow(ContainerRuntime parent)
+    {
+        var pickerRow = new ContainerRuntime();
+        pickerRow.WidthUnits = DimensionUnitType.RelativeToChildren;
+        pickerRow.Width = 0;
+        pickerRow.HeightUnits = DimensionUnitType.Absolute;
+        pickerRow.Height = SvSize;
+        pickerRow.ChildrenLayout = global::Gum.Managers.ChildrenLayout.LeftToRightStack;
+        pickerRow.StackSpacing = 4;
+        parent.Children.Add(pickerRow);
 
-        // Hex label + text box
+        BuildSvSquare(pickerRow);
+        BuildHueBar(pickerRow);
+    }
+
+    private void BuildRightPanel(ContainerRuntime parent)
+    {
+        // Top area: fills remaining vertical space via Ratio height
+        var topArea = new ContainerRuntime();
+        topArea.WidthUnits = DimensionUnitType.RelativeToParent;
+        topArea.Width = 0;
+        topArea.HeightUnits = DimensionUnitType.Ratio;
+        topArea.Height = 1;
+        topArea.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
+        topArea.StackSpacing = 4;
+        parent.Children.Add(topArea);
+
+        // Hex row
+        var hexRow = new ContainerRuntime();
+        hexRow.WidthUnits = DimensionUnitType.RelativeToChildren;
+        hexRow.Width = 0;
+        hexRow.HeightUnits = DimensionUnitType.RelativeToChildren;
+        hexRow.Height = 0;
+        hexRow.ChildrenLayout = global::Gum.Managers.ChildrenLayout.LeftToRightStack;
+        hexRow.StackSpacing = 2;
+        topArea.Children.Add(hexRow);
+
         var hexLabel = new TextRuntime();
         hexLabel.Text = "Hex:";
         hexLabel.Width = 28;
         hexLabel.Color = Theme.Text;
-        row.Children.Add(hexLabel);
+        hexRow.Children.Add(hexLabel);
 
         _hexBox = new TextBox();
         _hexBox.Width = 84;
         _hexBox.Text = $"#{_r:X2}{_g:X2}{_b:X2}";
         _hexBox.TextChanged += OnHexChanged;
-        row.Children.Add(_hexBox.Visual);
-    }
-
-    private void BuildMainRow(ContainerRuntime parent, Action<Color> onColorSelected)
-    {
-        var mainRow = new ContainerRuntime();
-        mainRow.WidthUnits = DimensionUnitType.RelativeToParent;
-        mainRow.Width = 0;
-        mainRow.HeightUnits = DimensionUnitType.Absolute;
-        mainRow.Height = SvSize;
-        mainRow.ChildrenLayout = global::Gum.Managers.ChildrenLayout.LeftToRightStack;
-        mainRow.StackSpacing = 4;
-        parent.Children.Add(mainRow);
-
-        // --- SV Square ---
-        BuildSvSquare(mainRow);
-
-        // --- Hue Bar ---
-        BuildHueBar(mainRow);
-
-        // --- Right panel: inputs + buttons ---
-        BuildRightPanel(mainRow, onColorSelected);
-    }
-
-    private void BuildRightPanel(ContainerRuntime parent, Action<Color> onColorSelected)
-    {
-        var rightPanel = new ContainerRuntime();
-        rightPanel.WidthUnits = DimensionUnitType.RelativeToChildren;
-        rightPanel.Width = 0;
-        rightPanel.HeightUnits = DimensionUnitType.RelativeToParent;
-        rightPanel.Height = 0;
-        rightPanel.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
-        rightPanel.StackSpacing = 4;
-        parent.Children.Add(rightPanel);
+        hexRow.Children.Add(_hexBox.Visual);
 
         // --- Precompute initial values ---
         var (hslH, hslS, hslL) = RgbToHsl(_r, _g, _b);
@@ -224,7 +243,7 @@ public class ColorPickerDialog
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        rightPanel.Children.Add(grid.Visual);
+        topArea.Children.Add(grid.Visual);
 
         // Row 0: RGB
         AddGridLabel(grid, "RGB:", 0, 0);
@@ -243,32 +262,6 @@ public class ColorPickerDialog
         _hsvHBox = AddGridTextBox(grid, ((int)hsvH).ToString(), 2, 1);
         _hsvSBox = AddGridTextBox(grid, ((int)hsvS).ToString(), 2, 2);
         _hsvVBox = AddGridTextBox(grid, ((int)hsvV).ToString(), 2, 3);
-
-        // --- OK / Cancel buttons ---
-        var buttonRow = new ContainerRuntime();
-        buttonRow.WidthUnits = DimensionUnitType.RelativeToChildren;
-        buttonRow.Width = 0;
-        buttonRow.HeightUnits = DimensionUnitType.RelativeToChildren;
-        buttonRow.Height = 0;
-        buttonRow.ChildrenLayout = global::Gum.Managers.ChildrenLayout.LeftToRightStack;
-        buttonRow.StackSpacing = 4;
-        rightPanel.Children.Add(buttonRow);
-
-        var okBtn = new Button();
-        okBtn.Text = "OK";
-        okBtn.Width = 70;
-        okBtn.Click += (_, _) =>
-        {
-            onColorSelected(new Color(_r, _g, _b));
-            CloseDialog();
-        };
-        buttonRow.Children.Add(okBtn.Visual);
-
-        var cancelBtn = new Button();
-        cancelBtn.Text = "Cancel";
-        cancelBtn.Width = 70;
-        cancelBtn.Click += (_, _) => CloseDialog();
-        buttonRow.Children.Add(cancelBtn.Visual);
 
         // --- Wire up TextChanged handlers ---
         _rBox.TextChanged += (_, _) => OnRgbChanged();
@@ -334,6 +327,44 @@ public class ColorPickerDialog
         innerSwatch.Height = -2;
         innerSwatch.HeightUnits = DimensionUnitType.RelativeToParent;
         container.Children.Add(innerSwatch);
+    }
+
+    private void BuildButtonRow(ContainerRuntime parent, Action<Color> onColorSelected)
+    {
+        // Bottom area: sizes to children height
+        var bottomArea = new ContainerRuntime();
+        bottomArea.WidthUnits = DimensionUnitType.RelativeToParent;
+        bottomArea.Width = 0;
+        bottomArea.HeightUnits = DimensionUnitType.RelativeToChildren;
+        bottomArea.Height = 0;
+        parent.Children.Add(bottomArea);
+
+        // Button row: right-aligned within bottom area
+        var buttonRow = new ContainerRuntime();
+        buttonRow.WidthUnits = DimensionUnitType.RelativeToChildren;
+        buttonRow.Width = 0;
+        buttonRow.HeightUnits = DimensionUnitType.RelativeToChildren;
+        buttonRow.Height = 0;
+        buttonRow.XOrigin = global::RenderingLibrary.Graphics.HorizontalAlignment.Right;
+        buttonRow.XUnits = global::Gum.Converters.GeneralUnitType.PixelsFromLarge;
+        buttonRow.X = 0;
+        buttonRow.ChildrenLayout = global::Gum.Managers.ChildrenLayout.LeftToRightStack;
+        buttonRow.StackSpacing = 4;
+        bottomArea.Children.Add(buttonRow);
+
+        var okBtn = new Button();
+        okBtn.Text = "OK";
+        okBtn.Click += (_, _) =>
+        {
+            onColorSelected(new Color(_r, _g, _b));
+            CloseDialog();
+        };
+        buttonRow.Children.Add(okBtn.Visual);
+
+        var cancelBtn = new Button();
+        cancelBtn.Text = "Cancel";
+        cancelBtn.Click += (_, _) => CloseDialog();
+        buttonRow.Children.Add(cancelBtn.Visual);
     }
 
     private void BuildSvSquare(ContainerRuntime parent)

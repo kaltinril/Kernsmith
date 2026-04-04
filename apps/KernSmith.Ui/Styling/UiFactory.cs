@@ -58,7 +58,7 @@ public static class UiFactory
         grid.Visual.Height = 0;
         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Theme.LabelWidth) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         parent.Children.Add(grid.Visual);
 
@@ -200,7 +200,7 @@ public static class UiFactory
         inner.Width = 0;
         inner.Height = 0;
         inner.X = 0;
-        inner.Y = Theme.ControlSpacing;
+        inner.Y = 0;
         inner.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
         inner.StackSpacing = Theme.SectionSpacing;
         scrollViewer.InnerPanel.Children.Add(inner);
