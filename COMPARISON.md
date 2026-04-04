@@ -21,7 +21,7 @@ How does KernSmith compare to other bitmap font generators?
 | **In-Memory API** | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | **Library / SDK** | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | **CLI Tool** | ✅ | ✅ | ⚠️ | ✅ | ❌ | ❌ | ❌ |
-| **GUI** | 🔜 | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
+| **GUI** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
 | **Embeddable in Pipelines** | ✅ | ⚠️ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | **Batch Processing** | ✅ | ✅ | ⚠️ | ✅ | ❌ | ❌ | ⚠️ |
 
@@ -31,7 +31,7 @@ How does KernSmith compare to other bitmap font generators?
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | **TTF/OTF** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **WOFF** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **WOFF2** | 🔜 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **WOFF2** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **Variable Fonts** | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | **Color Fonts (COLR/CPAL)** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **Emoji** | ⚠️ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
@@ -111,7 +111,7 @@ How does KernSmith compare to other bitmap font generators?
 | **Custom Glyph Images** | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ |
 | **Font Fallback/Substitution** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
 | **Multi-Font Atlas** | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| **GUI** | 🔜 | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
+| **GUI** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
 | **Engine-Specific Exports** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
 
 ## Config Format Compatibility
