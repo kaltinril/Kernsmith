@@ -61,6 +61,15 @@
 - Reduce overall contrast — fewer distinct background shades
 - Goal: quiet, professional UI that lets content speak (reference: egui default style)
 
+### Phase 7: MVVM Binding Refactor
+- Replace imperative `PropertyChanged` event wiring and manual visibility toggling with Gum's MVVM binding system
+- ViewModels should inherit from Gum's `ViewModel` base class (using `Get<T>()`/`Set(value)` pattern)
+- Add computed properties with `[DependsOn]` (e.g., `IsBrowseMode` / `IsSystemFontMode`)
+- Use `SetBinding` + `BindingContext` propagation instead of manual event handlers
+- `IsVisible` is bindable on all Forms controls — use it for mode-switching visibility
+- Start with FontConfigPanel, then apply pattern to EffectsPanel and other panels
+- Reference: https://docs.flatredball.com/gum/code/binding-viewmodels
+
 ## Key Decisions Made
 - **Padding/Spacing layout:** Keep cross/compass layout, just clean up labels and alignment
 - **All sections start expanded** (user preference)

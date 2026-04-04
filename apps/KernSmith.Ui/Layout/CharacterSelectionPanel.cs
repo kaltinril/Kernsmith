@@ -38,9 +38,7 @@ public class CharacterSelectionPanel : Panel
         stack.StackSpacing = Theme.SectionSpacing;
 
         // --- Preset RadioButtons ---
-        var presetExpander = new Expander();
-        presetExpander.Header = "CHARACTER SET PRESET";
-        presetExpander.IsExpanded = true;
+        var presetExpander = UiFactory.CreateExpander("Character Set Preset");
         stack.Children.Add(presetExpander.Visual);
         {
             var presetRow = new StackPanel();
@@ -74,9 +72,7 @@ public class CharacterSelectionPanel : Panel
         }
 
         // --- Text input area (Hiero-style) ---
-        var addTextExpander = new Expander();
-        addTextExpander.Header = "ADD FROM TEXT";
-        addTextExpander.IsExpanded = true;
+        var addTextExpander = UiFactory.CreateExpander("Add From Text");
         stack.Children.Add(addTextExpander.Visual);
         {
             var textInputRow = new StackPanel();
@@ -108,9 +104,7 @@ public class CharacterSelectionPanel : Panel
         }
 
         // --- Unicode block checkboxes ---
-        var blocksExpander = new Expander();
-        blocksExpander.Header = "UNICODE BLOCKS";
-        blocksExpander.IsExpanded = true;
+        var blocksExpander = UiFactory.CreateExpander("Unicode Blocks");
         stack.Children.Add(blocksExpander.Visual);
         {
             var blockScroll = new ScrollViewer();

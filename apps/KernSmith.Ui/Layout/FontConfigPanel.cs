@@ -81,11 +81,33 @@ public class FontConfigPanel : Panel
         var stack = inner;
 
         // --- FONT FILE section (expander) ---
-        var fontFileExpander = new Expander();
-        fontFileExpander.Header = "FONT FILE";
-        fontFileExpander.IsExpanded = true;
+        var fontFileExpander = UiFactory.CreateExpander("Font File");
         stack.Children.Add(fontFileExpander.Visual);
         {
+            // --- Font source radio buttons ---
+            var sourceRow = new StackPanel();
+            sourceRow.Orientation = Orientation.Horizontal;
+            sourceRow.Spacing = Theme.SectionSpacing;
+            sourceRow.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
+            sourceRow.Visual.Height = Theme.SectionSpacing;
+            fontFileExpander.AddContent(sourceRow);
+
+            var browseRadio = new RadioButton();
+            browseRadio.Text = "Browse File";
+            browseRadio.IsChecked = true;
+            browseRadio.Visual.YOrigin = global::RenderingLibrary.Graphics.VerticalAlignment.Center;
+            browseRadio.Visual.Y = 0;
+            browseRadio.Visual.YUnits = global::Gum.Converters.GeneralUnitType.PixelsFromMiddle;
+            sourceRow.AddChild(browseRadio);
+
+            var systemRadio = new RadioButton();
+            systemRadio.Text = "System Font";
+            systemRadio.Visual.YOrigin = global::RenderingLibrary.Graphics.VerticalAlignment.Center;
+            systemRadio.Visual.Y = 0;
+            systemRadio.Visual.YUnits = global::Gum.Converters.GeneralUnitType.PixelsFromMiddle;
+            sourceRow.AddChild(systemRadio);
+
+            // --- Browse button (visible in Browse File mode) ---
             var browseBtn = new Button();
             browseBtn.Text = "Browse for Font...";
             browseBtn.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -103,57 +125,46 @@ public class FontConfigPanel : Panel
             fontFileExpander.AddContent(browseBtn);
             TooltipService.SetTooltip(browseBtn, "Browse for a font file");
 
+            // --- Single grid for all font info rows ---
+            var fontGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+            fontFileExpander.AddContent(fontGrid);
+
+            // Browse File rows
             var sourceLabel = new Label();
             sourceLabel.Text = "";
-            sourceLabel.IsVisible = false;
-            fontFileExpander.AddContent(sourceLabel);
+            var sourceFileRow = fontGrid.AddRow("Source:", sourceLabel);
+            sourceFileRow.Visible = false;
 
-            // Only show source label for file-loaded fonts (system font is visible in dropdown)
             _fontConfig.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName == nameof(FontConfigViewModel.FontSourceKind) ||
                     e.PropertyName == nameof(FontConfigViewModel.FontSourceDescription))
                 {
                     var isFile = _fontConfig.FontSourceKind == Models.FontSourceKind.File;
-                    sourceLabel.IsVisible = isFile;
+                    sourceFileRow.Visible = isFile;
                     if (isFile)
                         sourceLabel.Text = _fontConfig.FontSourceDescription;
                 }
             };
 
-            // --- TTC Face Selection (hidden unless a .ttc font collection is loaded) ---
-            var faceSelectionRow = new StackPanel();
-            faceSelectionRow.Orientation = Orientation.Horizontal;
-            faceSelectionRow.Spacing = Theme.ControlSpacing;
-            faceSelectionRow.IsVisible = false;
-            fontFileExpander.AddContent(faceSelectionRow);
-
-            var faceLabel = new Label();
-            faceLabel.Text = "Face:";
-            faceLabel.Width = 50;
-            faceSelectionRow.AddChild(faceLabel);
-
             var faceCombo = new ComboBox();
             faceCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
-            faceCombo.Width = 80;
-            faceSelectionRow.AddChild(faceCombo);
-
-            var faceCountLabel = new Label();
-            faceCountLabel.Text = "";
-            faceSelectionRow.AddChild(faceCountLabel);
+            faceCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+            faceCombo.Visual.Width = 0;
+            var faceRow = fontGrid.AddRow("Face:", faceCombo);
+            faceRow.Visible = false;
 
             _fontConfig.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName == nameof(FontConfigViewModel.IsFontCollection))
                 {
-                    faceSelectionRow.IsVisible = _fontConfig.IsFontCollection;
+                    faceRow.Visible = _fontConfig.IsFontCollection;
                     if (_fontConfig.IsFontCollection)
                     {
                         faceCombo.Items.Clear();
                         for (int i = 0; i < _fontConfig.FaceCount; i++)
                             faceCombo.Items.Add($"Face {i}");
                         faceCombo.SelectedIndex = 0;
-                        faceCountLabel.Text = $"of {_fontConfig.FaceCount}";
                     }
                 }
             };
@@ -161,30 +172,22 @@ public class FontConfigPanel : Panel
             faceCombo.SelectionChanged += (_, _) =>
             {
                 if (faceCombo.SelectedIndex >= 0 && _fontConfig.IsFontCollection)
-                {
                     _fontConfig.ReloadWithFaceIndex(faceCombo.SelectedIndex);
-                }
             };
 
-            var familyLabel = new Label();
-            familyLabel.Text = "System Font:";
-            fontFileExpander.AddContent(familyLabel);
-            TooltipService.SetTooltip(familyLabel, "Pick an installed system font. Requires a backend that supports system fonts (GDI or DirectWrite).");
-
+            // System Font row
             var familyCombo = new ComboBox();
             familyCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
             familyCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
             familyCombo.Visual.Width = 0;
-            fontFileExpander.AddContent(familyCombo);
+            var fontRow = fontGrid.AddRow("Font:", familyCombo);
+            fontRow.Visible = false;
+            TooltipService.SetTooltip(familyCombo, "Pick an installed system font. Requires a backend that supports system fonts (GDI or DirectWrite).");
 
-            // Wire system font combo
             _fontConfig.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName == nameof(FontConfigViewModel.SystemFonts) && _fontConfig.SystemFonts != null)
-                {
                     familyCombo.Items = _fontConfig.SystemFonts.Select(g => (object)g.FamilyName).ToList();
-                }
-
             };
 
             familyCombo.SelectionChanged += (_, _) =>
@@ -197,7 +200,6 @@ public class FontConfigPanel : Panel
                     _fontConfig.LoadedAsBold = false;
                     _fontConfig.LoadedAsItalic = false;
 
-                    // Auto-load Regular, falling back to first available
                     if (group.Styles.Count > 0)
                     {
                         var font = group.Styles.FirstOrDefault(s =>
@@ -210,51 +212,55 @@ public class FontConfigPanel : Panel
                 }
             };
 
-            // --- Glyph count via PropertyGridVisual ---
-            var fontInfoGrid = new PropertyGridVisual();
+            // --- Radio toggle: swap row visibility ---
+            browseRadio.Checked += (_, _) =>
+            {
+                browseBtn.IsVisible = true;
+                fontRow.Visible = false;
+            };
+            systemRadio.Checked += (_, _) =>
+            {
+                browseBtn.IsVisible = false;
+                fontRow.Visible = true;
+            };
 
+            // --- Always-visible font info rows ---
             var glyphCount = new Label();
             glyphCount.Text = "0";
             glyphCount.SetBinding(nameof(Label.Text), nameof(FontConfigViewModel.NumGlyphs));
             glyphCount.Visual.BindingContext = _fontConfig;
-            fontInfoGrid.AddRow("Glyphs:", glyphCount);
+            fontGrid.AddRow("Glyphs:", glyphCount);
 
-            fontFileExpander.AddContent(fontInfoGrid);
-
-            // --- Conditional font info: color glyphs ---
             var colorGlyphLabel = new Label();
-            colorGlyphLabel.Text = "Has color glyphs";
-            colorGlyphLabel.IsVisible = false;
-            fontFileExpander.AddContent(colorGlyphLabel);
+            colorGlyphLabel.Text = "Yes";
+            var colorRow = fontGrid.AddRow("Color:", colorGlyphLabel);
+            colorRow.Visible = false;
 
-            // --- Conditional font info: variable font axes ---
             var axesLabel = new Label();
             axesLabel.Text = "";
-            axesLabel.IsVisible = false;
-            fontFileExpander.AddContent(axesLabel);
+            var axesRow = fontGrid.AddRow("Axes:", axesLabel);
+            axesRow.Visible = false;
 
             _fontConfig.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName == nameof(FontConfigViewModel.HasColorGlyphs))
-                    colorGlyphLabel.IsVisible = _fontConfig.HasColorGlyphs;
+                    colorRow.Visible = _fontConfig.HasColorGlyphs;
 
                 if (e.PropertyName is nameof(FontConfigViewModel.HasVariationAxes)
                     or nameof(FontConfigViewModel.VariationAxesSummary))
                 {
-                    axesLabel.IsVisible = _fontConfig.HasVariationAxes;
+                    axesRow.Visible = _fontConfig.HasVariationAxes;
                     if (_fontConfig.HasVariationAxes)
-                        axesLabel.Text = $"Variable axes: {_fontConfig.VariationAxesSummary}";
+                        axesLabel.Text = _fontConfig.VariationAxesSummary;
                 }
             };
         }
 
         // --- SIZE section (expander) ---
-        var sizeExpander = new Expander();
-        sizeExpander.Header = "SIZE";
-        sizeExpander.IsExpanded = true;
+        var sizeExpander = UiFactory.CreateExpander("Size");
         stack.Children.Add(sizeExpander.Visual);
         {
-            var sizeGrid = new PropertyGridVisual();
+            var sizeGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
 
             var sizeTextBox = new TextBox();
             sizeTextBox.Width = 42;
@@ -283,16 +289,12 @@ public class FontConfigPanel : Panel
         }
 
         // --- ATLAS section (expander) ---
-        var atlasExpander = new Expander();
-        atlasExpander.Header = "ATLAS";
-        atlasExpander.IsExpanded = true;
+        var atlasExpander = UiFactory.CreateExpander("Atlas");
         stack.Children.Add(atlasExpander.Visual);
         BuildAtlasSection(atlasExpander);
 
         // --- OUTPUT section (expander) ---
-        var outputExpander = new Expander();
-        outputExpander.Header = "OUTPUT";
-        outputExpander.IsExpanded = true;
+        var outputExpander = UiFactory.CreateExpander("Output");
         stack.Children.Add(outputExpander.Visual);
         BuildOutputSection(outputExpander);
 
@@ -443,7 +445,7 @@ public class FontConfigPanel : Panel
             }
         };
 
-        var atlasGrid = new PropertyGridVisual();
+        var atlasGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
 
         var packAlgoCombo = new ComboBox();
         packAlgoCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
@@ -484,7 +486,7 @@ public class FontConfigPanel : Panel
 
         var padHeader = new TextRuntime();
         padHeader.Text = "Padding";
-        padHeader.WidthUnits = DimensionUnitType.RelativeToParent;
+        padHeader.WidthUnits = DimensionUnitType.RelativeToChildren;
         padHeader.Width = 0;
         padHeader.HeightUnits = DimensionUnitType.Absolute;
         padHeader.Height = 20;
@@ -542,7 +544,7 @@ public class FontConfigPanel : Panel
 
         var spaceHeader = new TextRuntime();
         spaceHeader.Text = "Spacing";
-        spaceHeader.WidthUnits = DimensionUnitType.RelativeToParent;
+        spaceHeader.WidthUnits = DimensionUnitType.RelativeToChildren;
         spaceHeader.Width = 0;
         spaceHeader.HeightUnits = DimensionUnitType.Absolute;
         spaceHeader.Height = 20;

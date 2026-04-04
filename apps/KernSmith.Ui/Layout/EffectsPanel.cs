@@ -64,9 +64,7 @@ public class EffectsPanel : Panel
 
     private void BuildFontStyleSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
-        var expander = new Expander();
-        expander.Header = "FONT STYLE";
-        expander.IsExpanded = true;
+        var expander = UiFactory.CreateExpander("Font Style");
         stack.Children.Add(expander.Visual);
 
         // Two-column, three-row layout:
@@ -318,8 +316,7 @@ public class EffectsPanel : Panel
 
     private void BuildOutlineSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
-        var expander = new Expander();
-        expander.Header = "OUTLINE";
+        var expander = UiFactory.CreateExpander("Outline", isExpanded: false);
         stack.Children.Add(expander.Visual);
         TooltipService.SetTooltip(expander, "Add an outline border around each glyph");
 
@@ -351,8 +348,7 @@ public class EffectsPanel : Panel
 
     private void BuildShadowSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
-        var expander = new Expander();
-        expander.Header = "SHADOW";
+        var expander = UiFactory.CreateExpander("Shadow", isExpanded: false);
         stack.Children.Add(expander.Visual);
         TooltipService.SetTooltip(expander, "Add a drop shadow behind each glyph");
 
@@ -400,8 +396,7 @@ public class EffectsPanel : Panel
 
     private void BuildGradientSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
-        var expander = new Expander();
-        expander.Header = "GRADIENT";
+        var expander = UiFactory.CreateExpander("Gradient", isExpanded: false);
         stack.Children.Add(expander.Visual);
         TooltipService.SetTooltip(expander, "Apply a color gradient across each glyph");
 
@@ -434,8 +429,7 @@ public class EffectsPanel : Panel
 
     private void BuildChannelsSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
-        var expander = new Expander();
-        expander.Header = "CHANNELS";
+        var expander = UiFactory.CreateExpander("Channels", isExpanded: false);
         stack.Children.Add(expander.Visual);
         TooltipService.SetTooltip(expander, "Pack glyph data into specific RGBA channels");
 
@@ -466,9 +460,7 @@ public class EffectsPanel : Panel
 
     private void BuildAdvancedSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
-        var expander = new Expander();
-        expander.Header = "ADVANCED";
-        expander.IsExpanded = true;
+        var expander = UiFactory.CreateExpander("Advanced");
         stack.Children.Add(expander.Visual);
 
         var sdfCheck = new CheckBox();
@@ -590,12 +582,10 @@ public class EffectsPanel : Panel
 
     private void BuildFallbackSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
-        var expander = new Expander();
-        expander.Header = "FALLBACK CHARACTER";
-        expander.IsExpanded = true;
+        var expander = UiFactory.CreateExpander("Fallback Character");
         stack.Children.Add(expander.Visual);
 
-        var grid = new PropertyGridVisual();
+        var grid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
 
         var fallbackTextBox = new TextBox();
         fallbackTextBox.Width = 60;
@@ -613,8 +603,7 @@ public class EffectsPanel : Panel
 
     private void BuildVariableFontSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
-        var expander = new Expander();
-        expander.Header = "VARIABLE FONT";
+        var expander = UiFactory.CreateExpander("Variable Font", isExpanded: false);
         expander.Visual.Visible = false;
         stack.Children.Add(expander.Visual);
         TooltipService.SetTooltip(expander, "Variable font axis controls. Requires DirectWrite backend and a variable font (with fvar table).");

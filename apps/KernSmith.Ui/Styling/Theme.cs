@@ -50,4 +50,6 @@ public static class Theme
     public const int LabelWidth = 70;
     /// <summary>Section header height (px).</summary>
     public const int SectionHeaderHeight = 24;
+    /// <summary>Left indent for expander content area (px).</summary>
+    public const int ExpanderContentIndent = 10;
 }

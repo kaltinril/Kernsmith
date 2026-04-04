@@ -14,6 +14,25 @@ namespace KernSmith.Ui.Styling;
 public static class UiFactory
 {
     /// <summary>
+    /// Creates an Expander with the standard content indent applied.
+    /// </summary>
+    public static Expander CreateExpander(string header, bool isExpanded = true)
+    {
+        var expander = new Expander();
+        expander.Header = header;
+        expander.IsExpanded = isExpanded;
+
+        var contentContainer = expander.Visual.GetGraphicalUiElementByName("ContentContainer");
+        if (contentContainer != null)
+        {
+            contentContainer.X = Theme.ExpanderContentIndent;
+            contentContainer.Width = -Theme.ExpanderContentIndent;
+        }
+
+        return expander;
+    }
+
+    /// <summary>
     /// Creates a plain text section header (no background).
     /// </summary>
     public static void AddSectionHeader(global::Gum.Wireframe.GraphicalUiElement parent, string text)
