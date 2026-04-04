@@ -196,17 +196,16 @@ FreeTypeSharp uses `[DllImport("freetype")]` extensively. It will **not** work i
 - `Marshal.AllocHGlobal` works (maps to Emscripten `malloc`). Leak risk in the constrained WASM heap.
 - `CRuntime.malloc`/`free`/`memcpy` all map to `Marshal` -- all work.
 - SDF rendering (`stbtt_GetCodepointSDF`) works but has a known quality bug (StbSharp issue #1, open since 2020).
-- **No community validation** of StbTrueTypeSharp in Blazor WASM -- KernSmith would be a pioneer.
+- Blazor WASM support has been implemented and validated (see `samples/KernSmith.Samples.BlazorWasm/`).
 - Performance: interpreter mode is extremely slow for compute-intensive rasterization (5-10 seconds for simple ops based on ImageSharp precedent). AOT or Jiterpreter recommended.
 - SafeStbTrueTypeSharp exists but is abandoned (2020) and based on old version 1.24.
 - Alternative: Typography (LayoutFarm) -- active, full TTF/OTF reader + renderer.
 
 ### KernSmith Impact
 
-- StbTrueTypeSharp is technically viable for WASM but unproven.
+- StbTrueTypeSharp is viable for WASM and has been validated in the Blazor WASM sample app.
 - All unmanaged allocations must be wrapped in `try/finally`.
 - Bitmap data must be copied to managed `byte[]` immediately, then the unmanaged buffer freed.
-- Budget time for discovering issues as a first mover.
 - Performance optimization (AOT) will be critical for acceptable user experience.
 
 ### Mitigation

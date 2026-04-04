@@ -1,6 +1,6 @@
 # Rasterizer Backends Reference
 
-> **Purpose**: Documents the three rasterizer backends supported by KernSmith, their capabilities, trade-offs, and when to use each one.
+> **Purpose**: Documents the four rasterizer backends supported by KernSmith, their capabilities, trade-offs, and when to use each one.
 
 ---
 
@@ -11,8 +11,9 @@
 3. [FreeType](#3-freetype)
 4. [GDI](#4-gdi)
 5. [DirectWrite](#5-directwrite)
-6. [Output Differences](#6-output-differences)
-7. [Adding Custom Backends](#7-adding-custom-backends)
+6. [StbTrueType](#6-stbtruetype)
+7. [Output Differences](#7-output-differences)
+8. [Adding Custom Backends](#8-adding-custom-backends)
 
 ---
 
@@ -20,38 +21,39 @@
 
 KernSmith uses a pluggable rasterizer architecture. All backends implement the `IRasterizer` interface and expose their feature set through `IRasterizerCapabilities`. The core library selects a backend at runtime via `RasterizerFactory`, which maintains a thread-safe registry of `RasterizerBackend` -> factory function mappings.
 
-FreeType is the default backend, pre-registered in `RasterizerFactory`. The GDI and DirectWrite backends ship as separate NuGet packages (`KernSmith.Rasterizers.Gdi`, `KernSmith.Rasterizers.DirectWrite.TerraFX`) and register themselves when their assembly is loaded.
+FreeType is the default backend, pre-registered in `RasterizerFactory`. The GDI, DirectWrite, and StbTrueType backends ship as separate NuGet packages and register themselves when their assembly is loaded.
 
 ```
 RasterizerBackend enum:
   FreeType      — Cross-platform, full-featured (default)
   Gdi           — Windows-only
   DirectWrite   — Windows-only, high quality
+  StbTrueType   — Cross-platform, pure C#, no native dependencies
 ```
 
 ---
 
 ## 2. Comparison Table
 
-| Capability | FreeType | GDI | DirectWrite |
-|---|---|---|---|
-| **Platform** | Cross-platform (Windows, Linux, macOS) | Windows only | Windows only |
-| **NuGet package** | `KernSmith` (built-in) | `KernSmith.Rasterizers.Gdi` | `KernSmith.Rasterizers.DirectWrite.TerraFX` |
-| **Color fonts** (COLR/CPAL, CBDT/CBLC, sbix) | Yes | No | No (stubbed, no impl yet) |
-| **Variable fonts** (fvar axes) | Yes | No | No (stubbed, no impl yet) |
-| **SDF rendering** | Yes | No | No |
-| **Outline stroke** | Yes | No | No |
-| **System font loading** | No | Yes | Yes |
-| **Handles own sizing** | No (core converts cell height to ppem) | Yes (GDI sizes via LOGFONT) | No (core converts) |
-| **Anti-alias: None** | Yes | Yes | Yes |
-| **Anti-alias: Grayscale** | Yes | Yes | Yes |
-| **Anti-alias: Light** | Yes | No | No |
-| **Anti-alias: LCD** | Yes | No | No |
-| **Hinting** | FreeType auto-hinter + font bytecode | Windows GDI hinter | DirectWrite natural/symmetric hinting |
-| **Bold/italic simulation** | FreeType emboldening + oblique shear | GDI font mapper + MAT2 shear | DWRITE_FONT_SIMULATIONS flags |
-| **Font collection (TTC) support** | Yes (faceIndex parameter) | No (faceIndex must be 0) | Yes (faceIndex parameter) |
-| **Kerning source** | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser |
-| **Font metrics source** | Falls back to shared OS/2 table parser | GDI TEXTMETRIC (own impl) | Falls back to shared OS/2 table parser |
+| Capability | FreeType | GDI | DirectWrite | StbTrueType |
+|---|---|---|---|---|
+| **Platform** | Cross-platform (Windows, Linux, macOS) | Windows only | Windows only | Cross-platform (Windows, Linux, macOS, WASM) |
+| **NuGet package** | `KernSmith` (built-in) | `KernSmith.Rasterizers.Gdi` | `KernSmith.Rasterizers.DirectWrite.TerraFX` | `KernSmith.Rasterizers.StbTrueType` |
+| **Color fonts** (COLR/CPAL, CBDT/CBLC, sbix) | Yes | No | No (stubbed, no impl yet) | No |
+| **Variable fonts** (fvar axes) | Yes | No | No (stubbed, no impl yet) | No |
+| **SDF rendering** | Yes | No | No | Yes |
+| **Outline stroke** | Yes | No | No | No |
+| **System font loading** | No | Yes | Yes | No |
+| **Handles own sizing** | No (core converts cell height to ppem) | Yes (GDI sizes via LOGFONT) | No (core converts) | No (core converts) |
+| **Anti-alias: None** | Yes | Yes | Yes | Yes |
+| **Anti-alias: Grayscale** | Yes | Yes | Yes | Yes |
+| **Anti-alias: Light** | Yes | No | No | No |
+| **Anti-alias: LCD** | Yes | No | No | No |
+| **Hinting** | FreeType auto-hinter + font bytecode | Windows GDI hinter | DirectWrite natural/symmetric hinting | stb_truetype hinting (limited) |
+| **Bold/italic simulation** | FreeType emboldening + oblique shear | GDI font mapper + MAT2 shear | DWRITE_FONT_SIMULATIONS flags | Synthetic bold + oblique shear |
+| **Font collection (TTC) support** | Yes (faceIndex parameter) | No (faceIndex must be 0) | Yes (faceIndex parameter) | Yes (faceIndex parameter) |
+| **Kerning source** | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser |
+| **Font metrics source** | Falls back to shared OS/2 table parser | GDI TEXTMETRIC (own impl) | Falls back to shared OS/2 table parser | Falls back to shared OS/2 table parser |
 
 ---
 
@@ -126,21 +128,49 @@ RasterizerBackend enum:
 
 ---
 
-## 6. Output Differences
+## 6. StbTrueType
 
-The three backends will produce visually different output for the same font, size, and codepoints. This is expected and unavoidable because each uses a different rendering pipeline:
+**Package**: `KernSmith.Rasterizers.StbTrueType` (separate NuGet, cross-platform TFMs: `net8.0`, `net10.0`).
 
-- **Hinting**: FreeType uses its auto-hinter or the font's bytecode interpreter. GDI uses the Windows hinting engine. DirectWrite uses natural or symmetric hinting. These produce different pixel grid alignment, especially at small sizes.
-- **Gamma and blending**: GDI's `GGO_GRAY8_BITMAP` outputs 65 quantization levels (0-64). FreeType outputs 256 levels. DirectWrite outputs ClearType RGB triples averaged to grayscale. The alpha ramps differ.
-- **Metrics rounding**: GDI handles sizing internally via `LOGFONT.lfHeight` (with DPI conversion), while FreeType and DirectWrite receive ppem values from the core. Rounding differences of 1 pixel in bearingX, bearingY, or advance are common.
-- **Bold/italic synthesis**: Each backend applies synthetic bold and italic differently. GDI uses font mapper weight + MAT2 shear. FreeType uses `FT_Outline_Embolden` + `FT_GlyphSlot_Oblique`. DirectWrite uses `DWRITE_FONT_SIMULATIONS` flags.
-- **Kerning**: All three backends return `null` from `GetKerningPairs` and delegate to the shared GPOS/kern table parser, so kerning values are consistent across backends.
+**When to use**: When you need a pure C# rasterizer with zero native dependencies. Required for Blazor WASM, iOS AOT, and serverless environments where native P/Invoke is unavailable. Also useful when you want to avoid shipping platform-specific native binaries.
 
-For BMFont parity testing, use the GDI backend. For cross-platform builds, use FreeType.
+**Strengths**:
+
+- Pure managed C# -- no native dependencies, no `DllImport` or `LibraryImport`.
+- Cross-platform: works on Windows, Linux, macOS, Blazor WASM, and any .NET AOT target.
+- Marked `IsTrimmable` and `IsAotCompatible` for WASM and Native AOT scenarios.
+- SDF rendering support via vendored stb_truetype SDF implementation.
+- Synthetic bold and italic simulation.
+- TTC font collection support via `faceIndex`.
+- Auto-registers via `[ModuleInitializer]` when the assembly is loaded.
+
+**Limitations**:
+
+- No color font support (COLR/CPAL, CBDT/CBLC, sbix).
+- No variable font support (fvar axes).
+- No outline stroke support.
+- Cannot load system-installed fonts by family name.
+- Anti-alias limited to None and Grayscale.
+- Hinting quality is more limited than FreeType or platform rasterizers.
+- Requires `AllowUnsafeBlocks` due to StbTrueTypeSharp's pointer-based API.
 
 ---
 
-## 7. Adding Custom Backends
+## 7. Output Differences
+
+The four backends will produce visually different output for the same font, size, and codepoints. This is expected and unavoidable because each uses a different rendering pipeline:
+
+- **Hinting**: FreeType uses its auto-hinter or the font's bytecode interpreter. GDI uses the Windows hinting engine. DirectWrite uses natural or symmetric hinting. These produce different pixel grid alignment, especially at small sizes.
+- **Gamma and blending**: GDI's `GGO_GRAY8_BITMAP` outputs 65 quantization levels (0-64). FreeType outputs 256 levels. DirectWrite outputs ClearType RGB triples averaged to grayscale. StbTrueType outputs 256 levels via stb_truetype coverage values. The alpha ramps differ.
+- **Metrics rounding**: GDI handles sizing internally via `LOGFONT.lfHeight` (with DPI conversion), while FreeType and DirectWrite receive ppem values from the core. Rounding differences of 1 pixel in bearingX, bearingY, or advance are common.
+- **Bold/italic synthesis**: Each backend applies synthetic bold and italic differently. GDI uses font mapper weight + MAT2 shear. FreeType uses `FT_Outline_Embolden` + `FT_GlyphSlot_Oblique`. DirectWrite uses `DWRITE_FONT_SIMULATIONS` flags. StbTrueType uses outline transforms for synthetic bold and oblique shear for italic.
+- **Kerning**: All four backends return `null` from `GetKerningPairs` and delegate to the shared GPOS/kern table parser, so kerning values are consistent across backends.
+
+For BMFont parity testing, use the GDI backend. For cross-platform builds, use FreeType. For WASM, AOT, or native-dependency-free deployments, use StbTrueType.
+
+---
+
+## 8. Adding Custom Backends
 
 To add a custom rasterizer backend:
 

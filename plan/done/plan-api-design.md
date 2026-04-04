@@ -187,8 +187,8 @@ public static class BmFont
     public static BmFontResult Generate(byte[] fontData, FontGeneratorOptions options);
     public static BmFontResult Generate(byte[] fontData, int size);
 
-    // From stream
-    public static BmFontResult Generate(Stream fontStream, FontGeneratorOptions options);
+    // From stream (Not implemented — byte[] and string overloads cover all current use cases)
+    // public static BmFontResult Generate(Stream fontStream, FontGeneratorOptions options);
 
     // From system font name
     public static BmFontResult GenerateFromSystem(string fontFamily, int size);

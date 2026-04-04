@@ -1,6 +1,6 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-21, 30-33, 33B, 32B, 32d, 55, 60-69, 72-78, 77B, 79, 80 complete. Phase 34 (custom rasterizer) is planning/future. Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper). Phase 36 superseded by Phase 110. Phase 95 partial. Phase 99, 110, 111, 150 planning.
+> **Status**: Phases 1-19, 21, 30-33, 33B, 32B, 32d, 55, 60-69, 72-78, 77B, 79, 80 complete. Phase 20 (release readiness) still planning. Phase 34 (custom rasterizer) is planning/future. Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper). Phase 36 superseded by Phase 110. Phase 95 partial. Phase 99, 110, 111, 150 planning.
 > **Date**: 2026-03-31
 
 ---
@@ -128,7 +128,7 @@ Output Layer
 | 16 | [BMFont .bmfc Compatibility](done/phase-16-bmfc-compatibility.md) | Standard BMFont key=value format, drop legacy INI, same files work in both tools |
 | 17 | [Rebrand to KernSmith](done/phase-17-rebrand-kernsmith.md) | Full project rename from bmfontier to KernSmith |
 | 18 | [API Usability](done/phase-18-api-usability.md) | FromConfig, convenience properties, GetPngData, ToBmfc, Builder.FromConfig, init CLI command |
-| 20 | [Release Readiness](done/phase-20-release-readiness.md) | Version alignment, package icon, dotnet pack, CI verification, GitHub polish, first NuGet publish |
+| 20 | [Release Readiness](done/phase-20-release-readiness.md) | Version alignment, package icon, dotnet pack, CI verification, GitHub polish, first NuGet publish (**still Planning**) |
 | 21 | [Atlas Output Modes](done/phase-21-atlas-output-modes.md) | Combined batch atlas, render-to-existing-PNG, atlas size query & constraints |
 | 21R | [Atlas Output Modes Review](done/phase-21-review-findings.md) | Code review findings from Phase 21 implementation |
 | 30 | [WASM Rasterization](done/phase-30-wasm-rasterization.md) | Extract FreeTypeRasterizer from core library into standalone plugin package |

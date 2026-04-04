@@ -10,7 +10,7 @@
 
 ## Features
 
-- **Font format support** -- TTF, OTF, WOFF, and WOFF2 input
+- **Font format support** -- TTF, OTF, and WOFF input
 - **BMFont output** -- text, XML, and binary `.fnt` formats with `.png` atlas pages
 - **GPOS kerning** -- extracts kerning pairs directly from OpenType GPOS tables
 - **Atlas packing** -- MaxRects (default) and Skyline algorithms with autofit, power-of-two, and non-square texture support
@@ -38,18 +38,19 @@
 
 ## Rasterizer Backends
 
-KernSmith supports pluggable rasterizer backends. The core package includes FreeType; optional NuGet packages add alternative backends.
+KernSmith supports pluggable rasterizer backends. Install at least one backend package to generate fonts.
 
 | Backend | Package | Platform | Notes |
 |---------|---------|----------|-------|
-| **FreeType** | included in `KernSmith` | Windows, Linux, macOS | Default. Cross-platform, full feature support. |
+| **FreeType** | `KernSmith.Rasterizers.FreeType` | Windows, Linux, macOS | Cross-platform, full feature support. |
 | **GDI** | `KernSmith.Rasterizers.Gdi` | Windows only | Matches BMFont reference output for pixel-perfect parity. |
 | **DirectWrite** | `KernSmith.Rasterizers.DirectWrite.TerraFX` | Windows only | Color font (COLR/CPAL) and variable font rendering via DirectWrite. |
 | **StbTrueType** | `KernSmith.Rasterizers.StbTrueType` | Cross-platform | Pure C#, no native dependencies. Ideal for WASM, AOT, serverless. |
 
-Install an optional backend:
+Install a backend:
 
 ```
+dotnet add package KernSmith.Rasterizers.FreeType
 dotnet add package KernSmith.Rasterizers.Gdi
 dotnet add package KernSmith.Rasterizers.DirectWrite.TerraFX
 dotnet add package KernSmith.Rasterizers.StbTrueType
