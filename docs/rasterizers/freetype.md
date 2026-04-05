@@ -1,6 +1,6 @@
 # FreeType (Default)
 
-The built-in rasterizer backend, included in the core `KernSmith` package. Uses [FreeTypeSharp](https://github.com/nicholasgasior/FreeTypeSharp) 3.1.0 for glyph rasterization.
+The FreeType rasterizer backend for KernSmith. Uses [FreeTypeSharp](https://github.com/nicholasgasior/FreeTypeSharp) 3.1.0 for glyph rasterization.
 
 ## Platform
 
@@ -8,15 +8,13 @@ Cross-platform -- Linux, macOS, Windows.
 
 ## Installation
 
-FreeType is bundled with the core package. No additional NuGet references are needed:
-
 ```
-dotnet add package KernSmith
+dotnet add package KernSmith.Rasterizers.FreeType
 ```
 
 ## Usage
 
-FreeType is the default backend. No additional packages or configuration needed:
+FreeType is the default backend. Install the package and it auto-registers via `[ModuleInitializer]`:
 
 ```csharp
 var result = BmFont.Generate("path/to/font.ttf", new FontGeneratorOptions

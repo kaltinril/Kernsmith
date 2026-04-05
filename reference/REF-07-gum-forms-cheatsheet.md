@@ -1,3 +1,5 @@
+> **Note:** This is third-party reference material for the GUM UI framework, used by the KernSmith UI app in `apps/KernSmith.Ui/`.
+
 # GUM Forms Cheat Sheet (Code-Only, MonoGame)
 
 > Source: https://docs.flatredball.com/gum/

@@ -1,7 +1,22 @@
-"""Generate pixel-diff composite images between two sets of comparison PNGs.
+"""Generate pixel-diff composite images between two sets of comparison PNGs,
+and text-diff .fnt metadata files for regression detection.
 
-Compares comparison{N}.png files from two directories (or a baseline set vs
-current) and produces diff images where:
+Compares three categories of files:
+
+1. **Hardcoded comparison PNGs** (comparison.png through comparison4.png) --
+   the original 4-config comparison images.
+
+2. **Per-font comparison PNGs** -- auto-discovered comparison-*.png files
+   produced per font. In --dir mode, matches main_comparison-*.png to
+   comparison-*.png. In --baseline/--current mode, matches comparison-*.png
+   across both directories.
+
+3. **FNT metadata files** -- auto-discovered *.fnt files. Parsed as BMFont
+   key=value text format. The ``kernsmith`` metadata line is skipped
+   (it contains the version + commit hash that always differs between
+   branches). All other lines are compared for exact text match.
+
+For PNG comparisons, diff images are produced where:
   - Identical pixels are shown dimmed (1/3 brightness)
   - Different pixels are shown in bright magenta (#FF00FF)
 
@@ -19,7 +34,7 @@ Usage:
     python diff_comparisons.py --dir tests/bmfont-compare/output --tolerance 1
 
 Exit code:
-    0 = all images identical (within tolerance)
+    0 = all comparisons identical (PNGs within tolerance, FNTs exact match)
     1 = differences found
     2 = error (missing files, etc.)
 """
@@ -108,6 +123,68 @@ def generate_diff(
     return diff_count, total
 
 
+def discover_per_font_pngs(baseline_dir: Path, current_dir: Path, prefix: str) -> list[tuple[Path, Path, str]]:
+    """Discover per-font comparison PNGs and return (baseline, current, label) tuples."""
+    pairs = []
+    if prefix:
+        # --dir mode: main_comparison-*.png vs comparison-*.png in same dir
+        for baseline_path in sorted(baseline_dir.glob(f"{prefix}comparison-*.png")):
+            suffix = baseline_path.name[len(prefix):]  # e.g. "comparison-Roboto.png"
+            current_path = current_dir / suffix
+            label = suffix.replace(".png", "").replace("comparison-", "Per-font: ")
+            pairs.append((baseline_path, current_path, label))
+    else:
+        # --baseline/--current mode: comparison-*.png in both dirs
+        for current_path in sorted(current_dir.glob("comparison-*.png")):
+            baseline_path = baseline_dir / current_path.name
+            label = current_path.name.replace(".png", "").replace("comparison-", "Per-font: ")
+            pairs.append((baseline_path, current_path, label))
+    return pairs
+
+
+def compare_fnt_files(baseline_path: Path, current_path: Path) -> tuple[bool, int]:
+    """Compare two .fnt files line-by-line, skipping the info line.
+
+    Returns (is_identical, differing_line_count).
+    """
+    baseline_lines = baseline_path.read_text(encoding="utf-8").splitlines()
+    current_lines = current_path.read_text(encoding="utf-8").splitlines()
+
+    # Filter out the "kernsmith " line which contains version + commit hash
+    # that always differs between branches
+    baseline_filtered = [l for l in baseline_lines if not l.startswith("kernsmith ")]
+    current_filtered = [l for l in current_lines if not l.startswith("kernsmith ")]
+
+    diff_count = 0
+    max_len = max(len(baseline_filtered), len(current_filtered))
+    for i in range(max_len):
+        bl = baseline_filtered[i] if i < len(baseline_filtered) else None
+        cl = current_filtered[i] if i < len(current_filtered) else None
+        if bl != cl:
+            diff_count += 1
+
+    return diff_count == 0, diff_count
+
+
+def discover_fnt_files(baseline_dir: Path, current_dir: Path, prefix: str) -> list[tuple[Path, Path, str]]:
+    """Discover .fnt files and return (baseline, current, label) tuples."""
+    pairs = []
+    if prefix:
+        # --dir mode: main_*.fnt vs *.fnt in same dir
+        for baseline_path in sorted(baseline_dir.glob(f"{prefix}*.fnt")):
+            suffix = baseline_path.name[len(prefix):]  # e.g. "Roboto.fnt"
+            current_path = current_dir / suffix
+            label = suffix
+            pairs.append((baseline_path, current_path, label))
+    else:
+        # --baseline/--current mode: *.fnt in both dirs
+        for current_path in sorted(current_dir.glob("*.fnt")):
+            baseline_path = baseline_dir / current_path.name
+            label = current_path.name
+            pairs.append((baseline_path, current_path, label))
+    return pairs
+
+
 def main():
     parser = argparse.ArgumentParser(description="Pixel-diff comparison PNGs for regression detection")
     parser.add_argument("--dir", type=str, help="Single directory with main_comparison*.png and comparison*.png")
@@ -140,6 +217,9 @@ def main():
     print(f"Tolerance: {args.tolerance} per channel")
     print()
 
+    any_differences = False
+
+    # ── Section 1: Hardcoded comparison PNGs ──────────────────────────
     total_diffs = 0
     total_pixels = 0
     files_compared = 0
@@ -159,16 +239,97 @@ def main():
 
     print()
     if files_compared == 0:
+        print("No hardcoded comparison files found.")
+    elif total_diffs == 0:
+        print(f"PASS: All {files_compared} hardcoded comparisons are pixel-identical.")
+    else:
+        pct = (total_diffs / total_pixels) * 100
+        print(f"FAIL: {total_diffs} different pixels across {files_compared} hardcoded comparisons ({pct:.4f}%)")
+        any_differences = True
+
+    # ── Section 2: Per-font comparison PNGs ───────────────────────────
+    per_font_pairs = discover_per_font_pngs(baseline_dir, current_dir, prefix)
+
+    if per_font_pairs:
+        print()
+        print("Per-font comparisons")
+        print("-" * 40)
+        pf_diffs = 0
+        pf_pixels = 0
+        pf_compared = 0
+
+        for baseline_path, current_path, label in per_font_pairs:
+            diff_name = f"diff_{current_path.name}"
+            output_path = output_dir / diff_name
+            diffs, pixels = generate_diff(baseline_path, current_path, output_path, label, args.tolerance)
+            if pixels > 0:
+                pf_diffs += diffs
+                pf_pixels += pixels
+                pf_compared += 1
+
+        print()
+        if pf_compared == 0:
+            print("No per-font comparison files compared.")
+        elif pf_diffs == 0:
+            print(f"PASS: All {pf_compared} per-font comparisons are pixel-identical.")
+        else:
+            pct = (pf_diffs / pf_pixels) * 100
+            print(f"FAIL: {pf_diffs} different pixels across {pf_compared} per-font comparisons ({pct:.4f}%)")
+            any_differences = True
+
+    # ── Section 3: FNT metadata comparisons ───────────────────────────
+    fnt_pairs = discover_fnt_files(baseline_dir, current_dir, prefix)
+
+    if fnt_pairs:
+        print()
+        print("FNT metadata comparisons")
+        print("-" * 40)
+        fnt_identical = 0
+        fnt_different = 0
+        fnt_skipped = 0
+
+        for baseline_path, current_path, label in fnt_pairs:
+            if not baseline_path.exists():
+                print(f"  SKIP {label}: baseline missing ({baseline_path.name})")
+                fnt_skipped += 1
+                continue
+            if not current_path.exists():
+                print(f"  SKIP {label}: current missing ({current_path.name})")
+                fnt_skipped += 1
+                continue
+
+            is_identical, diff_lines = compare_fnt_files(baseline_path, current_path)
+            if is_identical:
+                print(f"  {label}: IDENTICAL")
+                fnt_identical += 1
+            else:
+                print(f"  {label}: DIFFERENT ({diff_lines} lines differ)")
+                fnt_different += 1
+
+        print()
+        total_fnt = fnt_identical + fnt_different
+        if total_fnt == 0:
+            print("No FNT files compared.")
+        elif fnt_different == 0:
+            print(f"PASS: All {fnt_identical} FNT files are identical (excluding kernsmith version line).")
+        else:
+            print(f"FAIL: {fnt_different} of {total_fnt} FNT files differ.")
+            any_differences = True
+
+    # ── Final result ──────────────────────────────────────────────────
+    total_compared = files_compared + len(per_font_pairs) + len(fnt_pairs)
+    if total_compared == 0:
+        print()
         print("No files compared.")
         sys.exit(2)
 
-    if total_diffs == 0:
-        print(f"PASS: All {files_compared} comparisons are pixel-identical.")
-        sys.exit(0)
-    else:
-        pct = (total_diffs / total_pixels) * 100
-        print(f"FAIL: {total_diffs} different pixels across {files_compared} comparisons ({pct:.4f}%)")
+    print()
+    if any_differences:
+        print("RESULT: Differences detected.")
         sys.exit(1)
+    else:
+        print("RESULT: All comparisons passed.")
+        sys.exit(0)
 
 
 if __name__ == "__main__":

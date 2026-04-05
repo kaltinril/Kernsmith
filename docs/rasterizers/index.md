@@ -1,12 +1,12 @@
 # Rasterizers
 
-KernSmith supports multiple rasterizer backends through a pluggable `IRasterizer` interface. The default FreeType backend is cross-platform. Three additional backends are available as separate NuGet packages -- two Windows-only (GDI, DirectWrite) and one cross-platform managed (StbTrueType). You can also [write your own](custom-backend.md).
+KernSmith supports multiple rasterizer backends through a pluggable `IRasterizer` interface. All backends are available as separate NuGet packages -- two cross-platform (FreeType, StbTrueType) and two Windows-only (GDI, DirectWrite). You can also [write your own](custom-backend.md).
 
 ## Backends
 
 | Backend | Package | Platform |
 |---------|---------|----------|
-| [FreeType](freetype.md) | Built into `KernSmith` | Cross-platform |
+| [FreeType](freetype.md) | `KernSmith.Rasterizers.FreeType` | Cross-platform |
 | [GDI](gdi.md) | `KernSmith.Rasterizers.Gdi` | Windows only |
 | [DirectWrite](directwrite.md) | `KernSmith.Rasterizers.DirectWrite.TerraFX` | Windows only |
 | [StbTrueType](stbtruetype.md) | `KernSmith.Rasterizers.StbTrueType` | Cross-platform (managed) |
@@ -29,7 +29,7 @@ KernSmith supports multiple rasterizer backends through a pluggable `IRasterizer
 
 ## Auto-Registration
 
-The GDI, DirectWrite, and StbTrueType packages use `[ModuleInitializer]` to register themselves automatically. Simply referencing the NuGet package is enough -- no manual setup code is required.
+All backend packages use `[ModuleInitializer]` to register themselves automatically. Simply referencing the NuGet package is enough -- no manual setup code is required.
 
 ## Choosing a Backend
 
@@ -41,7 +41,7 @@ Use this decision tree to pick the right backend:
 4. **Need SDF (Signed Distance Field) output?** Use [FreeType](freetype.md) or [StbTrueType](stbtruetype.md) -- they are the only backends with SDF rendering.
 5. **Need cross-platform SDF without native binaries?** Use [StbTrueType](stbtruetype.md) -- it supports SDF and runs fully managed.
 6. **Need WASM/Blazor or NativeAOT without native binaries?** Use [StbTrueType](stbtruetype.md) -- it is the only fully managed backend with zero native dependencies. See the [Blazor WASM sample](https://github.com/kaltinril/KernSmith/tree/main/samples/KernSmith.Samples.BlazorWasm) for a working example. Enable AOT compilation for production performance.
-7. **Not sure?** Start with FreeType. It covers the majority of use cases and requires no additional packages.
+7. **Not sure?** Start with FreeType. It covers the majority of use cases.
 
 ## Selecting a Backend in Code
 

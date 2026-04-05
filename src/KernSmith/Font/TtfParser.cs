@@ -61,7 +61,7 @@ internal class TtfParser
     /// <summary>
     /// Creates a parser that shares an existing byte array (avoids an extra copy).
     /// </summary>
-    internal TtfParser(byte[] fontBytes, int faceIndex, HashSet<int>? requestedCodepoints)
+    internal TtfParser(byte[] fontBytes, int faceIndex = 0, HashSet<int>? requestedCodepoints = null)
     {
         _data = fontBytes;
         _requestedCodepoints = requestedCodepoints;

@@ -101,19 +101,23 @@ internal sealed class MaxRectsPacker : IAtlasPacker
 
     private static void SplitFreeRects(List<Rect> freeRects, Rect placed)
     {
-        var count = freeRects.Count;
-        for (var i = count - 1; i >= 0; i--)
+        var originalCount = freeRects.Count;
+        var writeIndex = 0;
+
+        for (var i = 0; i < originalCount; i++)
         {
             var fr = freeRects[i];
 
             // Check if they overlap.
             if (placed.X >= fr.X + fr.Width || placed.X + placed.Width <= fr.X ||
                 placed.Y >= fr.Y + fr.Height || placed.Y + placed.Height <= fr.Y)
+            {
+                // No overlap — keep this rect.
+                freeRects[writeIndex++] = fr;
                 continue;
+            }
 
-            // They overlap; remove this free rect and add up to 4 new ones.
-            freeRects.RemoveAt(i);
-
+            // They overlap; add up to 4 new rects at the end.
             // Left strip.
             if (placed.X > fr.X)
                 freeRects.Add(new Rect(fr.X, fr.Y, placed.X - fr.X, fr.Height));
@@ -130,24 +134,43 @@ internal sealed class MaxRectsPacker : IAtlasPacker
             if (placed.Y + placed.Height < fr.Y + fr.Height)
                 freeRects.Add(new Rect(fr.X, placed.Y + placed.Height, fr.Width, fr.Y + fr.Height - placed.Y - placed.Height));
         }
+
+        // Move the newly added rects right after the survivors, then trim.
+        var newCount = freeRects.Count - originalCount;
+        for (var i = 0; i < newCount; i++)
+            freeRects[writeIndex + i] = freeRects[originalCount + i];
+
+        freeRects.RemoveRange(writeIndex + newCount, freeRects.Count - writeIndex - newCount);
     }
 
     private static void PruneContainedRects(List<Rect> freeRects)
     {
-        for (var i = freeRects.Count - 1; i >= 0; i--)
-        {
-            for (var j = freeRects.Count - 1; j >= 0; j--)
-            {
-                if (i == j) continue;
-                if (i >= freeRects.Count || j >= freeRects.Count) continue;
+        var count = freeRects.Count;
+        // Use a simple bool array to mark rects for removal.
+        Span<bool> remove = count <= 256 ? stackalloc bool[count] : new bool[count];
 
+        for (var i = 0; i < count; i++)
+        {
+            if (remove[i]) continue;
+            for (var j = 0; j < count; j++)
+            {
+                if (i == j || remove[j]) continue;
                 if (Contains(freeRects[j], freeRects[i]))
                 {
-                    freeRects.RemoveAt(i);
+                    remove[i] = true;
                     break;
                 }
             }
         }
+
+        // Compact: shift survivors down in-place.
+        var write = 0;
+        for (var read = 0; read < count; read++)
+        {
+            if (!remove[read])
+                freeRects[write++] = freeRects[read];
+        }
+        freeRects.RemoveRange(write, count - write);
     }
 
     private static bool Contains(Rect outer, Rect inner)

@@ -43,13 +43,8 @@ KernSmith/
 |       |   +-- GlyphRasterizer.cs         # FreeTypeSharp rasterization
 |       |   +-- RasterizedGlyph.cs         # Rasterized glyph output data
 |       |   +-- RasterOptions.cs           # Size, DPI, AA mode, SDF toggle
-|       +-- Packing/                       # Texture atlas packing
-|       |   +-- IAtlasPacker.cs            # Interface for swappable algorithms
-|       |   +-- MaxRectsPacker.cs          # Primary algorithm (BSSF + batch)
-|       |   +-- SkylinePacker.cs           # Fast alternative (Bottom-Left)
-|       |   +-- PackResult.cs              # Packing output (glyph placements)
-|       +-- Atlas/                         # Atlas image generation
-|       |   +-- IAtlasPacker.cs            # Interface for atlas packing
+|       +-- Atlas/                         # Texture atlas packing and image generation
+|       |   +-- IAtlasPacker.cs            # Interface for swappable packing algorithms
 |       |   +-- IAtlasEncoder.cs           # Interface for atlas encoding
 |       |   +-- AtlasBuilder.cs            # Composes glyph bitmaps into atlas
 |       |   +-- AtlasPage.cs              # Single texture page (bitmap data)
@@ -68,7 +63,7 @@ KernSmith/
 |       |   +-- CharacterSet.cs            # Predefined and custom char sets
 |       |   +-- PixelFormat.cs             # Pixel format enumeration
 |       +-- Exceptions/                    # Custom exception types
-|           +-- KernSmithException.cs      # Base exception
+|           +-- BmFontException.cs         # Base exception
 |           +-- FontParsingException.cs    # Font parsing errors
 |           +-- RasterizationException.cs  # Rasterization errors
 |           +-- AtlasPackingException.cs   # Atlas packing errors
@@ -102,10 +97,9 @@ KernSmith/
 | `KernSmith.Font.Tables` | Font/Tables/ | Individual table parsers |
 | `KernSmith.Font.Models` | Font/Models/ | `FontInfo`, `GlyphMetrics`, `KerningPair`, `HeadTable`, `HheaTable`, `Os2Metrics`, `NameInfo` |
 | `KernSmith.Rasterizer` | Rasterizer/ | `IRasterizer`, `IGlyphPostProcessor`, `GlyphRasterizer`, `RasterizedGlyph`, `RasterOptions` |
-| `KernSmith.Packing` | Packing/ | `IAtlasPacker`, `MaxRectsPacker`, `SkylinePacker`, `PackResult` |
-| `KernSmith.Atlas` | Atlas/ | `IAtlasPacker`, `IAtlasEncoder`, `AtlasBuilder`, `AtlasPage`, `GlyphRect`, `GlyphPlacement`, `PackResult` |
+| `KernSmith.Atlas` | Atlas/ | `IAtlasPacker`, `MaxRectsPacker`, `SkylinePacker`, `PackResult`, `IAtlasEncoder`, `AtlasBuilder`, `AtlasPage`, `GlyphRect`, `GlyphPlacement` |
 | `KernSmith.Output` | Output/ | `IBmFontFormatter`, `BmFontModel`, `TextFormatter`, `XmlFormatter`, `BmFontBinaryFormatter`, `FileWriter` |
-| `KernSmith.Exceptions` | Exceptions/ | `KernSmithException`, `FontParsingException`, `RasterizationException`, `AtlasPackingException` |
+| `KernSmith` | Exceptions/ | `BmFontException` (base), `FontParsingException`, `RasterizationException`, `AtlasPackingException` — all use root `KernSmith` namespace |
 
 > **Config/ namespace note:** Files in `Config/` use the root `KernSmith` namespace (not `KernSmith.Config`) because these are core configuration types that users reference frequently. Use `<RootNamespace>` in the folder's files or explicit namespace declarations.
 
@@ -140,7 +134,7 @@ The PNG encoder is abstracted behind `IAtlasEncoder` (see [Texture Packing](plan
 
 ## Target Framework
 
-**Target framework: `net8.0`** (current LTS). Multi-targeting with `netstandard2.1` is deferred to Phase 2. The `.csproj` should use `<TargetFramework>net8.0</TargetFramework>`.
+**Target framework: `net8.0;net10.0`** (multi-target). The `Directory.Build.props` uses `<TargetFrameworks>net8.0;net10.0</TargetFrameworks>`. Originally net8.0 only; net10.0 added in Phase 11.
 
 Key considerations:
 
@@ -153,7 +147,7 @@ Key considerations:
 
 ## Test Framework
 
-**Test framework: xUnit** with `xunit`, `xunit.runner.visualstudio`, and `Microsoft.NET.Test.Sdk`. Use `FluentAssertions` for readable assertions.
+**Test framework: xUnit** with `xunit`, `xunit.runner.visualstudio`, and `Microsoft.NET.Test.Sdk`. Use **Shouldly** for readable assertions (FluentAssertions replaced in Phase 79 due to paid licensing).
 
 ---
 
@@ -164,7 +158,7 @@ Minimal `.csproj` skeleton for `src/KernSmith/KernSmith.csproj`:
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

@@ -4,21 +4,61 @@ Side-by-side comparison of glyph output across four backends: FreeType, GDI, Dir
 
 ## Quick Start
 
-From the repo root:
+### Regression check (main vs feature branch)
+
+The fastest way to verify a change doesn't alter output. From the repo root:
+
+```bash
+# Compare current branch against main (handles git stash/checkout automatically)
+python tests/bmfont-compare/regression_check.py
+
+# Compare a specific branch against main
+python tests/bmfont-compare/regression_check.py --branch feature/my-change
+
+# Re-run diff only (skip regeneration, uses existing main_ baselines)
+python tests/bmfont-compare/regression_check.py --skip-generate
+
+# With pixel tolerance for antialiasing
+python tests/bmfont-compare/regression_check.py --tolerance 1
+```
+
+This automates the full workflow: stash changes, checkout main, generate baselines, checkout branch, restore stash, generate current, run diff. On failure or Ctrl+C it restores your original branch and stash.
+
+Exit codes: `0` = all identical, `1` = differences found, `2` = error.
+
+### Generate comparison images only
 
 ```bash
 # Generate all backends from .bmfc files
-dotnet run --project tests/bmfont-compare/GenerateAll/ --framework net10.0-windows -- tests/bmfont-compare/gum-bmfont temp-test
-
-# Generate comparison images
-dotnet run --project tests/bmfont-compare/CompareGlyphs/ --framework net10.0-windows -- temp-test
+dotnet run --project tests/bmfont-compare/GenerateAll/ --framework net10.0-windows -- tests/bmfont-compare/gum-bmfont tests/bmfont-compare/output
 ```
 
-Output:
-- `temp-test/comparison.png` — fire effect (outline + gradient + shadow)
-- `temp-test/comparison2.png` — plain (no effects)
+Output includes per-backend `.fnt` + `.png` files and `comparison*.png` side-by-side images.
 
 ## Tools
+
+### regression_check.py — Automated regression workflow
+
+Handles the full git stash/checkout/generate/diff cycle automatically so baselines are always generated from the correct branch.
+
+```bash
+python tests/bmfont-compare/regression_check.py [options]
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--base` | `main` | Base branch for baseline generation |
+| `--branch` | current branch | Feature branch to test |
+| `--output` | `tests/bmfont-compare/output` | Output directory |
+| `--tolerance` | `0` | Per-channel pixel tolerance |
+| `--skip-generate` | off | Skip generation, only run diff |
+
+Steps performed:
+1. Stash uncommitted changes (if any)
+2. Checkout base branch, generate fonts, copy output as `main_`-prefixed baselines
+3. Checkout feature branch, restore stash, generate fonts
+4. Run `diff_comparisons.py` to compare baselines vs current
+5. Restore original branch on failure
 
 ### GenerateAll
 
@@ -28,9 +68,10 @@ Reads `.bmfc` files from a source directory and generates `.fnt` + `.png` output
 dotnet run --project tests/bmfont-compare/GenerateAll/ --framework net10.0-windows -- <bmfc-dir> <output-dir>
 ```
 
-- Runs FreeType, GDI, and DirectWrite via KernSmith
+- Runs FreeType, GDI, DirectWrite, and StbTrueType via KernSmith
 - Runs BMFont64.exe if found at `c:\tools\bmfont64.exe` or on PATH
 - Output naming: `{configname}-{backend}.fnt` / `{configname}-{backend}_0.png`
+- Also generates `comparison*.png` side-by-side images
 
 ### CompareGlyphs
 
@@ -55,12 +96,18 @@ dotnet run --project tests/bmfont-compare/GenerateDirectWrite/ --framework net10
 
 ### Python Diff Scripts
 
-#### diff_comparisons.py — Pixel-diff regression detection
+#### diff_comparisons.py — Full regression detection (PNGs + FNT metadata)
 
-Compares baseline vs current comparison PNGs and produces magenta-highlighted diff images. Identical pixels are dimmed, different pixels are bright magenta (#FF00FF) for easy visual inspection.
+Compares baseline vs current output across three categories:
+
+1. **Hardcoded comparison PNGs** (`comparison.png` through `comparison4.png`) — magenta-highlighted pixel diffs
+2. **Per-font comparison PNGs** (`comparison-*.png`) — auto-discovered, same magenta diff format
+3. **FNT metadata files** (`*.fnt`) — line-by-line text diff, skipping the `kernsmith` version line (contains commit hash that always differs between branches)
+
+Identical pixels are dimmed, different pixels are bright magenta (#FF00FF).
 
 ```bash
-# Compare main_comparison*.png vs comparison*.png in the same directory
+# Full regression check: PNGs + per-font PNGs + FNT metadata
 python tests/bmfont-compare/diff_comparisons.py --dir tests/bmfont-compare/output
 
 # Compare two separate directories
@@ -71,11 +118,6 @@ python tests/bmfont-compare/diff_comparisons.py --dir tests/bmfont-compare/outpu
 ```
 
 Exit codes: `0` = all identical, `1` = differences found, `2` = error.
-
-**Typical workflow** for verifying a performance optimization doesn't change output:
-1. On `main`: generate comparisons, copy as `main_comparison*.png`
-2. On feature branch: generate comparisons
-3. Run `diff_comparisons.py --dir output/` to verify pixel-identical output
 
 #### diff_images.py / diff_fnt.py / diff_all_fonts.py — Atlas and metrics diffs
 

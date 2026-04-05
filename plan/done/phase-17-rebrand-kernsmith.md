@@ -1,8 +1,10 @@
 # Phase 17 — Rebrand to KernSmith
 
-> **Status**: Complete
+> **Status**: Partial — namespace rebrand completed; type-name rebrand deferred
 > **Created**: 2026-03-20
 > **Goal**: Rename the entire project from "bmfontier" to "KernSmith" — namespaces, assemblies, directories, project files, docs, CLI commands, NuGet package, and all references.
+
+> **Note (2026-04-03)**: The namespace and directory rename (Bmfontier -> KernSmith) was completed. However, the type-name rebrand planned in the naming table below was **not** done — types still use `BmFont*` prefixes (BmFont, BmFontBuilder, BmFontResult, BmFontModel, BmFontReader, BmFontModelBuilder, BmFontBinaryFormatter, IBmFontFormatter). The base exception file was renamed from `BmfontierException.cs` to `BmFontException.cs` in Phase 96.
 
 ---
 

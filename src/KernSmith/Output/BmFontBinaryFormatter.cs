@@ -68,7 +68,7 @@ internal sealed class BmFontBinaryFormatter : IBmFontBinaryFormatter
         bw.Write((byte)info.Padding.Left);
         bw.Write((byte)info.Spacing.Horizontal);
         bw.Write((byte)info.Spacing.Vertical);
-        bw.Write((byte)0);                // uint8 outline
+        bw.Write((byte)info.Outline);      // uint8 outline
 
         // Null-terminated font name (UTF-8)
         var nameBytes = Encoding.UTF8.GetBytes(info.Face);

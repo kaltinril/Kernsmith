@@ -71,22 +71,22 @@ internal sealed class TextFormatter : IBmFontTextFormatter
 
     private static void FormatChars(StringBuilder sb, IReadOnlyList<CharEntry> chars)
     {
-        sb.AppendLine($"chars count={chars.Count}");
+        sb.Append("chars count=").Append(chars.Count).AppendLine();
 
         foreach (var ch in chars)
         {
-            sb.Append("char");
-            sb.Append($" id={ch.Id}");
-            sb.Append($" x={ch.X}");
-            sb.Append($" y={ch.Y}");
-            sb.Append($" width={ch.Width}");
-            sb.Append($" height={ch.Height}");
-            sb.Append($" xoffset={ch.XOffset}");
-            sb.Append($" yoffset={ch.YOffset}");
-            sb.Append($" xadvance={ch.XAdvance}");
-            sb.Append($" page={ch.Page}");
-            sb.Append($" chnl={ch.Channel}");
-            sb.AppendLine();
+            sb.Append("char")
+              .Append(" id=").Append(ch.Id)
+              .Append(" x=").Append(ch.X)
+              .Append(" y=").Append(ch.Y)
+              .Append(" width=").Append(ch.Width)
+              .Append(" height=").Append(ch.Height)
+              .Append(" xoffset=").Append(ch.XOffset)
+              .Append(" yoffset=").Append(ch.YOffset)
+              .Append(" xadvance=").Append(ch.XAdvance)
+              .Append(" page=").Append(ch.Page)
+              .Append(" chnl=").Append(ch.Channel)
+              .AppendLine();
         }
     }
 

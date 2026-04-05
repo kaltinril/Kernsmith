@@ -15,9 +15,11 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 | Folder | Purpose |
 |--------|---------|
 | `src/KernSmith/` | **Main library** — the NuGet package |
-| `tests/KernSmith.Tests/` | **xUnit + FluentAssertions test suite** |
+| `src/KernSmith.Rasterizers.*/` | **Rasterizer backends** — FreeType, StbTrueType, Gdi, DirectWrite.TerraFX |
+| `tests/KernSmith.Tests/` | **xUnit + Shouldly test suite** |
 | `tools/KernSmith.Cli/` | **CLI tool** for bitmap font generation |
-| `samples/KernSmith.Samples/` | **Usage examples** |
+| `samples/` | **Usage examples** — KernSmith.Samples, Rasterizer.Example, Samples.BlazorWasm |
+| `integrations/` | **Gum UI integrations** — MonoGameGum, KniGum, FnaGum, GumCommon |
 | `benchmarks/KernSmith.Benchmarks/` | **BenchmarkDotNet performance benchmarks** |
 | `apps/` | **Future app projects** — Ui, Web, Mobile (placeholders) |
 | `plan/` | **Technical plan docs** — active plans; completed plans archived in `plan/done/` |
@@ -41,11 +43,11 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 
 ### Key Conventions
 
-- **Language**: C# / .NET 10.0
+- **Language**: C# / .NET 8.0 + 10.0 (multi-target: `net8.0;net10.0`)
 - **Nullable**: enabled
-- **Unsafe**: allowed only in FreeType interop (`FreeTypeRasterizer.cs`, `FreeTypeNative.cs`)
+- **Unsafe**: allowed only in rasterizer backend projects (`src/KernSmith.Rasterizers.*/`), not in the core library
 - **Testing**: xUnit + Shouldly (do NOT use FluentAssertions — paid licensing, see Phase 79)
-- **Dependencies**: FreeTypeSharp 3.1.0, StbImageWriteSharp 1.16.7
+- **Dependencies (core)**: StbImageSharp 2.30.15, StbImageWriteSharp 1.16.7 (FreeTypeSharp is a dependency of `KernSmith.Rasterizers.FreeType`, not the core library)
 - **License**: MIT (see LICENSE)
 
 ### Namespace Rules
@@ -54,7 +56,8 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 - `KernSmith.Font`: font reading, TTF parsing
 - `KernSmith.Font.Models`: FontInfo, KerningPair, GlyphMetrics
 - `KernSmith.Font.Tables`: HeadTable, HheaTable, Os2Metrics, NameInfo
-- `KernSmith.Rasterizer`: IRasterizer, FreeTypeRasterizer, post-processors, effects (IGlyphEffect), GlyphCompositor
+- `KernSmith.Rasterizer`: IRasterizer, post-processors, effects (IGlyphEffect), GlyphCompositor
+- `KernSmith.Rasterizers.*` (plural): rasterizer backend packages (e.g., `KernSmith.Rasterizers.FreeType`)
 - `KernSmith.Atlas`: IAtlasPacker, packers, encoders (PNG/TGA/DDS), AtlasBuilder, AtlasSizeEstimator, ChannelCompositor
 - `KernSmith.Output`: formatters, FileWriter, BmFontResult, BmFontReader, BmFontModelBuilder
 - `KernSmith.Output.Model`: BmFontModel, InfoBlock, CommonBlock, ExtendedMetadata, etc.
@@ -71,7 +74,7 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 
 | What | Location |
 |------|----------|
-| Entry point | `src/KernSmith/KernSmith.cs` |
+| Entry point | `src/KernSmith/BmFont.cs` |
 | Plan docs | `plan/` (start with `master-plan.md`) |
 | Data types (source of truth) | `plan/done/plan-data-types.md` |
 | Implementation order | `plan/done/plan-implementation-order.md` |
