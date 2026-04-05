@@ -24,7 +24,7 @@
     <!-- Temporary: using Gum source instead of NuGet to access unreleased features -->
     <!-- <PackageReference Include="Gum.MonoGame" /> -->
     <ProjectReference Include="..\..\..\Gum\MonoGameGum\MonoGameGum.csproj" />
-    <ProjectReference Include="..\..\..\Gum\Themes\Gum.Themes.Editor\Gum.Themes.Editor.csproj" />
+    <ProjectReference Include="..\..\..\Gum\Themes\Gum.Themes.Editor.MonoGame\Gum.Themes.Editor.MonoGame.csproj" />
 <PackageReference Include="NativeFileDialogNET" />
 
   </ItemGroup>

@@ -53,7 +53,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GumCommon", "..\Gum\GumComm
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gum.Analyzers", "..\Gum\Tools\Gum.Analyzers\Gum.Analyzers.csproj", "{6E35B167-83FB-4F2B-B580-EE1EE949D3BD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gum.Themes.Editor", "..\Gum\Themes\Gum.Themes.Editor\Gum.Themes.Editor.csproj", "{44C59852-AD29-40B3-84E0-5647E80C52B3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gum.Themes.Editor.MonoGame", "..\Gum\Themes\Gum.Themes.Editor.MonoGame\Gum.Themes.Editor.MonoGame.csproj", "{44C59852-AD29-40B3-84E0-5647E80C52B3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
