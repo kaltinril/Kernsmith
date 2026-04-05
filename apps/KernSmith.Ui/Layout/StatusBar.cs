@@ -1,5 +1,5 @@
-using Gum.DataTypes;
-using Gum.Forms.Controls;
+using global::Gum.DataTypes;
+using global::Gum.Forms.Controls;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using MonoGameGum.GueDeriving;
@@ -28,13 +28,13 @@ public class StatusBar : Panel
         var bg = new ColoredRectangleRuntime();
         bg.Color = Theme.Panel;
         this.AddChild(bg);
-        bg.Dock(Gum.Wireframe.Dock.Fill);
+        bg.Dock(global::Gum.Wireframe.Dock.Fill);
 
         // Top border line
         var border = new ColoredRectangleRuntime();
         border.Color = Theme.PanelBorder;
         border.Height = 1;
-        border.Dock(Gum.Wireframe.Dock.Top);
+        border.Dock(global::Gum.Wireframe.Dock.Top);
         this.AddChild(border);
 
         var stack = new StackPanel();
@@ -137,7 +137,7 @@ public class StatusBar : Panel
         return sep;
     }
 
-    private static TextRuntime? FindTextRuntime(Gum.Wireframe.GraphicalUiElement element)
+    private static TextRuntime? FindTextRuntime(global::Gum.Wireframe.GraphicalUiElement element)
     {
         // GUM Labels contain a child named "TextInstance" which is a TextRuntime
         foreach (var child in element.Children)

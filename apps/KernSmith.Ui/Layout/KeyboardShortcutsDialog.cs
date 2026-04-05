@@ -1,6 +1,6 @@
-using Gum.Forms;
-using Gum.Forms.Controls;
-using Gum.DataTypes;
+using global::Gum.Forms;
+using global::Gum.Forms.Controls;
+using global::Gum.DataTypes;
 using Microsoft.Xna.Framework;
 using MonoGameGum.GueDeriving;
 using KernSmith.Ui.Styling;
@@ -29,14 +29,14 @@ public static class KeyboardShortcutsDialog
     public static void Show()
     {
         var window = new Window();
-        window.Anchor(Gum.Wireframe.Anchor.Center);
+        window.Anchor(global::Gum.Wireframe.Anchor.Center);
         window.Width = 380;
         window.Height = 340;
         window.ResizeMode = ResizeMode.NoResize;
         FrameworkElement.ModalRoot.Children.Add(window.Visual);
 
         // Title in title bar
-        var windowVisual = window.Visual as Gum.Forms.DefaultVisuals.V3.WindowVisual;
+        var windowVisual = window.Visual as global::Gum.Forms.DefaultVisuals.V3.WindowVisual;
         if (windowVisual?.TitleBarInstance != null)
         {
             var titleLabel = new Label();
@@ -86,7 +86,7 @@ public static class KeyboardShortcutsDialog
 
         var okButton = new Button();
         okButton.Text = "OK";
-        okButton.Anchor(Gum.Wireframe.Anchor.Bottom);
+        okButton.Anchor(global::Gum.Wireframe.Anchor.Bottom);
         okButton.Y = -10;
         okButton.Width = 80;
         window.AddChild(okButton.Visual);

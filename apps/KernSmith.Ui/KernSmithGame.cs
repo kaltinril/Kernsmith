@@ -1,13 +1,15 @@
 using System.Collections.Concurrent;
-using Gum.Wireframe;
+using global::Gum.Wireframe;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using MonoGameGum;
-using Gum.Forms;
+using global::Gum.Forms;
 using KernSmith.Ui.Layout;
 using KernSmith.Ui.ViewModels;
 using KernSmith.Ui.Services;
 using KernSmith.Ui.Styling;
+using Gum.Themes.Editor;
+using GumRuntime;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace KernSmith.Ui;
@@ -62,28 +64,10 @@ public class KernSmithGame : Game
     {
         GumService.Default.Initialize(this, DefaultVisualsVersion.V3);
 
-        // Build a dark theme using the existing sprite sheet, then set as active
-        var defaultSpriteSheet = Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle.SpriteSheet;
-        var darkStyle = new Gum.Forms.DefaultVisuals.V3.Styling(defaultSpriteSheet, useDefaults: true);
+        GraphicalUiElement.IsAllLayoutSuspended = true;
 
-        // VS Code / dark IDE inspired palette
-        darkStyle.Colors.Primary = new Color(0, 122, 204);       // blue buttons/accents
-        darkStyle.Colors.Accent = new Color(0, 122, 204);        // selection highlights
-        darkStyle.Colors.InputBackground = new Color(60, 60, 60); // input fields
-        darkStyle.Colors.SurfaceVariant = new Color(50, 50, 50);  // scrollbar tracks
-        darkStyle.Colors.TextPrimary = new Color(212, 212, 212);  // main text
-        darkStyle.Colors.TextMuted = new Color(128, 128, 128);    // placeholder/muted
-        darkStyle.Colors.IconDefault = new Color(200, 200, 200);  // icons
-        darkStyle.Colors.Black = new Color(30, 30, 30);           // deep background
-        darkStyle.Colors.DarkGray = new Color(45, 45, 48);        // panel fills
-        darkStyle.Colors.Gray = new Color(70, 70, 74);            // borders/dividers
-        darkStyle.Colors.LightGray = new Color(150, 150, 150);    // secondary text
-        darkStyle.Colors.White = new Color(230, 230, 230);        // bright text/icons
-        darkStyle.Colors.Success = new Color(78, 201, 176);       // success green
-        darkStyle.Colors.Warning = new Color(220, 170, 50);       // warning amber
-        darkStyle.Colors.Danger = new Color(244, 71, 71);         // error red
-
-        Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle = darkStyle;
+        // Apply editor theme — registers styled visuals and sets up KernSmithFontCreator
+        EditorTheme.Apply(GraphicsDevice);
 
         var fontDiscoveryService = new FontDiscoveryService();
         var generationService = new GenerationService();
@@ -126,6 +110,10 @@ public class KernSmithGame : Game
             RunOnMainThread(() => _mainViewModel.FontConfig.SystemFonts = fonts);
         });
 
+        GraphicalUiElement.IsAllLayoutSuspended = false;
+        GumService.Default.Root.UpdateLayout();
+        GumService.Default.Root.UpdateFontRecursive();
+
         base.Initialize();
     }
 
@@ -149,7 +137,7 @@ public class KernSmithGame : Game
         var shiftHeld = kbState.IsKeyDown(Keys.LeftShift) || kbState.IsKeyDown(Keys.RightShift);
 
         // Only process keyboard shortcuts when no text input has focus
-        if (Gum.Wireframe.InteractiveGue.CurrentInputReceiver == null)
+        if (global::Gum.Wireframe.InteractiveGue.CurrentInputReceiver == null)
         {
             if (ctrlHeld && IsKeyPressed(Keys.O, kbState))
                 _mainViewModel?.OpenFont();
@@ -165,6 +153,14 @@ public class KernSmithGame : Game
                 SetUiScale(_uiScale - UiScaleStep);
             if (ctrlHeld && IsKeyPressed(Keys.D0, kbState))
                 SetUiScale(1.0f);
+            if (IsKeyPressed(Keys.F12, kbState))
+            {
+                var path = System.IO.Path.Combine(
+                    System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)!,
+                    "layout-export.json");
+                GumService.Default.Root.ExportLayoutJson(path);
+                if (_mainViewModel != null) _mainViewModel.StatusBar.StatusText = $"Layout exported to {path}";
+            }
         }
 
         _previousKeyboardState = kbState;

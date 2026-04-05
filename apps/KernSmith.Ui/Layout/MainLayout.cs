@@ -1,13 +1,13 @@
-using Gum.DataTypes;
-using Gum.Forms;
-using Gum.Forms.Controls;
+using global::Gum.DataTypes;
+using global::Gum.Forms;
+using global::Gum.Forms.Controls;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using Microsoft.Xna.Framework.Graphics;
-using Gum.Wireframe;
+using global::Gum.Wireframe;
 using MonoGameGum;
 using MonoGameGum.GueDeriving;
-using Gum.Forms.DefaultVisuals.V3;
+using global::Gum.Forms.DefaultVisuals.V3;
 
 namespace KernSmith.Ui.Layout;
 
@@ -31,7 +31,7 @@ public class MainLayout : ContainerRuntime
         _viewModel = viewModel;
         _graphicsDevice = graphicsDevice;
 
-        this.Dock(Gum.Wireframe.Dock.Fill);
+        this.Dock(global::Gum.Wireframe.Dock.Fill);
 
         CreateMenu();
         CreateBody();
@@ -42,6 +42,8 @@ public class MainLayout : ContainerRuntime
     {
         var menu = new Menu();
         var visual = (MenuVisual)menu.Visual;
+        visual.Height = 30;
+        visual.HeightUnits = DimensionUnitType.Absolute;
         // separate out the menu items a little:
         visual.InnerPanelInstance.StackSpacing = 10;
 
@@ -133,6 +135,7 @@ public class MainLayout : ContainerRuntime
         // Horizontal StackPanel for 3-column layout with splitters
         // Positioned below menu (Y=30) and above status bar (Height = -54 = 30 menu + 24 status)
         var body = new StackPanel();
+        body.Name = "Body";
         body.Orientation = Orientation.Horizontal;
         body.Y = 30;
         body.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -145,6 +148,7 @@ public class MainLayout : ContainerRuntime
         // Left column: font config (fixed width)
         _fontConfigPanel = new FontConfigPanel(_viewModel, _viewModel.FontConfig, _viewModel.AtlasConfig);
         var fontConfigPanel = _fontConfigPanel;
+        fontConfigPanel.Name = "FontConfigPanel";
         fontConfigPanel.Width = DefaultPanelWidth;
         fontConfigPanel.Visual.MinWidth = 210;
         fontConfigPanel.HeightUnits = DimensionUnitType.RelativeToParent;
@@ -154,8 +158,9 @@ public class MainLayout : ContainerRuntime
 
         // Splitter between left and center
         var leftSplitter = new Splitter();
+        leftSplitter.Name = "LeftSplitter";
         leftSplitter.Width = 5;
-        leftSplitter.Dock(Gum.Wireframe.Dock.FillVertically);
+        leftSplitter.Dock(global::Gum.Wireframe.Dock.FillVertically);
         AddSplitterBackground(leftSplitter);
         body.AddChild(leftSplitter);
 
@@ -166,6 +171,7 @@ public class MainLayout : ContainerRuntime
         // Center column: preview (fills remaining)
         Preview = new PreviewPanel(_viewModel.Preview, _viewModel.CharacterGrid, _graphicsDevice);
         var previewPanel = Preview;
+        previewPanel.Name = "PreviewPanel";
         previewPanel.WidthUnits = DimensionUnitType.Ratio;
         previewPanel.Width = 1;
         previewPanel.HeightUnits = DimensionUnitType.RelativeToParent;
@@ -174,14 +180,16 @@ public class MainLayout : ContainerRuntime
 
         // Splitter between center and right
         var rightSplitter = new Splitter();
+        rightSplitter.Name = "RightSplitter";
         rightSplitter.Width = 5;
-        rightSplitter.Dock(Gum.Wireframe.Dock.FillVertically);
+        rightSplitter.Dock(global::Gum.Wireframe.Dock.FillVertically);
         AddSplitterBackground(rightSplitter);
         body.AddChild(rightSplitter);
 
         // Right column: effects (fixed width)
         _effectsPanel = new EffectsPanel(_viewModel.Effects, _graphicsDevice);
         var effectsPanel = _effectsPanel;
+        effectsPanel.Name = "EffectsPanel";
         effectsPanel.Width = DefaultPanelWidth;
         effectsPanel.HeightUnits = DimensionUnitType.RelativeToParent;
         effectsPanel.Height = 0;
@@ -197,7 +205,7 @@ public class MainLayout : ContainerRuntime
     {
         var statusBar = new StatusBar(_viewModel.StatusBar);
         // Pin to bottom of screen with explicit positioning
-        statusBar.Visual.YUnits = Gum.Converters.GeneralUnitType.PixelsFromLarge;
+        statusBar.Visual.YUnits = global::Gum.Converters.GeneralUnitType.PixelsFromLarge;
         statusBar.Visual.YOrigin = RenderingLibrary.Graphics.VerticalAlignment.Bottom;
         statusBar.Visual.Y = 0;
         statusBar.Height = 24;
@@ -241,17 +249,18 @@ public class MainLayout : ContainerRuntime
 
     private static void AddSplitterBackground(Splitter splitter)
     {
-        var bg = new ColoredRectangleRuntime();
-        bg.Color = Theme.PanelBorder;
-        bg.Dock(Gum.Wireframe.Dock.Fill);
-        splitter.Visual.Children.Insert(0, bg);
+        if (splitter.Visual is global::Gum.Forms.DefaultVisuals.V3.SplitterVisual sv)
+        {
+            sv.Background.ApplyState(global::Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle.NineSlice.Solid);
+            sv.BackgroundColor = Theme.PanelBorder;
+        }
     }
 
     private static void AddPanelBackground(Panel panel, Microsoft.Xna.Framework.Color color)
     {
         var bg = new ColoredRectangleRuntime();
         bg.Color = color;
-        bg.Dock(Gum.Wireframe.Dock.Fill);
+        bg.Dock(global::Gum.Wireframe.Dock.Fill);
         // Insert as first child so it renders behind other content
         panel.Visual.Children.Insert(0, bg);
     }
@@ -259,7 +268,7 @@ public class MainLayout : ContainerRuntime
     private void ShowAboutDialog()
     {
         var window = new Window();
-        window.Anchor(Gum.Wireframe.Anchor.Center);
+        window.Anchor(global::Gum.Wireframe.Anchor.Center);
         window.Width = 340;
         window.Height = 260;
         FrameworkElement.ModalRoot.AddChild(window);
@@ -292,7 +301,7 @@ public class MainLayout : ContainerRuntime
 
         var okButton = new Button();
         okButton.Text = "OK";
-        okButton.Anchor(Gum.Wireframe.Anchor.Bottom);
+        okButton.Anchor(global::Gum.Wireframe.Anchor.Bottom);
         okButton.Y = -10;
         okButton.Width = 80;
         window.AddChild(okButton.Visual);
