@@ -71,6 +71,25 @@ public class CharacterGridViewModel : ViewModel
     }
 
     /// <summary>
+    /// Returns true/false/null for fully selected, none selected, or partially selected.
+    /// </summary>
+    public bool? GetRangeCheckState(int start, int end)
+    {
+        bool anySelected = false;
+        bool anyUnselected = false;
+        for (int cp = start; cp <= end; cp++)
+        {
+            if (_selectedCodepoints.Contains(cp))
+                anySelected = true;
+            else
+                anyUnselected = true;
+            if (anySelected && anyUnselected)
+                return null; // indeterminate
+        }
+        return anySelected;
+    }
+
+    /// <summary>
     /// Adds all codepoints in the inclusive range [start, end] to the selection.
     /// </summary>
     public void SelectRange(int start, int end)

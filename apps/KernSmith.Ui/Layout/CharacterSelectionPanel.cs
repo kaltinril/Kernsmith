@@ -129,6 +129,7 @@ public class CharacterSelectionPanel : Panel
             foreach (var block in UnicodeBlock.StandardBlocks)
             {
                 var cb = new CheckBox();
+                cb.IsThreeState = true;
                 cb.Text = $"{block.Name} ({block.Count})";
                 cb.Width = 350;
 
@@ -149,16 +150,22 @@ public class CharacterSelectionPanel : Panel
                 blockCheckboxes.Add((cb, block));
             }
 
+            void SyncCheckboxes()
+            {
+                isSyncingCheckboxes = true;
+                foreach (var (cb, block) in blockCheckboxes)
+                    cb.IsChecked = _gridVm.GetRangeCheckState(block.Start, block.End);
+                isSyncingCheckboxes = false;
+            }
+
             _gridVm.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName == nameof(CharacterGridViewModel.ActivePreset))
-                {
-                    isSyncingCheckboxes = true;
-                    foreach (var (cb, block) in blockCheckboxes)
-                        cb.IsChecked = _gridVm.IsRangeFullySelected(block.Start, block.End);
-                    isSyncingCheckboxes = false;
-                }
+                    SyncCheckboxes();
             };
+
+            // Sync to match the preset already active from the VM constructor
+            SyncCheckboxes();
         }
 
         // --- Summary + action buttons ---
