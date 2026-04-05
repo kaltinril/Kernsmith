@@ -1,5 +1,6 @@
 using System.Linq;
 using global::Gum.DataTypes;
+using global::Gum.Forms;
 using global::Gum.Forms.Controls;
 using Gum.Themes.Editor;
 using KernSmith.Ui.Models;
@@ -148,6 +149,7 @@ public class FontConfigPanel : Panel
             };
 
             var faceCombo = new ComboBox();
+            //faceCombo.VisualTemplate = NoWrapItemTemplate;
             faceCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
             faceCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
             faceCombo.Visual.Width = 0;
@@ -177,13 +179,15 @@ public class FontConfigPanel : Panel
 
             // System Font row
             var familyCombo = new ComboBox();
-            familyCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
+            //familyCombo.VisualTemplate = NoWrapItemTemplate;
+            familyCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = false;
             ((global::Gum.Forms.DefaultVisuals.V3.ListBoxVisual)familyCombo.ListBox.Visual).MakeHeightFixedSize();
             familyCombo.ListBox.Visual.Height = 300;
             familyCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
             familyCombo.Visual.Width = 0;
             var fontRow = fontGrid.AddRow("Font:", familyCombo);
             fontRow.Visible = false;
+
             TooltipService.SetTooltip(familyCombo, "Pick an installed system font. Requires a backend that supports system fonts (GDI or DirectWrite).");
 
             _fontConfig.PropertyChanged += (_, e) =>
@@ -276,6 +280,7 @@ public class FontConfigPanel : Panel
             TooltipService.SetTooltip(sizeTextBox, "Font size in points (4-500)");
 
             _rasterizerCombo = new ComboBox();
+            //_rasterizerCombo.VisualTemplate = NoWrapItemTemplate;
             _rasterizerCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
             _rasterizerCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
             _rasterizerCombo.Visual.Width = 0;
@@ -391,6 +396,7 @@ public class FontConfigPanel : Panel
         sizeControlRow.Spacing = Theme.ControlSpacing;
 
         var maxWidthCombo = new ComboBox();
+        //maxWidthCombo.VisualTemplate = NoWrapItemTemplate;
         maxWidthCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         maxWidthCombo.Width = 80;
         foreach (var s in sizes) maxWidthCombo.Items.Add(s.ToString());
@@ -408,6 +414,7 @@ public class FontConfigPanel : Panel
         sizeControlRow.AddChild(xLabel);
 
         var maxHeightCombo = new ComboBox();
+        //maxHeightCombo.VisualTemplate = NoWrapItemTemplate;
         maxHeightCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         maxHeightCombo.Width = 80;
         foreach (var s in sizes) maxHeightCombo.Items.Add(s.ToString());
@@ -445,6 +452,7 @@ public class FontConfigPanel : Panel
         var atlasGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
 
         var packAlgoCombo = new ComboBox();
+        //packAlgoCombo.VisualTemplate = NoWrapItemTemplate;
         packAlgoCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         packAlgoCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
         packAlgoCombo.Visual.Width = 0;
@@ -605,6 +613,7 @@ public class FontConfigPanel : Panel
 
         var formats = new[] { ("Text", OutputFormat.Text), ("XML", OutputFormat.Xml), ("Binary", OutputFormat.Binary) };
         var formatCombo = new ComboBox();
+        //formatCombo.VisualTemplate = NoWrapItemTemplate;
         formatCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         formatCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
         formatCombo.Visual.Width = 0;
@@ -674,6 +683,26 @@ public class FontConfigPanel : Panel
             }
         }
     }
+
+    // // I couldn't get this to work correctly, it caused items to squash weirdly
+    //private static readonly VisualTemplate NoWrapItemTemplate = new(() =>
+    //{
+    //    var visual = new ListBoxItemVisual();
+    //    visual.WidthUnits = DimensionUnitType.RelativeToChildren;
+
+    //    // Switch text from center-anchored to top-left so the parent's
+    //    // RelativeToChildren height calculation can see it.
+    //    visual.TextInstance.WidthUnits = DimensionUnitType.RelativeToChildren;
+    //    visual.TextInstance.XUnits = global::Gum.Converters.GeneralUnitType.PixelsFromSmall;
+    //    visual.TextInstance.YUnits = global::Gum.Converters.GeneralUnitType.PixelsFromSmall;
+    //    visual.TextInstance.XOrigin = global::RenderingLibrary.Graphics.HorizontalAlignment.Left;
+    //    visual.TextInstance.YOrigin = global::RenderingLibrary.Graphics.VerticalAlignment.Top;
+    //    visual.TextInstance.X = 4;
+    //    visual.TextInstance.Y = 2;
+    //    //visual.Height = 4; // 2px top + 2px bottom padding
+
+    //    return visual;
+    //});
 
     private static TextBox CreateSmallIntBox(int initialValue, Action<int> onChanged)
     {
