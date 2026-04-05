@@ -58,6 +58,19 @@ public class CharacterGridViewModel : ViewModel
     public bool IsSelected(int codepoint) => _selectedCodepoints.Contains(codepoint);
 
     /// <summary>
+    /// Returns true if every codepoint in the inclusive range [start, end] is selected.
+    /// </summary>
+    public bool IsRangeFullySelected(int start, int end)
+    {
+        for (int cp = start; cp <= end; cp++)
+        {
+            if (!_selectedCodepoints.Contains(cp))
+                return false;
+        }
+        return true;
+    }
+
+    /// <summary>
     /// Adds all codepoints in the inclusive range [start, end] to the selection.
     /// </summary>
     public void SelectRange(int start, int end)

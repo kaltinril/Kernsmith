@@ -44,6 +44,8 @@ public class CharacterSelectionPanel : Panel
             var presetRow = new StackPanel();
             presetRow.Orientation = Orientation.Horizontal;
             presetRow.Spacing = 8;
+            presetRow.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+            presetRow.Visual.Width = 0;
             presetExpander.AddContent(presetRow);
 
             var presetNames = new[] { "ASCII", "Extended ASCII", "Latin", "Custom" };
@@ -59,6 +61,10 @@ public class CharacterSelectionPanel : Panel
             {
                 var rb = new RadioButton();
                 rb.Text = presetNames[i];
+                rb.Visual.Width = 1;
+                rb.Visual.WidthUnits = DimensionUnitType.Ratio;
+                rb.Visual.Height = 0;
+                rb.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
                 if (i == 0) rb.IsChecked = true;
                 var preset = presetValues[i];
                 rb.Checked += (_, _) =>
@@ -117,6 +123,9 @@ public class CharacterSelectionPanel : Panel
             var blockStack = blockScroll.InnerPanel;
             blockStack.StackSpacing = Theme.ControlSpacing;
 
+            bool isSyncingCheckboxes = false;
+            var blockCheckboxes = new List<(CheckBox Cb, UnicodeBlock Block)>();
+
             foreach (var block in UnicodeBlock.StandardBlocks)
             {
                 var cb = new CheckBox();
@@ -126,16 +135,30 @@ public class CharacterSelectionPanel : Panel
                 var blockRef = block;
                 cb.Checked += (_, _) =>
                 {
+                    if (isSyncingCheckboxes) return;
                     _gridVm.SelectRange(blockRef.Start, blockRef.End);
                     _gridVm.ActivePreset = CharacterSetPreset.Custom;
                 };
                 cb.Unchecked += (_, _) =>
                 {
+                    if (isSyncingCheckboxes) return;
                     _gridVm.DeselectRange(blockRef.Start, blockRef.End);
                     _gridVm.ActivePreset = CharacterSetPreset.Custom;
                 };
                 blockScroll.AddChild(cb);
+                blockCheckboxes.Add((cb, block));
             }
+
+            _gridVm.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(CharacterGridViewModel.ActivePreset))
+                {
+                    isSyncingCheckboxes = true;
+                    foreach (var (cb, block) in blockCheckboxes)
+                        cb.IsChecked = _gridVm.IsRangeFullySelected(block.Start, block.End);
+                    isSyncingCheckboxes = false;
+                }
+            };
         }
 
         // --- Summary + action buttons ---

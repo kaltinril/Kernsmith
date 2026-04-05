@@ -180,7 +180,7 @@ public class FontConfigPanel : Panel
             // System Font row
             var familyCombo = new ComboBox();
             //familyCombo.VisualTemplate = NoWrapItemTemplate;
-            familyCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = false;
+            familyCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
             ((global::Gum.Forms.DefaultVisuals.V3.ListBoxVisual)familyCombo.ListBox.Visual).MakeHeightFixedSize();
             familyCombo.ListBox.Visual.Height = 300;
             familyCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
