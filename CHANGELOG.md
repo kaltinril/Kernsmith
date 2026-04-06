@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.3] - 2026-04-05
+
+### Added
+
+- Rasterizer auto-discovery — `RasterizerFactory` now auto-discovers built-in backends via `Type.GetType()` on first call to `Create()`, `GetAvailableBackends()`, or `IsRegistered()`. No manual `RuntimeHelpers` registration needed (Phase 97)
+- ILLink trimmer protection (`ILLink.Descriptors.xml`) for all 4 rasterizer packages, enabling correct behavior under AOT/trimming
+
+### Removed
+
+- Manual `RuntimeHelpers.RunModuleConstructor()` workarounds from 13 files (UI, CLI, GumCommon, Blazor WASM sample, 9 test files)
+- Redundant `[DynamicDependency]` attribute from `StbTrueTypeRegistration` (replaced by `ILLink.Descriptors.xml`)
+- `TestAssemblyInitializer.cs` (auto-discovery handles test rasterizer registration)
+
+### Fixed
+
+- Race condition in concurrent `RasterizerFactory.Create()` calls during discovery — replaced `Interlocked.CompareExchange` with double-checked locking so concurrent callers wait for discovery to complete
+
 ## [0.12.2] - 2026-04-03
 
 ### Fixed
