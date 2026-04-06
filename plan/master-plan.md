@@ -1,7 +1,7 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-19, 21, 30-33, 33B, 32B, 32d, 55, 60-69, 72-78, 77B, 79, 80 complete. Phase 20 (release readiness) still planning. Phase 34 (custom rasterizer) is planning/future. Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper). Phase 36 superseded by Phase 110. Phase 95 partial. Phase 99, 110, 111, 150 planning.
-> **Date**: 2026-03-31
+> **Status**: Phases 1-19, 21, 30-33, 33B, 32B, 32d, 55, 60-69, 72-78, 77B, 79, 80 complete. Phase 20 (release readiness) still planning. Phase 34 (custom rasterizer) is planning/future. Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper). Phase 36 superseded by Phase 110. Phase 95 partial. Phase 98 rejected (invalid bug report). Phase 99, 110, 111, 150 planning.
+> **Date**: 2026-04-05
 
 ---
 
@@ -103,6 +103,7 @@ Output Layer
 | 111 | [Texture Fill for Glyphs](phase-111-texture-fill.md) | Exploratory plan for texture/pattern fill effects on glyphs | Exploratory |
 | 150 | [Deferred Rasterizer Issues](phase-150-deferred-rasterizer-issues.md) | Color fonts, variable fonts, native DW kerning, GDI MatchCharHeight bug (deferred from Phase 78G) | Planning |
 | 200 | [FontCrafter & Platform Rasterizers](phase-200-fontcrafter-and-platform-rasterizers.md) | FontCrafter product concept and platform-specific rasterizer distribution | Idea |
+| 250 | [UI Cleanup & Polish](phase-250-ui-cleanup.md) | Collapsible sections, consistent grids, shared UI helpers, spacing polish | Future |
 
 ---
 
@@ -168,6 +169,7 @@ Output Layer
 | 79 | [Replace FluentAssertions with Shouldly](done/phase-79-replace-fluentassertions.md) | Replace FluentAssertions (paid licensing) with Shouldly across test suite |
 | 80 | [Atlas Preview Rendering](done/phase-80-atlas-preview-rendering.md) | Fix atlas preview rendering quality in UI to match saved PNG |
 | 86 | [RegisterFont File-Path Overload](done/phase-86-register-font-file-path-overload.md) | Add string filePath overload to KernSmithFontCreator.RegisterFont using TitleContainer.OpenStream |
+| 98 | [Outline Advance Bug](done/phase-98-outline-advance-bug.md) | Rejected -- outline not adjusting xadvance is correct BMFont behavior, not a bug |
 
 ### Topical Plan Docs (archived in `done/`)
 
