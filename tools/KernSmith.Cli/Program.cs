@@ -1,20 +1,6 @@
 using KernSmith.Cli.Commands;
 using KernSmith.Cli.Utilities;
 
-// Force backend assembly loading so [ModuleInitializer] registers them with RasterizerFactory
-System.Runtime.CompilerServices.RuntimeHelpers.RunModuleConstructor(
-    typeof(KernSmith.Rasterizers.FreeType.FreeTypeRasterizer).Module.ModuleHandle);
-System.Runtime.CompilerServices.RuntimeHelpers.RunModuleConstructor(
-    typeof(KernSmith.Rasterizers.StbTrueType.StbTrueTypeRasterizer).Module.ModuleHandle);
-#if WINDOWS
-System.Runtime.CompilerServices.RuntimeHelpers.RunModuleConstructor(
-    typeof(KernSmith.Rasterizers.Gdi.GdiRasterizer).Module.ModuleHandle);
-#endif
-#if DIRECTWRITE
-System.Runtime.CompilerServices.RuntimeHelpers.RunModuleConstructor(
-    typeof(KernSmith.Rasterizers.DirectWrite.TerraFX.DirectWriteRasterizer).Module.ModuleHandle);
-#endif
-
 // Handle global flags before command dispatch
 var filtered = new List<string>();
 foreach (var arg in args)

@@ -1,8 +1,6 @@
 #if DIRECTWRITE
-using System.Runtime.CompilerServices;
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.DirectWrite.TerraFX;
-using KernSmith.Rasterizers.FreeType;
 using Shouldly;
 
 namespace KernSmith.Tests.Rasterizer;
@@ -28,21 +26,6 @@ public class DirectWriteRasterizerTests : IDisposable
 
     private DirectWriteRasterizer? _rasterizer;
 
-    /// <summary>
-    /// Ensures the DirectWrite backend is registered with the factory. The module
-    /// initializer fires once per process, but <see cref="RasterizerFactory.ResetForTesting"/>
-    /// in other tests' Dispose can remove it. This method re-registers if needed.
-    /// </summary>
-    private static void EnsureDirectWriteRegistered()
-    {
-        // Reference DirectWriteRasterizer to guarantee the assembly is loaded and the
-        // module initializer has executed at least once.
-        RuntimeHelpers.RunClassConstructor(typeof(DirectWriteRasterizer).TypeHandle);
-
-        if (!RasterizerFactory.GetAvailableBackends().Contains(RasterizerBackend.DirectWrite))
-            RasterizerFactory.Register(RasterizerBackend.DirectWrite, () => new DirectWriteRasterizer());
-    }
-
     public void Dispose()
     {
         _rasterizer?.Dispose();
@@ -53,8 +36,6 @@ public class DirectWriteRasterizerTests : IDisposable
     [Fact]
     public void Factory_Create_DirectWrite_ReturnsDirectWriteRasterizer()
     {
-        EnsureDirectWriteRegistered();
-
         using var rasterizer = RasterizerFactory.Create(RasterizerBackend.DirectWrite);
 
         rasterizer.ShouldNotBeNull();
@@ -64,28 +45,17 @@ public class DirectWriteRasterizerTests : IDisposable
     // -- 2. Factory reset isolates state ---------------------------------
 
     [Fact]
-    public void Factory_ResetForTesting_RemovesDirectWriteRegistration()
+    public void Factory_ResetForTesting_ClearsAndRediscovers()
     {
-        EnsureDirectWriteRegistered();
-
-        // DirectWrite should be available before reset.
-        RasterizerFactory.GetAvailableBackends().ShouldContain(RasterizerBackend.DirectWrite);
-
-        RasterizerFactory.ResetForTesting();
-
         try
         {
-            // After reset, ALL backends are cleared (including FreeType).
-            RasterizerFactory.GetAvailableBackends().ShouldBeEmpty();
-
-            var act = () => RasterizerFactory.Create(RasterizerBackend.DirectWrite);
-            Should.Throw<InvalidOperationException>(act);
+            RasterizerFactory.ResetForTesting();
+            var rasterizer = RasterizerFactory.Create(RasterizerBackend.DirectWrite);
+            rasterizer.ShouldBeOfType<DirectWriteRasterizer>();
         }
         finally
         {
-            // Re-register all backends to restore state for other tests.
-            FreeTypeRegistration.Register();
-            RasterizerFactory.Register(RasterizerBackend.DirectWrite, () => new DirectWriteRasterizer());
+            RasterizerFactory.ResetForTesting();
         }
     }
 

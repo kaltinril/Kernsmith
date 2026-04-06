@@ -1,7 +1,5 @@
 #if WINDOWS
-using System.Runtime.CompilerServices;
 using KernSmith.Rasterizer;
-using KernSmith.Rasterizers.FreeType;
 using KernSmith.Rasterizers.Gdi;
 using Shouldly;
 
@@ -28,21 +26,6 @@ public class GdiRasterizerTests : IDisposable
 
     private GdiRasterizer? _rasterizer;
 
-    /// <summary>
-    /// Ensures the GDI backend is registered with the factory. The module initializer
-    /// fires once per process, but <see cref="RasterizerFactory.ResetForTesting"/> in
-    /// other tests' Dispose can remove it. This method re-registers if needed.
-    /// </summary>
-    private static void EnsureGdiRegistered()
-    {
-        // Reference GdiRegistration to guarantee the assembly is loaded and the
-        // module initializer has executed at least once.
-        RuntimeHelpers.RunClassConstructor(typeof(GdiRasterizer).TypeHandle);
-
-        if (!RasterizerFactory.GetAvailableBackends().Contains(RasterizerBackend.Gdi))
-            RasterizerFactory.Register(RasterizerBackend.Gdi, () => new GdiRasterizer());
-    }
-
     public void Dispose()
     {
         _rasterizer?.Dispose();
@@ -53,8 +36,6 @@ public class GdiRasterizerTests : IDisposable
     [Fact]
     public void Factory_Create_Gdi_ReturnsGdiRasterizer()
     {
-        EnsureGdiRegistered();
-
         using var rasterizer = RasterizerFactory.Create(RasterizerBackend.Gdi);
 
         rasterizer.ShouldNotBeNull();
@@ -64,28 +45,17 @@ public class GdiRasterizerTests : IDisposable
     // ── 2. Factory reset isolates state ─────────────────────────────
 
     [Fact]
-    public void Factory_ResetForTesting_RemovesGdiRegistration()
+    public void Factory_ResetForTesting_ClearsAndRediscovers()
     {
-        EnsureGdiRegistered();
-
-        // GDI should be available before reset.
-        RasterizerFactory.GetAvailableBackends().ShouldContain(RasterizerBackend.Gdi);
-
-        RasterizerFactory.ResetForTesting();
-
         try
         {
-            // After reset, ALL backends are cleared (including FreeType).
-            RasterizerFactory.GetAvailableBackends().ShouldBeEmpty();
-
-            var act = () => RasterizerFactory.Create(RasterizerBackend.Gdi);
-            Should.Throw<InvalidOperationException>(act);
+            RasterizerFactory.ResetForTesting();
+            var rasterizer = RasterizerFactory.Create(RasterizerBackend.Gdi);
+            rasterizer.ShouldBeOfType<GdiRasterizer>();
         }
         finally
         {
-            // Re-register all backends to restore state for other tests.
-            FreeTypeRegistration.Register();
-            RasterizerFactory.Register(RasterizerBackend.Gdi, () => new GdiRasterizer());
+            RasterizerFactory.ResetForTesting();
         }
     }
 

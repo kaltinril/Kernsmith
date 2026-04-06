@@ -1,6 +1,5 @@
 using KernSmith.Output;
 using KernSmith.Rasterizer;
-using KernSmith.Rasterizers.FreeType;
 using Shouldly;
 
 namespace KernSmith.Tests.Integration;
@@ -8,12 +7,6 @@ namespace KernSmith.Tests.Integration;
 [Collection("RasterizerFactory")]
 public class CombinedBatchTests
 {
-    public CombinedBatchTests()
-    {
-        if (!RasterizerFactory.GetAvailableBackends().Contains(RasterizerBackend.FreeType))
-            RasterizerFactory.Register(RasterizerBackend.FreeType, () => new FreeTypeRasterizer());
-    }
-
     private static byte[] LoadTestFont() =>
         File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Roboto-Regular.ttf"));
 

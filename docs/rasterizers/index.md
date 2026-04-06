@@ -29,7 +29,7 @@ KernSmith supports multiple rasterizer backends through a pluggable `IRasterizer
 
 ## Auto-Registration
 
-All backend packages use `[ModuleInitializer]` to register themselves automatically. Simply referencing the NuGet package is enough -- no manual setup code is required.
+All built-in backend packages are auto-discovered by `RasterizerFactory` on first call to `Create()`, `GetAvailableBackends()`, or `IsRegistered()`. Simply referencing the NuGet package is enough -- no manual setup code is required. Third-party backends use `[ModuleInitializer]` for self-registration.
 
 ## Choosing a Backend
 

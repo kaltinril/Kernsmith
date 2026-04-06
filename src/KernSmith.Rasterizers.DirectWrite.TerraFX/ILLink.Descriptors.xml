@@ -1,0 +1,5 @@
+<linker>
+  <assembly fullname="KernSmith.Rasterizers.DirectWrite.TerraFX">
+    <type fullname="KernSmith.Rasterizers.DirectWrite.TerraFX.DirectWriteRegistration" preserve="all" />
+  </assembly>
+</linker>

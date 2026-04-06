@@ -71,11 +71,7 @@ var result = BmFont.Builder()
 KernSmith runs entirely client-side in Blazor WebAssembly using the StbTrueType backend. See the [Blazor WASM sample](samples/KernSmith.Samples.BlazorWasm/) for a working example.
 
 ```csharp
-// In Program.cs — force assembly load to prevent trimming
-RuntimeHelpers.RunClassConstructor(
-    typeof(KernSmith.Rasterizers.StbTrueType.StbTrueTypeRasterizer).TypeHandle);
-
-// Generate in-browser
+// Generate in-browser — StbTrueType is auto-discovered
 var result = BmFont.Generate(fontBytes, new FontGeneratorOptions
 {
     Size = 32,

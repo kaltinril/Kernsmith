@@ -103,9 +103,10 @@ internal static class MyRegistration
 }
 ```
 
-The consuming application forces your assembly to load at startup:
+Built-in backends are auto-discovered by `RasterizerFactory` on first access. For third-party backends, the `[ModuleInitializer]` fires when your assembly loads. If your assembly isn't loaded automatically (e.g., nothing in the app references a type from it), add a direct type reference or call `RuntimeHelpers.RunModuleConstructor()`:
 
 ```csharp
+// Only needed if .NET doesn't load your assembly automatically
 System.Runtime.CompilerServices.RuntimeHelpers.RunModuleConstructor(
     typeof(KernSmith.Rasterizers.MyRasterizer.MyRasterizer).Module.ModuleHandle);
 ```
@@ -132,7 +133,7 @@ Validate your backend against FreeType reference output:
 Use `RasterizerFactory.IsRegistered()` to verify your module initializer fires correctly:
 
 ```csharp
-// Force assembly load
+// Force assembly load (needed for third-party backends not in the auto-discovery list)
 RuntimeHelpers.RunModuleConstructor(typeof(MyRasterizer).Module.ModuleHandle);
 
 // Verify registration

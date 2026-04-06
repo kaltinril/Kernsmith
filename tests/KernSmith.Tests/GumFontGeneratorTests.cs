@@ -1,8 +1,6 @@
-using System.Runtime.CompilerServices;
 using KernSmith.Gum;
 using KernSmith.Output;
 using KernSmith.Rasterizer;
-using KernSmith.Rasterizers.StbTrueType;
 using RenderingLibrary.Graphics.Fonts;
 using Shouldly;
 
@@ -12,13 +10,6 @@ namespace KernSmith.Tests;
 public class GumFontGeneratorTests : IDisposable
 {
     private const string TestFontPath = "Fixtures/Roboto-Regular.ttf";
-
-    public GumFontGeneratorTests()
-    {
-        RuntimeHelpers.RunClassConstructor(typeof(StbTrueTypeRasterizer).TypeHandle);
-        if (!RasterizerFactory.GetAvailableBackends().Contains(RasterizerBackend.StbTrueType))
-            RasterizerFactory.Register(RasterizerBackend.StbTrueType, () => new StbTrueTypeRasterizer());
-    }
 
     public void Dispose() => BmFont.ClearRegisteredFonts();
     [Fact]
