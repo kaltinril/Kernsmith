@@ -22,9 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Temporary: using Gum source instead of NuGet to match KernSmith.Ui -->
-    <!-- <PackageReference Include="FlatRedBall.GumCommon" /> -->
-    <ProjectReference Include="..\..\..\Gum\GumCommon\GumCommon.csproj" />
+    <PackageReference Include="FlatRedBall.GumCommon" />
   </ItemGroup>
 
 </Project>

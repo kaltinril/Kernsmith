@@ -21,9 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Temporary: using Gum source instead of NuGet to match KernSmith.Ui -->
-    <!-- <PackageReference Include="Gum.MonoGame" /> -->
-    <ProjectReference Include="..\..\..\Gum\MonoGameGum\MonoGameGum.csproj" />
+    <PackageReference Include="Gum.MonoGame" />
     <PackageReference Include="MonoGame.Framework.DesktopGL" />
   </ItemGroup>
 
