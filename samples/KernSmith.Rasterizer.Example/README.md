@@ -106,12 +106,12 @@ Add a project reference (or NuGet package reference) from your application to yo
 <ProjectReference Include="..\KernSmith.Rasterizers.Skia\KernSmith.Rasterizers.Skia.csproj" />
 ```
 
-The `[ModuleInitializer]` in the registration class runs automatically when the assembly loads. However, .NET may not load the assembly until a type from it is actually used. To force loading at startup, add this to your application's initialization:
+Built-in backends are auto-discovered by `RasterizerFactory` — no manual wiring needed. For third-party backends like this example, the `[ModuleInitializer]` fires when the assembly loads. If .NET doesn't load it automatically, force it at startup:
 
 ```csharp
 using System.Runtime.CompilerServices;
 
-// Force the rasterizer assembly to load, triggering its ModuleInitializer
+// Only needed for third-party backends not in the auto-discovery list
 RuntimeHelpers.RunModuleConstructor(
     typeof(KernSmith.Rasterizers.Skia.SkiaRasterizer).Module.ModuleHandle);
 ```

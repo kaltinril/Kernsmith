@@ -1,0 +1,5 @@
+<linker>
+  <assembly fullname="KernSmith.Rasterizers.StbTrueType">
+    <type fullname="KernSmith.Rasterizers.StbTrueType.StbTrueTypeRegistration" preserve="all" />
+  </assembly>
+</linker>

@@ -1,0 +1,5 @@
+<linker>
+  <assembly fullname="KernSmith.Rasterizers.Gdi">
+    <type fullname="KernSmith.Rasterizers.Gdi.GdiRegistration" preserve="all" />
+  </assembly>
+</linker>

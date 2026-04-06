@@ -1,7 +1,5 @@
-using System.Runtime.CompilerServices;
 using KernSmith.Font.Tables;
 using KernSmith.Rasterizer;
-using KernSmith.Rasterizers.FreeType;
 using KernSmith.Rasterizers.StbTrueType;
 using Shouldly;
 
@@ -27,19 +25,6 @@ public class StbTrueTypeRasterizerTests : IDisposable
 
     private StbTrueTypeRasterizer? _rasterizer;
 
-    /// <summary>
-    /// Ensures the StbTrueType backend is registered with the factory. The module initializer
-    /// fires once per process, but <see cref="RasterizerFactory.ResetForTesting"/> in
-    /// other tests' Dispose can remove it. This method re-registers if needed.
-    /// </summary>
-    private static void EnsureStbTrueTypeRegistered()
-    {
-        RuntimeHelpers.RunClassConstructor(typeof(StbTrueTypeRasterizer).TypeHandle);
-
-        if (!RasterizerFactory.GetAvailableBackends().Contains(RasterizerBackend.StbTrueType))
-            RasterizerFactory.Register(RasterizerBackend.StbTrueType, () => new StbTrueTypeRasterizer());
-    }
-
     public void Dispose()
     {
         _rasterizer?.Dispose();
@@ -50,8 +35,6 @@ public class StbTrueTypeRasterizerTests : IDisposable
     [Fact]
     public void Factory_Create_StbTrueType_ReturnsStbTrueTypeRasterizer()
     {
-        EnsureStbTrueTypeRegistered();
-
         using var rasterizer = RasterizerFactory.Create(RasterizerBackend.StbTrueType);
 
         rasterizer.ShouldNotBeNull();
@@ -61,26 +44,18 @@ public class StbTrueTypeRasterizerTests : IDisposable
     // -- 2. Factory reset isolates state ---------------------------------
 
     [Fact]
-    public void Factory_ResetForTesting_RemovesStbTrueTypeRegistration()
+    public void Factory_ResetForTesting_ClearsAndRediscovers()
     {
-        EnsureStbTrueTypeRegistered();
-
-        RasterizerFactory.GetAvailableBackends().ShouldContain(RasterizerBackend.StbTrueType);
-
-        RasterizerFactory.ResetForTesting();
-
         try
         {
-            RasterizerFactory.GetAvailableBackends().ShouldBeEmpty();
-
-            var act = () => RasterizerFactory.Create(RasterizerBackend.StbTrueType);
-            Should.Throw<InvalidOperationException>(act);
+            RasterizerFactory.ResetForTesting();
+            // Create() triggers re-discovery after reset and succeeds
+            var rasterizer = RasterizerFactory.Create(RasterizerBackend.StbTrueType);
+            rasterizer.ShouldBeOfType<StbTrueTypeRasterizer>();
         }
         finally
         {
-            // Re-register all backends to restore state for other tests.
-            FreeTypeRegistration.Register();
-            StbTrueTypeRegistration.Register();
+            RasterizerFactory.ResetForTesting();
         }
     }
 
@@ -427,8 +402,6 @@ public class StbTrueTypeRasterizerTests : IDisposable
     [Fact]
     public void BmFont_Generate_WithStbTrueType_ProducesValidOutput()
     {
-        EnsureStbTrueTypeRegistered();
-
         var result = BmFont.Generate(LoadTestFont(), new FontGeneratorOptions
         {
             Size = 32,

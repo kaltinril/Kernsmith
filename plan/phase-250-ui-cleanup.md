@@ -1,4 +1,4 @@
-# Phase 200: UI Cleanup & Polish
+# Phase 250: UI Cleanup & Polish
 
 ## Context
 
@@ -144,3 +144,7 @@ One feature branch with incremental commits. All phases build on each other.
 ## Future Follow-up
 
 Panel reorganization (moving Font Style, Super Sample, Fallback Character from right to left panel) is a separate phase to be done after this cleanup. The restyle makes reorganization easier by establishing shared helpers and consistent patterns.
+
+## Ideas Backlog
+
+- **Opt-in outline advance adjustment**: Add an option (e.g. `AdjustAdvanceForOutline = true`, default `false`) that bakes `+ 2 * outlineThickness` into xadvance during .fnt generation. The BMFont spec says outline does NOT modify xadvance (renderers are expected to handle it), but some users don't control their renderer and want the adjustment baked in. Expose in UI as a checkbox near the outline controls, and in .bmfc as a key. See `plan/done/phase-98-outline-advance-bug.md` for background.

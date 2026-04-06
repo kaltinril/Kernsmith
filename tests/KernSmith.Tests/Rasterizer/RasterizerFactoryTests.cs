@@ -1,5 +1,5 @@
+using System.Collections.Concurrent;
 using KernSmith.Rasterizer;
-using KernSmith.Rasterizers.FreeType;
 using Shouldly;
 
 namespace KernSmith.Tests.Rasterizer;
@@ -26,21 +26,10 @@ public class RasterizerFactoryTests
     [Fact]
     public void Create_UnregisteredBackend_ThrowsInvalidOperationException()
     {
-        // Reset to empty state so no backends are registered.
-        RasterizerFactory.ResetForTesting();
-        try
-        {
-            var act = () => RasterizerFactory.Create(RasterizerBackend.DirectWrite);
-
-            var ex = Should.Throw<InvalidOperationException>(act);
-            ex.Message.ShouldContain("DirectWrite");
-        }
-        finally
-        {
-            // Re-register FreeType since ResetForTesting() clears all backends
-            // and [ModuleInitializer] only fires once per assembly load.
-            FreeTypeRegistration.Register();
-        }
+        // Use a backend value with no known assembly — auto-discovery can't find it
+        var ex = Should.Throw<InvalidOperationException>(
+            () => RasterizerFactory.Create((RasterizerBackend)999));
+        ex.Message.ShouldContain("is not registered");
     }
 
     [Fact]
@@ -82,5 +71,58 @@ public class RasterizerFactoryTests
         var options = new FontGeneratorOptions();
 
         options.Backend.ShouldBe(RasterizerBackend.FreeType);
+    }
+
+    [Fact]
+    public void GetAvailableBackends_AfterReset_TriggersDiscovery()
+    {
+        try
+        {
+            RasterizerFactory.ResetForTesting();
+
+            // GetAvailableBackends() should trigger auto-discovery without any prior Create() call
+            var backends = RasterizerFactory.GetAvailableBackends();
+
+            backends.ShouldNotBeEmpty();
+            backends.ShouldContain(RasterizerBackend.FreeType);
+        }
+        finally
+        {
+            RasterizerFactory.ResetForTesting();
+        }
+    }
+
+    [Fact]
+    public async Task Create_ConcurrentCallsDuringDiscovery_DoNotThrow()
+    {
+        try
+        {
+            RasterizerFactory.ResetForTesting();
+
+            var exceptions = new ConcurrentBag<Exception>();
+            var barrier = new Barrier(10);
+
+            var tasks = Enumerable.Range(0, 10).Select(_ => Task.Run(() =>
+            {
+                try
+                {
+                    barrier.SignalAndWait();
+                    using var rasterizer = RasterizerFactory.Create(RasterizerBackend.FreeType);
+                    rasterizer.ShouldNotBeNull();
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                }
+            })).ToArray();
+
+            await Task.WhenAll(tasks);
+
+            exceptions.ShouldBeEmpty($"Concurrent Create() calls threw: {string.Join("; ", exceptions.Select(e => e.Message))}");
+        }
+        finally
+        {
+            RasterizerFactory.ResetForTesting();
+        }
     }
 }

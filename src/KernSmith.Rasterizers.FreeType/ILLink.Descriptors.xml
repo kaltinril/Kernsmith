@@ -1,0 +1,5 @@
+<linker>
+  <assembly fullname="KernSmith.Rasterizers.FreeType">
+    <type fullname="KernSmith.Rasterizers.FreeType.FreeTypeRegistration" preserve="all" />
+  </assembly>
+</linker>
