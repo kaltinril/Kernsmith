@@ -1,4 +1,4 @@
-using Gum.Wireframe;
+using global::Gum.Wireframe;
 using Microsoft.Xna.Framework;
 using MonoGameGum;
 using MonoGameGum.GueDeriving;
@@ -29,16 +29,16 @@ public static class TooltipService
         _tooltipContainer = new ContainerRuntime();
         _tooltipContainer.Visible = false;
         _tooltipContainer.HasEvents = false;
-        _tooltipContainer.WidthUnits = Gum.DataTypes.DimensionUnitType.RelativeToChildren;
-        _tooltipContainer.HeightUnits = Gum.DataTypes.DimensionUnitType.RelativeToChildren;
+        _tooltipContainer.WidthUnits = global::Gum.DataTypes.DimensionUnitType.RelativeToChildren;
+        _tooltipContainer.HeightUnits = global::Gum.DataTypes.DimensionUnitType.RelativeToChildren;
         _tooltipContainer.Width = 12; // padding
         _tooltipContainer.Height = 8;
 
         var bg = new ColoredRectangleRuntime();
         bg.Width = 0;
-        bg.WidthUnits = Gum.DataTypes.DimensionUnitType.RelativeToParent;
+        bg.WidthUnits = global::Gum.DataTypes.DimensionUnitType.RelativeToParent;
         bg.Height = 0;
-        bg.HeightUnits = Gum.DataTypes.DimensionUnitType.RelativeToParent;
+        bg.HeightUnits = global::Gum.DataTypes.DimensionUnitType.RelativeToParent;
         bg.Color = new Color(20, 20, 20);
         _tooltipContainer.Children.Add(bg);
 
@@ -48,13 +48,13 @@ public static class TooltipService
         _tooltipText.Color = Theme.Text;
         _tooltipContainer.Children.Add(_tooltipText);
 
-        Gum.Forms.Controls.FrameworkElement.PopupRoot.Children.Add(_tooltipContainer);
+        global::Gum.Forms.Controls.FrameworkElement.PopupRoot.Children.Add(_tooltipContainer);
     }
 
     /// <summary>
     /// Registers a tooltip for the given control. Shows on hover after delay, hides on roll-off.
     /// </summary>
-    public static void SetTooltip(Gum.Forms.Controls.FrameworkElement control, string text)
+    public static void SetTooltip(global::Gum.Forms.Controls.FrameworkElement control, string text)
     {
         control.Visual.RollOn += (_, _) =>
         {

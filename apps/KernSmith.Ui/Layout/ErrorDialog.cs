@@ -1,5 +1,5 @@
-using Gum.Forms;
-using Gum.Forms.Controls;
+using global::Gum.Forms;
+using global::Gum.Forms.Controls;
 
 namespace KernSmith.Ui.Layout;
 
@@ -14,7 +14,7 @@ public static class ErrorDialog
     public static void Show(string title, string message)
     {
         var window = new Window();
-        window.Anchor(Gum.Wireframe.Anchor.Center);
+        window.Anchor(global::Gum.Wireframe.Anchor.Center);
         window.Width = 400;
         window.Height = 200;
         FrameworkElement.ModalRoot.Children.Add(window.Visual);
@@ -35,7 +35,7 @@ public static class ErrorDialog
 
         var okBtn = new Button();
         okBtn.Text = "OK";
-        okBtn.Anchor(Gum.Wireframe.Anchor.Bottom);
+        okBtn.Anchor(global::Gum.Wireframe.Anchor.Bottom);
         okBtn.Y = -10;
         okBtn.Width = 80;
         window.AddChild(okBtn.Visual);

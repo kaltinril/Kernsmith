@@ -1,5 +1,6 @@
-using Gum.DataTypes;
-using Gum.Forms.Controls;
+using global::Gum.DataTypes;
+using global::Gum.Forms.Controls;
+using Gum.Themes.Editor;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using Microsoft.Xna.Framework.Graphics;
@@ -31,78 +32,31 @@ public class EffectsPanel : Panel
 
     private void BuildContent()
     {
-        var scrollViewer = new ScrollViewer();
-        scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
-        scrollViewer.Dock(Gum.Wireframe.Dock.Fill);
-        // Make ScrollViewer background transparent so the panel background color shows through
-        var scrollBg = scrollViewer.Visual.GetGraphicalUiElementByName("Background");
-        if (scrollBg is ColoredRectangleRuntime scrollRect)
-            scrollRect.Color = Microsoft.Xna.Framework.Color.Transparent;
-        this.AddChild(scrollViewer);
-
-        // Inner container with padding from panel edges
-        var inner = new ContainerRuntime();
-        inner.WidthUnits = DimensionUnitType.RelativeToParent;
-        inner.HeightUnits = DimensionUnitType.RelativeToChildren;
-        inner.Width = -16; // 8px padding each side
-        inner.Height = 0;
-        inner.X = 8;
-        inner.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
-        inner.Y = 4;
-        inner.StackSpacing = 6;
-        scrollViewer.InnerPanel.Children.Add(inner);
+        var (scrollViewer, inner) = UiFactory.CreateScrollablePanel(this);
 
         var stack = inner;
 
         // --- FONT STYLE section (always active) ---
         BuildFontStyleSection(stack);
 
-        AddDivider(stack);
-
-        // --- OUTLINE section ---
-        AddCollapsibleSection(stack, "OUTLINE", BuildOutlineContent,
-            enableChanged: enabled => _effects.OutlineEnabled = enabled,
-            tooltip: "Add an outline border around each glyph");
-
-        AddDivider(stack);
-
-        // --- SHADOW section ---
-        AddCollapsibleSection(stack, "SHADOW", BuildShadowContent,
-            enableChanged: enabled => _effects.ShadowEnabled = enabled,
-            tooltip: "Add a drop shadow behind each glyph");
-
-        AddDivider(stack);
-
-        // --- GRADIENT section ---
-        AddCollapsibleSection(stack, "GRADIENT", BuildGradientContent,
-            enableChanged: enabled => _effects.GradientEnabled = enabled,
-            tooltip: "Apply a color gradient across each glyph");
-
-        AddDivider(stack);
-
-        // --- CHANNELS section ---
-        AddCollapsibleSection(stack, "CHANNELS", BuildChannelsContent,
-            enableChanged: _ => { },
-            tooltip: "Pack glyph data into specific RGBA channels");
-
-        AddDivider(stack);
+        // --- EFFECTS section (outline, shadow, gradient, channels) ---
+        BuildEffectsSection(stack);
 
         // --- ADVANCED section (SDF, Color Font, Variable Font) ---
         BuildAdvancedSection(stack);
 
         // --- FALLBACK CHARACTER section ---
-        AddDivider(stack);
         BuildFallbackSection(stack);
 
         // --- VARIABLE FONT section (dynamic, appears when axes are present) ---
-        AddDivider(stack);
         BuildVariableFontSection(stack);
 
     }
 
-    private void BuildFontStyleSection(Gum.Wireframe.GraphicalUiElement stack)
+    private void BuildFontStyleSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
-        AddSectionHeader(stack, "FONT STYLE");
+        var expander = UiFactory.CreateExpander("Font Style");
+        stack.Children.Add(expander.Visual);
 
         // Two-column, three-row layout:
         // Row 1: Bold | Synthetic
@@ -113,9 +67,9 @@ public class EffectsPanel : Panel
         styleRow.Width = 0;
         styleRow.HeightUnits = DimensionUnitType.RelativeToChildren;
         styleRow.Height = 0;
-        styleRow.ChildrenLayout = Gum.Managers.ChildrenLayout.LeftToRightStack;
-        styleRow.StackSpacing = 4;
-        stack.Children.Add(styleRow);
+        styleRow.ChildrenLayout = global::Gum.Managers.ChildrenLayout.LeftToRightStack;
+        styleRow.StackSpacing = Theme.SectionSpacing;
+        expander.AddContent(styleRow);
 
         // Left column: Bold, Italic, Hinting
         var leftCol = new ContainerRuntime();
@@ -123,8 +77,8 @@ public class EffectsPanel : Panel
         leftCol.Width = 1;
         leftCol.HeightUnits = DimensionUnitType.RelativeToChildren;
         leftCol.Height = 0;
-        leftCol.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
-        leftCol.StackSpacing = 4;
+        leftCol.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
+        leftCol.StackSpacing = 8;
         styleRow.Children.Add(leftCol);
 
         var boldCheck = new CheckBox();
@@ -151,8 +105,8 @@ public class EffectsPanel : Panel
         rightCol.Width = 1;
         rightCol.HeightUnits = DimensionUnitType.RelativeToChildren;
         rightCol.Height = 0;
-        rightCol.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
-        rightCol.StackSpacing = 4;
+        rightCol.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
+        rightCol.StackSpacing = 8;
         styleRow.Children.Add(rightCol);
 
         var synBoldCheck = new CheckBox();
@@ -329,130 +283,176 @@ public class EffectsPanel : Panel
         synItalicCheck.Unchecked += (_, _) => _effects.ForceSyntheticItalic = false;
 
         // Super sampling
-        var ssLabel = new Label();
-        ssLabel.Text = "Super Sample:";
-        stack.Children.Add(ssLabel.Visual);
-        TooltipService.SetTooltip(ssLabel, "Render at higher resolution then downscale for smoother edges. Available with all backends. Higher values improve quality but increase generation time.");
+        var ssGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        expander.AddContent(ssGrid);
 
-        var ssGroup = new StackPanel();
-        ssGroup.Orientation = Orientation.Horizontal;
-        ssGroup.Spacing = 4;
-        stack.Children.Add(ssGroup.Visual);
-
-        foreach (var level in new[] { 1, 2, 4 })
+        var ssLevels = new[] { 1, 2, 4 };
+        var ssCombo = new ComboBox();
+        ssCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
+        ssCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        ssCombo.Visual.Width = 0;
+        foreach (var level in ssLevels) ssCombo.Items.Add($"{level}x");
+        ssCombo.SelectedIndex = 0;
+        ssCombo.SelectionChanged += (_, _) =>
         {
-            var rb = new RadioButton();
-            rb.Text = $"{level}x";
-            rb.Width = 50;
-            if (level == 1) rb.IsChecked = true;
-            var capturedLevel = level;
-            rb.Checked += (_, _) => _effects.SuperSampleLevel = capturedLevel;
-            ssGroup.AddChild(rb);
-        }
-    }
-
-    private void BuildOutlineContent(Gum.Wireframe.GraphicalUiElement contentPanel)
-    {
-        var widthGrid = new Grid();
-        widthGrid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-        widthGrid.Visual.Width = 0;
-        widthGrid.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
-        widthGrid.Visual.Height = 0;
-        widthGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        widthGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
-        widthGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        widthGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        contentPanel.Children.Add(widthGrid.Visual);
-
-        var widthLabel = new Label();
-        widthLabel.Text = "Width:";
-        widthGrid.AddChild(widthLabel, row: 0, column: 0);
-
-        var widthSlider = new Slider();
-        widthSlider.Minimum = 1;
-        widthSlider.Maximum = 10;
-        widthSlider.Value = 1;
-        widthSlider.Width = 100;
-        widthSlider.TicksFrequency = 1;
-        widthSlider.IsSnapToTickEnabled = true;
-        widthGrid.AddChild(widthSlider, row: 0, column: 1);
-
-        var widthValue = new Label();
-        widthValue.Text = "1";
-        widthGrid.AddChild(widthValue, row: 0, column: 2);
-
-        widthSlider.ValueChanged += (_, _) =>
-        {
-            var val = (int)widthSlider.Value;
-            widthValue.Text = val.ToString();
-            _effects.OutlineWidth = val;
+            if (ssCombo.SelectedIndex >= 0)
+                _effects.SuperSampleLevel = ssLevels[ssCombo.SelectedIndex];
         };
-
-        // Outline color row
-        AddColorRow(_graphicsDevice, contentPanel, "Color:",
-            _effects.OutlineColor, hex => _effects.OutlineColor = hex);
+        ssGrid.AddRow("Super Sample:", ssCombo);
+        TooltipService.SetTooltip(ssCombo, "Render at higher resolution then downscale for smoother edges. Higher values improve quality but increase generation time.");
     }
 
-    private void BuildShadowContent(Gum.Wireframe.GraphicalUiElement contentPanel)
+    private void BuildEffectsSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
-        AddSliderRow(contentPanel, "Offset X:", -10, 10, 2,
+        var expander = UiFactory.CreateExpander("Effects");
+        stack.Children.Add(expander.Visual);
+
+        // --- Outline ---
+        var outlineGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        expander.AddContent(outlineGrid);
+
+        var outlineCheck = new CheckBox();
+        outlineCheck.Text = "";
+        outlineGrid.AddRow("Outline:", outlineCheck);
+        TooltipService.SetTooltip(outlineCheck, "Add an outline border around each glyph");
+
+        var outlineContent = new ContainerRuntime();
+        outlineContent.WidthUnits = DimensionUnitType.RelativeToParent;
+        outlineContent.Width = 0;
+        outlineContent.HeightUnits = DimensionUnitType.RelativeToChildren;
+        outlineContent.Height = 0;
+        outlineContent.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
+        outlineContent.StackSpacing = 4;
+        outlineContent.Visible = false;
+        expander.AddContent(outlineContent);
+
+        outlineCheck.Checked += (_, _) => { outlineContent.Visible = true; _effects.OutlineEnabled = true; };
+        outlineCheck.Unchecked += (_, _) => { outlineContent.Visible = false; _effects.OutlineEnabled = false; };
+
+        UiFactory.AddSliderRow(outlineContent, "Width:", 1, 10, 1,
+            val => _effects.OutlineWidth = val);
+        UiFactory.AddColorRow(_graphicsDevice, outlineContent, "Color:",
+            _effects.OutlineColor, hex => _effects.OutlineColor = hex);
+
+        // --- Shadow ---
+        var shadowGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        expander.AddContent(shadowGrid);
+
+        var shadowCheck = new CheckBox();
+        shadowCheck.Text = "";
+        shadowGrid.AddRow("Shadow:", shadowCheck);
+        TooltipService.SetTooltip(shadowCheck, "Add a drop shadow behind each glyph");
+
+        var shadowContent = new ContainerRuntime();
+        shadowContent.WidthUnits = DimensionUnitType.RelativeToParent;
+        shadowContent.Width = 0;
+        shadowContent.HeightUnits = DimensionUnitType.RelativeToChildren;
+        shadowContent.Height = 0;
+        shadowContent.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
+        shadowContent.StackSpacing = 4;
+        shadowContent.Visible = false;
+        expander.AddContent(shadowContent);
+
+        shadowCheck.Checked += (_, _) => { shadowContent.Visible = true; _effects.ShadowEnabled = true; };
+        shadowCheck.Unchecked += (_, _) => { shadowContent.Visible = false; _effects.ShadowEnabled = false; };
+
+        UiFactory.AddSliderRow(shadowContent, "Offset X:", -10, 10, 2,
             val => _effects.ShadowOffsetX = val);
-        AddSliderRow(contentPanel, "Offset Y:", -10, 10, 2,
+        UiFactory.AddSliderRow(shadowContent, "Offset Y:", -10, 10, 2,
             val => _effects.ShadowOffsetY = val);
-        AddSliderRow(contentPanel, "Blur:", 0, 10, 0,
+        UiFactory.AddSliderRow(shadowContent, "Blur:", 0, 10, 0,
             val => _effects.ShadowBlur = val);
-
-        // Shadow color row
-        AddColorRow(_graphicsDevice, contentPanel, "Color:",
+        UiFactory.AddColorRow(_graphicsDevice, shadowContent, "Color:",
             _effects.ShadowColor, hex => _effects.ShadowColor = hex);
-
-        // Shadow opacity slider
-        AddSliderRow(contentPanel, "Opacity:", 0, 100, 100,
+        UiFactory.AddSliderRow(shadowContent, "Opacity:", 0, 100, 100,
             val => _effects.ShadowOpacity = val);
 
+        var shadowChecksGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        shadowContent.Children.Add(shadowChecksGrid);
+
         var hardShadowCheck = new CheckBox();
-        hardShadowCheck.Text = "Hard Shadow";
-        hardShadowCheck.Width = 180;
+        hardShadowCheck.Text = "";
         hardShadowCheck.IsChecked = _effects.HardShadow;
         TooltipService.SetTooltip(hardShadowCheck, "Use a crisp silhouette instead of soft antialiased edges");
         hardShadowCheck.Checked += (_, _) => _effects.HardShadow = true;
         hardShadowCheck.Unchecked += (_, _) => _effects.HardShadow = false;
-        contentPanel.Children.Add(hardShadowCheck.Visual);
-    }
+        shadowChecksGrid.AddRow("Hard Shadow:", hardShadowCheck);
 
-    private void BuildGradientContent(Gum.Wireframe.GraphicalUiElement contentPanel)
-    {
-        AddColorRow(_graphicsDevice, contentPanel, "Start:",
+        // --- Gradient ---
+        var gradientGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        expander.AddContent(gradientGrid);
+
+        var gradientCheck = new CheckBox();
+        gradientCheck.Text = "";
+        gradientGrid.AddRow("Gradient:", gradientCheck);
+        TooltipService.SetTooltip(gradientCheck, "Apply a color gradient across each glyph");
+
+        var gradientContent = new ContainerRuntime();
+        gradientContent.WidthUnits = DimensionUnitType.RelativeToParent;
+        gradientContent.Width = 0;
+        gradientContent.HeightUnits = DimensionUnitType.RelativeToChildren;
+        gradientContent.Height = 0;
+        gradientContent.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
+        gradientContent.StackSpacing = 4;
+        gradientContent.Visible = false;
+        expander.AddContent(gradientContent);
+
+        gradientCheck.Checked += (_, _) => { gradientContent.Visible = true; _effects.GradientEnabled = true; };
+        gradientCheck.Unchecked += (_, _) => { gradientContent.Visible = false; _effects.GradientEnabled = false; };
+
+        UiFactory.AddColorRow(_graphicsDevice, gradientContent, "Start:",
             _effects.GradientStartColor, hex => _effects.GradientStartColor = hex);
-
-        AddColorRow(_graphicsDevice, contentPanel, "End:",
+        UiFactory.AddColorRow(_graphicsDevice, gradientContent, "End:",
             _effects.GradientEndColor, hex => _effects.GradientEndColor = hex);
-
-        AddSliderRow(contentPanel, "Angle:", 0, 360, 90,
+        UiFactory.AddSliderRow(gradientContent, "Angle:", 0, 360, 90,
             val => _effects.GradientAngle = val);
-    }
 
-    private void BuildChannelsContent(Gum.Wireframe.GraphicalUiElement contentPanel)
-    {
+        // --- Channels ---
+        var channelsGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        expander.AddContent(channelsGrid);
+
+        var channelsCheck = new CheckBox();
+        channelsCheck.Text = "";
+        channelsGrid.AddRow("Channels:", channelsCheck);
+        TooltipService.SetTooltip(channelsCheck, "Pack glyph data into specific RGBA channels");
+
+        var channelsContent = new ContainerRuntime();
+        channelsContent.WidthUnits = DimensionUnitType.RelativeToParent;
+        channelsContent.Width = 0;
+        channelsContent.HeightUnits = DimensionUnitType.RelativeToChildren;
+        channelsContent.Height = 0;
+        channelsContent.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
+        channelsContent.StackSpacing = 4;
+        channelsContent.Visible = false;
+        expander.AddContent(channelsContent);
+
+        channelsCheck.Checked += (_, _) => { channelsContent.Visible = true; };
+        channelsCheck.Unchecked += (_, _) => { channelsContent.Visible = false; };
+
+        var channelsChecksGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        channelsContent.Children.Add(channelsChecksGrid);
+
         var packingCheck = new CheckBox();
-        packingCheck.Text = "Channel Packing";
-        packingCheck.Width = 180;
+        packingCheck.Text = "";
         packingCheck.Checked += (_, _) => _effects.ChannelPackingEnabled = true;
         packingCheck.Unchecked += (_, _) => _effects.ChannelPackingEnabled = false;
-        contentPanel.Children.Add(packingCheck.Visual);
+        channelsChecksGrid.AddRow("Channel Packing:", packingCheck);
     }
 
-    private void BuildAdvancedSection(Gum.Wireframe.GraphicalUiElement stack)
+    private void BuildAdvancedSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
-        AddSectionHeader(stack, "ADVANCED");
+        var expander = UiFactory.CreateExpander("Advanced");
+        stack.Children.Add(expander.Visual);
+
+        var advancedGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        expander.AddContent(advancedGrid);
 
         var sdfCheck = new CheckBox();
-        sdfCheck.Text = "SDF";
-        sdfCheck.Width = 220;
+        sdfCheck.Text = "";
         sdfCheck.IsEnabled = _effects.BackendSupportsSdf;
         sdfCheck.Checked += (_, _) => _effects.SdfEnabled = true;
         sdfCheck.Unchecked += (_, _) => _effects.SdfEnabled = false;
-        stack.Children.Add(sdfCheck.Visual);
+        advancedGrid.AddRow("SDF:", sdfCheck);
         TooltipService.SetTooltip(sdfCheck, "Signed Distance Field rendering for resolution-independent scaling. Only supported by the FreeType backend.");
 
         // SDF incompatibility warning (covers super-sample, outline, shadow, gradient)
@@ -460,15 +460,14 @@ public class EffectsPanel : Panel
         sdfWarning.Text = "";
         sdfWarning.Color = Theme.Warning;
         sdfWarning.Visible = false;
-        stack.Children.Add(sdfWarning);
+        expander.AddContent(sdfWarning);
 
         var colorCheck = new CheckBox();
-        colorCheck.Text = "Color Font";
-        colorCheck.Width = 220;
+        colorCheck.Text = "";
         colorCheck.IsEnabled = _effects.HasColorGlyphs && _effects.BackendSupportsColorFonts;
         colorCheck.Checked += (_, _) => _effects.ColorFontEnabled = true;
         colorCheck.Unchecked += (_, _) => _effects.ColorFontEnabled = false;
-        stack.Children.Add(colorCheck.Visual);
+        advancedGrid.AddRow("Color Font:", colorCheck);
         TooltipService.SetTooltip(colorCheck, "Render color glyphs (emoji). Requires DirectWrite backend and a font with color tables (COLR/CPAL or CBDT/CBLC).");
 
         // Color font + Gradient mutual exclusion feedback
@@ -476,7 +475,7 @@ public class EffectsPanel : Panel
         colorGradientWarning.Text = "";
         colorGradientWarning.Color = Theme.Warning;
         colorGradientWarning.Visible = false;
-        stack.Children.Add(colorGradientWarning);
+        expander.AddContent(colorGradientWarning);
 
         // Track whether we are programmatically updating checkboxes to avoid recursive loops
         bool updatingSdfCheck = false;
@@ -563,20 +562,12 @@ public class EffectsPanel : Panel
         };
     }
 
-    private void BuildFallbackSection(Gum.Wireframe.GraphicalUiElement stack)
+    private void BuildFallbackSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
-        AddSectionHeader(stack, "FALLBACK CHARACTER");
+        var expander = UiFactory.CreateExpander("Fallback Character");
+        stack.Children.Add(expander.Visual);
 
-        var fallbackRow = new StackPanel();
-        fallbackRow.Orientation = Orientation.Horizontal;
-        fallbackRow.Spacing = 4;
-        stack.Children.Add(fallbackRow.Visual);
-
-        var fallbackLabel = new Label();
-        fallbackLabel.Text = "Char:";
-        fallbackLabel.Width = 70;
-        fallbackRow.AddChild(fallbackLabel);
-        TooltipService.SetTooltip(fallbackLabel, "Replacement for missing glyphs");
+        var grid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
 
         var fallbackTextBox = new TextBox();
         fallbackTextBox.Width = 60;
@@ -586,27 +577,34 @@ public class EffectsPanel : Panel
             if (!string.IsNullOrEmpty(fallbackTextBox.Text))
                 _effects.FallbackCharacter = fallbackTextBox.Text;
         };
-        fallbackRow.AddChild(fallbackTextBox);
+        TooltipService.SetTooltip(fallbackTextBox, "Replacement for missing glyphs");
+
+        grid.AddRow("Char", fallbackTextBox);
+        expander.AddContent(grid);
     }
 
-    private void BuildVariableFontSection(Gum.Wireframe.GraphicalUiElement stack)
+    private void BuildVariableFontSection(global::Gum.Wireframe.GraphicalUiElement stack)
     {
-        var varFontHeader = new Label();
-        varFontHeader.Text = "VARIABLE FONT";
-        varFontHeader.IsVisible = false;
-        stack.Children.Add(varFontHeader.Visual);
-        TooltipService.SetTooltip(varFontHeader, "Variable font axis controls. Requires DirectWrite backend and a variable font (with fvar table).");
+        var expander = UiFactory.CreateExpander("Variable Font", isExpanded: false);
+        expander.Visual.Visible = false;
+        stack.Children.Add(expander.Visual);
+        TooltipService.SetTooltip(expander, "Variable font axis controls. Requires DirectWrite backend and a variable font (with fvar table).");
 
-        var varFontContainer = new StackPanel();
-        varFontContainer.Spacing = 4;
-        varFontContainer.IsVisible = false;
-        stack.Children.Add(varFontContainer.Visual);
+        // Container for dynamically rebuilt axis sliders
+        var varFontContainer = new ContainerRuntime();
+        varFontContainer.WidthUnits = DimensionUnitType.RelativeToParent;
+        varFontContainer.Width = 0;
+        varFontContainer.HeightUnits = DimensionUnitType.RelativeToChildren;
+        varFontContainer.Height = 0;
+        varFontContainer.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
+        varFontContainer.StackSpacing = 4;
+        expander.AddContent(varFontContainer);
 
         var varFontUnsupportedWarning = new TextRuntime();
         varFontUnsupportedWarning.Text = "Rasterizer does not support variable fonts";
         varFontUnsupportedWarning.Color = Theme.Warning;
         varFontUnsupportedWarning.Visible = false;
-        stack.Children.Add(varFontUnsupportedWarning);
+        expander.AddContent(varFontUnsupportedWarning);
 
         _effects.PropertyChanged += (_, e) =>
         {
@@ -615,12 +613,12 @@ public class EffectsPanel : Panel
             {
                 var hasAxes = _effects.HasVariationAxes;
                 var backendSupports = _effects.BackendSupportsVariableFonts;
-                varFontHeader.IsVisible = hasAxes;
-                varFontContainer.IsVisible = hasAxes;
+                expander.Visual.Visible = hasAxes;
+                expander.IsExpanded = hasAxes;
                 varFontUnsupportedWarning.Visible = hasAxes && !backendSupports;
 
                 // Rebuild axis sliders
-                varFontContainer.Visual.Children.Clear();
+                varFontContainer.Children.Clear();
 
                 if (hasAxes && _effects.VariationAxesList is { Count: > 0 })
                 {
@@ -635,7 +633,7 @@ public class EffectsPanel : Panel
                         axisGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
                         axisGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                         axisGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                        varFontContainer.Visual.Children.Add(axisGrid.Visual);
+                        varFontContainer.Children.Add(axisGrid.Visual);
 
                         var axisLabel = new Label();
                         axisLabel.Text = axis.Name ?? axis.Tag;
@@ -669,225 +667,4 @@ public class EffectsPanel : Panel
         };
     }
 
-    private static void AddCollapsibleSection(
-        Gum.Wireframe.GraphicalUiElement parent,
-        string title,
-        Action<Gum.Wireframe.GraphicalUiElement> buildContent,
-        Action<bool> enableChanged,
-        bool startExpanded = false,
-        string? tooltip = null)
-    {
-        var enableCheck = new CheckBox();
-        enableCheck.Text = title;
-        enableCheck.Width = 220;
-        parent.Children.Add(enableCheck.Visual);
-        if (tooltip != null)
-            TooltipService.SetTooltip(enableCheck, tooltip);
-
-        // Content container with subtle background
-        var contentWrapper = new ContainerRuntime();
-        contentWrapper.X = 8;
-        contentWrapper.Width = -8;
-        contentWrapper.WidthUnits = DimensionUnitType.RelativeToParent;
-        contentWrapper.HeightUnits = DimensionUnitType.RelativeToChildren;
-        contentWrapper.Height = 8; // padding
-        contentWrapper.Visible = startExpanded;
-        parent.Children.Add(contentWrapper);
-
-        var contentBg = new ColoredRectangleRuntime();
-        contentBg.Width = 0;
-        contentBg.WidthUnits = DimensionUnitType.RelativeToParent;
-        contentBg.Height = 0;
-        contentBg.HeightUnits = DimensionUnitType.RelativeToParent;
-        contentBg.Color = new Microsoft.Xna.Framework.Color(40, 40, 44);
-        contentWrapper.Children.Add(contentBg);
-
-        var content = new StackPanel();
-        content.Spacing = 4;
-        content.Visual.X = 4;
-        content.Visual.Y = 4;
-        content.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-        content.Visual.Width = -8; // 4px padding each side within contentWrapper
-        content.IsVisible = true;
-        contentWrapper.Children.Add(content.Visual);
-
-        if (startExpanded)
-            enableCheck.IsChecked = true;
-
-        enableCheck.Checked += (_, _) =>
-        {
-            contentWrapper.Visible = true;
-            enableChanged(true);
-        };
-        enableCheck.Unchecked += (_, _) =>
-        {
-            contentWrapper.Visible = false;
-            enableChanged(false);
-        };
-
-        buildContent(content.Visual);
-    }
-
-    private static void AddSliderRow(
-        Gum.Wireframe.GraphicalUiElement parent,
-        string label, int min, int max, int defaultVal,
-        Action<int> onChanged)
-    {
-        var grid = new Grid();
-        grid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-        grid.Visual.Width = 0;
-        grid.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
-        grid.Visual.Height = 0;
-        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        parent.Children.Add(grid.Visual);
-
-        var lbl = new Label();
-        lbl.Text = label;
-        grid.AddChild(lbl, row: 0, column: 0);
-
-        var slider = new Slider();
-        slider.Minimum = min;
-        slider.Maximum = max;
-        slider.Value = defaultVal;
-        slider.Width = 100;
-        slider.TicksFrequency = 1;
-        slider.IsSnapToTickEnabled = true;
-        grid.AddChild(slider, row: 0, column: 1);
-
-        var valueLabel = new Label();
-        valueLabel.Text = defaultVal.ToString();
-        grid.AddChild(valueLabel, row: 0, column: 2);
-
-        slider.ValueChanged += (_, _) =>
-        {
-            var val = (int)slider.Value;
-            valueLabel.Text = val.ToString();
-            onChanged(val);
-        };
-    }
-
-    private static void AddColorRow(
-        GraphicsDevice graphicsDevice,
-        Gum.Wireframe.GraphicalUiElement parent,
-        string label, string initialHex,
-        Action<string> onColorChanged)
-    {
-        var (defaultR, defaultG, defaultB) = EffectsViewModel.ParseHex(initialHex);
-
-        var grid = new Grid();
-        grid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
-        grid.Visual.Width = 0;
-        grid.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
-        grid.Visual.Height = 0;
-        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        parent.Children.Add(grid.Visual);
-
-        var lbl = new Label();
-        lbl.Text = label;
-        grid.AddChild(lbl, row: 0, column: 0);
-
-        // Color swatch preview
-        var swatchContainer = new ContainerRuntime();
-        swatchContainer.Width = 24;
-        swatchContainer.Height = 24;
-        swatchContainer.HasEvents = true;
-        grid.AddChild(swatchContainer, row: 0, column: 1);
-
-        var swatch = new ColoredRectangleRuntime();
-        swatch.Width = 0;
-        swatch.WidthUnits = DimensionUnitType.RelativeToParent;
-        swatch.Height = 0;
-        swatch.HeightUnits = DimensionUnitType.RelativeToParent;
-        swatch.Color = new Microsoft.Xna.Framework.Color(defaultR, defaultG, defaultB);
-        swatchContainer.Children.Add(swatch);
-
-        var swatchBorder = new ColoredRectangleRuntime();
-        swatchBorder.Width = 0;
-        swatchBorder.WidthUnits = DimensionUnitType.RelativeToParent;
-        swatchBorder.Height = 0;
-        swatchBorder.HeightUnits = DimensionUnitType.RelativeToParent;
-        swatchBorder.Color = Theme.PanelBorder;
-        swatchContainer.Children.Insert(0, swatchBorder);
-
-        // Hex input
-        var hexBox = new TextBox();
-        hexBox.Width = 80;
-        hexBox.Text = $"#{defaultR:X2}{defaultG:X2}{defaultB:X2}";
-        TooltipService.SetTooltip(hexBox, "Hex color (e.g., #FF0000)");
-        var suppressHexSync = false;
-
-        hexBox.TextChanged += (_, _) =>
-        {
-            if (suppressHexSync) return;
-            var hex = hexBox.Text?.Trim() ?? "";
-            if (hex.StartsWith('#')) hex = hex[1..];
-            if (hex.Length == 6 &&
-                byte.TryParse(hex[..2], System.Globalization.NumberStyles.HexNumber, null, out var r) &&
-                byte.TryParse(hex[2..4], System.Globalization.NumberStyles.HexNumber, null, out var g) &&
-                byte.TryParse(hex[4..6], System.Globalization.NumberStyles.HexNumber, null, out var b))
-            {
-                swatch.Color = new Microsoft.Xna.Framework.Color(r, g, b);
-                onColorChanged($"#{r:X2}{g:X2}{b:X2}");
-            }
-        };
-        grid.AddChild(hexBox, row: 0, column: 2);
-
-        swatchContainer.Click += (_, _) =>
-        {
-            var currentColor = swatch.Color;
-            ColorPickerDialog.Show(graphicsDevice, currentColor, newColor =>
-            {
-                var hex = $"#{newColor.R:X2}{newColor.G:X2}{newColor.B:X2}";
-                swatch.Color = newColor;
-                suppressHexSync = true;
-                hexBox.Text = hex;
-                suppressHexSync = false;
-                onColorChanged(hex);
-            });
-        };
-    }
-
-    private static void AddSectionHeader(Gum.Wireframe.GraphicalUiElement parent, string text)
-    {
-        // Container with background bar
-        var container = new ContainerRuntime();
-        container.Width = 0;
-        container.WidthUnits = DimensionUnitType.RelativeToParent;
-        container.Height = 22;
-        container.HeightUnits = DimensionUnitType.Absolute;
-        parent.Children.Add(container);
-
-        // Background bar
-        var bg = new ColoredRectangleRuntime();
-        bg.Width = 0;
-        bg.WidthUnits = DimensionUnitType.RelativeToParent;
-        bg.Height = 0;
-        bg.HeightUnits = DimensionUnitType.RelativeToParent;
-        bg.Color = new Microsoft.Xna.Framework.Color(50, 50, 55);
-        container.Children.Add(bg);
-
-        // Header text
-        var header = new TextRuntime();
-        header.Text = text;
-        header.Color = Theme.Accent;
-        header.X = 6;
-        header.Y = 2;
-        container.Children.Add(header);
-    }
-
-    private static void AddDivider(Gum.Wireframe.GraphicalUiElement parent)
-    {
-        var divider = new ColoredRectangleRuntime();
-        divider.Width = 0;
-        divider.WidthUnits = DimensionUnitType.RelativeToParent;
-        divider.Height = 1;
-        divider.Color = Theme.PanelBorder;
-        parent.Children.Add(divider);
-    }
 }

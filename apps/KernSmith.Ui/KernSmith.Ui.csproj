@@ -22,11 +22,13 @@
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.DesktopGL" />
     <PackageReference Include="Gum.MonoGame" />
-    <PackageReference Include="NativeFileDialogNET" />
+    <PackageReference Include="Gum.Themes.Editor.MonoGame" />
+<PackageReference Include="NativeFileDialogNET" />
 
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\integrations\KernSmith.MonoGameGum\KernSmith.MonoGameGum.csproj" />
     <ProjectReference Include="..\..\src\KernSmith\KernSmith.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.FreeType\KernSmith.Rasterizers.FreeType.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.StbTrueType\KernSmith.Rasterizers.StbTrueType.csproj" />

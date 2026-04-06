@@ -1,8 +1,8 @@
-using Gum.DataTypes;
-using Gum.Forms.Controls;
+using global::Gum.DataTypes;
+using global::Gum.Forms.Controls;
 using KernSmith.Ui.Models;
+using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
-using MonoGameGum.GueDeriving;
 
 namespace KernSmith.Ui.Layout;
 
@@ -25,113 +25,148 @@ public class CharacterSelectionPanel : Panel
     {
         var scrollViewer = new ScrollViewer();
         scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
-        scrollViewer.Dock(Gum.Wireframe.Dock.Fill);
+        scrollViewer.Dock(global::Gum.Wireframe.Dock.Fill);
+        if (scrollViewer.Visual is global::Gum.Forms.DefaultVisuals.V3.ScrollViewerVisual scrollVisual)
+        {
+            scrollVisual.Background.ApplyState(global::Gum.Forms.DefaultVisuals.V3.Styling.ActiveStyle.NineSlice.Solid);
+            scrollVisual.BackgroundColor = Styling.Theme.Panel;
+            FontConfigPanel.StripScrollViewerMargins(scrollVisual);
+        }
         this.AddChild(scrollViewer);
 
         var stack = scrollViewer.InnerPanel;
-        stack.StackSpacing = 6;
+        stack.StackSpacing = Theme.SectionSpacing;
 
         // --- Preset RadioButtons ---
-        AddSectionHeader(stack, "CHARACTER SET PRESET");
-
-        var presetRow = new StackPanel();
-        presetRow.Orientation = Orientation.Horizontal;
-        presetRow.Spacing = 8;
-        stack.Children.Add(presetRow.Visual);
-
-        var presetNames = new[] { "ASCII", "Extended ASCII", "Latin", "Custom" };
-        var presetValues = new[]
+        var presetExpander = UiFactory.CreateExpander("Character Set Preset");
+        stack.Children.Add(presetExpander.Visual);
         {
-            CharacterSetPreset.Ascii,
-            CharacterSetPreset.ExtendedAscii,
-            CharacterSetPreset.Latin,
-            CharacterSetPreset.Custom
-        };
+            var presetRow = new StackPanel();
+            presetRow.Orientation = Orientation.Horizontal;
+            presetRow.Spacing = 8;
+            presetRow.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+            presetRow.Visual.Width = 0;
+            presetExpander.AddContent(presetRow);
 
-        for (int i = 0; i < presetNames.Length; i++)
-        {
-            var rb = new RadioButton();
-            rb.Text = presetNames[i];
-            if (i == 0) rb.IsChecked = true;
-            var preset = presetValues[i];
-            rb.Checked += (_, _) =>
+            var presetNames = new[] { "ASCII", "Extended ASCII", "Latin", "Custom" };
+            var presetValues = new[]
             {
-                if (preset != CharacterSetPreset.Custom)
-                    _gridVm.ApplyPreset(preset);
-                _gridVm.ActivePreset = preset;
+                CharacterSetPreset.Ascii,
+                CharacterSetPreset.ExtendedAscii,
+                CharacterSetPreset.Latin,
+                CharacterSetPreset.Custom
             };
-            presetRow.AddChild(rb);
-        }
 
-        AddDivider(stack);
+            for (int i = 0; i < presetNames.Length; i++)
+            {
+                var rb = new RadioButton();
+                rb.Text = presetNames[i];
+                rb.Visual.Width = 1;
+                rb.Visual.WidthUnits = DimensionUnitType.Ratio;
+                rb.Visual.Height = 0;
+                rb.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
+                if (i == 0) rb.IsChecked = true;
+                var preset = presetValues[i];
+                rb.Checked += (_, _) =>
+                {
+                    if (preset != CharacterSetPreset.Custom)
+                        _gridVm.ApplyPreset(preset);
+                    _gridVm.ActivePreset = preset;
+                };
+                presetRow.AddChild(rb);
+            }
+        }
 
         // --- Text input area (Hiero-style) ---
-        AddSectionHeader(stack, "ADD FROM TEXT");
-
-        var textInputRow = new StackPanel();
-        textInputRow.Orientation = Orientation.Horizontal;
-        textInputRow.Spacing = 4;
-        stack.Children.Add(textInputRow.Visual);
-
-        var textBox = new TextBox();
-        textBox.Width = 300;
-        textBox.Height = 100;
-        textBox.Placeholder = "Paste or type characters here...";
-        textBox.TextWrapping = Gum.Forms.TextWrapping.Wrap;
-        textBox.AcceptsReturn = true;
-        textInputRow.AddChild(textBox);
-
-        var addTextBtn = new Button();
-        addTextBtn.Text = "Add";
-        addTextBtn.Width = 60;
-        addTextBtn.Click += (_, _) =>
+        var addTextExpander = UiFactory.CreateExpander("Add From Text");
+        stack.Children.Add(addTextExpander.Visual);
         {
-            var text = textBox.Text?.Trim();
-            if (!string.IsNullOrEmpty(text))
+            var textInputRow = new StackPanel();
+            textInputRow.Orientation = Orientation.Horizontal;
+            textInputRow.Spacing = Theme.ControlSpacing;
+            addTextExpander.AddContent(textInputRow);
+
+            var textBox = new TextBox();
+            textBox.Width = 300;
+            textBox.Height = 100;
+            textBox.Placeholder = "Paste or type characters here...";
+            textBox.TextWrapping = global::Gum.Forms.TextWrapping.Wrap;
+            textBox.AcceptsReturn = true;
+            textInputRow.AddChild(textBox);
+
+            var addTextBtn = new Button();
+            addTextBtn.Text = "Add";
+            addTextBtn.Width = 60;
+            addTextBtn.Click += (_, _) =>
             {
-                _gridVm.AddFromText(text);
-                _gridVm.ActivePreset = CharacterSetPreset.Custom;
-            }
-        };
-        textInputRow.AddChild(addTextBtn);
-
-        AddDivider(stack);
-
-        // --- Unicode block checkboxes ---
-        AddSectionHeader(stack, "UNICODE BLOCKS");
-
-        var blockScroll = new ScrollViewer();
-        blockScroll.Width = 0;
-        blockScroll.WidthUnits = DimensionUnitType.RelativeToParent;
-        blockScroll.Height = 300;
-        blockScroll.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
-        stack.Children.Add(blockScroll.Visual);
-
-        var blockStack = blockScroll.InnerPanel;
-        blockStack.StackSpacing = 2;
-
-        foreach (var block in UnicodeBlock.StandardBlocks)
-        {
-            var cb = new CheckBox();
-            cb.Text = $"{block.Name} ({block.Count})";
-            cb.Width = 350;
-
-            // Check if the block overlaps with current selection
-            var blockRef = block; // capture for closure
-            cb.Checked += (_, _) =>
-            {
-                _gridVm.SelectRange(blockRef.Start, blockRef.End);
-                _gridVm.ActivePreset = CharacterSetPreset.Custom;
+                var text = textBox.Text?.Trim();
+                if (!string.IsNullOrEmpty(text))
+                {
+                    _gridVm.AddFromText(text);
+                    _gridVm.ActivePreset = CharacterSetPreset.Custom;
+                }
             };
-            cb.Unchecked += (_, _) =>
-            {
-                _gridVm.DeselectRange(blockRef.Start, blockRef.End);
-                _gridVm.ActivePreset = CharacterSetPreset.Custom;
-            };
-            blockScroll.AddChild(cb);
+            textInputRow.AddChild(addTextBtn);
         }
 
-        AddDivider(stack);
+        // --- Unicode block checkboxes ---
+        var blocksExpander = UiFactory.CreateExpander("Unicode Blocks");
+        stack.Children.Add(blocksExpander.Visual);
+        {
+            var blockScroll = new ScrollViewer();
+            blockScroll.Width = 0;
+            blockScroll.WidthUnits = DimensionUnitType.RelativeToParent;
+            blockScroll.Height = 300;
+            blockScroll.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+            blocksExpander.AddContent(blockScroll);
+
+            var blockStack = blockScroll.InnerPanel;
+            blockStack.StackSpacing = Theme.ControlSpacing;
+
+            bool isSyncingCheckboxes = false;
+            var blockCheckboxes = new List<(CheckBox Cb, UnicodeBlock Block)>();
+
+            foreach (var block in UnicodeBlock.StandardBlocks)
+            {
+                var cb = new CheckBox();
+                cb.IsThreeState = true;
+                cb.Text = $"{block.Name} ({block.Count})";
+                cb.Width = 350;
+
+                var blockRef = block;
+                cb.Checked += (_, _) =>
+                {
+                    if (isSyncingCheckboxes) return;
+                    _gridVm.SelectRange(blockRef.Start, blockRef.End);
+                    _gridVm.ActivePreset = CharacterSetPreset.Custom;
+                };
+                cb.Unchecked += (_, _) =>
+                {
+                    if (isSyncingCheckboxes) return;
+                    _gridVm.DeselectRange(blockRef.Start, blockRef.End);
+                    _gridVm.ActivePreset = CharacterSetPreset.Custom;
+                };
+                blockScroll.AddChild(cb);
+                blockCheckboxes.Add((cb, block));
+            }
+
+            void SyncCheckboxes()
+            {
+                isSyncingCheckboxes = true;
+                foreach (var (cb, block) in blockCheckboxes)
+                    cb.IsChecked = _gridVm.GetRangeCheckState(block.Start, block.End);
+                isSyncingCheckboxes = false;
+            }
+
+            _gridVm.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(CharacterGridViewModel.ActivePreset))
+                    SyncCheckboxes();
+            };
+
+            // Sync to match the preset already active from the VM constructor
+            SyncCheckboxes();
+        }
 
         // --- Summary + action buttons ---
         var bottomRow = new StackPanel();
@@ -171,20 +206,4 @@ public class CharacterSelectionPanel : Panel
         bottomRow.AddChild(clearBtn);
     }
 
-    private static void AddSectionHeader(Gum.Wireframe.GraphicalUiElement parent, string text)
-    {
-        var label = new Label();
-        label.Text = text;
-        parent.Children.Add(label.Visual);
-    }
-
-    private static void AddDivider(Gum.Wireframe.GraphicalUiElement parent)
-    {
-        var divider = new ColoredRectangleRuntime();
-        divider.Width = 0;
-        divider.WidthUnits = DimensionUnitType.RelativeToParent;
-        divider.Height = 1;
-        divider.Color = new Microsoft.Xna.Framework.Color(60, 60, 60);
-        parent.Children.Add(divider);
-    }
 }
