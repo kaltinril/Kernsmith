@@ -27,7 +27,9 @@ public static class GumFontGenerator
         FontGeneratorOptions options = BuildOptions(bmfcSave);
         if (backend.HasValue)
             options.Backend = backend.Value;
-        return BmFont.GenerateFromSystem(bmfcSave.FontName, options);
+        return string.IsNullOrEmpty(bmfcSave.FontFile)
+            ? BmFont.GenerateFromSystem(bmfcSave.FontName, options)
+            : BmFont.Generate(bmfcSave.FontFile, options);
     }
 
     /// <summary>
