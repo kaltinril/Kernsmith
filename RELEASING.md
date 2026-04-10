@@ -82,8 +82,8 @@ dotnet pack integrations/KernSmith.MonoGameGum -c Release --output ./nupkg
 2. Merge the PR to main
 3. Trigger the publish — pick **one**:
    - **GitHub UI (recommended):** Actions → Publish Release → Run workflow → enter version → click Run
-   - **Command line:** `git tag v0.12.3 && git push origin v0.12.3`
-   - **Local script:** `scripts\publish.bat 0.12.3`
+   - **Command line:** `git tag v0.12.4 && git push origin v0.12.4`
+   - **Local script:** `scripts\publish.bat 0.12.4`
 4. The workflow automatically:
    - Validates the version matches `Directory.Build.props`
    - Builds CLI and UI binaries for all platforms (win-x64, win-arm64, linux-x64, osx-arm64, osx-x64)
