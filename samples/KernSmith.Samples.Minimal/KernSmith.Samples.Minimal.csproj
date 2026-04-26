@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\KernSmith\KernSmith.csproj" />
+    <ProjectReference Include="..\..\src\KernSmith.Rasterizers.StbTrueType\KernSmith.Rasterizers.StbTrueType.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework.DesktopGL" />
+  </ItemGroup>
+
+</Project>
