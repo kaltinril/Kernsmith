@@ -20,7 +20,7 @@ kernsmith generate -f <font> -s <size> [options]
 
 | Flag | Description |
 |------|-------------|
-| `-s, --size <n>` | Font size in pixels (required) |
+| `-s, --size <n>` | Font size in pixels — accepts fractional (e.g. `10.5`) (required) |
 | `--dpi <n>` | DPI (default: 72) |
 | `--aa <mode>` | Anti-aliasing: `none`, `grayscale`, `light`, `lcd` (default: grayscale) |
 | `--mono` | Disable anti-aliasing (alias for `--aa none`) |
@@ -203,7 +203,7 @@ kernsmith benchmark -f <font> -s <size> [options]
 |------|-------------|
 | `-f, --font <path>` | Font file path |
 | `--system-font <name>` | System font by family name |
-| `-s, --size <n>` | Font size in pixels (default: 32) |
+| `-s, --size <n>` | Font size in pixels — accepts fractional (e.g. `10.5`) (default: 32) |
 | `-c, --charset <preset>` | Character set (default: ascii) |
 | `--packer <alg>` | Packing algorithm (default: maxrects) |
 | `--iterations <n>` | Number of timed iterations (default: 10) |

@@ -26,7 +26,7 @@ internal sealed class BenchmarkCommand
             var iterations = 10;
             string? fontPath = null;
             string? systemFontName = null;
-            int size = 32;
+            float size = 32f;
             string charsetPreset = "ascii";
             var packingAlgorithm = PackingAlgorithm.MaxRects;
 
@@ -46,7 +46,7 @@ internal sealed class BenchmarkCommand
                         break;
                     case "-s":
                     case "--size":
-                        size = int.Parse(NextArg(args, ref i, args[i]));
+                        size = float.Parse(NextArg(args, ref i, args[i]), System.Globalization.CultureInfo.InvariantCulture);
                         break;
                     case "-c":
                     case "--charset":
@@ -181,7 +181,7 @@ internal sealed class BenchmarkCommand
             Options:
               -f, --font <path>           Font file path (TTF, OTF, WOFF)
               --system-font <name>        Use a system-installed font by family name
-              -s, --size <n>              Font size in pixels (default: 32)
+              -s, --size <n>              Font size in pixels — accepts fractional (e.g. 10.5) (default: 32)
               -c, --charset <preset>      Character set: ascii (default), extended, latin
               --packer <maxrects|skyline>  Packing algorithm (default: maxrects)
               --iterations <n>            Number of timed iterations (default: 10)
