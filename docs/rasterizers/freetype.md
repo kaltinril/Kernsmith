@@ -41,6 +41,7 @@ var options = new FontGeneratorOptions
 - Outline stroke
 - Synthetic bold and italic
 - Super sampling
+- Fractional font sizes (e.g. `Size = 32.5f`) honored natively
 
 ## Limitations
 

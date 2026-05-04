@@ -31,6 +31,7 @@ var result = BmFont.Generate("path/to/font.ttf", options);
 - SDF (Signed Distance Field) rendering
 - Super sampling
 - Synthetic bold and italic
+- Fractional font sizes (e.g. `Size = 32.5f`) honored natively
 
 ### Synthetic Bold and Italic
 

@@ -5,8 +5,9 @@ namespace KernSmith.Rasterizer;
 /// </summary>
 public sealed record RasterOptions
 {
-    /// <summary>Font size in points.</summary>
-    public required int Size { get; init; }
+    /// <summary>Font size in points. Fractional values are supported by all rasterizer backends
+    /// except GDI, which rounds to the nearest integer pixel size.</summary>
+    public required float Size { get; init; }
 
     /// <summary>DPI for converting points to pixels. Default is 72 (1 point = 1 pixel).</summary>
     public int Dpi { get; init; } = 72;

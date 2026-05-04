@@ -18,7 +18,7 @@ internal sealed class RasterizationResult
     /// The effective ppem used for rasterization. When cell-height scaling is applied
     /// (default BMFont behavior), this differs from <see cref="Options"/>.Size.
     /// </summary>
-    public int EffectiveSize { get; init; }
+    public float EffectiveSize { get; init; }
 
     /// <summary>
     /// Rasterizer-provided font-wide metrics, or null to fall back to TTF table calculation.

@@ -5,7 +5,7 @@ namespace KernSmith.Output.Model;
 /// </summary>
 public sealed record InfoBlock(
     string Face,
-    int Size,
+    float Size,
     bool Bold,
     bool Italic,
     bool Unicode,

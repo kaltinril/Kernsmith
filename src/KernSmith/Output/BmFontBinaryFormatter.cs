@@ -49,7 +49,7 @@ internal sealed class BmFontBinaryFormatter : IBmFontBinaryFormatter
         using var ms = new MemoryStream();
         using var bw = new BinaryWriter(ms, Encoding.UTF8);
 
-        bw.Write((short)info.Size);      // int16 fontSize
+        bw.Write((short)Math.Round(info.Size));      // int16 fontSize (BMFont on-disk format is integer-only)
 
         byte bitField = 0;
         if (info.Smooth) bitField |= 1 << 7;

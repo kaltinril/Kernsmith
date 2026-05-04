@@ -35,7 +35,7 @@ internal static class BmfcParser
             OutputFormat = config.OutputFormat,
 
             // Rendering
-            Size = gen.Size,
+            Size = (int)Math.Round(gen.Size),
             Dpi = gen.Dpi,
             AntiAlias = gen.AntiAlias,
             Sdf = gen.Sdf,
