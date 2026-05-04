@@ -10,8 +10,9 @@ namespace KernSmith;
 /// </summary>
 public class FontGeneratorOptions
 {
-    /// <summary>Font size in pixels (default 32).</summary>
-    public int Size { get; set; } = 32;
+    /// <summary>Font size in pixels (default 32). Fractional values are supported by FreeType,
+    /// StbTrueType, and DirectWrite backends; the GDI backend rounds to the nearest integer.</summary>
+    public float Size { get; set; } = 32f;
 
     /// <summary>Character set to include in the generated font.</summary>
     public CharacterSet Characters { get; set; } = CharacterSet.Ascii;

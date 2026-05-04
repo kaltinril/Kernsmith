@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using KernSmith.Cli.Config;
 using KernSmith.Cli.Utilities;
 using KernSmith.Output;
@@ -363,7 +364,7 @@ internal sealed class GenerateCommand
                     break;
                 case "-s":
                 case "--size":
-                    options.Size = int.Parse(NextArg(args, ref i, args[i]));
+                    options.Size = float.Parse(NextArg(args, ref i, args[i]), CultureInfo.InvariantCulture);
                     break;
                 case "-o":
                 case "--output":
@@ -834,7 +835,7 @@ internal sealed class GenerateCommand
               --texture-format <fmt>      Texture format: png (default), tga, dds
 
             Size & Rendering:
-              -s, --size <n>              Font size in pixels (required)
+              -s, --size <n>              Font size in pixels — accepts fractional (e.g. 10.5) (required)
               --dpi <n>                   DPI (default: 72)
               --aa <none|grayscale|light|lcd>  Anti-aliasing mode (default: grayscale)
               --sdf                       Enable Signed Distance Field rendering

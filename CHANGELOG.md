@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** `FontGeneratorOptions.Size`, `RasterOptions.Size`, and `BmFontModel.Info.Size` (`InfoBlock.Size`) are now `float` (default `32f`) -- previously `int`. Existing code passing integer literals (e.g. `Size = 32`) continues to compile via implicit widening
+- **Breaking:** `BmFontBuilder.WithSize(float)` -- previously `WithSize(int)`. Existing integer call sites still compile
+- BMFont on-disk formats (text/XML/binary `.fnt`, `.bmfc`) still store integer size; formatters round fractional sizes at the write boundary using `Math.Round` (banker's rounding -- `10.5` rounds to `10`)
+- FreeType, StbTrueType, and DirectWrite rasterizers honor fractional sizes natively. The GDI rasterizer rounds to the nearest integer because Win32 `LOGFONTW.lfHeight` is integer-only
+- The CLI `--size` flag remains integer-only
+
 ## [0.12.4] - 2026-04-10
 
 ### Added

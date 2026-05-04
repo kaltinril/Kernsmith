@@ -54,7 +54,7 @@ public class ProjectService
         }
 
         // Font settings
-        fontConfig.FontSize = options.Size;
+        fontConfig.FontSize = (int)Math.Round(options.Size);
         if (options.FaceIndex > 0 && fontConfig.IsFontLoaded)
             fontConfig.ReloadWithFaceIndex(options.FaceIndex);
 

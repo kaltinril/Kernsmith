@@ -86,10 +86,11 @@ public sealed class BmFontBuilder
         return this;
     }
 
-    /// <summary>Sets the font size in points.</summary>
+    /// <summary>Sets the font size in points. Fractional values are supported on FreeType,
+    /// StbTrueType, and DirectWrite backends; the GDI backend rounds to the nearest integer.</summary>
     /// <param name="size">Font size in points.</param>
     /// <returns>This builder.</returns>
-    public BmFontBuilder WithSize(int size) { _options.Size = size; return this; }
+    public BmFontBuilder WithSize(float size) { _options.Size = size; return this; }
 
     /// <summary>Sets which characters to include in the output.</summary>
     /// <param name="characters">The character set to render.</param>

@@ -11,7 +11,7 @@ internal sealed class CliOptions
     public int FaceIndex { get; set; }
 
     // Rendering
-    public int? Size { get; set; }
+    public float? Size { get; set; }
     public int Dpi { get; set; } = 72;
     public AntiAliasMode AntiAlias { get; set; } = AntiAliasMode.Grayscale;
     public bool Sdf { get; set; }

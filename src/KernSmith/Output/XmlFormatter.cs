@@ -45,7 +45,7 @@ internal sealed class XmlFormatter : IBmFontTextFormatter
     {
         writer.WriteStartElement("info");
         writer.WriteAttributeString("face", info.Face);
-        writer.WriteAttributeString("size", info.Size.ToString());
+        writer.WriteAttributeString("size", ((int)Math.Round(info.Size)).ToString());
         writer.WriteAttributeString("bold", BoolToString(info.Bold));
         writer.WriteAttributeString("italic", BoolToString(info.Italic));
         writer.WriteAttributeString("charset", info.Charset);
