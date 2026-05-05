@@ -110,27 +110,42 @@ EOF
 )"
 ```
 
-### 10. Merge
+### 10. Wait for PR CI to pass
+
+Do **not** merge the PR until CI has finished and reported success. Local tests passing is not a substitute — CI runs across multiple target frameworks (net8.0, net10.0, and Windows variants) and may surface platform-specific failures.
+
+```bash
+# Wait until the PR's checks complete, then verify success
+gh pr checks <pr-number> --watch
+```
+
+If any check fails, stop and report to the user. Do not merge a release PR with red CI.
+
+### 11. Merge
 
 ```bash
 gh pr merge <pr-number> --merge
 ```
 
-### 11. Remind about publishing
+### 12. Wait for main CI to pass, then remind about publishing
 
-After the merge, tell the user:
+After the merge, GitHub re-runs CI on `main`. Wait for that run to succeed before telling the user to push the tag — the publish workflow keys off the tag, and pushing it on top of a broken main wastes a release number.
 
-> PR merged. To publish, go to **GitHub Actions → Publish Release → Run workflow** and enter version `<version>`. Or from the command line:
+```bash
+# Sync local main and watch the post-merge CI
+git checkout main
+git pull
+gh run list --branch main --limit 1
+# If still in_progress, watch:
+gh run watch <run-id>
+```
+
+Once the main CI run reports success, tell the user:
+
+> PR merged and CI green on main. To publish, go to **GitHub Actions → Publish Release → Run workflow** and enter version `<version>`. Or from the command line:
 > ```
 > git tag v<version> && git push origin v<version>
 > ```
-
-Also switch back to main and pull so the local repo is up to date:
-
-```bash
-git checkout main
-git pull
-```
 
 ## Edge cases
 
