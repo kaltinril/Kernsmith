@@ -9,6 +9,11 @@ namespace KernSmith.Rasterizers.Gdi;
 /// <summary>
 /// Windows GDI-based rasterizer backend. Produces output compatible with BMFont's built-in rasterizer.
 /// Windows-only; uses GetGlyphOutlineW with GGO_GRAY8_BITMAP for grayscale rendering.
+/// <para>
+/// <b>Fractional sizes:</b> GDI's <c>LOGFONTW.lfHeight</c> is an integer-pixel field, so fractional
+/// values in <see cref="RasterOptions.Size"/> are rounded to the nearest integer when this backend
+/// is used. Use the FreeType, StbTrueType, or DirectWrite backend if you need true sub-pixel sizing.
+/// </para>
 /// </summary>
 public sealed class GdiRasterizer : IRasterizer
 {
@@ -323,12 +328,15 @@ public sealed class GdiRasterizer : IRasterizer
             throw new InvalidOperationException("Font not loaded. Call LoadFont or LoadSystemFont first.");
     }
 
-    private IntPtr CreateHFont(RasterOptions options, int? sizeOverride = null)
+    private IntPtr CreateHFont(RasterOptions options, float? sizeOverride = null)
     {
-        int size = sizeOverride ?? options.Size;
+        // GDI's LOGFONTW.lfHeight is an integer pixel value. Fractional sizes are rounded
+        // to the nearest integer pixel size; callers needing sub-pixel sizing should use a
+        // backend with native float sizing (FreeType, StbTrueType, or DirectWrite).
+        float size = sizeOverride ?? options.Size;
         var logFont = new LOGFONTW
         {
-            LfHeight = (int)((long)size * options.Dpi / 72),
+            LfHeight = (int)Math.Round((double)size * options.Dpi / 72),
             LfWidth = 0,
             LfEscapement = 0,
             LfOrientation = 0,

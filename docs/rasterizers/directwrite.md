@@ -54,6 +54,7 @@ var options = new FontGeneratorOptions
 - System font loading by family name
 - Synthetic bold and italic
 - TTF, OTF, WOFF, WOFF2 input
+- Fractional font sizes (e.g. `Size = 32.5f`) honored natively
 
 ## Limitations
 

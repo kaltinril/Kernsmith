@@ -52,6 +52,8 @@ The output of font generation. Provides access to:
 
 Configuration for the generation pipeline: font size, character set, effects (outline, gradient, shadow), atlas settings, SDF, super sampling, variable font axes, and more.
 
+`Size` is a `float` (default `32f`) and supports fractional values when paired with the FreeType, StbTrueType, or DirectWrite rasterizer. The GDI rasterizer rounds fractional sizes to the nearest integer. Integer literals (e.g. `Size = 32`) continue to compile via implicit widening. BMFont on-disk formats store integer size; formatters round at the write boundary using `Math.Round`.
+
 #### Bold / Italic Properties
 
 | Property | Description |
