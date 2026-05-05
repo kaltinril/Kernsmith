@@ -23,7 +23,7 @@ internal static class BmFontModelBuilder
         int charOffsetY = 0,
         int? overrideScaleW = null,
         int? overrideScaleH = null,
-        int? effectiveSize = null,
+        float? effectiveSize = null,
         RasterizerFontMetrics? rasterizerFontMetrics = null,
         IReadOnlyList<ScaledKerningPair>? rasterizerKerningPairs = null)
     {

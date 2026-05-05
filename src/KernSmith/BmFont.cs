@@ -196,17 +196,17 @@ public static class BmFont
             // requested cell height. When MatchCharHeight is true (negative fontSize in
             // .bmfc), use fontSize directly as ppem (em-square mode).
             // When the rasterizer handles its own sizing (e.g., GDI), skip this conversion.
-            int effectiveSize = options.Size;
+            float effectiveSize = options.Size;
             if (!rasterizer.Capabilities.HandlesOwnSizing)
             {
                 if (!options.MatchCharHeight
                     && fontInfo.Os2 is { } os2CellScale
                     && os2CellScale.WinAscent + os2CellScale.WinDescent > 0)
                 {
-                    effectiveSize = (int)(
+                    effectiveSize = (float)(
                         (double)options.Size * fontInfo.UnitsPerEm
                         / (os2CellScale.WinAscent + os2CellScale.WinDescent));
-                    if (effectiveSize < 1) effectiveSize = 1;
+                    if (effectiveSize < 1f) effectiveSize = 1f;
                     rasterOptions = rasterOptions with { Size = effectiveSize };
                 }
             }

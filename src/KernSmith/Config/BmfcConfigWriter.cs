@@ -46,7 +46,8 @@ public static class BmfcConfigWriter
         sb.AppendLine("# font settings");
         sb.AppendLine($"fontName={config.FontName ?? ""}");
         sb.AppendLine($"fontFile={FormatPath(config.FontFile, relativeBasePath)}");
-        var fontSize = options.Size;
+        // .bmfc is an integer-only format; round here since FontGeneratorOptions.Size is float.
+        var fontSize = (int)Math.Round(options.Size);
         if (options.MatchCharHeight)
             fontSize = -fontSize;
         sb.AppendLine($"fontSize={fontSize}");

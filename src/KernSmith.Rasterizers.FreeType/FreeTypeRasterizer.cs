@@ -23,7 +23,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
     /// </summary>
     private int[]? _variationCoords;
 
-    private int _lastSetSize;
+    private float _lastSetSize;
     private int _lastSetDpi;
 
     public unsafe void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0)
@@ -51,7 +51,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
             _face = face;
 
-            _lastSetSize = 0;
+            _lastSetSize = 0f;
             _lastSetDpi = 0;
         }
         catch (Exception ex) when (ex is not FontParsingException and not ObjectDisposedException)
@@ -474,12 +474,12 @@ public sealed class FreeTypeRasterizer : IRasterizer
     /// requested size and DPI match what was last set. This avoids redundant per-glyph
     /// interop overhead since size/DPI never change within a generation run.
     /// </summary>
-    private unsafe void EnsureCharSize(int size, int dpi)
+    private unsafe void EnsureCharSize(float size, int dpi)
     {
-        if (size == _lastSetSize && dpi == _lastSetDpi)
+        if (Math.Abs(size - _lastSetSize) < 0.01f && dpi == _lastSetDpi)
             return;
 
-        var sizeF26D6 = (IntPtr)checked(size * 64);
+        var sizeF26D6 = (IntPtr)checked((int)Math.Round(size * 64f));
         var error = FT.FT_Set_Char_Size(_face, sizeF26D6, sizeF26D6, (uint)dpi, (uint)dpi);
         if (error != FT_Error.FT_Err_Ok)
         {
@@ -489,7 +489,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
             if (_face->num_fixed_sizes > 0)
             {
                 var bestIndex = 0;
-                var bestDiff = int.MaxValue;
+                var bestDiff = float.MaxValue;
                 for (var s = 0; s < _face->num_fixed_sizes; s++)
                 {
                     var strikeHeight = _face->available_sizes[s].height;

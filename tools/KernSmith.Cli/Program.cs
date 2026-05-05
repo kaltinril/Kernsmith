@@ -65,7 +65,7 @@ static int ShowHelp()
         Generate options:
           -f, --font <path>            Font file path (required)
           --system-font <name>         System font family name (alternative to --font)
-          -s, --size <pixels>          Font size in pixels (required)
+          -s, --size <pixels>          Font size in pixels — accepts fractional (e.g. 10.5) (required)
           -o, --output <path>          Output path, without extension (default: ./<fontname>)
           -c, --charset <set>          Character set: ascii (default), extended, latin,
                                        or a literal string of characters

@@ -28,7 +28,7 @@ internal sealed class TextFormatter : IBmFontTextFormatter
     {
         sb.Append("info");
         sb.Append($" face=\"{info.Face}\"");
-        sb.Append($" size={info.Size}");
+        sb.Append($" size={(int)Math.Round(info.Size)}");
         sb.Append($" bold={BoolToInt(info.Bold)}");
         sb.Append($" italic={BoolToInt(info.Italic)}");
         sb.Append($" charset=\"{info.Charset}\"");
