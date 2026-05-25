@@ -63,8 +63,11 @@ internal static class BmFontModelBuilder
             // what bmfont.exe uses for lineHeight and base. This produces consistent
             // line spacing across generators. Note: WinDescent is positive (unlike
             // hhea Descender which is negative).
-            lineHeight = (int)Math.Ceiling((double)(os2.WinAscent + os2.WinDescent) * metricSize / fontInfo.UnitsPerEm);
-            baseLine = (int)Math.Ceiling((double)os2.WinAscent * metricSize / fontInfo.UnitsPerEm);
+            // Round (not Ceiling) to match GDI's tmAscent = round(WinAscent * ppem / unitsPerEm).
+            // Ceiling causes base to be 1px too high for values between N.0 and N.5, which
+            // makes x-height glyphs appear 1px lower than ascender glyphs (issue #67).
+            lineHeight = (int)Math.Round((double)(os2.WinAscent + os2.WinDescent) * metricSize / fontInfo.UnitsPerEm, MidpointRounding.AwayFromZero);
+            baseLine = (int)Math.Round((double)os2.WinAscent * metricSize / fontInfo.UnitsPerEm, MidpointRounding.AwayFromZero);
         }
         else
         {
