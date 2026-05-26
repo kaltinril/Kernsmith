@@ -257,6 +257,7 @@ public class EffectsPanel : Panel
         // Synthetic bold: when checked, auto-check Bold (synthetic implies bold)
         synBoldCheck.Checked += (_, _) =>
         {
+            if (updatingSyntheticChecks) return;
             _effects.ForceSyntheticBold = true;
             if (boldCheck.IsChecked != true)
             {
@@ -271,6 +272,7 @@ public class EffectsPanel : Panel
         // Synthetic italic: when checked, auto-check Italic (synthetic implies italic)
         synItalicCheck.Checked += (_, _) =>
         {
+            if (updatingSyntheticChecks) return;
             _effects.ForceSyntheticItalic = true;
             if (italicCheck.IsChecked != true)
             {

@@ -16,7 +16,9 @@ public class BaselineAlignmentTests
 
     [Theory]
     [InlineData(RasterizerBackend.FreeType)]
+#if DIRECTWRITE
     [InlineData(RasterizerBackend.DirectWrite)]
+#endif
     public void Generate_BaseAndLineHeight_MatchGdi(RasterizerBackend backend)
     {
         var fontData = LoadTestFont();
@@ -45,7 +47,9 @@ public class BaselineAlignmentTests
 
     [Theory]
     [InlineData(RasterizerBackend.FreeType)]
+#if DIRECTWRITE
     [InlineData(RasterizerBackend.DirectWrite)]
+#endif
     public void Generate_EmHeightMode_BaseAndLineHeight_MatchFreeType(RasterizerBackend backend)
     {
         // Verify em-height mode (MatchCharHeight=true — the Gum integration path).
