@@ -68,8 +68,14 @@ def generate_diff(
     output_path: Path,
     label: str,
     tolerance: int = 0,
+    ignore_top: int = 0,
 ) -> tuple[int, int]:
-    """Generate a diff image. Returns (diff_count, total_pixels)."""
+    """Generate a diff image. Returns (diff_count, total_pixels).
+
+    Rows above ``ignore_top`` (the header label band) are always dimmed and never
+    counted as differences -- those rows render the column/config labels with
+    GDI text antialiasing that varies run-to-run and is not a font-output change.
+    """
     if not baseline_path.exists():
         print(f"  SKIP {label}: baseline missing ({baseline_path.name})")
         return 0, 0
@@ -107,11 +113,11 @@ def generate_diff(
             bp = base_px[x, y]
             cp = curr_px[x, y]
 
-            if pixel_diff(bp, cp, tolerance):
+            if y >= ignore_top and pixel_diff(bp, cp, tolerance):
                 diff_px[x, y] = (255, 0, 255, 255)  # Bright magenta
                 diff_count += 1
             else:
-                # Dimmed original
+                # Dimmed original (header band y<ignore_top is always ignored)
                 diff_px[x, y] = (cp[0] // 3, cp[1] // 3, cp[2] // 3, 255)
 
     diff_img.save(output_path)
@@ -192,6 +198,11 @@ def main():
     parser.add_argument("--current", type=str, help="Directory containing current comparison PNGs")
     parser.add_argument("--output", type=str, help="Output directory for diff images (default: same as --dir or --current)")
     parser.add_argument("--tolerance", type=int, default=0, help="Per-channel tolerance (0 = exact match)")
+    parser.add_argument("--ignore-top", type=int, default=41,
+                        help="Ignore the top N rows of each comparison image -- the column/config "
+                             "header label band (incl. its antialiased bottom edge), which renders "
+                             "with non-deterministic GDI text antialiasing and is not a font-output "
+                             "change (default: 41; use 0 for full image)")
     parser.add_argument("--prefix", type=str, default="main_", help="Baseline filename prefix (default: main_)")
     args = parser.parse_args()
 
@@ -215,6 +226,7 @@ def main():
     print(f"Current:  {current_dir}")
     print(f"Output:   {output_dir}")
     print(f"Tolerance: {args.tolerance} per channel")
+    print(f"Ignore top: {args.ignore_top} rows (header label band)")
     print()
 
     any_differences = False
@@ -231,7 +243,7 @@ def main():
         diff_name = f"diff_{filename}"
         output_path = output_dir / diff_name
 
-        diffs, pixels = generate_diff(baseline_path, current_path, output_path, label, args.tolerance)
+        diffs, pixels = generate_diff(baseline_path, current_path, output_path, label, args.tolerance, args.ignore_top)
         if pixels > 0:
             total_diffs += diffs
             total_pixels += pixels
@@ -261,7 +273,7 @@ def main():
         for baseline_path, current_path, label in per_font_pairs:
             diff_name = f"diff_{current_path.name}"
             output_path = output_dir / diff_name
-            diffs, pixels = generate_diff(baseline_path, current_path, output_path, label, args.tolerance)
+            diffs, pixels = generate_diff(baseline_path, current_path, output_path, label, args.tolerance, args.ignore_top)
             if pixels > 0:
                 pf_diffs += diffs
                 pf_pixels += pixels

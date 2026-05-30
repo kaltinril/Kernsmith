@@ -8,8 +8,9 @@
 *.userosscache
 *.sln.docstates
 
-# Claude Code local settings
+# Claude Code local settings and runtime state
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

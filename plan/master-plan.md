@@ -100,6 +100,7 @@ Output Layer
 | 95 | [Performance Optimization & Bug Fixes](phase-95-performance-and-bugs.md) | Fix confirmed bugs (outline field, batch encoding, options mutation) and optimize generation performance | Partial |
 | 99 | [BMFont Parity Remaining Gaps](phase-99-bmfont-parity-gaps.md) | Investigate and close remaining metrics differences from Phase 78BB | Planning |
 | 100 | [Hiero Advanced Features](phase-100-hiero-advanced-features.md) | Advanced Hiero features requiring new KernSmith properties | Future |
+| 105 | [Text Layout Engine](done/phase-105-text-layout-engine.md) | Core text layout engine + framework rendering examples; pixel format helpers resolved | Complete |
 | 110 | [Post-Processing Enhancements](phase-110-post-processing-enhancements.md) | Exploratory plan for post-processing pipeline enhancements | Exploratory |
 | 111 | [Texture Fill for Glyphs](phase-111-texture-fill.md) | Exploratory plan for texture/pattern fill effects on glyphs | Exploratory |
 | 150 | [Deferred Rasterizer Issues](phase-150-deferred-rasterizer-issues.md) | Color fonts, variable fonts, native DW kerning, GDI MatchCharHeight bug (deferred from Phase 78G) | Planning |

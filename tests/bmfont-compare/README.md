@@ -106,6 +106,11 @@ Compares baseline vs current output across three categories:
 
 Identical pixels are dimmed, different pixels are bright magenta (#FF00FF).
 
+The top **41 rows** of each comparison image (the `--ignore-top` default) are the
+column/config **header label band**. That text is drawn with GDI/DirectWrite
+antialiasing that varies run-to-run, so it is excluded from the diff count — those
+rows are not font output. Pass `--ignore-top 0` to compare the full image.
+
 ```bash
 # Full regression check: PNGs + per-font PNGs + FNT metadata
 python tests/bmfont-compare/diff_comparisons.py --dir tests/bmfont-compare/output
@@ -115,7 +120,14 @@ python tests/bmfont-compare/diff_comparisons.py --baseline dir_a --current dir_b
 
 # With per-channel tolerance (e.g., for antialiasing differences)
 python tests/bmfont-compare/diff_comparisons.py --dir tests/bmfont-compare/output --tolerance 1
+
+# Compare the full image including the header band
+python tests/bmfont-compare/diff_comparisons.py --dir tests/bmfont-compare/output --ignore-top 0
 ```
+
+> Note: even with the header excluded, GDI/DirectWrite glyph rendering has minor
+> run-to-run subpixel antialiasing jitter (a handful of pixels per font). Use
+> `--tolerance 1` to treat that as identical; `.fnt` metadata is always compared exactly.
 
 Exit codes: `0` = all identical, `1` = differences found, `2` = error.
 
