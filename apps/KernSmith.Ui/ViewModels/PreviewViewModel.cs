@@ -56,12 +56,9 @@ public class PreviewViewModel : ViewModel
 
             pages.Add(new PreviewPage
             {
+                Page = page,
                 PageIndex = i,
-                PixelData = page.PixelData,
-                Width = page.Width,
-                Height = page.Height,
-                Label = $"Page {i} ({page.Width}x{page.Height})",
-                IsRgba = page.Format == PixelFormat.Rgba32
+                Label = $"Page {i} ({page.Width}x{page.Height})"
             });
         }
 

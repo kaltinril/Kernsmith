@@ -722,19 +722,14 @@ public class PreviewPanel : Panel
                 else
                 {
                     // Grayscale atlas: pixel luminance IS the alpha channel.
-                    // Remap to (255,255,255,L) so glyph pixels are white with
-                    // correct alpha and background is transparent.
+                    // GetRgbaPixelData() remaps to (255,255,255,L) — the same
+                    // white-with-alpha bytes downstream users get — so glyph pixels
+                    // are white with correct alpha and the background is transparent.
                     // Cached so conversion only happens once per generation.
                     if (!_sampleTextureCache.TryGetValue(page.PageIndex, out var tex))
                     {
                         tex = new Texture2D(_graphicsDevice, page.Width, page.Height);
-                        var pixels = new Color[page.Width * page.Height];
-                        for (int i = 0; i < page.PixelData.Length; i++)
-                        {
-                            var alpha = page.PixelData[i];
-                            pixels[i] = new Color((byte)255, (byte)255, (byte)255, alpha);
-                        }
-                        tex.SetData(pixels);
+                        tex.SetData(page.GetRgbaPixelData());
                         _sampleTextureCache[page.PageIndex] = tex;
                     }
                     _atlasPageTextures.Add(tex);
@@ -830,55 +825,13 @@ public class PreviewPanel : Panel
     }
 
     /// <summary>Creates a Texture2D directly from raw pixel data, avoiding PNG encode/decode.
-    /// RGBA data is premultiplied to match MonoGame's expected format for alpha blending.</summary>
+    /// Uses the library's premultiplied-RGBA helper so the preview uploads the exact
+    /// same bytes downstream users do; MonoGame's default BlendState.AlphaBlend expects
+    /// premultiplied textures (without it, shadows and anti-aliased edges render wrong).</summary>
     private Texture2D CreateTextureFromPixels(PreviewPage page)
     {
         var tex = new Texture2D(_graphicsDevice, page.Width, page.Height);
-        if (page.IsRgba)
-        {
-            // Premultiply alpha — MonoGame's default BlendState.AlphaBlend expects
-            // premultiplied textures. Without this, semi-transparent pixels (shadows,
-            // anti-aliased edges) render incorrectly.
-            var data = new byte[page.PixelData.Length];
-            for (int i = 0; i < data.Length; i += 4)
-            {
-                var a = page.PixelData[i + 3];
-                if (a == 255)
-                {
-                    data[i] = page.PixelData[i];
-                    data[i + 1] = page.PixelData[i + 1];
-                    data[i + 2] = page.PixelData[i + 2];
-                    data[i + 3] = 255;
-                }
-                else if (a == 0)
-                {
-                    // Leave as zero (transparent black)
-                }
-                else
-                {
-                    data[i] = (byte)(page.PixelData[i] * a / 255);
-                    data[i + 1] = (byte)(page.PixelData[i + 1] * a / 255);
-                    data[i + 2] = (byte)(page.PixelData[i + 2] * a / 255);
-                    data[i + 3] = a;
-                }
-            }
-            tex.SetData(data);
-        }
-        else
-        {
-            // Grayscale: expand 1-byte-per-pixel to RGBA for the GPU
-            var rgba = new byte[page.Width * page.Height * 4];
-            for (int i = 0; i < page.PixelData.Length; i++)
-            {
-                var v = page.PixelData[i];
-                var j = i * 4;
-                rgba[j] = v;
-                rgba[j + 1] = v;
-                rgba[j + 2] = v;
-                rgba[j + 3] = 255;
-            }
-            tex.SetData(rgba);
-        }
+        tex.SetData(page.GetPremultipliedRgbaPixelData());
         return tex;
     }
 
