@@ -85,6 +85,20 @@ byte[] pngData = result.GetPngData(0);
 
 AOT compilation (`RunAOTCompilation=true`) is recommended for production performance.
 
+### Native AOT and trimming
+
+Backend auto-discovery is reflection-based and **does not work under Native AOT or trimming** -- the backend may be trimmed away or cannot be resolved by name, so generation fails with a "backend is not registered" error. You must register a backend explicitly. Use **StbTrueType**, the only AOT-compatible backend (pure C#, no native dependencies):
+
+```csharp
+using System.Runtime.CompilerServices;
+using KernSmith.Rasterizers.StbTrueType;
+
+// Force the backend to load and register; the typeof reference prevents trimming.
+RuntimeHelpers.RunClassConstructor(typeof(StbTrueTypeRasterizer).TypeHandle);
+```
+
+See the [rasterizers documentation](https://jswartwood.github.io/kernsmith/rasterizers/) for details.
+
 ## Installation
 
 ```

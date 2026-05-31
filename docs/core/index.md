@@ -48,6 +48,20 @@ The output of font generation. Provides access to:
 - `.ToFile()` -- write all output files to disk
 - `.Model` -- the underlying <xref:KernSmith.Output.Model.BmFontModel> data
 
+### AtlasPage
+
+Each entry in `BmFontResult.Pages` is an <xref:KernSmith.Atlas.AtlasPage> exposing the raw `PixelData`, `Width`, `Height`, `PageIndex`, and `Format` (<xref:KernSmith.Atlas.PixelFormat>: `Rgba32` or `Grayscale8`).
+
+For encoded image bytes, a page provides `.ToPng()`, `.ToTga()`, and `.ToDds()`.
+
+For direct GPU upload, the following helpers convert a page to a specific pixel layout regardless of its native format. Each returns a fresh, caller-owned buffer:
+
+| Method | Output | Use case |
+|--------|--------|----------|
+| `GetRgbaPixelData()` | 4 bytes/pixel R,G,B,A (grayscale -> 255,255,255,v) | Straight-alpha GPU upload (e.g. MonoGame `Texture2D.SetData`) |
+| `GetAlpha8PixelData()` | 1 byte/pixel alpha coverage | Single-channel/coverage textures, custom shaders |
+| `GetPremultipliedRgbaPixelData()` | 4 bytes/pixel premultiplied R,G,B,A | Premultiplied-alpha blend pipelines (MonoGame default `BlendState.AlphaBlend`, WPF) |
+
 ### FontGeneratorOptions
 
 Configuration for the generation pipeline: font size, character set, effects (outline, gradient, shadow), atlas settings, SDF, super sampling, variable font axes, and more.

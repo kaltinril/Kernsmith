@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `AtlasPage.GetRgbaPixelData()` — returns RGBA32 pixel bytes (grayscale pages expand to `255,255,255,v` alpha-coverage layout) for straight-alpha GPU upload
+- `AtlasPage.GetAlpha8PixelData()` — returns 8-bit alpha-coverage bytes (one byte per pixel) for single-channel/coverage textures and custom shaders
+- `AtlasPage.GetPremultipliedRgbaPixelData()` — returns premultiplied RGBA32 bytes for premultiplied-alpha blend pipelines (e.g. MonoGame's default `BlendState.AlphaBlend`)
+
+### Changed
+
+- Core `KernSmith` library is now Native AOT– and trimming-compatible (`IsAotCompatible` plus trim/AOT analyzers enabled) (Phase 90)
+- Assembly version is now read via a compile-time constant instead of runtime assembly reflection
+- Under AOT/trimming, a rasterizer backend must be registered explicitly because auto-discovery is reflection-based — StbTrueType recommended. See [Native AOT and Trimming](docs/rasterizers/index.md#native-aot-and-trimming)
+
 ## [0.13.0] - 2026-05-04
 
 ### Changed

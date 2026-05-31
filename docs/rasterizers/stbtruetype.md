@@ -52,6 +52,41 @@ This is novel work -- no other StbTrueTypeSharp consumer (including FontStashSha
 - No system font loading -- provide font file bytes directly
 - TTF only (no OTF/CFF outlines, no WOFF/WOFF2)
 
+## Native AOT and Trimming
+
+StbTrueType is the **recommended backend for Native AOT and trimming** -- it is pure C#, has no native dependencies, and is the only backend marked AOT-compatible.
+
+KernSmith's auto-discovery resolves backends by name via reflection, which **does not work under Native AOT or trimming**: the backend may be trimmed away or cannot be resolved by name, so generation fails with a "backend is not registered" error. You must register the backend explicitly.
+
+Force the backend assembly to load so its module initializer registers the rasterizer, and reference the public `StbTrueTypeRasterizer` type by name so it is not trimmed:
+
+```csharp
+using System.Runtime.CompilerServices;
+using KernSmith;
+using KernSmith.Rasterizers.StbTrueType;
+
+// Required under Native AOT / trimming -- auto-discovery cannot find the backend.
+RuntimeHelpers.RunClassConstructor(typeof(StbTrueTypeRasterizer).TypeHandle);
+
+var result = BmFont.Generate("path/to/font.ttf", new FontGeneratorOptions
+{
+    Size = 32,
+    Characters = CharacterSet.Ascii,
+    Backend = RasterizerBackend.StbTrueType
+});
+```
+
+Or register a factory directly through the public `RasterizerFactory` API:
+
+```csharp
+using KernSmith.Rasterizer;
+using KernSmith.Rasterizers.StbTrueType;
+
+RasterizerFactory.Register(RasterizerBackend.StbTrueType, () => new StbTrueTypeRasterizer());
+```
+
+See the [rasterizers overview](index.md#native-aot-and-trimming) for more detail. The FreeType, GDI, and DirectWrite backends use native interop and are not targeted for AOT.
+
 ## When to Use
 
 Use StbTrueType when you need bitmap font generation on platforms where native FreeType binaries are unavailable: Blazor WebAssembly, NativeAOT trimmed deployments, iOS AOT, serverless containers, or any environment where zero native dependencies is a requirement. For full-featured rendering, use the FreeType backend instead.

@@ -28,4 +28,16 @@ var result = BmFont.Generate("path/to/font.ttf", new FontGeneratorOptions
 // result.Pages contains the texture atlas pages
 ```
 
+## Native AOT and trimming
+
+KernSmith normally auto-discovers a rasterizer backend, but this uses reflection and **does not work under Native AOT or trimming** -- generation fails with a "backend is not registered" error unless you register a backend explicitly. Use **StbTrueType** (`KernSmith.Rasterizers.StbTrueType`), the only AOT-compatible backend (pure C#, no native dependencies):
+
+```csharp
+using System.Runtime.CompilerServices;
+using KernSmith.Rasterizers.StbTrueType;
+
+// Force the backend to load and register; the typeof reference prevents trimming.
+RuntimeHelpers.RunClassConstructor(typeof(StbTrueTypeRasterizer).TypeHandle);
+```
+
 See the [root README](../../README.md) for full project documentation.
