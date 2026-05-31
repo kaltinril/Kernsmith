@@ -1,4 +1,3 @@
-using System.Reflection;
 using KernSmith.Atlas;
 using KernSmith.Font.Models;
 using KernSmith.Output.Model;
@@ -208,10 +207,7 @@ internal static class BmFontModelBuilder
 
     private static ExtendedMetadata? BuildExtendedMetadata(FontGeneratorOptions options)
     {
-        var version = typeof(BmFontModelBuilder).Assembly
-            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
-            ?? typeof(BmFontModelBuilder).Assembly.GetName().Version?.ToString()
-            ?? "0.0.0";
+        var version = KernSmithVersionInfo.Version;
 
         int? sdfSpread = options.Sdf ? 8 : null; // FreeType SDF default spread
 

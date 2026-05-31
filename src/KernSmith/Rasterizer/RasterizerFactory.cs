@@ -91,10 +91,16 @@ public static class RasterizerFactory
         }
     }
 
+    // Auto-discovery resolves optional rasterizer backend assemblies by name via reflection.
+    // Backends are out-of-scope for trimming/AOT (Phase 90); under those modes consumers
+    // register backends explicitly via Register(). Suppress locally so the warning is
+    // contained at this single reflection site and not propagated to the public API surface.
     [UnconditionalSuppressMessage("Trimming", "IL2057",
-        Justification = "Rasterizer backend assemblies are optional runtime dependencies loaded by name.")]
+        Justification = "Backend assemblies are optional runtime dependencies loaded by name; not present under trimming where explicit Register() is used.")]
     [UnconditionalSuppressMessage("Trimming", "IL2075",
-        Justification = "Registration types are in rasterizer backend assemblies that are not trimmed.")]
+        Justification = "Registration types live in optional backend assemblies that are not trimmed; explicit Register() is the trim/AOT path.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050",
+        Justification = "Reflection-based auto-discovery is unsupported under AOT; consumers use explicit Register() instead.")]
     private static void DiscoverBackends()
     {
         if (_discoveryComplete)

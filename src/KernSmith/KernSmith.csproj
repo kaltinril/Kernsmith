@@ -2,6 +2,9 @@
 
   <PropertyGroup>
     <IsPackable>true</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>KernSmith</PackageId>
     <Description>Generate BMFont-compatible bitmap font atlases from TTF/OTF/WOFF files. Features layered effects (outline, gradient, shadow), color font support (COLRv0/CPAL, sbix, CBDT), variable fonts, SDF rendering, font subsetting, channel packing, super sampling, TGA/DDS/PNG output, and extended metadata. In-memory pipeline with text/XML/binary .fnt output. Includes bitmap post-processors (bold, italic). Supports pluggable rasterizer backends (FreeType, GDI, DirectWrite, and StbTrueType available as separate packages).</Description>
@@ -27,5 +30,22 @@
     <PackageReference Include="StbImageSharp" />
     <PackageReference Include="StbImageWriteSharp" />
   </ItemGroup>
+
+  <!-- Phase 90 (AOT): emit the package version as a compile-time constant so
+       BmFontModelBuilder can read it without AOT-unsafe assembly reflection.
+       The path is computed inside the target so $(IntermediateOutputPath) is
+       fully resolved to obj/<config>/<tfm>/ (which is excluded from the default
+       compile glob, avoiding a duplicate-source CS2002 warning). -->
+  <Target Name="GenerateKernSmithVersionConstant" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <GeneratedVersionFile>$(IntermediateOutputPath)KernSmithVersion.g.cs</GeneratedVersionFile>
+      <KernSmithVersionSource>namespace KernSmith%3B internal static class KernSmithVersionInfo { internal const string Version = "$(Version)"%3B }</KernSmithVersionSource>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(GeneratedVersionFile)" Lines="$(KernSmithVersionSource)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <Compile Include="$(GeneratedVersionFile)" />
+      <FileWrites Include="$(GeneratedVersionFile)" />
+    </ItemGroup>
+  </Target>
 
 </Project>
