@@ -190,8 +190,8 @@ kernsmith generate -f font.ttf -s 32 -o output/myfont
 
 | Flag | Description |
 |------|-------------|
-| `--config <path>` | Load settings from a .bmfc configuration file |
-| `--save-config <path>` | Save current settings to a .bmfc file |
+| `--config <path>` | Load settings from a `.bmfc` or `.hiero` configuration file (format auto-detected by inspecting file content, with the extension used only as a fallback when the content is inconclusive) |
+| `--save-config <path>` | Save current settings to a `.bmfc` or `.hiero` file (format auto-detected by extension) |
 | `--dry-run` | Show what would be generated without writing files |
 | `--time` | Print actual generation time (excludes CLI startup) |
 | `--profile` | Print stage-level timing breakdown (font parsing, rasterization, packing, etc.) |
@@ -203,9 +203,9 @@ kernsmith generate -f font.ttf -s 32 -o output/myfont
 
 ### init
 
-Generate a `.bmfc` configuration file from CLI flags without rendering a font. This lets you scaffold a config, tweak it by hand, then run `kernsmith generate --config`.
+Generate a `.bmfc` or `.hiero` configuration file from CLI flags without rendering a font. This lets you scaffold a config, tweak it by hand, then run `kernsmith generate --config`.
 
-The `init` command accepts all the same flags as `generate` (font source, size, effects, atlas settings, etc.). The `-o` flag sets the output `.bmfc` file path instead of the font output path.
+The `init` command accepts all the same flags as `generate` (font source, size, effects, atlas settings, etc.). The `-o` flag sets the output config file path instead of the font output path. The format is chosen by the file extension — use `.hiero` to write a Hiero config; a path with no extension defaults to `.bmfc`. Any explicit extension is respected as-is (kept verbatim, not suffixed with `.bmfc`), and BMFont content is written for any non-`.hiero` extension.
 
 ```
 kernsmith init [options]
@@ -220,6 +220,9 @@ kernsmith init --system-font "Arial" -s 48 --outline 3,0055AA -o my-font.bmfc
 
 # Create a config from a font file with extended Latin
 kernsmith init -f fonts/Roboto-Regular.ttf -s 24 -c latin --kerning -o roboto.bmfc
+
+# Write a Hiero (.hiero / libGDX) config instead of .bmfc
+kernsmith init --system-font "Arial" -s 32 -o my-font.hiero
 
 # Then generate from the config (with optional overrides)
 kernsmith generate --config roboto.bmfc
@@ -346,22 +349,25 @@ kernsmith info RobotoFlex.ttf --json
 
 ### batch
 
-Process multiple `.bmfc` config files in a single invocation. Output paths are checked for collisions before any generation starts. A failed job does not stop other jobs from running.
+Process multiple `.bmfc` and/or `.hiero` config files in a single invocation. Each file's format is auto-detected by inspecting its content (the extension is used only as a fallback when the content is inconclusive), so mixed batches are allowed. Output paths are checked for collisions before any generation starts. A failed job does not stop other jobs from running.
 
 ```
-kernsmith batch <config1.bmfc> [config2.bmfc ...] [options]
+kernsmith batch <config1.bmfc> [config2.hiero ...] [options]
 ```
 
 | Flag | Description |
 |------|-------------|
-| `<paths>` | One or more `.bmfc` config file paths (supports glob patterns) |
-| `--jobs <file>` | Text file listing `.bmfc` paths (one per line, `#` comments) |
+| `<paths>` | One or more `.bmfc` / `.hiero` config file paths (supports glob patterns) |
+| `--jobs <file>` | Text file listing config paths (one per line, `#` comments) |
 | `--parallel <n>` | Max parallel jobs (default: 1, 0 = all CPU cores) |
 | `--time` | Show total elapsed time in summary |
 
 ```
 # Process all .bmfc files in a directory with 4 parallel jobs
 kernsmith batch fonts/*.bmfc --parallel 4 --time
+
+# Mixed-format batch: process both .bmfc and .hiero configs
+kernsmith batch configs/*.bmfc configs/*.hiero --parallel 4
 
 # Process from a jobs file using all CPU cores
 kernsmith batch --jobs jobs.txt --parallel 0
@@ -470,7 +476,7 @@ kernsmith generate -f font.ttf -s 48 --outline 2,000000 --gradient FFFFFF,888888
 
 ## Config Files
 
-Settings can be stored in `.bmfc` files (INI-like format) and loaded with `--config`. Use `--save-config` to export your current settings.
+Settings can be stored in `.bmfc` files (INI-like format) or `.hiero` files (Hiero/libGDX `key=value` format) and loaded with `--config`. Use `--save-config` to export your current settings. When loading, the format is auto-detected by inspecting the file content (the extension is used only as a fallback when the content is inconclusive); when saving, the format is selected from the file extension.
 
 ### Sample .bmfc File
 
@@ -529,23 +535,54 @@ format = text
 path = output/roboto
 ```
 
+### Sample .hiero File
+
+Hiero (`.hiero`) is the libGDX font tool's flat `key=value` format. KernSmith reads and writes the fields it can map; unsupported settings (channel packing, variable axes, super sampling, color fonts) are dropped on export.
+
+```
+# mygame-font.hiero
+font.name=Arial
+font.size=32
+font.bold=false
+font.italic=false
+font.mono=false
+
+pad.top=1
+pad.right=1
+pad.bottom=1
+pad.left=1
+
+glyph.page.width=512
+glyph.page.height=512
+glyph.text=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
+
+render_type=2
+
+effect.class=com.badlogic.gdx.tools.hiero.unicodefont.effects.ColorEffect
+effect.Color=ffffff
+```
+
 ### Using Config Files
 
 ```
-# Generate from a config file
+# Generate from a .bmfc config file
 kernsmith generate --config mygame-font.bmfc
+
+# Generate from a .hiero config file (format auto-detected by file content)
+kernsmith generate --config mygame-font.hiero
 
 # Config + CLI overrides (CLI flags take precedence)
 kernsmith generate --config mygame-font.bmfc -s 48 --format xml
 
-# Save current settings to a config file
+# Save current settings to a config file (.bmfc or .hiero)
 kernsmith generate -f font.ttf -s 32 --outline 2 --save-config my-settings.bmfc
+kernsmith generate -f font.ttf -s 32 --outline 2 --save-config my-settings.hiero
 
 # Load, tweak, and re-save
 kernsmith generate --config old.bmfc -s 64 --save-config updated.bmfc
 ```
 
-Lines starting with `#` are comments. Boolean values accept `true`/`false`, `1`/`0`, or `yes`/`no`. Paths in the config file are resolved relative to the config file's directory.
+Paths in the config file are resolved relative to the config file's directory. In `.bmfc` files, lines starting with `#` are comments and boolean values accept `true`/`false`, `1`/`0`, or `yes`/`no`. `.hiero` files use UTF-8 `key=value` lines with blank lines as separators.
 
 ## Output Formats
 

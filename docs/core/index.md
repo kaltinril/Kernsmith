@@ -30,7 +30,7 @@ The main entry point. Provides static methods for font generation:
 
 - <xref:KernSmith.BmFont>.Generate() -- generate from a font file path or byte array
 - <xref:KernSmith.BmFont>.GenerateFromSystem() -- generate from a system-installed font
-- <xref:KernSmith.BmFont>.FromConfig() -- generate from a `.bmfc` configuration file
+- <xref:KernSmith.BmFont>.FromConfig() -- generate from a `.bmfc` or `.hiero` configuration file (format auto-detected by inspecting file content, with the extension used only as a fallback when the content is inconclusive)
 - <xref:KernSmith.BmFont>.Builder() -- start a fluent builder chain
 - <xref:KernSmith.BmFont>.Load() -- load an existing `.fnt` file with atlas pages
 - <xref:KernSmith.BmFont>.GenerateBatch() -- parallel batch generation
@@ -46,7 +46,12 @@ The output of font generation. Provides access to:
 - `.Pages` -- atlas page pixel data and dimensions
 - `.GetPngData()`, `.GetTgaData()`, `.GetDdsData()` -- encoded atlas images
 - `.ToFile()` -- write all output files to disk
+- `.ToBmfc()`, `.ToHiero()` -- export an equivalent `.bmfc` or Hiero `.hiero` (libGDX) config string
 - `.Model` -- the underlying <xref:KernSmith.Output.Model.BmFontModel> data
+
+### Config Formats
+
+KernSmith reads and writes both BMFont `.bmfc` and Hiero `.hiero` (libGDX) configuration files. `ConfigFormatFactory.ReadConfig()` dispatches to the correct format by inspecting the file content (the extension is used only as a fallback when the content is inconclusive), while `ConfigFormatFactory.WriteConfig()` selects the format from the file extension; both return/accept a `BmfcConfig`. The format-specific `BmfcConfigReader`/`BmfcConfigWriter` and `HieroConfigReader`/`HieroConfigWriter` (all in the `KernSmith` namespace) are also available. Hiero is a lossy target for some KernSmith features (channel packing, variable axes, super sampling, color fonts have no `.hiero` equivalent).
 
 ### AtlasPage
 

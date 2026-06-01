@@ -168,11 +168,13 @@ Once you have generated a font you are happy with:
 
 ### Save Project
 
-File > Save Project (Ctrl+S) saves all current settings to a `.bmfc` file: font path, size, effects, atlas config, character selection, and output format. The window title shows an asterisk (*) when there are unsaved changes.
+File > Save Project (Ctrl+S) saves all current settings to a config file: font path, size, effects, atlas config, character selection, and output format. The window title shows an asterisk (*) when there are unsaved changes.
+
+You can save to either a BMFont `.bmfc` or a libGDX Hiero `.hiero` config; the format is chosen by the file extension you pick in the save dialog. `.bmfc` is KernSmith's native format and is lossless. `.hiero` is provided for interoperability with libGDX Hiero, but some KernSmith-only settings (such as channel packing, variable font axes, super sampling, and color fonts) have no Hiero equivalent -- when you save to `.hiero` the UI shows a warning listing the settings that will be dropped.
 
 ### Load Project
 
-File > Load Project opens a `.bmfc` file and restores all settings. You can also drag a `.bmfc` file onto the window. If the original font file has moved, you will need to re-browse for it.
+File > Load Project opens a `.bmfc` or `.hiero` config file and restores all settings. The format is detected by inspecting the file's content, so either format loads correctly regardless of its extension. You can also drag a `.bmfc` or `.hiero` file onto the window. If the original font file has moved, you will need to re-browse for it.
 
 ## Keyboard Shortcuts
 

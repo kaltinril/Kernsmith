@@ -3,7 +3,9 @@ using System.Globalization;
 namespace KernSmith;
 
 /// <summary>
-/// Reads .bmfc configuration files in BMFont flat key=value format into <see cref="BmfcConfig"/>.
+/// Reads BMFont/AngelCode <c>.bmfc</c> configuration files (flat key=value format) into <see cref="BmfcConfig"/>.
+/// This reader is BMFont-specific; to read either a <c>.bmfc</c> or a libGDX Hiero <c>.hiero</c> file with
+/// automatic content-based format detection, use <see cref="ConfigFormatFactory.ReadConfig"/> instead.
 /// </summary>
 public static class BmfcConfigReader
 {

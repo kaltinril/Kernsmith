@@ -55,6 +55,28 @@ Console.WriteLine($"  Written to: {configOutputPath}.fnt + .png");
 Console.WriteLine();
 
 // ============================================================
+// 2b. FromConfig — load a .hiero (Hiero/libGDX) file and generate
+// ============================================================
+// FromConfig auto-detects the format by inspecting the file content (the
+// extension is used only as a fallback when the content is inconclusive),
+// so the same call works for .bmfc and .hiero configs.
+Console.WriteLine("=== 2b. FromConfig (.hiero) ===");
+
+var hieroPath = Path.Combine(samplesDir, "sample.hiero");
+if (File.Exists(hieroPath))
+{
+    var hieroResult = BmFont.FromConfig(hieroPath);
+
+    var hieroOutputPath = Path.Combine(outputDir, "from-hiero");
+    hieroResult.ToFile(hieroOutputPath, OutputFormat.Text);
+
+    Console.WriteLine($"  Loaded config: {hieroPath}");
+    Console.WriteLine($"  Generated {hieroResult.Model.Characters.Count} glyphs");
+    Console.WriteLine($"  Written to: {hieroOutputPath}.fnt + .png");
+}
+Console.WriteLine();
+
+// ============================================================
 // 3. Builder pattern — fluent API with effects
 // ============================================================
 Console.WriteLine("=== 3. Builder Pattern (outline + shadow + gradient) ===");
@@ -112,6 +134,10 @@ for (var i = 0; i < pngPages.Length; i++)
 // You can also export the .bmfc config that reproduces this result.
 var bmfcContent = memResult.ToBmfc();
 Console.WriteLine($"  ToBmfc length: {bmfcContent.Length} chars");
+
+// Or export an equivalent Hiero (.hiero) config string.
+var hieroContent = memResult.ToHiero();
+Console.WriteLine($"  ToHiero length: {hieroContent.Length} chars");
 Console.WriteLine();
 
 Console.WriteLine("=== All samples completed successfully. ===");

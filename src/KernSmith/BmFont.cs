@@ -916,18 +916,18 @@ public static class BmFont
         }
     }
 
-    /// <summary>Generates a bitmap font from a .bmfc config file.</summary>
-    /// <param name="bmfcPath">Path to the .bmfc configuration file.</param>
+    /// <summary>Generates a bitmap font from a config file, auto-detecting .bmfc or .hiero format.</summary>
+    /// <param name="bmfcPath">Path to a configuration file. Despite the name, this accepts both <c>.bmfc</c> and <c>.hiero</c> files (auto-detected by inspecting the file content; the extension is used only as a fallback when the content is inconclusive).</param>
     /// <returns>The generated bitmap font result.</returns>
     public static BmFontResult FromConfig(string bmfcPath)
     {
         ArgumentNullException.ThrowIfNull(bmfcPath);
-        var config = BmfcConfigReader.Read(bmfcPath);
+        var config = ConfigFormatFactory.ReadConfig(bmfcPath);
         return FromConfig(config);
     }
 
-    /// <summary>Generates a bitmap font from a parsed .bmfc config.</summary>
-    /// <param name="config">The parsed .bmfc configuration.</param>
+    /// <summary>Generates a bitmap font from a parsed configuration (from a <c>.bmfc</c> or <c>.hiero</c> file).</summary>
+    /// <param name="config">The parsed configuration. <see cref="BmfcConfig"/> is the shared model for both the BMFont <c>.bmfc</c> and libGDX Hiero <c>.hiero</c> formats.</param>
     /// <returns>The generated bitmap font result.</returns>
     public static BmFontResult FromConfig(BmfcConfig config)
     {

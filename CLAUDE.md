@@ -41,6 +41,21 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 3. **Never hardcode credentials** — use environment variables or `.env` + appropriate library
 4. **Test with real data** — test font is at `tests/KernSmith.Tests/Fixtures/Roboto-Regular.ttf`
 
+### Regression & Output Comparison (IMPORTANT)
+
+When the user asks to **"run a comparison"**, **"regress"**, **"a regression"**, or refers to **"the comparison script"**, they mean the purpose-built harness at **`tests/bmfont-compare/`** — NOT an ad-hoc byte/hash check. Do not improvise; run the real tool:
+
+```bash
+# Full main-vs-branch regression (stash → checkout base → generate → checkout branch → regenerate → diff)
+python tests/bmfont-compare/regression_check.py
+```
+
+- It runs **`GenerateAll`** across every backend (FreeType, GDI, DirectWrite, StbTrueType, + BMFont64.exe if present) over the `.bmfc` configs in `tests/bmfont-compare/gum-bmfont/`, then runs **`diff_comparisons.py`**.
+- Outputs land in `tests/bmfont-compare/output/`: the `comparison.png`…`comparison4.png` side-by-side images, the per-font `comparison-*.png`, and the **`diff_comparison*.png`** magenta-highlighted pixel diffs (bright magenta = differing pixels). FNT metadata is diffed line-by-line (skipping the version line).
+- Exit codes: `0` = identical, `1` = differences found, `2` = error. Use `--tolerance 1` for GDI/DirectWrite antialiasing jitter; `--skip-generate` to re-diff existing baselines.
+- **Requirements**: Windows (GDI/DirectWrite are Windows-only), .NET 10, Python 3 + Pillow (`pip install Pillow`). BMFont64.exe optional (`c:\tools\bmfont64.exe` or PATH).
+- See `tests/bmfont-compare/README.md` for the per-tool breakdown.
+
 ### Key Conventions
 
 - **Language**: C# / .NET 8.0 + 10.0 (multi-target: `net8.0;net10.0`)
@@ -79,4 +94,5 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 | Data types (source of truth) | `plan/done/plan-data-types.md` |
 | Implementation order | `plan/done/plan-implementation-order.md` |
 | Tests | `tests/KernSmith.Tests/` |
+| Regression/output comparison | `tests/bmfont-compare/regression_check.py` (see Regression & Output Comparison above) |
 | CI/CD | `.github/workflows/` |

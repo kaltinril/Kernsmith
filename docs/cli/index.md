@@ -31,8 +31,8 @@ kernsmith generate --system-font "Arial" -s 32
 | Command | Description |
 |---------|-------------|
 | [generate](commands.md#generate) | Generate BMFont files from a font (main command) |
-| [init](commands.md#init) | Scaffold a `.bmfc` config file without rendering |
-| [batch](commands.md#batch) | Process multiple `.bmfc` files in one invocation |
+| [init](commands.md#init) | Scaffold a `.bmfc` or `.hiero` config file without rendering |
+| [batch](commands.md#batch) | Process multiple `.bmfc` / `.hiero` files in one invocation |
 | [benchmark](commands.md#benchmark) | Benchmark generation performance |
 | [inspect](commands.md#inspect) | Inspect an existing `.fnt` file |
 | [convert](commands.md#convert) | Convert between `.fnt` formats (text, XML, binary) |
@@ -44,14 +44,17 @@ See the [Command Reference](commands.md) for full details on every command and f
 
 ## Configuration Files
 
-Settings can be stored in `.bmfc` files and loaded with `--config`. Use the `init` command or `--save-config` to scaffold a config, then edit by hand.
+Settings can be stored in BMFont `.bmfc` files or Hiero `.hiero` (libGDX) files and loaded with `--config`. When loading, the format is auto-detected by inspecting the file content (the extension is used only as a fallback when the content is inconclusive). Use the `init` command or `--save-config` to scaffold a config, then edit by hand.
 
 ```bash
-# Scaffold a config
+# Scaffold a .bmfc config
 kernsmith init --system-font "Arial" -s 32 -o my-font.bmfc
 
-# Generate from it
-kernsmith generate --config my-font.bmfc
+# Or scaffold a .hiero (libGDX) config
+kernsmith init --system-font "Arial" -s 32 -o my-font.hiero
+
+# Generate from it (.bmfc or .hiero)
+kernsmith generate --config my-font.hiero
 
 # Override individual settings
 kernsmith generate --config my-font.bmfc -s 48 --format xml

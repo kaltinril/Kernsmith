@@ -9,7 +9,7 @@ namespace KernSmith.Cli.Commands;
 
 /// <summary>
 /// Generates BMFont .fnt and texture atlas files from a TTF/OTF/WOFF font, driven by CLI flags
-/// or a .bmfc configuration file.
+/// or a .bmfc/.hiero configuration file.
 /// </summary>
 internal sealed class GenerateCommand
 {
@@ -896,8 +896,8 @@ internal sealed class GenerateCommand
               --face <n>                  Face index for .ttc collections (default: 0)
 
             Configuration:
-              --config <path>             Load settings from a .bmfc configuration file
-              --save-config <path>        Save current settings to a .bmfc file
+              --config <path>             Load settings from a .bmfc or .hiero config file
+              --save-config <path>        Save current settings to a .bmfc or .hiero file
               --dry-run                   Show what would be generated without writing files
               --time                      Print generation time (excludes CLI startup)
               --profile                   Show per-stage pipeline timing breakdown
@@ -911,7 +911,7 @@ internal sealed class GenerateCommand
               kernsmith generate -f arial.ttf -s 32
               kernsmith generate -f roboto.ttf -s 48 -b -i --outline 2
               kernsmith generate -f font.ttf -s 24 --super-sample 2 --no-hinting
-              kernsmith generate --config mygame.bmfc --save-config updated.bmfc
+              kernsmith generate --config mygame.bmfc --save-config updated.hiero
             """);
     }
 }

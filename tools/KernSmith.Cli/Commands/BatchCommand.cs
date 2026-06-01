@@ -5,7 +5,7 @@ using KernSmith.Output;
 namespace KernSmith.Cli.Commands;
 
 /// <summary>
-/// Processes multiple .bmfc configuration files in a single invocation, with optional parallelism.
+/// Processes multiple .bmfc/.hiero configuration files in a single invocation, with optional parallelism.
 /// Detects output path collisions before generation and reports per-job success/failure.
 /// </summary>
 internal sealed class BatchCommand
@@ -57,7 +57,7 @@ internal sealed class BatchCommand
                     showTime = true;
                     break;
                 default:
-                    // Positional arg: treat as .bmfc path or glob pattern
+                    // Positional arg: treat as .bmfc/.hiero path or glob pattern
                     if (args[i].StartsWith('-'))
                     {
                         ConsoleOutput.WriteError($"Unknown option: {args[i]}");
@@ -111,7 +111,7 @@ internal sealed class BatchCommand
 
         if (expandedPaths.Count == 0)
         {
-            ConsoleOutput.WriteError("No .bmfc config files specified. Provide paths as arguments or use --jobs <file>.");
+            ConsoleOutput.WriteError("No .bmfc or .hiero config files specified. Provide paths as arguments or use --jobs <file>.");
             return ExitCodes.InvalidArguments;
         }
 
@@ -263,13 +263,13 @@ internal sealed class BatchCommand
     private static void ShowHelp()
     {
         Console.WriteLine("""
-            Process multiple .bmfc config files in a single invocation.
+            Process multiple .bmfc/.hiero config files in a single invocation.
 
-            Usage: kernsmith batch <config1.bmfc> [config2.bmfc ...] [options]
+            Usage: kernsmith batch <config1.bmfc> [config2.hiero ...] [options]
 
             Input:
-              <paths>                    One or more .bmfc config file paths (supports glob patterns)
-              --jobs <file>              Text file listing .bmfc paths (one per line, # comments)
+              <paths>                    One or more .bmfc/.hiero config file paths (supports glob patterns)
+              --jobs <file>              Text file listing .bmfc/.hiero paths (one per line, # comments)
 
             Options:
               --parallel <n>             Max parallel jobs (default: 1, 0 = all CPU cores)
@@ -285,7 +285,7 @@ internal sealed class BatchCommand
 
             Examples:
               kernsmith batch a.bmfc b.bmfc c.bmfc
-              kernsmith batch fonts/*.bmfc --parallel 4 --time
+              kernsmith batch fonts/*.bmfc fonts/*.hiero --parallel 4 --time
               kernsmith batch --jobs jobs.txt --parallel 0
             """);
     }

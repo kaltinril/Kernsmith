@@ -1,10 +1,13 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
 namespace KernSmith;
 
 /// <summary>
-/// Serializes <see cref="BmfcConfig"/> to standard BMFont .bmfc flat key=value format.
+/// Serializes <see cref="BmfcConfig"/> to the standard BMFont/AngelCode <c>.bmfc</c> flat key=value format.
+/// To write the libGDX Hiero <c>.hiero</c> format use <see cref="HieroConfigWriter"/>, or let
+/// <see cref="ConfigFormatFactory.WriteConfig"/> pick the writer based on the file extension.
 /// </summary>
 public static class BmfcConfigWriter
 {
@@ -48,6 +51,8 @@ public static class BmfcConfigWriter
         sb.AppendLine($"fontFile={FormatPath(config.FontFile, relativeBasePath)}");
         // .bmfc is an integer-only format; round here since FontGeneratorOptions.Size is float.
         var fontSize = (int)Math.Round(options.Size);
+        if (options.Size != Math.Round(options.Size))
+            Debug.WriteLine($"[BmfcConfigWriter] Fractional font size {options.Size.ToString(CultureInfo.InvariantCulture)} was rounded to {fontSize} for the .bmfc integer fontSize field; this is lossy.");
         if (options.MatchCharHeight)
             fontSize = -fontSize;
         sb.AppendLine($"fontSize={fontSize}");

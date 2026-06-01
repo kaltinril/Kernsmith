@@ -96,7 +96,7 @@ public class KernSmithGame : Game
             {
                 var path = args.Files[0];
                 var ext = Path.GetExtension(path).ToLowerInvariant();
-                if (ext is ".bmfc")
+                if (ext is ".bmfc" or ".hiero")
                     _mainViewModel!.LoadProjectFromPath(path);
                 else if (ext is ".ttf" or ".otf" or ".woff" or ".ttc")
                     _mainViewModel!.LoadFontFromPath(path);

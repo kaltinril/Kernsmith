@@ -136,8 +136,8 @@ kernsmith generate -f RobotoFlex.ttf -s 32 --instance "Bold"
 
 | Flag | Description |
 |------|-------------|
-| `--config <path>` | Load settings from a `.bmfc` configuration file |
-| `--save-config <path>` | Save current settings to a `.bmfc` file |
+| `--config <path>` | Load settings from a `.bmfc` or `.hiero` configuration file (format auto-detected by inspecting file content, with the extension used only as a fallback when the content is inconclusive) |
+| `--save-config <path>` | Save current settings to a `.bmfc` or `.hiero` file (format chosen by the file extension; `.hiero` writes a Hiero config, otherwise BMFont) |
 | `--dry-run` | Show what would be generated without writing files |
 | `--time` | Print actual generation time (excludes CLI startup) |
 | `--profile` | Print stage-level timing breakdown |
@@ -148,13 +148,13 @@ kernsmith generate -f RobotoFlex.ttf -s 32 --instance "Bold"
 
 ## init
 
-Generate a `.bmfc` configuration file from CLI flags without rendering a font. Accepts all the same flags as `generate`.
+Generate a `.bmfc` or `.hiero` configuration file from CLI flags without rendering a font. Accepts all the same flags as `generate`.
 
 ```
 kernsmith init [options]
 ```
 
-The `-o` flag sets the output `.bmfc` file path (default: `font.bmfc`).
+The `-o` flag sets the output config file path; the format is chosen by its extension. A `.hiero` extension writes a Hiero (libGDX) config; a path with no extension defaults to `.bmfc` (default: `font.bmfc`).
 
 ```bash
 # Scaffold a config
@@ -162,6 +162,9 @@ kernsmith init --system-font "Arial" -s 32 -o my-font.bmfc
 
 # Config with effects
 kernsmith init --system-font "Arial" -s 48 --outline 3,0055AA -o my-font.bmfc
+
+# Write a Hiero (.hiero) config instead
+kernsmith init --system-font "Arial" -s 32 -o my-font.hiero
 
 # Then generate from it
 kernsmith generate --config my-font.bmfc
@@ -171,21 +174,22 @@ kernsmith generate --config my-font.bmfc
 
 ## batch
 
-Process multiple `.bmfc` config files in a single invocation. A failed job does not stop other jobs.
+Process multiple `.bmfc` and/or `.hiero` config files in a single invocation. Each file's format is auto-detected by inspecting its content (the extension is used only as a fallback when the content is inconclusive), so mixed batches are allowed. A failed job does not stop other jobs.
 
 ```
-kernsmith batch <config1.bmfc> [config2.bmfc ...] [options]
+kernsmith batch <config1.bmfc> [config2.hiero ...] [options]
 ```
 
 | Flag | Description |
 |------|-------------|
-| `<paths>` | One or more `.bmfc` paths (supports glob patterns) |
-| `--jobs <file>` | Text file listing `.bmfc` paths (one per line, `#` comments) |
+| `<paths>` | One or more `.bmfc` / `.hiero` paths (supports glob patterns) |
+| `--jobs <file>` | Text file listing config paths (one per line, `#` comments) |
 | `--parallel <n>` | Max parallel jobs (default: 1, 0 = all CPU cores) |
 | `--time` | Show total elapsed time in summary |
 
 ```bash
 kernsmith batch fonts/*.bmfc --parallel 4 --time
+kernsmith batch configs/*.bmfc configs/*.hiero --parallel 4
 kernsmith batch --jobs jobs.txt --parallel 0
 ```
 

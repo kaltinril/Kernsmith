@@ -4,7 +4,7 @@ _layout: landing
 
 # KernSmith Documentation
 
-Cross-platform .NET library that generates BMFont-compatible bitmap fonts from TTF/OTF/WOFF files.
+Cross-platform .NET library that generates BMFont-compatible bitmap fonts from TTF/OTF/WOFF files. Reads and writes both BMFont `.bmfc` and libGDX Hiero `.hiero` configuration files.
 
 Explore the documentation sections below.
 

@@ -442,6 +442,216 @@ public class CliTests : IDisposable
         pngBytes[3].ShouldBe((byte)71);  // G
     }
 
+    // -- Phase 84: .hiero / .bmfc config format support --
+
+    [Fact]
+    public void Init_HieroExtension_WritesHieroFile()
+    {
+        // Arrange
+        var configPath = Path.Combine(_tempDir, "myfont.hiero");
+
+        // Act
+        var (exitCode, stdout, stderr) = RunCli(
+            "init", "-f", FontPath, "-s", "32", "-c", "A-Z", "-o", configPath);
+
+        // Assert
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        File.Exists(configPath).ShouldBeTrue("init should honor the .hiero extension");
+        stdout.ShouldContain(configPath);
+
+        // .hiero files are Java-properties style with font.* keys
+        var content = File.ReadAllText(configPath);
+        content.ShouldContain("font.size=32");
+    }
+
+    [Fact]
+    public void Init_NoExtension_DefaultsToBmfc()
+    {
+        // Arrange
+        var configBase = Path.Combine(_tempDir, "myfont");
+
+        // Act
+        var (exitCode, _, stderr) = RunCli(
+            "init", "-f", FontPath, "-s", "32", "-c", "A-Z", "-o", configBase);
+
+        // Assert
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        File.Exists(configBase + ".bmfc").ShouldBeTrue("no extension should default to .bmfc");
+        File.Exists(configBase + ".hiero").ShouldBeFalse();
+
+        // .bmfc files are BMFont-style with a configuration block
+        var content = File.ReadAllText(configBase + ".bmfc");
+        content.ShouldContain("fileVersion=1");
+    }
+
+    [Fact]
+    public void Init_CfgExtension_RespectedNotSuffixedWithBmfc()
+    {
+        // A path WITH an explicit extension must be respected as-is: init must NOT
+        // append .bmfc (so x.cfg stays x.cfg, never becomes x.cfg.bmfc).
+        var configPath = Path.Combine(_tempDir, "x.cfg");
+
+        var (exitCode, stdout, stderr) = RunCli(
+            "init", "-f", FontPath, "-s", "32", "-c", "A-Z", "-o", configPath);
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        File.Exists(configPath).ShouldBeTrue("x.cfg should be respected verbatim");
+        File.Exists(configPath + ".bmfc").ShouldBeFalse("init must NOT append .bmfc to a path that already has an extension");
+        stdout.ShouldContain(configPath);
+
+        // A non-.hiero extension is written as BMFont content.
+        File.ReadAllText(configPath).ShouldContain("fileVersion=1");
+    }
+
+    [Fact]
+    public void Init_ArbitraryExtension_RespectedWithBmfcContent()
+    {
+        // Any explicit non-.hiero extension is respected and written as BMFont format.
+        var configPath = Path.Combine(_tempDir, "a.abc");
+
+        var (exitCode, _, stderr) = RunCli(
+            "init", "-f", FontPath, "-s", "32", "-c", "A-Z", "-o", configPath);
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        File.Exists(configPath).ShouldBeTrue("a.abc should be respected verbatim");
+        File.Exists(configPath + ".bmfc").ShouldBeFalse("init must NOT append .bmfc to a.abc");
+        File.ReadAllText(configPath).ShouldContain("fileVersion=1");
+    }
+
+    [Fact]
+    public void Init_BmfcExtension_WritesBmfcFile()
+    {
+        // Arrange
+        var configPath = Path.Combine(_tempDir, "myfont.bmfc");
+
+        // Act
+        var (exitCode, _, stderr) = RunCli(
+            "init", "-f", FontPath, "-s", "32", "-c", "A-Z", "-o", configPath);
+
+        // Assert
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        File.Exists(configPath).ShouldBeTrue();
+        File.ReadAllText(configPath).ShouldContain("fileVersion=1");
+    }
+
+    [Fact]
+    public void Init_HieroExtensionWithTrailingSpace_WritesHieroContent()
+    {
+        // L4: a -o value with a trailing space ("name.hiero ") is trimmed by init, and the
+        // extension is also trimmed when selecting the writer, so the file is Hiero content.
+        // The on-disk name is the trimmed "name.hiero".
+        var configPath = Path.Combine(_tempDir, "trailing.hiero");
+
+        var (exitCode, _, stderr) = RunCli(
+            "init", "-f", FontPath, "-s", "32", "-c", "A-Z", "-o", configPath + " ");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        File.Exists(configPath).ShouldBeTrue("init trims the trailing space from the output path");
+        var content = File.ReadAllText(configPath);
+        // Hiero-style keys, not BMFont's fileVersion block.
+        content.ShouldContain("font.size=32");
+        content.ShouldNotContain("fileVersion=1");
+    }
+
+    [Fact]
+    public void Init_TrailingDotNoExtension_ProducesSingleBmfcExtension()
+    {
+        // nit: "myfont." has no real extension, so init appends .bmfc. The lone trailing dot
+        // must be trimmed first so the result is "myfont.bmfc", never "myfont..bmfc".
+        var configBase = Path.Combine(_tempDir, "myfont.");
+
+        var (exitCode, _, stderr) = RunCli(
+            "init", "-f", FontPath, "-s", "32", "-c", "A-Z", "-o", configBase);
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        var expected = Path.Combine(_tempDir, "myfont.bmfc");
+        File.Exists(expected).ShouldBeTrue("a trailing dot must collapse to a single .bmfc extension");
+        File.Exists(Path.Combine(_tempDir, "myfont..bmfc")).ShouldBeFalse("must NOT produce a double-dot myfont..bmfc");
+        File.ReadAllText(expected).ShouldContain("fileVersion=1");
+    }
+
+    [Fact]
+    public void Generate_SaveConfigHiero_WritesHieroFile()
+    {
+        // Arrange
+        var outputBase = Path.Combine(_tempDir, "save-hiero-out");
+        var configPath = Path.Combine(_tempDir, "exported.hiero");
+
+        // Act
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "48", "-c", "A-Z",
+            "-o", outputBase, "--save-config", configPath);
+
+        // Assert
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        File.Exists(configPath).ShouldBeTrue("--save-config should write a .hiero file");
+        File.ReadAllText(configPath).ShouldContain("font.size=48");
+    }
+
+    [Fact]
+    public void Generate_ConfigHiero_AutoDetectsAndGenerates()
+    {
+        // Arrange: first create a .hiero config via --save-config, then load it.
+        var firstOut = Path.Combine(_tempDir, "first-out");
+        var configPath = Path.Combine(_tempDir, "game.hiero");
+        var (saveExit, _, saveErr) = RunCli(
+            "generate", "-f", FontPath, "-s", "32", "-c", "ABC",
+            "-o", firstOut, "--save-config", configPath);
+        saveExit.ShouldBe(0, $"save stderr: {saveErr}");
+        File.Exists(configPath).ShouldBeTrue();
+
+        var outputBase = Path.Combine(_tempDir, "from-hiero");
+
+        // Act: load the .hiero config (format auto-detected from its CONTENT, not the extension)
+        var (exitCode, stdout, stderr) = RunCli(
+            "generate", "--config", configPath, "-f", FontPath, "-o", outputBase);
+
+        // Assert
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain("Done.");
+        File.Exists(outputBase + ".fnt").ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Batch_MixedBmfcAndHieroGlob_ProcessesBoth()
+    {
+        // Arrange: create one .bmfc and one .hiero config, each with a distinct output.
+        var bmfcOut = Path.Combine(_tempDir, "batch-bmfc");
+        var hieroOut = Path.Combine(_tempDir, "batch-hiero");
+        var bmfcConfig = Path.Combine(_tempDir, "a.bmfc");
+        var hieroConfig = Path.Combine(_tempDir, "b.hiero");
+
+        RunCli("init", "-f", FontPath, "-s", "24", "-c", "AB", "-o", bmfcOut).ExitCode.ShouldBe(0);
+        RunCli("init", "-f", FontPath, "-s", "24", "-c", "CD", "-o", hieroOut + ".hiero").ExitCode.ShouldBe(0);
+
+        // init writes config alongside; move the generated configs to predictable glob names
+        File.Move(bmfcOut + ".bmfc", bmfcConfig);
+        File.Move(hieroOut + ".hiero", hieroConfig);
+
+        // Act: glob both extensions
+        var (exitCode, stdout, stderr) = RunCli(
+            "batch",
+            Path.Combine(_tempDir, "*.bmfc"),
+            Path.Combine(_tempDir, "*.hiero"));
+
+        // Assert
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain("Processing 2 job(s)");
+        stdout.ShouldContain("2 succeeded, 0 failed");
+    }
+
+    [Fact]
+    public void Batch_NoConfigs_ReportsBmfcOrHieroMessage()
+    {
+        // Act: glob that matches nothing
+        var (exitCode, _, stderr) = RunCli(
+            "batch", Path.Combine(_tempDir, "*.nope"));
+
+        // Assert
+        exitCode.ShouldBe(1);
+        stderr.ShouldContain("No .bmfc or .hiero config files specified");
+    }
+
     // -- Helper methods --
 
     private static int ExtractIntAttribute(string fntContent, string attributeName)

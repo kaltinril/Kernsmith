@@ -3,15 +3,18 @@ using KernSmith.Ui.ViewModels;
 namespace KernSmith.Ui.Services;
 
 /// <summary>
-/// Handles saving and loading .bmfc project files using the KernSmith library's
-/// <see cref="BmfcConfig"/>, <see cref="BmfcConfigReader"/>, and <see cref="BmfcConfigWriter"/>.
+/// Handles saving and loading project files (<c>.bmfc</c> and <c>.hiero</c>) using the
+/// KernSmith library's <see cref="BmfcConfig"/> and <see cref="ConfigFormatFactory"/>.
+/// Loading auto-detects the format by inspecting the file content (the extension is used only
+/// as a fallback when the content is inconclusive); saving selects the format from the file extension.
 /// </summary>
 public class ProjectService
 {
     public string? CurrentProjectPath { get; private set; }
 
     /// <summary>
-    /// Saves the current UI state to a .bmfc file at the specified path.
+    /// Saves the current UI state to a .bmfc or .hiero file at the specified path.
+    /// The output format is auto-detected from the file extension.
     /// </summary>
     public void SaveProject(
         string path,
@@ -30,12 +33,14 @@ public class ProjectService
                 : null,
             outputFormat: atlasConfig.DescriptorFormat);
 
-        BmfcConfigWriter.WriteToFile(config, path);
+        ConfigFormatFactory.WriteConfig(config, path);
         CurrentProjectPath = path;
     }
 
     /// <summary>
-    /// Loads a .bmfc file and populates the provided ViewModels.
+    /// Loads a .bmfc or .hiero file and populates the provided ViewModels.
+    /// The format is auto-detected by inspecting the file content; the extension is used only
+    /// as a fallback when the content is inconclusive.
     /// </summary>
     public void LoadProject(
         string path,
@@ -44,7 +49,7 @@ public class ProjectService
         EffectsViewModel effects,
         CharacterGridViewModel characterGrid)
     {
-        var config = BmfcConfigReader.Read(path);
+        var config = ConfigFormatFactory.ReadConfig(path);
         var options = config.Options;
 
         // Load font source
