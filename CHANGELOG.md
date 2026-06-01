@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `BmFont.FromConfig()` and `BmFontBuilder.FromConfig()` now auto-detect `.bmfc` and `.hiero` configs by inspecting file content (extension used only when content is inconclusive)
 - Config-format auto-detection treats any non-`.hiero` extension (including no extension) as BMFont `.bmfc`, preserving backward compatibility (lenient `ConfigFormatFactory` behavior)
 - `BmFontResult.ToHiero()` — export an equivalent Hiero `.hiero` config string (mirrors `ToBmfc()`)
-- CLI: `--config` and `--save-config` accept `.hiero` files; `init -o foo.hiero` writes a `.hiero` config (no extension defaults to `.bmfc`); `batch` processes mixed `.bmfc` and `.hiero` globs
+- CLI: `--config` and `--save-config` accept `.hiero` files; `init -o foo.hiero` writes a `.hiero` config (no extension defaults to `.bmfc`; an explicit extension — even an unusual one like `.cfg` — is now kept verbatim instead of being suffixed with `.bmfc`, and BMFont content is written for any non-`.hiero` extension); `batch` processes mixed `.bmfc` and `.hiero` globs
 - UI: Load/Save project dialogs and drag-and-drop accept `.hiero` files, with a warning when saving `.hiero` with settings it cannot represent (channel packing, variable axes, super sampling, color font)
 - `AtlasPage.GetRgbaPixelData()` — returns RGBA32 pixel bytes (grayscale pages expand to `255,255,255,v` alpha-coverage layout) for straight-alpha GPU upload
 - `AtlasPage.GetAlpha8PixelData()` — returns 8-bit alpha-coverage bytes (one byte per pixel) for single-channel/coverage textures and custom shaders

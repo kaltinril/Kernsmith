@@ -183,18 +183,16 @@ public static class HieroConfigWriter
     private static string Bool(bool value) => value ? "true" : "false";
 
     /// <summary>
-    /// Formats a character set as literal Hiero glyph text, escaping backslashes as
-    /// <c>\\</c> and newlines as <c>\n</c>. Backslash is escaped first so the output is
-    /// symmetric with the reader's single-pass unescape and round-trips correctly.
+    /// Formats a character set as literal Hiero glyph text, escaping ONLY an actual newline
+    /// char (U+000A) as the two-char sequence <c>\n</c>. Matching real Hiero (HieroSettings.java),
+    /// a literal backslash is emitted verbatim as a single <c>\</c> and is NOT escaped.
     /// </summary>
     private static string FormatChars(CharacterSet characters)
     {
         var sb = new StringBuilder();
         foreach (var cp in characters.GetCodepoints())
         {
-            if (cp == '\\')
-                sb.Append("\\\\");
-            else if (cp == '\n')
+            if (cp == '\n')
                 sb.Append("\\n");
             else
                 sb.Append(char.ConvertFromUtf32(cp));

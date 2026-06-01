@@ -66,31 +66,31 @@ public static class ConfigFormatFactory
 {
     public static BmfcConfig ReadConfig(string filePath)
     {
-        var ext = Path.GetExtension(filePath).ToLowerInvariant();
-        return ext switch
-        {
-            ".hiero" => HieroConfigReader.Read(filePath),
-            ".bmfc" => BmfcConfigReader.Read(filePath),
-            _ => throw new BmFontException($"Unsupported config format: {ext}")
-        };
+        // READ path is content-based: detect the format by inspecting the
+        // file contents, using the extension only as a fallback tiebreaker
+        // when content is inconclusive. Non-.hiero / inconclusive content is
+        // parsed as BMFont — this is intentionally lenient and never throws.
+        var format = ConfigFormatDetector.DetectFromContent(filePath);
+        return format == ConfigFormat.Hiero
+            ? HieroConfigReader.Read(filePath)
+            : BmfcConfigReader.Read(filePath);
     }
 
     public static void WriteConfig(BmfcConfig config, string filePath)
     {
+        // WRITE path is by extension: .hiero -> Hiero, anything else -> BMFont.
         var ext = Path.GetExtension(filePath).ToLowerInvariant();
-        switch (ext)
-        {
-            case ".hiero": HieroConfigWriter.WriteToFile(config, filePath); break;
-            case ".bmfc": BmfcConfigWriter.WriteToFile(config, filePath); break;
-            default: throw new BmFontException($"Unsupported config format: {ext}");
-        }
+        if (ext == ".hiero")
+            HieroConfigWriter.WriteToFile(config, filePath);
+        else
+            BmfcConfigWriter.WriteToFile(config, filePath);
     }
 }
 ```
 
 > **Public API surface that Phases 83 & 84 depend on (must be public + tested before those phases start):**
-> - `static ConfigFormatFactory.ReadConfig(string filePath) → BmfcConfig` — auto-detects format by file extension, throws `BmFontException` on an unknown/unsupported extension.
-> - `static ConfigFormatFactory.WriteConfig(BmfcConfig config, string filePath) → void` — auto-detects format by file extension, throws `BmFontException` on an unknown/unsupported extension.
+> - `static ConfigFormatFactory.ReadConfig(string filePath) → BmfcConfig` — auto-detects format by inspecting file **content** (extension is only a fallback tiebreaker when content is inconclusive); non-`.hiero`/inconclusive content is parsed as BMFont. Intentionally lenient — does **not** throw on an unknown/missing extension.
+> - `static ConfigFormatFactory.WriteConfig(BmfcConfig config, string filePath) → void` — selects format by file extension (`.hiero` → Hiero, anything else → BMFont). Does **not** throw on an unknown/unsupported extension.
 > - `static HieroConfigReader.Read(string filePath) → BmfcConfig` and `HieroConfigReader.Parse(string content) → BmfcConfig` — mirroring the existing static `BmfcConfigReader`.
 > - `static HieroConfigWriter.Write(BmfcConfig config) → string` and `HieroConfigWriter.WriteToFile(BmfcConfig config, string filePath) → void` — mirroring the existing static `BmfcConfigWriter`.
 
@@ -170,7 +170,7 @@ public string ToBmfc() { ... }
 public string ToHiero() { ... }
 ```
 
-**`ToHiero()` contract:** `public string ToHiero()` returns the `.hiero` file content as a string — the same contract as the existing `ToBmfc()`. It requires `SourceOptions`, `SourceFontFile`, and `SourceFontName` to be set on the `BmFontResult` (identical preconditions to `ToBmfc()`); throws `BmFontException` if they are missing.
+**`ToHiero()` contract:** `public string ToHiero()` returns the `.hiero` file content as a string — the same contract as the existing `ToBmfc()`. It requires only `SourceOptions` to be set on the `BmFontResult` (identical preconditions to `ToBmfc()`) and throws `InvalidOperationException` when `SourceOptions` is null. `SourceFontFile` and `SourceFontName` are optional and serialize as empty strings when null.
 
 **`src/KernSmith/Output/FileWriter.cs`** — No new config-path parameter:
 - Config export is the **caller's** responsibility via `BmFontResult.ToBmfc()` / `BmFontResult.ToHiero()` (or `ConfigFormatFactory.WriteConfig()`), NOT a parameter on `FileWriter.Write()`.
@@ -220,7 +220,7 @@ public string ToHiero() { ... }
 | Character set: Empty | Unit | Empty glyph.text handled |
 | Format detection: .hiero | Integration | `BmFont.FromConfig("test.hiero")` works |
 | Format detection: .bmfc | Integration | `BmFont.FromConfig("test.bmfc")` still works |
-| Format detection: unknown | Integration | Throws `BmFontException` |
+| Format detection: unknown | Integration | Unknown/inconclusive content falls back to BMFont (no exception) |
 | Generate from .hiero | Integration | Full pipeline produces valid .fnt + .png |
 | `ToHiero()` export | Integration | Result exports valid .hiero string |
 | Lossy round-trip warning | Unit | KernSmith-only features trigger warnings |

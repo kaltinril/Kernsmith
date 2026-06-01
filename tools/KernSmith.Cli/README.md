@@ -205,7 +205,7 @@ kernsmith generate -f font.ttf -s 32 -o output/myfont
 
 Generate a `.bmfc` or `.hiero` configuration file from CLI flags without rendering a font. This lets you scaffold a config, tweak it by hand, then run `kernsmith generate --config`.
 
-The `init` command accepts all the same flags as `generate` (font source, size, effects, atlas settings, etc.). The `-o` flag sets the output config file path instead of the font output path. The format is chosen by the file extension — use `.hiero` to write a Hiero config; a path with no extension defaults to `.bmfc`.
+The `init` command accepts all the same flags as `generate` (font source, size, effects, atlas settings, etc.). The `-o` flag sets the output config file path instead of the font output path. The format is chosen by the file extension — use `.hiero` to write a Hiero config; a path with no extension defaults to `.bmfc`. Any explicit extension is respected as-is (kept verbatim, not suffixed with `.bmfc`), and BMFont content is written for any non-`.hiero` extension.
 
 ```
 kernsmith init [options]

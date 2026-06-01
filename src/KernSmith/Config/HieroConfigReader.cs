@@ -194,8 +194,8 @@ public static class HieroConfigReader
                             Debug.WriteLine($"[HieroConfigReader] Could not parse glyph.page.height value '{value.Trim()}'; keeping default.");
                         break;
                     case "glyph.text":
-                        // Literal characters; the writer escapes '\' as "\\" then newlines as "\n".
-                        // Mirror that with a single left-to-right unescape pass.
+                        // Literal characters; real Hiero escapes only newlines as "\n" (a backslash
+                        // is otherwise literal). Mirror that with a single left-to-right unescape pass.
                         options.Characters = CharacterSet.FromChars(UnescapeGlyphText(value));
                         break;
                     case "glyph.native.rendering":
@@ -259,6 +259,11 @@ public static class HieroConfigReader
                         if (width > 0 && width < 0.5f)
                             Debug.WriteLine($"[HieroConfigReader] OutlineEffect Width '{widthStr}' rounds to 0; bumped to 1 to preserve a thin outline.");
                     }
+                    else
+                        // Hiero's documented Width default is 2 (REF-10); apply it (with the same
+                        // Math.Round semantics) when the outline block exists but omits the key,
+                        // rather than leaving KernSmith's 0 default and dropping the outline.
+                        options.Outline = (int)Math.Round(2f);
                     if (options.Outline > 0 && values.TryGetValue("Color", out var outlineColor))
                     {
                         var oc = ParseHexColor(outlineColor);
@@ -292,9 +297,17 @@ public static class HieroConfigReader
                     if (values.TryGetValue("X distance", out var xdStr)
                         && float.TryParse(xdStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var xd))
                         options.ShadowOffsetX = (int)Math.Round(xd);
+                    else
+                        // Hiero's documented X distance default is 2 (REF-10); apply it when the shadow
+                        // block exists but omits the key, rather than leaving KernSmith's 0 default.
+                        options.ShadowOffsetX = (int)Math.Round(2f);
                     if (values.TryGetValue("Y distance", out var ydStr)
                         && float.TryParse(ydStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var yd))
                         options.ShadowOffsetY = (int)Math.Round(yd);
+                    else
+                        // Hiero's documented Y distance default is 2 (REF-10); apply it when the shadow
+                        // block exists but omits the key, rather than leaving KernSmith's 0 default.
+                        options.ShadowOffsetY = (int)Math.Round(2f);
                     if (values.TryGetValue("Color", out var shadowColor))
                     {
                         var sc = ParseHexColor(shadowColor);
@@ -333,9 +346,10 @@ public static class HieroConfigReader
     }
 
     /// <summary>
-    /// Reverses the writer's <c>glyph.text</c> escaping with a single left-to-right pass:
-    /// the writer escapes '\' as "\\" first, then newlines as "\n", so here "\\" -> '\' and "\n" -> newline.
-    /// Any other character (including a lone trailing '\' not part of those sequences) is emitted verbatim.
+    /// Reverses real Hiero's <c>glyph.text</c> escaping with a single left-to-right pass:
+    /// only the two-char sequence "\n" -> newline. A backslash is NOT an escape introducer in
+    /// real Hiero (HieroSettings.java), so any other '\' (including a '\' not followed by 'n',
+    /// or a lone trailing '\') is passed through verbatim as a literal backslash.
     /// </summary>
     private static string UnescapeGlyphText(string value)
     {
@@ -343,21 +357,11 @@ public static class HieroConfigReader
         for (var i = 0; i < value.Length; i++)
         {
             var c = value[i];
-            if (c == '\\' && i + 1 < value.Length)
+            if (c == '\\' && i + 1 < value.Length && value[i + 1] == 'n')
             {
-                var next = value[i + 1];
-                if (next == '\\')
-                {
-                    sb.Append('\\');
-                    i++;
-                    continue;
-                }
-                if (next == 'n')
-                {
-                    sb.Append('\n');
-                    i++;
-                    continue;
-                }
+                sb.Append('\n');
+                i++;
+                continue;
             }
             sb.Append(c);
         }

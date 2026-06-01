@@ -1123,7 +1123,9 @@ public sealed class HieroConfigTests : IDisposable
     }
 
     // ------------------------------------------------------------------
-    // #2: backslash escaping in glyph.text / character set
+    // #2: backslash handling in glyph.text / character set.
+    // Matching real Hiero (HieroSettings.java): ONLY newlines escape as "\n";
+    // a backslash is a literal char, NOT an escape introducer.
     // ------------------------------------------------------------------
 
     [Fact]
@@ -1151,11 +1153,34 @@ public sealed class HieroConfigTests : IDisposable
     }
 
     [Fact]
+    public void Write_CharacterSetWithBackslash_EmitsSingleLiteralBackslash()
+    {
+        // Interop with real Hiero (HieroSettings.java): a backslash in the glyph set is written
+        // as a SINGLE literal '\' (NOT escaped to "\\"). Asserting the exact glyph.text line guards
+        // against re-introducing the non-standard backslash-escaping scheme.
+        var config = new BmfcConfig
+        {
+            Options = new FontGeneratorOptions
+            {
+                Characters = CharacterSet.FromChars("A\\B/C")
+            }
+        };
+
+        var hiero = HieroConfigWriter.Write(config);
+
+        // GetCodepoints() sorts ascending: '/'(0x2F) 'A'(0x41) 'B'(0x42) 'C'(0x43) '\'(0x5C),
+        // so the literal glyph.text is "/ABC\" with a SINGLE trailing backslash.
+        hiero.ShouldContain("glyph.text=/ABC\\");
+        // The non-standard double-backslash escaping must NOT be present.
+        hiero.ShouldNotContain("\\\\");
+    }
+
+    [Fact]
     public void Parse_GlyphTextLiteralBackslash_NotTurnedIntoNewline()
     {
-        // A lone backslash followed by a non-escape char (here 't') is emitted verbatim,
-        // and an escaped backslash "\\" decodes to a single '\' -- never a newline.
-        var content = "glyph.text=A\\\\t\n"; // glyph.text=A\\t
+        // Matching real Hiero, a backslash is NOT an escape introducer: a backslash followed by a
+        // non-'n' char (here 't') is emitted verbatim, never decoded and never turned into a newline.
+        var content = "glyph.text=A\\t\n"; // glyph.text=A\t
 
         var config = HieroConfigReader.Parse(content);
 
@@ -1368,5 +1393,75 @@ public sealed class HieroConfigTests : IDisposable
         var config = HieroConfigReader.Parse(content);
 
         config.Options.ShadowOpacity.ShouldBe(0.6f);
+    }
+
+    // ------------------------------------------------------------------
+    // P82-4 / P82-5: REF-10 effect defaults applied when block is present
+    // but the corresponding key is absent.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Parse_OutlineEffect_NoWidthKey_DefaultsToTwo()
+    {
+        // An OutlineEffect block without a Width key adopts Hiero's documented Width default of 2
+        // (REF-10), not KernSmith's 0 default. The color must still apply since Outline > 0.
+        var content =
+            $"effect.class={EffectPkg}OutlineEffect\n" +
+            "effect.Color=ff0000\n" +
+            "effect.Join=0\n";
+
+        var config = HieroConfigReader.Parse(content);
+
+        config.Options.Outline.ShouldBe(2);
+        config.Options.OutlineR.ShouldBe((byte)0xff);
+        config.Options.OutlineG.ShouldBe((byte)0x00);
+        config.Options.OutlineB.ShouldBe((byte)0x00);
+    }
+
+    [Fact]
+    public void Parse_ShadowEffect_NoDistanceKeys_DefaultsToTwo()
+    {
+        // A ShadowEffect block omitting X/Y distance adopts Hiero's documented distance default
+        // of 2 (REF-10), not KernSmith's 0 default. Blur stays at its 0 default.
+        var content =
+            $"effect.class={EffectPkg}ShadowEffect\n" +
+            "effect.Color=000000\n" +
+            "effect.Opacity=0.6\n";
+
+        var config = HieroConfigReader.Parse(content);
+
+        config.Options.ShadowOffsetX.ShouldBe(2);
+        config.Options.ShadowOffsetY.ShouldBe(2);
+        config.Options.ShadowBlur.ShouldBe(0);
+    }
+
+    [Fact]
+    public void WriteToFile_ThenReadConfig_DetectedAsHiero()
+    {
+        // Self-round-trip detection guard: a file written by HieroConfigWriter must stay
+        // detectable as Hiero by ConfigFormatFactory's content sniffing. The Hiero-only
+        // glyph.text=ABC -> A,B,C mapping proves the Hiero reader (not BMFont) handled it.
+        var config = new BmfcConfig
+        {
+            FontName = "Arial",
+            Options = new FontGeneratorOptions
+            {
+                Size = 32,
+                Characters = CharacterSet.FromChars("ABC")
+            }
+        };
+        var dir = Path.Combine(Path.GetTempPath(), $"KernSmith_HieroTest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(dir);
+        _tempPaths.Add(dir);
+        var path = Path.Combine(dir, "selfroundtrip.hiero");
+
+        HieroConfigWriter.WriteToFile(config, path);
+        var parsed = ConfigFormatFactory.ReadConfig(path);
+
+        // glyph.text codepoints survived -> the writer's emitted keys were sniffed as Hiero.
+        parsed.Options.Characters.GetCodepoints().ToList()
+            .ShouldBe(new[] { (int)'A', (int)'B', (int)'C' });
+        parsed.FontName.ShouldBe("Arial");
+        parsed.Options.Size.ShouldBe(32f);
     }
 }

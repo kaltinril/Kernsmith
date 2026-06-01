@@ -315,15 +315,15 @@ This table maps Hiero properties to their KernSmith equivalents for implementing
 | `font.gamma` | — | No direct equivalent; could add |
 | `font.mono` | `FontGeneratorOptions.AntiAlias` (inverted) | `mono=true` → `AntiAlias=AntiAliasMode.None` |
 | `pad.top/right/bottom/left` | `FontGeneratorOptions.Padding` | Direct mapping |
-| `pad.advance.x` | `FontGeneratorOptions.Spacing.X` | Maps to spacing |
-| `pad.advance.y` | `FontGeneratorOptions.Spacing.Y` | Maps to spacing |
+| `pad.advance.x` | — (dropped) | Per-glyph advance adjustment; no KernSmith equivalent, dropped on import with a warning (deferred to Phase 100). NOT mapped to `Spacing` — `Spacing` is atlas cell spacing (a different concept) and its members are `Horizontal`/`Vertical`, not `X`/`Y`. |
+| `pad.advance.y` | — (dropped) | Per-glyph advance adjustment; no KernSmith equivalent, dropped on import with a warning (deferred to Phase 100). NOT mapped to `Spacing` — `Spacing` is atlas cell spacing (a different concept) and its members are `Horizontal`/`Vertical`, not `X`/`Y`. |
 | `glyph.page.width` | `FontGeneratorOptions.MaxTextureWidth` | Direct mapping |
 | `glyph.page.height` | `FontGeneratorOptions.MaxTextureHeight` | Direct mapping |
 | `glyph.text` | `FontGeneratorOptions.Characters` | Literal chars → CharacterSet |
 | `render_type` | — | KernSmith always uses FreeType |
 | `effect.class=...ColorEffect` | `FontGeneratorOptions.Outline*` (none) | Just a fill color; default behavior |
 | `effect.class=...GradientEffect` | `FontGeneratorOptions.Gradient*` | Map top/bottom color; Hiero's Offset/Scale/Cyclic have no direct KernSmith equivalent (GradientAngle/GradientMidpoint are different concepts) |
-| `effect.class=...OutlineEffect` | `FontGeneratorOptions.Outline*` | Map color, width; join has no KernSmith equivalent (Hiero-specific, dropped on import); Hiero Width is float (truncated to int for KernSmith Outline) |
+| `effect.class=...OutlineEffect` | `FontGeneratorOptions.Outline*` | Map color, width; join has no KernSmith equivalent (Hiero-specific, dropped on import); Hiero Width is a float (range 0.1–999), KernSmith Outline is an int. Width is rounded to the nearest integer (`Math.Round`), and any positive width below 0.5 is bumped up to 1 so a thin Hiero outline isn't silently dropped; Width &le; 0 maps to no outline |
 | `effect.class=...ShadowEffect` | `FontGeneratorOptions.Shadow*` | Map color (ShadowR/G/B), offset, opacity; Hiero's two-param blur (kernel size + passes) collapses to single ShadowBlur |
 | `effect.class=...DistanceFieldEffect` | `FontGeneratorOptions.Sdf` | Hiero's Scale and Spread have no KernSmith equivalent (Sdf is boolean only) |
 | `effect.class=...OutlineWobbleEffect` | — | No KernSmith equivalent |

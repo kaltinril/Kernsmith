@@ -15,7 +15,7 @@ Phase 85 work begins **only after Phases 82–84 land** — i.e. `BmFontResult.T
 
 > **Note on line numbers:** Line numbers below are approximate and may have drifted. Locate the current section by its heading/content rather than relying on the exact line number. File paths are precise.
 
-> **API symbols the docs must reference:** `BmFont.FromConfig` (now auto-detects `.bmfc`/`.hiero` by extension), `BmFontResult.ToHiero()`, and `ConfigFormatFactory.ReadConfig` / `ConfigFormatFactory.WriteConfig`.
+> **API symbols the docs must reference:** `BmFont.FromConfig` (now auto-detects `.bmfc`/`.hiero` by inspecting file content, with the extension used only as a fallback), `BmFontResult.ToHiero()`, and `ConfigFormatFactory.ReadConfig` / `ConfigFormatFactory.WriteConfig`.
 
 ### 1. README.md (Root)
 
@@ -25,7 +25,7 @@ Add `.hiero` (Hiero/libGDX) to supported config formats alongside `.bmfc`.
 **Quick Start section:**
 Add example showing `.hiero` usage:
 ```csharp
-// From Hiero config (format auto-detected by extension)
+// From Hiero config (format auto-detected by inspecting file content)
 var result = BmFont.FromConfig("myfont.hiero");
 ```
 
@@ -41,7 +41,8 @@ Document `ToHiero()` method alongside `ToBmfc()`.
 **Reading and Writing config files section:**
 Expand section to cover both formats:
 ```csharp
-// Read any supported config format (auto-detected by extension)
+// Read any supported config format (auto-detected by inspecting file content;
+// extension is only a fallback when content is inconclusive)
 var config = ConfigFormatFactory.ReadConfig("project.hiero");
 var config = ConfigFormatFactory.ReadConfig("project.bmfc");
 
@@ -105,7 +106,7 @@ Add new subsection documenting `.hiero` format structure with example.
 ### 5. Core Library Docs
 
 **File:** `docs/core/index.md` (locate the `FromConfig()` description)
-- Update `FromConfig()` description: "generate from a `.bmfc` or `.hiero` configuration file (format auto-detected by extension)"
+- Update `FromConfig()` description: "generate from a `.bmfc` or `.hiero` configuration file (format auto-detected by inspecting file content, with the extension used only as a fallback)"
 
 ### 6. Sample Code
 
@@ -137,9 +138,9 @@ Add to the existing **Unreleased** section. The entry scope spans the **library 
 ### Added
 - Hiero `.hiero` configuration file format support (read and write)
 - `HieroConfigReader` and `HieroConfigWriter` classes
-- `ConfigFormatFactory` for auto-detecting config format by file extension
+- `ConfigFormatFactory` for auto-detecting config format by inspecting file content (read path; write selects by extension)
 - `BmFontResult.ToHiero()` for exporting Hiero config strings
-- `BmFont.FromConfig()` and `BmFontBuilder.FromConfig()` now auto-detect `.hiero` and `.bmfc`
+- `BmFont.FromConfig()` and `BmFontBuilder.FromConfig()` now auto-detect `.hiero` and `.bmfc` by inspecting file content
 - CLI: `--config` and `--save-config` accept `.hiero` files
 - CLI: `init` command can create `.hiero` configs
 - CLI: `batch` command processes mixed `.bmfc` and `.hiero` files

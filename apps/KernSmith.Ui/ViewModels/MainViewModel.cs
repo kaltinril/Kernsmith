@@ -505,9 +505,21 @@ public class MainViewModel : ViewModel
         // HardShadow has no Hiero equivalent (writer forces blur kernel size 0).
         if (Effects.HardShadow)
             lost.Add("Hard shadow");
+        // HieroConfigWriter writes font.bold/font.italic but has no notion of forcing
+        // synthetic styling, so the forced-synthetic intent is dropped on reload.
+        if (Effects.ForceSyntheticBold || Effects.ForceSyntheticItalic)
+            lost.Add("Forced synthetic bold/italic");
         // The .hiero format is always flat text; XML/Binary descriptor output is lost.
         if (AtlasConfig.DescriptorFormat != OutputFormat.Text)
             lost.Add("Descriptor format (XML/Binary)");
+        // HieroConfigWriter never emits autofit; the reader restores the default (false),
+        // so the UI default (true) is lost even on a default project.
+        if (AtlasConfig.AutofitTexture)
+            lost.Add("Autofit texture");
+        // Hiero has no kerning toggle; the default (enabled) round-trips, so only flag
+        // when kerning has been explicitly disabled.
+        if (!AtlasConfig.IncludeKerning)
+            lost.Add("Kerning (disabled)");
         return lost;
     }
 
