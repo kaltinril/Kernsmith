@@ -572,7 +572,7 @@ A reference command-line tool is included in `tools/KernSmith.Cli/`. See the [CL
 
 Available commands: `generate`, `init`, `batch`, `benchmark`, `inspect`, `convert`, `list-fonts`, `list-rasterizers`, `info`.
 
-The `init` command generates a `.bmfc` config file from CLI flags without rendering a font, so you can scaffold a config and tweak it by hand.
+The `init` command generates a `.bmfc` or `.hiero` config file from CLI flags without rendering a font (the format is chosen by the output extension), so you can scaffold a config and tweak it by hand. `generate --config` and `batch` accept both `.bmfc` and `.hiero` configs, auto-detecting the format by inspecting file content.
 
 Use `--time` to display elapsed time or `--profile` to show a full pipeline stage breakdown.
 

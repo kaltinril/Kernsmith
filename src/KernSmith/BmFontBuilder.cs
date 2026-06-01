@@ -26,8 +26,8 @@ public sealed class BmFontBuilder
         return FromConfig(ConfigFormatFactory.ReadConfig(bmfcPath));
     }
 
-    /// <summary>Loads settings from a parsed .bmfc config as a starting point.</summary>
-    /// <param name="config">The parsed .bmfc configuration.</param>
+    /// <summary>Loads settings from a parsed configuration (from a <c>.bmfc</c> or <c>.hiero</c> file) as a starting point.</summary>
+    /// <param name="config">The parsed configuration. <see cref="BmfcConfig"/> is the shared model for both the BMFont <c>.bmfc</c> and libGDX Hiero <c>.hiero</c> formats.</param>
     /// <returns>This builder.</returns>
     public BmFontBuilder FromConfig(BmfcConfig config)
     {

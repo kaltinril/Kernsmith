@@ -11,6 +11,7 @@ KernSmith is a cross-platform .NET library that generates BMFont-compatible bitm
 - **Atlas packing** -- MaxRects and Skyline algorithms with autofit and power-of-two support
 - **In-memory pipeline** -- the entire pipeline runs without touching disk unless you explicitly write output
 - **Batch generation** -- parallel multi-font generation with font caching and pipeline metrics
+- **Config formats** -- read and write BMFont `.bmfc` and libGDX Hiero `.hiero` configuration files
 
 ## Documentation Sections
 

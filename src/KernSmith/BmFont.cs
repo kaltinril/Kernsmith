@@ -926,8 +926,8 @@ public static class BmFont
         return FromConfig(config);
     }
 
-    /// <summary>Generates a bitmap font from a parsed .bmfc config.</summary>
-    /// <param name="config">The parsed .bmfc configuration.</param>
+    /// <summary>Generates a bitmap font from a parsed configuration (from a <c>.bmfc</c> or <c>.hiero</c> file).</summary>
+    /// <param name="config">The parsed configuration. <see cref="BmfcConfig"/> is the shared model for both the BMFont <c>.bmfc</c> and libGDX Hiero <c>.hiero</c> formats.</param>
     /// <returns>The generated bitmap font result.</returns>
     public static BmFontResult FromConfig(BmfcConfig config)
     {

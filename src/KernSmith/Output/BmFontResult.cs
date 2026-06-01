@@ -153,10 +153,11 @@ public sealed class BmFontResult
     }
 
     /// <summary>
-    /// Returns the .bmfc configuration file content as a string.
+    /// Serializes this result's source options to a BMFont/AngelCode <c>.bmfc</c> config string.
     /// Requires that this result was produced by a generation call (not loaded from disk).
+    /// See <see cref="ToHiero"/> for the libGDX Hiero equivalent.
     /// </summary>
-    /// <returns>The .bmfc file content.</returns>
+    /// <returns>The <c>.bmfc</c> config file content.</returns>
     /// <exception cref="InvalidOperationException">Thrown when no source options are available.</exception>
     public string ToBmfc()
     {
@@ -176,10 +177,11 @@ public sealed class BmFontResult
     }
 
     /// <summary>
-    /// Returns the .hiero configuration file content as a string.
+    /// Serializes this result's source options to a libGDX Hiero <c>.hiero</c> config string.
     /// Requires that this result was produced by a generation call (not loaded from disk).
+    /// See <see cref="ToBmfc"/> for the BMFont/AngelCode equivalent.
     /// </summary>
-    /// <returns>The .hiero file content.</returns>
+    /// <returns>The <c>.hiero</c> config file content.</returns>
     /// <exception cref="InvalidOperationException">Thrown when no source options are available.</exception>
     public string ToHiero()
     {

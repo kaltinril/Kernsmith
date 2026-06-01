@@ -1,9 +1,10 @@
 namespace KernSmith;
 
 /// <summary>
-/// Holds the result of reading a .bmfc configuration file.
-/// Combines <see cref="FontGeneratorOptions"/> with font source and output path
-/// information that lives outside the options type.
+/// Holds the result of reading a font-generation configuration file. This is the shared
+/// model for both the BMFont/AngelCode <c>.bmfc</c> and libGDX Hiero <c>.hiero</c> formats
+/// (see <see cref="ConfigFormatFactory"/>). Combines <see cref="FontGeneratorOptions"/> with
+/// font source and output path information that lives outside the options type.
 /// </summary>
 public sealed class BmfcConfig
 {
@@ -24,8 +25,10 @@ public sealed class BmfcConfig
 
     /// <summary>
     /// Creates a <see cref="BmfcConfig"/> from existing <see cref="FontGeneratorOptions"/>
-    /// with optional font source and output path. Useful for standalone .bmfc export
-    /// via <see cref="BmfcConfigWriter.Write"/> without parsing an existing file.
+    /// with optional font source and output path. Useful for standalone config export
+    /// via <see cref="BmfcConfigWriter.Write"/> (BMFont <c>.bmfc</c>),
+    /// <see cref="HieroConfigWriter.Write"/> (libGDX Hiero <c>.hiero</c>), or
+    /// <see cref="ConfigFormatFactory.WriteConfig"/> (selected by extension) without parsing an existing file.
     /// </summary>
     /// <param name="options">Font generation options to wrap.</param>
     /// <param name="fontFile">Path to the font file, or null.</param>
