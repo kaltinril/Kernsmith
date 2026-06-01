@@ -41,7 +41,8 @@ The `.hiero` file is a **plain-text key=value format**:
 
 The `.hiero` format maps to KernSmith's existing `FontGeneratorOptions` / `BmfcConfig` model:
 
-**Direct mappings**: `font.size` → `Size`, `font.bold` → `Bold`, `font.italic` → `Italic`, texture dimensions, characters (`pad.advance.x/y` → requires careful mapping (Hiero adjusts advance width, not atlas spacing))
+**Direct mappings**: `font.size` → `Size`, `font.bold` → `Bold`, `font.italic` → `Italic`, texture dimensions, characters
+**Dropped on import**: `pad.advance.x/y` → DROPPED with a warning. These adjust per-glyph advance width / line height in Hiero and have no KernSmith equivalent; they are NOT mapped to `Spacing` (which is atlas cell spacing, a different concept). Deferred to Phase 100.
 **Inverted mappings**: `font.mono=true` → `AntiAlias=AntiAliasMode.None`
 **Effect mappings**: Outline, Gradient, Shadow, DistanceField effects map to existing KernSmith effect properties
 **Unmapped Hiero → KernSmith**: `render_type` (always FreeType), `font.gamma`, `OutlineWobbleEffect`, `OutlineZigzagEffect`
@@ -74,17 +75,25 @@ Since the formats don't have 1:1 feature parity, round-tripping `.hiero` → Ker
 - Hiero's `OutlineWobbleEffect` and `OutlineZigzagEffect` have no KernSmith equivalent — they are silently dropped on import (with a warning logged)
 - KernSmith's advanced features (channel packing, variable fonts, supersampling, etc.) have no Hiero equivalent — they are omitted on export (with a warning logged)
 
+### Implementation Notes
+- KernSmith has only **3 real `IGlyphEffect` implementations** today: `OutlineEffect`, `GradientEffect`, and `ShadowEffect`. There is **no `DistanceFieldEffect` class** — SDF is a boolean flag (`FontGeneratorOptions.Sdf`). Hiero's `DistanceFieldEffect` therefore maps to the `Sdf` flag, not to a class. Hiero's `ColorEffect` is a plain fill color and has no corresponding KernSmith effect class.
+- KernSmith applies effects in a **fixed Z-order**, whereas Hiero serializes an **ordered effect list**. Round-trip is therefore **canonical-order** (KernSmith emits effects in a fixed canonical order on export), not arbitrary-order. Hiero files with effects in a different order will be re-emitted in KernSmith's canonical order.
+
 ## Risks & Open Questions
 
 1. **Character encoding edge cases** — Hiero uses literal text with `\n` escaping; need to handle Unicode properly
 2. **Effect stacking order** — Hiero applies effects in list order; need to verify KernSmith matches
-3. **Padding semantics** — Hiero's `pad.advance.x/y` maps to spacing, not padding; verify sign conventions
+3. **Padding semantics** — Hiero's `pad.top/right/bottom/left` map to `Padding`; `pad.advance.x/y` are DROPPED with a warning (deferred to Phase 100), not mapped to `Spacing`
 4. **Font resolution** — Hiero's `font.name` is a Java font family name; system font lookup may differ across platforms
 
 ## Test Strategy
 
 - Unit tests: Round-trip parse/write for all property types
-- Unit tests: Effect serialization/deserialization for all 7 effect types
+- Unit tests: Effect serialization/deserialization for all 7 Hiero effect types — `ColorEffect`, `OutlineEffect`, `GradientEffect`, `ShadowEffect`, `DistanceFieldEffect`, `OutlineWobbleEffect`, `OutlineZigzagEffect` (the last two are dropped on import with a warning)
+- Unit tests: Character encoding — ASCII, Unicode, and `\n` escaping/unescaping in `glyph.text`
+- Unit tests: Font source resolution — system font (`font.name`) vs file path (`font2.file` + `font2.use`), and missing/unresolvable font handling
+- Unit tests: Numeric conversions and rounding — float→int for outline width (`Math.Round`), color hex parsing, integer/boolean parsing
+- Unit tests: Round-trip fidelity on mappable properties — KernSmith → `.hiero` → KernSmith preserves all properties that have a Hiero equivalent (canonical effect order, not arbitrary order)
 - Integration tests: Load real `.hiero` files from libGDX examples
 - Integration tests: Generate fonts from `.hiero` config and compare output
 - Edge cases: Empty glyph text, Unicode characters, missing properties, unknown effects

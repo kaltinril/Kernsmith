@@ -7,30 +7,38 @@
 
 ---
 
+## Dependency Gate
+
+Phase 85 work begins **only after Phases 82–84 land** — i.e. `BmFontResult.ToHiero()`, `ConfigFormatFactory`, `HieroConfigReader`/`HieroConfigWriter`, and CLI/UI `.hiero` support are all present and merged. The docs describe shipped behavior, so they must not be written ahead of the features.
+
 ## Files Requiring Updates
+
+> **Note on line numbers:** Line numbers below are approximate and may have drifted. Locate the current section by its heading/content rather than relying on the exact line number. File paths are precise.
+
+> **API symbols the docs must reference:** `BmFont.FromConfig` (now auto-detects `.bmfc`/`.hiero` by extension), `BmFontResult.ToHiero()`, and `ConfigFormatFactory.ReadConfig` / `ConfigFormatFactory.WriteConfig`.
 
 ### 1. README.md (Root)
 
-**Lines 13–14 — Feature list:**
+**Feature list section:**
 Add `.hiero` (Hiero/libGDX) to supported config formats alongside `.bmfc`.
 
-**Lines 51–58 — Quick Start:**
+**Quick Start section:**
 Add example showing `.hiero` usage:
 ```csharp
-// From Hiero config
+// From Hiero config (format auto-detected by extension)
 var result = BmFont.FromConfig("myfont.hiero");
 ```
 
-**Lines 69–70 — ToFile output:**
-Mention that `.ToFile()` can optionally save `.hiero` alongside `.fnt` + images.
+**ToFile output section:**
+Mention that config export is done by the caller via `ToBmfc()`/`ToHiero()` (`.ToFile()` writes `.fnt` + images; it does not take a config path).
 
-**Lines 108–115 — Fluent Builder:**
+**Fluent Builder section:**
 Add `FromConfig("base.hiero")` example.
 
-**Lines ~298+ — Write to Disk / In-Memory:**
+**Write to Disk / In-Memory section:**
 Document `ToHiero()` method alongside `ToBmfc()`.
 
-**Lines ~368+ — Reading and Writing .bmfc Config Files:**
+**Reading and Writing config files section:**
 Expand section to cover both formats:
 ```csharp
 // Read any supported config format (auto-detected by extension)
@@ -50,13 +58,13 @@ var bmfcConfig = BmfcConfigReader.Read("project.bmfc");
 
 **File:** `src/KernSmith/KernSmith.csproj`
 
-**Line 7 — Description:**
+**`<Description>` (~line 10):**
 ```xml
 <Description>BMFont-compatible bitmap font atlases from TTF/OTF/WOFF files. Supports BMFont .bmfc and Hiero .hiero configuration formats.</Description>
 ```
 
-**Line 13 — PackageTags:**
-Add `hiero` and `libgdx` tags:
+**`<PackageTags>` (~line 16):**
+Add the `hiero` and `libgdx` tags (lowercase, consistent with existing tags):
 ```xml
 <PackageTags>bmfont;bitmap-font;hiero;libgdx;font-atlas;...</PackageTags>
 ```
@@ -65,45 +73,45 @@ Add `hiero` and `libgdx` tags:
 
 **File:** `tools/KernSmith.Cli/README.md`
 
-**Lines 187–195 — Config flags:**
+**Config flags section:**
 Update `--config` and `--save-config` descriptions to mention both formats.
 
-**Lines 198–223 — init Command:**
+**init Command section:**
 Add `.hiero` example:
 ```bash
 kernsmith init -o myfont.hiero --font "Arial" --size 32
 ```
 
-**Lines ~314+ — batch Command:**
+**batch Command section:**
 Document mixed-format batch processing:
 ```bash
 kernsmith batch configs/*.bmfc configs/*.hiero --parallel 4
 ```
 
-**Lines ~433+ — Config Files section:**
+**Config Files section:**
 Add new subsection documenting `.hiero` format structure with example.
 
 ### 4. CLI Docs
 
-**File:** `docs/cli/index.md` (lines 34–57)
+**File:** `docs/cli/index.md` (locate the commands table and the Configuration Files section)
 - Update command table to mention `.hiero` in init and batch descriptions
 - Update Configuration Files section
 
-**File:** `docs/cli/commands.md` (lines 134–186)
+**File:** `docs/cli/commands.md` (locate the `--config`/`--save-config`, init, and batch sections)
 - Update `--config` and `--save-config` flag docs
 - Update init command docs
 - Update batch command docs
 
 ### 5. Core Library Docs
 
-**File:** `docs/core/index.md` (line 33)
-- Update `FromConfig()` description: "generate from a `.bmfc` or `.hiero` configuration file"
+**File:** `docs/core/index.md` (locate the `FromConfig()` description)
+- Update `FromConfig()` description: "generate from a `.bmfc` or `.hiero` configuration file (format auto-detected by extension)"
 
 ### 6. Sample Code
 
 **File:** `samples/KernSmith.Samples/Program.cs`
 
-**Lines ~42–55 — Section 2:**
+**Section 2 (FromConfig):**
 Add Hiero example alongside existing `.bmfc` example:
 ```csharp
 // Section 2b: FromConfig (.hiero)
@@ -115,7 +123,7 @@ if (File.Exists(hieroPath))
 }
 ```
 
-**Line ~113 — Export:**
+**Export section:**
 Add `ToHiero()` example:
 ```csharp
 var hieroString = memResult.ToHiero();
@@ -124,7 +132,7 @@ Console.WriteLine($"Hiero config: {hieroString.Length} chars");
 
 ### 7. CHANGELOG.md
 
-Add to the next release section:
+Add to the existing **Unreleased** section. The entry scope spans the **library + CLI + UI** (Phases 82–84) — list the library APIs, CLI flag/command changes, and UI dialog/drag-drop changes together:
 ```markdown
 ### Added
 - Hiero `.hiero` configuration file format support (read and write)
@@ -141,15 +149,14 @@ Add to the next release section:
 
 ### 8. Sample .hiero File
 
-Create a sample `.hiero` file for the samples directory:
+Create a sample `.hiero` file for the samples directory. The content **must conform to `reference/REF-10-hiero-format-reference.md`** and should only use fields KernSmith actually maps (cross-check against the Phase 82 mapping). Deferred/unmapped Hiero fields — e.g. `font.gamma`, `pad.advance.x/y` — should be **omitted** (or commented as ignored), since they have no KernSmith equivalent and are deferred to Phase 100. Keep the example faithful to the format syntax (UTF-8, `key=value`, effects as repeating `effect.class` blocks).
 
-**New file:** `samples/KernSmith.Samples/sample.hiero`
+**New file:** `samples/KernSmith.Samples/sample.hiero` (created by the Phase 85 implementation, not now)
 ```
 font.name=Arial
 font.size=32
 font.bold=false
 font.italic=false
-font.gamma=1.8
 font.mono=false
 
 font2.file=
@@ -159,8 +166,6 @@ pad.top=1
 pad.right=1
 pad.bottom=1
 pad.left=1
-pad.advance.x=-2
-pad.advance.y=-2
 
 glyph.native.rendering=false
 glyph.page.width=512
@@ -172,6 +177,7 @@ render_type=2
 effect.class=com.badlogic.gdx.tools.hiero.unicodefont.effects.ColorEffect
 effect.Color=ffffff
 ```
+(`font.gamma` and `pad.advance.x/y` are intentionally omitted — they are unmapped/deferred per Phase 82.)
 
 ## Summary of All Documentation Changes
 

@@ -4,13 +4,13 @@ using KernSmith.Cli.Utilities;
 namespace KernSmith.Cli.Commands;
 
 /// <summary>
-/// Generates a .bmfc configuration file from CLI flags without rendering a font.
+/// Generates a .bmfc or .hiero configuration file from CLI flags without rendering a font.
 /// This lets users scaffold a config, tweak it by hand, then run <c>kernsmith generate --config</c>.
 /// </summary>
 internal sealed class InitCommand
 {
     /// <summary>
-    /// Parses the provided CLI arguments and writes a .bmfc configuration file to disk.
+    /// Parses the provided CLI arguments and writes a .bmfc or .hiero configuration file to disk.
     /// </summary>
     /// <param name="args">Command-line arguments forwarded from the top-level dispatcher.</param>
     /// <returns>An exit code indicating success or the category of failure.</returns>
@@ -30,10 +30,16 @@ internal sealed class InitCommand
             ConsoleOutput.SetVerbose(options.Verbose);
             ConsoleOutput.SetQuiet(options.Quiet);
 
-            // Determine output path — default to ./font.bmfc
+            // Determine output path — default to font.bmfc
             var outputPath = options.OutputPath ?? "font.bmfc";
-            if (!outputPath.EndsWith(".bmfc", StringComparison.OrdinalIgnoreCase))
-                outputPath += ".bmfc";
+            outputPath = outputPath.Trim();
+            // If the path has no extension, append the canonical default (.bmfc); BMFont is
+            // the default init format. An explicit extension is respected as-is and decides
+            // the written format via ConfigFormatFactory (.hiero -> Hiero, anything else ->
+            // BMFont). Users opt into Hiero by typing a .hiero extension (e.g. -o myfont.hiero).
+            // Trim a lone trailing '.' so "myfont." becomes "myfont.bmfc", not "myfont..bmfc".
+            if (!Path.HasExtension(outputPath))
+                outputPath = outputPath.TrimEnd('.') + ".bmfc";
 
             // Write the config file
             BmfcWriter.Write(options, outputPath);
@@ -62,20 +68,23 @@ internal sealed class InitCommand
     private static void ShowHelp()
     {
         Console.WriteLine("""
-            Generate a .bmfc configuration file without rendering a font.
+            Generate a .bmfc or .hiero configuration file without rendering a font.
 
             Usage: kernsmith init [options]
 
             The init command accepts all the same flags as 'generate' but writes a
-            .bmfc configuration file instead of producing bitmap font output. You can
-            then edit the file and run 'kernsmith generate --config <path>'.
+            config file instead of producing bitmap font output. You can then edit the
+            file and run 'kernsmith generate --config <path>'.
 
             Font Source:
               -f, --font <path>           Font file path (TTF, OTF, WOFF)
               --system-font <name>        Use a system-installed font by family name
 
             Output:
-              -o, --output <path>         Output .bmfc file path (default: ./font.bmfc)
+              -o, --output <path>         Output config file path (default: font.bmfc).
+                                          No extension defaults to .bmfc; an explicit
+                                          extension is respected as-is (the format is chosen
+                                          from it). Use a .hiero extension for Hiero/libGDX.
 
             All other generate flags (--size, --charset, --outline, --gradient, etc.)
             are accepted and written into the configuration file.
@@ -83,7 +92,7 @@ internal sealed class InitCommand
             Examples:
               kernsmith init --system-font "Rockwell Extra Bold" -s 48 --outline 3,0055AA -o my-font.bmfc
               kernsmith init -f ./fonts/MyFont.ttf -s 32 -c extended -o game-font.bmfc
-              kernsmith init -f arial.ttf -s 24 --gradient FF0000,0000FF
+              kernsmith init -f arial.ttf -s 24 -o my-font.hiero
             """);
     }
 }

@@ -176,6 +176,29 @@ public sealed class BmFontResult
     }
 
     /// <summary>
+    /// Returns the .hiero configuration file content as a string.
+    /// Requires that this result was produced by a generation call (not loaded from disk).
+    /// </summary>
+    /// <returns>The .hiero file content.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when no source options are available.</exception>
+    public string ToHiero()
+    {
+        if (SourceOptions is null)
+            throw new InvalidOperationException(
+                "Cannot generate .hiero content: this result was not produced by a generation call, " +
+                "so no source options are available.");
+
+        var config = new BmfcConfig
+        {
+            Options = SourceOptions,
+            FontFile = SourceFontFile,
+            FontName = SourceFontName,
+        };
+
+        return HieroConfigWriter.Write(config);
+    }
+
+    /// <summary>
     /// Writes the BMFont descriptor and atlas page images to disk.
     /// </summary>
     /// <param name="outputPath">Base path without extension (e.g., "output/myfont").</param>

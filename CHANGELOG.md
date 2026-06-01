@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Hiero `.hiero` (libGDX) configuration file format support (read and write) — `HieroConfigReader` and `HieroConfigWriter` (`KernSmith` namespace)
+- `ConfigFormatFactory.ReadConfig()` auto-detects config format (`.bmfc` / `.hiero`) by inspecting file content (extension used only when content is inconclusive); `ConfigFormatFactory.WriteConfig()` selects format by file extension
+- `BmFont.FromConfig()` and `BmFontBuilder.FromConfig()` now auto-detect `.bmfc` and `.hiero` configs by inspecting file content (extension used only when content is inconclusive)
+- Config-format auto-detection treats any non-`.hiero` extension (including no extension) as BMFont `.bmfc`, preserving backward compatibility (lenient `ConfigFormatFactory` behavior)
+- `BmFontResult.ToHiero()` — export an equivalent Hiero `.hiero` config string (mirrors `ToBmfc()`)
+- CLI: `--config` and `--save-config` accept `.hiero` files; `init -o foo.hiero` writes a `.hiero` config (no extension defaults to `.bmfc`); `batch` processes mixed `.bmfc` and `.hiero` globs
+- UI: Load/Save project dialogs and drag-and-drop accept `.hiero` files, with a warning when saving `.hiero` with settings it cannot represent (channel packing, variable axes, super sampling, color font)
 - `AtlasPage.GetRgbaPixelData()` — returns RGBA32 pixel bytes (grayscale pages expand to `255,255,255,v` alpha-coverage layout) for straight-alpha GPU upload
 - `AtlasPage.GetAlpha8PixelData()` — returns 8-bit alpha-coverage bytes (one byte per pixel) for single-channel/coverage textures and custom shaders
 - `AtlasPage.GetPremultipliedRgbaPixelData()` — returns premultiplied RGBA32 bytes for premultiplied-alpha blend pipelines (e.g. MonoGame's default `BlendState.AlphaBlend`)

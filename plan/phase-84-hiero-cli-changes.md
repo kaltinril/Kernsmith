@@ -7,16 +7,20 @@
 
 ---
 
+## Implementation Blockers
+
+Phase 84 requires Phase 82's `ConfigFormatFactory` (with `ReadConfig` / `WriteConfig`, public and tested) to be merged first. `BmfcParser.cs` and `BmfcWriter.cs` dispatch through that factory; without it, the CLI cannot auto-detect `.hiero` vs `.bmfc`.
+
 ## Current State
 
 The CLI tool has several `.bmfc`-specific code paths:
 
-- `tools/KernSmith.Cli/Config/BmfcParser.cs` — Calls `BmfcConfigReader.Read()` directly
-- `tools/KernSmith.Cli/Config/BmfcWriter.cs` — Calls `BmfcConfigWriter.WriteToFile()` directly
-- `tools/KernSmith.Cli/Commands/GenerateCommand.cs` — `--config` and `--save-config` flags, no format detection
-- `tools/KernSmith.Cli/Commands/InitCommand.cs` — Hardcoded `.bmfc` extension appending
-- `tools/KernSmith.Cli/Commands/BatchCommand.cs` — Glob expansion assumes `*.bmfc`, help text references `.bmfc`
-- `tools/KernSmith.Cli/Program.cs` — Help text mentions `.bmfc`
+- `tools/KernSmith.Cli/Config/BmfcParser.cs` — Calls `BmfcConfigReader.Read()` directly (~line 18); switch to `ConfigFormatFactory.ReadConfig()`
+- `tools/KernSmith.Cli/Config/BmfcWriter.cs` — Calls `BmfcConfigWriter.WriteToFile()` directly (~line 19); switch to `ConfigFormatFactory.WriteConfig()`
+- `tools/KernSmith.Cli/Commands/GenerateCommand.cs` — `BmfcParser.Parse()` call (~line 36); **no change needed** (the factory dispatches inside the parser)
+- `tools/KernSmith.Cli/Commands/InitCommand.cs` — Hardcoded `.bmfc` extension appending (~lines 34–36)
+- `tools/KernSmith.Cli/Commands/BatchCommand.cs` — Glob/help (~lines 60–110), error message (~line 114), help text (~lines 271–272)
+- `tools/KernSmith.Cli/Program.cs` — Help text mentions `.bmfc` (~lines 45, 56–57, 108–109)
 
 ## Changes Required
 
@@ -81,7 +85,7 @@ kernsmith generate --save-config output.hiero --font "Arial" --size 32
 
 ### 4. Init Command — Remove Hardcoded Extension
 
-**File:** `InitCommand.cs` (lines ~35–36)
+**File:** `InitCommand.cs` (~lines 34–36)
 
 Current:
 ```csharp
@@ -91,10 +95,14 @@ if (!outputPath.EndsWith(".bmfc", StringComparison.OrdinalIgnoreCase))
 
 Updated — support both extensions:
 ```csharp
+// Intentional: default to .bmfc for backward compatibility when no recognized
+// extension is given. Users opt into .hiero by passing the .hiero extension explicitly.
 if (!outputPath.EndsWith(".bmfc", StringComparison.OrdinalIgnoreCase) &&
     !outputPath.EndsWith(".hiero", StringComparison.OrdinalIgnoreCase))
     outputPath += ".bmfc";  // default to .bmfc if no recognized extension
 ```
+
+**Rationale:** Keep defaulting to `.bmfc` when no extension is supplied (backward compat). Users opt into `.hiero` by giving the `.hiero` extension explicitly. This is intentional — note the comment in the code.
 
 Or add a `--format` flag:
 ```bash
@@ -109,22 +117,25 @@ kernsmith init -o myfont --font "Arial"                     # defaults to .bmfc
 
 **File:** `BatchCommand.cs`
 
-**Glob expansion (lines ~89–110):**
+**Glob expansion (~lines 60–110):**
 
 Current: Expands `*.bmfc` patterns.
 
-Updated: Also expand `*.hiero` patterns. When user passes glob patterns, both extensions should be matched:
+Updated: Also expand `*.hiero` patterns. When the user passes glob patterns, both extensions should be matched:
 ```bash
-kernsmith batch fonts/*.bmfc fonts/*.hiero --parallel 4
-kernsmith batch fonts/*.bmfc                              # existing behavior
-kernsmith batch configs/                                  # auto-find .bmfc and .hiero (requires new directory-scanning logic — not currently supported; batch only accepts file paths and glob patterns)
+kernsmith batch configs/*.bmfc configs/*.hiero --parallel 4
+kernsmith batch configs/*.bmfc                           # existing behavior
 ```
 
-**Help text (lines ~266, ~271):** Update references from `.bmfc` to `.bmfc/.hiero`.
+**Directory scanning is DEFERRED:** users supply glob patterns (`configs/*.bmfc configs/*.hiero`). Bare-directory scanning (e.g. `kernsmith batch configs/`) is a future phase — `batch` only accepts file paths and glob patterns for now.
+
+**Error message (~line 114):** Generalize from `"No .bmfc config files specified"` to `"No .bmfc or .hiero config files specified"`.
+
+**Help text (~lines 271–272):** Update references from `.bmfc` to `.bmfc/.hiero`.
 
 ### 6. Help Text Updates
 
-**File:** `Program.cs`
+**File:** `Program.cs` (~lines 45, 56–57, 108–109)
 
 Update general help text to mention both formats:
 ```
@@ -174,14 +185,14 @@ kernsmith generate --config existing.bmfc --save-config converted.hiero
 
 | Test | Description |
 |------|-------------|
-| `--config game.hiero` | Loads .hiero, generates font correctly |
+| Load via `--config file.hiero` | Loads .hiero, generates font correctly |
 | `--config game.bmfc` | Existing behavior unchanged |
-| `--save-config out.hiero` | Writes valid .hiero file |
+| Save via `--save-config out.hiero` | Writes valid .hiero file |
 | `--save-config out.bmfc` | Existing behavior unchanged |
-| `init -o font.hiero` | Creates .hiero config file |
-| `init -o font` | Defaults to .bmfc (backward compat) |
+| `init -o file.hiero` honors extension | Creates a `.hiero` config file (extension respected) |
+| `init -o file` (no ext) defaults to `.bmfc` | Backward-compat default applied |
 | `batch *.hiero` | Processes all .hiero files |
-| `batch *.bmfc *.hiero` | Mixed format batch |
+| Batch with mixed glob processes both | `batch configs/*.bmfc configs/*.hiero` handles `.bmfc` and `.hiero` together |
 | Format conversion | `--config a.bmfc --save-config b.hiero` round-trips |
 
 ## Estimated Complexity

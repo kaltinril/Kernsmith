@@ -916,13 +916,13 @@ public static class BmFont
         }
     }
 
-    /// <summary>Generates a bitmap font from a .bmfc config file.</summary>
-    /// <param name="bmfcPath">Path to the .bmfc configuration file.</param>
+    /// <summary>Generates a bitmap font from a config file, auto-detecting .bmfc or .hiero format.</summary>
+    /// <param name="bmfcPath">Path to a configuration file. Despite the name, this accepts both <c>.bmfc</c> and <c>.hiero</c> files (auto-detected by inspecting the file content; the extension is used only as a fallback when the content is inconclusive).</param>
     /// <returns>The generated bitmap font result.</returns>
     public static BmFontResult FromConfig(string bmfcPath)
     {
         ArgumentNullException.ThrowIfNull(bmfcPath);
-        var config = BmfcConfigReader.Read(bmfcPath);
+        var config = ConfigFormatFactory.ReadConfig(bmfcPath);
         return FromConfig(config);
     }
 

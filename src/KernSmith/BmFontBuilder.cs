@@ -17,13 +17,13 @@ public sealed class BmFontBuilder
 
     internal BmFontBuilder() { }
 
-    /// <summary>Loads settings from a .bmfc config file as a starting point.</summary>
-    /// <param name="bmfcPath">Path to the .bmfc configuration file.</param>
+    /// <summary>Loads settings from a config file (.bmfc or .hiero) as a starting point.</summary>
+    /// <param name="bmfcPath">Path to a configuration file. Despite the name, this accepts both <c>.bmfc</c> and <c>.hiero</c> files (auto-detected by inspecting the file content; the extension is used only as a fallback when the content is inconclusive).</param>
     /// <returns>This builder.</returns>
     public BmFontBuilder FromConfig(string bmfcPath)
     {
         ArgumentNullException.ThrowIfNull(bmfcPath);
-        return FromConfig(BmfcConfigReader.Read(bmfcPath));
+        return FromConfig(ConfigFormatFactory.ReadConfig(bmfcPath));
     }
 
     /// <summary>Loads settings from a parsed .bmfc config as a starting point.</summary>

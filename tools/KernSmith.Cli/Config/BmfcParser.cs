@@ -3,26 +3,30 @@ using KernSmith.Cli.Utilities;
 namespace KernSmith.Cli.Config;
 
 /// <summary>
-/// Reads .bmfc configuration files into <see cref="CliOptions"/>.
-/// Delegates to the library-level <see cref="BmfcConfigReader"/> and maps the result.
+/// Reads .bmfc/.hiero configuration files into <see cref="CliOptions"/>.
+/// Delegates to the library-level <see cref="ConfigFormatFactory"/> (which auto-detects the
+/// format by inspecting the file content, using the extension only as a fallback when the
+/// content is inconclusive) and maps the result.
 /// </summary>
 internal static class BmfcParser
 {
     /// <summary>
-    /// Reads a .bmfc configuration file and returns the equivalent CLI options.
+    /// Reads a .bmfc or .hiero configuration file and returns the equivalent CLI options.
+    /// The format is auto-detected by inspecting the file content; the extension is used only
+    /// as a fallback when the content is inconclusive.
     /// </summary>
-    /// <param name="filePath">Absolute or relative path to the .bmfc file.</param>
+    /// <param name="filePath">Absolute or relative path to the config file (.bmfc or .hiero).</param>
     /// <returns>A <see cref="CliOptions"/> populated from the configuration file.</returns>
     public static CliOptions Parse(string filePath)
     {
-        var config = BmfcConfigReader.Read(filePath);
+        var config = ConfigFormatFactory.ReadConfig(filePath);
         return MapToCliOptions(config);
     }
 
     /// <summary>
     /// Maps a library-level <see cref="BmfcConfig"/> to CLI-level <see cref="CliOptions"/>.
     /// </summary>
-    /// <param name="config">The parsed .bmfc configuration.</param>
+    /// <param name="config">The parsed configuration (from .bmfc or .hiero).</param>
     /// <returns>A <see cref="CliOptions"/> with all fields mapped from the config.</returns>
     private static CliOptions MapToCliOptions(BmfcConfig config)
     {

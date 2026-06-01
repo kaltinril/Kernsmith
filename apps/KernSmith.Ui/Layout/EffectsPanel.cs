@@ -219,11 +219,13 @@ public class EffectsPanel : Panel
         // Bold checkbox
         boldCheck.Checked += (_, _) =>
         {
+            if (updatingSyntheticChecks) return;
             _effects.Bold = true;
             UpdateSynBoldState();
         };
         boldCheck.Unchecked += (_, _) =>
         {
+            if (updatingSyntheticChecks) return;
             _effects.Bold = false;
             _effects.ForceSyntheticBold = false;
             UpdateSynBoldState();
@@ -232,11 +234,13 @@ public class EffectsPanel : Panel
         // Italic checkbox
         italicCheck.Checked += (_, _) =>
         {
+            if (updatingSyntheticChecks) return;
             _effects.Italic = true;
             UpdateSynItalicState();
         };
         italicCheck.Unchecked += (_, _) =>
         {
+            if (updatingSyntheticChecks) return;
             _effects.Italic = false;
             _effects.ForceSyntheticItalic = false;
             UpdateSynItalicState();
@@ -257,6 +261,7 @@ public class EffectsPanel : Panel
         // Synthetic bold: when checked, auto-check Bold (synthetic implies bold)
         synBoldCheck.Checked += (_, _) =>
         {
+            if (updatingSyntheticChecks) return;
             _effects.ForceSyntheticBold = true;
             if (boldCheck.IsChecked != true)
             {
@@ -266,11 +271,16 @@ public class EffectsPanel : Panel
                 _effects.Bold = true;
             }
         };
-        synBoldCheck.Unchecked += (_, _) => _effects.ForceSyntheticBold = false;
+        synBoldCheck.Unchecked += (_, _) =>
+        {
+            if (updatingSyntheticChecks) return;
+            _effects.ForceSyntheticBold = false;
+        };
 
         // Synthetic italic: when checked, auto-check Italic (synthetic implies italic)
         synItalicCheck.Checked += (_, _) =>
         {
+            if (updatingSyntheticChecks) return;
             _effects.ForceSyntheticItalic = true;
             if (italicCheck.IsChecked != true)
             {
@@ -280,7 +290,11 @@ public class EffectsPanel : Panel
                 _effects.Italic = true;
             }
         };
-        synItalicCheck.Unchecked += (_, _) => _effects.ForceSyntheticItalic = false;
+        synItalicCheck.Unchecked += (_, _) =>
+        {
+            if (updatingSyntheticChecks) return;
+            _effects.ForceSyntheticItalic = false;
+        };
 
         // Super sampling
         var ssGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };

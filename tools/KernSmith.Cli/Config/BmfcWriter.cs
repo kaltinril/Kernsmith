@@ -3,20 +3,22 @@ using KernSmith.Cli.Utilities;
 namespace KernSmith.Cli.Config;
 
 /// <summary>
-/// Serializes <see cref="CliOptions"/> to .bmfc format.
-/// Delegates to the library-level <see cref="BmfcConfigWriter"/>.
+/// Serializes <see cref="CliOptions"/> to .bmfc or .hiero format.
+/// Delegates to the library-level <see cref="ConfigFormatFactory"/>, which selects the
+/// serializer based on the output file extension.
 /// </summary>
 internal static class BmfcWriter
 {
     /// <summary>
-    /// Writes CLI options to a .bmfc configuration file.
+    /// Writes CLI options to a configuration file. The format (.bmfc or .hiero) is
+    /// auto-detected from the file extension.
     /// </summary>
     /// <param name="options">The CLI options to serialize.</param>
-    /// <param name="filePath">The output .bmfc file path.</param>
+    /// <param name="filePath">The output config file path (.bmfc or .hiero).</param>
     public static void Write(CliOptions options, string filePath)
     {
         var config = MapToBmfcConfig(options);
-        BmfcConfigWriter.WriteToFile(config, filePath);
+        ConfigFormatFactory.WriteConfig(config, filePath);
     }
 
     /// <summary>
@@ -43,7 +45,7 @@ internal static class BmfcWriter
     /// This mirrors GenerateCommand.BuildGenOptions but without requiring a validated Size.
     /// </summary>
     /// <param name="options">The CLI options to convert.</param>
-    /// <returns>A <see cref="FontGeneratorOptions"/> suitable for .bmfc serialization.</returns>
+    /// <returns>A <see cref="FontGeneratorOptions"/> suitable for config serialization (.bmfc or .hiero).</returns>
     private static FontGeneratorOptions BuildFontGeneratorOptions(CliOptions options)
     {
         var genOptions = new FontGeneratorOptions

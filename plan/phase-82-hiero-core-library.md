@@ -88,6 +88,12 @@ public static class ConfigFormatFactory
 }
 ```
 
+> **Public API surface that Phases 83 & 84 depend on (must be public + tested before those phases start):**
+> - `static ConfigFormatFactory.ReadConfig(string filePath) → BmfcConfig` — auto-detects format by file extension, throws `BmFontException` on an unknown/unsupported extension.
+> - `static ConfigFormatFactory.WriteConfig(BmfcConfig config, string filePath) → void` — auto-detects format by file extension, throws `BmFontException` on an unknown/unsupported extension.
+> - `static HieroConfigReader.Read(string filePath) → BmfcConfig` and `HieroConfigReader.Parse(string content) → BmfcConfig` — mirroring the existing static `BmfcConfigReader`.
+> - `static HieroConfigWriter.Write(BmfcConfig config) → string` and `HieroConfigWriter.WriteToFile(BmfcConfig config, string filePath) → void` — mirroring the existing static `BmfcConfigWriter`.
+
 ### 2. Hiero Config Reader
 
 **New file: `src/KernSmith/Config/HieroConfigReader.cs`**
@@ -108,8 +114,8 @@ Responsibilities:
 Effect mapping logic:
 - `ColorEffect` → ignore on import (log warning if non-white); always write white on export. Full fill-color support deferred to Phase 100.
 - `GradientEffect` → `GradientStartR/G/B`, `GradientEndR/G/B`; Hiero's Offset/Scale/Cyclic have no direct equivalent (KernSmith uses `GradientAngle`, `GradientMidpoint`)
-- `OutlineEffect` → `Outline` (float→int, round-to-nearest), `OutlineR`, `OutlineG`, `OutlineB`; join has no KernSmith equivalent (dropped)
-- `ShadowEffect` → `ShadowOffsetX/Y`, `ShadowR/G/B`, `ShadowOpacity`, `ShadowBlur`; `HardShadow` has no Hiero equivalent (omitted on export). Hiero's two-param blur collapses as `ShadowBlur = kernelSize * passes`. Two-param blur deferred to Phase 100.
+- `OutlineEffect` → `Outline` (float→int via `Math.Round()`, matching the existing `BmfcConfigWriter` rounding pattern), `OutlineR`, `OutlineG`, `OutlineB`; join has no KernSmith equivalent (dropped)
+- `ShadowEffect` → `ShadowOffsetX/Y`, `ShadowR/G/B`, `ShadowOpacity`, `ShadowBlur`. On export, the `HardShadow` flag controls blur output: if `HardShadow == true` write blur `0` (and log a warning), otherwise write `ShadowBlur` as-is. Hiero's two-parameter blur (kernel size + passes) is collapsed/deferred to Phase 100.
 - `DistanceFieldEffect` → `Sdf = true`; Hiero's Scale and Spread have no KernSmith equivalent
 - `OutlineWobbleEffect` / `OutlineZigzagEffect` → log warning, skip (no KernSmith equivalent)
 
@@ -124,12 +130,14 @@ Responsibilities:
 - Write padding section
 - Write glyph settings (texture size, character text with `\n` escaping)
 - Write `render_type=2` (always FreeType)
-- Write effect blocks based on active KernSmith effects:
+- Write effect blocks based on active KernSmith effects, using the **effect-activation rules** below.
+- **Canonical effect serialization order** (for stable round-trip): `ColorEffect`, `OutlineEffect`, `GradientEffect`, `ShadowEffect`, `DistanceFieldEffect`. Always emit effects in this fixed order regardless of any input ordering.
   - Always write `ColorEffect` (white default)
-  - Write `OutlineEffect` if outline thickness > 0
-  - Write `GradientEffect` if gradient is enabled
-  - Write `ShadowEffect` if shadow is enabled
-  - Write `DistanceFieldEffect` if SDF is enabled
+  - Write `OutlineEffect` if **Outline thickness > 0**. Hiero `Width` is a float; KernSmith `Outline` is an int — write it directly as a float-formatted value (and on import use `Math.Round()` for the float→int conversion, matching the existing `BmfcConfigWriter` rounding pattern).
+  - Write `GradientEffect` if **gradient start/end colors are set**
+  - Write `ShadowEffect` if **`ShadowOffsetX != 0` OR `ShadowOffsetY != 0` OR `ShadowBlur > 0`**
+  - Write `DistanceFieldEffect` if **`Sdf == true`**
+- **Shadow blur conversion**: KernSmith has `ShadowBlur` (a radius) plus a `HardShadow` flag. On export: if `HardShadow == true`, write blur `0`; otherwise write `ShadowBlur` as-is. Log a warning when `HardShadow == true` (the flag itself has no Hiero equivalent).
 - Log warnings for KernSmith features with no Hiero equivalent (including `HardShadow`)
 
 ### 4. Public API Updates
@@ -162,9 +170,11 @@ public string ToBmfc() { ... }
 public string ToHiero() { ... }
 ```
 
-**`src/KernSmith/Output/FileWriter.cs`** — Update `ToFile()` to optionally write `.hiero` alongside output:
-- Currently writes `.bmfc` alongside `.fnt` + images
-- Should use `ConfigFormatFactory.WriteConfig()` if a config path is provided
+**`ToHiero()` contract:** `public string ToHiero()` returns the `.hiero` file content as a string — the same contract as the existing `ToBmfc()`. It requires `SourceOptions`, `SourceFontFile`, and `SourceFontName` to be set on the `BmFontResult` (identical preconditions to `ToBmfc()`); throws `BmFontException` if they are missing.
+
+**`src/KernSmith/Output/FileWriter.cs`** — No new config-path parameter:
+- Config export is the **caller's** responsibility via `BmFontResult.ToBmfc()` / `BmFontResult.ToHiero()` (or `ConfigFormatFactory.WriteConfig()`), NOT a parameter on `FileWriter.Write()`.
+- Do **not** add a config path parameter to `FileWriter.Write()`. Callers that want to persist a config string write it themselves using the appropriate `To*()` method.
 
 ### 5. Backward Compatibility
 
@@ -185,7 +195,7 @@ public string ToHiero() { ... }
 | `src/KernSmith/BmFont.cs` | Modified — `FromConfig(string)` uses factory |
 | `src/KernSmith/BmFontBuilder.cs` | Modified — `FromConfig(string)` uses factory |
 | `src/KernSmith/Output/BmFontResult.cs` | Modified — add `ToHiero()` |
-| `src/KernSmith/Output/FileWriter.cs` | Modified — config format awareness |
+| `src/KernSmith/Output/FileWriter.cs` | **No change** — config export stays at caller level via `BmFontResult.ToBmfc()`/`ToHiero()` |
 
 ## Test Plan
 
@@ -228,8 +238,8 @@ Decisions made during pre-implementation review:
 
 1. **`pad.advance.x/y`** — Drop on import with warning. Semantically different from `Spacing` (per-glyph advance vs atlas spacing). Deferred to Phase 100.
 2. **ColorEffect** — Ignore on import (log warning if non-white), always write white on export. Full fill-color support deferred to Phase 100.
-3. **Outline thickness** — Hiero's float width maps to `FontGeneratorOptions.Outline` (int). Use round-to-nearest (not truncation) for float→int conversion.
-4. **Shadow blur** — Collapse as `ShadowBlur = kernelSize * passes`. Two-parameter blur deferred to Phase 100.
+3. **Outline thickness** — Hiero's float width maps to `FontGeneratorOptions.Outline` (int). Use `Math.Round()` (matching the existing `BmfcConfigWriter` rounding pattern), not truncation, for float→int conversion.
+4. **Shadow blur** — KernSmith `ShadowBlur` (radius) + `HardShadow` flag. On export: `HardShadow == true` → write blur `0` (log warning); else write `ShadowBlur` as-is. Hiero's two-parameter blur (kernel size + passes) deferred to Phase 100.
 5. **Font paths on export** — Use relative paths, matching `BmfcConfigWriter` behavior.
 6. **Gradient Offset/Scale/Cyclic, DistanceField Scale/Spread, Wobble/Zigzag** — All deferred to Phase 100.
 7. **Scope focus** — Priority is KernSmith ↔ .hiero round-trip fidelity, not full Hiero ecosystem compatibility.

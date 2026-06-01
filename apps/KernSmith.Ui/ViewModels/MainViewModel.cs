@@ -412,16 +412,127 @@ public class MainViewModel : ViewModel
             return;
         }
 
+        // Derive the default extension from the current project path so re-saving a
+        // .hiero project defaults to .hiero. Falls back to .bmfc when there is no
+        // current path or its extension is not a recognized config format.
+        var defaultExt = GetDefaultProjectExtension();
         var initialDir = _sessionService.State.LastOutputDir;
         using var dialog = new NativeFileDialog()
             .SaveFile()
-            .AddFilter("KernSmith Projects", "*.bmfc");
-        var result = dialog.Open(out string? savePath, initialDir, "myproject.bmfc");
+            .AddFilter("KernSmith Projects", "bmfc,hiero");
+        var result = dialog.Open(out string? savePath, initialDir, $"myproject.{defaultExt}");
         if (result == DialogResult.Okay && savePath != null)
+        {
+            // Normalize a typed path with no extension so the lossy-.hiero check and the
+            // writer both receive the intended (default) extension.
+            if (!Path.HasExtension(savePath))
+                savePath += "." + GetDefaultProjectExtension();
             DoSaveProject(savePath);
+        }
+    }
+
+    /// <summary>
+    /// Returns the default project file extension (without a dot) for new saves, based on
+    /// the current project path. Falls back to <c>bmfc</c> when the path is null or its
+    /// extension is neither <c>.bmfc</c> nor <c>.hiero</c>.
+    /// </summary>
+    private string GetDefaultProjectExtension()
+    {
+        var currentPath = _projectService.CurrentProjectPath;
+        if (currentPath == null)
+            return "bmfc";
+
+        var ext = Path.GetExtension(currentPath).TrimStart('.').ToLowerInvariant();
+        return ext is "bmfc" or "hiero" ? ext : "bmfc";
     }
 
     private void DoSaveProject(string path)
+    {
+        // The Hiero format cannot store some KernSmith-specific settings. Warn and confirm
+        // before writing so the user does not silently lose configuration.
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        if (ext == ".hiero")
+        {
+            var lost = GetLossyHieroSettings();
+            if (lost.Count > 0)
+            {
+                var message =
+                    "These settings are not supported by the Hiero format and will not be saved:\n- "
+                    + string.Join("\n- ", lost)
+                    + "\nContinue saving?";
+                ErrorDialog.Confirm(
+                    "Lossy Save Warning",
+                    message,
+                    "Save Anyway",
+                    () => WriteProject(path),
+                    () => StatusBar.StatusText = "Save canceled");
+                return;
+            }
+        }
+
+        WriteProject(path);
+    }
+
+    /// <summary>
+    /// Returns the KernSmith-specific settings that would be lost when saving to the Hiero
+    /// format, given the current UI state.
+    /// </summary>
+    private List<string> GetLossyHieroSettings()
+    {
+        var lost = new List<string>();
+        if (Effects.ChannelPackingEnabled)
+            lost.Add("Channel packing");
+        // Hiero cannot represent variable-font axes at all. The UI (SyncVariationAxesToEffects)
+        // pre-populates VariationAxisValues with each axis's DefaultValue on font load, so only
+        // flag when at least one value deviates from its axis DefaultValue.
+        if (Effects.HasVariationAxes && HasNonDefaultVariationAxes())
+            lost.Add("Variable font axes");
+        if (Effects.SuperSampleLevel > 1)
+            lost.Add("Super sampling level");
+        if (Effects.ColorFontEnabled)
+            lost.Add("Color font glyphs");
+        // HieroConfigWriter never serializes glyph spacing; the reader restores the
+        // default (1,1) on reload, so only a non-default spacing is actually lost.
+        if (AtlasConfig.SpacingH != 1 || AtlasConfig.SpacingV != 1)
+            lost.Add("Glyph spacing");
+        // The writer emits a fixed gradient offset/scale and has no angle field, so a
+        // non-default angle (default 90) on an enabled gradient is dropped.
+        if (Effects.GradientEnabled && Effects.GradientAngle != 90)
+            lost.Add("Gradient angle");
+        // Hinting is never serialized; only a deviation when disabled (default on).
+        if (!Effects.Hinting)
+            lost.Add("Hinting");
+        // HardShadow has no Hiero equivalent (writer forces blur kernel size 0).
+        if (Effects.HardShadow)
+            lost.Add("Hard shadow");
+        // The .hiero format is always flat text; XML/Binary descriptor output is lost.
+        if (AtlasConfig.DescriptorFormat != OutputFormat.Text)
+            lost.Add("Descriptor format (XML/Binary)");
+        return lost;
+    }
+
+    /// <summary>
+    /// Returns true when any loaded variation axis value deviates from its axis
+    /// <see cref="Font.Tables.VariationAxis.DefaultValue"/>. Axes whose default cannot be
+    /// resolved are treated conservatively as non-default deviations.
+    /// </summary>
+    private bool HasNonDefaultVariationAxes()
+    {
+        if (Effects.VariationAxisValues.Count == 0)
+            return false;
+
+        var axes = FontConfig.LoadedVariationAxes;
+        foreach (var (tag, value) in Effects.VariationAxisValues)
+        {
+            var axis = axes?.FirstOrDefault(a => a.Tag == tag);
+            // Unknown axis default: treat as a deviation to stay conservative.
+            if (axis == null || value != axis.DefaultValue)
+                return true;
+        }
+        return false;
+    }
+
+    private void WriteProject(string path)
     {
         try
         {
@@ -438,13 +549,13 @@ public class MainViewModel : ViewModel
     }
 
     /// <summary>
-    /// Opens a file browser dialog to select and load a .bmfc project file.
+    /// Opens a file browser dialog to select and load a .bmfc or .hiero project file.
     /// </summary>
     public void LoadProject()
     {
         using var dialog = new NativeFileDialog()
             .SelectFile()
-            .AddFilter("KernSmith Projects", "bmfc")
+            .AddFilter("KernSmith Projects", "bmfc,hiero")
             .AddFilter("All Files", "*");
         var result = dialog.Open(out string? path);
         if (result == DialogResult.Okay && path != null)
@@ -452,7 +563,7 @@ public class MainViewModel : ViewModel
     }
 
     /// <summary>
-    /// Loads a .bmfc project file from the given path, populating all ViewModels.
+    /// Loads a .bmfc or .hiero project file from the given path, populating all ViewModels.
     /// </summary>
     public void LoadProjectFromPath(string path)
     {

@@ -26,6 +26,7 @@
 - **Font subsetting** -- only parses tables for requested codepoints
 - **Custom glyphs** -- replace or add glyphs with user-supplied images
 - **Texture formats** -- PNG (default), TGA, and DDS atlas output
+- **Config formats** -- read and write BMFont `.bmfc` and Hiero `.hiero` (libGDX) config files; reading auto-detects the format by inspecting file content (extension used only when content is inconclusive), writing selects the format by extension
 - **Reading BMFont files** -- load and parse existing `.fnt` files (auto-detects text/XML/binary)
 - **Fluent builder API** -- chainable configuration as an alternative to options objects
 - **System font loading** -- generate from installed fonts by family name, with a font registry for platforms without system font access
@@ -122,6 +123,13 @@ var result = BmFont.FromConfig("myfont.bmfc");
 result.ToFile("output/myfont");
 ```
 
+`FromConfig` auto-detects the format by inspecting the file content (using the extension only as a fallback when the content is inconclusive), so a Hiero `.hiero` (libGDX) config works the same way:
+
+```csharp
+var result = BmFont.FromConfig("myfont.hiero");
+result.ToFile("output/myfont");
+```
+
 Generate from a TTF file using `FontGeneratorOptions`:
 
 ```csharp
@@ -211,7 +219,7 @@ You can also start the builder from a `.bmfc` config and override individual set
 
 ```csharp
 var result = BmFont.Builder()
-    .FromConfig("base.bmfc")
+    .FromConfig("base.bmfc")   // or "base.hiero" — format auto-detected by file content
     .WithSize(48)
     .Build();
 ```
@@ -471,6 +479,7 @@ byte[][] ddsFiles = result.GetDdsData();
 
 // Round-trip: export the config that produced this result
 string bmfcText = result.ToBmfc();
+string hieroText = result.ToHiero();   // Hiero (.hiero / libGDX) equivalent
 ```
 
 The older `ToString()`, `ToXml()`, and `ToBinary()` methods still work and return the same data.
@@ -504,25 +513,39 @@ foreach (var page in result.Pages)
 }
 ```
 
-## Reading and Writing .bmfc Config Files
+## Reading and Writing Config Files
 
-Use `BmfcConfigReader` and `BmfcConfigWriter` to work with `.bmfc` configuration files programmatically:
+KernSmith supports both BMFont `.bmfc` and Hiero `.hiero` (libGDX) configuration files. Use `ConfigFormatFactory` to read or write either format. Reading auto-detects the format by inspecting the file content (the extension is used only as a fallback when the content is inconclusive); writing selects the format by file extension:
 
 ```csharp
 using KernSmith;
 
-// Read a .bmfc config file
-BmfcConfig config = BmfcConfigReader.Read("path/to/font.bmfc");
+// Read any supported config format (auto-detected by file content)
+BmfcConfig config = ConfigFormatFactory.ReadConfig("project.hiero");
+BmfcConfig other = ConfigFormatFactory.ReadConfig("project.bmfc");
 
-// Or parse from a string
-BmfcConfig config2 = BmfcConfigReader.Parse(bmfcContent);
-
-// Modify and write back
-BmfcConfigWriter.WriteToFile(config, "path/to/output.bmfc");
-
-// Or serialize to a string
-string bmfcText = BmfcConfigWriter.Write(config);
+// Write to a specific format (chosen by extension)
+ConfigFormatFactory.WriteConfig(config, "output.hiero");
+ConfigFormatFactory.WriteConfig(config, "output.bmfc");
 ```
+
+The format-specific readers and writers are also available directly:
+
+```csharp
+// BMFont .bmfc
+BmfcConfig bmfcConfig = BmfcConfigReader.Read("path/to/font.bmfc");
+BmfcConfig bmfcParsed = BmfcConfigReader.Parse(bmfcContent);
+BmfcConfigWriter.WriteToFile(bmfcConfig, "path/to/output.bmfc");
+string bmfcText = BmfcConfigWriter.Write(bmfcConfig);
+
+// Hiero .hiero (libGDX)
+BmfcConfig hieroConfig = HieroConfigReader.Read("path/to/font.hiero");
+BmfcConfig hieroParsed = HieroConfigReader.Parse(hieroContent);
+HieroConfigWriter.WriteToFile(hieroConfig, "path/to/output.hiero");
+string hieroText = HieroConfigWriter.Write(hieroConfig);
+```
+
+Hiero is a lossy target for some KernSmith features (channel packing, variable axes, super sampling, and color fonts have no `.hiero` equivalent).
 
 ## Reading BMFont Files
 

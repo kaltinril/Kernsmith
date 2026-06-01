@@ -42,7 +42,7 @@ static int ShowHelp()
         Usage:
           kernsmith generate -f <font> -s <size> [options]
           kernsmith init [options] -o <path>
-          kernsmith batch <config1.bmfc> [config2.bmfc ...] [options]
+          kernsmith batch <config1.bmfc> [config2.hiero ...] [options]
           kernsmith benchmark -f <font> -s <size> [options]
           kernsmith inspect <path>
           kernsmith convert <input> -o <output> [--format <text|xml|binary>]
@@ -53,8 +53,8 @@ static int ShowHelp()
 
         Commands:
           generate      Generate BMFont files from a font
-          init          Generate a .bmfc config file without rendering
-          batch         Process multiple .bmfc configs in a single invocation
+          init          Generate a .bmfc or .hiero config file without rendering
+          batch         Process multiple .bmfc/.hiero configs in a single invocation
           benchmark     Benchmark font generation performance
           inspect       Inspect an existing .fnt file
           convert       Convert between BMFont formats (text/xml/binary)
@@ -105,8 +105,8 @@ static int ShowHelp()
           --axis <tag>=<value>         Set variation axis (repeatable)
           --instance <name>            Use a named font instance
           --face <n>                   Face index for .ttc (default: 0)
-          --config <path>              Load settings from a .bmfc configuration file
-          --save-config <path>         Save current settings to a .bmfc file
+          --config <path>              Load settings from a .bmfc or .hiero config file
+          --save-config <path>         Save current settings to a .bmfc or .hiero file
           --dry-run                    Show what would be generated without writing files
           --time                       Print generation time (excludes CLI startup)
           --profile                    Show per-stage pipeline timing breakdown
