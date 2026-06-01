@@ -121,6 +121,25 @@ public sealed class HieroConfigTests : IDisposable
         config.FontFile.ShouldBeNull();
     }
 
+    [Fact]
+    public void Parse_EmptyFontName_MapsToNullNotEmptyString()
+    {
+        // Cross-platform regression guard: a file-based font writes an empty font.name. It must
+        // read back as null, NOT "". A non-null FontName becomes the CLI's SystemFontName and
+        // triggers a system-font lookup for "" -> "System font '' not found" (exit 3) on
+        // macOS/Linux, even though font2.file provides the real font. Windows masks it by
+        // leniently resolving "" to a default font.
+        var content =
+            "font.name=\n" +
+            "font2.file=MyFont.ttf\n" +
+            "font2.use=true\n";
+
+        var config = HieroConfigReader.Parse(content);
+
+        config.FontName.ShouldBeNull();
+        config.FontFile.ShouldBe("MyFont.ttf");
+    }
+
     // ------------------------------------------------------------------
     // pad.advance dropped with warning
     // ------------------------------------------------------------------
@@ -1463,5 +1482,44 @@ public sealed class HieroConfigTests : IDisposable
             .ShouldBe(new[] { (int)'A', (int)'B', (int)'C' });
         parsed.FontName.ShouldBe("Arial");
         parsed.Options.Size.ShouldBe(32f);
+    }
+
+    [Fact]
+    public void WriteToFile_RelativeFontPath_UsesForwardSlashesNotBackslashes()
+    {
+        // Cross-platform regression guard: Hiero is a libGDX/Java tool whose configs use
+        // forward slashes. font2.file must never be written with Windows backslash separators
+        // (Path.GetRelativePath emits '\' on Windows) -- otherwise the relative path fails to
+        // resolve on macOS/Linux and the font falls back to an empty system-font name,
+        // producing "System font '' not found" (exit code 3). See CliTests round-trip.
+        var config = new BmfcConfig
+        {
+            FontName = "Roboto",
+            FontFile = TestFontPath,
+            Options = new FontGeneratorOptions
+            {
+                Size = 32,
+                Characters = CharacterSet.FromChars("ABC")
+            }
+        };
+        // Write into a nested temp dir so a multi-segment relative path back to the fixture
+        // is computed (the case where separators actually appear).
+        var rootDir = Path.Combine(Path.GetTempPath(), $"KernSmith_HieroPath_{Guid.NewGuid():N}");
+        var dir = Path.Combine(rootDir, "a", "b");
+        Directory.CreateDirectory(dir);
+        _tempPaths.Add(rootDir);
+        var path = Path.Combine(dir, "paths.hiero");
+
+        HieroConfigWriter.WriteToFile(config, path);
+
+        var font2Line = File.ReadAllLines(path)
+            .Single(l => l.StartsWith("font2.file=", StringComparison.Ordinal));
+        font2Line.ShouldNotContain("\\",
+            customMessage: "font2.file must use forward slashes for cross-platform Hiero compatibility");
+
+        // And it must still resolve back to the real font file on this platform.
+        var parsed = ConfigFormatFactory.ReadConfig(path);
+        parsed.FontFile.ShouldNotBeNull();
+        File.Exists(parsed.FontFile!).ShouldBeTrue("the written font2.file must resolve back to the real font");
     }
 }

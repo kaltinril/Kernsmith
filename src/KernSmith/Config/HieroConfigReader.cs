@@ -104,7 +104,12 @@ public static class HieroConfigReader
                 {
                     // Font properties
                     case "font.name":
-                        config.FontName = value.Trim();
+                        // An empty font.name (e.g. when the source font was a file, not a system
+                        // font) must map to null, NOT "". A non-null FontName flows to the CLI as
+                        // SystemFontName and would trigger a system-font lookup for "" -> "System
+                        // font '' not found" on macOS/Linux (Windows leniently resolves "").
+                        var fontName = value.Trim();
+                        config.FontName = fontName.Length == 0 ? null : fontName;
                         break;
                     case "font.size":
                         // FontGeneratorOptions.Size is a float; tolerate "32", "32.0", "32.5".
