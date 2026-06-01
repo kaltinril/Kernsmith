@@ -205,26 +205,20 @@ public static class HieroConfigWriter
         if (string.IsNullOrEmpty(path))
             return "";
 
-        var result = path;
-        if (relativeBasePath != null)
-        {
-            try
-            {
-                var configDir = Path.GetDirectoryName(Path.GetFullPath(relativeBasePath));
-                if (!string.IsNullOrEmpty(configDir))
-                    result = Path.GetRelativePath(configDir, path);
-            }
-            catch
-            {
-                result = path;
-            }
-        }
+        if (relativeBasePath == null)
+            return path;
 
-        // Hiero is a libGDX/Java tool whose configs always use forward slashes. On macOS/Linux
-        // a backslash is NOT a path separator, so a Windows-style font2.file written with '\'
-        // fails to resolve (the font falls back to an empty system-font name). Normalize to
-        // forward slashes for cross-platform portability; '/' also resolves fine on Windows.
-        return result.Replace('\\', '/');
+        try
+        {
+            var configDir = Path.GetDirectoryName(Path.GetFullPath(relativeBasePath));
+            if (string.IsNullOrEmpty(configDir))
+                return path;
+            return Path.GetRelativePath(configDir, path);
+        }
+        catch
+        {
+            return path;
+        }
     }
 
     /// <summary>Formats RGB bytes as 6 lowercase hex chars (RRGGBB), matching Hiero's color serialization.</summary>

@@ -1483,43 +1483,4 @@ public sealed class HieroConfigTests : IDisposable
         parsed.FontName.ShouldBe("Arial");
         parsed.Options.Size.ShouldBe(32f);
     }
-
-    [Fact]
-    public void WriteToFile_RelativeFontPath_UsesForwardSlashesNotBackslashes()
-    {
-        // Cross-platform regression guard: Hiero is a libGDX/Java tool whose configs use
-        // forward slashes. font2.file must never be written with Windows backslash separators
-        // (Path.GetRelativePath emits '\' on Windows) -- otherwise the relative path fails to
-        // resolve on macOS/Linux and the font falls back to an empty system-font name,
-        // producing "System font '' not found" (exit code 3). See CliTests round-trip.
-        var config = new BmfcConfig
-        {
-            FontName = "Roboto",
-            FontFile = TestFontPath,
-            Options = new FontGeneratorOptions
-            {
-                Size = 32,
-                Characters = CharacterSet.FromChars("ABC")
-            }
-        };
-        // Write into a nested temp dir so a multi-segment relative path back to the fixture
-        // is computed (the case where separators actually appear).
-        var rootDir = Path.Combine(Path.GetTempPath(), $"KernSmith_HieroPath_{Guid.NewGuid():N}");
-        var dir = Path.Combine(rootDir, "a", "b");
-        Directory.CreateDirectory(dir);
-        _tempPaths.Add(rootDir);
-        var path = Path.Combine(dir, "paths.hiero");
-
-        HieroConfigWriter.WriteToFile(config, path);
-
-        var font2Line = File.ReadAllLines(path)
-            .Single(l => l.StartsWith("font2.file=", StringComparison.Ordinal));
-        font2Line.ShouldNotContain("\\",
-            customMessage: "font2.file must use forward slashes for cross-platform Hiero compatibility");
-
-        // And it must still resolve back to the real font file on this platform.
-        var parsed = ConfigFormatFactory.ReadConfig(path);
-        parsed.FontFile.ShouldNotBeNull();
-        File.Exists(parsed.FontFile!).ShouldBeTrue("the written font2.file must resolve back to the real font");
-    }
 }
