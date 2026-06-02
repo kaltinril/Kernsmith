@@ -1,6 +1,6 @@
 # Phase 83 — Hiero UI Changes
 
-> **Status**: Planning
+> **Status**: Complete
 > **Created**: 2026-03-22
 > **Depends on**: Phase 82
 > **Goal**: Update the KernSmith UI to support loading and saving `.hiero` project files alongside `.bmfc`.

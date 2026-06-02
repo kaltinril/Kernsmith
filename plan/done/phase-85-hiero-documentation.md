@@ -1,6 +1,6 @@
 # Phase 85 — Hiero Documentation Updates
 
-> **Status**: Planning
+> **Status**: Complete
 > **Created**: 2026-03-22
 > **Depends on**: Phases 82, 83, 84
 > **Goal**: Update all documentation, README, samples, and NuGet metadata to reflect `.hiero` format support.
