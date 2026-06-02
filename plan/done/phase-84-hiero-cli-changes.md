@@ -1,6 +1,6 @@
 # Phase 84 — Hiero CLI Changes
 
-> **Status**: Planning
+> **Status**: Complete
 > **Created**: 2026-03-22
 > **Depends on**: Phase 82
 > **Goal**: Update the KernSmith CLI tool to support `.hiero` configuration files alongside `.bmfc`.

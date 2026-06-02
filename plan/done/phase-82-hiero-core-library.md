@@ -1,6 +1,6 @@
 # Phase 82 — Hiero Core Library Changes
 
-> **Status**: Planning
+> **Status**: Complete
 > **Created**: 2026-03-22
 > **Depends on**: Phase 81
 > **Priority**: KernSmith ↔ .hiero round-trip fidelity (export our fonts to Hiero, read them back). Full Hiero ecosystem compatibility is deferred to Phase 100.

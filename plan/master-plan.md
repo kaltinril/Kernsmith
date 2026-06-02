@@ -90,11 +90,11 @@ Output Layer
 | 36 | [Bitmap Bold & Italic Post-Processing](done/phase-36-bitmap-bold-italic-postprocessing.md) | Superseded — absorbed into Phase 110 | Done |
 | 37 | [QA, Security & Performance Fixes](done/phase-37-qa-security-perf-fixes.md) | Correctness, security hardening, and perf fixes from full codebase review | Complete |
 | 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
-| 81 | [Hiero Format Support](phase-81-hiero-format-support.md) | Hiero `.hiero` config format specification and design decisions | Planning |
-| 82 | [Hiero Core Library](phase-82-hiero-core-library.md) | Add `.hiero` config read/write to the NuGet library | Planning |
-| 83 | [Hiero UI Changes](phase-83-hiero-ui-changes.md) | Update UI for `.hiero` file dialogs, drag-drop, project service | Planning |
-| 84 | [Hiero CLI Changes](phase-84-hiero-cli-changes.md) | Update CLI for `.hiero` format auto-detection and batch support | Planning |
-| 85 | [Hiero Documentation](phase-85-hiero-documentation.md) | Document `.hiero` support in README, CLI docs, samples | Planning |
+| 81 | [Hiero Format Support](done/phase-81-hiero-format-support.md) | Hiero `.hiero` config format specification and design decisions | Complete |
+| 82 | [Hiero Core Library](done/phase-82-hiero-core-library.md) | Add `.hiero` config read/write to the NuGet library | Complete |
+| 83 | [Hiero UI Changes](done/phase-83-hiero-ui-changes.md) | Update UI for `.hiero` file dialogs, drag-drop, project service | Complete |
+| 84 | [Hiero CLI Changes](done/phase-84-hiero-cli-changes.md) | Update CLI for `.hiero` format auto-detection and batch support | Complete |
+| 85 | [Hiero Documentation](done/phase-85-hiero-documentation.md) | Document `.hiero` support in README, CLI docs, samples | Complete |
 | 97 | [Rasterizer Auto-Discovery](done/phase-97-rasterizer-auto-discovery.md) | Auto-discover rasterizer backends via Type.GetType(); remove 13 manual workarounds; add ILLink trimmer protection | Complete |
 | 95 | [Performance Optimization & Bug Fixes](phase-95-performance-and-bugs.md) | Fix confirmed bugs (outline field, batch encoding, options mutation) and optimize generation performance | Partial |
 | 99 | [BMFont Parity Remaining Gaps](phase-99-bmfont-parity-gaps.md) | Investigate and close remaining metrics differences from Phase 78BB | Planning |

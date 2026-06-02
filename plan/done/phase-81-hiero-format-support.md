@@ -1,6 +1,6 @@
 # Phase 81 — Hiero .hiero Configuration Format Support
 
-> **Status**: Planning
+> **Status**: Complete
 > **Created**: 2026-03-22
 > **Goal**: Add read/write support for the libGDX Hiero `.hiero` configuration file format as an alternative to BMFont `.bmfc`.
 
