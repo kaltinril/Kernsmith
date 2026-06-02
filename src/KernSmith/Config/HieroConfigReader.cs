@@ -231,9 +231,16 @@ public static class HieroConfigReader
         if (hasPadding)
             options.Padding = new Padding(padTop, padRight, padBottom, padLeft);
 
-        // Resolve font source: file font takes effect when font2.use is true.
+        // Resolve font source: when font2.use is true the secondary FILE font is authoritative
+        // and Hiero ignores the primary font.name. Clear FontName so downstream consumers use the
+        // file -- otherwise the CLI (which prefers SystemFontName) would attempt a system-font
+        // lookup for that name and fail (e.g. "System font 'CherokeeHandone' not found"), even
+        // though font2.file points at a real font.
         if (font2Use && !string.IsNullOrEmpty(font2File))
+        {
             config.FontFile = font2File;
+            config.FontName = null;
+        }
 
         ApplyEffects(options, effects);
 

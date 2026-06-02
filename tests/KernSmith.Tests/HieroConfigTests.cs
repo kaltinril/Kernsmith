@@ -122,6 +122,26 @@ public sealed class HieroConfigTests : IDisposable
     }
 
     [Fact]
+    public void Parse_Font2UseTrue_ClearsFontNameSoFileIsAuthoritative()
+    {
+        // Real-world Hiero writes BOTH font.name (primary system font) and font2.file (secondary
+        // file font). When font2.use=true the FILE is authoritative and Hiero ignores font.name.
+        // KernSmith must clear FontName here; otherwise the CLI (which prefers SystemFontName over
+        // the file) tries to resolve a system font by that name and fails -- e.g. a real
+        // CherokeeHandone .hiero erroring with "System font 'CherokeeHandone' not found" despite
+        // font2.file pointing at the bundled .ttf.
+        var content =
+            "font.name=CherokeeHandone\n" +
+            "font2.file=MyFont.ttf\n" +
+            "font2.use=true\n";
+
+        var config = HieroConfigReader.Parse(content);
+
+        config.FontFile.ShouldBe("MyFont.ttf");
+        config.FontName.ShouldBeNull();
+    }
+
+    [Fact]
     public void Parse_EmptyFontName_MapsToNullNotEmptyString()
     {
         // Cross-platform regression guard: a file-based font writes an empty font.name. It must
