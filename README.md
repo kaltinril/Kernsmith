@@ -64,7 +64,7 @@ Select a backend when generating:
 var result = BmFont.Builder()
     .WithFont("font.ttf")
     .WithSize(32)
-    .WithRasterizer("gdi")
+    .WithBackend(RasterizerBackend.Gdi)
     .Build();
 ```
 
