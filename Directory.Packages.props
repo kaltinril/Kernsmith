@@ -15,7 +15,7 @@
     <!-- Test dependencies -->
     <PackageVersion Include="coverlet.collector" Version="8.0.1" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <!-- Benchmark dependencies -->
