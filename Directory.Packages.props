@@ -13,7 +13,7 @@
     <!-- SourceLink -->
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.300" />
     <!-- Test dependencies -->
-    <PackageVersion Include="coverlet.collector" Version="8.0.1" />
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
