@@ -11,7 +11,7 @@
     <PackageVersion Include="StbImageWriteSharp" Version="1.16.7" />
     <PackageVersion Include="TerraFX.Interop.Windows" Version="10.0.26100.6" />
     <!-- SourceLink -->
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.201" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.300" />
     <!-- Test dependencies -->
     <PackageVersion Include="coverlet.collector" Version="8.0.1" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
