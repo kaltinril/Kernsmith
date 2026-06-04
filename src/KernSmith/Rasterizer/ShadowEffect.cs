@@ -1,3 +1,4 @@
+using System.Buffers;
 using KernSmith.Font.Models;
 
 namespace KernSmith.Rasterizer;
@@ -50,96 +51,127 @@ internal sealed class ShadowEffect : IGlyphEffect
         var dstW = width + expandLeft + expandRight;
         var dstH = height + expandTop + expandBottom;
 
+        var size = dstW * dstH;
+
         // Step 1: Place source alpha at the shadow offset position in the expanded buffer.
-        var shadowAlpha = new float[dstW * dstH];
-
-        var shadowOriginX = expandLeft + _offsetX;
-        var shadowOriginY = expandTop + _offsetY;
-
-        for (var y = 0; y < height; y++)
+        // shadowAlpha is read in full later (positions with no source alpha stay zero),
+        // so a rented buffer must be cleared first.
+        var shadowAlpha = ArrayPool<float>.Shared.Rent(size);
+        var blurred = false;
+        try
         {
-            for (var x = 0; x < width; x++)
+            Array.Clear(shadowAlpha, 0, size);
+
+            var shadowOriginX = expandLeft + _offsetX;
+            var shadowOriginY = expandTop + _offsetY;
+
+            for (var y = 0; y < height; y++)
             {
-                var srcIdx = y * pitch + x;
-                var alpha = srcIdx < alphaData.Length ? alphaData[srcIdx] / 255f : 0f;
-                if (_hardShadow && alpha > 0f)
-                    alpha = 1f;
+                for (var x = 0; x < width; x++)
+                {
+                    var srcIdx = y * pitch + x;
+                    var alpha = srcIdx < alphaData.Length ? alphaData[srcIdx] / 255f : 0f;
+                    if (_hardShadow && alpha > 0f)
+                        alpha = 1f;
 
-                var dx = shadowOriginX + x;
-                var dy = shadowOriginY + y;
-                if (dx >= 0 && dx < dstW && dy >= 0 && dy < dstH)
-                    shadowAlpha[dy * dstW + dx] = alpha * _opacity;
+                    var dx = shadowOriginX + x;
+                    var dy = shadowOriginY + y;
+                    if (dx >= 0 && dx < dstW && dy >= 0 && dy < dstH)
+                        shadowAlpha[dy * dstW + dx] = alpha * _opacity;
+                }
             }
+
+            // Step 2: Apply box blur if requested. BoxBlur allocates its own output buffer.
+            if (_blurRadius > 0)
+            {
+                shadowAlpha = BoxBlur(shadowAlpha, dstW, dstH, _blurRadius);
+                blurred = true;
+            }
+
+            // Step 3: Build RGBA output with shadow color.
+            var dst = new byte[size * 4];
+
+            for (var y = 0; y < dstH; y++)
+            {
+                for (var x = 0; x < dstW; x++)
+                {
+                    var sa = shadowAlpha[y * dstW + x];
+                    if (sa <= 0) continue;
+
+                    var idx = (y * dstW + x) * 4;
+                    dst[idx + 0] = _shadowR;
+                    dst[idx + 1] = _shadowG;
+                    dst[idx + 2] = _shadowB;
+                    dst[idx + 3] = (byte)Math.Min(255, (int)(sa * 255));
+                }
+            }
+
+            // The layer origin is offset relative to the glyph origin.
+            // expandLeft/expandTop is how much the canvas extends before the glyph origin.
+            return new GlyphLayer(dst, dstW, dstH, OffsetX: -expandLeft, OffsetY: -expandTop, ZOrder);
         }
-
-        // Step 2: Apply box blur if requested.
-        if (_blurRadius > 0)
-            shadowAlpha = BoxBlur(shadowAlpha, dstW, dstH, _blurRadius);
-
-        // Step 3: Build RGBA output with shadow color.
-        var dst = new byte[dstW * dstH * 4];
-
-        for (var y = 0; y < dstH; y++)
+        finally
         {
-            for (var x = 0; x < dstW; x++)
-            {
-                var sa = shadowAlpha[y * dstW + x];
-                if (sa <= 0) continue;
-
-                var idx = (y * dstW + x) * 4;
-                dst[idx + 0] = _shadowR;
-                dst[idx + 1] = _shadowG;
-                dst[idx + 2] = _shadowB;
-                dst[idx + 3] = (byte)Math.Min(255, (int)(sa * 255));
-            }
+            // When blur ran, shadowAlpha was reassigned to BoxBlur's heap output and the
+            // original rented buffer was already returned inside BoxBlur. Avoid double-return.
+            if (!blurred)
+                ArrayPool<float>.Shared.Return(shadowAlpha);
         }
-
-        // The layer origin is offset relative to the glyph origin.
-        // expandLeft/expandTop is how much the canvas extends before the glyph origin.
-        return new GlyphLayer(dst, dstW, dstH, OffsetX: -expandLeft, OffsetY: -expandTop, ZOrder);
     }
 
     /// <summary>
     /// Two-pass separable box blur. Uses naive O(W*H*R) for bit-exact output.
     /// See ShadowPostProcessor.cs for sliding-window alternative and perf notes.
+    /// Returns the rented <paramref name="src"/> buffer to the shared pool before returning;
+    /// callers must not use <paramref name="src"/> after this call.
     /// </summary>
     private static float[] BoxBlur(float[] src, int width, int height, int radius)
     {
-        var temp = new float[width * height];
-        var dst = new float[width * height];
-        var kernelSize = radius * 2 + 1;
-        var invKernel = 1f / kernelSize;
-
-        // Horizontal pass.
-        for (var y = 0; y < height; y++)
+        var size = width * height;
+        // dst escapes as the blurred result; keep it heap-allocated (not pooled).
+        var dst = new float[size];
+        var temp = ArrayPool<float>.Shared.Rent(size);
+        try
         {
-            for (var x = 0; x < width; x++)
-            {
-                float sum = 0;
-                for (var k = -radius; k <= radius; k++)
-                {
-                    var sx = Math.Clamp(x + k, 0, width - 1);
-                    sum += src[y * width + sx];
-                }
-                temp[y * width + x] = sum * invKernel;
-            }
-        }
+            var kernelSize = radius * 2 + 1;
+            var invKernel = 1f / kernelSize;
 
-        // Vertical pass.
-        for (var y = 0; y < height; y++)
+            // Horizontal pass.
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    float sum = 0;
+                    for (var k = -radius; k <= radius; k++)
+                    {
+                        var sx = Math.Clamp(x + k, 0, width - 1);
+                        sum += src[y * width + sx];
+                    }
+                    temp[y * width + x] = sum * invKernel;
+                }
+            }
+
+            // Vertical pass.
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    float sum = 0;
+                    for (var k = -radius; k <= radius; k++)
+                    {
+                        var sy = Math.Clamp(y + k, 0, height - 1);
+                        sum += temp[sy * width + x];
+                    }
+                    dst[y * width + x] = sum * invKernel;
+                }
+            }
+
+            return dst;
+        }
+        finally
         {
-            for (var x = 0; x < width; x++)
-            {
-                float sum = 0;
-                for (var k = -radius; k <= radius; k++)
-                {
-                    var sy = Math.Clamp(y + k, 0, height - 1);
-                    sum += temp[sy * width + x];
-                }
-                dst[y * width + x] = sum * invKernel;
-            }
+            ArrayPool<float>.Shared.Return(temp);
+            ArrayPool<float>.Shared.Return(src);
         }
-
-        return dst;
     }
 }

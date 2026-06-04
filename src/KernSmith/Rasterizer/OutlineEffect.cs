@@ -1,3 +1,4 @@
+using System.Buffers;
 using KernSmith.Atlas;
 using KernSmith.Font.Models;
 
@@ -30,81 +31,93 @@ internal sealed class OutlineEffect : IGlyphEffect
         var ow = _outlineWidth;
         var dstW = width + 2 * ow;
         var dstH = height + 2 * ow;
+        var size = dstW * dstH;
 
         // Step 1: Extract source alpha into an expanded buffer, centered.
-        var expandedAlpha = new byte[dstW * dstH];
-
-        for (var y = 0; y < height; y++)
+        // expandedAlpha is read in full later (border pixels are read but never written),
+        // so a rented buffer must be cleared first.
+        var expandedAlpha = ArrayPool<byte>.Shared.Rent(size);
+        var binaryAlpha = ArrayPool<byte>.Shared.Rent(size);
+        try
         {
-            for (var x = 0; x < width; x++)
+            Array.Clear(expandedAlpha, 0, size);
+
+            for (var y = 0; y < height; y++)
             {
-                var srcIdx = y * pitch + x;
-                var alpha = srcIdx < alphaData.Length ? alphaData[srcIdx] : (byte)0;
-                expandedAlpha[(y + ow) * dstW + (x + ow)] = alpha;
-            }
-        }
-
-        // Step 2: Binarize alpha so the EDT measures distance from the opaque glyph core.
-        // Semi-transparent antialiased edge pixels (alpha < 128) are treated as "outside",
-        // which lets the outline extend under the fringe and eliminates edge gaps.
-        var binaryAlpha = new byte[dstW * dstH];
-        for (var i = 0; i < expandedAlpha.Length; i++)
-            binaryAlpha[i] = expandedAlpha[i] >= 32 ? (byte)255 : (byte)0;
-
-        var squaredDist = EuclideanDistanceTransform.Compute(binaryAlpha, dstW, dstH);
-
-        // Step 2b: Flood-fill from edges to identify exterior zero-alpha pixels.
-        // Counter pixels (holes in glyphs like 'e', 'o') are NOT exterior and must not receive outline.
-        // Uses binarized alpha so the fringe is treated as exterior.
-        var exterior = FloodFillExterior(binaryAlpha, dstW, dstH);
-
-        // Step 3: Build RGBA output with outline color and anti-aliased alpha.
-        // The outline extends under the glyph body (not just the exterior ring) so that
-        // alpha-over compositing has full opacity behind the body's anti-aliased edge.
-        // Counters (interior holes like in O, B) are still skipped.
-        var dst = new byte[dstW * dstH * 4];
-
-        for (var y = 0; y < dstH; y++)
-        {
-            for (var x = 0; x < dstW; x++)
-            {
-                var pixelIdx = y * dstW + x;
-                var hasSourceAlpha = expandedAlpha[pixelIdx] > 0;
-
-                // Skip only counter pixels (interior with no source alpha).
-                // Allow: exterior pixels (the ring) and body pixels (under the glyph).
-                if (!exterior[pixelIdx] && !hasSourceAlpha)
-                    continue;
-
-                if (exterior[pixelIdx])
+                for (var x = 0; x < width; x++)
                 {
-                    var dist = MathF.Sqrt(squaredDist[pixelIdx]);
-                    // Smooth falloff: fully opaque up to ow, then linear fade over 1.5 pixels.
-                    var outlineAlpha = Math.Clamp(255f * (ow + 0.75f - dist) / 1.5f, 0f, 255f);
+                    var srcIdx = y * pitch + x;
+                    var alpha = srcIdx < alphaData.Length ? alphaData[srcIdx] : (byte)0;
+                    expandedAlpha[(y + ow) * dstW + (x + ow)] = alpha;
+                }
+            }
 
-                    if (outlineAlpha <= 0)
+            // Step 2: Binarize alpha so the EDT measures distance from the opaque glyph core.
+            // Semi-transparent antialiased edge pixels (alpha < 128) are treated as "outside",
+            // which lets the outline extend under the fringe and eliminates edge gaps.
+            for (var i = 0; i < size; i++)
+                binaryAlpha[i] = expandedAlpha[i] >= 32 ? (byte)255 : (byte)0;
+
+            var squaredDist = EuclideanDistanceTransform.Compute(binaryAlpha, dstW, dstH);
+
+            // Step 2b: Flood-fill from edges to identify exterior zero-alpha pixels.
+            // Counter pixels (holes in glyphs like 'e', 'o') are NOT exterior and must not receive outline.
+            // Uses binarized alpha so the fringe is treated as exterior.
+            var exterior = FloodFillExterior(binaryAlpha, dstW, dstH);
+
+            // Step 3: Build RGBA output with outline color and anti-aliased alpha.
+            // The outline extends under the glyph body (not just the exterior ring) so that
+            // alpha-over compositing has full opacity behind the body's anti-aliased edge.
+            // Counters (interior holes like in O, B) are still skipped.
+            var dst = new byte[size * 4];
+
+            for (var y = 0; y < dstH; y++)
+            {
+                for (var x = 0; x < dstW; x++)
+                {
+                    var pixelIdx = y * dstW + x;
+                    var hasSourceAlpha = expandedAlpha[pixelIdx] > 0;
+
+                    // Skip only counter pixels (interior with no source alpha).
+                    // Allow: exterior pixels (the ring) and body pixels (under the glyph).
+                    if (!exterior[pixelIdx] && !hasSourceAlpha)
                         continue;
 
-                    var idx = pixelIdx * 4;
-                    dst[idx + 0] = _outlineR;
-                    dst[idx + 1] = _outlineG;
-                    dst[idx + 2] = _outlineB;
-                    dst[idx + 3] = (byte)outlineAlpha;
-                }
-                else
-                {
-                    // Body area: fill with full outline alpha so there's no seam
-                    // when the body composites on top.
-                    var idx = pixelIdx * 4;
-                    dst[idx + 0] = _outlineR;
-                    dst[idx + 1] = _outlineG;
-                    dst[idx + 2] = _outlineB;
-                    dst[idx + 3] = 255;
+                    if (exterior[pixelIdx])
+                    {
+                        var dist = MathF.Sqrt(squaredDist[pixelIdx]);
+                        // Smooth falloff: fully opaque up to ow, then linear fade over 1.5 pixels.
+                        var outlineAlpha = Math.Clamp(255f * (ow + 0.75f - dist) / 1.5f, 0f, 255f);
+
+                        if (outlineAlpha <= 0)
+                            continue;
+
+                        var idx = pixelIdx * 4;
+                        dst[idx + 0] = _outlineR;
+                        dst[idx + 1] = _outlineG;
+                        dst[idx + 2] = _outlineB;
+                        dst[idx + 3] = (byte)outlineAlpha;
+                    }
+                    else
+                    {
+                        // Body area: fill with full outline alpha so there's no seam
+                        // when the body composites on top.
+                        var idx = pixelIdx * 4;
+                        dst[idx + 0] = _outlineR;
+                        dst[idx + 1] = _outlineG;
+                        dst[idx + 2] = _outlineB;
+                        dst[idx + 3] = 255;
+                    }
                 }
             }
-        }
 
-        return new GlyphLayer(dst, dstW, dstH, OffsetX: -ow, OffsetY: -ow, ZOrder);
+            return new GlyphLayer(dst, dstW, dstH, OffsetX: -ow, OffsetY: -ow, ZOrder);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(expandedAlpha);
+            ArrayPool<byte>.Shared.Return(binaryAlpha);
+        }
     }
 
     private static bool[] FloodFillExterior(byte[] alpha, int width, int height)

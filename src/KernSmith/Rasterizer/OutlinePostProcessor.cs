@@ -1,3 +1,4 @@
+using System.Buffers;
 using KernSmith.Atlas;
 using KernSmith.Font.Models;
 
@@ -48,30 +49,42 @@ public sealed class OutlinePostProcessor : IGlyphPostProcessor
         var dstH = srcH + 2 * ow;
 
         // Step 1: Extract source alpha into an expanded buffer, centered.
-        var expandedAlpha = new byte[dstW * dstH];
-
-        for (var y = 0; y < srcH; y++)
+        // expandedAlpha is read in full by the EDT (border pixels are never written here),
+        // so a rented buffer must be cleared first.
+        var size = dstW * dstH;
+        float[] squaredDist;
+        var expandedAlpha = ArrayPool<byte>.Shared.Rent(size);
+        try
         {
-            for (var x = 0; x < srcW; x++)
+            Array.Clear(expandedAlpha, 0, size);
+
+            for (var y = 0; y < srcH; y++)
             {
-                byte alpha;
-                if (glyph.Format == PixelFormat.Rgba32)
+                for (var x = 0; x < srcW; x++)
                 {
-                    var srcIdx = y * glyph.Pitch + x * 4 + 3;
-                    alpha = srcIdx < glyph.BitmapData.Length ? glyph.BitmapData[srcIdx] : (byte)0;
-                }
-                else
-                {
-                    var srcIdx = y * glyph.Pitch + x;
-                    alpha = srcIdx < glyph.BitmapData.Length ? glyph.BitmapData[srcIdx] : (byte)0;
-                }
+                    byte alpha;
+                    if (glyph.Format == PixelFormat.Rgba32)
+                    {
+                        var srcIdx = y * glyph.Pitch + x * 4 + 3;
+                        alpha = srcIdx < glyph.BitmapData.Length ? glyph.BitmapData[srcIdx] : (byte)0;
+                    }
+                    else
+                    {
+                        var srcIdx = y * glyph.Pitch + x;
+                        alpha = srcIdx < glyph.BitmapData.Length ? glyph.BitmapData[srcIdx] : (byte)0;
+                    }
 
-                expandedAlpha[(y + ow) * dstW + (x + ow)] = alpha;
+                    expandedAlpha[(y + ow) * dstW + (x + ow)] = alpha;
+                }
             }
-        }
 
-        // Step 2: Compute EDT on the expanded alpha.
-        var squaredDist = EuclideanDistanceTransform.Compute(expandedAlpha, dstW, dstH);
+            // Step 2: Compute EDT on the expanded alpha.
+            squaredDist = EuclideanDistanceTransform.Compute(expandedAlpha, dstW, dstH);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(expandedAlpha);
+        }
 
         // Step 3: Build RGBA output with outline color and anti-aliased alpha.
         var dst = new byte[dstW * dstH * 4];
