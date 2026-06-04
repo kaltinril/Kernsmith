@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Core `KernSmith` library is now Native AOT– and trimming-compatible (`IsAotCompatible` plus trim/AOT analyzers enabled) (Phase 90)
+- Core `KernSmith` library is now Native AOT– and trimming-compatible (`IsAotCompatible` plus trim/AOT analyzers enabled)
 - Assembly version is now read via a compile-time constant instead of runtime assembly reflection
 - Under AOT/trimming, a rasterizer backend must be registered explicitly because auto-discovery is reflection-based — StbTrueType recommended. See [Native AOT and Trimming](docs/rasterizers/index.md#native-aot-and-trimming)
 
@@ -50,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Rasterizer auto-discovery — `RasterizerFactory` now auto-discovers built-in backends via `Type.GetType()` on first call to `Create()`, `GetAvailableBackends()`, or `IsRegistered()`. No manual `RuntimeHelpers` registration needed (Phase 97)
+- Rasterizer auto-discovery — `RasterizerFactory` now auto-discovers built-in backends via `Type.GetType()` on first call to `Create()`, `GetAvailableBackends()`, or `IsRegistered()`. No manual `RuntimeHelpers` registration needed
 - ILLink trimmer protection (`ILLink.Descriptors.xml`) for all 4 rasterizer packages, enabling correct behavior under AOT/trimming
 
 ### Removed
@@ -80,41 +80,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `KernSmithFontCreator` now accepts an optional `RasterizerBackend` in the constructor, enabling Blazor WASM and other platforms to use StbTrueType without reimplementing the class (Phase 33b)
+- `KernSmithFontCreator` now accepts an optional `RasterizerBackend` in the constructor, enabling Blazor WASM and other platforms to use StbTrueType without reimplementing the class
 - `GumFontGenerator.Generate()` now accepts an optional `RasterizerBackend` parameter to override the default backend
-- Synthetic bold/italic bitmap post-processors (`BoldPostProcessor`, `ItalicPostProcessor`) for any rasterizer backend (Phase 32d)
-- Outline-level synthetic bold/italic for StbTrueType rasterizer via stb_truetype shape API (Phase 32d)
+- Synthetic bold/italic bitmap post-processors (`BoldPostProcessor`, `ItalicPostProcessor`) for any rasterizer backend
+- Outline-level synthetic bold/italic for StbTrueType rasterizer via stb_truetype shape API
 - Pixel-diff comparison tool for regression detection (`tests/bmfont-compare/diff_comparisons.py`)
 - FontStashSharp technique insights distilled into native rasterizer phases 160-180
 
 ### Fixed
 
-- SDF `GetFontMetrics` inconsistency — `aa` calculation now matches `RasterizeGlyph`/`GetGlyphMetrics` when SDF + SuperSample are both set (Phase 37)
-- `ItalicPostProcessor` now adjusts advance width to prevent glyph overlap (Phase 37)
-- Double-bold/italic guard when both `options.Bold` and `BoldPostProcessor` are active (Phase 37)
-- WOFF decompressor: destination bounds check and integer overflow on offset+length (Phase 37)
-- Cmap Format 12: entry limit (200k) and numGroups overflow guard to prevent resource exhaustion (Phase 37)
-- Table directory offset/length validation against file bounds (Phase 37)
-- GPOS parser: slice bounds checks on untrusted offsets (Phase 37)
-- Kern table: infinite loop guard when subtableLength == 0 (Phase 37)
-- CLI: sanitize font family name in output path to prevent path traversal (Phase 37)
+- SDF `GetFontMetrics` inconsistency — `aa` calculation now matches `RasterizeGlyph`/`GetGlyphMetrics` when SDF + SuperSample are both set
+- `ItalicPostProcessor` now adjusts advance width to prevent glyph overlap
+- Double-bold/italic guard when both `options.Bold` and `BoldPostProcessor` are active
+- WOFF decompressor: destination bounds check and integer overflow on offset+length
+- Cmap Format 12: entry limit (200k) and numGroups overflow guard to prevent resource exhaustion
+- Table directory offset/length validation against file bounds
+- GPOS parser: slice bounds checks on untrusted offsets
+- Kern table: infinite loop guard when subtableLength == 0
+- CLI: sanitize font family name in output path to prevent path traversal
 
 ### Changed
 
-- BoldPostProcessor kernel falloff precomputed once per glyph, eliminating per-pixel `MathF.Sqrt` calls (Phase 37)
-- Generation pipeline consolidated from 6 `.Select().ToList()` chains into a single for-loop (Phase 37)
+- BoldPostProcessor kernel falloff precomputed once per glyph, eliminating per-pixel `MathF.Sqrt` calls
+- Generation pipeline consolidated from 6 `.Select().ToList()` chains into a single for-loop
 - UI preview: raw pixel data uploaded directly to GPU via `Texture2D.SetData()`, eliminating PNG encode/decode round-trip (~800ms savings)
 - UI effects toggles regenerate immediately (removed 300ms debounce); remaining debounce reduced to 10ms
 - UI texture caching: atlas textures decoded once per generation, not per page/tab switch
 - SDF no longer auto-disables when outline/shadow/gradient are enabled; shows informational warning instead
-- Phases 35 (FontStashSharp) rejected and 36 (bitmap bold/italic) superseded by Phase 110
 
 ## [0.11.0] - 2026-04-01
 
 ### Added
 
-- StbTrueType rasterizer backend -- pure C#, cross-platform, no native dependencies. Supports SDF rendering. Ideal for Blazor WASM, iOS AOT, and serverless (Phase 32)
-- Blazor WASM sample and validation — client-side font generation with StbTrueType backend, AOT compilation support, CI publish gate, native dependency scanning tests (Phase 33)
+- StbTrueType rasterizer backend -- pure C#, cross-platform, no native dependencies. Supports SDF rendering. Ideal for Blazor WASM, iOS AOT, and serverless
+- Blazor WASM sample and validation — client-side font generation with StbTrueType backend, AOT compilation support, CI publish gate, native dependency scanning tests
 
 ### Fixed
 
@@ -132,19 +131,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Rasterizer plugin template and sample project for custom backends (Phase 78E)
-- Synthetic bold/italic CLI flags (`--synthetic-bold`, `--synthetic-italic`) and UI controls (Phase 78G)
-- Guard against double bold/italic when font file is already styled (Phase 78G)
-- DirectWrite synthetic bold/italic support (Phase 78G)
+- Rasterizer plugin template and sample project for custom backends
+- Synthetic bold/italic CLI flags (`--synthetic-bold`, `--synthetic-italic`) and UI controls
+- Guard against double bold/italic when font file is already styled
+- DirectWrite synthetic bold/italic support
 - Font registration API: `BmFont.RegisterFont()` for registering raw font data by family name, enabling `GenerateFromSystem()` on platforms without system font access (Blazor WASM, mobile, containers)
 - `BmFont.UnregisterFont()` and `BmFont.ClearRegisteredFonts()` for managing registrations
 - Registered fonts take priority over system fonts with automatic fallback
-- Phase 78S documentation pass: updated tooltips, READMEs, DocFX docs, CHANGELOG, reference doc, NuGet descriptions
+- Documentation pass: updated tooltips, READMEs, docfx docs, CHANGELOG, reference docs, and NuGet descriptions
 
 ### Fixed
 
-- Space character now gets a transparent atlas entry when outline > 0, matching BMFont behavior (Phase 78F)
-- Deferred 4 remaining rasterizer issues to Phase 150 (color fonts, variable fonts, channel-based outlines, GDI MatchCharHeight)
+- Space character now gets a transparent atlas entry when outline > 0, matching BMFont behavior
+- Known limitations deferred to a later release: color fonts, variable fonts, channel-based outlines, and GDI `MatchCharHeight`
 
 ## [0.10.2] - 2026-03-28
 
@@ -167,9 +166,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- CLI `--rasterizer` flag to select backend (freetype, gdi, directwrite) (Phase 78D)
-- CLI `list-rasterizers` command showing available backends and capabilities (Phase 78D)
-- UI rasterizer dropdown with capability-aware option disabling (Phase 78D)
+- CLI `--rasterizer` flag to select backend (freetype, gdi, directwrite)
+- CLI `list-rasterizers` command showing available backends and capabilities
+- UI rasterizer dropdown with capability-aware option disabling
 - Multi-package NuGet publishing — all packages (core, rasterizers, integrations) publish from a single workflow
 - Split publish workflow into parallel ubuntu/windows pack jobs for faster CI
 - NuGet metadata (readme, tags, authors, URL) for rasterizer packages
@@ -195,18 +194,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Pluggable rasterizer architecture — IRasterizer, IRasterizerCapabilities, RasterizerFactory, RasterizerBackend enum (Phase 78A)
-- GDI rasterizer backend for BMFont pixel-perfect parity via Win32 P/Invoke (Windows-only) (Phase 78B)
-- GDI parity fixes — TEXTMETRIC metrics, GetKerningPairs kerning, LoadSystemFont support (Phase 78BB)
-- DirectWrite rasterizer backend with sizing fixes (Phase 78C)
-- Font sizing and DPI parity verification across all backends (Phase 78CC)
-- Super-sampling support across all rasterizer backends (Phase 78BB)
+- Pluggable rasterizer architecture — IRasterizer, IRasterizerCapabilities, RasterizerFactory, RasterizerBackend enum
+- GDI rasterizer backend for BMFont pixel-perfect parity via Win32 P/Invoke (Windows-only)
+- GDI parity fixes — TEXTMETRIC metrics, GetKerningPairs kerning, LoadSystemFont support
+- DirectWrite rasterizer backend with sizing fixes
+- Font sizing and DPI parity verification across all backends
+- Super-sampling support across all rasterizer backends
 - README for bmfont comparison tools
 
 ### Changed
 
-- Channel settings added to fire.bmfc for BMFont64 outline separation
-- Phase 99 created for remaining BMFont parity gaps
+- Channel settings added to the bundled fire comparison config for BMFont64 outline separation
 
 ## [0.9.5] - 2026-03-23
 

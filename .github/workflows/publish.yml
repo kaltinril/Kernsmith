@@ -201,16 +201,8 @@ jobs:
           draft: false
           append_body: true
           body: |
-            **NuGet Packages** (v${{ needs.validate.outputs.version }}):
-            - [KernSmith](https://www.nuget.org/packages/KernSmith/${{ needs.validate.outputs.version }})
-            - [KernSmith.Rasterizers.Gdi](https://www.nuget.org/packages/KernSmith.Rasterizers.Gdi/${{ needs.validate.outputs.version }})
-            - [KernSmith.Rasterizers.DirectWrite.TerraFX](https://www.nuget.org/packages/KernSmith.Rasterizers.DirectWrite.TerraFX/${{ needs.validate.outputs.version }})
-            - [KernSmith.Rasterizers.FreeType](https://www.nuget.org/packages/KernSmith.Rasterizers.FreeType/${{ needs.validate.outputs.version }})
-            - [KernSmith.Rasterizers.StbTrueType](https://www.nuget.org/packages/KernSmith.Rasterizers.StbTrueType/${{ needs.validate.outputs.version }})
-            - [KernSmith.GumCommon](https://www.nuget.org/packages/KernSmith.GumCommon/${{ needs.validate.outputs.version }})
-            - [KernSmith.MonoGameGum](https://www.nuget.org/packages/KernSmith.MonoGameGum/${{ needs.validate.outputs.version }})
-            - [KernSmith.KniGum](https://www.nuget.org/packages/KernSmith.KniGum/${{ needs.validate.outputs.version }})
-            <!-- KernSmith.FnaGum excluded until build issues are resolved -->
+            **NuGet Packages** (v${{ needs.validate.outputs.version }}): all KernSmith packages for this version are published to nuget.org — browse the full set by searching [`KernSmith` on nuget.org](https://www.nuget.org/packages?q=KernSmith).
+            <!-- Package links are intentionally not hardcoded here so this template does not break when packages are added or removed. -->
             **Docs**: [kaltinril.github.io/Kernsmith](https://kaltinril.github.io/Kernsmith/)
           files: |
             artifacts/**/*.zip

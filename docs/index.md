@@ -1,10 +1,10 @@
 # KernSmith
 
-KernSmith is a cross-platform .NET library that generates BMFont-compatible bitmap fonts from TTF, OTF, WOFF, and WOFF2 files. It combines FreeTypeSharp for glyph rasterization with custom TTF table parsers for GPOS kerning, packs glyphs into texture atlases, and outputs BMFont `.fnt` + `.png` pairs ready for game engines and rendering frameworks.
+KernSmith is a cross-platform .NET library that generates BMFont-compatible bitmap fonts from TTF, OTF, and WOFF files. It combines FreeTypeSharp for glyph rasterization with custom TTF table parsers for GPOS kerning, packs glyphs into texture atlases, and outputs BMFont `.fnt` + `.png` pairs ready for game engines and rendering frameworks.
 
 ## Key Capabilities
 
-- **Multiple font formats** -- TTF, OTF, WOFF, and WOFF2 input
+- **Multiple font formats** -- TTF, OTF, and WOFF input
 - **BMFont output** -- text, XML, and binary `.fnt` formats with PNG, TGA, or DDS atlas pages
 - **Layered effects** -- outline, gradient, and drop shadow compositing
 - **Advanced rendering** -- SDF, super sampling, color fonts (COLR/CPAL), variable fonts, channel packing
@@ -18,6 +18,7 @@ KernSmith is a cross-platform .NET library that generates BMFont-compatible bitm
 | Section | Description |
 |---------|-------------|
 | [Core Library](core/index.md) | Namespaces, pipeline flow, and key classes in the KernSmith library |
+| [API Reference Guide](api-reference/index.md) | Curated guide to the public API: `BmFont`, the fluent builder, `FontGeneratorOptions`, `BmFontResult`, `BmFontModel`, and exceptions |
 | [CLI Reference](cli/index.md) | Command-line tool for generating bitmap fonts |
 | [UI Guide](ui/index.md) | Visual interface for font configuration and preview |
 | [Integrations](integrations/index.md) | Gum framework packages for MonoGame, FNA, and KNI |

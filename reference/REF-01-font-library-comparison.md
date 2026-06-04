@@ -2,6 +2,9 @@
 
 > Research date: 2026-03-18
 > Purpose: Evaluate open-source C# libraries for TTF/OTF parsing, glyph metric extraction, kerning, and bitmap rasterization for a cross-platform NuGet package (game-runtime use case).
+> **Note on metrics:** All NuGet download counts and "latest version" figures below are point-in-time
+> snapshots taken on the research date above. They are not kept up to date; treat them as relative
+> indicators of popularity/maturity, not current values. Check nuget.org for live numbers.
 
 ---
 

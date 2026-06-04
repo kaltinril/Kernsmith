@@ -3,6 +3,27 @@
 > **Research date**: 2026-03-26
 > **Purpose**: Document the internal implementation details of AngelCode's BMFont tool — rasterization pipeline, metrics calculation, outline algorithm, channel encoding, atlas packing, and configuration — based on source code analysis. This serves as the authoritative reference for achieving parity in KernSmith's GDI and pluggable rasterizer backends.
 
+> **What is KernSmith vs. what is BMFont (read this first):** Everything in this document
+> describes **AngelCode BMFont's own internals** — it is *reference material*, not a description
+> of KernSmith's implementation. KernSmith is an independent, cross-platform reimplementation; it
+> does **not** call BMFont's code and is not Windows/GDI-bound. Where KernSmith deliberately
+> reproduces a BMFont behavior (for output parity), it does so through its own pipeline. Use the
+> table below as the quick map; individual sections add a **KernSmith** note where the behavior
+> is intentionally matched, approximated, or not replicated.
+>
+> | BMFont behavior (this doc) | KernSmith status |
+> |---|---|
+> | GDI `GetGlyphOutlineW` rasterization | **Matched only by the GDI backend** (Windows). FreeType, StbTrueType, and DirectWrite backends use their own engines and differ pixel-for-pixel. |
+> | `AddOutline` algorithm (section 2) | **Replicated** — including the 1×1 transparent space-glyph expansion. |
+> | Channel/layer encoding (section 3) | **Replicated** via `ChannelConfig` / channel packing. |
+> | `lineHeight` / `base` metrics (section 4) | **Replicated** from OS/2 cell-height conversion. |
+> | Kerning (section 5) | **Replicated**, but from KernSmith's own shared GPOS/`kern` parser, not GDI. |
+> | `xadvance`, `xoffset`/`yoffset` (sections 6–7) | **Replicated**. |
+> | Spacing vs. padding (section 8) | **Replicated**. |
+> | Atlas packing (section 9) | **Independent** — KernSmith uses MaxRects/Skyline, not BMFont's packer. |
+> | `.fnt` output formats (section 11) | **Replicated** (text/XML/binary), plus KernSmith-only extended metadata. |
+> | `.bmfc` config keys (section 13) | **Replicated** for read/write; KernSmith also reads/writes libGDX Hiero `.hiero`. |
+
 ---
 
 ## Table of Contents

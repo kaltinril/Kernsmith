@@ -3,6 +3,8 @@
   items:
     - name: Core Library
       href: docs/core/index.md
+    - name: API Reference Guide
+      href: docs/api-reference/index.md
     - name: CLI Tool
       href: docs/cli/index.md
     - name: UI Guide

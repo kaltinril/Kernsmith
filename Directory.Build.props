@@ -5,12 +5,25 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!--
+      VERSION SOURCE OF TRUTH: this single <Version> drives every project and every NuGet
+      package in the repo. Bump it here only (see RELEASING.md); the publish workflow verifies
+      a release tag matches this value. Do not set <Version> in individual .csproj files.
+    -->
     <Version>0.14.0</Version>
   </PropertyGroup>
 
-  <!-- Shared metadata for the NuGet package (only applies when IsPackable=true) -->
+  <!--
+    Shared NuGet package metadata (only applies when IsPackable=true).
+    AUTHORS (canonical): "Kaltinril (Jeremy Swartwood)" is the NuGet package author for every
+    published package, and matches the <Authors> override in each packable .csproj. The value
+    here is the single source of truth; non-packable projects (tests, samples, benchmarks) are
+    never published so their author metadata is irrelevant.
+    COPYRIGHT (canonical): "KernSmith contributors" matches the LICENSE file and is the legal
+    copyright holder. Keep these two in sync with LICENSE — do not "fix" one to match the other.
+  -->
   <PropertyGroup>
-    <Authors>KernSmith contributors</Authors>
+    <Authors>Kaltinril (Jeremy Swartwood)</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/kaltinril/KernSmith</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

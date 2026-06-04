@@ -120,7 +120,7 @@ RasterizerBackend enum:
 **Limitations**:
 
 - Windows only.
-- Color fonts and variable fonts are stubbed but not yet implemented (capabilities report `false`).
+- Color fonts and variable fonts are stubbed but not yet implemented. `DirectWriteCapabilities.SupportsColorFonts` and `SupportsVariableFonts` both return `false` (see `DirectWriteCapabilities.cs`), so the core pipeline never invokes the color/variable code paths. The `SetVariationAxes` and `SelectColorPalette` methods exist and accept their arguments, but only store the values — they have no rendering effect yet (no `TranslateColorGlyphRun` or `IDWriteFontFace5` axis implementation). Verified against `DirectWriteRasterizer.cs` and `DirectWriteCapabilities.cs` as of KernSmith 0.14.0.
 - No SDF or outline stroke support.
 - Anti-alias limited to None and Grayscale.
 - Returns `null` for `GetFontMetrics` (delegates to shared OS/2 parser) because DirectWrite's `DWRITE_FONT_METRICS` uses hhea typographic values that produce incorrect `lineHeight` for many fonts.
