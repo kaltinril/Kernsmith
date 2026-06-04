@@ -1,0 +1,46 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly scan, Mondays at 06:00 UTC, to catch newly disclosed query rules.
+    - cron: '0 6 * * 1'
+
+jobs:
+  analyze:
+    name: Analyze (C#)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+          # security-and-quality adds maintainability/quality queries on top of
+          # the default security suite, giving lightweight static analysis.
+          queries: security-and-quality
+
+      - name: Build solution
+        run: |
+          dotnet restore
+          dotnet build --no-restore --configuration Release
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:csharp'

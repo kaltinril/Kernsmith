@@ -75,7 +75,7 @@ public static class BmFontReader
                 case "kernsmith":
                     extended = ParseExtendedFromKvp(kvp);
                     break;
-                // "chars" and "kernings" lines just have count, skip them
+                    // "chars" and "kernings" lines just have count, skip them
             }
         }
 

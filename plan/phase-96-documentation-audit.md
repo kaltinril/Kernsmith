@@ -1,8 +1,8 @@
 # Phase 96: Documentation Audit
 
-**Status:** In Progress
-**Date:** 2026-04-03
-**Branch:** phase/95-performance-and-bugs (implemented on current branch)
+**Status:** In Progress — CI/quality items (H5, M7, M8, M10) plus L7/L9 resolved on `phase/96-documentation-audit` (2026-06-03); H7, M2, M4–M6, M11 and remaining L-series items still open.
+**Date:** 2026-06-03
+**Branch:** phase/96-documentation-audit
 
 ## Overview
 
@@ -23,13 +23,15 @@ Comprehensive audit of all project documentation — plan docs, reference docs, 
 - [x] **REF-07-gum-forms-cheatsheet.md** — Added clarifying note about third-party scope (M3)
 - [x] **BmFontException.cs** — Renamed to BmFontException.cs via git mv (M9)
 
-### Validated but not implemented (needs future work)
-- [ ] **H5** — CI framework matrix only tests .NET 10; net8.0 untested (works by luck on current runners)
-- [ ] **M7** — No code quality/linting checks in CI
-- [ ] **M8** — No dependency vulnerability scanning
-- [ ] **M10** — Config classes lack dedicated unit tests (indirect coverage exists)
-- [ ] **L7** — RobotoFlex-Variable.ttf unused in tests (only benchmarks)
-- [ ] **L9** — RELEASING.md doesn't mention FnaGum exclusion from publish
+### Resolved on phase/96-documentation-audit (2026-06-03)
+- [x] **H5** — Added net8.0 to the CI test matrix in ci.yml, publish.yml, and benchmark.yml so both target frameworks are validated
+- [x] **M7** — Added a `dotnet format --verify-no-changes` CI job plus a new CodeQL workflow (.github/workflows/codeql.yml); added .gitattributes (LF) and fixed whitespace
+- [x] **M8** — Added Dependabot config (.github/dependabot.yml) and a `dotnet list package --vulnerable` CI step
+- [x] **M10** — Added 74 unit tests for Config classes under tests/KernSmith.Tests/Config/
+
+### Resolved on phase/96-documentation-audit (2026-06-03)
+- [x] **L7** — Added RobotoFlexVariableFontTests.cs that explicitly loads RobotoFlex-Variable.ttf by name and asserts its fvar/weight axis plus successful generation
+- [x] **L9** — Added a note to RELEASING.md's Multi-Package Architecture section documenting that KernSmith.FnaGum is intentionally excluded from publish until its FNA build issues are resolved
 
 ### Not yet addressed
 - [ ] **H7** — No formal API reference documentation

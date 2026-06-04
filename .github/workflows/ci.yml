@@ -9,23 +9,51 @@ on:
 jobs:
   build-and-test:
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
+        framework: [net8.0, net10.0]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '10.0.x'
+          # Install both SDKs so the net8.0 target can be built and tested
+          # on a net10.0 SDK host without falling back to runtime-only.
+          dotnet-version: |
+            8.0.x
+            10.0.x
       - run: dotnet restore
       - run: dotnet build --no-restore
-      - name: Test
-        run: dotnet test tests/KernSmith.Tests/KernSmith.Tests.csproj --no-build --verbosity normal --blame-hang --blame-hang-timeout 3m
+      - name: Test (${{ matrix.framework }})
+        run: dotnet test tests/KernSmith.Tests/KernSmith.Tests.csproj --no-build -f ${{ matrix.framework }} --verbosity normal --blame-hang --blame-hang-timeout 3m
         continue-on-error: ${{ matrix.os == 'ubuntu-latest' }}
       - name: Verify tests passed (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: echo "Ubuntu test step completed (may have been force-killed due to known .NET test host hang)"
+
+  code-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - run: dotnet restore
+      - name: Verify formatting (dotnet format)
+        run: dotnet format KernSmith.sln --verify-no-changes
+      - name: Scan for vulnerable NuGet packages
+        run: |
+          dotnet list KernSmith.sln package --vulnerable --include-transitive 2>&1 | tee vuln.log
+          if grep -q "has the following vulnerable packages" vuln.log; then
+            echo "::error::Vulnerable NuGet packages detected"
+            exit 1
+          fi
+          echo "No vulnerable packages found"
 
   wasm-publish:
     runs-on: ubuntu-latest
