@@ -34,7 +34,7 @@
 - **Fully in-memory** -- entire pipeline runs without touching disk unless you call `ToFile()`
 - **Batch generation** -- parallel multi-font generation with font caching
 - **Pipeline metrics** -- stage-level timing breakdown for profiling
-- **Cross-platform** -- Windows, Linux, macOS via .NET 10.0
+- **Cross-platform** -- Windows, Linux, macOS via .NET 8.0 and .NET 10.0
 - **Pluggable rasterizers** -- swap rendering backends to match your platform and feature needs
 - **Hardened font parsing** -- bounds validation and resource limits for untrusted font files
 
@@ -99,7 +99,9 @@ using KernSmith.Rasterizers.StbTrueType;
 RuntimeHelpers.RunClassConstructor(typeof(StbTrueTypeRasterizer).TypeHandle);
 ```
 
-See the [rasterizers documentation](https://jswartwood.github.io/kernsmith/rasterizers/) for details.
+See the [rasterizers documentation](https://kaltinril.github.io/Kernsmith/docs/rasterizers/) for details.
+
+See the [API reference guide](https://kaltinril.github.io/Kernsmith/docs/api-reference/) for `BmFont`, the fluent builder, `FontGeneratorOptions`, `BmFontResult`, `BmFontModel`, and the exception types.
 
 ## Installation
 

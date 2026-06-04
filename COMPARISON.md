@@ -212,7 +212,8 @@ KernSmith supports four pluggable rasterizer backends. Each has different platfo
 |---|:---:|:---:|:---:|:---:|
 | **TTF** | ✅ | ✅ | ✅ | ✅ |
 | **OTF (CFF)** | ✅ | ✅ | ✅ | ❌ |
-| **WOFF / WOFF2** | ✅ | ❌ | ✅ | ❌ |
+| **WOFF** | ✅ | ❌ | ✅ | ❌ |
+| **WOFF2** | ❌ | ❌ | ❌ | ❌ |
 | **TTC (font collections)** | ✅ | ❌ | ✅ | ✅ |
 | **Anti-aliasing** | Grayscale, Light, LCD, None | Grayscale, None | Grayscale, ClearType | Grayscale, None |
 | **SDF Rendering** | ✅ | ❌ | ❌ | ✅ |
