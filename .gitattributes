@@ -1,3 +1,22 @@
+# Normalize line endings: enforce LF for text/source files so that
+# `dotnet format --verify-no-changes` (which honors .editorconfig's
+# end_of_line = lf) passes consistently across Windows/Linux/macOS,
+# regardless of each contributor's core.autocrlf setting.
+* text=auto eol=lf
+
+# Binary assets must never be normalized.
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.png binary
+*.tga binary
+*.dds binary
+*.fnt binary
+*.ico binary
+*.snk binary
+*.zip binary
+
 # Exclude Claude Code skill scripts from GitHub language statistics
 .claude/** linguist-vendored
 extract_prompt_history.py linguist-vendored
