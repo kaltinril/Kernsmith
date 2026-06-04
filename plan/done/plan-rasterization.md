@@ -5,11 +5,22 @@
 
 > **Data Types:** All types used in this document (`RasterizedGlyph`, `GlyphMetrics`, `RasterOptions`, `PixelFormat`) are defined in [plan-data-types.md](plan-data-types.md).
 
+> **Status note (post Phase 78):** This document describes the original single-rasterizer design,
+> where the FreeType rasterizer lived inside the core library. Phase 78 introduced the **pluggable
+> rasterizer architecture**: `IRasterizer` implementations now ship as separate NuGet packages
+> (`KernSmith.Rasterizers.FreeType`, `.Gdi`, `.DirectWrite.TerraFX`, `.StbTrueType`) selected at
+> runtime via `RasterizerBackend` / `RasterizerFactory`, each declaring its feature set through
+> `IRasterizerCapabilities`. The core library no longer contains any concrete rasterizer. For the
+> current backend lineup and capabilities, see
+> [REF-12 Rasterizer Backends](../../reference/REF-12-rasterizer-backends.md) and the
+> [rasterizers docs](../../docs/rasterizers/index.md). The interface-level concepts below remain
+> accurate.
+
 ---
 
 ## IRasterizer Interface
 
-Rasterization is abstracted behind `IRasterizer` so the engine can be swapped. The default implementation uses FreeTypeSharp, but the interface allows replacing it with SkiaSharp, a custom software rasterizer, or anything else.
+Rasterization is abstracted behind `IRasterizer` so the engine can be swapped. The default backend uses FreeTypeSharp (in the `KernSmith.Rasterizers.FreeType` package since Phase 78), but the interface allows replacing it with StbTrueType, GDI, DirectWrite, or any custom implementation.
 
 > `IRasterizer` and `IGlyphPostProcessor` interfaces are defined in [plan-data-types.md](plan-data-types.md#interfaces).
 > `RasterizedGlyph` class is defined in [plan-data-types.md](plan-data-types.md#rasterization-types).

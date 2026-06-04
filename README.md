@@ -46,7 +46,7 @@ KernSmith supports pluggable rasterizer backends. Install at least one backend p
 |---------|---------|----------|-------|
 | **FreeType** | `KernSmith.Rasterizers.FreeType` | Windows, Linux, macOS | Cross-platform, full feature support. |
 | **GDI** | `KernSmith.Rasterizers.Gdi` | Windows only | Matches BMFont reference output for pixel-perfect parity. |
-| **DirectWrite** | `KernSmith.Rasterizers.DirectWrite.TerraFX` | Windows only | Color font (COLR/CPAL) and variable font rendering via DirectWrite. |
+| **DirectWrite** | `KernSmith.Rasterizers.DirectWrite.TerraFX` | Windows only | Modern Windows rendering with natural/symmetric hinting. Color and variable fonts are not yet implemented; use FreeType for those. |
 | **StbTrueType** | `KernSmith.Rasterizers.StbTrueType` | Cross-platform | Pure C#, no native dependencies. Ideal for WASM, AOT, serverless. |
 
 Install a backend:
@@ -614,6 +614,41 @@ var result = BmFont.Generate("color-emoji.ttf", new FontGeneratorOptions
 });
 ```
 
+### Custom Glyphs
+
+Replace a font glyph, or add a brand-new one for a codepoint the font does not contain, by
+supplying raw pixel data. Pass either a prepared `CustomGlyph` or the raw bytes directly. The
+data must be raw pixels (RGBA32 or Grayscale8) — not an encoded PNG.
+
+```csharp
+// 8x8 solid white RGBA block to use for the private-use codepoint U+E000.
+int w = 8, h = 8;
+byte[] pixels = new byte[w * h * 4];
+for (int i = 0; i < pixels.Length; i++) pixels[i] = 255;
+
+var result = BmFont.Builder()
+    .WithFont("font.ttf")
+    .WithSize(32)
+    .WithCharacters(CharacterSet.Ascii)
+    // codepoint, width, height, pixels, format, optional xAdvance
+    .WithCustomGlyph(0xE000, w, h, pixels, PixelFormat.Rgba32, xAdvance: w)
+    .Build();
+```
+
+The options-object equivalent uses the `CustomGlyphs` dictionary:
+
+```csharp
+var options = new FontGeneratorOptions
+{
+    Size = 32,
+    CustomGlyphs = new Dictionary<int, CustomGlyph>
+    {
+        [0xE000] = new CustomGlyph(w, h, pixels, PixelFormat.Rgba32, XAdvance: w)
+    }
+};
+var result = BmFont.Generate("font.ttf", options);
+```
+
 ### Channel Packing
 
 Pack glyphs into individual RGBA channels for 4x atlas density:
@@ -676,6 +711,8 @@ See [COMPARISON.md](COMPARISON.md) for a detailed feature comparison with BMFont
 ## License
 
 MIT. See [LICENSE](LICENSE) for details.
+
+KernSmith is authored by Kaltinril (Jeremy Swartwood) — the author listed on every published NuGet package. The copyright holder of record is "KernSmith contributors", matching the [LICENSE](LICENSE).
 
 ## Third-Party Licenses
 
