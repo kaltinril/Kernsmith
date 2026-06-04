@@ -70,7 +70,7 @@ public class FontInspectorDialog
 
             if (fontInfo.Head is { } head)
             {
-                UiFactory.AddSectionHeader(scrollViewer.InnerPanel,"Head Table");
+                UiFactory.AddSectionHeader(scrollViewer.InnerPanel, "Head Table");
                 AddRow(scrollViewer, "  Bounding Box", $"({head.XMin}, {head.YMin}) to ({head.XMax}, {head.YMax})");
                 AddRow(scrollViewer, "  Lowest Rec PPEM", head.LowestRecPPEM.ToString());
                 AddRow(scrollViewer, "  Created", head.CreatedUtc.ToString("yyyy-MM-dd"));
@@ -79,7 +79,7 @@ public class FontInspectorDialog
 
             if (fontInfo.Hhea is { } hhea)
             {
-                UiFactory.AddSectionHeader(scrollViewer.InnerPanel,"Hhea Table");
+                UiFactory.AddSectionHeader(scrollViewer.InnerPanel, "Hhea Table");
                 AddRow(scrollViewer, "  Ascender", hhea.Ascender.ToString());
                 AddRow(scrollViewer, "  Descender", hhea.Descender.ToString());
                 AddRow(scrollViewer, "  Line Gap", hhea.LineGap.ToString());
@@ -89,7 +89,7 @@ public class FontInspectorDialog
 
             if (fontInfo.Os2 is { } os2)
             {
-                UiFactory.AddSectionHeader(scrollViewer.InnerPanel,"OS/2 Table");
+                UiFactory.AddSectionHeader(scrollViewer.InnerPanel, "OS/2 Table");
                 AddRow(scrollViewer, "  Weight Class", os2.WeightClass.ToString());
                 AddRow(scrollViewer, "  Width Class", os2.WidthClass.ToString());
                 AddRow(scrollViewer, "  Typo Ascender", os2.TypoAscender.ToString());
@@ -101,7 +101,7 @@ public class FontInspectorDialog
 
             if (fontInfo.VariationAxes is { Count: > 0 } axes)
             {
-                UiFactory.AddSectionHeader(scrollViewer.InnerPanel,$"Variation Axes ({axes.Count})");
+                UiFactory.AddSectionHeader(scrollViewer.InnerPanel, $"Variation Axes ({axes.Count})");
                 foreach (var axis in axes)
                 {
                     var name = axis.Name ?? axis.Tag;

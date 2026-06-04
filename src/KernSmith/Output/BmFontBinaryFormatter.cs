@@ -172,7 +172,7 @@ internal sealed class BmFontBinaryFormatter : IBmFontBinaryFormatter
         WriteBlock(writer, 5, ms.ToArray());
     }
 
-private static void WriteExtendedBlock(BinaryWriter writer, ExtendedMetadata extended)
+    private static void WriteExtendedBlock(BinaryWriter writer, ExtendedMetadata extended)
     {
         // Build a dictionary of non-null fields for clean JSON output.
         var dict = new Dictionary<string, object>

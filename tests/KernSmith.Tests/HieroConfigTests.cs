@@ -432,10 +432,17 @@ public sealed class HieroConfigTests : IDisposable
                 Characters = CharacterSet.FromChars("ABCabc123"),
                 Outline = 2,
                 OutlineR = 0xff,
-                GradientStartR = 0x00, GradientStartG = 0xff, GradientStartB = 0xff,
-                GradientEndR = 0x00, GradientEndG = 0x00, GradientEndB = 0xff,
-                ShadowOffsetX = 3, ShadowOffsetY = 4,
-                ShadowR = 0x11, ShadowG = 0x22, ShadowB = 0x33,
+                GradientStartR = 0x00,
+                GradientStartG = 0xff,
+                GradientStartB = 0xff,
+                GradientEndR = 0x00,
+                GradientEndG = 0x00,
+                GradientEndB = 0xff,
+                ShadowOffsetX = 3,
+                ShadowOffsetY = 4,
+                ShadowR = 0x11,
+                ShadowG = 0x22,
+                ShadowB = 0x33,
                 Sdf = false
             }
         };
@@ -1263,8 +1270,12 @@ public sealed class HieroConfigTests : IDisposable
         {
             Options = new FontGeneratorOptions
             {
-                GradientStartR = 0x11, GradientStartG = 0x22, GradientStartB = 0x33,
-                GradientEndR = 0x44, GradientEndG = 0x55, GradientEndB = 0x66
+                GradientStartR = 0x11,
+                GradientStartG = 0x22,
+                GradientStartB = 0x33,
+                GradientEndR = 0x44,
+                GradientEndG = 0x55,
+                GradientEndB = 0x66
             }
         };
 
@@ -1282,8 +1293,12 @@ public sealed class HieroConfigTests : IDisposable
         {
             Options = new FontGeneratorOptions
             {
-                GradientStartR = 0x11, GradientStartG = 0x22, GradientStartB = 0x33,
-                GradientEndR = 0x44, GradientEndG = 0x55, GradientEndB = 0x66
+                GradientStartR = 0x11,
+                GradientStartG = 0x22,
+                GradientStartB = 0x33,
+                GradientEndR = 0x44,
+                GradientEndG = 0x55,
+                GradientEndB = 0x66
             }
         };
 
@@ -1386,9 +1401,14 @@ public sealed class HieroConfigTests : IDisposable
             {
                 Outline = 2,
                 OutlineR = 0xff,
-                GradientStartR = 0x00, GradientStartG = 0xff, GradientStartB = 0xff,
-                GradientEndR = 0x00, GradientEndG = 0x00, GradientEndB = 0xff,
-                ShadowOffsetX = 2, ShadowOffsetY = 2,
+                GradientStartR = 0x00,
+                GradientStartG = 0xff,
+                GradientStartB = 0xff,
+                GradientEndR = 0x00,
+                GradientEndG = 0x00,
+                GradientEndB = 0xff,
+                ShadowOffsetX = 2,
+                ShadowOffsetY = 2,
                 Sdf = true
             }
         };
