@@ -5,7 +5,6 @@ using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using Microsoft.Xna.Framework.Graphics;
 using global::Gum.Wireframe;
-using MonoGameGum;
 using MonoGameGum.GueDeriving;
 using global::Gum.Forms.DefaultVisuals.V3;
 
