@@ -5,7 +5,7 @@ using global::Gum.Wireframe;
 using KernSmith.Ui.Styling;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MonoGameGum.GueDeriving;
+using Gum.GueDeriving;
 
 namespace KernSmith.Ui.Layout;
 
@@ -33,7 +33,7 @@ public class ColorPickerDialog
     private TextBox _rBox = null!, _gBox = null!, _bBox = null!;
     private TextBox _hslHBox = null!, _hslSBox = null!, _hslLBox = null!;
     private TextBox _hsvHBox = null!, _hsvSBox = null!, _hsvVBox = null!;
-    private ColoredRectangleRuntime _newSwatch = null!;
+    private RectangleRuntime _newSwatch = null!;
 
     private Texture2D? _svTexture;
     private Texture2D? _hueBarTexture;
@@ -41,14 +41,14 @@ public class ColorPickerDialog
     private SpriteRuntime? _hueBarSprite;
 
     // SV crosshair indicator (4 thin rectangles forming a + shape)
-    private ColoredRectangleRuntime? _svCrosshairH;
-    private ColoredRectangleRuntime? _svCrosshairV;
-    private ColoredRectangleRuntime? _svCrosshairHBorder;
-    private ColoredRectangleRuntime? _svCrosshairVBorder;
+    private RectangleRuntime? _svCrosshairH;
+    private RectangleRuntime? _svCrosshairV;
+    private RectangleRuntime? _svCrosshairHBorder;
+    private RectangleRuntime? _svCrosshairVBorder;
 
     // Hue bar indicator
-    private ColoredRectangleRuntime? _hueIndicator;
-    private ColoredRectangleRuntime? _hueIndicatorBorder;
+    private RectangleRuntime? _hueIndicator;
+    private RectangleRuntime? _hueIndicatorBorder;
 
     private bool _draggingSv;
     private bool _draggingHue;
@@ -158,7 +158,7 @@ public class ColorPickerDialog
         row.Children.Add(newLabel);
 
         AddBorderedSwatch(row, 24, 20, out _newSwatch);
-        _newSwatch.Color = new Color(_r, _g, _b);
+        _newSwatch.FillColor = new Color(_r, _g, _b);
 
         // Small spacer
         var spacer1 = new ContainerRuntime();
@@ -174,7 +174,7 @@ public class ColorPickerDialog
         row.Children.Add(prevLabel);
 
         AddBorderedSwatch(row, 24, 20, out var prevSwatch);
-        prevSwatch.Color = _previousColor;
+        prevSwatch.FillColor = _previousColor;
     }
 
     private void BuildPickerRow(ContainerRuntime parent)
@@ -304,22 +304,24 @@ public class ColorPickerDialog
         return box;
     }
 
-    private static void AddBorderedSwatch(ContainerRuntime parent, int width, int height, out ColoredRectangleRuntime innerSwatch)
+    private static void AddBorderedSwatch(ContainerRuntime parent, int width, int height, out RectangleRuntime innerSwatch)
     {
         var container = new ContainerRuntime();
         container.Width = width;
         container.Height = height;
         parent.Children.Add(container);
 
-        var border = new ColoredRectangleRuntime();
+        var border = new RectangleRuntime();
+        border.IsFilled = true;
         border.Width = 0;
         border.WidthUnits = DimensionUnitType.RelativeToParent;
         border.Height = 0;
         border.HeightUnits = DimensionUnitType.RelativeToParent;
-        border.Color = Theme.PanelBorder;
+        border.FillColor = Theme.PanelBorder;
         container.Children.Add(border);
 
-        innerSwatch = new ColoredRectangleRuntime();
+        innerSwatch = new RectangleRuntime();
+        innerSwatch.IsFilled = true;
         innerSwatch.X = 1;
         innerSwatch.Y = 1;
         innerSwatch.Width = -2;
@@ -376,12 +378,13 @@ public class ColorPickerDialog
         parent.Children.Add(svContainer);
 
         // Border
-        var svBorder = new ColoredRectangleRuntime();
+        var svBorder = new RectangleRuntime();
+        svBorder.IsFilled = true;
         svBorder.Width = 0;
         svBorder.WidthUnits = DimensionUnitType.RelativeToParent;
         svBorder.Height = 0;
         svBorder.HeightUnits = DimensionUnitType.RelativeToParent;
-        svBorder.Color = Theme.PanelBorder;
+        svBorder.FillColor = Theme.PanelBorder;
         svContainer.Children.Add(svBorder);
 
         // SV texture sprite
@@ -398,28 +401,32 @@ public class ColorPickerDialog
         RegenerateSvTexture();
 
         // Crosshair indicator: dark border lines behind white lines
-        _svCrosshairHBorder = new ColoredRectangleRuntime();
+        _svCrosshairHBorder = new RectangleRuntime();
+        _svCrosshairHBorder.IsFilled = true;
         _svCrosshairHBorder.Width = 9;
         _svCrosshairHBorder.Height = 3;
-        _svCrosshairHBorder.Color = new Color(0, 0, 0);
+        _svCrosshairHBorder.FillColor = new Color(0, 0, 0);
         svContainer.Children.Add(_svCrosshairHBorder);
 
-        _svCrosshairVBorder = new ColoredRectangleRuntime();
+        _svCrosshairVBorder = new RectangleRuntime();
+        _svCrosshairVBorder.IsFilled = true;
         _svCrosshairVBorder.Width = 3;
         _svCrosshairVBorder.Height = 9;
-        _svCrosshairVBorder.Color = new Color(0, 0, 0);
+        _svCrosshairVBorder.FillColor = new Color(0, 0, 0);
         svContainer.Children.Add(_svCrosshairVBorder);
 
-        _svCrosshairH = new ColoredRectangleRuntime();
+        _svCrosshairH = new RectangleRuntime();
+        _svCrosshairH.IsFilled = true;
         _svCrosshairH.Width = 7;
         _svCrosshairH.Height = 1;
-        _svCrosshairH.Color = Color.White;
+        _svCrosshairH.FillColor = Color.White;
         svContainer.Children.Add(_svCrosshairH);
 
-        _svCrosshairV = new ColoredRectangleRuntime();
+        _svCrosshairV = new RectangleRuntime();
+        _svCrosshairV.IsFilled = true;
         _svCrosshairV.Width = 1;
         _svCrosshairV.Height = 7;
-        _svCrosshairV.Color = Color.White;
+        _svCrosshairV.FillColor = Color.White;
         svContainer.Children.Add(_svCrosshairV);
 
         UpdateSvIndicator();
@@ -442,12 +449,13 @@ public class ColorPickerDialog
         parent.Children.Add(hueContainer);
 
         // Border
-        var hueBorder = new ColoredRectangleRuntime();
+        var hueBorder = new RectangleRuntime();
+        hueBorder.IsFilled = true;
         hueBorder.Width = 0;
         hueBorder.WidthUnits = DimensionUnitType.RelativeToParent;
         hueBorder.Height = 0;
         hueBorder.HeightUnits = DimensionUnitType.RelativeToParent;
-        hueBorder.Color = Theme.PanelBorder;
+        hueBorder.FillColor = Theme.PanelBorder;
         hueContainer.Children.Add(hueBorder);
 
         // Hue bar texture sprite
@@ -464,16 +472,18 @@ public class ColorPickerDialog
         GenerateHueBarTexture();
 
         // Hue indicator: horizontal line with dark border
-        _hueIndicatorBorder = new ColoredRectangleRuntime();
+        _hueIndicatorBorder = new RectangleRuntime();
+        _hueIndicatorBorder.IsFilled = true;
         _hueIndicatorBorder.Width = HueBarWidth;
         _hueIndicatorBorder.Height = 5;
-        _hueIndicatorBorder.Color = new Color(0, 0, 0);
+        _hueIndicatorBorder.FillColor = new Color(0, 0, 0);
         hueContainer.Children.Add(_hueIndicatorBorder);
 
-        _hueIndicator = new ColoredRectangleRuntime();
+        _hueIndicator = new RectangleRuntime();
+        _hueIndicator.IsFilled = true;
         _hueIndicator.Width = HueBarWidth - 2;
         _hueIndicator.Height = 3;
-        _hueIndicator.Color = Color.White;
+        _hueIndicator.FillColor = Color.White;
         hueContainer.Children.Add(_hueIndicator);
 
         UpdateHueIndicator();
@@ -759,7 +769,7 @@ public class ColorPickerDialog
         _suppressSync = true;
         try
         {
-            _newSwatch.Color = new Color(_r, _g, _b);
+            _newSwatch.FillColor = new Color(_r, _g, _b);
 
             if (syncHex)
                 _hexBox.Text = $"#{_r:X2}{_g:X2}{_b:X2}";

@@ -5,7 +5,7 @@ using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using Microsoft.Xna.Framework.Graphics;
 using global::Gum.Wireframe;
-using MonoGameGum.GueDeriving;
+using Gum.GueDeriving;
 using global::Gum.Forms.DefaultVisuals.V3;
 
 namespace KernSmith.Ui.Layout;
@@ -257,8 +257,9 @@ public class MainLayout : ContainerRuntime
 
     private static void AddPanelBackground(Panel panel, Microsoft.Xna.Framework.Color color)
     {
-        var bg = new ColoredRectangleRuntime();
-        bg.Color = color;
+        var bg = new RectangleRuntime();
+        bg.IsFilled = true;
+        bg.FillColor = color;
         bg.Dock(global::Gum.Wireframe.Dock.Fill);
         // Insert as first child so it renders behind other content
         panel.Visual.Children.Insert(0, bg);

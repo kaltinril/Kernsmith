@@ -2,7 +2,7 @@ using global::Gum.Forms;
 using global::Gum.Forms.Controls;
 using global::Gum.DataTypes;
 using Microsoft.Xna.Framework;
-using MonoGameGum.GueDeriving;
+using Gum.GueDeriving;
 using KernSmith.Ui.Styling;
 
 namespace KernSmith.Ui.Layout;
@@ -47,14 +47,15 @@ public static class KeyboardShortcutsDialog
         }
 
         // Opaque background behind content so atlas doesn't bleed through
-        var bg = new ColoredRectangleRuntime();
+        var bg = new RectangleRuntime();
+        bg.IsFilled = true;
         bg.X = 0;
         bg.Y = 0;
         bg.Width = 0;
         bg.WidthUnits = DimensionUnitType.RelativeToParent;
         bg.Height = 0;
         bg.HeightUnits = DimensionUnitType.RelativeToParent;
-        bg.Color = Theme.Panel;
+        bg.FillColor = Theme.Panel;
         window.Visual.Children.Insert(0, bg);
 
         var grid = new Grid();

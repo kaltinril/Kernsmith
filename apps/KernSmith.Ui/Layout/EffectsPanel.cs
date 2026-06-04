@@ -4,7 +4,7 @@ using Gum.Themes.Editor;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using Microsoft.Xna.Framework.Graphics;
-using MonoGameGum.GueDeriving;
+using Gum.GueDeriving;
 
 namespace KernSmith.Ui.Layout;
 
