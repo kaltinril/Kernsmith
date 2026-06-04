@@ -1,3 +1,4 @@
+using System.Buffers;
 using KernSmith.Font.Models;
 
 namespace KernSmith.Rasterizer;
@@ -65,47 +66,55 @@ internal static class GlyphCompositor
                 // The shadow silhouette must be fully opaque everywhere the final glyph will be
                 // (outline ring + body interior), otherwise anti-aliased boundary pixels between
                 // the ring and body produce sub-255 alpha, causing lighter shadow artifacts.
-                var mergedAlpha = new byte[outlineLayer.Width * outlineLayer.Height];
-
-                // First, copy outline alpha.
-                for (var i = 0; i < mergedAlpha.Length; i++)
-                    mergedAlpha[i] = outlineLayer.RgbaData[i * 4 + 3];
-
-                // Then, overlay the original glyph alpha at the correct offset.
-                // The glyph sits at (-outlineLayer.OffsetX, -outlineLayer.OffsetY) within the outline canvas.
-                var glyphOffX = -outlineLayer.OffsetX;
-                var glyphOffY = -outlineLayer.OffsetY;
-                for (var y = 0; y < srcH; y++)
+                // mergedAlpha is fully written (every element) before it is read, so no clear is needed.
+                var mergedSize = outlineLayer.Width * outlineLayer.Height;
+                var mergedAlpha = ArrayPool<byte>.Shared.Rent(mergedSize);
+                try
                 {
-                    for (var x = 0; x < srcW; x++)
+                    // First, copy outline alpha.
+                    for (var i = 0; i < mergedSize; i++)
+                        mergedAlpha[i] = outlineLayer.RgbaData[i * 4 + 3];
+
+                    // Then, overlay the original glyph alpha at the correct offset.
+                    // The glyph sits at (-outlineLayer.OffsetX, -outlineLayer.OffsetY) within the outline canvas.
+                    var glyphOffX = -outlineLayer.OffsetX;
+                    var glyphOffY = -outlineLayer.OffsetY;
+                    for (var y = 0; y < srcH; y++)
                     {
-                        var dx = glyphOffX + x;
-                        var dy = glyphOffY + y;
-                        if (dx < 0 || dx >= outlineLayer.Width || dy < 0 || dy >= outlineLayer.Height) continue;
+                        for (var x = 0; x < srcW; x++)
+                        {
+                            var dx = glyphOffX + x;
+                            var dy = glyphOffY + y;
+                            if (dx < 0 || dx >= outlineLayer.Width || dy < 0 || dy >= outlineLayer.Height) continue;
 
-                        var srcIdx = y * alphaPitch + x;
-                        var srcAlpha = srcIdx < alphaData.Length ? alphaData[srcIdx] : (byte)0;
-                        var dstIdx = dy * outlineLayer.Width + dx;
-                        mergedAlpha[dstIdx] = Math.Max(mergedAlpha[dstIdx], srcAlpha);
+                            var srcIdx = y * alphaPitch + x;
+                            var srcAlpha = srcIdx < alphaData.Length ? alphaData[srcIdx] : (byte)0;
+                            var dstIdx = dy * outlineLayer.Width + dx;
+                            mergedAlpha[dstIdx] = Math.Max(mergedAlpha[dstIdx], srcAlpha);
+                        }
                     }
+
+                    var outlineMetrics = new Font.Models.GlyphMetrics(
+                        BearingX: sourceGlyph.Metrics.BearingX + outlineLayer.OffsetX,
+                        BearingY: sourceGlyph.Metrics.BearingY - outlineLayer.OffsetY,
+                        Advance: sourceGlyph.Metrics.Advance,
+                        Width: outlineLayer.Width,
+                        Height: outlineLayer.Height);
+
+                    var shadowLayer = shadowEffect.Generate(
+                        mergedAlpha, outlineLayer.Width, outlineLayer.Height,
+                        outlineLayer.Width, outlineMetrics);
+
+                    layers.Add(shadowLayer with
+                    {
+                        OffsetX = shadowLayer.OffsetX + outlineLayer.OffsetX,
+                        OffsetY = shadowLayer.OffsetY + outlineLayer.OffsetY
+                    });
                 }
-
-                var outlineMetrics = new Font.Models.GlyphMetrics(
-                    BearingX: sourceGlyph.Metrics.BearingX + outlineLayer.OffsetX,
-                    BearingY: sourceGlyph.Metrics.BearingY - outlineLayer.OffsetY,
-                    Advance: sourceGlyph.Metrics.Advance,
-                    Width: outlineLayer.Width,
-                    Height: outlineLayer.Height);
-
-                var shadowLayer = shadowEffect.Generate(
-                    mergedAlpha, outlineLayer.Width, outlineLayer.Height,
-                    outlineLayer.Width, outlineMetrics);
-
-                layers.Add(shadowLayer with
+                finally
                 {
-                    OffsetX = shadowLayer.OffsetX + outlineLayer.OffsetX,
-                    OffsetY = shadowLayer.OffsetY + outlineLayer.OffsetY
-                });
+                    ArrayPool<byte>.Shared.Return(mergedAlpha);
+                }
             }
             else
             {

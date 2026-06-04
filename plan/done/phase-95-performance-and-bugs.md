@@ -1,6 +1,6 @@
 # Phase 95 -- Performance Optimization & Bug Fixes
 
-> **Status**: Partial
+> **Status**: Complete (2026-06-03)
 > **Size**: Large
 > **Created**: 2026-03-29
 > **Origin**: Full codebase audit (efficiency, speed, correctness)
@@ -12,17 +12,23 @@
 > - Perf 2+3+6b (pipeline merge & parallelize): DONE
 > - Perf 4 (MaxRects O(n^3) to O(n^2)): DONE
 > - Perf 5 (box blur): already DONE in Phase 37
-> - Perf 6 (ArrayPool for glyph/atlas buffers): DEFERRED -- large refactor with lifecycle complexity
+> - Perf 6 (ArrayPool for glyph/atlas buffers): Phase A DONE (see Resolved 2026-06-03); Phases B/C remain future work
 > - Perf 7 (redundant font copies): DONE
 > - Perf 8 (parallel page encoding): DONE
 > - Perf 9 (BGRA swap): DONE
-> - Perf 10 (integer alpha blending): DEFERRED -- risk of byte-level output differences
+> - Perf 10 (integer alpha blending): CLOSED -- proven impossible (see Resolved 2026-06-03)
 > - Perf 11 (format check hoist): DONE
 > - Perf 12 (TextFormatter StringBuilder): DONE
 > - Perf 13 (BmFontResult Lazy<T>): DONE
 > - Perf 14 (MemoryStream pre-alloc): DONE
 > - Perf 15 (EDT ArrayPool): DONE
 > - Perf 16 (HashSet codepoints): SKIPPED -- trivially low impact (called once)
+>
+> **Resolved 2026-06-03 (final two deferred items closed)**:
+> - **Perf 6 -- Phase A DONE**: ArrayPool now backs the safe local scratch buffers in `OutlineEffect`, `OutlinePostProcessor`, `ShadowEffect`, `ShadowPostProcessor`, and `GlyphCompositor` (rent/return in `finally`, loop bounds use the requested length not `array.Length`, clear-before-read where the buffer is read before fully written).
+>   - **Phases B and C intentionally NOT done -- carried forward as future work**: the atlas page buffer (`AtlasPage.PixelData`) and per-glyph `RasterizedGlyph.BitmapData` escape into the public API. Pooling them safely requires an `IDisposable`/ownership API redesign; without it, returning a buffer to the pool risks use-after-return on caller-held data. Deferred deliberately, not forgotten.
+> - **Perf 10 -- CLOSED, proven IMPOSSIBLE**: A brute-force sweep of all 4.28 billion `(srcC, srcA, dstC, dstA)` combinations showed ~4.3M channel results diverge between the float blend and any integer equivalent (IEEE-754 per-step rounding crosses integer boundaries ~0.1% of the time). A byte-identical integer rewrite cannot exist, so all three blend sites (`GlyphCompositor`, `OutlinePostProcessor`, `ShadowPostProcessor`) intentionally remain float.
+> - **Validation**: full build green (net8/9/10), full test suite passes, and the real bmfont-compare regression harness passed with exit 0 -- 150/150 FNT files identical and all backends pixel-identical (zero diffs), proving the ArrayPool change is output-neutral.
 
 ## Bugs
 
