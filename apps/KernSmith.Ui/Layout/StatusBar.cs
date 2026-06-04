@@ -2,7 +2,7 @@ using global::Gum.DataTypes;
 using global::Gum.Forms.Controls;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
-using MonoGameGum.GueDeriving;
+using Gum.GueDeriving;
 
 namespace KernSmith.Ui.Layout;
 
@@ -25,14 +25,16 @@ public class StatusBar : Panel
     private void BuildContent()
     {
         // Background to visually separate from content above
-        var bg = new ColoredRectangleRuntime();
-        bg.Color = Theme.Panel;
+        var bg = new RectangleRuntime();
+        bg.IsFilled = true;
+        bg.FillColor = Theme.Panel;
         this.AddChild(bg);
         bg.Dock(global::Gum.Wireframe.Dock.Fill);
 
         // Top border line
-        var border = new ColoredRectangleRuntime();
-        border.Color = Theme.PanelBorder;
+        var border = new RectangleRuntime();
+        border.IsFilled = true;
+        border.FillColor = Theme.PanelBorder;
         border.Height = 1;
         border.Dock(global::Gum.Wireframe.Dock.Top);
         this.AddChild(border);

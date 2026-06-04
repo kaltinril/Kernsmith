@@ -6,7 +6,7 @@ using Gum.Themes.Editor;
 using KernSmith.Ui.Models;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
-using MonoGameGum.GueDeriving;
+using Gum.GueDeriving;
 using NativeFileDialogNET;
 
 namespace KernSmith.Ui.Layout;
@@ -322,11 +322,12 @@ public class FontConfigPanel : Panel
         parent.Children.Add(bottomBar);
 
         // Separator line at top of bar
-        var separator = new ColoredRectangleRuntime();
+        var separator = new RectangleRuntime();
+        separator.IsFilled = true;
         separator.Width = 0;
         separator.WidthUnits = DimensionUnitType.RelativeToParent;
         separator.Height = 1;
-        separator.Color = Theme.PanelBorder;
+        separator.FillColor = Theme.PanelBorder;
         bottomBar.Children.Add(separator);
 
         // Inner padding container

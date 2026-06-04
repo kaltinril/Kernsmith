@@ -1,7 +1,7 @@
 using global::Gum.Wireframe;
 using Microsoft.Xna.Framework;
 using MonoGameGum;
-using MonoGameGum.GueDeriving;
+using Gum.GueDeriving;
 using KernSmith.Ui.Styling;
 
 namespace KernSmith.Ui.Layout;
@@ -34,12 +34,13 @@ public static class TooltipService
         _tooltipContainer.Width = 12; // padding
         _tooltipContainer.Height = 8;
 
-        var bg = new ColoredRectangleRuntime();
+        var bg = new RectangleRuntime();
+        bg.IsFilled = true;
         bg.Width = 0;
         bg.WidthUnits = global::Gum.DataTypes.DimensionUnitType.RelativeToParent;
         bg.Height = 0;
         bg.HeightUnits = global::Gum.DataTypes.DimensionUnitType.RelativeToParent;
-        bg.Color = new Color(20, 20, 20);
+        bg.FillColor = new Color(20, 20, 20);
         _tooltipContainer.Children.Add(bg);
 
         _tooltipText = new TextRuntime();

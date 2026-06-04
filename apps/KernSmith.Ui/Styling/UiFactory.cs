@@ -4,7 +4,7 @@ using KernSmith.Ui.Layout;
 using KernSmith.Ui.ViewModels;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MonoGameGum.GueDeriving;
+using Gum.GueDeriving;
 
 namespace KernSmith.Ui.Styling;
 
@@ -121,20 +121,22 @@ public static class UiFactory
         swatchContainer.HasEvents = true;
         grid.AddChild(swatchContainer, row: 0, column: 1);
 
-        var swatch = new ColoredRectangleRuntime();
+        var swatch = new RectangleRuntime();
+        swatch.IsFilled = true;
         swatch.Width = 0;
         swatch.WidthUnits = DimensionUnitType.RelativeToParent;
         swatch.Height = 0;
         swatch.HeightUnits = DimensionUnitType.RelativeToParent;
-        swatch.Color = new Color(defaultR, defaultG, defaultB);
+        swatch.FillColor = new Color(defaultR, defaultG, defaultB);
         swatchContainer.Children.Add(swatch);
 
-        var swatchBorder = new ColoredRectangleRuntime();
+        var swatchBorder = new RectangleRuntime();
+        swatchBorder.IsFilled = true;
         swatchBorder.Width = 0;
         swatchBorder.WidthUnits = DimensionUnitType.RelativeToParent;
         swatchBorder.Height = 0;
         swatchBorder.HeightUnits = DimensionUnitType.RelativeToParent;
-        swatchBorder.Color = Theme.PanelBorder;
+        swatchBorder.FillColor = Theme.PanelBorder;
         swatchContainer.Children.Insert(0, swatchBorder);
 
         var hexBox = new TextBox();
@@ -153,7 +155,7 @@ public static class UiFactory
                 byte.TryParse(hex[2..4], System.Globalization.NumberStyles.HexNumber, null, out var g) &&
                 byte.TryParse(hex[4..6], System.Globalization.NumberStyles.HexNumber, null, out var b))
             {
-                swatch.Color = new Color(r, g, b);
+                swatch.FillColor = new Color(r, g, b);
                 onColorChanged($"#{r:X2}{g:X2}{b:X2}");
             }
         };
@@ -161,11 +163,11 @@ public static class UiFactory
 
         swatchContainer.Click += (_, _) =>
         {
-            var currentColor = swatch.Color;
+            var currentColor = swatch.FillColor;
             ColorPickerDialog.Show(graphicsDevice, currentColor, newColor =>
             {
                 var hex = $"#{newColor.R:X2}{newColor.G:X2}{newColor.B:X2}";
-                swatch.Color = newColor;
+                swatch.FillColor = newColor;
                 suppressHexSync = true;
                 hexBox.Text = hex;
                 suppressHexSync = false;
