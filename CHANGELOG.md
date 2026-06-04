@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- API reference documentation — a curated guide under `docs/api-reference/` covering `BmFont`, the fluent builder, `FontGeneratorOptions`, `BmFontResult`, `BmFontModel`, and the exception types
+
+### Changed
+
+- CI now also builds and tests against .NET 8.0 (in addition to .NET 10.0)
+
 ## [0.14.0] - 2026-06-03
 
 ### Added
