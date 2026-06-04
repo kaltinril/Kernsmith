@@ -99,9 +99,9 @@ using KernSmith.Rasterizers.StbTrueType;
 RuntimeHelpers.RunClassConstructor(typeof(StbTrueTypeRasterizer).TypeHandle);
 ```
 
-See the [rasterizers documentation](https://jswartwood.github.io/kernsmith/rasterizers/) for details.
+See the [rasterizers documentation](https://kaltinril.github.io/Kernsmith/docs/rasterizers/) for details.
 
-See the [API reference guide](https://jswartwood.github.io/kernsmith/api-reference/) for `BmFont`, the fluent builder, `FontGeneratorOptions`, `BmFontResult`, `BmFontModel`, and the exception types.
+See the [API reference guide](https://kaltinril.github.io/Kernsmith/docs/api-reference/) for `BmFont`, the fluent builder, `FontGeneratorOptions`, `BmFontResult`, `BmFontModel`, and the exception types.
 
 ## Installation
 
