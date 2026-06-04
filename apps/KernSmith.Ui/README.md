@@ -36,7 +36,7 @@ dotnet run --project apps/KernSmith.Ui
 - Atlas packing and texture settings
 - Character set selection with Unicode block browser
 - Rasterizer backend selection — choose between FreeType, GDI, DirectWrite, or StbTrueType from a dropdown. Available backends depend on the current platform and installed NuGet packages.
-- Project save/load and session persistence
+- Project save/load and session persistence — load and save `.bmfc` (BMFont) and `.hiero` (libGDX) project files, including drag-and-drop (`.hiero` saving warns when settings can't be represented)
 
 ## Dependencies
 
