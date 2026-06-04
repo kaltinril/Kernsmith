@@ -39,6 +39,13 @@ KernSmith                                    (core — no sibling deps)
 │   └── KernSmith.MonoGameGum              → GumCommon
 ```
 
+> **`KernSmith.FnaGum` is intentionally excluded from the publish workflow.**
+> The pack step in `.github/workflows/publish.yml` deliberately skips it (and the
+> GitHub Release notes omit its package link) because it does not build cleanly
+> yet — it needs an FNA framework reference before it can be re-added. Until those
+> build issues are resolved, FnaGum is not packed or published to nuget.org even
+> though it appears in the dependency graph above.
+
 ### Adding a new package
 
 1. Create the project under `src/` or `integrations/` (e.g. `src/KernSmith.NewThing/`).

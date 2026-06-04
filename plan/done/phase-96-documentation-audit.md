@@ -29,9 +29,9 @@ Comprehensive audit of all project documentation — plan docs, reference docs, 
 - [x] **M8** — Added Dependabot config (.github/dependabot.yml) and a `dotnet list package --vulnerable` CI step
 - [x] **M10** — Added 74 unit tests for Config classes under tests/KernSmith.Tests/Config/
 
-### Validated but not implemented (needs future work)
-- [ ] **L7** — RobotoFlex-Variable.ttf unused in tests (only benchmarks)
-- [ ] **L9** — RELEASING.md doesn't mention FnaGum exclusion from publish
+### Resolved on phase/96-documentation-audit (2026-06-03)
+- [x] **L7** — Added RobotoFlexVariableFontTests.cs that explicitly loads RobotoFlex-Variable.ttf by name and asserts its fvar/weight axis plus successful generation
+- [x] **L9** — Added a note to RELEASING.md's Multi-Package Architecture section documenting that KernSmith.FnaGum is intentionally excluded from publish until its FNA build issues are resolved
 
 ### Not yet addressed
 - [ ] **H7** — No formal API reference documentation
