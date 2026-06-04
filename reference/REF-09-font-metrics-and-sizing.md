@@ -380,6 +380,13 @@ Compute the effective ppem from the desired cell height:
 effectivePpem = fontSize * unitsPerEm / (usWinAscent + usWinDescent)
 ```
 
+> **Verified against code (KernSmith 0.14.0):** This formula is implemented in
+> `BmFont.RasterizeFont` (`src/KernSmith/BmFont.cs`) as
+> `effectiveSize = (float)((double)options.Size * fontInfo.UnitsPerEm / (os2.WinAscent + os2.WinDescent))`,
+> applied only when `MatchCharHeight` is `false`, the OS/2 table is present, and
+> `WinAscent + WinDescent > 0` (with a floor of `1f`). It is skipped for backends that report
+> `HandlesOwnSizing` (e.g. GDI, which sizes via `LOGFONT.lfHeight`).
+
 Then set FreeType's size using this adjusted ppem:
 
 ```c
