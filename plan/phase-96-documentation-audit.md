@@ -1,6 +1,6 @@
 # Phase 96: Documentation Audit
 
-**Status:** Complete
+**Status:** In Progress — CI/quality items (H5, M7, M8, M10) plus L7/L9 resolved on `phase/96-documentation-audit` (2026-06-03); H7, M2, M4–M6, M11 and remaining L-series items still open.
 **Date:** 2026-06-03
 **Branch:** phase/96-documentation-audit
 
