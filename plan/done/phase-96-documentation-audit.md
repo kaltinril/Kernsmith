@@ -1,8 +1,8 @@
 # Phase 96: Documentation Audit
 
-**Status:** In Progress — CI/quality items (H5, M7, M8, M10) plus L7/L9 resolved on `phase/96-documentation-audit` (2026-06-03); H7, M2, M4–M6, M11 and remaining L-series items still open.
+**Status:** Complete (2026-06-03)
 **Date:** 2026-06-03
-**Branch:** phase/96-documentation-audit
+**Branch:** phase/96-documentation-audit (completion on phase/96-audit-completion)
 
 ## Overview
 
@@ -33,14 +33,21 @@ Comprehensive audit of all project documentation — plan docs, reference docs, 
 - [x] **L7** — Added RobotoFlexVariableFontTests.cs that explicitly loads RobotoFlex-Variable.ttf by name and asserts its fvar/weight axis plus successful generation
 - [x] **L9** — Added a note to RELEASING.md's Multi-Package Architecture section documenting that KernSmith.FnaGum is intentionally excluded from publish until its FNA build issues are resolved
 
-### Not yet addressed
-- [ ] **H7** — No formal API reference documentation
-- [ ] **M2** — CHANGELOG phase references confuse external users
-- [ ] **M4** — REF-12 DirectWrite stub status needs verification
-- [ ] **M5** — REF-08 unclear KernSmith vs BMFont distinction
-- [ ] **M6** — plan-rasterization.md doesn't acknowledge plugin architecture
-- [ ] **M11** — Author attribution inconsistency
-- [ ] **L1-L6, L8, L10** — Low-priority doc polish items
+### Resolved on phase/96-audit-completion (2026-06-03)
+- [x] **H7** — Added a curated API Reference Guide under `docs/api-reference/` (index + bmfont + builder + options + result + model + exceptions pages), wired into docfx nav (`docs/toc.yml`, `docs/index.md`, root `toc.yml`/`index.md`); every member verified against source for 0.14.0
+- [x] **M2** — Stripped all 32 `(Phase NN)` parentheticals from CHANGELOG entries and reworded/removed the remaining internal-planning lines (rejected experiments, "Phase 99 created", "Phase 78S pass", "deferred to Phase 150")
+- [x] **M4** — Verified `DirectWriteCapabilities` reports `SupportsColorFonts`/`SupportsVariableFonts` = false; clarified REF-12 that the setter methods accept-but-no-op, and corrected the inaccurate README backends-table claim
+- [x] **M5** — Added a "What is KernSmith vs. what is BMFont" section + per-section status table to REF-08
+- [x] **M6** — Added a post-Phase-78 status note to plan-rasterization.md acknowledging the pluggable `IRasterizer` package architecture
+- [x] **M11** — Made `Directory.Build.props` `<Authors>` canonical ("Kaltinril (Jeremy Swartwood)", matching all packable csproj) with a comment distinguishing it from the LICENSE copyright; documented canonical attribution in README
+- [x] **L1** — Added a Custom Glyphs usage example (builder + options) to README
+- [x] **L2** — Added a point-in-time-snapshot disclaimer for download/version metrics in REF-01
+- [x] **L3** — Verified the ppem formula against `BmFont.RasterizeFont` and annotated REF-09
+- [x] **L4** — Added `DefaultSystemFontProviderTests` (non-throwing, caching, unknown-family-returns-null)
+- [x] **L5** — Added `ExceptionScenarioTests` covering the exception hierarchy, properties, and real throw paths
+- [x] **L6** — Added `EffectPostProcessorTests` for Outline/Shadow/Gradient/HeightStretch (Bold/Italic already in PostProcessorTests)
+- [x] **L8** — Replaced the hardcoded per-package release-notes list in publish.yml with a single nuget.org search link
+- [x] **L10** — Added an XML comment to `Directory.Build.props` documenting it as the version source of truth
 
 ### Not an issue (validated as already correct)
 - [x] **C8** — CHANGELOG version matches Directory.Build.props (both 0.12.1)
