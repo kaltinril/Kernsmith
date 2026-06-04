@@ -26,6 +26,7 @@
 - **Font subsetting** -- only parses tables for requested codepoints
 - **Custom glyphs** -- replace or add glyphs with user-supplied images
 - **Texture formats** -- PNG (default), TGA, and DDS atlas output
+- **Pixel export** -- `AtlasPage.GetRgbaPixelData()`, `GetAlpha8PixelData()`, and `GetPremultipliedRgbaPixelData()` for straight-alpha, single-channel, or premultiplied RGBA pixel access for GPU upload and custom rendering pipelines
 - **Config formats** -- read and write BMFont `.bmfc` and Hiero `.hiero` (libGDX) config files; reading auto-detects the format by inspecting file content (extension used only when content is inconclusive), writing selects the format by extension
 - **Reading BMFont files** -- load and parse existing `.fnt` files (auto-detects text/XML/binary)
 - **Fluent builder API** -- chainable configuration as an alternative to options objects
