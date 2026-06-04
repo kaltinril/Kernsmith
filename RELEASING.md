@@ -48,6 +48,12 @@ KernSmith                                    (core — no sibling deps)
    packages in the family stay version-locked.
 5. Add `<IsPackable>true</IsPackable>` to the `.csproj` — `Directory.Build.props`
    defaults to `false`, so each package project must opt in explicitly.
+6. **License attribution** — add
+   `<None Include="..\..\THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="/" />`
+   so the notices ship inside the `.nupkg`. If the package introduces a new
+   third-party runtime dependency (managed or bundled native), add it to
+   `THIRD-PARTY-NOTICES.md` with its SPDX license, copyright line, and full
+   license text. See `plan/phase-74b-license-attribution-compliance.md`.
 
 ### Packability rules
 
@@ -102,6 +108,7 @@ dotnet pack integrations/KernSmith.MonoGameGum -c Release --output ./nupkg
 
 - [ ] Version bumped in `Directory.Build.props`
 - [ ] `CHANGELOG.md` updated
+- [ ] If runtime dependencies changed, `THIRD-PARTY-NOTICES.md` updated (license + copyright + required notice)
 - [ ] PR merged to main
 - [ ] Run "Publish Release" workflow from GitHub Actions
 - [ ] Verify workflow completed successfully

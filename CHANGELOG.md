@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `AtlasPage.GetRgbaPixelData()` — returns RGBA32 pixel bytes (grayscale pages expand to `255,255,255,v` alpha-coverage layout) for straight-alpha GPU upload
 - `AtlasPage.GetAlpha8PixelData()` — returns 8-bit alpha-coverage bytes (one byte per pixel) for single-channel/coverage textures and custom shaders
 - `AtlasPage.GetPremultipliedRgbaPixelData()` — returns premultiplied RGBA32 bytes for premultiplied-alpha blend pipelines (e.g. MonoGame's default `BlendState.AlphaBlend`)
+- `THIRD-PARTY-NOTICES.md` with third-party license attribution (FreeType FTL credit, MonoGame Ms-PL, SDL2/Zlib, OpenAL Soft LGPL, Gum/KNI, etc.); packaged into every NuGet package and shipped alongside the CLI and UI binaries
+- Attribution for the FreeType-derived embolden (synthetic-bold) port in the StbTrueType backend — source header, package README, and `THIRD-PARTY-NOTICES.md`
 
 ### Changed
 

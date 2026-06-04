@@ -33,3 +33,7 @@ dotnet build src/KernSmith.Rasterizers.DirectWrite.TerraFX/KernSmith.Rasterizers
 ```
 
 See the [KernSmith repository](https://github.com/kaltinril/KernSmith) for full project documentation.
+
+## Third-Party Licenses
+
+See `THIRD-PARTY-NOTICES.md` (packaged at the package root) for third-party license attributions.

@@ -292,7 +292,7 @@ public class MainLayout : ContainerRuntime
         contentStack.AddChild(descLabel);
 
         var creditsLabel = new Label();
-        creditsLabel.Text = "Built with MonoGame + GUM UI";
+        creditsLabel.Text = "Built with MonoGame, GUM, and FreeType — see THIRD-PARTY-NOTICES.md";
         contentStack.AddChild(creditsLabel);
 
         var urlLabel = new Label();
