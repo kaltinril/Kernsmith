@@ -1,3 +1,14 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// The synthetic-bold / embolden routines in this file (ApplyEmbolden /
+// EmboldenContour) are a port of FreeType's FT_Outline_EmboldenXY algorithm.
+//
+// Portions of this software are copyright © 2023 The FreeType Project
+// (www.freetype.org). All rights reserved.
+//
+// Used under the FreeType License (FTL). See THIRD-PARTY-NOTICES.md at the repo
+// root for the full license text.
+// ─────────────────────────────────────────────────────────────────────────────
+
 using System.Runtime.CompilerServices;
 using Stb = StbTrueTypeSharp.StbTrueType;
 

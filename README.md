@@ -675,3 +675,9 @@ See [COMPARISON.md](COMPARISON.md) for a detailed feature comparison with BMFont
 ## License
 
 MIT. See [LICENSE](LICENSE) for details.
+
+## Third-Party Licenses
+
+KernSmith bundles and links against third-party components, listed with their licenses and required attributions in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Notably, the FreeType rasterizer backend (FreeType 2.13.2 via FreeTypeSharp) and the synthetic-bold (embolden) port in the StbTrueType backend use FreeType under the FreeType License (FTL).
+
+> Portions of this software are copyright © 2023 The FreeType Project (www.freetype.org). All rights reserved.

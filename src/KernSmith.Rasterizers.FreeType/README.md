@@ -33,3 +33,11 @@ dotnet build src/KernSmith.Rasterizers.FreeType/KernSmith.Rasterizers.FreeType.c
 ```
 
 See the [KernSmith repository](https://github.com/kaltinril/KernSmith) for full project documentation.
+
+## Third-Party Licenses
+
+This package uses FreeType (2.13.2, via FreeTypeSharp) under the FreeType License (FTL).
+
+> Portions of this software are copyright © 2023 The FreeType Project (www.freetype.org). All rights reserved.
+
+See `THIRD-PARTY-NOTICES.md` (packaged at the package root) for the full license text.

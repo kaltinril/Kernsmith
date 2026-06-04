@@ -28,6 +28,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="..\..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\integrations\KernSmith.MonoGameGum\KernSmith.MonoGameGum.csproj" />
     <ProjectReference Include="..\..\src\KernSmith\KernSmith.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.FreeType\KernSmith.Rasterizers.FreeType.csproj" />

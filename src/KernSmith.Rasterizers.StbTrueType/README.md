@@ -61,3 +61,11 @@ dotnet build src/KernSmith.Rasterizers.StbTrueType/KernSmith.Rasterizers.StbTrue
 ```
 
 See the [KernSmith repository](https://github.com/kaltinril/KernSmith) for full project documentation.
+
+## Third-Party Licenses
+
+The synthetic-bold feature ports FreeType's `FT_Outline_EmboldenXY` algorithm, used under the FreeType License (FTL).
+
+> Portions of this software are copyright © 2023 The FreeType Project (www.freetype.org). All rights reserved.
+
+See `THIRD-PARTY-NOTICES.md` (packaged at the package root) for the full license text.
