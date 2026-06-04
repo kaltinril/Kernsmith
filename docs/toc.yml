@@ -1,5 +1,20 @@
 - name: KernSmith
   href: core/index.md
+- name: API Reference Guide
+  href: api-reference/index.md
+  items:
+    - name: BmFont (Entry Point)
+      href: api-reference/bmfont.md
+    - name: Fluent Builder
+      href: api-reference/builder.md
+    - name: FontGeneratorOptions
+      href: api-reference/options.md
+    - name: BmFontResult
+      href: api-reference/result.md
+    - name: BmFontModel
+      href: api-reference/model.md
+    - name: Exceptions
+      href: api-reference/exceptions.md
 - name: CLI Tool
   href: cli/index.md
   items:
