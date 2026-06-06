@@ -18,6 +18,17 @@ internal sealed class GradientEffect : IGlyphEffect
     private readonly float _scale;
     private readonly bool _cyclic;
 
+    /// <param name="startR">Start (gradient origin) color red channel.</param>
+    /// <param name="startG">Start (gradient origin) color green channel.</param>
+    /// <param name="startB">Start (gradient origin) color blue channel.</param>
+    /// <param name="endR">End color red channel.</param>
+    /// <param name="endG">End color green channel.</param>
+    /// <param name="endB">End color blue channel.</param>
+    /// <param name="angleDegrees">Gradient direction in degrees (<c>90</c> = top-to-bottom).</param>
+    /// <param name="midpoint">Midpoint bias (where the 50% blend falls), clamped to <c>0.01</c>-<c>0.99</c>.</param>
+    /// <param name="offset">Shifts the gradient start along its axis. <c>0</c> (default) is no shift.</param>
+    /// <param name="scale">Stretches (<c>&gt;1</c>) or compresses (<c>&lt;1</c>) the gradient span. <c>1</c> (default) is no change; zero/negative values are coerced to <c>1</c>.</param>
+    /// <param name="cyclic">When <c>true</c>, repeats/tiles the gradient (fractional wrap with a hard seam) instead of clamping at the ends.</param>
     public GradientEffect(
         byte startR, byte startG, byte startB,
         byte endR, byte endG, byte endB,

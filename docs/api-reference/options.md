@@ -35,6 +35,8 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 | `EnableHinting` | `bool` | `true` | Enable hinting for crisp small text. |
 | `SuperSampleLevel` | `int` | `1` | `1`-`4`; renders at Nx and downscales. Cannot combine with `Sdf`. |
 | `Sdf` | `bool` | `false` | Generate a signed distance field font. |
+| `SdfSpread` | `float` | `8f` | SDF spread (distance range) in pixels. Wired to the FreeType SDF renderer; only applies when `Sdf` is `true`. |
+| `Gamma` | `float` | `1.8f` | Gamma correction applied to FreeType grayscale coverage. `1.8` is the no-op baseline; `>1.8` darkens, `<1.8` lightens. Not applied to MONO/color/SDF output. |
 
 ## Outline
 
@@ -50,7 +52,9 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 | `ShadowOffsetX` / `ShadowOffsetY` | `int` | `0` | Shadow offset in pixels. Any non-zero offset (or blur) enables the shadow. |
 | `ShadowR` / `ShadowG` / `ShadowB` | `byte` | `0` | Shadow color channels. |
 | `ShadowOpacity` | `float` | `1.0f` | Shadow opacity, `0.0`-`1.0`. |
-| `ShadowBlur` | `int` | `0` | Blur radius. `0` = hard edge. |
+| `ShadowBlur` | `int` | `0` | Blur radius (primary control). `0` = hard edge. |
+| `ShadowBlurKernelSize` | `int` | `0` | Extra blur radius added on top of `ShadowBlur`. `0` leaves the primary radius untouched. |
+| `ShadowBlurPasses` | `int` | `1` | Number of box-blur passes. `1` = single pass (legacy output); more passes approximate a Gaussian for a smoother shadow. |
 | `HardShadow` | `bool` | `false` | Use a binarized silhouette instead of antialiased glyph alpha. |
 
 ## Gradient
@@ -61,6 +65,16 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 | `GradientEndR` / `GradientEndG` / `GradientEndB` | `byte?` | `null` | End (bottom) color. |
 | `GradientAngle` | `float` | `90f` | Angle in degrees (`90` = top-to-bottom). |
 | `GradientMidpoint` | `float` | `0.5f` | Midpoint bias, `0.0`-`1.0`. |
+| `GradientOffset` | `float` | `0f` | Shifts the gradient start along its axis. `0` = no shift. |
+| `GradientScale` | `float` | `1f` | Stretches (`>1`) or compresses (`<1`) the gradient span. `1` = no change. |
+| `GradientCyclic` | `bool` | `false` | Repeats/tiles the gradient (hard-seam fractional wrap) instead of clamping at the ends. |
+
+## Fill color
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `FillColorR` / `FillColorG` / `FillColorB` | `byte` | `255` | Body fill color channels. A non-white fill tints the default body layer and composites even when no other effects are present. Ignored when a gradient is set. |
+| `FillColorA` | `byte` | `255` | Body fill alpha; multiplies the glyph mask alpha. `255` = opaque (legacy behavior). |
 
 ## Atlas and texture
 
@@ -106,6 +120,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `Kerning` | `bool` | `true` | Include kerning pairs in the output. |
+| `AdvanceAdjustX` | `float` | `0f` | Global value added to every glyph's `xadvance`. |
 | `CollectMetrics` | `bool` | `false` | Record per-stage pipeline timing on the result. |
 
 ## Pluggable components

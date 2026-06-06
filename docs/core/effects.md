@@ -68,6 +68,8 @@ var result = BmFont.Builder()
 
 Use `WithHardShadow()` for a binarized shadow silhouette (all non-zero alpha becomes fully opaque before blur).
 
+The blur is further controllable with two additional options: `ShadowBlurKernelSize` adds extra blur radius on top of the primary `ShadowBlur` radius, and `ShadowBlurPasses` sets the number of box-blur passes. A single pass (`1`, the default) reproduces the legacy single-pass shadow; running multiple passes approximates a Gaussian falloff for a smoother result.
+
 ### Gradient
 
 Applies a two-color linear gradient across the glyph body. Replaces the default white body layer (Z-order 2). The gradient angle and midpoint are configurable.
@@ -87,6 +89,12 @@ var result = BmFont.Builder()
         angleDegrees: 90f)
     .Build();
 ```
+
+Three further options refine the gradient: `GradientOffset` shifts the gradient start along its axis, `GradientScale` stretches (`>1`) or compresses (`<1`) the gradient span, and `GradientCyclic` repeats/tiles the gradient (a hard-seam fractional wrap) instead of clamping at the ends. These compose with the angle and midpoint controls above.
+
+### Fill Color
+
+When no gradient is set, the glyph body renders as solid white by default. The body layer can instead be tinted with the `FillColorR`/`FillColorG`/`FillColorB`/`FillColorA` options. A non-white fill color tints the default body layer and composites even when no other effects are present; `FillColorA` multiplies the glyph mask alpha. The default `(255, 255, 255, 255)` reproduces the legacy opaque-white body.
 
 ### Combining Effects
 

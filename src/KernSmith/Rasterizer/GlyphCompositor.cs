@@ -12,6 +12,12 @@ internal static class GlyphCompositor
     /// <summary>
     /// Applies all effects to a source glyph and composites the resulting layers into a single RGBA bitmap.
     /// </summary>
+    /// <param name="sourceGlyph">The rasterized source glyph (grayscale or RGBA) to composite.</param>
+    /// <param name="effects">The effects to apply, sorted internally by Z-order (shadow Z=0, outline Z=1, body Z=2).</param>
+    /// <param name="fillR">Body fill red channel. Tints the default body layer when no gradient/body effect is present.</param>
+    /// <param name="fillG">Body fill green channel.</param>
+    /// <param name="fillB">Body fill blue channel.</param>
+    /// <param name="fillA">Body fill alpha; multiplies the glyph mask alpha. The default <c>(255,255,255,255)</c> reproduces the legacy opaque-white body.</param>
     public static RasterizedGlyph Composite(
         RasterizedGlyph sourceGlyph,
         IReadOnlyList<IGlyphEffect> effects,
@@ -276,6 +282,15 @@ internal static class GlyphCompositor
     /// <paramref name="fillB"/> become the body RGB and <paramref name="fillA"/> multiplies the glyph alpha.
     /// The default (255,255,255,255) reproduces the legacy opaque-white body exactly.
     /// </summary>
+    /// <param name="alphaData">Extracted per-pixel alpha mask (one byte per pixel) for the glyph.</param>
+    /// <param name="width">Mask width in pixels.</param>
+    /// <param name="height">Mask height in pixels.</param>
+    /// <param name="pitch">Row stride of <paramref name="alphaData"/> in bytes.</param>
+    /// <param name="sourceGlyph">The source glyph; its original RGBA colors are preserved when the source format is RGBA (e.g. color fonts).</param>
+    /// <param name="fillR">Body fill red channel.</param>
+    /// <param name="fillG">Body fill green channel.</param>
+    /// <param name="fillB">Body fill blue channel.</param>
+    /// <param name="fillA">Body fill alpha; multiplies the glyph mask alpha. <c>255</c> is a bit-exact pass-through of the original alpha.</param>
     private static GlyphLayer CreateDefaultBodyLayer(byte[] alphaData, int width, int height, int pitch, RasterizedGlyph sourceGlyph,
         byte fillR = 255, byte fillG = 255, byte fillB = 255, byte fillA = 255)
     {
