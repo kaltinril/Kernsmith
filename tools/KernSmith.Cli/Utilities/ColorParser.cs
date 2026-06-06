@@ -53,4 +53,43 @@ internal static class ColorParser
                 $"Invalid color '{hex}': expected a hex color (e.g., FF0000, F00, #FF0000)");
         }
     }
+
+    /// <summary>
+    /// Parses a hex color string (with or without leading #) into RGBA bytes.
+    /// Supports 3/4-char shorthand and 6/8-char forms. When no alpha channel is present,
+    /// alpha defaults to 255 (fully opaque).
+    /// </summary>
+    /// <param name="hex">The hex color string (e.g., "FF0000", "#F00", "FF0000FF", "#RGBA").</param>
+    /// <returns>A tuple of (R, G, B, A) byte values.</returns>
+    public static (byte R, byte G, byte B, byte A) ParseRgba(string hex)
+    {
+        if (string.IsNullOrWhiteSpace(hex))
+            throw new ArgumentException("Color string cannot be empty.");
+
+        var s = hex.TrimStart('#');
+
+        // Expand shorthand forms.
+        if (s.Length == 3)
+            s = new string(new[] { s[0], s[0], s[1], s[1], s[2], s[2] });
+        else if (s.Length == 4)
+            s = new string(new[] { s[0], s[0], s[1], s[1], s[2], s[2], s[3], s[3] });
+
+        if (s.Length != 6 && s.Length != 8)
+            throw new ArgumentException(
+                $"Invalid color '{hex}': expected a hex color (e.g., FF0000, #FF0000, FF0000FF, #RGB, #RGBA)");
+
+        try
+        {
+            var r = Convert.ToByte(s[..2], 16);
+            var g = Convert.ToByte(s[2..4], 16);
+            var b = Convert.ToByte(s[4..6], 16);
+            var a = s.Length == 8 ? Convert.ToByte(s[6..8], 16) : (byte)255;
+            return (r, g, b, a);
+        }
+        catch (FormatException)
+        {
+            throw new ArgumentException(
+                $"Invalid color '{hex}': expected a hex color (e.g., FF0000, #FF0000, FF0000FF, #RGB, #RGBA)");
+        }
+    }
 }

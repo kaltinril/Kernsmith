@@ -238,6 +238,40 @@ public static class BmfcConfigReader
                     case "shadowBlur":
                         options.ShadowBlur = int.Parse(value, CultureInfo.InvariantCulture);
                         break;
+                    case "shadowBlurKernelSize":
+                        options.ShadowBlurKernelSize = int.Parse(value, CultureInfo.InvariantCulture);
+                        break;
+                    case "shadowBlurPasses":
+                        options.ShadowBlurPasses = int.Parse(value, CultureInfo.InvariantCulture);
+                        break;
+                    case "gradientOffset":
+                        options.GradientOffset = float.Parse(value, CultureInfo.InvariantCulture);
+                        break;
+                    case "gradientScale":
+                        options.GradientScale = float.Parse(value, CultureInfo.InvariantCulture);
+                        break;
+                    case "gradientCyclic":
+                        options.GradientCyclic = value == "1";
+                        break;
+                    case "fillColor":
+                        if (!string.IsNullOrEmpty(value))
+                        {
+                            var fill = ParseHexColorRgba(value);
+                            options.FillColorR = fill.R;
+                            options.FillColorG = fill.G;
+                            options.FillColorB = fill.B;
+                            options.FillColorA = fill.A;
+                        }
+                        break;
+                    case "sdfSpread":
+                        options.SdfSpread = float.Parse(value, CultureInfo.InvariantCulture);
+                        break;
+                    case "gamma":
+                        options.Gamma = float.Parse(value, CultureInfo.InvariantCulture);
+                        break;
+                    case "advanceAdjustX":
+                        options.AdvanceAdjustX = float.Parse(value, CultureInfo.InvariantCulture);
+                        break;
                     case "outlineColor":
                         if (!string.IsNullOrEmpty(value))
                             outlineColor = value;
@@ -423,6 +457,36 @@ public static class BmfcConfigReader
         catch
         {
             return (0, 0, 0);
+        }
+    }
+
+    /// <summary>
+    /// Parses a hex color string (e.g., "FF0000", "FF0000FF", "#RGB", "#RGBA") into RGBA bytes.
+    /// Alpha defaults to 255 when not present. Invalid colors fall back to opaque white.
+    /// </summary>
+    private static (byte R, byte G, byte B, byte A) ParseHexColorRgba(string hex)
+    {
+        var s = hex.TrimStart('#');
+
+        if (s.Length == 3)
+            s = new string(new[] { s[0], s[0], s[1], s[1], s[2], s[2] });
+        else if (s.Length == 4)
+            s = new string(new[] { s[0], s[0], s[1], s[1], s[2], s[2], s[3], s[3] });
+
+        if (s.Length != 6 && s.Length != 8)
+            return (255, 255, 255, 255); // Fallback to opaque white for invalid colors
+
+        try
+        {
+            var r = Convert.ToByte(s[..2], 16);
+            var g = Convert.ToByte(s[2..4], 16);
+            var b = Convert.ToByte(s[4..6], 16);
+            var a = s.Length == 8 ? Convert.ToByte(s[6..8], 16) : (byte)255;
+            return (r, g, b, a);
+        }
+        catch
+        {
+            return (255, 255, 255, 255);
         }
     }
 }

@@ -117,6 +117,12 @@ public static class BmfcConfigWriter
             extensions.AppendLine($"gradientAngle={options.GradientAngle.ToString(CultureInfo.InvariantCulture)}");
         if (options.GradientMidpoint != 0.5f)
             extensions.AppendLine($"gradientMidpoint={options.GradientMidpoint.ToString(CultureInfo.InvariantCulture)}");
+        if (options.GradientOffset != 0f)
+            extensions.AppendLine($"gradientOffset={options.GradientOffset.ToString(CultureInfo.InvariantCulture)}");
+        if (options.GradientScale != 1f)
+            extensions.AppendLine($"gradientScale={options.GradientScale.ToString(CultureInfo.InvariantCulture)}");
+        if (options.GradientCyclic)
+            extensions.AppendLine("gradientCyclic=1");
         if (options.ShadowOffsetX != 0)
             extensions.AppendLine($"shadowOffsetX={options.ShadowOffsetX}");
         if (options.ShadowOffsetY != 0)
@@ -125,6 +131,18 @@ public static class BmfcConfigWriter
             extensions.AppendLine($"shadowColor={FormatColor(options.ShadowR, options.ShadowG, options.ShadowB)}");
         if (options.ShadowBlur != 0)
             extensions.AppendLine($"shadowBlur={options.ShadowBlur}");
+        if (options.ShadowBlurKernelSize != 0)
+            extensions.AppendLine($"shadowBlurKernelSize={options.ShadowBlurKernelSize}");
+        if (options.ShadowBlurPasses != 1)
+            extensions.AppendLine($"shadowBlurPasses={options.ShadowBlurPasses}");
+        if (options.FillColorR != 255 || options.FillColorG != 255 || options.FillColorB != 255 || options.FillColorA != 255)
+            extensions.AppendLine($"fillColor={options.FillColorR:X2}{options.FillColorG:X2}{options.FillColorB:X2}{options.FillColorA:X2}");
+        if (options.SdfSpread != 8f)
+            extensions.AppendLine($"sdfSpread={options.SdfSpread.ToString(CultureInfo.InvariantCulture)}");
+        if (options.Gamma != 1.8f)
+            extensions.AppendLine($"gamma={options.Gamma.ToString(CultureInfo.InvariantCulture)}");
+        if (options.AdvanceAdjustX != 0f)
+            extensions.AppendLine($"advanceAdjustX={options.AdvanceAdjustX.ToString(CultureInfo.InvariantCulture)}");
         if (options.Outline > 0 && (options.OutlineR != 0 || options.OutlineG != 0 || options.OutlineB != 0))
             extensions.AppendLine($"outlineColor={FormatColor(options.OutlineR, options.OutlineG, options.OutlineB)}");
         if (options.Sdf)

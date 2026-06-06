@@ -76,11 +76,23 @@ internal static class BmfcWriter
             ColorPaletteIndex = options.ColorPaletteIndex,
             GradientAngle = options.GradientAngle,
             GradientMidpoint = options.GradientMidpoint,
+            GradientOffset = options.GradientOffset,
+            GradientScale = options.GradientScale,
+            GradientCyclic = options.GradientCyclic,
             ShadowOffsetX = options.ShadowOffsetX,
             ShadowOffsetY = options.ShadowOffsetY,
             ShadowBlur = options.ShadowBlur,
+            ShadowBlurKernelSize = options.ShadowBlurKernelSize,
+            ShadowBlurPasses = options.ShadowBlurPasses,
+            AdvanceAdjustX = options.AdvanceAdjustX,
             Backend = options.Backend,
         };
+
+        // Phase 100 rendering options — only override defaults when explicitly set.
+        if (options.SdfSpread.HasValue)
+            genOptions.SdfSpread = options.SdfSpread.Value;
+        if (options.Gamma.HasValue)
+            genOptions.Gamma = options.Gamma.Value;
 
         // Set MaxTextureSize (sets both width and height)
         genOptions.MaxTextureSize = options.MaxTextureSize;
@@ -126,6 +138,14 @@ internal static class BmfcWriter
             genOptions.ShadowR = sc.R;
             genOptions.ShadowG = sc.G;
             genOptions.ShadowB = sc.B;
+        }
+        if (options.FillColor != null)
+        {
+            var fill = ColorParser.ParseRgba(options.FillColor);
+            genOptions.FillColorR = fill.R;
+            genOptions.FillColorG = fill.G;
+            genOptions.FillColorB = fill.B;
+            genOptions.FillColorA = fill.A;
         }
 
         // Build character set from CLI options
