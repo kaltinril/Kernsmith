@@ -15,9 +15,11 @@
 - **GPOS kerning** -- extracts kerning pairs directly from OpenType GPOS tables
 - **Atlas packing** -- MaxRects (default) and Skyline algorithms with autofit, power-of-two, and non-square texture support
 - **Outline rendering** -- configurable width and color
-- **Gradient fill** -- per-glyph vertical/angled gradients with midpoint control
-- **Drop shadow** -- offset, blur radius, color, and opacity
-- **SDF rendering** -- signed distance field output for resolution-independent text
+- **Fill color** -- tint the glyph body with a custom RGBA fill color
+- **Gradient fill** -- per-glyph vertical/angled gradients with midpoint, offset, scale, and cyclic control
+- **Drop shadow** -- offset, color, opacity, and two-parameter blur control (kernel size + passes)
+- **Gamma correction** -- adjust grayscale coverage to darken or lighten rendered glyphs
+- **SDF rendering** -- signed distance field output with configurable spread for resolution-independent text
 - **Super sampling** -- 2x-4x rasterization with box-filter downscale for smoother edges
 - **Variable fonts** -- set variation axes (weight, width, slant, etc.)
 - **Color fonts** -- COLR/CPAL emoji and color glyph rendering with palette selection

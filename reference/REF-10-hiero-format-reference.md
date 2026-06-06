@@ -312,20 +312,20 @@ This table maps Hiero properties to their KernSmith equivalents for implementing
 | `font.size` | `FontGeneratorOptions.Size` | Direct mapping |
 | `font.bold` | `FontGeneratorOptions.Bold` | Direct mapping |
 | `font.italic` | `FontGeneratorOptions.Italic` | Direct mapping |
-| `font.gamma` | — | No direct equivalent; could add |
+| `font.gamma` | `FontGeneratorOptions.Gamma` | Direct mapping. `1.8` is the no-op baseline; applied to FreeType grayscale coverage only |
 | `font.mono` | `FontGeneratorOptions.AntiAlias` (inverted) | `mono=true` → `AntiAlias=AntiAliasMode.None` |
 | `pad.top/right/bottom/left` | `FontGeneratorOptions.Padding` | Direct mapping |
-| `pad.advance.x` | — (dropped) | Per-glyph advance adjustment; no KernSmith equivalent, dropped on import with a warning (deferred to Phase 100). NOT mapped to `Spacing` — `Spacing` is atlas cell spacing (a different concept) and its members are `Horizontal`/`Vertical`, not `X`/`Y`. |
-| `pad.advance.y` | — (dropped) | Per-glyph advance adjustment; no KernSmith equivalent, dropped on import with a warning (deferred to Phase 100). NOT mapped to `Spacing` — `Spacing` is atlas cell spacing (a different concept) and its members are `Horizontal`/`Vertical`, not `X`/`Y`. |
+| `pad.advance.x` | `FontGeneratorOptions.AdvanceAdjustX` | Global value added to every glyph's `xadvance`. NOT mapped to `Spacing` — `Spacing` is atlas cell spacing (a different concept) and its members are `Horizontal`/`Vertical`, not `X`/`Y`. |
+| `pad.advance.y` | — (deferred to Phase 100b) | Per-glyph vertical advance adjustment; no BMFont `yadvance` field, so dropped on import with a warning. NOT mapped to `Spacing` — `Spacing` is atlas cell spacing (a different concept) and its members are `Horizontal`/`Vertical`, not `X`/`Y`. |
 | `glyph.page.width` | `FontGeneratorOptions.MaxTextureWidth` | Direct mapping |
 | `glyph.page.height` | `FontGeneratorOptions.MaxTextureHeight` | Direct mapping |
 | `glyph.text` | `FontGeneratorOptions.Characters` | Literal chars → CharacterSet |
 | `render_type` | — | KernSmith always uses FreeType |
 | `effect.class=...ColorEffect` | `FontGeneratorOptions.Outline*` (none) | Just a fill color; default behavior |
-| `effect.class=...GradientEffect` | `FontGeneratorOptions.Gradient*` | Map top/bottom color; Hiero's Offset/Scale/Cyclic have no direct KernSmith equivalent (GradientAngle/GradientMidpoint are different concepts) |
+| `effect.class=...GradientEffect` | `FontGeneratorOptions.Gradient*` | Map top/bottom color; Hiero's Offset/Scale/Cyclic map to `GradientOffset`/`GradientScale`/`GradientCyclic`, which compose with `GradientAngle`/`GradientMidpoint` |
 | `effect.class=...OutlineEffect` | `FontGeneratorOptions.Outline*` | Map color, width; join has no KernSmith equivalent (Hiero-specific, dropped on import); Hiero Width is a float (range 0.1–999), KernSmith Outline is an int. Width is rounded to the nearest integer (`Math.Round`), and any positive width below 0.5 is bumped up to 1 so a thin Hiero outline isn't silently dropped; Width &le; 0 maps to no outline |
-| `effect.class=...ShadowEffect` | `FontGeneratorOptions.Shadow*` | Map color (ShadowR/G/B), offset, opacity; Hiero's two-param blur (kernel size + passes) collapses to single ShadowBlur |
-| `effect.class=...DistanceFieldEffect` | `FontGeneratorOptions.Sdf` | Hiero's Scale and Spread have no KernSmith equivalent (Sdf is boolean only) |
+| `effect.class=...ShadowEffect` | `FontGeneratorOptions.Shadow*` | Map color (ShadowR/G/B), offset, opacity; Hiero's two-param blur maps to `ShadowBlurKernelSize` + `ShadowBlurPasses` (alongside the primary `ShadowBlur` radius) |
+| `effect.class=...DistanceFieldEffect` | `FontGeneratorOptions.Sdf` + `SdfSpread` | Spread maps to `SdfSpread`; Scale deferred to Phase 100b (plumbed but not yet applied) |
 | `effect.class=...OutlineWobbleEffect` | — | No KernSmith equivalent |
 | `effect.class=...OutlineZigzagEffect` | — | No KernSmith equivalent |
 | `glyph.native.rendering` | — | KernSmith always uses FreeType |

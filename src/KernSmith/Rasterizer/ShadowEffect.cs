@@ -22,6 +22,16 @@ internal sealed class ShadowEffect : IGlyphEffect
     private readonly float _opacity;
     private readonly bool _hardShadow;
 
+    /// <param name="offsetX">Horizontal shadow offset in pixels (positive = right).</param>
+    /// <param name="offsetY">Vertical shadow offset in pixels (positive = down).</param>
+    /// <param name="blurRadius">Primary box-blur radius in pixels. <c>0</c> = a sharp shadow with no blur.</param>
+    /// <param name="shadowR">Shadow color red channel.</param>
+    /// <param name="shadowG">Shadow color green channel.</param>
+    /// <param name="shadowB">Shadow color blue channel.</param>
+    /// <param name="opacity">Shadow opacity, clamped to <c>0.0</c>-<c>1.0</c>.</param>
+    /// <param name="hardShadow">When <c>true</c>, binarizes the alpha (any non-zero coverage becomes fully opaque) before blurring.</param>
+    /// <param name="blurPasses">Number of box-blur passes; values are clamped to a minimum of <c>1</c>. A single pass (<c>1</c>) reproduces the legacy single-pass output; additional passes approximate a Gaussian falloff for a smoother shadow.</param>
+    /// <param name="blurKernelSize">Optional extra blur radius added to <paramref name="blurRadius"/>. <c>0</c> (default, clamped to a minimum of <c>0</c>) leaves the primary radius untouched.</param>
     public ShadowEffect(
         int offsetX = 2,
         int offsetY = 2,
