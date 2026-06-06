@@ -1,9 +1,25 @@
 # Phase 100 — Hiero Advanced Feature Support
 
-> **Status**: Future
+> **Status**: Complete (2026-06-05)
 > **Created**: 2026-03-22
 > **Depends on**: Phase 82
 > **Goal**: Extend Hiero `.hiero` format support with advanced features that require new KernSmith properties or capabilities.
+
+---
+
+## Phase 100 — Complete (2026-06-05)
+
+Implemented and verified (660 unit tests pass; bmfont-compare regression harness confirms byte-identical output at default option values across FreeType/GDI/DirectWrite/StbTrueType):
+
+- **Fill color** (`FillColorR/G/B/A`) — tints the default body layer; non-white fill composites even with no other effects.
+- **Two-parameter shadow blur** (`ShadowBlurKernelSize`, `ShadowBlurPasses`) — multi-pass box blur.
+- **Extended gradient** (`GradientOffset`, `GradientScale`, `GradientCyclic`) — composes with angle/midpoint.
+- **FreeType gamma correction** (`Gamma`) — 1.8 is the no-op baseline; only non-default values alter pixels.
+- **SDF spread** (`SdfSpread`) — wired to FreeType via `FT_Property_Set`.
+- **Global per-glyph advance adjustment** (`AdvanceAdjustX`) — added to every glyph's xadvance.
+- **Full Hiero `.hiero` round-trip read/write** for all the above (19 new round-trip tests).
+
+Remaining/deferred items moved to **Phase 100b** — see `phase-100b-deferred-advanced-features.md`.
 
 ---
 
@@ -12,6 +28,8 @@
 Phase 82 implements basic Hiero read/write support, mapping existing KernSmith `FontGeneratorOptions` properties to/from `.hiero` format. Several Hiero features have no KernSmith equivalent and were deferred to this phase. These features would require adding new properties to `FontGeneratorOptions` or new effect implementations.
 
 ## Deferred Features
+
+> **Note**: The sections below describe the *original* Phase 100 scope and are kept for history. The items that remained unshipped after the 2026-06-05 core — `SdfScale`, `AdvanceAdjustY`, outline wobble/zigzag, native rendering, and the channel-packing fill guard — are now tracked in **Phase 100b** (`phase-100b-deferred-advanced-features.md`).
 
 ### 1. Per-Glyph Advance Adjustment (`pad.advance.x/y`)
 
