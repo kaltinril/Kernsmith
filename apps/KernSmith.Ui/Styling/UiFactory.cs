@@ -90,13 +90,111 @@ public static class UiFactory
     }
 
     /// <summary>
+    /// Creates a grid row with label | slider | live value label for a bounded float range.
+    /// The underlying Gum slider is integer-snapped; values are mapped to floats by dividing the
+    /// raw slider value by <paramref name="steps"/> (e.g. min=1, max=3, steps=10 yields 1.0..3.0
+    /// in 0.1 increments). Use this for discoverable, bounded float params (Gamma, SdfSpread).
+    /// </summary>
+    public static Slider AddFloatSliderRow(
+        global::Gum.Wireframe.GraphicalUiElement parent,
+        string label, float min, float max, float defaultVal, int steps,
+        Action<float> onChanged)
+    {
+        var grid = new Grid();
+        grid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        grid.Visual.Width = 0;
+        grid.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
+        grid.Visual.Height = 0;
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Theme.LabelWidth) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        parent.Children.Add(grid.Visual);
+
+        var lbl = new Label();
+        lbl.Text = label;
+        grid.AddChild(lbl, row: 0, column: 0);
+
+        var slider = new Slider();
+        slider.Minimum = min * steps;
+        slider.Maximum = max * steps;
+        slider.Value = defaultVal * steps;
+        slider.Width = 100;
+        slider.TicksFrequency = 1;
+        slider.IsSnapToTickEnabled = true;
+        grid.AddChild(slider, row: 0, column: 1);
+
+        var valueLabel = new Label();
+        valueLabel.Text = defaultVal.ToString("0.0#");
+        grid.AddChild(valueLabel, row: 0, column: 2);
+
+        slider.ValueChanged += (_, _) =>
+        {
+            var val = (float)(slider.Value / steps);
+            valueLabel.Text = val.ToString("0.0#");
+            onChanged(val);
+        };
+
+        return slider;
+    }
+
+    /// <summary>
+    /// Creates a label : float-text-box row for a precise/unbounded float value.
+    /// Mirrors the two-column rhythm of <see cref="AddSliderRow"/> using a fixed-width label.
+    /// </summary>
+    public static TextBox AddFloatBoxRow(
+        global::Gum.Wireframe.GraphicalUiElement parent,
+        string label, float initialValue,
+        Action<float> onChanged)
+    {
+        var grid = new Grid();
+        grid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        grid.Visual.Width = 0;
+        grid.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
+        grid.Visual.Height = 0;
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Theme.LabelWidth) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        parent.Children.Add(grid.Visual);
+
+        var lbl = new Label();
+        lbl.Text = label;
+        grid.AddChild(lbl, row: 0, column: 0);
+
+        var box = CreateSmallFloatBox(initialValue, onChanged);
+        grid.AddChild(box, row: 0, column: 1);
+
+        return box;
+    }
+
+    /// <summary>
+    /// Creates a small text box for a precise/unbounded float value, parsing on edit.
+    /// Use this for params that benefit from exact entry (advance adjust, gradient offset/scale).
+    /// </summary>
+    public static TextBox CreateSmallFloatBox(float initialValue, Action<float> onChanged)
+    {
+        var box = new TextBox();
+        box.Width = 56;
+        box.Height = 24;
+        box.Text = initialValue.ToString("0.0###");
+        box.TextChanged += (_, _) =>
+        {
+            if (float.TryParse(box.Text, System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.CurrentCulture, out var val))
+                onChanged(val);
+        };
+        return box;
+    }
+
+    /// <summary>
     /// Creates a grid row with label | color swatch | hex input for color selection.
     /// </summary>
     public static void AddColorRow(
         GraphicsDevice graphicsDevice,
         global::Gum.Wireframe.GraphicalUiElement parent,
         string label, string initialHex,
-        Action<string> onColorChanged)
+        Action<string> onColorChanged,
+        string? tooltip = null)
     {
         var (defaultR, defaultG, defaultB) = EffectsViewModel.ParseHex(initialHex);
 
@@ -113,6 +211,7 @@ public static class UiFactory
 
         var lbl = new Label();
         lbl.Text = label;
+        if (tooltip != null) TooltipService.SetTooltip(lbl, tooltip);
         grid.AddChild(lbl, row: 0, column: 0);
 
         var swatchContainer = new ContainerRuntime();

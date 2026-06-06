@@ -18,78 +18,109 @@ public class GenerationService
         {
             System.Diagnostics.Debug.WriteLine($"[GEN] Source={request.SourceKind} Path={request.FontFilePath} Bold={request.Bold} ForceSynBold={request.ForceSyntheticBold} Italic={request.Italic} ForceSynItalic={request.ForceSyntheticItalic}");
 
-            var builder = BmFont.Builder()
-                .WithSize(request.FontSize)
-                .WithCharacters(request.Characters)
-                .WithMaxTextureSize(request.MaxWidth, request.MaxHeight)
-                .WithPowerOfTwo(request.PowerOfTwo)
-                .WithAutofitTexture(request.AutofitTexture)
-                .WithPadding(request.PaddingUp, request.PaddingRight, request.PaddingDown, request.PaddingLeft)
-                .WithSpacing(request.SpacingH, request.SpacingV)
-                .WithKerning(request.IncludeKerning)
-                .WithBold(request.Bold)
-                .WithItalic(request.Italic)
-                .WithAntiAlias(request.AntiAlias ? AntiAliasMode.Grayscale : AntiAliasMode.None)
-                .WithHinting(request.Hinting)
-                .WithSuperSampling(request.SuperSampleLevel)
-                .WithSdf(request.SdfEnabled)
-                .WithColorFont(request.ColorFontEnabled)
-                .WithBackend(request.Backend);
+            // Build options directly (rather than via the fluent builder) so that the Phase 100
+            // options without dedicated builder methods (FillColor, AdvanceAdjustX, Gamma, SdfSpread,
+            // gradient Offset/Scale/Cyclic, shadow BlurKernelSize/BlurPasses) can be threaded through.
+            // Each assignment mirrors the previous BmFontBuilder call to preserve identical output.
+            var options = new FontGeneratorOptions
+            {
+                Size = request.FontSize,
+                Characters = request.Characters,
+                MaxTextureWidth = request.MaxWidth,
+                MaxTextureHeight = request.MaxHeight,
+                PowerOfTwo = request.PowerOfTwo,
+                AutofitTexture = request.AutofitTexture,
+                Padding = new Padding(request.PaddingUp, request.PaddingRight, request.PaddingDown, request.PaddingLeft),
+                Spacing = new Spacing(request.SpacingH, request.SpacingV),
+                Kerning = request.IncludeKerning,
+                Bold = request.Bold,
+                Italic = request.Italic,
+                AntiAlias = request.AntiAlias ? AntiAliasMode.Grayscale : AntiAliasMode.None,
+                EnableHinting = request.Hinting,
+                SuperSampleLevel = request.SuperSampleLevel,
+                Sdf = request.SdfEnabled,
+                SdfSpread = request.SdfSpread,
+                ColorFont = request.ColorFontEnabled,
+                Backend = request.Backend,
+                PackingAlgorithm = (PackingAlgorithm)request.PackingAlgorithmIndex,
+                // Phase 100: base fill color, advance adjust, and gamma (defaults are no-ops).
+                FillColorR = request.FillColorR,
+                FillColorG = request.FillColorG,
+                FillColorB = request.FillColorB,
+                FillColorA = request.FillColorA,
+                AdvanceAdjustX = request.AdvanceAdjustX,
+                Gamma = request.Gamma,
+            };
 
             if (request.OutlineEnabled)
-                builder.WithOutline(request.OutlineWidth, request.OutlineColorR, request.OutlineColorG, request.OutlineColorB);
+            {
+                options.Outline = request.OutlineWidth;
+                options.OutlineR = request.OutlineColorR;
+                options.OutlineG = request.OutlineColorG;
+                options.OutlineB = request.OutlineColorB;
+            }
 
             if (request.ShadowEnabled)
             {
-                builder.WithShadow(request.ShadowOffsetX, request.ShadowOffsetY, request.ShadowBlur,
-                    (request.ShadowColorR, request.ShadowColorG, request.ShadowColorB),
-                    request.ShadowOpacity / 100f);
-                if (request.HardShadow)
-                    builder.WithHardShadow();
+                options.ShadowOffsetX = request.ShadowOffsetX;
+                options.ShadowOffsetY = request.ShadowOffsetY;
+                options.ShadowBlur = request.ShadowBlur;
+                options.ShadowBlurKernelSize = request.ShadowBlurKernelSize;
+                options.ShadowBlurPasses = request.ShadowBlurPasses;
+                options.ShadowR = request.ShadowColorR;
+                options.ShadowG = request.ShadowColorG;
+                options.ShadowB = request.ShadowColorB;
+                options.ShadowOpacity = request.ShadowOpacity / 100f;
+                options.HardShadow = request.HardShadow;
             }
 
             if (request.GradientEnabled)
-                builder.WithGradient(
-                    (request.GradientStartR, request.GradientStartG, request.GradientStartB),
-                    (request.GradientEndR, request.GradientEndG, request.GradientEndB),
-                    request.GradientAngle);
+            {
+                options.GradientStartR = request.GradientStartR;
+                options.GradientStartG = request.GradientStartG;
+                options.GradientStartB = request.GradientStartB;
+                options.GradientEndR = request.GradientEndR;
+                options.GradientEndG = request.GradientEndG;
+                options.GradientEndB = request.GradientEndB;
+                options.GradientAngle = request.GradientAngle;
+                options.GradientOffset = request.GradientOffset;
+                options.GradientScale = request.GradientScale;
+                options.GradientCyclic = request.GradientCyclic;
+            }
 
             if (request.ChannelPackingEnabled)
-                builder.WithChannelPacking();
-
-            builder.WithPackingAlgorithm((PackingAlgorithm)request.PackingAlgorithmIndex);
+                options.ChannelPacking = true;
 
             if (request.ForceSyntheticBold)
-                builder.WithForceSyntheticBold();
+            {
+                options.Bold = true;
+                options.ForceSyntheticBold = true;
+            }
             if (request.ForceSyntheticItalic)
-                builder.WithForceSyntheticItalic();
+            {
+                options.Italic = true;
+                options.ForceSyntheticItalic = true;
+            }
 
             if (request.FaceIndex > 0)
-                builder.WithFaceIndex(request.FaceIndex);
+                options.FaceIndex = request.FaceIndex;
 
             if (request.VariationAxisValues is { Count: > 0 })
             {
-                foreach (var (tag, value) in request.VariationAxisValues)
-                    builder.WithVariationAxis(tag, value);
+                options.VariationAxes = new Dictionary<string, float>(request.VariationAxisValues);
             }
 
             if (!string.IsNullOrEmpty(request.FallbackCharacter))
-                builder.WithFallbackCharacter(request.FallbackCharacter[0]);
+                options.FallbackCharacter = request.FallbackCharacter[0];
 
-            switch (request.SourceKind)
+            return request.SourceKind switch
             {
-                case FontSourceKind.File when request.FontFilePath != null:
-                    builder.WithFont(request.FontFilePath);
-                    break;
-                case FontSourceKind.System when request.SystemFontFamily != null:
-                    builder.WithSystemFont(request.SystemFontFamily);
-                    break;
-                default:
-                    builder.WithFont(request.FontData!);
-                    break;
-            }
-
-            return builder.Build();
+                FontSourceKind.File when request.FontFilePath != null
+                    => BmFont.Generate(request.FontFilePath, options),
+                FontSourceKind.System when request.SystemFontFamily != null
+                    => BmFont.GenerateFromSystem(request.SystemFontFamily, options),
+                _ => BmFont.Generate(request.FontData!, options),
+            };
         });
     }
 }

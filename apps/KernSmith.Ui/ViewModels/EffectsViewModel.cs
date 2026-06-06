@@ -10,6 +10,15 @@ namespace KernSmith.Ui.ViewModels;
 /// </summary>
 public class EffectsViewModel : ViewModel
 {
+    // Base glyph fill color (#RRGGBB; alpha defaults to 255 in the options mapping)
+    public string FillColor { get => Get<string>(); set => Set(value); }
+
+    // Global horizontal advance adjustment added to every glyph's xadvance
+    public float AdvanceAdjustX { get => Get<float>(); set => Set(value); }
+
+    // FreeType gamma correction applied during rasterization (default 1.8)
+    public float Gamma { get => Get<float>(); set => Set(value); }
+
     // Font Style (always active)
     public bool Bold { get => Get<bool>(); set => Set(value); }
     public bool Italic { get => Get<bool>(); set => Set(value); }
@@ -29,6 +38,8 @@ public class EffectsViewModel : ViewModel
     public int ShadowOffsetX { get => Get<int>(); set => Set(value); }
     public int ShadowOffsetY { get => Get<int>(); set => Set(value); }
     public int ShadowBlur { get => Get<int>(); set => Set(value); }
+    public int ShadowBlurKernelSize { get => Get<int>(); set => Set(value); }
+    public int ShadowBlurPasses { get => Get<int>(); set => Set(value); }
     public string ShadowColor { get => Get<string>(); set => Set(value); }
     public int ShadowOpacity { get => Get<int>(); set => Set(value); }
     public bool HardShadow { get => Get<bool>(); set => Set(value); }
@@ -38,12 +49,16 @@ public class EffectsViewModel : ViewModel
     public string GradientStartColor { get => Get<string>(); set => Set(value); }
     public string GradientEndColor { get => Get<string>(); set => Set(value); }
     public int GradientAngle { get => Get<int>(); set => Set(value); }
+    public float GradientOffset { get => Get<float>(); set => Set(value); }
+    public float GradientScale { get => Get<float>(); set => Set(value); }
+    public bool GradientCyclic { get => Get<bool>(); set => Set(value); }
 
     // Channel Packing
     public bool ChannelPackingEnabled { get => Get<bool>(); set => Set(value); }
 
     // SDF
     public bool SdfEnabled { get => Get<bool>(); set => Set(value); }
+    public float SdfSpread { get => Get<float>(); set => Set(value); }
 
     // Color Font
     public bool ColorFontEnabled { get => Get<bool>(); set => Set(value); }
@@ -74,18 +89,27 @@ public class EffectsViewModel : ViewModel
 
     public EffectsViewModel()
     {
+        FillColor = "#FFFFFF";
+        AdvanceAdjustX = 0f;
+        Gamma = 1.8f;
         AntiAlias = true;
         Hinting = true;
         SuperSampleLevel = 1;
         OutlineWidth = 1;
         ShadowOffsetX = 2;
         ShadowOffsetY = 2;
+        ShadowBlurKernelSize = 0;
+        ShadowBlurPasses = 1;
         ShadowOpacity = 100;
         OutlineColor = "#000000";
         ShadowColor = "#000000";
         GradientStartColor = "#FFFFFF";
         GradientEndColor = "#000000";
         GradientAngle = 90;
+        GradientOffset = 0f;
+        GradientScale = 1f;
+        GradientCyclic = false;
+        SdfSpread = 8f;
         FallbackCharacter = "?";
         BackendSupportsColorFonts = true;
         BackendSupportsVariableFonts = true;

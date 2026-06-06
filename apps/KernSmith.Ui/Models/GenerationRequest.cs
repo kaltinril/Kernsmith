@@ -51,6 +51,18 @@ public record GenerationRequest
 
     // --- Effects ---
 
+    /// <summary>Base glyph fill color red component. Range: 0..255. Default 255 (white).</summary>
+    public byte FillColorR { get; init; } = 255;
+    /// <summary>Base glyph fill color green component. Range: 0..255. Default 255 (white).</summary>
+    public byte FillColorG { get; init; } = 255;
+    /// <summary>Base glyph fill color blue component. Range: 0..255. Default 255 (white).</summary>
+    public byte FillColorB { get; init; } = 255;
+    /// <summary>Base glyph fill color alpha component. Range: 0..255. Default 255 (opaque).</summary>
+    public byte FillColorA { get; init; } = 255;
+    /// <summary>Global horizontal advance adjustment added to every glyph's xadvance. Default 0.</summary>
+    public float AdvanceAdjustX { get; init; }
+    /// <summary>FreeType gamma correction applied during rasterization. Default 1.8.</summary>
+    public float Gamma { get; init; } = 1.8f;
     /// <summary>Apply synthetic bold (only when the loaded font file is not already bold).</summary>
     public bool Bold { get; init; }
     /// <summary>Apply synthetic italic (only when the loaded font file is not already italic).</summary>
@@ -83,6 +95,10 @@ public record GenerationRequest
     public int ShadowOffsetY { get; init; } = 2;
     /// <summary>Shadow blur radius in pixels. Range: 0..10.</summary>
     public int ShadowBlur { get; init; }
+    /// <summary>Shadow blur kernel size. Range: 0..10. Default 0.</summary>
+    public int ShadowBlurKernelSize { get; init; }
+    /// <summary>Number of shadow blur passes. Range: 1..10. Default 1.</summary>
+    public int ShadowBlurPasses { get; init; } = 1;
     /// <summary>Shadow color red component. Range: 0..255.</summary>
     public byte ShadowColorR { get; init; }
     /// <summary>Shadow color green component. Range: 0..255.</summary>
@@ -109,10 +125,18 @@ public record GenerationRequest
     public byte GradientEndB { get; init; }
     /// <summary>Gradient angle in degrees. Range: 0..360.</summary>
     public int GradientAngle { get; init; } = 90;
+    /// <summary>Gradient positional offset along its axis. Default 0.</summary>
+    public float GradientOffset { get; init; }
+    /// <summary>Gradient scale factor along its axis. Default 1.</summary>
+    public float GradientScale { get; init; } = 1f;
+    /// <summary>Whether the gradient repeats (cycles) instead of clamping. Default false.</summary>
+    public bool GradientCyclic { get; init; }
     /// <summary>Pack glyph data into separate RGBA channels for multi-font atlases.</summary>
     public bool ChannelPackingEnabled { get; init; }
     /// <summary>Generate Signed Distance Field glyphs for scalable rendering.</summary>
     public bool SdfEnabled { get; init; }
+    /// <summary>SDF spread (search radius) in pixels. Range: 2..32. Default 8.</summary>
+    public float SdfSpread { get; init; } = 8f;
     /// <summary>Render color glyphs from COLR/CPAL tables (e.g., emoji fonts).</summary>
     public bool ColorFontEnabled { get; init; }
     /// <summary>Index into the packing algorithm list: 0 = MaxRects, 1 = Skyline.</summary>

@@ -321,6 +321,20 @@ public class EffectsPanel : Panel
         var expander = UiFactory.CreateExpander("Effects");
         stack.Children.Add(expander.Visual);
 
+        // --- Fill color (base glyph color; default white = no-op) ---
+        var fillColorContent = new ContainerRuntime();
+        fillColorContent.WidthUnits = DimensionUnitType.RelativeToParent;
+        fillColorContent.Width = 0;
+        fillColorContent.HeightUnits = DimensionUnitType.RelativeToChildren;
+        fillColorContent.Height = 0;
+        fillColorContent.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
+        fillColorContent.StackSpacing = 4;
+        expander.AddContent(fillColorContent);
+
+        UiFactory.AddColorRow(_graphicsDevice, fillColorContent, "Fill:",
+            _effects.FillColor, hex => _effects.FillColor = hex,
+            "Base glyph color before outline/shadow/gradient. Default white.");
+
         // --- Outline ---
         var outlineGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
         expander.AddContent(outlineGrid);
@@ -380,6 +394,12 @@ public class EffectsPanel : Panel
             _effects.ShadowColor, hex => _effects.ShadowColor = hex);
         UiFactory.AddSliderRow(shadowContent, "Opacity:", 0, 100, 100,
             val => _effects.ShadowOpacity = val);
+        var shadowKernelSlider = UiFactory.AddSliderRow(shadowContent, "Blur Kernel:", 0, 10, 0,
+            val => _effects.ShadowBlurKernelSize = val);
+        TooltipService.SetTooltip(shadowKernelSlider, "Extra blur kernel size on top of Blur; 0 = none, higher = softer.");
+        var shadowPassesSlider = UiFactory.AddSliderRow(shadowContent, "Blur Passes:", 1, 10, 1,
+            val => _effects.ShadowBlurPasses = val);
+        TooltipService.SetTooltip(shadowPassesSlider, "How many times the blur is applied; more passes = softer, wider shadow.");
 
         var shadowChecksGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
         shadowContent.Children.Add(shadowChecksGrid);
@@ -420,6 +440,23 @@ public class EffectsPanel : Panel
             _effects.GradientEndColor, hex => _effects.GradientEndColor = hex);
         UiFactory.AddSliderRow(gradientContent, "Angle:", 0, 360, 90,
             val => _effects.GradientAngle = val);
+        var gradientOffsetBox = UiFactory.AddFloatBoxRow(gradientContent, "Offset:", 0f,
+            val => _effects.GradientOffset = val);
+        TooltipService.SetTooltip(gradientOffsetBox, "Shift the gradient along its axis. 0 = centered.");
+        var gradientScaleBox = UiFactory.AddFloatBoxRow(gradientContent, "Scale:", 1f,
+            val => _effects.GradientScale = val);
+        TooltipService.SetTooltip(gradientScaleBox, "Stretch (>1) or compress (<1) the gradient. 1 = normal.");
+
+        var gradientChecksGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
+        gradientContent.Children.Add(gradientChecksGrid);
+
+        var gradientCyclicCheck = new CheckBox();
+        gradientCyclicCheck.Text = "";
+        gradientCyclicCheck.IsChecked = _effects.GradientCyclic;
+        gradientCyclicCheck.Checked += (_, _) => _effects.GradientCyclic = true;
+        gradientCyclicCheck.Unchecked += (_, _) => _effects.GradientCyclic = false;
+        gradientChecksGrid.AddRow("Cyclic:", gradientCyclicCheck);
+        TooltipService.SetTooltip(gradientCyclicCheck, "Repeat the gradient instead of clamping at the ends.");
 
         // --- Channels ---
         var channelsGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
@@ -476,6 +513,19 @@ public class EffectsPanel : Panel
         sdfWarning.Visible = false;
         expander.AddContent(sdfWarning);
 
+        var sdfSpreadContent = new ContainerRuntime();
+        sdfSpreadContent.WidthUnits = DimensionUnitType.RelativeToParent;
+        sdfSpreadContent.Width = 0;
+        sdfSpreadContent.HeightUnits = DimensionUnitType.RelativeToChildren;
+        sdfSpreadContent.Height = 0;
+        sdfSpreadContent.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
+        sdfSpreadContent.StackSpacing = 4;
+        expander.AddContent(sdfSpreadContent);
+
+        var sdfSpreadSlider = UiFactory.AddFloatSliderRow(sdfSpreadContent, "SDF Spread:", 2f, 32f, 8f, 1,
+            val => _effects.SdfSpread = val);
+        TooltipService.SetTooltip(sdfSpreadSlider, "How far the distance field reaches from each edge (pixels). 8 = default; larger = thicker SDF range.");
+
         var colorCheck = new CheckBox();
         colorCheck.Text = "";
         colorCheck.IsEnabled = _effects.HasColorGlyphs && _effects.BackendSupportsColorFonts;
@@ -490,6 +540,20 @@ public class EffectsPanel : Panel
         colorGradientWarning.Color = Theme.Warning;
         colorGradientWarning.Visible = false;
         expander.AddContent(colorGradientWarning);
+
+        // Rendering quality: gamma correction (default 1.8 = no-op vs current output)
+        var gammaContent = new ContainerRuntime();
+        gammaContent.WidthUnits = DimensionUnitType.RelativeToParent;
+        gammaContent.Width = 0;
+        gammaContent.HeightUnits = DimensionUnitType.RelativeToChildren;
+        gammaContent.Height = 0;
+        gammaContent.ChildrenLayout = global::Gum.Managers.ChildrenLayout.TopToBottomStack;
+        gammaContent.StackSpacing = 4;
+        expander.AddContent(gammaContent);
+
+        var gammaSlider = UiFactory.AddFloatSliderRow(gammaContent, "Gamma:", 1.0f, 3.0f, 1.8f, 10,
+            val => _effects.Gamma = val);
+        TooltipService.SetTooltip(gammaSlider, "Lighten/darken glyph edges; 1.8 = default, higher = darker.");
 
         // Track whether we are programmatically updating checkboxes to avoid recursive loops
         bool updatingSdfCheck = false;
