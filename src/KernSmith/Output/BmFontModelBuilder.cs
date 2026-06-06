@@ -124,6 +124,12 @@ internal static class BmFontModelBuilder
             placementById = dict;
         }
 
+        // Global advance adjustment (Hiero pad.advance.x). Added in whole pixels to every
+        // glyph's xadvance. Default 0 -> no change -> byte-identical metrics. The BMFont
+        // char entry has no per-glyph yadvance field (horizontal layout only), so
+        // AdvanceAdjustY cannot be represented here and is intentionally not applied.
+        var advanceAdjustX = (int)Math.Round(options.AdvanceAdjustX, MidpointRounding.AwayFromZero);
+
         var characters = new List<CharEntry>();
         foreach (var glyph in glyphs)
         {
@@ -152,7 +158,7 @@ internal static class BmFontModelBuilder
                 Height: charHeight,
                 XOffset: xOffset,
                 YOffset: yOffset,
-                XAdvance: glyph.Metrics.Advance,
+                XAdvance: glyph.Metrics.Advance + advanceAdjustX,
                 Page: placement.PageIndex,
                 Channel: channel));
         }
@@ -209,7 +215,11 @@ internal static class BmFontModelBuilder
     {
         var version = KernSmithVersionInfo.Version;
 
-        int? sdfSpread = options.Sdf ? 8 : null; // FreeType SDF default spread
+        // Record the actually-configured SDF spread. The default (8) matches the prior
+        // hardcoded value and FreeType's default, so default output is unchanged.
+        int? sdfSpread = options.Sdf
+            ? (int)Math.Round(options.SdfSpread, MidpointRounding.AwayFromZero)
+            : null;
 
         float? outlineThickness = null;
         string? gradientTop = null;

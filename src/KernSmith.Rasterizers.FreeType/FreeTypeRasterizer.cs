@@ -25,6 +25,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
     private float _lastSetSize;
     private int _lastSetDpi;
+    private uint _lastSetSdfSpread;
 
     public unsafe void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0)
     {
@@ -53,6 +54,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
             _lastSetSize = 0f;
             _lastSetDpi = 0;
+            _lastSetSdfSpread = 0;
         }
         catch (Exception ex) when (ex is not FontParsingException and not ObjectDisposedException)
         {
@@ -173,6 +175,12 @@ public sealed class FreeTypeRasterizer : IRasterizer
             FT.FT_GlyphSlot_Oblique(slot);
         }
 
+        // Configure the SDF renderer's spread (search radius) before rendering.
+        // The FreeType "sdf" module default is 8, so the default option value reproduces
+        // current output exactly. Values are clamped to FreeType's valid range (2..32).
+        if (options.Sdf)
+            EnsureSdfSpread(options.SdfSpread);
+
         // Determine render mode.
         // When SDF is enabled, FT_RENDER_MODE_SDF (value 6) produces an 8-bit bitmap where
         // 128 = on the glyph edge, >128 = inside, <128 = outside. The bitmap dimensions
@@ -250,6 +258,23 @@ public sealed class FreeTypeRasterizer : IRasterizer
             }
             bitmapData = unpacked;
             pitch = bitmapWidth;
+        }
+
+        // Apply gamma correction to grayscale coverage values.
+        // Semantics: Gamma is normalized so the default (1.8, matching Hiero's font.gamma)
+        // is the no-op baseline. The current/main behavior applies NO gamma, so we treat
+        // 1.8 as identity by raising normalized coverage to the power (1.8 / Gamma).
+        //   Gamma == 1.8 -> exponent 1.0 -> identity (loop skipped, byte-identical output)
+        //   Gamma  > 1.8 -> exponent < 1 -> brighter/heavier coverage
+        //   Gamma  < 1.8 -> exponent > 1 -> darker/lighter coverage
+        // Only applied to single-channel grayscale coverage (not MONO 0/255 output, not
+        // color BGRA glyphs, and not SDF distance fields, where remapping would corrupt
+        // the encoded distances).
+        if (!options.Sdf
+            && bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_GRAY
+            && bitmapData.Length > 0)
+        {
+            ApplyGamma(bitmapData, options.Gamma);
         }
 
         // Swap BGRA to RGBA when FreeType returns a color bitmap.
@@ -557,6 +582,84 @@ public sealed class FreeTypeRasterizer : IRasterizer
         slot->metrics.horiBearingY += (IntPtr)strength;
         slot->metrics.horiAdvance += (IntPtr)strength;
         slot->metrics.vertAdvance += (IntPtr)strength;
+    }
+
+    /// <summary>FreeType's built-in default SDF spread (search radius) in pixels.</summary>
+    private const uint FreeTypeDefaultSdfSpread = 8;
+
+    /// <summary>FreeType's minimum and maximum supported SDF spread values.</summary>
+    private const uint MinSdfSpread = 2;
+    private const uint MaxSdfSpread = 32;
+
+    /// <summary>
+    /// Sets the SDF renderer's spread on the "sdf" module via FT_Property_Set, skipping the
+    /// native call when the requested spread matches what was last set. The spread is rounded
+    /// to an integer and clamped to FreeType's valid range (2..32).
+    /// </summary>
+    /// <remarks>
+    /// At the default spread (8) this leaves FreeType's own default in place and never calls
+    /// FT_Property_Set, guaranteeing byte-identical output to current behavior. Only a
+    /// non-default spread triggers the property set.
+    /// </remarks>
+    private unsafe void EnsureSdfSpread(float spread)
+    {
+        var rounded = (uint)Math.Clamp((int)Math.Round(spread, MidpointRounding.AwayFromZero),
+            (int)MinSdfSpread, (int)MaxSdfSpread);
+
+        // Default spread: rely on FreeType's built-in default (no interop, no output change),
+        // unless a non-default value was previously set on this library instance.
+        if (rounded == FreeTypeDefaultSdfSpread && _lastSetSdfSpread == 0)
+            return;
+
+        if (rounded == _lastSetSdfSpread)
+            return;
+
+        var value = rounded;
+        var error = FreeTypeNative.FT_Property_Set(
+            (IntPtr)_library!.Native, "sdf", "spread", &value);
+        if (error != FT_Error.FT_Err_Ok)
+            throw new FreeTypeException(error);
+
+        _lastSetSdfSpread = rounded;
+    }
+
+    /// <summary>
+    /// The gamma value treated as the no-op baseline. This matches Hiero's default
+    /// font.gamma (1.8) and the historical KernSmith behavior of applying no gamma curve.
+    /// </summary>
+    private const float BaselineGamma = 1.8f;
+
+    /// <summary>
+    /// Applies gamma correction to 8-bit grayscale coverage values in place.
+    /// The exponent is (BaselineGamma / gamma) so the default gamma (1.8) is identity.
+    /// When the resulting exponent is effectively 1.0 the method is a no-op, guaranteeing
+    /// byte-identical output at the default gamma value.
+    /// </summary>
+    private static void ApplyGamma(byte[] coverage, float gamma)
+    {
+        // Guard against invalid/zero gamma; treat as no-op.
+        if (gamma <= 0f)
+            return;
+
+        var exponent = BaselineGamma / gamma;
+
+        // Identity case: skip entirely so default output is unchanged (no rounding drift).
+        if (Math.Abs(exponent - 1.0f) < 1e-6f)
+            return;
+
+        // Precompute a 256-entry lookup table: out = round(255 * (in/255)^exponent).
+        Span<byte> lut = stackalloc byte[256];
+        lut[0] = 0;
+        lut[255] = 255;
+        for (var i = 1; i < 255; i++)
+        {
+            var normalized = i / 255.0;
+            var corrected = Math.Pow(normalized, exponent) * 255.0;
+            lut[i] = (byte)Math.Clamp((int)Math.Round(corrected, MidpointRounding.AwayFromZero), 0, 255);
+        }
+
+        for (var i = 0; i < coverage.Length; i++)
+            coverage[i] = lut[coverage[i]];
     }
 
     /// <summary>

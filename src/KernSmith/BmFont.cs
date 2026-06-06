@@ -234,7 +234,11 @@ public static class BmFont
 
             // Pre-compute transform parameters once
             var effects = BuildEffects(options);
-            var hasEffects = effects.Count > 0;
+            // A non-default (non-opaque-white) fill color must tint the body layer even when no
+            // other effects are present, so it has to trigger compositing on its own.
+            var hasFillTint = options.FillColorR != 255 || options.FillColorG != 255
+                || options.FillColorB != 255 || options.FillColorA != 255;
+            var hasEffects = effects.Count > 0 || hasFillTint;
             List<IGlyphPostProcessor>? activePostProcessors = null;
             if (options.PostProcessors != null)
             {
@@ -259,7 +263,8 @@ public static class BmFont
                 void ProcessGlyph(int i)
                 {
                     var g = glyphs[i];
-                    if (hasEffects) g = GlyphCompositor.Composite(g, effects);
+                    if (hasEffects) g = GlyphCompositor.Composite(g, effects,
+                        options.FillColorR, options.FillColorG, options.FillColorB, options.FillColorA);
                     if (activePostProcessors != null)
                     {
                         foreach (var processor in activePostProcessors)
@@ -1037,7 +1042,7 @@ public static class BmFont
             effects.Add(new ShadowEffect(
                 options.ShadowOffsetX, options.ShadowOffsetY, options.ShadowBlur,
                 options.ShadowR, options.ShadowG, options.ShadowB, options.ShadowOpacity,
-                options.HardShadow));
+                options.HardShadow, options.ShadowBlurPasses, options.ShadowBlurKernelSize));
         }
         else if (options.PostProcessors != null)
         {
@@ -1076,7 +1081,8 @@ public static class BmFont
             effects.Add(new GradientEffect(
                 options.GradientStartR!.Value, options.GradientStartG ?? 0, options.GradientStartB ?? 0,
                 options.GradientEndR!.Value, options.GradientEndG ?? 0, options.GradientEndB ?? 0,
-                options.GradientAngle, options.GradientMidpoint));
+                options.GradientAngle, options.GradientMidpoint,
+                options.GradientOffset, options.GradientScale, options.GradientCyclic));
         }
         else if (options.PostProcessors != null)
         {

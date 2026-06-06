@@ -129,7 +129,10 @@ public static class HieroConfigReader
                             options.AntiAlias = AntiAliasMode.None;
                         break;
                     case "font.gamma":
-                        // No KernSmith equivalent -- dropped (deferred to Phase 100).
+                        if (float.TryParse(value.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var gamma))
+                            options.Gamma = gamma;
+                        else
+                            Debug.WriteLine($"[HieroConfigReader] Could not parse font.gamma value '{value.Trim()}'; keeping default.");
                         break;
 
                     // Secondary (file-based) font
@@ -179,10 +182,16 @@ public static class HieroConfigReader
                             Debug.WriteLine($"[HieroConfigReader] Could not parse pad.left value '{value.Trim()}'; keeping default.");
                         break;
                     case "pad.advance.x":
+                        if (float.TryParse(value.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var advX))
+                            options.AdvanceAdjustX = advX;
+                        else
+                            Debug.WriteLine($"[HieroConfigReader] Could not parse pad.advance.x value '{value.Trim()}'; keeping default.");
+                        break;
                     case "pad.advance.y":
-                        // Per-glyph advance adjustment has no KernSmith equivalent.
-                        // Dropped with a warning (deferred to Phase 100).
-                        Debug.WriteLine($"[HieroConfigReader] Dropping unsupported key '{key}' (per-glyph advance adjustment has no KernSmith equivalent).");
+                        if (float.TryParse(value.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var advY))
+                            options.AdvanceAdjustY = advY;
+                        else
+                            Debug.WriteLine($"[HieroConfigReader] Could not parse pad.advance.y value '{value.Trim()}'; keeping default.");
                         break;
 
                     // Glyph / texture page settings
@@ -255,9 +264,15 @@ public static class HieroConfigReader
             switch (shortName)
             {
                 case "ColorEffect":
-                    // Fill color: ignored on import (always white on export). Warn if non-white.
-                    if (values.TryGetValue("Color", out var fill) && !IsWhite(fill))
-                        Debug.WriteLine($"[HieroConfigReader] ColorEffect fill color '{fill}' ignored on import; KernSmith always uses white fill.");
+                    // Fill color: Hiero ColorEffect stores RGB only (no alpha), so A defaults to 255.
+                    if (values.TryGetValue("Color", out var fill))
+                    {
+                        var fc = ParseHexColor(fill);
+                        options.FillColorR = fc.R;
+                        options.FillColorG = fc.G;
+                        options.FillColorB = fc.B;
+                        options.FillColorA = 255;
+                    }
                     break;
 
                 case "OutlineEffect":
@@ -301,7 +316,14 @@ public static class HieroConfigReader
                             options.GradientEndG = bottom.G;
                             options.GradientEndB = bottom.B;
                         }
-                        // Offset/Scale/Cyclic have no KernSmith equivalent -- dropped.
+                        if (values.TryGetValue("Offset", out var gOffsetStr)
+                            && float.TryParse(gOffsetStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var gOffset))
+                            options.GradientOffset = gOffset;
+                        if (values.TryGetValue("Scale", out var gScaleStr)
+                            && float.TryParse(gScaleStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var gScale))
+                            options.GradientScale = gScale;
+                        if (values.TryGetValue("Cyclic", out var gCyclicStr))
+                            options.GradientCyclic = gCyclicStr.Trim() == "true";
                     }
                     break;
 
@@ -334,15 +356,28 @@ public static class HieroConfigReader
                         // Hiero's documented Opacity default is 0.6 (REF-10); apply it when the shadow
                         // block exists but omits the key, rather than leaving KernSmith's 1.0 default.
                         options.ShadowOpacity = 0.6f;
-                    // Hiero's two-parameter blur (kernel size + passes) collapses to a single blur radius.
+                    // Hiero's two-parameter blur (kernel size + passes) collapses to a single blur
+                    // radius for back-compat, and is also preserved verbatim in the dedicated
+                    // ShadowBlurKernelSize / ShadowBlurPasses properties.
                     if (values.TryGetValue("Blur kernel size", out var blurStr)
                         && int.TryParse(blurStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var blur))
+                    {
                         options.ShadowBlur = blur;
+                        options.ShadowBlurKernelSize = blur;
+                    }
+                    if (values.TryGetValue("Blur passes", out var passesStr)
+                        && int.TryParse(passesStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var passes))
+                        options.ShadowBlurPasses = passes;
                     break;
 
                 case "DistanceFieldEffect":
                     options.Sdf = true;
-                    // Scale/Spread have no KernSmith equivalent -- dropped.
+                    if (values.TryGetValue("Scale", out var sdfScaleStr)
+                        && int.TryParse(sdfScaleStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var sdfScale))
+                        options.SdfScale = sdfScale;
+                    if (values.TryGetValue("Spread", out var sdfSpreadStr)
+                        && float.TryParse(sdfSpreadStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var sdfSpread))
+                        options.SdfSpread = sdfSpread;
                     break;
 
                 case "OutlineWobbleEffect":
@@ -384,12 +419,6 @@ public static class HieroConfigReader
     {
         var idx = fullClassName.LastIndexOf('.');
         return idx >= 0 ? fullClassName[(idx + 1)..] : fullClassName;
-    }
-
-    private static bool IsWhite(string hex)
-    {
-        var (r, g, b) = ParseHexColor(hex);
-        return r == 255 && g == 255 && b == 255;
     }
 
     /// <summary>

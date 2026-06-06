@@ -14,17 +14,27 @@ internal sealed class GradientEffect : IGlyphEffect
     private readonly byte _endR, _endG, _endB;
     private readonly float _angleDegrees;
     private readonly float _midpoint;
+    private readonly float _offset;
+    private readonly float _scale;
+    private readonly bool _cyclic;
 
     public GradientEffect(
         byte startR, byte startG, byte startB,
         byte endR, byte endG, byte endB,
         float angleDegrees = 90f,
-        float midpoint = 0.5f)
+        float midpoint = 0.5f,
+        float offset = 0f,
+        float scale = 1f,
+        bool cyclic = false)
     {
         _startR = startR; _startG = startG; _startB = startB;
         _endR = endR; _endG = endG; _endB = endB;
         _angleDegrees = angleDegrees;
         _midpoint = Math.Clamp(midpoint, 0.01f, 0.99f);
+        _offset = offset;
+        // Guard against a zero/negative scale collapsing the gradient span.
+        _scale = scale <= 0f ? 1f : scale;
+        _cyclic = cyclic;
     }
 
     public GlyphLayer Generate(byte[] alphaData, int width, int height, int pitch, GlyphMetrics metrics)
@@ -59,7 +69,21 @@ internal sealed class GradientEffect : IGlyphEffect
                 // Project pixel onto gradient direction and normalize to 0..1
                 float dot = x * dirX + y * dirY;
                 float t = (dot - minD) / range;
-                t = MathF.Max(0f, MathF.Min(1f, t));
+
+                // Apply offset (shift the gradient start along its axis) and scale (stretch/shrink
+                // the gradient span). With offset=0 and scale=1 this is an exact pass-through.
+                if (_offset != 0f || _scale != 1f)
+                    t = (t - _offset) / _scale;
+
+                if (_cyclic)
+                {
+                    // Repeat/tile the gradient instead of clamping at the ends.
+                    t -= MathF.Floor(t);
+                }
+                else
+                {
+                    t = MathF.Max(0f, MathF.Min(1f, t));
+                }
 
                 // Apply midpoint bias
                 if (t < _midpoint)
