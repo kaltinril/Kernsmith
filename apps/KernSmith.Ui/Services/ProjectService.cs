@@ -78,6 +78,9 @@ public class ProjectService
         atlasConfig.DescriptorFormat = config.OutputFormat;
 
         // Effects
+        effects.FillColor = EffectsViewModel.ToHex(options.FillColorR, options.FillColorG, options.FillColorB);
+        effects.AdvanceAdjustX = options.AdvanceAdjustX;
+        effects.Gamma = options.Gamma;
         effects.Bold = options.Bold;
         effects.Italic = options.Italic;
         effects.ForceSyntheticBold = options.ForceSyntheticBold;
@@ -92,6 +95,8 @@ public class ProjectService
         effects.ShadowOffsetX = options.ShadowOffsetX;
         effects.ShadowOffsetY = options.ShadowOffsetY;
         effects.ShadowBlur = options.ShadowBlur;
+        effects.ShadowBlurKernelSize = options.ShadowBlurKernelSize;
+        effects.ShadowBlurPasses = options.ShadowBlurPasses;
         effects.ShadowColor = EffectsViewModel.ToHex(options.ShadowR, options.ShadowG, options.ShadowB);
         effects.ShadowOpacity = (int)(options.ShadowOpacity * 100);
         effects.HardShadow = options.HardShadow;
@@ -101,8 +106,12 @@ public class ProjectService
         effects.GradientEndColor = EffectsViewModel.ToHex(
             options.GradientEndR ?? 0, options.GradientEndG ?? 0, options.GradientEndB ?? 0);
         effects.GradientAngle = (int)options.GradientAngle;
+        effects.GradientOffset = options.GradientOffset;
+        effects.GradientScale = options.GradientScale;
+        effects.GradientCyclic = options.GradientCyclic;
         effects.ChannelPackingEnabled = options.Channels != null;
         effects.SdfEnabled = options.Sdf;
+        effects.SdfSpread = options.SdfSpread;
         effects.ColorFontEnabled = options.ColorFont;
 
         // Character set
@@ -134,6 +143,7 @@ public class ProjectService
         var shadowRgb = EffectsViewModel.ParseHex(effects.ShadowColor);
         var gradStartRgb = EffectsViewModel.ParseHex(effects.GradientStartColor);
         var gradEndRgb = EffectsViewModel.ParseHex(effects.GradientEndColor);
+        var fillRgb = EffectsViewModel.ParseHex(effects.FillColor);
 
         var options = new FontGeneratorOptions
         {
@@ -146,6 +156,12 @@ public class ProjectService
             Padding = new Padding(atlasConfig.PaddingUp, atlasConfig.PaddingRight, atlasConfig.PaddingDown, atlasConfig.PaddingLeft),
             Spacing = new Spacing(atlasConfig.SpacingH, atlasConfig.SpacingV),
             Kerning = atlasConfig.IncludeKerning,
+            FillColorR = fillRgb.R,
+            FillColorG = fillRgb.G,
+            FillColorB = fillRgb.B,
+            FillColorA = 255,
+            AdvanceAdjustX = effects.AdvanceAdjustX,
+            Gamma = effects.Gamma,
             Bold = effects.Bold,
             Italic = effects.Italic,
             ForceSyntheticBold = effects.ForceSyntheticBold,
@@ -160,6 +176,8 @@ public class ProjectService
             ShadowOffsetX = effects.ShadowEnabled ? effects.ShadowOffsetX : 0,
             ShadowOffsetY = effects.ShadowEnabled ? effects.ShadowOffsetY : 0,
             ShadowBlur = effects.ShadowEnabled ? effects.ShadowBlur : 0,
+            ShadowBlurKernelSize = effects.ShadowEnabled ? effects.ShadowBlurKernelSize : 0,
+            ShadowBlurPasses = effects.ShadowEnabled ? effects.ShadowBlurPasses : 1,
             ShadowR = shadowRgb.R,
             ShadowG = shadowRgb.G,
             ShadowB = shadowRgb.B,
@@ -172,8 +190,12 @@ public class ProjectService
             GradientEndG = effects.GradientEnabled ? gradEndRgb.G : null,
             GradientEndB = effects.GradientEnabled ? gradEndRgb.B : null,
             GradientAngle = effects.GradientAngle,
+            GradientOffset = effects.GradientEnabled ? effects.GradientOffset : 0f,
+            GradientScale = effects.GradientEnabled ? effects.GradientScale : 1f,
+            GradientCyclic = effects.GradientEnabled && effects.GradientCyclic,
             FaceIndex = fontConfig.FaceIndex,
             Sdf = effects.SdfEnabled,
+            SdfSpread = effects.SdfSpread,
             ColorFont = effects.ColorFontEnabled
         };
 

@@ -293,6 +293,11 @@ public class FontConfigPanel : Panel
             sizeGrid.AddRow("Rasterizer:", _rasterizerCombo);
             TooltipService.SetTooltip(_rasterizerCombo, "Glyph rasterizer backend. FreeType: cross-platform default. GDI: Windows-only, matches BMFont output. DirectWrite: Windows-only, modern rendering with color/variable font support.");
 
+            var advanceXBox = UiFactory.CreateSmallFloatBox(_mainViewModel.Effects.AdvanceAdjustX,
+                v => _mainViewModel.Effects.AdvanceAdjustX = v);
+            sizeGrid.AddRow("Advance X:", advanceXBox);
+            TooltipService.SetTooltip(advanceXBox, "Add this many pixels to every glyph's horizontal advance (spacing between characters). 0 = no change.");
+
             sizeExpander.AddContent(sizeGrid);
         }
 

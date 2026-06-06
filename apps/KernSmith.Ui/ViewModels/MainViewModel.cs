@@ -233,6 +233,7 @@ public class MainViewModel : ViewModel
             var shadowRgb = EffectsViewModel.ParseHex(Effects.ShadowColor);
             var gradStartRgb = EffectsViewModel.ParseHex(Effects.GradientStartColor);
             var gradEndRgb = EffectsViewModel.ParseHex(Effects.GradientEndColor);
+            var fillRgb = EffectsViewModel.ParseHex(Effects.FillColor);
 
             var request = new GenerationRequest
             {
@@ -258,6 +259,12 @@ public class MainViewModel : ViewModel
                 SpacingH = AtlasConfig.SpacingH,
                 SpacingV = AtlasConfig.SpacingV,
                 IncludeKerning = AtlasConfig.IncludeKerning,
+                FillColorR = fillRgb.R,
+                FillColorG = fillRgb.G,
+                FillColorB = fillRgb.B,
+                FillColorA = 255,
+                AdvanceAdjustX = Effects.AdvanceAdjustX,
+                Gamma = Effects.Gamma,
                 Bold = Effects.Bold,
                 Italic = Effects.Italic,
                 ForceSyntheticBold = Effects.ForceSyntheticBold,
@@ -274,6 +281,8 @@ public class MainViewModel : ViewModel
                 ShadowOffsetX = Effects.ShadowOffsetX,
                 ShadowOffsetY = Effects.ShadowOffsetY,
                 ShadowBlur = Effects.ShadowBlur,
+                ShadowBlurKernelSize = Effects.ShadowBlurKernelSize,
+                ShadowBlurPasses = Effects.ShadowBlurPasses,
                 ShadowColorR = shadowRgb.R,
                 ShadowColorG = shadowRgb.G,
                 ShadowColorB = shadowRgb.B,
@@ -287,8 +296,12 @@ public class MainViewModel : ViewModel
                 GradientEndG = gradEndRgb.G,
                 GradientEndB = gradEndRgb.B,
                 GradientAngle = Effects.GradientAngle,
+                GradientOffset = Effects.GradientOffset,
+                GradientScale = Effects.GradientScale,
+                GradientCyclic = Effects.GradientCyclic,
                 ChannelPackingEnabled = Effects.ChannelPackingEnabled,
                 SdfEnabled = Effects.SdfEnabled,
+                SdfSpread = Effects.SdfSpread,
                 ColorFontEnabled = Effects.ColorFontEnabled,
                 PackingAlgorithmIndex = AtlasConfig.PackingAlgorithmIndex,
                 FaceIndex = FontConfig.FaceIndex,
