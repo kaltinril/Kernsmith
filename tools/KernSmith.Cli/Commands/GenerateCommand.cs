@@ -245,7 +245,25 @@ internal sealed class GenerateCommand
         if (options.VariationAxes.Count > 0)
             genOptions.VariationAxes = new Dictionary<string, float>(options.VariationAxes);
 
+        // Validate Phase 100 ranges with friendly messages (ArgumentException is reported cleanly).
+        if (options.ShadowBlurPasses < 1)
+            throw new ArgumentException($"--shadow-blur-passes must be >= 1 (got {options.ShadowBlurPasses}).");
+        if (options.ShadowBlurKernelSize < 0)
+            throw new ArgumentException($"--shadow-blur-kernel must be >= 0 (got {options.ShadowBlurKernelSize}).");
+        if (options.SdfSpread is < 0)
+            throw new ArgumentException($"--sdf-spread must be >= 0 (got {options.SdfSpread.Value.ToString(CultureInfo.InvariantCulture)}).");
+        if (options.Gamma is <= 0)
+            throw new ArgumentException($"--gamma must be > 0 (got {options.Gamma!.Value.ToString(CultureInfo.InvariantCulture)}).");
+
         // Effects
+        if (options.FillColor != null)
+        {
+            var fill = ColorParser.ParseRgba(options.FillColor);
+            genOptions.FillColorR = fill.R;
+            genOptions.FillColorG = fill.G;
+            genOptions.FillColorB = fill.B;
+            genOptions.FillColorA = fill.A;
+        }
         if (options.GradientTop != null && options.GradientBottom != null)
         {
             var top = ColorParser.Parse(options.GradientTop);
@@ -258,6 +276,9 @@ internal sealed class GenerateCommand
             genOptions.GradientEndB = bottom.B;
             genOptions.GradientAngle = options.GradientAngle;
             genOptions.GradientMidpoint = options.GradientMidpoint;
+            genOptions.GradientOffset = options.GradientOffset;
+            genOptions.GradientScale = options.GradientScale;
+            genOptions.GradientCyclic = options.GradientCyclic;
         }
         if (options.Outline > 0 && options.OutlineColor != null)
         {
@@ -266,11 +287,14 @@ internal sealed class GenerateCommand
             genOptions.OutlineG = oc.G;
             genOptions.OutlineB = oc.B;
         }
-        if (options.ShadowOffsetX != 0 || options.ShadowOffsetY != 0 || options.ShadowColor != null)
+        if (options.ShadowOffsetX != 0 || options.ShadowOffsetY != 0 || options.ShadowColor != null
+            || options.ShadowBlurKernelSize != 0 || options.ShadowBlurPasses != 1)
         {
             genOptions.ShadowOffsetX = options.ShadowOffsetX;
             genOptions.ShadowOffsetY = options.ShadowOffsetY;
             genOptions.ShadowBlur = options.ShadowBlur;
+            genOptions.ShadowBlurKernelSize = options.ShadowBlurKernelSize;
+            genOptions.ShadowBlurPasses = options.ShadowBlurPasses;
             if (options.ShadowColor != null)
             {
                 var sc = ColorParser.Parse(options.ShadowColor);
@@ -281,6 +305,13 @@ internal sealed class GenerateCommand
         }
         if (options.HardShadow)
             genOptions.HardShadow = true;
+
+        // Rendering options (Phase 100) — only set when explicitly provided so defaults are preserved.
+        if (options.SdfSpread.HasValue)
+            genOptions.SdfSpread = options.SdfSpread.Value;
+        if (options.Gamma.HasValue)
+            genOptions.Gamma = options.Gamma.Value;
+        genOptions.AdvanceAdjustX = options.AdvanceAdjustX;
 
         return genOptions;
     }
@@ -494,7 +525,19 @@ internal sealed class GenerateCommand
                     options.GradientAngle = float.Parse(NextArg(args, ref i, "--gradient-angle"));
                     break;
                 case "--gradient-midpoint":
-                    options.GradientMidpoint = float.Parse(NextArg(args, ref i, "--gradient-midpoint"));
+                    options.GradientMidpoint = float.Parse(NextArg(args, ref i, "--gradient-midpoint"), CultureInfo.InvariantCulture);
+                    break;
+                case "--gradient-offset":
+                    options.GradientOffset = float.Parse(NextArg(args, ref i, "--gradient-offset"), CultureInfo.InvariantCulture);
+                    break;
+                case "--gradient-scale":
+                    options.GradientScale = float.Parse(NextArg(args, ref i, "--gradient-scale"), CultureInfo.InvariantCulture);
+                    break;
+                case "--gradient-cyclic":
+                    options.GradientCyclic = true;
+                    break;
+                case "--fill-color":
+                    options.FillColor = NextArg(args, ref i, "--fill-color");
                     break;
                 case "--kerning":
                     options.Kerning = true;
@@ -515,6 +558,12 @@ internal sealed class GenerateCommand
                     var shadowArg = NextArg(args, ref i, "--shadow");
                     ParseShadowArg(options, shadowArg);
                     break;
+                case "--shadow-blur-kernel":
+                    options.ShadowBlurKernelSize = int.Parse(NextArg(args, ref i, "--shadow-blur-kernel"));
+                    break;
+                case "--shadow-blur-passes":
+                    options.ShadowBlurPasses = int.Parse(NextArg(args, ref i, "--shadow-blur-passes"));
+                    break;
                 case "--hard-shadow":
                     options.HardShadow = true;
                     break;
@@ -526,6 +575,16 @@ internal sealed class GenerateCommand
                     break;
                 case "--super-sample":
                     options.SuperSampleLevel = int.Parse(NextArg(args, ref i, args[i]));
+                    break;
+                case "--sdf-spread":
+                    options.SdfSpread = float.Parse(NextArg(args, ref i, "--sdf-spread"), CultureInfo.InvariantCulture);
+                    break;
+                case "--gamma":
+                    options.Gamma = float.Parse(NextArg(args, ref i, "--gamma"), CultureInfo.InvariantCulture);
+                    break;
+                case "--advance-x":
+                case "--advance-adjust-x":
+                    options.AdvanceAdjustX = float.Parse(NextArg(args, ref i, args[i]), CultureInfo.InvariantCulture);
                     break;
                 case "--rasterizer":
                     var backendStr = NextArg(args, ref i, args[i]);
@@ -680,6 +739,17 @@ internal sealed class GenerateCommand
         if (cli.ShowProfile) config.ShowProfile = true;
         if (cli.GradientAngle != 90f) config.GradientAngle = cli.GradientAngle;
         if (cli.GradientMidpoint != 0.5f) config.GradientMidpoint = cli.GradientMidpoint;
+
+        // Phase 100 options
+        if (cli.FillColor != null) config.FillColor = cli.FillColor;
+        if (cli.GradientOffset != 0f) config.GradientOffset = cli.GradientOffset;
+        if (cli.GradientScale != 1f) config.GradientScale = cli.GradientScale;
+        if (cli.GradientCyclic) config.GradientCyclic = true;
+        if (cli.ShadowBlurKernelSize != 0) config.ShadowBlurKernelSize = cli.ShadowBlurKernelSize;
+        if (cli.ShadowBlurPasses != 1) config.ShadowBlurPasses = cli.ShadowBlurPasses;
+        if (cli.SdfSpread.HasValue) config.SdfSpread = cli.SdfSpread;
+        if (cli.Gamma.HasValue) config.Gamma = cli.Gamma;
+        if (cli.AdvanceAdjustX != 0f) config.AdvanceAdjustX = cli.AdvanceAdjustX;
     }
 
     /// <summary>
@@ -839,12 +909,15 @@ internal sealed class GenerateCommand
               --dpi <n>                   DPI (default: 72)
               --aa <none|grayscale|light|lcd>  Anti-aliasing mode (default: grayscale)
               --sdf                       Enable Signed Distance Field rendering
+              --sdf-spread <n>            SDF search radius (spread) in pixels (default: 8)
               --mono                      Disable anti-aliasing (alias for --aa none)
               --super-sample <n>          Super sampling level 1-4 (default: 1)
               --rasterizer <backend>      Rasterizer backend: freetype (default), stbtruetype, gdi, directwrite
               --hinting / --no-hinting    Enable/disable FreeType hinting (default: on)
+              --gamma <n>                 Gamma correction applied during rasterization (default: 1.8)
               --height-percent <n>        Vertical height scaling percentage (default: 100)
               --match-char-height         Match rendered height to requested pixel height
+              --advance-x <n>             Global horizontal advance adjustment added to every glyph (default: 0)
               --fallback-char <char>      Fallback character for missing glyphs (char or codepoint)
 
             Style:
@@ -878,12 +951,18 @@ internal sealed class GenerateCommand
               --force-offsets-zero        Set all xoffset/yoffset to zero
 
             Effects:
+              --fill-color <color>        Base glyph fill color as hex #RRGGBB or #RRGGBBAA (default: FFFFFF, opaque white)
               --outline <n>[,color]        Outline width in pixels, optional hex color (e.g., --outline 2,FF0000)
               --gradient <top>,<bottom>   Vertical gradient, colors as hex
               --gradient <top> <bottom>   Vertical gradient (two-argument form)
               --gradient-angle <deg>      Gradient rotation in degrees (default: 90)
               --gradient-midpoint <0-1>   Gradient midpoint bias (default: 0.5)
+              --gradient-offset <n>       Gradient positional offset along its axis (default: 0)
+              --gradient-scale <n>        Gradient scale factor along its axis (default: 1)
+              --gradient-cyclic           Repeat (cycle) the gradient instead of clamping at its ends
               --shadow <x>,<y>[,color[,blur]]  Drop shadow (e.g., --shadow 2,2,000000,1)
+              --shadow-blur-kernel <n>    Shadow blur kernel size (default: 0)
+              --shadow-blur-passes <n>    Number of shadow blur passes; more = softer (default: 1)
               --hard-shadow               Use a crisp shadow silhouette instead of soft edges
 
             Kerning:
@@ -911,6 +990,8 @@ internal sealed class GenerateCommand
               kernsmith generate -f arial.ttf -s 32
               kernsmith generate -f roboto.ttf -s 48 -b -i --outline 2
               kernsmith generate -f font.ttf -s 24 --super-sample 2 --no-hinting
+              kernsmith generate -f roboto.ttf -s 32 --fill-color "#FF8800" --gamma 2.2
+              kernsmith generate -f roboto.ttf -s 32 --shadow 2,2,000000 --shadow-blur-kernel 3 --shadow-blur-passes 2
               kernsmith generate --config mygame.bmfc --save-config updated.hiero
             """);
     }

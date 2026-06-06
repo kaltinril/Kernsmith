@@ -41,14 +41,20 @@ internal sealed class CliOptions
     // Effects
     public int Outline { get; set; }
     public string? OutlineColor { get; set; }
+    public string? FillColor { get; set; }
     public string? GradientTop { get; set; }
     public string? GradientBottom { get; set; }
     public float GradientAngle { get; set; } = 90f;
     public float GradientMidpoint { get; set; } = 0.5f;
+    public float GradientOffset { get; set; }
+    public float GradientScale { get; set; } = 1f;
+    public bool GradientCyclic { get; set; }
     public int ShadowOffsetX { get; set; }
     public int ShadowOffsetY { get; set; }
     public string? ShadowColor { get; set; }
     public int ShadowBlur { get; set; }
+    public int ShadowBlurKernelSize { get; set; }
+    public int ShadowBlurPasses { get; set; } = 1;
     public bool HardShadow { get; set; }
 
     // Kerning
@@ -64,6 +70,9 @@ internal sealed class CliOptions
     public bool MatchCharHeight { get; set; }
     public bool ColorFont { get; set; }
     public int ColorPaletteIndex { get; set; }
+    public float? SdfSpread { get; set; }
+    public float? Gamma { get; set; }
+    public float AdvanceAdjustX { get; set; }
 
     // Rasterizer
     public RasterizerBackend Backend { get; set; } = RasterizerBackend.FreeType;

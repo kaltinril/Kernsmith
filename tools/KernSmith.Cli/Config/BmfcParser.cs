@@ -59,9 +59,17 @@ internal static class BmfcParser
             Outline = gen.Outline,
             GradientAngle = gen.GradientAngle,
             GradientMidpoint = gen.GradientMidpoint,
+            GradientOffset = gen.GradientOffset,
+            GradientScale = gen.GradientScale,
+            GradientCyclic = gen.GradientCyclic,
             ShadowOffsetX = gen.ShadowOffsetX,
             ShadowOffsetY = gen.ShadowOffsetY,
             ShadowBlur = gen.ShadowBlur,
+            ShadowBlurKernelSize = gen.ShadowBlurKernelSize,
+            ShadowBlurPasses = gen.ShadowBlurPasses,
+            SdfSpread = gen.SdfSpread,
+            Gamma = gen.Gamma,
+            AdvanceAdjustX = gen.AdvanceAdjustX,
 
             // Kerning
             Kerning = gen.Kerning,
@@ -101,6 +109,14 @@ internal static class BmfcParser
 
         if (gen.ShadowR != 0 || gen.ShadowG != 0 || gen.ShadowB != 0)
             options.ShadowColor = FormatColor(gen.ShadowR, gen.ShadowG, gen.ShadowB);
+
+        // Fill color: only surface when it differs from the default opaque white.
+        if (gen.FillColorR != 255 || gen.FillColorG != 255 || gen.FillColorB != 255 || gen.FillColorA != 255)
+        {
+            options.FillColor = gen.FillColorA == 255
+                ? FormatColor(gen.FillColorR, gen.FillColorG, gen.FillColorB)
+                : $"{gen.FillColorR:X2}{gen.FillColorG:X2}{gen.FillColorB:X2}{gen.FillColorA:X2}";
+        }
 
         // Map character set: extract ranges from the CharacterSet for CLI compatibility
         var codepoints = gen.Characters.GetCodepoints().OrderBy(c => c).ToArray();
