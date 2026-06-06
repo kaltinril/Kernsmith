@@ -1523,4 +1523,368 @@ public sealed class HieroConfigTests : IDisposable
         parsed.FontName.ShouldBe("Arial");
         parsed.Options.Size.ShouldBe(32f);
     }
+
+    // ------------------------------------------------------------------
+    // Phase 100: defaults preserve current output
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Defaults_Phase100Properties_PreserveCurrentValues()
+    {
+        var options = new FontGeneratorOptions();
+
+        options.FillColorR.ShouldBe((byte)255);
+        options.FillColorG.ShouldBe((byte)255);
+        options.FillColorB.ShouldBe((byte)255);
+        options.FillColorA.ShouldBe((byte)255);
+        options.AdvanceAdjustX.ShouldBe(0f);
+        options.AdvanceAdjustY.ShouldBe(0f);
+        options.ShadowBlurKernelSize.ShouldBe(0);
+        options.ShadowBlurPasses.ShouldBe(1);
+        options.GradientOffset.ShouldBe(0f);
+        options.GradientScale.ShouldBe(1f);
+        options.GradientCyclic.ShouldBeFalse();
+        options.SdfScale.ShouldBe(1);
+        options.SdfSpread.ShouldBe(8f);
+        options.Gamma.ShouldBe(1.8f);
+    }
+
+    // ------------------------------------------------------------------
+    // Phase 100: Fill color (ColorEffect)
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Parse_ColorEffect_MapsFillColorWithOpaqueAlpha()
+    {
+        var content =
+            $"effect.class={EffectPkg}ColorEffect\n" +
+            "effect.Color=ff8000\n";
+
+        var config = HieroConfigReader.Parse(content);
+
+        config.Options.FillColorR.ShouldBe((byte)0xff);
+        config.Options.FillColorG.ShouldBe((byte)0x80);
+        config.Options.FillColorB.ShouldBe((byte)0x00);
+        // Hiero ColorEffect carries no alpha; A defaults to fully opaque.
+        config.Options.FillColorA.ShouldBe((byte)255);
+    }
+
+    [Fact]
+    public void Write_FillColor_EmitsColorEffectRgbHex()
+    {
+        var config = new BmfcConfig
+        {
+            Options = new FontGeneratorOptions { FillColorR = 0x11, FillColorG = 0x22, FillColorB = 0x33 }
+        };
+
+        var hiero = HieroConfigWriter.Write(config);
+
+        hiero.ShouldContain("ColorEffect");
+        hiero.ShouldContain("effect.Color=112233");
+    }
+
+    [Fact]
+    public void RoundTrip_FillColor_Preserved()
+    {
+        var original = new BmfcConfig
+        {
+            Options = new FontGeneratorOptions { FillColorR = 0xaa, FillColorG = 0xbb, FillColorB = 0xcc }
+        };
+
+        var hiero = HieroConfigWriter.Write(original);
+        var parsed = HieroConfigReader.Parse(hiero);
+
+        parsed.Options.FillColorR.ShouldBe((byte)0xaa);
+        parsed.Options.FillColorG.ShouldBe((byte)0xbb);
+        parsed.Options.FillColorB.ShouldBe((byte)0xcc);
+        parsed.Options.FillColorA.ShouldBe((byte)255);
+    }
+
+    // ------------------------------------------------------------------
+    // Phase 100: Advance adjustment (pad.advance.x/y)
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Parse_PadAdvance_MapsToAdvanceAdjust()
+    {
+        var content =
+            "pad.advance.x=-2\n" +
+            "pad.advance.y=3\n";
+
+        var config = HieroConfigReader.Parse(content);
+
+        config.Options.AdvanceAdjustX.ShouldBe(-2f);
+        config.Options.AdvanceAdjustY.ShouldBe(3f);
+        // Must NOT leak into Spacing (which stays at its default).
+        config.Options.Spacing.ShouldBe(new Spacing(1, 1));
+    }
+
+    [Fact]
+    public void Write_AdvanceAdjust_EmitsPadAdvance()
+    {
+        var config = new BmfcConfig
+        {
+            Options = new FontGeneratorOptions { AdvanceAdjustX = -2.5f, AdvanceAdjustY = 1.5f }
+        };
+
+        var hiero = HieroConfigWriter.Write(config);
+
+        hiero.ShouldContain("pad.advance.x=-2.5");
+        hiero.ShouldContain("pad.advance.y=1.5");
+    }
+
+    [Fact]
+    public void RoundTrip_AdvanceAdjust_Preserved()
+    {
+        var original = new BmfcConfig
+        {
+            Options = new FontGeneratorOptions { AdvanceAdjustX = -2.5f, AdvanceAdjustY = 4f }
+        };
+
+        var hiero = HieroConfigWriter.Write(original);
+        var parsed = HieroConfigReader.Parse(hiero);
+
+        parsed.Options.AdvanceAdjustX.ShouldBe(-2.5f);
+        parsed.Options.AdvanceAdjustY.ShouldBe(4f);
+    }
+
+    // ------------------------------------------------------------------
+    // Phase 100: Two-parameter shadow blur (kernel size + passes)
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Parse_ShadowEffect_MapsBlurKernelSizeAndPasses()
+    {
+        var content =
+            $"effect.class={EffectPkg}ShadowEffect\n" +
+            "effect.Color=000000\n" +
+            "effect.X distance=2.0\n" +
+            "effect.Y distance=2.0\n" +
+            "effect.Blur kernel size=3\n" +
+            "effect.Blur passes=2\n";
+
+        var config = HieroConfigReader.Parse(content);
+
+        // Back-compat: ShadowBlur still mirrors the kernel size.
+        config.Options.ShadowBlur.ShouldBe(3);
+        config.Options.ShadowBlurKernelSize.ShouldBe(3);
+        config.Options.ShadowBlurPasses.ShouldBe(2);
+    }
+
+    [Fact]
+    public void Write_ShadowBlurPasses_EmittedFromOption()
+    {
+        var config = new BmfcConfig
+        {
+            Options = new FontGeneratorOptions
+            {
+                ShadowOffsetX = 2,
+                ShadowBlur = 3,
+                ShadowBlurPasses = 4
+            }
+        };
+
+        var hiero = HieroConfigWriter.Write(config);
+
+        hiero.ShouldContain("effect.Blur kernel size=3");
+        hiero.ShouldContain("effect.Blur passes=4");
+    }
+
+    [Fact]
+    public void RoundTrip_ShadowBlurPasses_Preserved()
+    {
+        var original = new BmfcConfig
+        {
+            Options = new FontGeneratorOptions
+            {
+                ShadowOffsetX = 2,
+                ShadowBlur = 3,
+                ShadowBlurPasses = 4
+            }
+        };
+
+        var hiero = HieroConfigWriter.Write(original);
+        var parsed = HieroConfigReader.Parse(hiero);
+
+        parsed.Options.ShadowBlurKernelSize.ShouldBe(3);
+        parsed.Options.ShadowBlurPasses.ShouldBe(4);
+    }
+
+    // ------------------------------------------------------------------
+    // Phase 100: Gradient extended properties (Offset/Scale/Cyclic)
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Parse_GradientEffect_MapsOffsetScaleCyclic()
+    {
+        var content =
+            $"effect.class={EffectPkg}GradientEffect\n" +
+            "effect.Top color=00ffff\n" +
+            "effect.Bottom color=0000ff\n" +
+            "effect.Offset=0.25\n" +
+            "effect.Scale=2.0\n" +
+            "effect.Cyclic=true\n";
+
+        var config = HieroConfigReader.Parse(content);
+
+        config.Options.GradientOffset.ShouldBe(0.25f);
+        config.Options.GradientScale.ShouldBe(2.0f);
+        config.Options.GradientCyclic.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Write_GradientExtended_EmitsOffsetScaleCyclic()
+    {
+        var config = new BmfcConfig
+        {
+            Options = new FontGeneratorOptions
+            {
+                GradientStartR = 0x00,
+                GradientStartG = 0xff,
+                GradientStartB = 0xff,
+                GradientEndR = 0x00,
+                GradientEndG = 0x00,
+                GradientEndB = 0xff,
+                GradientOffset = 0.25f,
+                GradientScale = 2.0f,
+                GradientCyclic = true
+            }
+        };
+
+        var hiero = HieroConfigWriter.Write(config);
+
+        hiero.ShouldContain("effect.Offset=0.25");
+        hiero.ShouldContain("effect.Scale=2.0");
+        hiero.ShouldContain("effect.Cyclic=true");
+    }
+
+    [Fact]
+    public void RoundTrip_GradientExtended_Preserved()
+    {
+        var original = new BmfcConfig
+        {
+            Options = new FontGeneratorOptions
+            {
+                GradientStartR = 0x00,
+                GradientStartG = 0xff,
+                GradientStartB = 0xff,
+                GradientEndR = 0x00,
+                GradientEndG = 0x00,
+                GradientEndB = 0xff,
+                GradientOffset = 0.25f,
+                GradientScale = 2.0f,
+                GradientCyclic = true
+            }
+        };
+
+        var hiero = HieroConfigWriter.Write(original);
+        var parsed = HieroConfigReader.Parse(hiero);
+
+        parsed.Options.GradientOffset.ShouldBe(0.25f);
+        parsed.Options.GradientScale.ShouldBe(2.0f);
+        parsed.Options.GradientCyclic.ShouldBeTrue();
+    }
+
+    // ------------------------------------------------------------------
+    // Phase 100: SDF Scale and Spread
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Parse_DistanceFieldEffect_MapsScaleAndSpread()
+    {
+        var content =
+            $"effect.class={EffectPkg}DistanceFieldEffect\n" +
+            "effect.Color=ffffff\n" +
+            "effect.Scale=2\n" +
+            "effect.Spread=4.0\n";
+
+        var config = HieroConfigReader.Parse(content);
+
+        config.Options.Sdf.ShouldBeTrue();
+        config.Options.SdfScale.ShouldBe(2);
+        config.Options.SdfSpread.ShouldBe(4.0f);
+    }
+
+    [Fact]
+    public void Write_SdfScaleAndSpread_EmittedFromOptions()
+    {
+        var config = new BmfcConfig
+        {
+            Options = new FontGeneratorOptions { Sdf = true, SdfScale = 3, SdfSpread = 6f }
+        };
+
+        var hiero = HieroConfigWriter.Write(config);
+
+        hiero.ShouldContain("DistanceFieldEffect");
+        hiero.ShouldContain("effect.Scale=3");
+        hiero.ShouldContain("effect.Spread=6.0");
+    }
+
+    [Fact]
+    public void RoundTrip_SdfScaleAndSpread_Preserved()
+    {
+        var original = new BmfcConfig
+        {
+            Options = new FontGeneratorOptions { Sdf = true, SdfScale = 3, SdfSpread = 6f }
+        };
+
+        var hiero = HieroConfigWriter.Write(original);
+        var parsed = HieroConfigReader.Parse(hiero);
+
+        parsed.Options.Sdf.ShouldBeTrue();
+        parsed.Options.SdfScale.ShouldBe(3);
+        parsed.Options.SdfSpread.ShouldBe(6f);
+    }
+
+    // ------------------------------------------------------------------
+    // Phase 100: Gamma (font.gamma)
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Parse_FontGamma_MapsToGamma()
+    {
+        var content = "font.gamma=2.2\n";
+
+        var config = HieroConfigReader.Parse(content);
+
+        config.Options.Gamma.ShouldBe(2.2f);
+    }
+
+    [Fact]
+    public void Write_Gamma_EmitsFontGamma()
+    {
+        var config = new BmfcConfig
+        {
+            Options = new FontGeneratorOptions { Gamma = 2.2f }
+        };
+
+        var hiero = HieroConfigWriter.Write(config);
+
+        hiero.ShouldContain("font.gamma=2.2");
+    }
+
+    [Fact]
+    public void Write_DefaultGamma_StillEmitsOnePointEight()
+    {
+        // Back-compat: the default gamma must continue to serialize as 1.8.
+        var config = new BmfcConfig { Options = new FontGeneratorOptions() };
+
+        var hiero = HieroConfigWriter.Write(config);
+
+        hiero.ShouldContain("font.gamma=1.8");
+    }
+
+    [Fact]
+    public void RoundTrip_Gamma_Preserved()
+    {
+        var original = new BmfcConfig
+        {
+            Options = new FontGeneratorOptions { Gamma = 2.2f }
+        };
+
+        var hiero = HieroConfigWriter.Write(original);
+        var parsed = HieroConfigReader.Parse(hiero);
+
+        parsed.Options.Gamma.ShouldBe(2.2f);
+    }
 }

@@ -30,6 +30,27 @@ public sealed record RasterOptions
     /// <summary>If true, render as signed distance fields instead of regular bitmaps.</summary>
     public bool Sdf { get; init; }
 
+    /// <summary>
+    /// SDF supersampling scale factor. Higher values render the distance field at a larger
+    /// size for finer precision. Default is 1 (no scaling). Only consumed by backends that
+    /// support SDF (e.g., FreeType); other backends ignore it.
+    /// </summary>
+    public int SdfScale { get; init; } = 1;
+
+    /// <summary>
+    /// SDF spread (search radius) in pixels. Larger values capture distance information
+    /// further from the glyph edge. Default is 8 (the FreeType SDF default). Only consumed
+    /// by backends that support SDF; other backends ignore it.
+    /// </summary>
+    public float SdfSpread { get; init; } = 8f;
+
+    /// <summary>
+    /// Gamma correction applied to rasterized coverage/alpha values. Default is 1.8 (matching
+    /// Hiero), which the FreeType backend treats as the no-op baseline so that default output
+    /// is unchanged. Only consumed by the FreeType backend; other backends ignore it.
+    /// </summary>
+    public float Gamma { get; init; } = 1.8f;
+
     /// <summary>If true, render color glyphs (emoji and other multi-color characters).</summary>
     public bool ColorFont { get; init; }
 
@@ -64,6 +85,9 @@ public sealed record RasterOptions
             ForceSyntheticBold = options.ForceSyntheticBold,
             ForceSyntheticItalic = options.ForceSyntheticItalic,
             Sdf = options.Sdf,
+            SdfScale = options.SdfScale,
+            SdfSpread = options.SdfSpread,
+            Gamma = options.Gamma,
             ColorFont = options.ColorFont,
             ColorPaletteIndex = options.ColorPaletteIndex,
             VariationAxes = options.VariationAxes,

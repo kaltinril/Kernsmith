@@ -99,6 +99,19 @@ internal static unsafe class FreeTypeNative
     public static extern FT_Error FT_Outline_Embolden(FT_Outline_* outline, int strength);
 
     /// <summary>
+    /// Sets a driver/module property by name. Used to configure the SDF renderer's
+    /// <c>spread</c> (search radius) on the built-in "sdf" module.
+    /// The value pointer's type depends on the property; for "sdf"/"spread" it is an
+    /// <c>FT_UInt</c> (32-bit unsigned).
+    /// </summary>
+    [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern FT_Error FT_Property_Set(
+        IntPtr library,
+        [MarshalAs(UnmanagedType.LPStr)] string module_name,
+        [MarshalAs(UnmanagedType.LPStr)] string property_name,
+        void* value);
+
+    /// <summary>
     /// Reads the FT_BitmapGlyphRec_ fields from a glyph pointer after FT_Glyph_To_Bitmap.
     /// Uses manual pointer arithmetic to avoid struct layout portability issues.
     /// </summary>

@@ -54,6 +54,18 @@ public class FontGeneratorOptions
     /// <summary>Spacing between glyphs in the atlas.</summary>
     public Spacing Spacing { get; set; } = new Spacing(1, 1);
 
+    /// <summary>
+    /// Global horizontal advance adjustment (default 0) added to every glyph's xadvance.
+    /// Distinct from <see cref="Spacing"/> (inter-glyph atlas spacing). Maps to Hiero's <c>pad.advance.x</c>.
+    /// </summary>
+    public float AdvanceAdjustX { get; set; }
+
+    /// <summary>
+    /// Global vertical advance adjustment (default 0) added to every glyph's yadvance.
+    /// Distinct from <see cref="Spacing"/> (inter-glyph atlas spacing). Maps to Hiero's <c>pad.advance.y</c>.
+    /// </summary>
+    public float AdvanceAdjustY { get; set; }
+
     /// <summary>Algorithm used for packing glyphs into atlas pages.</summary>
     public PackingAlgorithm PackingAlgorithm { get; set; } = PackingAlgorithm.MaxRects;
 
@@ -74,6 +86,19 @@ public class FontGeneratorOptions
 
     /// <summary>If true, generates a signed distance field (SDF) font.</summary>
     public bool Sdf { get; set; }
+
+    /// <summary>
+    /// SDF supersampling scale factor (default 1). Higher values render the distance field
+    /// at a larger size for finer precision. Maps to Hiero's <c>DistanceFieldEffect</c> Scale.
+    /// </summary>
+    public int SdfScale { get; set; } = 1;
+
+    /// <summary>
+    /// SDF spread (search radius) in pixels (default 8, matching the FreeType SDF default).
+    /// Larger values capture distance information further from the glyph edge.
+    /// Maps to Hiero's <c>DistanceFieldEffect</c> Spread.
+    /// </summary>
+    public float SdfSpread { get; set; } = 8f;
 
     /// <summary>If true, atlas dimensions are rounded up to powers of two (default true).</summary>
     public bool PowerOfTwo { get; set; } = true;
@@ -126,6 +151,12 @@ public class FontGeneratorOptions
     public bool EnableHinting { get; set; } = true;
 
     /// <summary>
+    /// FreeType gamma correction applied during rasterization (default 1.8, matching Hiero).
+    /// Maps to Hiero's <c>font.gamma</c>.
+    /// </summary>
+    public float Gamma { get; set; } = 1.8f;
+
+    /// <summary>
     /// If true, picks the smallest power-of-two texture that fits all glyphs.
     /// Overrides MaxTextureWidth/MaxTextureHeight.
     /// </summary>
@@ -162,6 +193,19 @@ public class FontGeneratorOptions
     /// </summary>
     public bool MatchCharHeight { get; set; }
 
+    /// <summary>Base glyph fill color red channel (default 255 = white).</summary>
+    public byte FillColorR { get; set; } = 255;
+
+    /// <summary>Base glyph fill color green channel (default 255 = white).</summary>
+    public byte FillColorG { get; set; } = 255;
+
+    /// <summary>Base glyph fill color blue channel (default 255 = white).</summary>
+    public byte FillColorB { get; set; } = 255;
+
+    /// <summary>Base glyph fill color alpha channel (default 255 = opaque).
+    /// Hiero's ColorEffect stores only RGB, so this defaults to 255 on import.</summary>
+    public byte FillColorA { get; set; } = 255;
+
     /// <summary>Gradient start (top) color red channel.</summary>
     public byte? GradientStartR { get; set; }
 
@@ -186,6 +230,24 @@ public class FontGeneratorOptions
     /// <summary>Gradient midpoint bias (0.0 to 1.0, default 0.5).</summary>
     public float GradientMidpoint { get; set; } = 0.5f;
 
+    /// <summary>
+    /// Gradient positional offset (default 0). Shifts the gradient along its axis.
+    /// Composes with <see cref="GradientAngle"/>/<see cref="GradientMidpoint"/>. Maps to Hiero's <c>GradientEffect</c> Offset.
+    /// </summary>
+    public float GradientOffset { get; set; }
+
+    /// <summary>
+    /// Gradient scale factor (default 1). Stretches or compresses the gradient along its axis.
+    /// Composes with <see cref="GradientAngle"/>/<see cref="GradientMidpoint"/>. Maps to Hiero's <c>GradientEffect</c> Scale.
+    /// </summary>
+    public float GradientScale { get; set; } = 1f;
+
+    /// <summary>
+    /// If true, the gradient repeats (cycles) instead of clamping at its ends (default false).
+    /// Maps to Hiero's <c>GradientEffect</c> Cyclic.
+    /// </summary>
+    public bool GradientCyclic { get; set; }
+
     /// <summary>True if gradient start and end colors are both set.</summary>
     internal bool HasGradient => GradientStartR.HasValue && GradientEndR.HasValue;
 
@@ -209,6 +271,18 @@ public class FontGeneratorOptions
 
     /// <summary>Shadow blur radius. 0 = hard shadow.</summary>
     public int ShadowBlur { get; set; }
+
+    /// <summary>
+    /// Shadow blur kernel size (default 0 = no kernel blur). Maps to Hiero's <c>ShadowEffect</c> "Blur kernel size".
+    /// Additive to the legacy <see cref="ShadowBlur"/> radius for finer two-parameter control.
+    /// </summary>
+    public int ShadowBlurKernelSize { get; set; }
+
+    /// <summary>
+    /// Number of shadow blur passes (default 1). Maps to Hiero's <c>ShadowEffect</c> "Blur passes".
+    /// More passes produce a softer, wider blur.
+    /// </summary>
+    public int ShadowBlurPasses { get; set; } = 1;
 
     /// <summary>When true, shadow uses a hard (binarized) silhouette instead of the antialiased glyph alpha.</summary>
     public bool HardShadow { get; set; }

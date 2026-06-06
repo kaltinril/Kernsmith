@@ -14,9 +14,16 @@ internal static class GlyphCompositor
     /// </summary>
     public static RasterizedGlyph Composite(
         RasterizedGlyph sourceGlyph,
-        IReadOnlyList<IGlyphEffect> effects)
+        IReadOnlyList<IGlyphEffect> effects,
+        byte fillR = 255,
+        byte fillG = 255,
+        byte fillB = 255,
+        byte fillA = 255)
     {
-        if (effects.Count == 0)
+        // A non-white/non-opaque fill color must still tint the default body layer
+        // even when no other effects are present, so don't early-out in that case.
+        var hasFillTint = fillR != 255 || fillG != 255 || fillB != 255 || fillA != 255;
+        if (effects.Count == 0 && !hasFillTint)
             return sourceGlyph;
 
         if (sourceGlyph.Width == 0 || sourceGlyph.Height == 0 || sourceGlyph.BitmapData.Length == 0)
@@ -132,7 +139,7 @@ internal static class GlyphCompositor
         // so the glyph itself is still visible.
         if (!hasBodyEffect)
         {
-            var bodyLayer = CreateDefaultBodyLayer(alphaData, srcW, srcH, alphaPitch, sourceGlyph);
+            var bodyLayer = CreateDefaultBodyLayer(alphaData, srcW, srcH, alphaPitch, sourceGlyph, fillR, fillG, fillB, fillA);
             layers.Add(bodyLayer);
         }
 
@@ -263,10 +270,14 @@ internal static class GlyphCompositor
     }
 
     /// <summary>
-    /// Creates a default white body layer from the alpha mask.
+    /// Creates a default body layer from the alpha mask, tinted with the supplied fill color.
     /// Used when effects like outline or shadow are present but no gradient/body effect was specified.
+    /// The glyph's rasterized alpha is the mask; <paramref name="fillR"/>/<paramref name="fillG"/>/
+    /// <paramref name="fillB"/> become the body RGB and <paramref name="fillA"/> multiplies the glyph alpha.
+    /// The default (255,255,255,255) reproduces the legacy opaque-white body exactly.
     /// </summary>
-    private static GlyphLayer CreateDefaultBodyLayer(byte[] alphaData, int width, int height, int pitch, RasterizedGlyph sourceGlyph)
+    private static GlyphLayer CreateDefaultBodyLayer(byte[] alphaData, int width, int height, int pitch, RasterizedGlyph sourceGlyph,
+        byte fillR = 255, byte fillG = 255, byte fillB = 255, byte fillA = 255)
     {
         var rgba = new byte[width * height * 4];
 
@@ -298,10 +309,12 @@ internal static class GlyphCompositor
                     var srcIdx = y * pitch + x;
                     var alpha = srcIdx < alphaData.Length ? alphaData[srcIdx] : (byte)0;
                     var di = (y * width + x) * 4;
-                    rgba[di + 0] = 255;
-                    rgba[di + 1] = 255;
-                    rgba[di + 2] = 255;
-                    rgba[di + 3] = alpha;
+                    rgba[di + 0] = fillR;
+                    rgba[di + 1] = fillG;
+                    rgba[di + 2] = fillB;
+                    // Multiply the glyph mask alpha by the fill alpha. With fillA == 255 this is a
+                    // bit-exact pass-through of the original alpha (alpha * 255 / 255 == alpha).
+                    rgba[di + 3] = fillA == 255 ? alpha : (byte)(alpha * fillA / 255);
                 }
             }
         }

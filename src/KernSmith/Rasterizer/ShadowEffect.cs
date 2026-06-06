@@ -14,6 +14,8 @@ internal sealed class ShadowEffect : IGlyphEffect
     private readonly int _offsetX;
     private readonly int _offsetY;
     private readonly int _blurRadius;
+    private readonly int _blurPasses;
+    private readonly int _blurKernelSize;
     private readonly byte _shadowR;
     private readonly byte _shadowG;
     private readonly byte _shadowB;
@@ -28,11 +30,18 @@ internal sealed class ShadowEffect : IGlyphEffect
         byte shadowG = 0,
         byte shadowB = 0,
         float opacity = 1.0f,
-        bool hardShadow = false)
+        bool hardShadow = false,
+        int blurPasses = 1,
+        int blurKernelSize = 0)
     {
         _offsetX = offsetX;
         _offsetY = offsetY;
         _blurRadius = Math.Max(0, blurRadius);
+        // At least one pass; multiple box-blur passes approximate a Gaussian for a smoother shadow.
+        _blurPasses = Math.Max(1, blurPasses);
+        // Optional finer control: a positive kernel size adds extra blur radius beyond the
+        // primary blurRadius. kernelSize <= 0 (default) leaves the primary radius untouched.
+        _blurKernelSize = Math.Max(0, blurKernelSize);
         _shadowR = shadowR;
         _shadowG = shadowG;
         _shadowB = shadowB;
@@ -42,11 +51,17 @@ internal sealed class ShadowEffect : IGlyphEffect
 
     public GlyphLayer Generate(byte[] alphaData, int width, int height, int pitch, GlyphMetrics metrics)
     {
+        // Effective per-axis blur radius. The optional kernel-size control adds to the primary
+        // radius; with the default kernel size of 0 this equals _blurRadius exactly.
+        // Multiple passes each spread by _blurRadius, so reserve room for all of them.
+        var effectiveRadius = _blurRadius + _blurKernelSize;
+        var blurMargin = effectiveRadius * _blurPasses;
+
         // Calculate the expanded bitmap size to accommodate shadow + blur.
-        var expandLeft = Math.Max(0, -_offsetX) + _blurRadius;
-        var expandRight = Math.Max(0, _offsetX) + _blurRadius;
-        var expandTop = Math.Max(0, -_offsetY) + _blurRadius;
-        var expandBottom = Math.Max(0, _offsetY) + _blurRadius;
+        var expandLeft = Math.Max(0, -_offsetX) + blurMargin;
+        var expandRight = Math.Max(0, _offsetX) + blurMargin;
+        var expandTop = Math.Max(0, -_offsetY) + blurMargin;
+        var expandBottom = Math.Max(0, _offsetY) + blurMargin;
 
         var dstW = width + expandLeft + expandRight;
         var dstH = height + expandTop + expandBottom;
@@ -82,10 +97,17 @@ internal sealed class ShadowEffect : IGlyphEffect
             }
 
             // Step 2: Apply box blur if requested. BoxBlur allocates its own output buffer.
-            if (_blurRadius > 0)
+            // Run the blur _blurPasses times; repeated box blurs approximate a Gaussian falloff.
+            if (effectiveRadius > 0)
             {
-                shadowAlpha = BoxBlur(shadowAlpha, dstW, dstH, _blurRadius);
-                blurred = true;
+                for (var pass = 0; pass < _blurPasses; pass++)
+                {
+                    // Only the first pass receives the rented (pooled) buffer; later passes
+                    // operate on the heap output of the previous BoxBlur.
+                    var srcPooled = !blurred;
+                    shadowAlpha = BoxBlur(shadowAlpha, dstW, dstH, effectiveRadius, srcPooled);
+                    blurred = true;
+                }
             }
 
             // Step 3: Build RGBA output with shadow color.
@@ -122,10 +144,12 @@ internal sealed class ShadowEffect : IGlyphEffect
     /// <summary>
     /// Two-pass separable box blur. Uses naive O(W*H*R) for bit-exact output.
     /// See ShadowPostProcessor.cs for sliding-window alternative and perf notes.
-    /// Returns the rented <paramref name="src"/> buffer to the shared pool before returning;
-    /// callers must not use <paramref name="src"/> after this call.
+    /// When <paramref name="srcPooled"/> is true, returns the rented <paramref name="src"/> buffer
+    /// to the shared pool before returning; in either case callers must not use
+    /// <paramref name="src"/> after this call. Heap (non-pooled) <paramref name="src"/> buffers
+    /// from a previous pass are simply dropped (GC-collected).
     /// </summary>
-    private static float[] BoxBlur(float[] src, int width, int height, int radius)
+    private static float[] BoxBlur(float[] src, int width, int height, int radius, bool srcPooled)
     {
         var size = width * height;
         // dst escapes as the blurred result; keep it heap-allocated (not pooled).
@@ -171,7 +195,8 @@ internal sealed class ShadowEffect : IGlyphEffect
         finally
         {
             ArrayPool<float>.Shared.Return(temp);
-            ArrayPool<float>.Shared.Return(src);
+            if (srcPooled)
+                ArrayPool<float>.Shared.Return(src);
         }
     }
 }

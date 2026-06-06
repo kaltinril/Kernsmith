@@ -54,7 +54,7 @@ public static class HieroConfigWriter
         sb.AppendLine($"font.size={fontSize}");
         sb.AppendLine($"font.bold={Bool(options.Bold)}");
         sb.AppendLine($"font.italic={Bool(options.Italic)}");
-        sb.AppendLine("font.gamma=1.8");
+        sb.AppendLine($"font.gamma={options.Gamma.ToString("0.0###", CultureInfo.InvariantCulture)}");
         sb.AppendLine($"font.mono={Bool(options.AntiAlias == AntiAliasMode.None)}");
         sb.AppendLine();
 
@@ -70,8 +70,8 @@ public static class HieroConfigWriter
         sb.AppendLine($"pad.right={pad.Right}");
         sb.AppendLine($"pad.bottom={pad.Down}");
         sb.AppendLine($"pad.left={pad.Left}");
-        sb.AppendLine("pad.advance.x=0");
-        sb.AppendLine("pad.advance.y=0");
+        sb.AppendLine($"pad.advance.x={options.AdvanceAdjustX.ToString("0.0###", CultureInfo.InvariantCulture)}");
+        sb.AppendLine($"pad.advance.y={options.AdvanceAdjustY.ToString("0.0###", CultureInfo.InvariantCulture)}");
         sb.AppendLine();
 
         // Glyph / texture page settings
@@ -86,7 +86,7 @@ public static class HieroConfigWriter
         sb.AppendLine();
 
         // Effects in canonical order.
-        WriteColorEffect(sb);
+        WriteColorEffect(sb, options);
 
         if (options.Outline > 0)
             WriteOutlineEffect(sb, options);
@@ -101,16 +101,16 @@ public static class HieroConfigWriter
             WriteShadowEffect(sb, options);
 
         if (options.Sdf)
-            WriteDistanceFieldEffect(sb);
+            WriteDistanceFieldEffect(sb, options);
 
         return sb.ToString();
     }
 
-    private static void WriteColorEffect(StringBuilder sb)
+    private static void WriteColorEffect(StringBuilder sb, FontGeneratorOptions options)
     {
-        // ColorEffect is always written with white fill (full fill-color support deferred to Phase 100).
+        // Hiero ColorEffect stores RGB only (no alpha), so FillColorA is not serialized.
         sb.AppendLine($"effect.class={EffectPackage}ColorEffect");
-        sb.AppendLine("effect.Color=ffffff");
+        sb.AppendLine($"effect.Color={FormatColor(options.FillColorR, options.FillColorG, options.FillColorB)}");
         sb.AppendLine();
     }
 
@@ -129,9 +129,9 @@ public static class HieroConfigWriter
         sb.AppendLine($"effect.class={EffectPackage}GradientEffect");
         sb.AppendLine($"effect.Top color={FormatColor(options.GradientStartR!.Value, options.GradientStartG.GetValueOrDefault(), options.GradientStartB.GetValueOrDefault())}");
         sb.AppendLine($"effect.Bottom color={FormatColor(options.GradientEndR!.Value, options.GradientEndG.GetValueOrDefault(), options.GradientEndB.GetValueOrDefault())}");
-        sb.AppendLine("effect.Offset=0");
-        sb.AppendLine("effect.Scale=1.0");
-        sb.AppendLine("effect.Cyclic=false");
+        sb.AppendLine($"effect.Offset={options.GradientOffset.ToString("0.0###", CultureInfo.InvariantCulture)}");
+        sb.AppendLine($"effect.Scale={options.GradientScale.ToString("0.0###", CultureInfo.InvariantCulture)}");
+        sb.AppendLine($"effect.Cyclic={Bool(options.GradientCyclic)}");
         sb.AppendLine();
     }
 
@@ -167,16 +167,16 @@ public static class HieroConfigWriter
         sb.AppendLine($"effect.X distance={options.ShadowOffsetX.ToString("0.0", CultureInfo.InvariantCulture)}");
         sb.AppendLine($"effect.Y distance={options.ShadowOffsetY.ToString("0.0", CultureInfo.InvariantCulture)}");
         sb.AppendLine($"effect.Blur kernel size={blur}");
-        sb.AppendLine("effect.Blur passes=1");
+        sb.AppendLine($"effect.Blur passes={options.ShadowBlurPasses}");
         sb.AppendLine();
     }
 
-    private static void WriteDistanceFieldEffect(StringBuilder sb)
+    private static void WriteDistanceFieldEffect(StringBuilder sb, FontGeneratorOptions options)
     {
         sb.AppendLine($"effect.class={EffectPackage}DistanceFieldEffect");
         sb.AppendLine("effect.Color=ffffff");
-        sb.AppendLine("effect.Scale=1");
-        sb.AppendLine("effect.Spread=1.0");
+        sb.AppendLine($"effect.Scale={options.SdfScale}");
+        sb.AppendLine($"effect.Spread={options.SdfSpread.ToString("0.0###", CultureInfo.InvariantCulture)}");
         sb.AppendLine();
     }
 
