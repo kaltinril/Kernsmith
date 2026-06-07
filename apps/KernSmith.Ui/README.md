@@ -32,7 +32,8 @@ dotnet run --project apps/KernSmith.Ui
 
 - Font file loading and system font selection
 - Real-time bitmap font preview
-- Full effects configuration (outline, gradient, shadow)
+- Full effects configuration (outline, fill color, gradient, shadow)
+- Advanced effect and rendering options — fill color, two-parameter shadow blur (kernel size + passes), extended gradient (offset, scale, cyclic), gamma correction, SDF spread, and per-glyph horizontal advance adjustment
 - Atlas packing and texture settings
 - Character set selection with Unicode block browser
 - Rasterizer backend selection — choose between FreeType, GDI, DirectWrite, or StbTrueType from a dropdown. Available backends depend on the current platform and installed NuGet packages.

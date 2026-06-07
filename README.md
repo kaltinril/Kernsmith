@@ -21,6 +21,7 @@
 - **Gamma correction** -- adjust grayscale coverage to darken or lighten rendered glyphs
 - **SDF rendering** -- signed distance field output with configurable spread for resolution-independent text
 - **Super sampling** -- 2x-4x rasterization with box-filter downscale for smoother edges
+- **Advance adjustment** -- global per-glyph horizontal advance offset for custom letter spacing
 - **Variable fonts** -- set variation axes (weight, width, slant, etc.)
 - **Color fonts** -- COLR/CPAL emoji and color glyph rendering with palette selection
 - **Channel packing** -- pack multiple glyphs into RGBA channels for compact atlases

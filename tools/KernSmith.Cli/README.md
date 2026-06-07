@@ -28,6 +28,12 @@ Use a system-installed font instead of a file:
 kernsmith generate --system-font "Arial" -s 32
 ```
 
+Tint the glyph fill and apply gamma correction:
+
+```
+kernsmith generate -f MyFont.ttf -s 32 --fill-color "#FF8800" --gamma 2.2
+```
+
 ## Commands
 
 ### generate
@@ -55,11 +61,14 @@ kernsmith generate -f <font> -s <size> [options]
 | `--aa <mode>` | Anti-aliasing: `none`, `grayscale`, `light`, `lcd` (default: grayscale) |
 | `--mono` | Disable anti-aliasing (alias for `--aa none`) |
 | `--sdf` | Enable Signed Distance Field rendering |
+| `--sdf-spread <n>` | SDF search radius (spread) in pixels (default: 8) |
 | `--super-sample <n>` | Super sampling level 1-4 (default: 1) |
+| `--gamma <n>` | Gamma correction applied during rasterization (FreeType, default: 1.8) |
 | `--hinting / --no-hinting` | Enable/disable FreeType hinting (default: on) |
 | `--rasterizer <name>` | Rasterizer backend: `freetype` (default), `gdi`, `directwrite`, `stbtruetype` |
 | `--height-percent <n>` | Vertical height scaling percentage (default: 100) |
 | `--match-char-height` | Match rendered height to requested pixel height |
+| `--advance-x <n>` | Global horizontal advance adjustment added to every glyph (alias `--advance-adjust-x`, default: 0) |
 | `--fallback-char <char>` | Fallback character for missing glyphs (char or codepoint) |
 
 #### Style
@@ -140,10 +149,16 @@ kernsmith generate -f font.ttf -s 32 --no-pot --packer skyline
 | Flag | Description |
 |------|-------------|
 | `--outline <n>[,color]` | Outline width in pixels, optional hex color |
+| `--fill-color <color>` | Base glyph fill color as hex `#RRGGBB` or `#RRGGBBAA` (default: FFFFFF, opaque white) |
 | `--gradient <top>,<bottom>` | Vertical gradient with hex colors |
 | `--gradient-angle <degrees>` | Gradient rotation angle |
 | `--gradient-midpoint <0.0-1.0>` | Gradient midpoint / bias |
+| `--gradient-offset <n>` | Gradient positional offset along its axis (default: 0) |
+| `--gradient-scale <n>` | Gradient scale factor along its axis (default: 1) |
+| `--gradient-cyclic` | Repeat (cycle) the gradient instead of clamping at its ends |
 | `--shadow <x>,<y>[,color[,blur]]` | Drop shadow with offset, optional color and blur |
+| `--shadow-blur-kernel <n>` | Shadow blur kernel size (default: 0) |
+| `--shadow-blur-passes <n>` | Number of shadow blur passes; more = softer (default: 1) |
 | `--hard-shadow` | Use crisp shadow silhouette instead of soft antialiased edges |
 
 See the [Effects](#effects) section below for detailed examples.
@@ -432,11 +447,26 @@ kernsmith generate -f font.ttf -s 32 --gradient FF0000,0000FF --gradient-angle 4
 
 # Shift the gradient midpoint (0.0-1.0, default 0.5)
 kernsmith generate -f font.ttf -s 32 --gradient FFFFFF,000000 --gradient-midpoint 0.3
+
+# Offset, scale, and cyclically tile the gradient
+kernsmith generate -f font.ttf -s 32 --gradient FF0000,0000FF --gradient-offset 0.25 --gradient-scale 2 --gradient-cyclic
+```
+
+### Fill Color
+
+Tint the base glyph body with a fill color. Accepts hex `#RRGGBB` or `#RRGGBBAA` (default is opaque white).
+
+```
+# Orange glyph fill
+kernsmith generate -f font.ttf -s 32 --fill-color "#FF8800"
+
+# Semi-transparent fill
+kernsmith generate -f font.ttf -s 32 --fill-color "#FF880080"
 ```
 
 ### Shadow
 
-Add a drop shadow with X/Y offset, optional color, and optional blur radius.
+Add a drop shadow with X/Y offset, optional color, and optional blur radius. Use `--shadow-blur-kernel` and `--shadow-blur-passes` for finer two-parameter blur control (more passes produce a softer, wider blur).
 
 ```
 # Simple 2px shadow
@@ -447,6 +477,9 @@ kernsmith generate -f font.ttf -s 32 --shadow 2,2,000000,1
 
 # Colored shadow, no blur
 kernsmith generate -f font.ttf -s 32 --shadow 1,1,444444
+
+# Soft shadow via kernel + multiple passes
+kernsmith generate -f font.ttf -s 32 --shadow 2,2,000000 --shadow-blur-kernel 3 --shadow-blur-passes 2
 ```
 
 ### Hard Shadow
@@ -514,12 +547,18 @@ autofit = false
 
 [effects]
 outline = 2
+fill-color = FF8800
 gradient-top = FFFFFF
 gradient-bottom = 888888
+gradient-offset = 0
+gradient-scale = 1
+gradient-cyclic = false
 shadow-offset-x = 1
 shadow-offset-y = 1
 shadow-color = 000000
 shadow-blur = 1
+shadow-blur-kernel = 0
+shadow-blur-passes = 1
 hard-shadow = false
 
 [kerning]
@@ -619,9 +658,12 @@ Generate SDF textures for resolution-independent text rendering. Commonly used w
 
 ```
 kernsmith generate -f font.ttf -s 32 --sdf --padding 4
+
+# Widen the distance field search radius (spread)
+kernsmith generate -f font.ttf -s 32 --sdf --sdf-spread 12 --padding 8
 ```
 
-SDF fonts typically need extra padding to store the distance field. A padding of 4-8 pixels is recommended.
+SDF fonts typically need extra padding to store the distance field. A padding of 4-8 pixels is recommended. Use `--sdf-spread` to control the distance-field search radius in pixels (default 8); larger values capture distance information further from the glyph edge.
 
 ### Variable Fonts
 

@@ -7,9 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-06-06
+
 ### Added
 
-- API reference documentation — a curated guide under `docs/api-reference/` covering `BmFont`, the fluent builder, `FontGeneratorOptions`, `BmFontResult`, `BmFontModel`, and the exception types
+- Advanced effect, fill, and rendering options exposed across the core library, CLI, and desktop UI (phase 100):
+  - Fill color to tint the base glyph body (`FillColorR`/`G`/`B`/`A`; CLI `--fill-color`)
+  - Two-parameter shadow blur control (`ShadowBlurKernelSize`, `ShadowBlurPasses`; CLI `--shadow-blur-kernel`, `--shadow-blur-passes`)
+  - Extended gradient controls — offset, scale, and cyclic tiling (`GradientOffset`, `GradientScale`, `GradientCyclic`; CLI `--gradient-offset`, `--gradient-scale`, `--gradient-cyclic`)
+  - FreeType gamma correction (`Gamma`; CLI `--gamma`)
+  - SDF spread and scale controls (`SdfSpread`, `SdfScale`; CLI `--sdf-spread`)
+  - Global per-glyph horizontal advance adjustment (`AdvanceAdjustX`; CLI `--advance-x`)
+  - All new options round-trip through `.bmfc` and `.hiero` config files
+- API reference documentation under `docs/api-reference/` covering `BmFont`, the fluent builder, `FontGeneratorOptions`, `BmFontResult`, `BmFontModel`, and exception types
 
 ### Changed
 

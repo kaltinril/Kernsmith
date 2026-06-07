@@ -25,10 +25,13 @@ kernsmith generate -f <font> -s <size> [options]
 | `--aa <mode>` | Anti-aliasing: `none`, `grayscale`, `light`, `lcd` (default: grayscale) |
 | `--mono` | Disable anti-aliasing (alias for `--aa none`) |
 | `--sdf` | Enable Signed Distance Field rendering |
+| `--sdf-spread <n>` | SDF search radius (spread) in pixels (default: 8) |
 | `--super-sample <n>` | Super sampling level 1-4 (default: 1) |
+| `--gamma <n>` | Gamma correction applied during rasterization (FreeType, default: 1.8) |
 | `--hinting / --no-hinting` | Enable/disable FreeType hinting (default: on) |
 | `--height-percent <n>` | Vertical height scaling percentage (default: 100) |
 | `--match-char-height` | Match rendered height to requested pixel height |
+| `--advance-x <n>` | Global horizontal advance adjustment added to every glyph (alias `--advance-adjust-x`, default: 0) |
 | `--fallback-char <char>` | Fallback character for missing glyphs |
 
 ### Style
@@ -86,10 +89,16 @@ kernsmith generate -f font.ttf -s 32 --range 0020-007E --range 00A0-00FF
 | Flag | Description |
 |------|-------------|
 | `--outline <n>[,color]` | Outline width in pixels, optional hex color |
+| `--fill-color <color>` | Base glyph fill color as hex `#RRGGBB` or `#RRGGBBAA` (default: FFFFFF, opaque white) |
 | `--gradient <top>,<bottom>` | Vertical gradient with hex colors |
 | `--gradient-angle <degrees>` | Gradient rotation angle |
 | `--gradient-midpoint <0.0-1.0>` | Gradient midpoint / bias |
+| `--gradient-offset <n>` | Gradient positional offset along its axis (default: 0) |
+| `--gradient-scale <n>` | Gradient scale factor along its axis (default: 1) |
+| `--gradient-cyclic` | Repeat (cycle) the gradient instead of clamping at its ends |
 | `--shadow <x>,<y>[,color[,blur]]` | Drop shadow with offset, optional color and blur |
+| `--shadow-blur-kernel <n>` | Shadow blur kernel size (default: 0) |
+| `--shadow-blur-passes <n>` | Number of shadow blur passes; more = softer (default: 1) |
 | `--hard-shadow` | Use a crisp shadow silhouette instead of soft antialiased edges |
 
 Effects can be combined freely. All color values are hex (e.g., `FF0000` for red).
@@ -98,8 +107,17 @@ Effects can be combined freely. All color values are hex (e.g., `FF0000` for red
 # 3px red outline
 kernsmith generate -f font.ttf -s 32 --outline 3,FF0000
 
+# Tinted glyph fill
+kernsmith generate -f font.ttf -s 32 --fill-color "#FF8800"
+
 # Gradient with shadow
 kernsmith generate -f font.ttf -s 48 --gradient FFFFFF,888888 --shadow 2,2,000000,1
+
+# Offset/scaled cyclic gradient
+kernsmith generate -f font.ttf -s 48 --gradient FF0000,0000FF --gradient-offset 0.25 --gradient-scale 2 --gradient-cyclic
+
+# Soft shadow via blur kernel + passes
+kernsmith generate -f font.ttf -s 48 --shadow 2,2,000000 --shadow-blur-kernel 3 --shadow-blur-passes 2
 
 # All three effects
 kernsmith generate -f font.ttf -s 48 --outline 2,000000 --gradient FFFFFF,888888 --shadow 2,3,000000,2
