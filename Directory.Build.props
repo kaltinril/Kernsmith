@@ -6,9 +6,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <!--
-      VERSION SOURCE OF TRUTH: this single <Version> drives every project and every NuGet
-      package in the repo. Bump it here only (see RELEASING.md); the publish workflow verifies
-      a release tag matches this value. Do not set <Version> in individual .csproj files.
+      VERSION SOURCE OF TRUTH: this single Version property drives every project and every
+      NuGet package in the repo. Bump it here only (see RELEASING.md); the publish workflow
+      verifies a release tag matches this value. Do not set the Version in individual .csproj
+      files. (Avoid writing the literal Version XML tag in this comment — the release tooling
+      greps for it.)
     -->
     <Version>0.15.0</Version>
   </PropertyGroup>

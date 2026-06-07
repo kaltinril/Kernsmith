@@ -36,7 +36,7 @@ jobs:
       - name: Verify version matches Directory.Build.props
         run: |
           version="${{ steps.resolve.outputs.version }}"
-          props_version=$(grep -oP '(?<=<Version>)[^<]+' Directory.Build.props)
+          props_version=$(grep -oP '<Version>\K[^<]+(?=</Version>)' Directory.Build.props)
           if [ "$props_version" != "$version" ]; then
             echo "::error::Release version ($version) does not match Directory.Build.props ($props_version)"
             echo "Make sure you've merged a PR that bumps the version first."
