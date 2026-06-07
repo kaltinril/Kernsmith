@@ -143,6 +143,8 @@ public static class BmfcConfigWriter
             extensions.AppendLine($"gamma={options.Gamma.ToString(CultureInfo.InvariantCulture)}");
         if (options.AdvanceAdjustX != 0f)
             extensions.AppendLine($"advanceAdjustX={options.AdvanceAdjustX.ToString(CultureInfo.InvariantCulture)}");
+        if (options.AdvanceAdjustY != 0f)
+            extensions.AppendLine($"advanceAdjustY={options.AdvanceAdjustY.ToString(CultureInfo.InvariantCulture)}");
         if (options.Outline > 0 && (options.OutlineR != 0 || options.OutlineG != 0 || options.OutlineB != 0))
             extensions.AppendLine($"outlineColor={FormatColor(options.OutlineR, options.OutlineG, options.OutlineB)}");
         if (options.Sdf)

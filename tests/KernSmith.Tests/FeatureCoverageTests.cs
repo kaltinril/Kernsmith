@@ -99,6 +99,103 @@ public sealed class FeatureCoverageTests
         ex.Message.ShouldContain("SDF");
     }
 
+    [Fact]
+    public void Generate_WithSdfScale_DoesNotThrow_AndKeepsDimensionsCloseToScale1()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+        FontGeneratorOptions MakeOptions(int sdfScale) => new()
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars("A"),
+            Sdf = true,
+            SdfScale = sdfScale
+        };
+
+        // Act — SdfScale=2 renders the field at 2x ppem then downsamples back.
+        var scale1 = BmFont.Generate(fontData, MakeOptions(1));
+        BmFontResult scale2 = null!;
+        var act = () => scale2 = BmFont.Generate(fontData, MakeOptions(2));
+
+        // Assert (a) it does not throw
+        Should.NotThrow(act);
+
+        // Assert (b) final dimensions are downscaled back to roughly the SdfScale=1 size
+        // (proves the high-res render was downsampled, not left at 2x). The SDF spread is a
+        // fixed pixel margin that doesn't scale with ppem, so the two differ by a few spread
+        // pixels — but the result is far closer to scale1 than to an un-downscaled 2x render.
+        var a1 = scale1.Model.Characters.First(c => c.Id == 65);
+        var a2 = scale2.Model.Characters.First(c => c.Id == 65);
+        a2.Width.ShouldBeLessThan(a1.Width * 2 - 4);
+        a2.Height.ShouldBeLessThan(a1.Height * 2 - 4);
+        a2.Width.ShouldBeGreaterThan(a1.Width / 2);
+        a2.Height.ShouldBeGreaterThan(a1.Height / 2);
+    }
+
+    [Fact]
+    public void Generate_WithSdfScale_ProducesValidSdf()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act
+        var result = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars("A"),
+            Sdf = true,
+            SdfScale = 2
+        });
+
+        // Assert — a valid SDF has clearly-inside texels above the 128 edge level
+        // and clearly-outside texels below it. Sample the 'A' glyph cell.
+        var glyph = result.Model.Characters.First(c => c.Id == 65);
+        var page = result.Pages[glyph.Page];
+        var alpha = page.GetAlpha8PixelData();
+
+        byte inside = 0;
+        byte outside = 255;
+        for (var y = 0; y < glyph.Height; y++)
+        {
+            for (var x = 0; x < glyph.Width; x++)
+            {
+                var v = alpha[(glyph.Y + y) * page.Width + (glyph.X + x)];
+                if (v > inside) inside = v;
+                if (v < outside) outside = v;
+            }
+        }
+
+        inside.ShouldBeGreaterThan((byte)128, "SDF should have a clearly-inside texel > 128 (edge=128)");
+        outside.ShouldBeLessThan((byte)128, "SDF should have a clearly-outside texel < 128 (edge=128)");
+    }
+
+    [Fact]
+    public void Generate_WithSdfScale1_IsByteIdenticalToOmittingSdfScale()
+    {
+        // Arrange
+        var fontData = LoadTestFont();
+
+        // Act — explicit SdfScale=1 (the default) must produce identical output to omitting it.
+        var withDefault = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars("ABCabc"),
+            Sdf = true
+        });
+        var withExplicit = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars("ABCabc"),
+            Sdf = true,
+            SdfScale = 1
+        });
+
+        // Assert — atlas pixels are byte-identical.
+        withExplicit.Pages.Count.ShouldBe(withDefault.Pages.Count);
+        for (var i = 0; i < withDefault.Pages.Count; i++)
+            withExplicit.Pages[i].PixelData.ShouldBe(withDefault.Pages[i].PixelData);
+    }
+
     // ------------------------------------------------------------------
     // B3.2 — Multi-page atlas
     // ------------------------------------------------------------------

@@ -131,6 +131,8 @@ internal sealed class TextFormatter : IBmFontTextFormatter
             sb.Append($" shadowColor={extended.ShadowColor}");
         if (extended.SuperSampleLevel.HasValue)
             sb.Append($" superSampleLevel={extended.SuperSampleLevel.Value}");
+        if (extended.AdvanceAdjustY.HasValue)
+            sb.Append($" advanceAdjustY={extended.AdvanceAdjustY.Value}");
         if (extended.ColorFont is true)
             sb.Append(" colorFont=1");
         if (extended.VariationAxes is { Count: > 0 })

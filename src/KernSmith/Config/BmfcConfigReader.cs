@@ -272,6 +272,9 @@ public static class BmfcConfigReader
                     case "advanceAdjustX":
                         options.AdvanceAdjustX = float.Parse(value, CultureInfo.InvariantCulture);
                         break;
+                    case "advanceAdjustY":
+                        options.AdvanceAdjustY = float.Parse(value, CultureInfo.InvariantCulture);
+                        break;
                     case "outlineColor":
                         if (!string.IsNullOrEmpty(value))
                             outlineColor = value;

@@ -42,6 +42,13 @@ public sealed class ExtendedMetadata
     public int? FallbackCharacter { get; init; }
 
     /// <summary>
+    /// Global vertical advance adjustment (Hiero pad.advance.y), if non-zero. BMFont has no
+    /// per-glyph yadvance field, so this is surfaced here so it round-trips; a standard BMFont
+    /// file without this field reads back as null.
+    /// </summary>
+    public float? AdvanceAdjustY { get; init; }
+
+    /// <summary>
     /// Returns true if any extended field (beyond GeneratorVersion) is set.
     /// </summary>
     internal bool HasExtendedFields =>
@@ -55,5 +62,6 @@ public sealed class ExtendedMetadata
         SuperSampleLevel.HasValue ||
         VariationAxes is { Count: > 0 } ||
         ColorFont is true ||
-        FallbackCharacter.HasValue;
+        FallbackCharacter.HasValue ||
+        AdvanceAdjustY.HasValue;
 }
