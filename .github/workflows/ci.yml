@@ -54,6 +54,22 @@ jobs:
             exit 1
           fi
           echo "No vulnerable packages found"
+      - name: Verify release version is cleanly parseable
+        run: |
+          # Mirror the version extraction used by publish.yml's validate job so a
+          # malformed <Version> — or a comment that contains the literal token —
+          # is caught here on every PR/push instead of only at release time.
+          version=$(grep -oP '<Version>\K[^<]+(?=</Version>)' Directory.Build.props)
+          count=$(printf '%s\n' "$version" | grep -c .)
+          if [ "$count" -ne 1 ]; then
+            echo "::error::Directory.Build.props must contain exactly one <Version>...</Version>; extraction returned: $version"
+            exit 1
+          fi
+          if ! printf '%s' "$version" | grep -qP '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
+            echo "::error::Directory.Build.props version is not valid SemVer: '$version'"
+            exit 1
+          fi
+          echo "Release version OK: $version"
 
   wasm-publish:
     runs-on: ubuntu-latest
