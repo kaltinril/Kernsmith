@@ -36,6 +36,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 | `SuperSampleLevel` | `int` | `1` | `1`-`4`; renders at Nx and downscales. Cannot combine with `Sdf`. |
 | `Sdf` | `bool` | `false` | Generate a signed distance field font. |
 | `SdfSpread` | `float` | `8f` | SDF spread (distance range) in pixels. Wired to the FreeType SDF renderer; only applies when `Sdf` is `true`. |
+| `SdfScale` | `int` | `1` | SDF supersampling scale factor. Higher values render the distance field at a larger size for finer precision. Only applies when `Sdf` is `true`. |
 | `Gamma` | `float` | `1.8f` | Gamma correction applied to FreeType grayscale coverage. `1.8` is the no-op baseline; `>1.8` darkens, `<1.8` lightens. Not applied to MONO/color/SDF output. |
 
 ## Outline

@@ -10,7 +10,7 @@
       package in the repo. Bump it here only (see RELEASING.md); the publish workflow verifies
       a release tag matches this value. Do not set <Version> in individual .csproj files.
     -->
-    <Version>0.14.0</Version>
+    <Version>0.15.0</Version>
   </PropertyGroup>
 
   <!--
