@@ -325,4 +325,80 @@ public sealed class KernSmithReaderTests
         var ex = Should.Throw<FormatException>(act);
         ex.Message.ShouldContain("root element");
     }
+
+    // ------------------------------------------------------------------
+    // AdvanceAdjustY extended-metadata round-trip
+    // ------------------------------------------------------------------
+
+    private static BmFontResult GenerateWithAdvanceAdjustY(float value) =>
+        BmFont.Generate(LoadTestFont(), new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.Ascii,
+            AdvanceAdjustY = value
+        });
+
+    [Fact]
+    public void RoundTrip_AdvanceAdjustY_TextFormat()
+    {
+        var original = GenerateWithAdvanceAdjustY(3.5f);
+        original.Model.Extended!.AdvanceAdjustY.ShouldBe(3.5f);
+
+        var parsed = BmFontReader.ReadText(original.ToString());
+
+        parsed.Extended.ShouldNotBeNull();
+        parsed.Extended!.AdvanceAdjustY.ShouldBe(3.5f);
+    }
+
+    [Fact]
+    public void RoundTrip_AdvanceAdjustY_XmlFormat()
+    {
+        var original = GenerateWithAdvanceAdjustY(3.5f);
+
+        var parsed = BmFontReader.ReadXml(original.ToXml());
+
+        parsed.Extended.ShouldNotBeNull();
+        parsed.Extended!.AdvanceAdjustY.ShouldBe(3.5f);
+    }
+
+    [Fact]
+    public void RoundTrip_AdvanceAdjustY_BinaryFormat()
+    {
+        var original = GenerateWithAdvanceAdjustY(3.5f);
+
+        var parsed = BmFontReader.ReadBinary(original.ToBinary());
+
+        parsed.Extended.ShouldNotBeNull();
+        parsed.Extended!.AdvanceAdjustY.ShouldBe(3.5f);
+    }
+
+    [Fact]
+    public void StandardFnt_WithoutAdvanceAdjustY_ReadsBackNull()
+    {
+        // A standard BMFont .fnt with no kernsmith block must load without crashing
+        // and surface AdvanceAdjustY == null (the field is optional).
+        var standardFnt =
+            "info face=\"Test\" size=32 bold=0 italic=0 charset=\"\" unicode=1 stretchH=100 smooth=1 aa=1 padding=0,0,0,0 spacing=0,0\n" +
+            "common lineHeight=38 base=30 scaleW=256 scaleH=256 pages=1 packed=0\n" +
+            "page id=0 file=\"test_0.png\"\n" +
+            "chars count=0\n";
+
+        var parsed = BmFontReader.ReadText(standardFnt);
+
+        // Extended is null (no kernsmith line) — AdvanceAdjustY is therefore absent.
+        parsed.Extended.ShouldBeNull();
+    }
+
+    [Fact]
+    public void Generate_DefaultAdvanceAdjustY_EmitsNoExtendedField()
+    {
+        // Default AdvanceAdjustY (0) must not surface in extended metadata.
+        var result = BmFont.Generate(LoadTestFont(), new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.Ascii
+        });
+
+        result.Model.Extended!.AdvanceAdjustY.ShouldBeNull();
+    }
 }

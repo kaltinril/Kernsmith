@@ -212,8 +212,18 @@ public static class BmFont
             }
 
             var ssLevel = Math.Clamp(options.SuperSampleLevel, 1, 4);
-            var effectiveRasterOptions = ssLevel > 1
-                ? rasterOptions with { Size = rasterOptions.Size * ssLevel }
+
+            // SDF supersampling: render the distance field at a larger ppem, then box-average
+            // back down. Unlike alpha-coverage super sampling (forbidden with SDF at line 96
+            // because averaging coverage corrupts distances), a FreeType SDF byte is locally
+            // linear in signed distance (128 = edge crossing), so box-averaging preserves the
+            // edge zero-crossing — this is the standard "render SDF high-res, then downsample"
+            // technique. SDF and SuperSampleLevel>1 are mutually exclusive (rejected above), so
+            // renderScale collapses to a single upscale factor for both paths.
+            var sdfScale = options.Sdf ? Math.Clamp(options.SdfScale, 1, 4) : 1;
+            var renderScale = sdfScale > 1 ? sdfScale : ssLevel;
+            var effectiveRasterOptions = renderScale > 1
+                ? rasterOptions with { Size = rasterOptions.Size * renderScale }
                 : rasterOptions;
 
             var glyphs = rasterizer.RasterizeAll(codepoints, effectiveRasterOptions).ToList();
@@ -255,7 +265,7 @@ public static class BmFont
                     activePostProcessors.Add(processor);
                 }
             }
-            var needsDownscale = ssLevel > 1;
+            var needsDownscale = renderScale > 1;
 
             // Apply remaining per-glyph transforms in a single pass (parallelized on non-WASM)
             if (hasEffects || activePostProcessors != null || needsDownscale)
@@ -270,7 +280,7 @@ public static class BmFont
                         foreach (var processor in activePostProcessors)
                             g = processor.Process(g);
                     }
-                    if (needsDownscale) g = SuperSampleDownscale(g, ssLevel);
+                    if (needsDownscale) g = SuperSampleDownscale(g, renderScale);
                     glyphs[i] = g;
                 }
 

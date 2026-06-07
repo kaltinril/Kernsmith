@@ -158,6 +158,8 @@ internal sealed class XmlFormatter : IBmFontTextFormatter
             writer.WriteAttributeString("shadowColor", extended.ShadowColor);
         if (extended.SuperSampleLevel.HasValue)
             writer.WriteAttributeString("superSampleLevel", extended.SuperSampleLevel.Value.ToString());
+        if (extended.AdvanceAdjustY.HasValue)
+            writer.WriteAttributeString("advanceAdjustY", extended.AdvanceAdjustY.Value.ToString());
         if (extended.ColorFont is true)
             writer.WriteAttributeString("colorFont", "1");
         if (extended.VariationAxes is { Count: > 0 })

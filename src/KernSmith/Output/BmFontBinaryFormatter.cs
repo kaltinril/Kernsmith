@@ -188,6 +188,7 @@ internal sealed class BmFontBinaryFormatter : IBmFontBinaryFormatter
         if (extended.ShadowOffsetY.HasValue) dict["shadowOffsetY"] = extended.ShadowOffsetY.Value;
         if (extended.ShadowColor != null) dict["shadowColor"] = extended.ShadowColor;
         if (extended.SuperSampleLevel.HasValue) dict["superSampleLevel"] = extended.SuperSampleLevel.Value;
+        if (extended.AdvanceAdjustY.HasValue) dict["advanceAdjustY"] = extended.AdvanceAdjustY.Value;
         if (extended.ColorFont is true) dict["colorFont"] = true;
         if (extended.VariationAxes is { Count: > 0 }) dict["variationAxes"] = extended.VariationAxes;
 

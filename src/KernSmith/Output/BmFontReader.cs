@@ -622,6 +622,7 @@ public static class BmFontReader
             ShadowOffsetY = kvp.ContainsKey("shadowOffsetY") ? GetInt(kvp, "shadowOffsetY") : null,
             ShadowColor = kvp.TryGetValue("shadowColor", out var sc) ? sc : null,
             SuperSampleLevel = kvp.ContainsKey("superSampleLevel") ? GetInt(kvp, "superSampleLevel") : null,
+            AdvanceAdjustY = kvp.TryGetValue("advanceAdjustY", out var aay) && float.TryParse(aay, CultureInfo.InvariantCulture, out var aayv) ? aayv : null,
             ColorFont = GetBool(kvp, "colorFont") ? true : null,
             VariationAxes = axes
         };
@@ -652,6 +653,7 @@ public static class BmFontReader
             ShadowOffsetY = el.Attribute("shadowOffsetY") != null ? XmlAttrInt(el, "shadowOffsetY") : null,
             ShadowColor = el.Attribute("shadowColor")?.Value,
             SuperSampleLevel = el.Attribute("superSampleLevel") != null ? XmlAttrInt(el, "superSampleLevel") : null,
+            AdvanceAdjustY = el.Attribute("advanceAdjustY") != null && float.TryParse(el.Attribute("advanceAdjustY")!.Value, CultureInfo.InvariantCulture, out var aayv) ? aayv : null,
             ColorFont = XmlAttrBool(el, "colorFont") ? true : null,
             VariationAxes = axes
         };
@@ -689,6 +691,7 @@ public static class BmFontReader
             ShadowOffsetY = root.TryGetProperty("shadowOffsetY", out var sy) ? sy.GetInt32() : null,
             ShadowColor = root.TryGetProperty("shadowColor", out var scProp) ? scProp.GetString() : null,
             SuperSampleLevel = root.TryGetProperty("superSampleLevel", out var sl) ? sl.GetInt32() : null,
+            AdvanceAdjustY = root.TryGetProperty("advanceAdjustY", out var aay) ? aay.GetSingle() : null,
             ColorFont = root.TryGetProperty("colorFont", out var cf) && cf.GetBoolean() ? true : null,
             VariationAxes = axes
         };

@@ -272,6 +272,36 @@ public sealed class BmfcConfigReaderWriterTests
     }
 
     [Fact]
+    public void WriteThenParse_RoundTripsAdvanceAdjustXandY()
+    {
+        // Arrange
+        var original = new FontGeneratorOptions
+        {
+            AdvanceAdjustX = 1.5f,
+            AdvanceAdjustY = -2.25f,
+        };
+        var config = BmfcConfig.FromOptions(original);
+
+        // Act
+        var result = BmfcConfigReader.Parse(BmfcConfigWriter.Write(config)).Options;
+
+        // Assert
+        result.AdvanceAdjustX.ShouldBe(1.5f);
+        result.AdvanceAdjustY.ShouldBe(-2.25f);
+    }
+
+    [Fact]
+    public void WriteThenParse_DefaultAdvanceAdjustY_EmitsNothing()
+    {
+        // Default (0) must not be written, keeping output identical to before.
+        var config = BmfcConfig.FromOptions(new FontGeneratorOptions());
+
+        var text = BmfcConfigWriter.Write(config);
+
+        text.ShouldNotContain("advanceAdjustY");
+    }
+
+    [Fact]
     public void WriteToFile_CreatesReadableFile()
     {
         // Arrange

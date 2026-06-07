@@ -1,6 +1,6 @@
 # Phase 100b — Deferred Advanced Effect Features
 
-> **Status**: Planning
+> **Status**: In progress — P2/P3 core items landed (2026-06-07); P4/P5 remain deferred
 > **Created**: 2026-06-05
 > **Depends on**: Phase 100
 > **Goal**: Land the advanced-effect items that were deferred when Phase 100 shipped its core.
@@ -15,17 +15,17 @@ Phase 100 (Hiero Advanced Feature Support) shipped its core set of new effect pr
 
 ## Scope
 
-### 1. `SdfScale` — render-at-larger-ppem SDF path (P3)
+### 1. `SdfScale` — render-at-larger-ppem SDF path (P3) — ✅ DONE (2026-06-07)
 
-`SdfScale` is plumbed through `RasterOptions` but is not applied; it is a no-op at its default value of `1` today. Applying it requires rendering the SDF at a larger ppem and scaling down, which the existing supersample path cannot provide because that path currently blocks SDF. This needs a dedicated, SDF-aware scaling path in the BmFont pipeline rather than reusing supersampling.
+`SdfScale` was plumbed through `RasterOptions` but not applied — a no-op at its default value of `1`. Now implemented at the BmFont pipeline level (`BmFont.cs`, `RasterizeFont`), mirroring the existing SuperSample path: when `Sdf` and `SdfScale > 1`, glyphs are rasterized at `Size × SdfScale` and downscaled via `SuperSampleDownscale`. For a single-channel SDF, box-averaging the 8-bit distance values is the correct, SDF-aware downscale — the field is locally linear and the `128 = edge` zero-crossing is preserved, so this is the standard "render SDF at high res, then downsample" technique. The non-SDF supersample path is untouched, and the `SuperSampleLevel + SDF` guard remains in force (`SdfScale` is the separate SDF-specific knob).
 
-**Notes**: Keep the default (1) byte-identical to current output. The work is isolated to the SDF render path and should not touch the non-SDF supersample path.
+**Result**: Default (`SdfScale = 1`) is byte-identical — confirmed by the bmfont-compare regression (150/150 FNT + 24/24 images identical, including the SDF configs) and a byte-identical unit test. New tests cover non-throw, downscale-back-to-target dimensions, and valid-SDF (inside > 128, outside < 128).
 
-### 2. `AdvanceAdjustY` — vertical advance adjustment (P2, blocked)
+### 2. `AdvanceAdjustY` — vertical advance adjustment (P2) — ✅ DONE (2026-06-07)
 
-BMFont `char` entries have no `yadvance` field, so there is currently nowhere to write a vertical advance adjustment. This is blocked on a format decision: emit it via extended metadata, or skip it permanently. The horizontal counterpart (`AdvanceAdjustX`) already shipped in Phase 100.
+BMFont `char` entries have no `yadvance` field, so a vertical advance adjustment cannot be applied to the per-glyph advance and standard consumers cannot honor it. **Decision (user, 2026-06-07)**: surface it as an **optional** `ExtendedMetadata` field (we already pack extra data into the `.fnt`/`.hiero`; the eventual native format will carry all options). It must never be required — a standard BMFont `.fnt` with no such field reads back as `null`, and the default value (`0`) emits nothing, keeping default output byte-identical. Implemented as `ExtendedMetadata.AdvanceAdjustY` (populated only when non-zero), serialized/round-tripped through the text/xml/binary formatters and `BmFontReader`, plus the bmfc reader/writer (symmetric with `AdvanceAdjustX`). Hiero already round-trips `pad.advance.y`.
 
-**Notes**: Requires a decision before implementation — extended metadata vs. permanent skip. If skipped, document the limitation and drop the property to avoid implying support.
+**Note**: Still not applied to the `char` `xadvance` (no yadvance field exists); it is preserved as metadata only, for round-trip fidelity and future use.
 
 ### 3. Outline wobble / zigzag effects (P4)
 
@@ -51,10 +51,10 @@ Fill-tint (`FillColorR/G/B/A`) is not factored into `HasAnyEffects`, which feeds
 
 | Item | Impact | Effort | Priority | Status |
 |------|--------|--------|----------|--------|
-| `SdfScale` render path | Low | Medium | P3 | Plumbed, not applied |
-| `AdvanceAdjustY` | Medium | Medium | P2 | Blocked on format decision |
-| Outline wobble/zigzag | Low | High | P4 | Not started |
-| Native rendering | Very Low | Very High | P5 | Not started |
+| `SdfScale` render path | Low | Medium | P3 | ✅ Done (2026-06-07) |
+| `AdvanceAdjustY` | Medium | Medium | P2 | ✅ Done — optional extended metadata (2026-06-07) |
+| Outline wobble/zigzag | Low | High | P4 | Deferred (decorative, not started) |
+| Native rendering | Very Low | Very High | P5 | Deferred (not started) |
 | Channel-packing fill guard | Low | Low | P3 | Intentionally excluded |
 
 ---

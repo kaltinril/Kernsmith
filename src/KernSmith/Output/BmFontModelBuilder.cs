@@ -127,7 +127,8 @@ internal static class BmFontModelBuilder
         // Global advance adjustment (Hiero pad.advance.x). Added in whole pixels to every
         // glyph's xadvance. Default 0 -> no change -> byte-identical metrics. The BMFont
         // char entry has no per-glyph yadvance field (horizontal layout only), so
-        // AdvanceAdjustY cannot be represented here and is intentionally not applied.
+        // AdvanceAdjustY still cannot be applied to xadvance here; instead it is surfaced
+        // (when non-default) via the optional extended-metadata advanceAdjustY field below.
         var advanceAdjustX = (int)Math.Round(options.AdvanceAdjustX, MidpointRounding.AwayFromZero);
 
         var characters = new List<CharEntry>();
@@ -251,6 +252,9 @@ internal static class BmFontModelBuilder
         int? fallbackCharacter = options.FallbackCodepoint
             ?? (options.FallbackCharacter.HasValue ? (int)options.FallbackCharacter.Value : null);
 
+        // Only emit AdvanceAdjustY when non-default (0) so default output stays byte-identical.
+        float? advanceAdjustY = options.AdvanceAdjustY != 0 ? options.AdvanceAdjustY : (float?)null;
+
         var meta = new ExtendedMetadata
         {
             GeneratorVersion = version,
@@ -260,7 +264,8 @@ internal static class BmFontModelBuilder
             GradientBottomColor = gradientBottom,
             ColorFont = colorFont,
             VariationAxes = variationAxes,
-            FallbackCharacter = fallbackCharacter
+            FallbackCharacter = fallbackCharacter,
+            AdvanceAdjustY = advanceAdjustY
         };
 
         // Only include metadata when there are extended fields worth storing.
