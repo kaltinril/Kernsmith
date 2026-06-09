@@ -20,6 +20,7 @@ public static class RasterizerFactory
         (RasterizerBackend.StbTrueType, "KernSmith.Rasterizers.StbTrueType.StbTrueTypeRegistration, KernSmith.Rasterizers.StbTrueType"),
         (RasterizerBackend.Gdi, "KernSmith.Rasterizers.Gdi.GdiRegistration, KernSmith.Rasterizers.Gdi"),
         (RasterizerBackend.DirectWrite, "KernSmith.Rasterizers.DirectWrite.TerraFX.DirectWriteRegistration, KernSmith.Rasterizers.DirectWrite.TerraFX"),
+        (RasterizerBackend.Native, "KernSmith.Rasterizers.Native.NativeRegistration, KernSmith.Rasterizers.Native"),
     ];
 
     private static readonly object _discoveryLock = new();

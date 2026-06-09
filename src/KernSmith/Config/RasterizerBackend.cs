@@ -15,5 +15,8 @@ public enum RasterizerBackend
     DirectWrite,
 
     /// <summary>StbTrueType rasterizer. Pure C#, cross-platform. No native dependencies.</summary>
-    StbTrueType
+    StbTrueType,
+
+    /// <summary>Native KernSmith rasterizer. Pure C#, cross-platform. No external dependencies.</summary>
+    Native
 }
