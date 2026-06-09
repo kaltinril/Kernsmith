@@ -1,0 +1,5 @@
+<linker>
+  <assembly fullname="KernSmith.Rasterizers.Native">
+    <type fullname="KernSmith.Rasterizers.Native.NativeRegistration" preserve="all" />
+  </assembly>
+</linker>
