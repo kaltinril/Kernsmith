@@ -32,6 +32,7 @@
     <ProjectReference Include="..\..\integrations\KernSmith.GumCommon\KernSmith.GumCommon.csproj" />
     <ProjectReference Include="..\..\integrations\KernSmith.MonoGameGum\KernSmith.MonoGameGum.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.StbTrueType\KernSmith.Rasterizers.StbTrueType.csproj" />
+    <ProjectReference Include="..\..\src\KernSmith.Fonts.Web\KernSmith.Fonts.Web.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.Gdi\KernSmith.Rasterizers.Gdi.csproj"
                       Condition="$(TargetFramework.Contains('-windows'))" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.DirectWrite.TerraFX\KernSmith.Rasterizers.DirectWrite.TerraFX.csproj"
