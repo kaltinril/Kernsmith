@@ -88,7 +88,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 | `Spacing` | `Spacing` | `(1,1)` | Spacing between glyphs. |
 | `PackingAlgorithm` | `PackingAlgorithm` | `MaxRects` | MaxRects or Skyline. |
 | `PowerOfTwo` | `bool` | `true` | Round dimensions up to powers of two. |
-| `AutofitTexture` | `bool` | `false` | Pick the smallest power-of-two texture that fits; overrides max width/height. |
+| `AutofitTexture` | `bool` | `false` | Pick the smallest power-of-two texture that fits; max width/height remain an upper bound (the chosen size is capped to them). |
 | `EqualizeCellHeights` | `bool` | `false` | Pad all glyph cells to a common height and baseline. |
 | `ForceOffsetsToZero` | `bool` | `false` | Zero out all xoffset/yoffset values. |
 | `TextureFormat` | `TextureFormat` | `Png` | PNG, TGA, or DDS. |

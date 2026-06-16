@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-06-15
+
+### Fixed
+
+- Custom `FontGeneratorOptions.Channels` (`ChannelConfig`) that routed outline content into a channel spilled glyphs across multiple atlas pages where the default channel config fit on a single page, and `AutofitTexture` failed to consolidate the result. Atlas size estimation, the `AutofitTexture` verification pack, and the final pack now all account for the outline-expanded glyph dimensions, so the result stays on a single page when it fits. `Spacing` is now also honored on the custom-channel path. (#115)
+
 ## [0.15.0] - 2026-06-06
 
 ### Added
