@@ -158,7 +158,7 @@ public class FontGeneratorOptions
 
     /// <summary>
     /// If true, picks the smallest power-of-two texture that fits all glyphs.
-    /// Overrides MaxTextureWidth/MaxTextureHeight.
+    /// MaxTextureWidth/MaxTextureHeight remain an upper bound (the chosen size is capped to them).
     /// </summary>
     public bool AutofitTexture { get; set; }
 
