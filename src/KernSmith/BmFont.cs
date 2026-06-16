@@ -397,7 +397,33 @@ public static class BmFont
             : new MaxRectsPacker());
         var padding = options.Padding;
         var spacing = options.Spacing;
-        var glyphRects = glyphs.Select(g => new GlyphRect(
+
+        // Issue #115: a custom ChannelConfig that routes outline content into a channel
+        // produces glyphs that are larger than the base glyphs (each dimension grows by
+        // 2*outlineWidth). Generate those outline glyphs up front so the atlas size estimate,
+        // the AutofitTexture verification pack, and the real pack all operate on the SAME
+        // (expanded) dimensions. Otherwise sizing is computed from the smaller base glyphs and
+        // the larger outline glyphs spill onto extra pages — while the default-channel path,
+        // which expands glyphs during rasterization, sizes correctly.
+        IReadOnlyList<RasterizedGlyph>? channelOutlineGlyphs = null;
+        if (options.Channels is { } cfg && !cfg.IsDefault)
+        {
+            var needsOutline = cfg.Alpha is ChannelContent.Outline or ChannelContent.GlyphAndOutline
+                || cfg.Red is ChannelContent.Outline or ChannelContent.GlyphAndOutline
+                || cfg.Green is ChannelContent.Outline or ChannelContent.GlyphAndOutline
+                || cfg.Blue is ChannelContent.Outline or ChannelContent.GlyphAndOutline;
+            if (needsOutline)
+            {
+                var outlineWidth = options.Outline > 0 ? options.Outline : 1;
+                var outlineProcessor = new OutlinePostProcessor(outlineWidth, options.OutlineR, options.OutlineG, options.OutlineB);
+                channelOutlineGlyphs = glyphs.Select(g => outlineProcessor.Process(g)).ToList();
+            }
+        }
+
+        // Use the outline-expanded glyphs (when present) for atlas sizing/packing so the
+        // packed rectangles match the glyphs that actually get composited.
+        var rectGlyphs = channelOutlineGlyphs ?? glyphs;
+        var glyphRects = rectGlyphs.Select(g => new GlyphRect(
             g.Codepoint,
             g.Width + padding.Left + padding.Right + spacing.Horizontal,
             g.Height + padding.Up + padding.Down + spacing.Vertical
@@ -563,36 +589,21 @@ public static class BmFont
 
             if (options.Channels is { } channelConfig && !channelConfig.IsDefault)
             {
-                // Per-channel compositing: generate outline glyphs if any channel needs them.
-                IReadOnlyList<RasterizedGlyph>? outlineGlyphs = null;
-                var needsOutline = channelConfig.Alpha is ChannelContent.Outline or ChannelContent.GlyphAndOutline
-                    || channelConfig.Red is ChannelContent.Outline or ChannelContent.GlyphAndOutline
-                    || channelConfig.Green is ChannelContent.Outline or ChannelContent.GlyphAndOutline
-                    || channelConfig.Blue is ChannelContent.Outline or ChannelContent.GlyphAndOutline;
-
-                if (needsOutline)
-                {
-                    var outlineWidth = options.Outline > 0 ? options.Outline : 1;
-                    var outlineProcessor = new OutlinePostProcessor(outlineWidth, options.OutlineR, options.OutlineG, options.OutlineB);
-                    outlineGlyphs = glyphs.Select(g => outlineProcessor.Process(g)).ToList();
-
-                    // Re-pack using the larger outline glyph dimensions so atlas cells
-                    // are big enough to contain the outline fringe.
-                    var outlineRects = outlineGlyphs.Select(g =>
-                        new GlyphRect(g.Codepoint, g.Width + padding.Left + padding.Right,
-                                      g.Height + padding.Up + padding.Down)).ToList();
-                    packResult = packer.Pack(outlineRects, pageWidth, pageHeight);
-                }
+                // Outline glyphs (when any channel needs them) were generated up front and
+                // already drove the atlas size estimate, the AutofitTexture verification, and
+                // packResult above — so the packed cells are sized for the outline fringe and
+                // the result stays on a single page when it fits (issue #115).
+                var outlineGlyphs = channelOutlineGlyphs;
 
                 // Build atlas pages with original glyphs for glyph channels and
                 // outline glyphs for outline channels.
                 pages = ChannelCompositor.Build(glyphs, outlineGlyphs, packResult, padding, channelConfig, encoder);
 
-                if (needsOutline)
+                if (outlineGlyphs != null)
                 {
                     // Use outline glyphs for the model so .fnt metrics (width, height,
                     // xoffset, yoffset, xadvance) reflect the expanded dimensions.
-                    glyphs = outlineGlyphs!.ToList();
+                    glyphs = outlineGlyphs.ToList();
                 }
             }
             else if (options.ChannelPacking)

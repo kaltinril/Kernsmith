@@ -556,4 +556,49 @@ public class EndToEndTests
             "outline channel should contain pixels beyond the glyph boundary — " +
             "if both channels are identical, the outline is invisible");
     }
+
+    [Fact]
+    public void Generate_OutlineChannelConfig_DoesNotSpillExtraPagesVersusDefaultChannels()
+    {
+        // Regression for issue #115: a custom outline ChannelConfig sized the atlas from the
+        // smaller base glyphs while packing the larger outline glyphs, spilling onto extra
+        // pages — even though the equivalent default-channel outline fit on a single page.
+        var fontData = LoadTestFont();
+
+        var codepoints = new List<int>();
+        for (var c = 32; c <= 126; c++) codepoints.Add(c);    // Basic Latin
+        for (var c = 160; c <= 255; c++) codepoints.Add(c);   // Latin-1 Supplement
+        var chars = CharacterSet.FromChars(codepoints);
+
+        // These params reproduce the spill on the bundled Roboto font: the default-channel
+        // outline packs onto a single 1024 page, while the unfixed custom-channel path sized
+        // from the smaller base glyphs and spilled to 3 pages.
+        FontGeneratorOptions MakeOptions() => new()
+        {
+            Size = 64,
+            Outline = 16,
+            MaxTextureWidth = 1024,
+            MaxTextureHeight = 1024,
+            AutofitTexture = true,
+            Characters = chars,
+        };
+
+        // Default-channel outline (glyphs expanded during rasterization) — the baseline.
+        var resultDefault = BmFont.Generate(fontData, MakeOptions());
+
+        // Same glyph set, but routing the outline into a custom channel layout.
+        var customOptions = MakeOptions();
+        customOptions.Channels = new ChannelConfig(
+            Alpha: ChannelContent.Outline,
+            Red: ChannelContent.Glyph,
+            Green: ChannelContent.Glyph,
+            Blue: ChannelContent.Glyph);
+        var resultCustom = BmFont.Generate(fontData, customOptions);
+
+        resultDefault.Pages.Count.ShouldBe(1,
+            "the default-channel outline must fit on a single page for this to be a valid baseline");
+        resultCustom.Pages.Count.ShouldBe(resultDefault.Pages.Count,
+            "a custom outline ChannelConfig must size the atlas from the outline-expanded glyphs " +
+            "so it consolidates onto the same single page the default-channel path uses");
+    }
 }

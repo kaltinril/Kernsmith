@@ -41,6 +41,18 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 3. **Never hardcode credentials** — use environment variables or `.env` + appropriate library
 4. **Test with real data** — test font is at `tests/KernSmith.Tests/Fixtures/Roboto-Regular.ttf`
 
+### Test-Driven Development (REQUIRED)
+
+**Always TDD.** Write the test first, watch it fail, then write the code to make it pass. This is not optional — it applies to new features and, especially, to bug fixes.
+
+The red→green cycle is mandatory, not ceremonial:
+
+1. **Red** — write the test and **run it against the unmodified code**, confirming it fails *for the reason you expect* (assert on the actual wrong value, e.g. "expected 1 page but was 3"). A test that has only ever been seen green is unverified — it may be passing for the wrong reason (wrong params, no real reproduction, tautological assertion).
+2. **Green** — make the minimal change to pass, then re-run the same test.
+3. **Refactor** — clean up with the test as a safety net.
+
+**For bug fixes specifically:** the regression test must reproduce the actual bug. If you wrote the fix before the test, you MUST still prove the test catches the bug — stash/revert the fix (`git stash push -- <file>`), run the test, confirm it goes red, then restore the fix and confirm green. Do not claim a fix is verified until you have observed that red→green transition. Picking repro parameters that don't actually trigger the bug produces a false-positive test that guards nothing.
+
 ### Regression & Output Comparison (IMPORTANT)
 
 When the user asks to **"run a comparison"**, **"regress"**, **"a regression"**, or refers to **"the comparison script"**, they mean the purpose-built harness at **`tests/bmfont-compare/`** — NOT an ad-hoc byte/hash check. Do not improvise; run the real tool:
