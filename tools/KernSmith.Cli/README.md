@@ -335,8 +335,8 @@ Shows each installed backend with its platform support, color font capability, a
 # Use GDI for BMFont-parity rendering (Windows only)
 kernsmith generate -f font.ttf -s 32 --rasterizer gdi
 
-# Use DirectWrite for color/variable font support (Windows only)
-kernsmith generate -f font.ttf -s 32 --rasterizer directwrite --color-font
+# Use FreeType for color/variable font support (cross-platform)
+kernsmith generate -f font.ttf -s 32 --rasterizer freetype --color-font
 
 # Default (FreeType, cross-platform)
 kernsmith generate -f font.ttf -s 32

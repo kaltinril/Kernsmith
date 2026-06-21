@@ -4,6 +4,8 @@
 > **Created**: 2026-04-01
 > **Depends on**: Phase 165 (IRasterizer integration)
 
+> **Existing implementation (reference)**: SDF already exists in the FreeType and StbTrueType backends (`RasterOptions.Sdf` / `SdfScale` / `SdfSpread`; `FreeTypeCapabilities.SupportsSdf = true`; `StbTrueTypeCapabilities.SupportsSdf = true`). This phase implements SDF for the NATIVE backend only (currently `SupportsSdf = false`). Use the existing backends as the behavioral baseline.
+
 ## Goal
 
 Implement Signed Distance Field (SDF) generation directly from glyph outlines, producing higher-quality SDF output than stb_truetype's brute-force approach.

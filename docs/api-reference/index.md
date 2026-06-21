@@ -1,7 +1,7 @@
 # API Reference Guide
 
 This is a curated, task-oriented guide to KernSmith's public API. For the complete,
-auto-generated member listing of every type, see the [generated API reference](../../api/KernSmith.html).
+auto-generated member listing of every type in the core KernSmith library, see the [generated API reference](../../api/KernSmith.html).
 
 This guide focuses on the surface most applications use:
 
@@ -51,4 +51,4 @@ var result = BmFont.Builder()
 | `KernSmith.Output.Model` | `BmFontModel` and its blocks (`InfoBlock`, `CommonBlock`, `CharEntry`, `PageEntry`, `KerningEntry`, `ExtendedMetadata`) |
 | `KernSmith.Atlas` | `AtlasPage`, `PixelFormat` |
 
-> All public types in this guide were verified against the source for KernSmith 0.14.0.
+> All public types in this guide were verified against the source for KernSmith 0.15.1.

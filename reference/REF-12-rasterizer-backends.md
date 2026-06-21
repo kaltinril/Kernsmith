@@ -1,6 +1,6 @@
 # Rasterizer Backends Reference
 
-> **Purpose**: Documents the four rasterizer backends supported by KernSmith, their capabilities, trade-offs, and when to use each one.
+> **Purpose**: Documents the five rasterizer backends supported by KernSmith, their capabilities, trade-offs, and when to use each one.
 
 ---
 
@@ -12,8 +12,9 @@
 4. [GDI](#4-gdi)
 5. [DirectWrite](#5-directwrite)
 6. [StbTrueType](#6-stbtruetype)
-7. [Output Differences](#7-output-differences)
-8. [Adding Custom Backends](#8-adding-custom-backends)
+7. [Native](#7-native)
+8. [Output Differences](#8-output-differences)
+9. [Adding Custom Backends](#9-adding-custom-backends)
 
 ---
 
@@ -21,7 +22,7 @@
 
 KernSmith uses a pluggable rasterizer architecture. All backends implement the `IRasterizer` interface and expose their feature set through `IRasterizerCapabilities`. The core library selects a backend at runtime via `RasterizerFactory`, which maintains a thread-safe registry of `RasterizerBackend` -> factory function mappings.
 
-FreeType is the default backend, pre-registered in `RasterizerFactory`. The GDI, DirectWrite, and StbTrueType backends ship as separate NuGet packages and register themselves when their assembly is loaded.
+FreeType is the default backend, pre-registered in `RasterizerFactory`. The GDI, DirectWrite, StbTrueType, and Native backends ship as separate NuGet packages and register themselves when their assembly is loaded.
 
 ```
 RasterizerBackend enum:
@@ -29,31 +30,34 @@ RasterizerBackend enum:
   Gdi           — Windows-only
   DirectWrite   — Windows-only, high quality
   StbTrueType   — Cross-platform, pure C#, no native dependencies
+  Native        — Cross-platform, pure C#, no external dependencies (Phase 161 scaffold)
 ```
+
+> **Native backend status**: The Native backend is a Phase 161 scaffold. It loads and validates fonts and parses the core tables (`head`, `hhea`, `hmtx`, `OS/2`, `cmap`), but glyph outline decoding and rasterization are not yet implemented — its rendering methods throw `NotImplementedException` until Phases 162–165 land. It is documented here for completeness; do not select it for production output yet.
 
 ---
 
 ## 2. Comparison Table
 
-| Capability | FreeType | GDI | DirectWrite | StbTrueType |
-|---|---|---|---|---|
-| **Platform** | Cross-platform (Windows, Linux, macOS) | Windows only | Windows only | Cross-platform (Windows, Linux, macOS, WASM) |
-| **NuGet package** | `KernSmith` (built-in) | `KernSmith.Rasterizers.Gdi` | `KernSmith.Rasterizers.DirectWrite.TerraFX` | `KernSmith.Rasterizers.StbTrueType` |
-| **Color fonts** (COLR/CPAL, CBDT/CBLC, sbix) | Yes | No | No (stubbed, no impl yet) | No |
-| **Variable fonts** (fvar axes) | Yes | No | No (stubbed, no impl yet) | No |
-| **SDF rendering** | Yes | No | No | Yes |
-| **Outline stroke** | Yes | No | No | No |
-| **System font loading** | No | Yes | Yes | No |
-| **Handles own sizing** | No (core converts cell height to ppem) | Yes (GDI sizes via LOGFONT) | No (core converts) | No (core converts) |
-| **Anti-alias: None** | Yes | Yes | Yes | Yes |
-| **Anti-alias: Grayscale** | Yes | Yes | Yes | Yes |
-| **Anti-alias: Light** | Yes | No | No | No |
-| **Anti-alias: LCD** | Yes | No | No | No |
-| **Hinting** | FreeType auto-hinter + font bytecode | Windows GDI hinter | DirectWrite natural/symmetric hinting | stb_truetype hinting (limited) |
-| **Bold/italic simulation** | FreeType emboldening + oblique shear | GDI font mapper + MAT2 shear | DWRITE_FONT_SIMULATIONS flags | Synthetic bold + oblique shear |
-| **Font collection (TTC) support** | Yes (faceIndex parameter) | No (faceIndex must be 0) | Yes (faceIndex parameter) | Yes (faceIndex parameter) |
-| **Kerning source** | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser |
-| **Font metrics source** | Falls back to shared OS/2 table parser | GDI TEXTMETRIC (own impl) | Falls back to shared OS/2 table parser | Falls back to shared OS/2 table parser |
+| Capability | FreeType | GDI | DirectWrite | StbTrueType | Native |
+|---|---|---|---|---|---|
+| **Platform** | Cross-platform (Windows, Linux, macOS) | Windows only | Windows only | Cross-platform (Windows, Linux, macOS, WASM) | Cross-platform (Windows, Linux, macOS, WASM) |
+| **NuGet package** | `KernSmith` (built-in) | `KernSmith.Rasterizers.Gdi` | `KernSmith.Rasterizers.DirectWrite.TerraFX` | `KernSmith.Rasterizers.StbTrueType` | `KernSmith.Rasterizers.Native` |
+| **Color fonts** (COLR/CPAL, CBDT/CBLC, sbix) | Yes | No | No (stubbed, no impl yet) | No | No |
+| **Variable fonts** (fvar axes) | Yes | No | No (stubbed, no impl yet) | No | No |
+| **SDF rendering** | Yes | No | No | Yes | No |
+| **Outline stroke** | Yes | No | No | No | No |
+| **System font loading** | No | Yes | Yes | No | No |
+| **Handles own sizing** | No (core converts cell height to ppem) | Yes (GDI sizes via LOGFONT) | No (core converts) | No (core converts) | No (core converts) |
+| **Anti-alias: None** | Yes | Yes | Yes | Yes | Yes (declared; rendering not yet implemented) |
+| **Anti-alias: Grayscale** | Yes | Yes | Yes | Yes | Yes (declared; rendering not yet implemented) |
+| **Anti-alias: Light** | Yes | No | No | No | No |
+| **Anti-alias: LCD** | Yes | No | No | No | No |
+| **Hinting** | FreeType auto-hinter + font bytecode | Windows GDI hinter | DirectWrite natural/symmetric hinting | stb_truetype hinting (limited) | None planned (scaffold; no rasterizer yet) |
+| **Bold/italic simulation** | FreeType emboldening + oblique shear | GDI font mapper + MAT2 shear | DWRITE_FONT_SIMULATIONS flags | Synthetic bold + oblique shear | No (not yet implemented) |
+| **Font collection (TTC) support** | Yes (faceIndex parameter) | No (faceIndex must be 0) | Yes (faceIndex parameter) | Yes (faceIndex parameter) | Yes (faceIndex parameter) |
+| **Kerning source** | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser |
+| **Font metrics source** | Falls back to shared OS/2 table parser | GDI TEXTMETRIC (own impl) | Falls back to shared OS/2 table parser | Falls back to shared OS/2 table parser | Parses own core tables (`head`/`hhea`/`hmtx`/`OS/2`/`cmap`) |
 
 ---
 
@@ -156,21 +160,47 @@ RasterizerBackend enum:
 
 ---
 
-## 7. Output Differences
+## 7. Native
 
-The four backends will produce visually different output for the same font, size, and codepoints. This is expected and unavoidable because each uses a different rendering pipeline:
+**Package**: `KernSmith.Rasterizers.Native` (separate NuGet, cross-platform TFMs: `net8.0`, `net10.0`).
+
+**Status**: Phase 161 scaffold. Font loading and core-table parsing work, but glyph outline decoding and rasterization are not yet implemented. `RasterizeGlyph` and `RasterizeAll` throw `NotImplementedException` until Phases 162–165 land. Do not use it for production output yet.
+
+**When to use**: A future fully-owned, dependency-free fallback for the most constrained environments (Blazor WASM, Native AOT, trimmed/single-file apps) where even StbTrueTypeSharp's `AllowUnsafeBlocks` requirement is undesirable. For those scenarios today, use StbTrueType.
+
+**Strengths**:
+
+- Pure managed C# owned entirely by KernSmith -- zero external dependencies (no FreeType, no stb, no platform API).
+- Cross-platform and WASM/AOT-friendly by design.
+- Parses the core font tables itself (`head`, `hhea`, `hmtx`, `OS/2`, `cmap`) rather than delegating sizing/metrics to a native library.
+- TTC font collection support via `faceIndex`.
+
+**Limitations**:
+
+- Glyph rendering not implemented yet (Phase 161 scaffold; rasterization arrives in Phases 162–165).
+- No color fonts, variable fonts, SDF, or outline stroke support.
+- Cannot load system-installed fonts by family name (`LoadSystemFont` throws `NotSupportedException`).
+- Anti-alias modes declared are None and Grayscale only.
+- No synthetic bold or italic (`SupportsSyntheticBold` / `SupportsSyntheticItalic` are `false`).
+- Not thread-safe: create one instance per thread for parallel rasterization.
+
+---
+
+## 8. Output Differences
+
+The four rendering backends (FreeType, GDI, DirectWrite, StbTrueType) will produce visually different output for the same font, size, and codepoints. (The Native backend does not yet rasterize — see section 7.) This is expected and unavoidable because each uses a different rendering pipeline:
 
 - **Hinting**: FreeType uses its auto-hinter or the font's bytecode interpreter. GDI uses the Windows hinting engine. DirectWrite uses natural or symmetric hinting. These produce different pixel grid alignment, especially at small sizes.
 - **Gamma and blending**: GDI's `GGO_GRAY8_BITMAP` outputs 65 quantization levels (0-64). FreeType outputs 256 levels. DirectWrite outputs ClearType RGB triples averaged to grayscale. StbTrueType outputs 256 levels via stb_truetype coverage values. The alpha ramps differ.
 - **Metrics rounding**: GDI handles sizing internally via `LOGFONT.lfHeight` (with DPI conversion), while FreeType and DirectWrite receive ppem values from the core. Rounding differences of 1 pixel in bearingX, bearingY, or advance are common.
 - **Bold/italic synthesis**: Each backend applies synthetic bold and italic differently. GDI uses font mapper weight + MAT2 shear. FreeType uses `FT_Outline_Embolden` + `FT_GlyphSlot_Oblique`. DirectWrite uses `DWRITE_FONT_SIMULATIONS` flags. StbTrueType uses outline transforms for synthetic bold and oblique shear for italic.
-- **Kerning**: All four backends return `null` from `GetKerningPairs` and delegate to the shared GPOS/kern table parser, so kerning values are consistent across backends.
+- **Kerning**: All five backends return `null` from `GetKerningPairs` and delegate to the shared GPOS/kern table parser, so kerning values are consistent across backends.
 
 For BMFont parity testing, use the GDI backend. For cross-platform builds, use FreeType. For WASM, AOT, or native-dependency-free deployments, use StbTrueType.
 
 ---
 
-## 8. Adding Custom Backends
+## 9. Adding Custom Backends
 
 To add a custom rasterizer backend:
 
@@ -196,3 +226,5 @@ The `IRasterizerCapabilities` interface:
 | `SupportedAntiAliasModes` | `IReadOnlyList<AntiAliasMode>` | Which AA modes are available |
 | `HandlesOwnSizing` | `bool` | If true, core skips ppem conversion |
 | `SupportsSystemFonts` | `bool` | If true, `LoadSystemFont` is available |
+| `SupportsSyntheticBold` | `bool` | If true, can apply synthetic bold (emboldening) to outlines |
+| `SupportsSyntheticItalic` | `bool` | If true, can apply synthetic italic (oblique/shear) to outlines |

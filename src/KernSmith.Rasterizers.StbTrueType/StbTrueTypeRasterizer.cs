@@ -7,8 +7,10 @@ using Stb = StbTrueTypeSharp.StbTrueType;
 namespace KernSmith.Rasterizers.StbTrueType;
 
 /// <summary>
-/// Pure C# rasterizer backend using stb_truetype. Cross-platform, no native dependencies.
-/// Ideal for Blazor WASM, iOS AOT, and serverless scenarios.
+/// Pure C# rasterizer backend using stb_truetype. Cross-platform, with no native dependencies,
+/// making it ideal for Blazor WASM, iOS AOT, and serverless scenarios. Supports SDF generation
+/// and synthetic bold/italic; does not support color fonts, variable fonts, or outline stroking,
+/// and handles TrueType (TTF) outlines only.
 /// </summary>
 public sealed class StbTrueTypeRasterizer : IRasterizer
 {

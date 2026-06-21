@@ -4,7 +4,9 @@ A DirectWrite rasterizer backend for KernSmith using TerraFX.Interop.Windows.
 
 ## Overview
 
-This package provides an alternative rasterizer that uses Windows DirectWrite APIs (via TerraFX interop bindings) instead of FreeType. It supports color fonts and variable fonts with native Windows text rendering quality.
+This package provides an alternative rasterizer that uses Windows DirectWrite APIs (via TerraFX interop bindings) instead of FreeType, with native Windows text rendering quality.
+
+Color and variable fonts are not yet implemented in this backend (both capabilities are currently stubbed) — use the FreeType backend for those.
 
 **Platform**: Windows only (`net10.0-windows`).
 

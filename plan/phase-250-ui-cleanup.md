@@ -1,5 +1,14 @@
 # Phase 250: UI Cleanup & Polish
 
+> **Live progress snapshot**: see [`ui-cleanup-progress.md`](ui-cleanup-progress.md) for the dated, day-to-day status of this work.
+
+## Status At A Glance
+
+- **Phase 1 (UiFactory extraction + Theme constants)** — **COMPLETE**. `apps/KernSmith.Ui/Styling/UiFactory.cs` and the new `Theme` constants both exist.
+- **Phase 2 (collapsible section headers)** — **IN PROGRESS / BLOCKED**. Collapsible Expander sections were added to FontConfigPanel, EffectsPanel, and CharacterSelectionPanel, but there is an unresolved layout bug: the Generate bar overlaps the scroll area in FontConfigPanel (Ratio/TopToBottomStack sizing not respecting sibling hierarchy).
+- **Phases 3-5 (grid layout consistency, spacing/polish)** — partially done.
+- **Phase 6 (egui-inspired visual polish)** — not started.
+
 ## Context
 
 The KernSmith UI (Gum/MonoGame) works but looks cramped and inconsistent compared to professional tools like Rerun.io and egui. This phase brings visual polish: collapsible sections, consistent label:control grids, generous spacing, clean visual hierarchy. Panel reorganization (moving controls between left/right) is deferred to a follow-up phase.

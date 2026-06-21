@@ -73,9 +73,11 @@ The existing `AntiAliasMode` enum includes `Light` (used by FreeType for light a
 
 After Phase 174 (Auto-Hinting) is implemented, `Light` mode can be mapped to: auto-hinting with reduced grid-fitting strength (snap blue zones but don't quantize stem widths). Until then:
 
-- If a user requests `AntiAliasMode.Light` with the Native backend, fall back to `Grayscale` silently
-- Document this fallback behavior in the capabilities
-- Phase 174 should add `Light` to `SupportedAntiAliasModes` when auto-hinting is available
+- The Native backend simply does **not** list `AntiAliasMode.Light` in its `SupportedAntiAliasModes`; until this phase / Phase 174 lands, `NativeCapabilities` advertises only `None` and `Grayscale` (verified)
+- When a user requests `AntiAliasMode.Light`, the pipeline's **capability negotiation** degrades the unsupported request to `Grayscale`. The rasterizer does NOT internally substitute or quietly reinterpret the mode — it just renders what it advertises
+- Phase 174 adds `Light` to `SupportedAntiAliasModes` when auto-hinting is available, at which point the negotiation passes `Light` through unchanged
+
+> **CLARIFYING NOTE (added during plan housekeeping):** `AntiAliasMode.Light` already exists in the enum (verified). The "silent fallback" here is a property of pipeline-level capability negotiation against `SupportedAntiAliasModes`, not an in-rasterizer hack — a backend never receives an AA mode it did not advertise. Implementers should therefore gate `Light` purely by what `NativeCapabilities.SupportedAntiAliasModes` reports, and add no special-case substitution code inside the rasterizer.
 
 ## Testing
 

@@ -34,6 +34,7 @@
 - **Reading BMFont files** -- load and parse existing `.fnt` files (auto-detects text/XML/binary)
 - **Fluent builder API** -- chainable configuration as an alternative to options objects
 - **System font loading** -- generate from installed fonts by family name, with a font registry for platforms without system font access
+- **Web/CDN font sourcing** -- fetch WOFF fonts from font CDNs (Bunny Fonts, Google Fonts) via the `KernSmith.Fonts.Web` package, ideal for WASM where there is no filesystem
 - **Fully in-memory** -- entire pipeline runs without touching disk unless you call `ToFile()`
 - **Batch generation** -- parallel multi-font generation with font caching
 - **Pipeline metrics** -- stage-level timing breakdown for profiling

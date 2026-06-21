@@ -291,6 +291,16 @@ The handling strategy is:
 
 This means WOFF/WOFF2 support requires only a decompression frontend -- the core font processing logic is shared with TTF/OTF.
 
+### Sourcing Web Fonts (`KernSmith.Fonts.Web`)
+
+KernSmith ships an optional companion package, **`KernSmith.Fonts.Web`**, that *fetches* fonts from CSS-based web font CDNs rather than the local filesystem. It implements the core `KernSmith.Font.IFontSource` abstraction via `WebFontSource`, parameterized by a `WebFontProvider` (built-in `BunnyFonts` and `GoogleFonts`, or `WebFontProvider.Custom(cssBaseUrl)` for any Google-Fonts-style `?family=Name:weight` CSS endpoint).
+
+The flow: request the provider's stylesheet over HTTP, parse the `@font-face` rules, and download the **`.woff`** file for the requested family / weight / style / Unicode subset (results are cached in memory, with an optional `diskCachePath` for cross-run persistence).
+
+- **WOFF only, not WOFF2**: only `.woff` URLs are requested; `.woff2` entries are deliberately ignored because WOFF2's Brotli + transform decoding is not yet implemented (consistent with the "unsupported WOFF2" note above). If a CDN offers only `.woff2` for a font, the fetch fails with a clear error.
+- **WASM-friendly**: it depends only on `HttpClient` from the BCL and needs no filesystem, so it works in browser/Blazor WebAssembly scenarios (leave `diskCachePath` null there). Cross-platform on `net8.0`/`net10.0`.
+- **No discovery**: CSS CDNs expose no family-listing endpoint, so `ListFamiliesAsync` returns an empty list.
+
 ---
 
 ## 3. Embedded OpenType (.EOT)

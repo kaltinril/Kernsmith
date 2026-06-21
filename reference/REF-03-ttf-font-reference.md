@@ -282,6 +282,8 @@ The OpenType specification (1.9.1) defines eight tables as **required** for all 
 
 **Note**: The `OS/2` table was technically optional in older versions of the spec but is listed as required in OpenType 1.9.1 and is present in virtually all modern fonts. The `cvt `, `fpgm`, `prep`, and `gasp` tables are optional but commonly present in TrueType-outline fonts.
 
+> **What KernSmith parses (parsing scope)**: The rest of this section describes the full TrueType/OpenType table set as an external reference. KernSmith's **core** library (`KernSmith.Font`, in `src/KernSmith/Font/Tables/`) reads only **metrics and layout** tables: `head`, `hhea`, `OS/2`, `name` (plus the variable-font axes/named instances exposed via `VariationAxis`/`NamedInstance`), `cmap`, and `hmtx`, plus `kern`/`GPOS` for kerning extraction. Outline tables (`glyf`, `loca`, `CFF`/`CFF2`) and advanced tables (`gvar`, `GDEF`, `GSUB`, etc.) are **not** parsed by the core — glyph outlines are decoded and rasterized by the pluggable rasterizer **backends** (FreeType, StbTrueType, GDI, DirectWrite, and the native rasterizer), each of which owns its own outline handling. Treat the table details below as spec reference, not as a map of the core parser's coverage.
+
 ### head (Font Header)
 
 The `head` table contains global information about the font. It is 54 bytes long.

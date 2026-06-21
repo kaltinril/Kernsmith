@@ -2,6 +2,8 @@
 
 Runtime bitmap font generation for FNA + Gum games using KernSmith.
 
+> **Note:** This package is currently **excluded from the solution and from NuGet publishing** until FNA framework references are resolved. The Quick Setup steps below will not build until then.
+
 ## Overview
 
 This package generates `BitmapFont` instances entirely in memory for FNA projects that use the Gum UI framework. No disk I/O is required -- fonts are rasterized, packed, and loaded into GPU textures at runtime.

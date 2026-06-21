@@ -353,6 +353,46 @@ The number of kerning pairs is `blockSize / 10`. This block is optional and may 
 
 ---
 
+### KernSmith Extended Metadata (non-standard)
+
+KernSmith records the generation settings that produced a font in an **extended metadata** block. This is a **KernSmith-specific extension to the BMFont format** -- it is not part of the AngelCode specification. Standard BMFont parsers ignore it (see "Compatibility" below), so files round-trip safely. It is written by all three output formats and is emitted only when at least one field beyond the generator version is present.
+
+| Format | How it is emitted |
+|--------|-------------------|
+| **Text** | An extra `kernsmith` line appended after the `kerning` lines: `kernsmith version="1.2.3" sdfSpread=4 ...` (tag + space-separated `key=value` pairs, same scheme as `info`/`common`). |
+| **XML** | An extra `<kernsmith version="1.2.3" .../>` element inside `<font>`, with one attribute per field. |
+| **Binary** | A custom **block type 6** (standard blocks are 1--5), whose data is a null-terminated UTF-8 **JSON object**, e.g. `{"version":"1.2.3","sdfSpread":4}`. |
+
+#### Fields
+
+`version` (the generator version) is always present; every other field is written only when it was set during generation. Field names are identical across text and XML (and are the JSON keys in the binary block).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `version` | string | KernSmith library version that generated the font (always present). |
+| `sdfSpread` | int | SDF spread value, if SDF mode was used. |
+| `outlineThickness` | float | Outline thickness, if the outline post-processor was used. |
+| `gradientTopColor` | string | Gradient top/start color as hex RGB (e.g. `FFD700`), if a gradient was used. |
+| `gradientBottomColor` | string | Gradient bottom/end color as hex RGB (e.g. `DC143C`), if a gradient was used. |
+| `shadowOffsetX` | int | Shadow X offset, if the shadow post-processor was used. |
+| `shadowOffsetY` | int | Shadow Y offset, if the shadow post-processor was used. |
+| `shadowColor` | string | Shadow color as hex RGB (e.g. `000000`), if a shadow was used. |
+| `superSampleLevel` | int | Super-sampling level, if super sampling was used. |
+| `advanceAdjustY` | float | Global vertical advance adjustment (Hiero `pad.advance.y`), surfaced here because BMFont has no per-glyph yadvance field. |
+| `colorFont` | bool (`1`) | Present (value 1 / `true`) if color-font rendering (COLR/CPAL) was enabled. |
+| `axis_<tag>` | float | One entry per variable-font axis used at generation time, keyed by the 4-char axis tag (e.g. `axis_wght=700`). In the binary JSON these are nested under a `variationAxes` object instead of flattened into `axis_` keys. |
+
+#### Compatibility
+
+Standard BMFont parsers skip this metadata without error:
+
+- **Text / XML**: parsers match lines/elements by known tag names (`info`, `common`, `page`, `char`, `kerning`); an unrecognized `kernsmith` line or `<kernsmith>` element is simply not matched and is ignored.
+- **Binary**: parsers loop over blocks dispatching on the type ID (1--5) and use each block's declared size to skip its data, so the unknown type-6 block is stepped over cleanly.
+
+KernSmith's own `BmFontReader` reads the block back into an `ExtendedMetadata` object; a standard BMFont file without it simply reads back as `null`.
+
+---
+
 ## 3. Texture Atlas
 
 **Reference**: https://www.angelcode.com/products/bmfont/doc/export_options.html

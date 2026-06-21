@@ -4,6 +4,8 @@
 > **Created**: 2026-04-01
 > **Depends on**: Phase 165 (IRasterizer integration)
 
+> **Existing implementation (reference)**: Color fonts are already supported in the FreeType backend (COLR/CPAL) — `RasterOptions.ColorFont` / `ColorPaletteIndex`, `FreeTypeRasterizer.SelectColorPalette()`, `FreeTypeCapabilities.SupportsColorFonts = true`. DirectWrite is stubbed only. This phase implements color fonts for the NATIVE backend only; cross-reference FreeType's COLR v0/v1 handling.
+
 ## Goal
 
 Implement color font rendering for COLR v0 (layered color glyphs) and COLR v1 (paint graph), enabling emoji and decorative color fonts.

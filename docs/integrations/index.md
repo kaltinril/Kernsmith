@@ -8,7 +8,7 @@ KernSmith provides integration packages for the [Gum](https://docs.flatredball.c
 |---------|-----------|--------|
 | [MonoGameGum](monogamegum.md) | MonoGame + Gum | Available |
 | [KniGum](knigum.md) | KNI + Gum | Available |
-| [FnaGum](fnagum.md) | FNA + Gum | Planned |
+| [FnaGum](fnagum.md) | FNA + Gum | Excluded -- not built or published until FNA framework references are resolved |
 | [GumCommon](gumcommon.md) | Shared (no framework dependency) | Available |
 
 All framework packages depend on `KernSmith.GumCommon` for shared generation logic.

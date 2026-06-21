@@ -4,6 +4,8 @@
 > **Created**: 2026-04-01
 > **Depends on**: Phases 161–176 (all feature phases)
 
+> **Existing implementation (reference)**: The Phase 161 foundation (binary reader, core tables) is now merged, and benchmark infrastructure exists in `benchmarks/KernSmith.Benchmarks/`. Establish baselines against the native rasterizer once Phases 162-165 make it render. The "within 2x of StbTrueTypeSharp" target remains valid.
+
 ## Goal
 
 Optimize the Native rasterizer for production performance. Target: within 2x of StbTrueTypeSharp for common workloads, competitive with FreeType for large glyph sets.

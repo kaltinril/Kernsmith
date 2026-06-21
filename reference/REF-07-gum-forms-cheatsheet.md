@@ -119,7 +119,7 @@ label.Text = "Hello World";
 parentPanel.AddChild(label);
 ```
 
-**Text alignment**: V3 `LabelVisual` IS a `TextRuntime` (no separate text child). Use `SetProperty` to center text vertically within fixed-height labels:
+**Text alignment**: A V3 `Label` contains a **child** `TextRuntime` named `"TextInstance"` (fetch it via `element.GetChildByNameRecursively("TextInstance")` to recolor/realign the text directly). `label.Visual` itself is the container, not the text. Use `SetProperty` on the visual to center text vertically within fixed-height labels:
 ```csharp
 label.Visual.HeightUnits = DimensionUnitType.Absolute;
 label.Height = 30;

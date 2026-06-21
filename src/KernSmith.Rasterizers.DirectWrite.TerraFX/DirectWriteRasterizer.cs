@@ -10,9 +10,10 @@ using static TerraFX.Interop.Windows.Windows;
 namespace KernSmith.Rasterizers.DirectWrite.TerraFX;
 
 /// <summary>
-/// DirectWrite-based rasterizer backend using TerraFX.Interop.Windows.
-/// Windows-only. Supports color fonts and variable fonts.
-/// Uses IDWriteGlyphRunAnalysis for glyph bitmap rasterization.
+/// DirectWrite-based rasterizer backend using TerraFX.Interop.Windows. Windows-only.
+/// Supports system fonts and synthetic bold/italic, using IDWriteGlyphRunAnalysis for
+/// glyph bitmap rasterization. Color font and variable font support are stubbed and not
+/// yet implemented (see <see cref="DirectWriteCapabilities"/>).
 /// </summary>
 public sealed unsafe class DirectWriteRasterizer : IRasterizer
 {

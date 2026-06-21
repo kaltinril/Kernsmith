@@ -1,7 +1,7 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-19, 21, 30-33, 33B, 32B, 32d, 55, 60-69, 72-78, 77B, 79, 80, 90, 97 complete. Phase 20 (release readiness) still planning. Phase 34 (custom rasterizer) is planning/future. Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper). Phase 36 superseded by Phase 110. Phase 95 complete. Phase 98 rejected (invalid bug report). Phase 99, 110, 111, 150 planning. Phase 300 deferred/future (Perf 6 B/C carried from Phase 95).
-> **Date**: 2026-04-05
+> **Status**: Phases 1-19, 21, 30-33, 33B, 32B, 32d, 55, 60-69, 72-78, 77B, 79, 80, 90, 97, 161, 185 complete. Phase 34 (custom rasterizer) is planning/future. Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper). Phase 36 superseded by Phase 110. Phase 95 complete. Phase 98 rejected (invalid bug report). Phase 99, 110, 111, 150 planning. Phase 300 deferred/future (Perf 6 B/C carried from Phase 95).
+> **Date**: 2026-06-20
 
 ---
 
@@ -98,7 +98,7 @@ Output Layer
 | 97 | [Rasterizer Auto-Discovery](done/phase-97-rasterizer-auto-discovery.md) | Auto-discover rasterizer backends via Type.GetType(); remove 13 manual workarounds; add ILLink trimmer protection | Complete |
 | 95 | [Performance Optimization & Bug Fixes](done/phase-95-performance-and-bugs.md) | Fix confirmed bugs (outline field, batch encoding, options mutation) and optimize generation performance | Complete |
 | 99 | [BMFont Parity Remaining Gaps](phase-99-bmfont-parity-gaps.md) | Investigate and close remaining metrics differences from Phase 78BB | Planning |
-| 100 | [Hiero Advanced Features](phase-100-hiero-advanced-features.md) | Advanced Hiero features requiring new KernSmith properties | Future |
+| 100b | [Deferred Advanced Features](phase-100b-deferred-advanced-features.md) | Deferred advanced effects (SdfScale/AdvanceAdjustY done; outline wobble + native render mode deferred) | Partial |
 | 105 | [Text Layout Engine](done/phase-105-text-layout-engine.md) | Core text layout engine + framework rendering examples; pixel format helpers resolved | Complete |
 | 110 | [Post-Processing Enhancements](phase-110-post-processing-enhancements.md) | Exploratory plan for post-processing pipeline enhancements | Exploratory |
 | 111 | [Texture Fill for Glyphs](phase-111-texture-fill.md) | Exploratory plan for texture/pattern fill effects on glyphs | Exploratory |
@@ -106,6 +106,33 @@ Output Layer
 | 200 | [FontCrafter & Platform Rasterizers](phase-200-fontcrafter-and-platform-rasterizers.md) | FontCrafter product concept and platform-specific rasterizer distribution | Idea |
 | 250 | [UI Cleanup & Polish](phase-250-ui-cleanup.md) | Collapsible sections, consistent grids, shared UI helpers, spacing polish | Future |
 | 300 | [Deferred Performance Work](phase-300-deferred-performance.md) | Perf 6 Phases B/C carried from Phase 95 -- pool atlas page & per-glyph buffers; needs IDisposable/ownership redesign (Perf 10 excluded -- proven impossible) | Deferred / Future |
+
+### Native Rasterizer Series (Phases 160-180)
+
+Pure C# TTF/OTF rasterizer initiative; see Phase 160 for design decisions. Phase 161 scaffold is complete (see done/).
+
+| # | Document | Description | Status |
+|---|----------|-------------|--------|
+| 160 | [Rasterizer Design Decisions](phase-160-rasterizer-design-decisions.md) | Rasterizer design decisions / overview (decision record for the series) | Active |
+| 162 | [glyf/loca/maxp Parsers](phase-162-glyf-loca-maxp-parsers.md) | glyf/loca/maxp table parsers | Planning |
+| 163 | [Outline Extraction](phase-163-outline-extraction.md) | Glyph outline extraction + bezier flattening | Planning |
+| 164 | [Scanline Rasterizer](phase-164-scanline-rasterizer.md) | Scanline rasterizer (coverage/anti-aliasing) | Planning |
+| 165 | [IRasterizer Integration](phase-165-irasterizer-integration.md) | IRasterizer integration (wire native backend into pipeline) | Planning |
+| 166 | [CFF/Type2 Charstring Interpreter](phase-166-cff-charstring-interpreter.md) | CFF/Type2 charstring interpreter (OTF outlines) | Planning |
+| 167 | [Synthetic Bold & Italic](phase-167-synthetic-bold-italic.md) | Synthetic bold + italic transforms | Planning |
+| 168 | [Synthetic Outline/Stroke](phase-168-synthetic-outline-stroke.md) | Synthetic outline/stroke | Planning |
+| 169 | [SDF Generation](phase-169-sdf-generation.md) | SDF generation (native backend) | Planning |
+| 170 | [MSDF Generation](phase-170-msdf-generation.md) | MSDF generation | Planning |
+| 171 | [Variable Font Support](phase-171-variable-font-support.md) | Variable font support (native backend) | Planning |
+| 172 | [Color Font Support](phase-172-color-font-support.md) | Color font support / COLR-CPAL (native backend) | Planning |
+| 173 | [LCD Subpixel Rendering](phase-173-lcd-subpixel-rendering.md) | LCD subpixel rendering | Planning |
+| 174 | [Auto-Hinting](phase-174-auto-hinting.md) | Auto-hinting | Planning |
+| 175 | [GSUB Layout](phase-175-gsub-layout.md) | GSUB layout (ligatures/substitution) | Planning |
+| 176 | [Supersampling + Height Stretch](phase-176-supersampling-height-stretch.md) | Supersampling + height stretch (native integration) | Planning |
+| 177 | [Performance Optimization](phase-177-performance-optimization.md) | Performance optimization | Planning |
+| 178 | [WOFF2 Decompression](phase-178-woff-decompression.md) | WOFF2 decompression | Planning |
+| 179 | [Validation / Golden Masters](phase-179-validation-golden-masters.md) | Validation / golden masters | Planning |
+| 180 | [Innovation Research](phase-180-innovation-research.md) | Innovation research (ongoing experiments) | Planning |
 
 ---
 
@@ -131,7 +158,7 @@ Output Layer
 | 16 | [BMFont .bmfc Compatibility](done/phase-16-bmfc-compatibility.md) | Standard BMFont key=value format, drop legacy INI, same files work in both tools |
 | 17 | [Rebrand to KernSmith](done/phase-17-rebrand-kernsmith.md) | Full project rename from bmfontier to KernSmith |
 | 18 | [API Usability](done/phase-18-api-usability.md) | FromConfig, convenience properties, GetPngData, ToBmfc, Builder.FromConfig, init CLI command |
-| 20 | [Release Readiness](done/phase-20-release-readiness.md) | Version alignment, package icon, dotnet pack, CI verification, GitHub polish, first NuGet publish (**still Planning**) |
+| 20 | [Release Readiness](done/phase-20-release-readiness.md) | Version alignment, package icon, dotnet pack, CI verification, GitHub polish, first NuGet publish |
 | 21 | [Atlas Output Modes](done/phase-21-atlas-output-modes.md) | Combined batch atlas, render-to-existing-PNG, atlas size query & constraints |
 | 21R | [Atlas Output Modes Review](done/phase-21-review-findings.md) | Code review findings from Phase 21 implementation |
 | 30 | [WASM Rasterization](done/phase-30-wasm-rasterization.md) | Extract FreeTypeRasterizer from core library into standalone plugin package |
@@ -173,6 +200,9 @@ Output Layer
 | 86 | [RegisterFont File-Path Overload](done/phase-86-register-font-file-path-overload.md) | Add string filePath overload to KernSmithFontCreator.RegisterFont using TitleContainer.OpenStream |
 | 90 | [Native AOT Compliance](done/phase-90-aot-compliance.md) | Native AOT / trimming compatibility for core library -- analyzers enabled, version reflection replaced with compile-time constant, RasterizerFactory reflection contained (Option A); AOT consumers register backends explicitly |
 | 98 | [Outline Advance Bug](done/phase-98-outline-advance-bug.md) | Rejected -- outline not adjusting xadvance is correct BMFont behavior, not a bug |
+| 100 | [Hiero Advanced Features](done/phase-100-hiero-advanced-features.md) | Advanced Hiero features requiring new KernSmith properties |
+| 161 | [Native Rasterizer Scaffold](done/phase-161-native-project-scaffold.md) | Pure C# binary font reader, table directory parser, core table parsers (head/hhea/hmtx/OS2/cmap/maxp), NativeRasterizer IRasterizer shell -- Complete |
+| 185 | [Font Sourcing](done/phase-185-font-sourcing.md) | IFontSource abstraction + KernSmith.Fonts.Web package for web font CDNs (WOFF) -- Complete |
 
 ### Topical Plan Docs (archived in `done/`)
 
