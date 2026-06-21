@@ -4,6 +4,8 @@
 > **Created**: 2026-04-01
 > **Depends on**: Phase 164 (scanline rasterizer core)
 
+> **Existing implementation (reference)**: Supersampling (`RasterOptions.SuperSample`, applied in the pipeline) and height-stretch (`HeightStretchPostProcessor` in `src/KernSmith/Rasterizer/`) ALREADY EXIST as pipeline/post-processor features. This phase is about integrating that behavior INTO the native rasterizer (single-pass) rather than implementing it from scratch — match the existing post-processor behavior as the baseline.
+
 ## Goal
 
 Implement native supersampling and height stretch directly in the rasterizer for higher quality output and BMFont-compatible vertical scaling.

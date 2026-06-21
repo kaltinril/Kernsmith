@@ -1,9 +1,40 @@
 # Phase 110 — Post-Processing Enhancements
 
-> **Status**: Exploratory (partially addressed by Phase 32d)
+> **Status**: Partially done — core post-processor architecture COMPLETE (Phase 32d); remaining items FUTURE / exploratory
 > **Created**: 2026-03-30
 > **Depends on**: Core rasterizer + atlas pipeline
 > **Goal**: Enable post-generation modifications to bitmap font atlas PNGs — applying shaders, recoloring, stretching, bolding, and other transformations to already-rendered glyph textures.
+
+---
+
+## Status Summary
+
+### DONE (Phase 32d) — exists in `src/KernSmith/Rasterizer/`
+
+The `IGlyphPostProcessor` architecture and its core post-processors are implemented and shipping:
+
+- `IGlyphPostProcessor` — the chainable post-processor interface
+- `GradientPostProcessor` — two-color linear gradient
+- `OutlinePostProcessor` — colored outline via EDT
+- `ShadowPostProcessor` — configurable drop shadow
+- `HeightStretchPostProcessor` — vertical scaling
+- `BoldPostProcessor` — morphological dilation for bitmap-level bold
+- `ItalicPostProcessor` — pixel-level shear for bitmap-level italic
+
+This is the "plugin-like" architecture this phase envisioned. Each processor takes a `RasterizedGlyph` and returns a modified one; they chain naturally in sequence. No new abstraction is needed for these — they are complete.
+
+### FUTURE / still exploratory
+
+The items below are **not started** and remain design exploration:
+
+- **PNG / image import pipeline** — load existing `.fnt` + `.png` back into memory for modification
+- **Advanced / shader-like effects** — blur, sharpen, glow, emboss, edge detect, noise, chromatic aberration
+- **Colorization** beyond `GradientPostProcessor` (hue shift, channel remap, color ramp, flat tint)
+- **Compositing operations** — layer blending, masks, multi-pass chaining
+- **Batch processing** — CLI pipeline over many atlases
+- **Thin / Erode** (morphological erosion — inverse of `BoldPostProcessor`) and **outline extraction** from filled glyphs
+
+The remainder of this document captures the design detail for the FUTURE items above.
 
 ---
 
@@ -119,15 +150,17 @@ Apply the same post-processing pipeline to multiple font atlases.
 
 ### Interface Design
 
+**Per-glyph post-processing already ships** as `IGlyphPostProcessor` (`src/KernSmith/Rasterizer/IGlyphPostProcessor.cs`). It is chainable and operates on `RasterizedGlyph`:
+
 ```
-IPostProcessor
-    void Process(GlyphImage glyph, PostProcessOptions options)
-    void ProcessAtlas(AtlasImage atlas, GlyphRegion[] regions, PostProcessOptions options)
+IGlyphPostProcessor
+    RasterizedGlyph Process(RasterizedGlyph glyph)
 ```
 
-Two levels of operation:
-- **Per-glyph**: Operates on individual extracted glyph images (better for geometric transforms that change dimensions)
-- **Whole-atlas**: Operates on the full atlas texture (better for color/shader effects that don't change layout)
+This covers the per-glyph level below; no new per-glyph abstraction is needed. The remaining open design question is whether a **whole-atlas** entry point is also worth adding for effects that operate on the packed atlas texture rather than individual glyphs:
+
+- **Per-glyph** (shipping, `IGlyphPostProcessor`): Operates on individual `RasterizedGlyph` instances (better for geometric transforms that change dimensions)
+- **Whole-atlas** (future, if needed): Operates on the full atlas texture (better for color/shader effects that don't change layout)
 
 ### Metric Updates
 
@@ -150,7 +183,7 @@ If post-processing changes glyph dimensions (bold, stretch), the atlas may need 
 
 ## Open Questions
 
-1. **Should post-processors share the `IGlyphEffect` interface from the rasterizer pipeline, or be a separate interface?** The rasterizer effects operate on pre-atlas glyph buffers; post-processors operate on already-encoded PNG data. Different enough to warrant separation?
+1. **~~Should post-processors share the `IGlyphEffect` interface from the rasterizer pipeline, or be a separate interface?~~ RESOLVED.** A dedicated, chainable per-glyph post-processor interface already ships as `IGlyphPostProcessor` (`src/KernSmith/Rasterizer/IGlyphPostProcessor.cs`), separate from `IGlyphEffect`. It operates on `RasterizedGlyph` and chains naturally, so the per-glyph architecture is settled. The only remaining (optional) design question is whether to add a separate whole-atlas entry point for effects on the packed PNG; the per-glyph path is done. The remaining work for this phase is the PNG/image import pipeline plus the advanced/shader-like effects only.
 2. **How to handle SDF fonts?** Post-processing SDF atlases requires different math (distance field operations vs. pixel operations). Should SDF post-processing be a separate track?
 3. **Performance**: Some shader-like effects (large-radius blur, multi-pass chains) could be slow on large atlases. Worth investigating GPU acceleration via compute shaders, or keep it CPU-only for portability?
 4. **Lossy round-trip**: Loading a PNG, processing it, and saving again introduces compression artifacts. Should we support lossless intermediate formats (raw RGBA buffers, TGA)?

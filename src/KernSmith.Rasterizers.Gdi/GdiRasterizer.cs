@@ -14,6 +14,11 @@ namespace KernSmith.Rasterizers.Gdi;
 /// values in <see cref="RasterOptions.Size"/> are rounded to the nearest integer when this backend
 /// is used. Use the FreeType, StbTrueType, or DirectWrite backend if you need true sub-pixel sizing.
 /// </para>
+/// <para>
+/// <b>Kerning:</b> <see cref="GetKerningPairs"/> returns <c>null</c> so that kerning is resolved
+/// through the shared GPOS/kern parser, which matches BMFont's output. Color, variable, SDF, and
+/// outline-stroke features are not supported.
+/// </para>
 /// </summary>
 public sealed class GdiRasterizer : IRasterizer
 {
@@ -684,6 +689,11 @@ public sealed class GdiRasterizer : IRasterizer
 
     // ── Capabilities ────────────────────────────────────────────────
 
+    /// <summary>
+    /// Describes what the GDI rasterizer backend supports. Windows-only, with system-font and
+    /// synthetic bold/italic support; color fonts, variable fonts, SDF, and outline stroking are
+    /// not supported. GDI handles its own (integer-pixel) sizing.
+    /// </summary>
     private sealed class GdiCapabilities : IRasterizerCapabilities
     {
         public bool SupportsColorFonts => false;

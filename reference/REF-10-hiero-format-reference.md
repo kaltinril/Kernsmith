@@ -316,7 +316,7 @@ This table maps Hiero properties to their KernSmith equivalents for implementing
 | `font.mono` | `FontGeneratorOptions.AntiAlias` (inverted) | `mono=true` → `AntiAlias=AntiAliasMode.None` |
 | `pad.top/right/bottom/left` | `FontGeneratorOptions.Padding` | Direct mapping |
 | `pad.advance.x` | `FontGeneratorOptions.AdvanceAdjustX` | Global value added to every glyph's `xadvance`. NOT mapped to `Spacing` — `Spacing` is atlas cell spacing (a different concept) and its members are `Horizontal`/`Vertical`, not `X`/`Y`. |
-| `pad.advance.y` | — (deferred to Phase 100b) | Per-glyph vertical advance adjustment; no BMFont `yadvance` field, so dropped on import with a warning. NOT mapped to `Spacing` — `Spacing` is atlas cell spacing (a different concept) and its members are `Horizontal`/`Vertical`, not `X`/`Y`. |
+| `pad.advance.y` | `FontGeneratorOptions.AdvanceAdjustY` | Implemented (Phase 100b P2, landed 2026-06-07): the value is read directly into `AdvanceAdjustY`. BMFont's `char` block has no per-glyph `yadvance` field, so the value is surfaced (when non-default) via the optional extended-metadata `advanceAdjustY` field rather than baked into `xadvance`. NOT mapped to `Spacing` — `Spacing` is atlas cell spacing (a different concept) and its members are `Horizontal`/`Vertical`, not `X`/`Y`. |
 | `glyph.page.width` | `FontGeneratorOptions.MaxTextureWidth` | Direct mapping |
 | `glyph.page.height` | `FontGeneratorOptions.MaxTextureHeight` | Direct mapping |
 | `glyph.text` | `FontGeneratorOptions.Characters` | Literal chars → CharacterSet |
@@ -325,7 +325,7 @@ This table maps Hiero properties to their KernSmith equivalents for implementing
 | `effect.class=...GradientEffect` | `FontGeneratorOptions.Gradient*` | Map top/bottom color; Hiero's Offset/Scale/Cyclic map to `GradientOffset`/`GradientScale`/`GradientCyclic`, which compose with `GradientAngle`/`GradientMidpoint` |
 | `effect.class=...OutlineEffect` | `FontGeneratorOptions.Outline*` | Map color, width; join has no KernSmith equivalent (Hiero-specific, dropped on import); Hiero Width is a float (range 0.1–999), KernSmith Outline is an int. Width is rounded to the nearest integer (`Math.Round`), and any positive width below 0.5 is bumped up to 1 so a thin Hiero outline isn't silently dropped; Width &le; 0 maps to no outline |
 | `effect.class=...ShadowEffect` | `FontGeneratorOptions.Shadow*` | Map color (ShadowR/G/B), offset, opacity; Hiero's two-param blur maps to `ShadowBlurKernelSize` + `ShadowBlurPasses` (alongside the primary `ShadowBlur` radius) |
-| `effect.class=...DistanceFieldEffect` | `FontGeneratorOptions.Sdf` + `SdfSpread` | Spread maps to `SdfSpread`; Scale deferred to Phase 100b (plumbed but not yet applied) |
+| `effect.class=...DistanceFieldEffect` | `FontGeneratorOptions.Sdf` + `SdfSpread` + `SdfScale` | Spread maps to `SdfSpread`; Scale maps to `SdfScale` and is fully applied (Phase 100b P3, landed 2026-06-07): it drives the SDF upscale factor (clamped 1–4) used to render glyphs at higher precision |
 | `effect.class=...OutlineWobbleEffect` | — | No KernSmith equivalent |
 | `effect.class=...OutlineZigzagEffect` | — | No KernSmith equivalent |
 | `glyph.native.rendering` | — | KernSmith always uses FreeType |

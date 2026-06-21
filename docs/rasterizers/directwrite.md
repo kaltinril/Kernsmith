@@ -1,6 +1,6 @@
 # DirectWrite Rasterizer
 
-DirectWrite rasterizer backend using [TerraFX.Interop.Windows](https://github.com/terrafx/terrafx.interop.windows) bindings. Provides access to Windows' modern text rendering APIs including color font and variable font support.
+DirectWrite rasterizer backend using [TerraFX.Interop.Windows](https://github.com/terrafx/terrafx.interop.windows) bindings. Provides access to Windows' modern text rendering APIs, including high-quality ClearType subpixel rendering and system font loading.
 
 ## Installation
 
@@ -24,40 +24,31 @@ var options = new FontGeneratorOptions
 var result = BmFont.Generate("path/to/font.ttf", options);
 ```
 
-For color fonts with a specific palette:
+For system fonts, use `GenerateFromSystem`:
 
 ```csharp
-var options = new FontGeneratorOptions
+var result = BmFont.GenerateFromSystem("Segoe UI", new FontGeneratorOptions
 {
     Size = 32,
-    RasterizerBackend = RasterizerBackend.DirectWrite,
-    ColorPaletteIndex = 0
-};
+    RasterizerBackend = RasterizerBackend.DirectWrite
+});
 ```
 
-For variable fonts with custom axis values:
-
-```csharp
-var options = new FontGeneratorOptions
-{
-    Size = 32,
-    RasterizerBackend = RasterizerBackend.DirectWrite,
-    VariationAxes = new Dictionary<string, float> { ["wght"] = 700, ["wdth"] = 100 }
-};
-```
+> [!NOTE]
+> Color font (`ColorPaletteIndex`) and variable font (`VariationAxes`) options are not yet honored by this backend -- see [Limitations](#limitations). Use [FreeType](freetype.md) for COLR/CPAL and fvar today.
 
 ## Capabilities
 
-- Color font support (COLR/CPAL)
-- Variable font axes (fvar)
 - High-quality ClearType-style subpixel rendering
 - System font loading by family name
 - Synthetic bold and italic
-- TTF, OTF, WOFF, WOFF2 input
+- TTF, OTF, WOFF input
 - Fractional font sizes (e.g. `Size = 32.5f`) honored natively
 
 ## Limitations
 
+- **Color fonts (COLR/CPAL) are not yet implemented** -- the capability is currently stubbed (`SupportsColorFonts` returns `false`; there is no `TranslateColorGlyphRun` implementation yet). Use [FreeType](freetype.md) for color glyphs.
+- **Variable font axes (fvar) are not yet implemented** -- the capability is currently stubbed (`SupportsVariableFonts` returns `false`; there is no `IDWriteFontFace5` axis implementation yet). Use [FreeType](freetype.md) for variable fonts.
 - Windows only -- will not load on Linux or macOS
 - Requires net10.0-windows (not net8.0-windows)
 - No SDF rendering support -- use FreeType for SDF
@@ -69,4 +60,4 @@ Uses an isolated `IDWriteFactory5` instance and loads fonts into memory via `IDW
 
 ## When to Use
 
-Use DirectWrite when you need color font or variable font support on Windows, or want DirectWrite's high-quality rendering. It is the only backend that supports COLR/CPAL color glyphs and fvar variable font axes.
+Use DirectWrite when you want Windows' high-quality ClearType subpixel rendering or need to load system-installed fonts by family name on Windows. For color fonts (COLR/CPAL) or variable font axes (fvar), use [FreeType](freetype.md) -- those DirectWrite code paths are currently stubbed and not yet functional.

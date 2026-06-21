@@ -1,6 +1,6 @@
 # Phase 20 — Release Readiness
 
-> **Status**: Planning
+> **Status**: Complete
 > **Created**: 2026-03-20
 > **Goal**: Resolve all remaining packaging, versioning, and polish items needed to publish KernSmith as a public NuGet package.
 

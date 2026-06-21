@@ -59,6 +59,8 @@ When optional methods return `null`, KernSmith falls back to its built-in TTF ta
 |--------|---------|
 | `HandlesOwnSizing` | Set to `true` if your engine handles point-to-pixel conversion internally |
 | `SupportsSystemFonts` | Set to `true` if you implement `LoadSystemFont()` |
+| `SupportsSyntheticBold` | Set to `true` if your engine can apply synthetic bold (emboldening) to glyph outlines |
+| `SupportsSyntheticItalic` | Set to `true` if your engine can apply synthetic italic (oblique/shear) to glyph outlines |
 
 ## RasterizedGlyph Output
 

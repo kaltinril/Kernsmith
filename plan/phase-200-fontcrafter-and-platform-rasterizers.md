@@ -1,6 +1,6 @@
 # Phase 200 -- FontCrafter & Platform-Specific Rasterizer Distribution
 
-> **Status**: Idea
+> **Status**: Not started / Future — deferred pending strategic prioritization. No `KernSmith.FontCrafter` package, no `.fontcrafter` format, and no platform-specific rasterizer distribution exists yet. The idea content below is intact.
 > **Created**: 2026-03-28
 > **Dependencies**: Phase 78 (pluggable rasterizers), Phase 78D (CLI/UI integration)
 > **Goal**: (1) Ship platform-aware CLI/UI binaries so Windows users get all three rasterizers while Linux/macOS get FreeType only, and (2) build KernSmith.FontCrafter -- a simple vector font creation tool that doubles as a proof-of-concept custom rasterizer plugin.

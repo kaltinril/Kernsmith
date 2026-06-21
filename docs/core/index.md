@@ -100,3 +100,19 @@ The core library works in Blazor WebAssembly when paired with the StbTrueType ra
 - Enable `<RunAOTCompilation>true</RunAOTCompilation>` for production performance
 
 See the [Blazor WASM sample](https://github.com/kaltinril/KernSmith/tree/main/samples/KernSmith.Samples.BlazorWasm) for a complete working example.
+
+### Web font sourcing
+
+The optional `KernSmith.Fonts.Web` package fetches fonts over the network instead of from disk, which is handy in browser/WASM scenarios that have no filesystem. Its `WebFontSource` implements the `KernSmith.Font.IFontSource` abstraction: it requests a stylesheet from a CSS font CDN (Bunny Fonts, Google Fonts, or a custom endpoint), parses the `@font-face` rules, and downloads the matching `.woff` for the requested family, weight, style, and subset. It uses only `HttpClient` from the BCL, so it is WASM-friendly.
+
+```csharp
+using KernSmith.Fonts.Web;
+
+var source = new WebFontSource(WebFontProvider.BunnyFonts);
+byte[] bytes = await source.GetFontAsync("Roboto", weight: 400);
+
+BmFont.RegisterFont("Roboto", bytes);
+var result = BmFont.GenerateFromSystem("Roboto", size: 32);
+```
+
+> Only `.woff` is supported -- `.woff2` URLs are skipped because WOFF2's Brotli compression is not yet decoded. See the [package README](https://github.com/kaltinril/KernSmith/tree/main/src/KernSmith.Fonts.Web) for providers, caching, and subset options.

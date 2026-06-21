@@ -14,6 +14,8 @@
 
 During Phase 78C DirectWrite implementation and Phase 78G triage, four issues were identified as worth tracking but not blocking Phase 78 completion. These issues involve complex API surface (DirectWrite COM interfaces, GDI sizing edge cases) and are deferred until there is user demand or strategic need.
 
+> **Last validated 2026-03-30** — re-check the GDI MatchCharHeight bug (Issue 4) on next DirectWrite/GDI work.
+
 ## Priority Rankings
 
 Each issue is ranked 1 (low) to 5 (high) on three dimensions:

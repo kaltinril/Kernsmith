@@ -4,6 +4,8 @@
 > **Created**: 2026-04-01
 > **Depends on**: Phase 165 (IRasterizer integration), Phase 166 (CFF2 for variable CFF fonts)
 
+> **Existing implementation (reference)**: Variable fonts are already fully supported in the FreeType backend — `RasterOptions.VariationAxes` / `FontGeneratorOptions.VariationAxes`, `FreeTypeRasterizer.SetVariationAxes()`, `FreeTypeCapabilities.SupportsVariableFonts = true` (handles fvar/avar/gvar). This phase implements variable fonts for the NATIVE backend only; reference the FreeType implementation as the quality baseline.
+
 ## Goal
 
 Implement variable font axis interpolation so the Native rasterizer can handle fonts with weight, width, italic, optical size, and custom axes.

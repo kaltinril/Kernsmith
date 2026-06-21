@@ -2,7 +2,11 @@
 
 Runtime bitmap font generation for FNA + Gum games.
 
-> **Status:** Planned -- this package is not yet available on NuGet. The project files are maintained in the repository.
+> **Status:** Excluded -- this package is currently removed from the solution (`KernSmith.sln`)
+> and is not built or published to NuGet. It needs FNA framework references resolved before it can
+> be re-added. The project files are maintained in the repository, but the setup steps below will
+> not work until the package is restored to the build and shipped. MonoGameGum, KniGum, and
+> GumCommon are the active Gum integrations in the meantime.
 
 ## Setup (when available)
 

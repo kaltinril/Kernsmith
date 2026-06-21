@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-02
 **Branch:** `feature/ui-cleanup`
-**Status:** In progress — paused to add Gum layout debug tooling
+**Status:** In progress — Phase 2 BLOCKED on the Generate-bar overlap issue (FontConfigPanel); Ratio/TopToBottomStack sizing not respecting sibling hierarchy. Paused to add Gum layout debug tooling.
 
 ## What's Been Done
 
@@ -12,7 +12,7 @@
 - Removed all duplicate helper methods from FontConfigPanel, EffectsPanel, CharacterSelectionPanel, FontInspectorDialog
 - All panels now use `UiFactory.*` calls
 
-### Phase 2: Collapsible Section Headers (MOSTLY COMPLETE)
+### Phase 2: Collapsible Section Headers (BLOCKED — Generate-bar overlap)
 - `AddCollapsibleHeader` added to UiFactory — clickable header bar with `v`/`>` ASCII chevron, content area with subtle background + indent
 - `AddCollapsibleSection` (checkbox variant) updated to match — now has header bar background instead of floating checkbox
 - **FontConfigPanel:** FONT FILE, SIZE, ATLAS, OUTPUT sections all collapsible
@@ -29,8 +29,8 @@
   2. `this.Visual.ChildrenLayout = TopToBottomStack` — broke MainLayout's positioning of the panel
   3. Intermediate `root` ContainerRuntime with TopToBottomStack, ScrollViewer with Ratio height — bottom bar still overlaps
   4. Wrapper ContainerRuntime around ScrollViewer with ClipsChildren — same overlap
-- **Root cause unclear** — need Gum layout debug dump to see actual computed positions/sizes
-- **User is adding layout debug tooling to Gum** to enable diagnosing this
+- **Root cause:** Ratio/TopToBottomStack sizing not respecting sibling hierarchy — the scroll area doesn't shrink to leave room for the fixed bottom bar. Need a Gum layout debug dump to see actual computed positions/sizes.
+- **This is the blocker for Phase 2.** **User is adding layout debug tooling to Gum** to enable diagnosing it.
 
 ## What's Left To Do
 

@@ -101,3 +101,4 @@ non-default features were used.
 | `VariationAxes` | `IReadOnlyDictionary<string, float>?` | Variable-font axis values used during generation. |
 | `ColorFont` | `bool?` | Whether color font rendering was enabled. |
 | `FallbackCharacter` | `int?` | Fallback codepoint for missing glyphs, if configured. |
+| `AdvanceAdjustY` | `float?` | Global vertical advance adjustment (Hiero `pad.advance.y`), if non-zero. BMFont has no per-glyph yadvance field, so this is surfaced here to round-trip. |

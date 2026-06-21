@@ -9,6 +9,13 @@
 
 Resolve all open design decisions and architectural questions before beginning implementation of KernSmith's pure C# font rasterizer. This phase is the "decision record" — all subsequent phases reference it.
 
+## Implementation Status (as of June 2026)
+
+- **Phase 161 (Project Scaffold)** merged 2026-06-09: binary reader, table directory parser, core tables (head, hhea, hmtx, OS/2, cmap, maxp), and the `NativeRasterizer` shell with NotImplemented rendering stubs.
+- **Phases 162-165** (outline extraction → scanline rasterizer → IRasterizer integration) are next.
+- **Phases 166-180** (CFF, effects, validation, research) pending.
+- All design decisions in this doc remain valid.
+
 ## Context
 
 KernSmith currently has two rasterizer backends:

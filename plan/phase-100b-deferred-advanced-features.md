@@ -1,6 +1,6 @@
 # Phase 100b — Deferred Advanced Effect Features
 
-> **Status**: In progress — P2/P3 core items landed (2026-06-07); P4/P5 remain deferred
+> **Status**: P2/P3 core items (SdfScale render path + AdvanceAdjustY metadata) landed 2026-06-07 and are verified (regression + unit tests). P4 (outline wobble/zigzag) and P5 (native render mode) are intentionally DEFERRED as low-priority decorative/low-impact items — not abandoned.
 > **Created**: 2026-06-05
 > **Depends on**: Phase 100
 > **Goal**: Land the advanced-effect items that were deferred when Phase 100 shipped its core.
@@ -27,13 +27,13 @@ BMFont `char` entries have no `yadvance` field, so a vertical advance adjustment
 
 **Note**: Still not applied to the `char` `xadvance` (no yadvance field exists); it is preserved as metadata only, for round-trip fidelity and future use.
 
-### 3. Outline wobble / zigzag effects (P4)
+### 3. Outline wobble / zigzag effects (P4) — DEFERRED (low-priority, decorative)
 
 New `IGlyphEffect` implementations for pixel-level outline distortion, mapping Hiero's `OutlineWobbleEffect` (Detail, Amplitude) and `OutlineZigzagEffect` (Wavelength, Amplitude). Decorative only.
 
 **Notes**: Highest-effort item in this phase; requires pixel-level outline path manipulation. Low impact — purely decorative.
 
-### 4. Native rendering mode (P5)
+### 4. Native rendering mode (P5) — DEFERRED (low-impact, very high effort)
 
 Support OS-native font rendering as an alternative to FreeType, mapping Hiero's `glyph.native.rendering`. Lowest priority — FreeType covers the vast majority of use cases.
 

@@ -3,7 +3,9 @@ using KernSmith.Rasterizer;
 namespace KernSmith.Rasterizers.DirectWrite.TerraFX;
 
 /// <summary>
-/// Describes DirectWrite rasterizer capabilities.
+/// Describes DirectWrite rasterizer capabilities. System fonts and synthetic bold/italic are
+/// supported; color font and variable font support are currently stubbed to <c>false</c>
+/// (not yet implemented).
 /// </summary>
 internal sealed class DirectWriteCapabilities : IRasterizerCapabilities
 {

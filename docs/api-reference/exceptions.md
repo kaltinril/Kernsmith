@@ -9,6 +9,7 @@ KernSmith throws a small hierarchy of exceptions for generation errors. All deri
 Exception
 └── BmFontException
     ├── FontParsingException
+    ├── FontFormatException
     ├── RasterizationException
     └── AtlasPackingException
 ```
@@ -59,6 +60,20 @@ Thrown when a font cannot be read. This is the most common KernSmith exception. 
 | `FontParsingException(string message, Exception inner)` | Error wrapping an underlying exception. |
 | `FontParsingException(string tableTag, int offset, string details)` | Error at a specific table and byte offset. |
 | `TableTag` | `string?` -- the font table that failed, if known (e.g. `"GPOS"`). |
+| `Offset` | `int?` -- byte offset of the error, if known. |
+
+## FontFormatException
+
+Thrown when a font file's binary structure is invalid -- for example, a corrupt or truncated
+table directory, an unsupported sfnt version, or out-of-bounds table offsets. Derives directly
+from `BmFontException`.
+
+| Member | Description |
+|--------|-------------|
+| `FontFormatException(string message)` | Error with a message. |
+| `FontFormatException(string message, Exception inner)` | Error wrapping an underlying exception. |
+| `FontFormatException(string tableTag, int offset, string details)` | Error at a specific table and byte offset. |
+| `TableTag` | `string?` -- the font table that had the error, if known (e.g. `"cmap"`). |
 | `Offset` | `int?` -- byte offset of the error, if known. |
 
 ## RasterizationException

@@ -36,7 +36,8 @@ public sealed class WebFontSource : IFontSource, IDisposable
     /// <c>IHttpClientFactory</c> or the Blazor WASM DI container) for connection reuse.
     /// </param>
     /// <param name="diskCachePath">
-    /// Optional directory for persisting fetched fonts across runs. Leave null on WASM,
+    /// Optional path to a <em>directory</em> (not a file) for persisting fetched fonts across
+    /// runs. Pass <c>null</c> to use an in-memory cache only; this must be <c>null</c> on WASM,
     /// which has no filesystem.
     /// </param>
     public WebFontSource(

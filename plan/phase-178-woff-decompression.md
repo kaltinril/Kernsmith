@@ -4,13 +4,15 @@
 > **Created**: 2026-04-01
 > **Depends on**: Phase 161 (binary reader, table directory)
 
+> **Existing implementation (reference)**: WOFF 1.0 decompression is ALREADY COMPLETE in the core library (`src/KernSmith/Font/WoffDecompressor.cs`, zlib per-table; auto-detected in `BmFont.cs`). Only WOFF 2.0 remains (Brotli + glyf triplet transform), which currently throws `NotSupportedException`. This phase is therefore re-scoped to WOFF2-only; cite the existing WOFF1 implementation as the reference.
+
 ## Goal
 
-Handle WOFF and WOFF2 compressed font files natively in the rasterizer, so users can load web fonts directly without external decompression.
+Handle WOFF 2.0 compressed font files natively in the rasterizer, so users can load web fonts directly without external decompression. (WOFF 1.0 is already handled by the core library — see the reference note above.)
 
 ## Background
 
-WOFF (Web Open Font Format) wraps sfnt fonts with per-table zlib compression. WOFF2 uses Brotli compression with additional preprocessing. The main KernSmith pipeline already handles WOFF decompression before passing to rasterizers, but native support means the rasterizer can work standalone.
+WOFF (Web Open Font Format) wraps sfnt fonts with per-table zlib compression. WOFF2 uses Brotli compression with additional preprocessing. The main KernSmith pipeline already handles WOFF 1.0 decompression (`WoffDecompressor.cs`) before passing to rasterizers; WOFF 2.0 remains the outstanding work, and native support means the rasterizer can work standalone.
 
 ## Research Notes (2026-04-09)
 
@@ -62,14 +64,15 @@ WOFF2 is a **W3C Recommendation finalized in 2018**. The spec will not change �
 
 ## Scope
 
-### WOFF 1.0
+### WOFF 1.0 — DONE (core library)
+Already implemented in `src/KernSmith/Font/WoffDecompressor.cs` (zlib per-table, auto-detected in `BmFont.cs`). Listed here for reference only; no work remains in this phase.
 - Magic: `wOFF` (0x774F4646)
 - Header: sfntVersion, length, numTables, totalSfntSize, etc.
 - Per-table: tag, offset, compLength, origLength, origChecksum
 - Decompression: zlib (deflate) via `System.IO.Compression.DeflateStream`
 - If compLength == origLength, table is stored uncompressed
 
-### WOFF 2.0
+### WOFF 2.0 — PENDING (focus of this phase)
 - Magic: `wOF2` (0x774F4632)
 - Uses Brotli compression (available in .NET via `System.IO.Compression.BrotliDecoder`)
 - Additional preprocessing transforms before compression:
@@ -109,7 +112,7 @@ The most complex part. WOFF2 re-encodes glyf data:
 
 ## Success Criteria
 
-- [ ] WOFF 1.0 fonts load and rasterize correctly
+- [x] WOFF 1.0 fonts load and rasterize correctly (done in core library — `WoffDecompressor.cs`)
 - [ ] WOFF 2.0 fonts load and rasterize correctly (including glyf transform)
 - [ ] Output matches raw sfnt version of same font
 - [ ] No external NuGet dependencies added (uses BCL only)

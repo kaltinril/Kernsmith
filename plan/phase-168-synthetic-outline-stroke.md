@@ -50,6 +50,8 @@ These transforms need user-facing configuration. Add to `RasterOptions` or `Font
 - Bold/italic already exist as `RasterOptions.Bold`/`Italic`
 - Italic angle: use font's `post.italicAngle` as default, or add `float SyntheticItalicAngle = 12f` to `RasterOptions`
 
+> **CLARIFYING NOTE (added during plan housekeeping):** `WidthScale`, `SmallCaps`, and `SyntheticItalicAngle` do **not** exist on `RasterOptions` or `FontGeneratorOptions` yet (verified). Add them as new **optional** properties (each with the default shown above, so existing call sites are unaffected). Their home is `RasterOptions`: these are per-render geometric outline transforms, the same surface that already carries the other synthetic transforms (`Bold`, `Italic`, `ForceSyntheticBold`, `ForceSyntheticItalic`) which the rasterizer consumes. Follow that convention. `FontGeneratorOptions` may later expose matching pass-through properties (as it already does for bold/italic/SDF) if pipeline-level configuration is wanted, but the rasterizer reads them from `RasterOptions`.
+
 ### Small Caps Transform
 
 Scale uppercase glyph outlines to simulate small caps:

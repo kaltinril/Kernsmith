@@ -72,9 +72,13 @@ Changes to `RasterOptions`:
 - Deprecate existing `bool Sdf` property (map to `SdfMode.Sdf` for backward compatibility)
 - When `SdfMode == Msdf || SdfMode == Mtsdf`, output format is `PixelFormat.Rgba32`
 
+> **CLARIFYING NOTE (added during plan housekeeping):** `RasterOptions` already ships a `bool Sdf` property (verified). Introduce `SdfMode` **additively** — do not remove or break `bool Sdf`. Keep `bool Sdf == true` working as shorthand for `SdfMode.Sdf` (treat the two as equivalent when resolving the effective mode, e.g. `Sdf ? SdfMode.Sdf : SdfMode` if `SdfMode` is left at its `None` default). "Deprecate" above means soft-deprecate (e.g. an `[Obsolete]`-style steer toward `SdfMode` in docs/comments) — NOT an in-place replacement, since the shipped record is public API.
+
 Changes to `IRasterizerCapabilities`:
 - Add `bool SupportsMsdf { get; }` property (default false)
 - Native rasterizer sets `SupportsMsdf = true` after this phase
+
+> **CLARIFYING NOTE (added during plan housekeeping):** `SupportsMsdf` does **not** exist on `IRasterizerCapabilities` yet (verified — only `SupportsSdf` is present). This phase must ADD it as a new capability flag. Give it a `=> false` default-interface implementation, matching the existing optional flags (`SupportsSystemFonts`, `SupportsSyntheticBold`, etc.), so existing backends compile unchanged.
 
 Update `NativeRasterizer`:
 - Dispatch on `SdfMode`: None → coverage raster, Sdf → Phase 169 path, Msdf/Mtsdf → this phase's path

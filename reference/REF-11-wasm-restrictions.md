@@ -119,19 +119,19 @@ FreeTypeSharp uses `[DllImport("freetype")]` extensively. It will **not** work i
 - Use `[DynamicallyAccessedMembers]` and `[RequiresUnreferencedCode]` attributes to preserve types.
 - `TrimmerSingleWarn=false` shows all detailed warnings (default collapses to one per assembly).
 - Source generators are the primary recommended pattern for trim-safe code.
-- Library authors should set `IsTrimmable=true` in csproj and use `EnableTrimAnalyzer=true`.
+- Library authors should mark assemblies trim-safe -- setting `IsAotCompatible=true` implies both `IsTrimmable` and `EnableTrimAnalyzer` (plus the AOT/single-file analyzers), so a separate `IsTrimmable` property is not required.
 - Test trim compatibility by creating a trim test app with `TrimmerRootAssembly`.
 
 ### KernSmith Impact
 
 - `BmFontBinaryFormatter` and `BmFontReader` may use reflection for serialization -- verify.
 - TTF table parsers use direct struct reads (trim-safe).
-- Consider adding `IsTrimmable` to `KernSmith.csproj`.
+- `KernSmith.csproj` already sets `IsAotCompatible=true`, which implies `IsTrimmable` -- no separate property is needed.
 
 ### Mitigation
 
 - Audit all serialization code for reflection usage; replace with source-generated alternatives.
-- Add `<IsTrimmable>true</IsTrimmable>` and `<EnableTrimAnalyzer>true</EnableTrimAnalyzer>` to the core library csproj.
+- No action needed for trim flags: the core library already sets `<IsAotCompatible>true</IsAotCompatible>`, which implies `<IsTrimmable>` and `<EnableTrimAnalyzer>`.
 - Use `[DynamicallyAccessedMembers]` where reflection is unavoidable.
 
 ---
@@ -186,9 +186,14 @@ FreeTypeSharp uses `[DllImport("freetype")]` extensively. It will **not** work i
 
 ---
 
-## 8. StbTrueTypeSharp WASM Concerns
+## 8. Managed Rasterizers for WASM (StbTrueTypeSharp + Native)
 
-### Findings
+Two pure-managed rasterizer backends are viable under WASM:
+
+1. **`KernSmith.Rasterizers.StbTrueType`** (StbTrueTypeSharp) -- available today, validated in the Blazor WASM sample.
+2. **`KernSmith.Rasterizers.Native`** -- the future first-class WASM rasterizer. Fully custom, pure C#, **zero external NuGet/native dependencies** (only references `KernSmith` core). The csproj already sets `IsTrimmable`, `EnableTrimAnalyzer`, and `IsAotCompatible=true`, so it is trim/AOT/WASM-friendly by design and needs no `try/finally` Marshal cleanup (no unmanaged allocations). **Currently a Phase 161 scaffold:** font loading, validation, and core table parsing (`head`, `hhea`, `hmtx`, `OS/2`, `cmap`) are done, but glyph outline decoding and rasterization arrive in Phases 162-165 -- `RasterizeGlyph`/`RasterizeAll` throw `NotImplementedException` until then. Once complete it becomes the recommended zero-dependency WASM rasterizer alongside (and eventually ahead of) StbTrueType.
+
+### StbTrueTypeSharp Findings
 
 - `unsafe` code blocks, `fixed` statements, and pointer arithmetic **all work** in WASM (both interpreted and AOT).
 - Float precision: IEEE 754 compliant in WASM, no differences from desktop.
@@ -203,8 +208,10 @@ FreeTypeSharp uses `[DllImport("freetype")]` extensively. It will **not** work i
 
 ### KernSmith Impact
 
-- StbTrueTypeSharp is viable for WASM and has been validated in the Blazor WASM sample app.
-- All unmanaged allocations must be wrapped in `try/finally`.
+- StbTrueTypeSharp is viable for WASM today and has been validated in the Blazor WASM sample app.
+- The pure-C# `KernSmith.Rasterizers.Native` backend is the intended long-term WASM rasterizer (zero native deps, AOT/trim-clean) but cannot render yet -- glyph rendering lands in Phases 162-165. Until then, use StbTrueType for WASM.
+- The mitigations below apply to StbTrueTypeSharp; the Native backend has no unmanaged allocations to wrap.
+- All unmanaged allocations (StbTrueTypeSharp) must be wrapped in `try/finally`.
 - Bitmap data must be copied to managed `byte[]` immediately, then the unmanaged buffer freed.
 - Performance optimization (AOT) will be critical for acceptable user experience.
 
@@ -288,7 +295,7 @@ Based on all findings above, the Phase 32 `StbTrueType` managed rasterizer must 
 - [ ] **No `System.Diagnostics.Process`** -- not available in WASM
 - [ ] **Wrap all `Marshal.AllocHGlobal`** in `try/finally` with `Marshal.FreeHGlobal`
 - [ ] **Copy unmanaged bitmap data to managed `byte[]` immediately**, then free the unmanaged buffer
-- [ ] **Set `IsTrimmable` and `IsAotCompatible`** MSBuild properties in the core library csproj
+- [x] **Set `IsAotCompatible=true`** in the core library csproj -- already done; implies `IsTrimmable` + the trim/AOT analyzers, so no separate `IsTrimmable` property is required
 - [ ] **No `Reflection.Emit` or `DynamicMethod`**
 - [ ] **Prefer source-generated JSON** over reflection-based serialization
 - [ ] **Provide async API variants** with progress callbacks for Blazor UI responsiveness

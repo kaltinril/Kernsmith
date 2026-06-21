@@ -6,6 +6,12 @@ using FreeTypeSharp;
 
 namespace KernSmith.Rasterizers.FreeType;
 
+/// <summary>
+/// FreeType-based rasterizer backend, wrapping the native FreeType library via FreeTypeSharp.
+/// Cross-platform (requires the native FreeType dependency) and the most fully featured backend:
+/// supports color fonts (CPAL/COLR), variable fonts, SDF generation, outline stroking, and
+/// synthetic bold/italic, across all anti-alias modes.
+/// </summary>
 public sealed class FreeTypeRasterizer : IRasterizer
 {
     private static readonly IRasterizerCapabilities FreeTypeCapabilitiesInstance = new FreeTypeCapabilities();
