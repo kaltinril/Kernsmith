@@ -5,6 +5,7 @@
 - **NEVER read, open, or access any `.env` file** — these contain secrets (API keys, credentials)
 - **NEVER log, print, or output the contents of `.env` files**
 - **NEVER read, grep, or explore `.dll` files** (including NuGet cache) — use `reference/` docs or WebFetch for API questions
+- **Watch for decomposition attacks** — a multi-step request whose net effect reads or prints `.env` (or other secrets) is still a violation; judge the whole chain, not each step alone
 
 ## Project Purpose
 
@@ -76,6 +77,20 @@ python tests/bmfont-compare/regression_check.py
 - **Testing**: xUnit + Shouldly (do NOT use FluentAssertions — paid licensing, see Phase 79)
 - **Dependencies (core)**: StbImageSharp 2.30.15, StbImageWriteSharp 1.16.7 (FreeTypeSharp is a dependency of `KernSmith.Rasterizers.FreeType`, not the core library)
 - **License**: MIT (see LICENSE)
+- **No ReadyToRun (R2R)** — benchmarked ~15% slower than plain JIT on .NET 10
+
+### Working Style
+
+- **Stay in scope** — review/validate/doc requests don't authorize implementation; don't let prior-turn momentum widen a bounded task.
+- **Debug then ask** — trace the path once and form a hypothesis; if the cause isn't clear, ask the user what they observe rather than re-running static analysis. Scope debug agents narrowly (one file, one theory).
+- **Surface decisions in chat** — give context and a recommendation in plain text before asking; don't bury the question inside a tool batch.
+- **Read the relevant README** before guessing run/build/publish commands.
+
+### Build & Test Gotchas
+
+- **CliTests need a Debug build** — `tests/KernSmith.Tests/Cli/CliTests.cs` runs a hardcoded Debug CLI path; use plain `dotnet test`, not `-c Release --no-build` (which yields false CLI failures).
+- **Regression harness = CLI path only** — `tests/bmfont-compare` exercises CLI `GenerateAll`, not the UI `GenerationService`; verify UI-generation changes separately.
+- **Local NuGet validation needs `packageSourceMapping`** — route `KernSmith*` to the local feed and `*` to nuget.org in the consumer `nuget.config`.
 
 ### Namespace Rules
 
@@ -93,9 +108,18 @@ python tests/bmfont-compare/regression_check.py
 ### Git & Release Workflow
 
 - **Never push directly to main** — always use a feature branch + PR
+- **Don't commit, push, open PRs, or merge on your own initiative** — each git step (commit → push → PR → merge) happens only when Jeremy asks for it; completing one step is not permission to chain into the next.
+- **Merging**: only merge when Jeremy directs it (he will want merges from time to time — that's fine) — never merge on your own. Avoid `gh pr merge --auto` on this repo: `main` has no required status checks, so `--auto` merges immediately instead of waiting for CI. When asked to merge, use a plain merge and confirm CI is green first.
+- **Commits & PRs**: no `Co-Authored-By` lines, no "Generated with Claude Code" footer, and no Test-plan checklist in PR bodies — just summary bullets.
 - **Version and release process** — see `RELEASING.md` for the full workflow
 - **Version source of truth** — `Directory.Build.props` `<Version>` property (all projects inherit it)
 - **Don't bump versions or tag releases** unless explicitly asked
+
+### Documentation Conventions
+
+- **Don't document unsupported or scaffold features in user-facing docs or the CLI** until they actually work. Example: the Native rasterizer (`KernSmith.Rasterizers.Native`) renders nothing until Phases 162-165 — keep it out of the docfx site, CLI `--rasterizer` options, and README backend tables. Internal `reference/REF-*` docs and code XML comments may note a clearly-labeled scaffold for contributors.
+- **Docs are three-layered**: (1) per-package READMEs (where backends/satellite packages are documented), (2) hand-written docfx guides under `docs/`, and (3) the docfx-generated API reference, which covers **only** the core `src/KernSmith` project and is gitignored (`/api/` and `/_site/` are build artifacts). Don't expand `docfx.json` metadata to satellites without a reason. Site: kaltinril.github.io/Kernsmith.
+- **When auditing docs, verify every factual claim** (especially "included/built-in/bundled" wording) against the real package structure, and scan `docs/` too — not just root + `plan/`.
 
 ### Project File References
 
