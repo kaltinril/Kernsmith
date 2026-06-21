@@ -1,6 +1,7 @@
 # Phase 111 — Texture Fill for Glyphs
 
 > **Status**: Deferred / speculative — not started. No `TextureFillEffect` exists in `src/KernSmith/Rasterizer/`. The design content below is intact for if/when this is picked up.
+> **Companion**: [Phase 112 — Shader Fill](phase-112-shader-fill.md) (texture fill *samples* an image per pixel; shader fill *computes* color per pixel). They share the same fill-stage plumbing.
 > **Created**: 2026-03-30
 > **Depends on**: Core rasterizer + effects pipeline
 > **Goal**: Allow glyph interiors to be filled with a texture image instead of flat colors or gradients, enabling rich visual styles like wood grain, metal, stone, fire, fabric, or any arbitrary image mapped onto text.
