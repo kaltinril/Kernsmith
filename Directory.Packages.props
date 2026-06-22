@@ -25,7 +25,7 @@
     <PackageVersion Include="nkast.Xna.Framework" Version="4.2.9001" />
     <PackageVersion Include="nkast.Xna.Framework.Graphics" Version="4.2.9001" />
     <PackageVersion Include="FlatRedBall.GumCommon" Version="2026.5.31.1" />
-    <PackageVersion Include="Gum.MonoGame" Version="2026.5.31.1" />
+    <PackageVersion Include="Gum.MonoGame" Version="2026.6.20.1" />
     <PackageVersion Include="Gum.KNI" Version="2026.5.31.1" />
     <PackageVersion Include="Gum.FNA" Version="2026.5.31.1" />
     <PackageVersion Include="Gum.Themes.Editor.MonoGame" Version="2026.5.31.1" />
