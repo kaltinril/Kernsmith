@@ -89,6 +89,21 @@ public sealed class BmfcConfigReaderWriterTests
     }
 
     [Fact]
+    public void Parse_PerChannelKeys_PopulateChannelConfig()
+    {
+        // Act -- glyph in alpha, RGB forced to one (BMFont: 0=glyph, 4=one)
+        var config = BmfcConfigReader.Parse(
+            "alphaChnl=0\nredChnl=4\ngreenChnl=4\nblueChnl=4\n");
+
+        // Assert
+        config.Options.Channels.ShouldNotBeNull();
+        config.Options.Channels!.Alpha.ShouldBe(ChannelContent.Glyph);
+        config.Options.Channels!.Red.ShouldBe(ChannelContent.One);
+        config.Options.Channels!.Green.ShouldBe(ChannelContent.One);
+        config.Options.Channels!.Blue.ShouldBe(ChannelContent.One);
+    }
+
+    [Fact]
     public void Parse_FontDescFormat_MapsToOutputFormat()
     {
         // Act

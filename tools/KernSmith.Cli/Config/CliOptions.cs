@@ -35,6 +35,7 @@ internal sealed class CliOptions
     public bool? PowerOfTwo { get; set; } = true;
     public PackingAlgorithm PackingAlgorithm { get; set; } = PackingAlgorithm.MaxRects;
     public bool ChannelPacking { get; set; }
+    public ChannelConfig? Channels { get; set; }
     public bool AutofitTexture { get; set; }
     public string? TextureFormat { get; set; }
 

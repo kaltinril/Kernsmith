@@ -210,6 +210,7 @@ internal sealed class GenerateCommand
             Dpi = options.Dpi,
             FaceIndex = options.FaceIndex,
             ChannelPacking = options.ChannelPacking,
+            Channels = options.Channels,
             Backend = options.Backend,
             SuperSampleLevel = options.SuperSampleLevel,
             FallbackCharacter = options.FallbackCharacter,

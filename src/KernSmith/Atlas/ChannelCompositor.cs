@@ -20,6 +20,10 @@ internal static class ChannelCompositor
         var pageWidth = packResult.PageWidth;
         var pageHeight = packResult.PageHeight;
 
+        // When no outline layer was generated (e.g. outlineThickness=0), Outline-content
+        // channels fall back to the glyph's own coverage instead of an empty/synthesized ring.
+        var hasOutline = outlineGlyphs != null;
+
         var glyphById = new Dictionary<int, RasterizedGlyph>();
         foreach (var g in glyphs)
             glyphById[g.Codepoint] = g;
@@ -76,9 +80,15 @@ internal static class ChannelCompositor
                             // Map from outline-expanded coords back to base glyph coords.
                             var baseRow = row - offsetY;
                             var baseCol = col - offsetX;
-                            var glyphValue = (baseRow >= 0 && baseRow < glyph.Height && baseCol >= 0 && baseCol < glyph.Width)
-                                ? GetGlyphAlpha(glyph, baseRow, baseCol)
-                                : (byte)0;
+                            var inGlyph = baseRow >= 0 && baseRow < glyph.Height && baseCol >= 0 && baseCol < glyph.Width;
+                            // Coverage (alpha) drives non-color channels and grayscale glyphs.
+                            var glyphValue = inGlyph ? GetGlyphAlpha(glyph, baseRow, baseCol) : (byte)0;
+                            // For color (Rgba32) glyphs, Glyph content fills each output channel from
+                            // the matching source component so gradient color survives; grayscale glyphs
+                            // reuse the single coverage byte (see GetGlyphComponent).
+                            var glyphRed = inGlyph ? GetGlyphComponent(glyph, baseRow, baseCol, 0) : (byte)0;
+                            var glyphGreen = inGlyph ? GetGlyphComponent(glyph, baseRow, baseCol, 1) : (byte)0;
+                            var glyphBlue = inGlyph ? GetGlyphComponent(glyph, baseRow, baseCol, 2) : (byte)0;
                             var outlineValue = outlineGlyph != null
                                 ? GetOutlineAlphaDirect(outlineGlyph, row, col)
                                 : (byte)0;
@@ -87,10 +97,10 @@ internal static class ChannelCompositor
                             if (dstIdx < 0 || dstIdx + 3 >= pixelData.Length)
                                 continue;
 
-                            pixelData[dstIdx + 0] = ResolveChannel(channelConfig.Red, channelConfig.InvertRed, glyphValue, outlineValue);
-                            pixelData[dstIdx + 1] = ResolveChannel(channelConfig.Green, channelConfig.InvertGreen, glyphValue, outlineValue);
-                            pixelData[dstIdx + 2] = ResolveChannel(channelConfig.Blue, channelConfig.InvertBlue, glyphValue, outlineValue);
-                            pixelData[dstIdx + 3] = ResolveChannel(channelConfig.Alpha, channelConfig.InvertAlpha, glyphValue, outlineValue);
+                            pixelData[dstIdx + 0] = ResolveChannel(channelConfig.Red, channelConfig.InvertRed, glyphRed, outlineValue, hasOutline);
+                            pixelData[dstIdx + 1] = ResolveChannel(channelConfig.Green, channelConfig.InvertGreen, glyphGreen, outlineValue, hasOutline);
+                            pixelData[dstIdx + 2] = ResolveChannel(channelConfig.Blue, channelConfig.InvertBlue, glyphBlue, outlineValue, hasOutline);
+                            pixelData[dstIdx + 3] = ResolveChannel(channelConfig.Alpha, channelConfig.InvertAlpha, glyphValue, outlineValue, hasOutline);
                         }
                     }
                 }
@@ -123,6 +133,24 @@ internal static class ChannelCompositor
             var idx = row * glyph.Pitch + col;
             return idx < glyph.BitmapData.Length ? glyph.BitmapData[idx] : (byte)0;
         }
+    }
+
+    /// <summary>
+    /// Reads one color component (0=R, 1=G, 2=B) of a glyph pixel. For color (Rgba32)
+    /// glyphs this returns the matching channel byte so a gradient survives compositing;
+    /// for grayscale glyphs there is no per-channel color, so the single coverage byte
+    /// is returned (preserving the original white-glyph behavior).
+    /// </summary>
+    private static byte GetGlyphComponent(RasterizedGlyph glyph, int row, int col, int component)
+    {
+        if (glyph.Format == PixelFormat.Rgba32)
+        {
+            var idx = row * glyph.Pitch + col * 4 + component;
+            return idx < glyph.BitmapData.Length ? glyph.BitmapData[idx] : (byte)0;
+        }
+
+        var grayIdx = row * glyph.Pitch + col;
+        return grayIdx < glyph.BitmapData.Length ? glyph.BitmapData[grayIdx] : (byte)0;
     }
 
     /// <summary>
@@ -174,13 +202,15 @@ internal static class ChannelCompositor
         }
     }
 
-    private static byte ResolveChannel(ChannelContent content, bool invert, byte glyphValue, byte outlineValue)
+    private static byte ResolveChannel(ChannelContent content, bool invert, byte glyphValue, byte outlineValue, bool hasOutline)
     {
         var value = content switch
         {
             ChannelContent.Glyph => glyphValue,
-            ChannelContent.Outline => outlineValue,
-            ChannelContent.GlyphAndOutline => ThresholdEncode(glyphValue, outlineValue),
+            // With no outline layer (outlineThickness=0), fall back to glyph coverage so the
+            // channel isn't empty and glyphs don't gain a phantom 1px ring.
+            ChannelContent.Outline => hasOutline ? outlineValue : glyphValue,
+            ChannelContent.GlyphAndOutline => hasOutline ? ThresholdEncode(glyphValue, outlineValue) : glyphValue,
             ChannelContent.Zero => (byte)0,
             ChannelContent.One => (byte)255,
             _ => glyphValue

@@ -1,7 +1,7 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-19, 21, 30-33, 33B, 32B, 32d, 55, 60-69, 72-78, 77B, 79, 80, 90, 97, 161, 185 complete. Phase 34 (custom rasterizer) is planning/future. Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper). Phase 36 superseded by Phase 110. Phase 95 complete. Phase 98 rejected (invalid bug report). Phase 99, 110, 111, 150 planning. Phase 300 deferred/future (Perf 6 B/C carried from Phase 95).
-> **Date**: 2026-06-20
+> **Status**: Phases 1-19, 21, 30-33, 33B, 32B, 32d, 55, 60-69, 72-78, 77B, 79, 80, 90, 97, 161, 185 complete (185 -- Font Sourcing: IFontSource abstraction + KernSmith.Fonts.Web -- is the latest landed work). Phase 34 (custom rasterizer) is planning/future. Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper). Phase 36 superseded by Phase 110. Phase 95 complete. Phase 98 rejected (invalid bug report). Phase 99, 150 planning. Phases 110, 111, 112 exploratory (111 texture fill, 112 shader fill are the newest design docs). Phase 300 deferred/future (Perf 6 B/C carried from Phase 95).
+> **Date**: 2026-06-28
 
 ---
 
@@ -102,6 +102,7 @@ Output Layer
 | 105 | [Text Layout Engine](done/phase-105-text-layout-engine.md) | Core text layout engine + framework rendering examples; pixel format helpers resolved | Complete |
 | 110 | [Post-Processing Enhancements](phase-110-post-processing-enhancements.md) | Exploratory plan for post-processing pipeline enhancements | Exploratory |
 | 111 | [Texture Fill for Glyphs](phase-111-texture-fill.md) | Exploratory plan for texture/pattern fill effects on glyphs | Exploratory |
+| 112 | [Shader Fill for Glyphs](phase-112-shader-fill.md) | Exploratory plan for shader-computed (per-pixel) fill effects on glyphs | Exploratory |
 | 150 | [Deferred Rasterizer Issues](phase-150-deferred-rasterizer-issues.md) | Color fonts, variable fonts, native DW kerning, GDI MatchCharHeight bug (deferred from Phase 78G) | Planning |
 | 200 | [FontCrafter & Platform Rasterizers](phase-200-fontcrafter-and-platform-rasterizers.md) | FontCrafter product concept and platform-specific rasterizer distribution | Idea |
 | 250 | [UI Cleanup & Polish](phase-250-ui-cleanup.md) | Collapsible sections, consistent grids, shared UI helpers, spacing polish | Future |
