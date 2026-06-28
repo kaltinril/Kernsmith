@@ -85,4 +85,112 @@ public class OutlineEffectTests
         var outerRing = LayerAlphaAtSource(layer, 37, 20);
         outerRing.ShouldBeGreaterThan((byte)0, "the exterior outline ring must still be drawn");
     }
+
+    /// <summary>
+    /// Finds the topmost (smallest-y) layer row that has any outline coverage in the given
+    /// layer column, or the layer height if the column is empty.
+    /// </summary>
+    private static int TopmostOutlineRow(GlyphLayer layer, int layerX)
+    {
+        for (var y = 0; y < layer.Height; y++)
+        {
+            if (layer.RgbaData[(y * layer.Width + layerX) * 4 + 3] > 0)
+                return y;
+        }
+
+        return layer.Height;
+    }
+
+    /// <summary>
+    /// Builds the shared synthetic glyph: a solid bar (alpha 255) across all columns on rows
+    /// 3, 4, 5 of a 9x6 grayscale buffer, plus a single apex spike at (4, 2) whose value
+    /// varies per test. The spike is what exercises the 50%-coverage binarization threshold.
+    /// </summary>
+    private static byte[] MakeApexGlyph(byte spikeValue)
+    {
+        const int width = 9;
+        const int height = 6;
+        const int pitch = 9;
+
+        var alpha = new byte[pitch * height];
+
+        // Solid bar across all columns for rows 3, 4, 5.
+        for (var y = 3; y <= 5; y++)
+            for (var x = 0; x < width; x++)
+                alpha[y * pitch + x] = 255;
+
+        // Apex spike: one pixel above the bar at x=4.
+        alpha[2 * pitch + 4] = spikeValue;
+
+        return alpha;
+    }
+
+    /// <summary>
+    /// Regression for issue #127: the EDT binarizes at 50% coverage (alpha &gt;= 128), so faint
+    /// sub-50% fringe at a curved apex is treated as outside the true geometric edge and must
+    /// NOT be traced by the outline. A spike at alpha 64 (above 0, below 128) sits in that
+    /// fringe: with the historical <c>&gt; 0</c> threshold it was traced (spike topmost 2 vs
+    /// neighbor 3), the <c>&gt;= 128</c> fix excludes it so both columns share the same top (3).
+    /// </summary>
+    [Fact]
+    public void Generate_SubFiftyPercentFringe_NotTracedByOutline()
+    {
+        // Arrange -- a solid bar (rows 3-5) plus a sub-50% apex spike at (4,2), alpha 64.
+        const int width = 9;
+        const int height = 6;
+        const int pitch = 9;
+        const int ow = 2;
+
+        var alpha = MakeApexGlyph(spikeValue: 64);
+        var metrics = new GlyphMetrics(BearingX: 0, BearingY: 0, Advance: 9, Width: 9, Height: 6);
+
+        // Act
+        var layer = new OutlineEffect(ow).Generate(alpha, width, height, pitch, metrics);
+
+        // Assert -- layer is sized width/height + 2*ow.
+        layer.Width.ShouldBe(width + 2 * ow);   // 13
+        layer.Height.ShouldBe(height + 2 * ow); // 10
+
+        // Source x=4 maps to layer x=6 (spike column); source x=2 maps to layer x=4 (bar-only neighbor).
+        var spikeTop = TopmostOutlineRow(layer, 4 + ow);
+        var neighborTop = TopmostOutlineRow(layer, 2 + ow);
+
+        // The sub-50% fringe must NOT pull the outline higher than the plain neighbor: it is
+        // outside the glyph's true geometric edge, so both columns share the same topmost row.
+        spikeTop.ShouldBe(neighborTop,
+            "a sub-50% fringe spike must not be traced by the outline (issue #127)");
+    }
+
+    /// <summary>
+    /// Sanity check that real edges are still followed: a spike at alpha 200 (&gt;= 128) is true
+    /// coverage inside the glyph's geometric edge, so the outline must rise to follow it.
+    /// </summary>
+    [Fact]
+    public void Generate_StrongApexCoverage_TracedByOutline()
+    {
+        // Arrange -- a solid bar (rows 3-5) plus a strong apex spike at (4,2), alpha 200.
+        const int width = 9;
+        const int height = 6;
+        const int pitch = 9;
+        const int ow = 2;
+
+        var alpha = MakeApexGlyph(spikeValue: 200);
+        var metrics = new GlyphMetrics(BearingX: 0, BearingY: 0, Advance: 9, Width: 9, Height: 6);
+
+        // Act
+        var layer = new OutlineEffect(ow).Generate(alpha, width, height, pitch, metrics);
+
+        // Assert -- layer is sized width/height + 2*ow.
+        layer.Width.ShouldBe(width + 2 * ow);   // 13
+        layer.Height.ShouldBe(height + 2 * ow); // 10
+
+        // Source x=4 maps to layer x=6 (spike column); source x=2 maps to layer x=4 (bar-only neighbor).
+        var spikeTop = TopmostOutlineRow(layer, 4 + ow);
+        var neighborTop = TopmostOutlineRow(layer, 2 + ow);
+
+        // Strong coverage IS traced: the spike column reaches a higher (smaller-y) row than the
+        // flat-bar neighbor, so the outline follows the apex.
+        spikeTop.ShouldBeLessThan(neighborTop,
+            "a >=50% apex spike must be traced by the outline (the outline rises to follow it)");
+    }
 }

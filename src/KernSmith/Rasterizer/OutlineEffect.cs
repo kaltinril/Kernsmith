@@ -52,11 +52,16 @@ internal sealed class OutlineEffect : IGlyphEffect
                 }
             }
 
-            // Step 2: Binarize alpha so the EDT measures distance from the opaque glyph core.
-            // Semi-transparent antialiased edge pixels (alpha < 128) are treated as "outside",
-            // which lets the outline extend under the fringe and eliminates edge gaps.
+            // Step 2: Binarize at 50% coverage (alpha >= 128) so the EDT measures distance from
+            // the glyph's true geometric edge. The 50% contour is where the anti-aliased edge
+            // actually sits. Lower thresholds (e.g. the historical >= 32) include a wide faint
+            // band at curved apexes and flatten them into a flat outline cap (issue #127); the
+            // opposite extreme, > 0, over-counts the faintest fringe and bloats near-flat tops
+            // (lowercase a) and overall outline thickness. 50% rounds curved tops without
+            // bloating. The body backing below still uses expandedAlpha > 0, so the fringe stays
+            // covered and there is no gap between the body and the outline ring.
             for (var i = 0; i < size; i++)
-                binaryAlpha[i] = expandedAlpha[i] >= 32 ? (byte)255 : (byte)0;
+                binaryAlpha[i] = expandedAlpha[i] >= 128 ? (byte)255 : (byte)0;
 
             var squaredDist = EuclideanDistanceTransform.Compute(binaryAlpha, dstW, dstH);
 
