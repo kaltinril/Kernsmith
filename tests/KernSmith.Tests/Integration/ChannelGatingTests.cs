@@ -35,8 +35,12 @@ public class ChannelGatingTests
             Size = 48,
             Characters = chars,
             // Red -> gold vertical gradient (fire.bmfc style).
-            GradientStartR = 0xFF, GradientStartG = 0x00, GradientStartB = 0x00,
-            GradientEndR = 0xFF, GradientEndG = 0xD7, GradientEndB = 0x00,
+            GradientStartR = 0xFF,
+            GradientStartG = 0x00,
+            GradientStartB = 0x00,
+            GradientEndR = 0xFF,
+            GradientEndG = 0xD7,
+            GradientEndB = 0x00,
         };
 
         var resultDefault = BmFont.Generate(fontData, BaseOptions());
