@@ -60,15 +60,15 @@ internal sealed class OutlineEffect : IGlyphEffect
 
             var squaredDist = EuclideanDistanceTransform.Compute(binaryAlpha, dstW, dstH);
 
-            // Step 2b: Flood-fill from edges to identify exterior zero-alpha pixels.
-            // Counter pixels (holes in glyphs like 'e', 'o') are NOT exterior and must not receive outline.
-            // Uses binarized alpha so the fringe is treated as exterior.
-            var exterior = FloodFillExterior(binaryAlpha, dstW, dstH);
-
             // Step 3: Build RGBA output with outline color and anti-aliased alpha.
-            // The outline extends under the glyph body (not just the exterior ring) so that
-            // alpha-over compositing has full opacity behind the body's anti-aliased edge.
-            // Counters (interior holes like in O, B) are still skipped.
+            // Two cases per pixel:
+            //   - Body (under the glyph fill): full-opacity backing so alpha-over compositing
+            //     has no seam behind the body's anti-aliased edge.
+            //   - Everything else (exterior ring AND interior counters): a distance-based
+            //     anti-aliased ring. The falloff fades to zero beyond ~ow pixels from the
+            //     glyph core, so the open center of a large counter stays transparent on its
+            //     own -- no flood-fill needed -- while pixels near an inner stroke wall get
+            //     a proper inner outline.
             var dst = new byte[size * 4];
 
             for (var y = 0; y < dstH; y++)
@@ -78,13 +78,19 @@ internal sealed class OutlineEffect : IGlyphEffect
                     var pixelIdx = y * dstW + x;
                     var hasSourceAlpha = expandedAlpha[pixelIdx] > 0;
 
-                    // Skip only counter pixels (interior with no source alpha).
-                    // Allow: exterior pixels (the ring) and body pixels (under the glyph).
-                    if (!exterior[pixelIdx] && !hasSourceAlpha)
-                        continue;
-
-                    if (exterior[pixelIdx])
+                    if (hasSourceAlpha)
                     {
+                        // Body area: fill with full outline alpha so there's no seam
+                        // when the body composites on top.
+                        var idx = pixelIdx * 4;
+                        dst[idx + 0] = _outlineR;
+                        dst[idx + 1] = _outlineG;
+                        dst[idx + 2] = _outlineB;
+                        dst[idx + 3] = 255;
+                    }
+                    else
+                    {
+                        // Exterior or counter: distance-based anti-aliased ring.
                         var dist = MathF.Sqrt(squaredDist[pixelIdx]);
                         // Smooth falloff: fully opaque up to ow, then linear fade over 1.5 pixels.
                         var outlineAlpha = Math.Clamp(255f * (ow + 0.75f - dist) / 1.5f, 0f, 255f);
@@ -98,16 +104,6 @@ internal sealed class OutlineEffect : IGlyphEffect
                         dst[idx + 2] = _outlineB;
                         dst[idx + 3] = (byte)outlineAlpha;
                     }
-                    else
-                    {
-                        // Body area: fill with full outline alpha so there's no seam
-                        // when the body composites on top.
-                        var idx = pixelIdx * 4;
-                        dst[idx + 0] = _outlineR;
-                        dst[idx + 1] = _outlineG;
-                        dst[idx + 2] = _outlineB;
-                        dst[idx + 3] = 255;
-                    }
                 }
             }
 
@@ -118,71 +114,5 @@ internal sealed class OutlineEffect : IGlyphEffect
             ArrayPool<byte>.Shared.Return(expandedAlpha);
             ArrayPool<byte>.Shared.Return(binaryAlpha);
         }
-    }
-
-    private static bool[] FloodFillExterior(byte[] alpha, int width, int height)
-    {
-        var exterior = new bool[width * height];
-        var queue = new Queue<int>();
-
-        // Seed all edge pixels that have zero alpha.
-        for (var x = 0; x < width; x++)
-        {
-            if (alpha[x] == 0)
-            {
-                exterior[x] = true;
-                queue.Enqueue(x);
-            }
-
-            var bottomIdx = (height - 1) * width + x;
-            if (alpha[bottomIdx] == 0)
-            {
-                exterior[bottomIdx] = true;
-                queue.Enqueue(bottomIdx);
-            }
-        }
-
-        for (var y = 1; y < height - 1; y++)
-        {
-            var leftIdx = y * width;
-            if (alpha[leftIdx] == 0)
-            {
-                exterior[leftIdx] = true;
-                queue.Enqueue(leftIdx);
-            }
-
-            var rightIdx = y * width + width - 1;
-            if (alpha[rightIdx] == 0)
-            {
-                exterior[rightIdx] = true;
-                queue.Enqueue(rightIdx);
-            }
-        }
-
-        // BFS through 4-connected zero-alpha neighbors.
-        while (queue.Count > 0)
-        {
-            var idx = queue.Dequeue();
-            var x = idx % width;
-            var y = idx / width;
-
-            ReadOnlySpan<(int dx, int dy)> neighbors = [(-1, 0), (1, 0), (0, -1), (0, 1)];
-            foreach (var (dx, dy) in neighbors)
-            {
-                var nx = x + dx;
-                var ny = y + dy;
-                if (nx < 0 || nx >= width || ny < 0 || ny >= height)
-                    continue;
-
-                var nIdx = ny * width + nx;
-                if (!exterior[nIdx] && alpha[nIdx] == 0)
-                {
-                    exterior[nIdx] = true;
-                    queue.Enqueue(nIdx);
-                }
-            }
-        }
-
-        return exterior;
     }
 }
