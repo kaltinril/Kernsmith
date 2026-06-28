@@ -65,6 +65,12 @@ public static class BmfcConfigReader
         string? outlineColor = null;
         string? shadowColor = null;
 
+        // Accumulate per-channel content/inversion (BMFont: 0=glyph, 1=outline, 2=glyph+outline, 3=zero, 4=one)
+        ChannelContent chnlAlpha = ChannelContent.Glyph, chnlRed = ChannelContent.Glyph,
+                       chnlGreen = ChannelContent.Glyph, chnlBlue = ChannelContent.Glyph;
+        bool invA = false, invR = false, invG = false, invB = false;
+        bool hasChannels = false;
+
         foreach (var rawLine in content.Split('\n'))
         {
             var line = rawLine.Trim();
@@ -197,6 +203,38 @@ public static class BmfcConfigReader
                         break;
                     case "fourChnlPacked":
                         options.ChannelPacking = value == "1";
+                        break;
+                    case "alphaChnl":
+                        chnlAlpha = ParseChannelContent(value);
+                        hasChannels = true;
+                        break;
+                    case "redChnl":
+                        chnlRed = ParseChannelContent(value);
+                        hasChannels = true;
+                        break;
+                    case "greenChnl":
+                        chnlGreen = ParseChannelContent(value);
+                        hasChannels = true;
+                        break;
+                    case "blueChnl":
+                        chnlBlue = ParseChannelContent(value);
+                        hasChannels = true;
+                        break;
+                    case "invA":
+                        invA = value == "1";
+                        hasChannels = true;
+                        break;
+                    case "invR":
+                        invR = value == "1";
+                        hasChannels = true;
+                        break;
+                    case "invG":
+                        invG = value == "1";
+                        hasChannels = true;
+                        break;
+                    case "invB":
+                        invB = value == "1";
+                        hasChannels = true;
                         break;
 
                     // Outline
@@ -343,14 +381,6 @@ public static class BmfcConfigReader
                     case "widthPaddingFactor":
                     case "outBitDepth":
                     case "textureCompression":
-                    case "alphaChnl":
-                    case "redChnl":
-                    case "greenChnl":
-                    case "blueChnl":
-                    case "invA":
-                    case "invR":
-                    case "invG":
-                    case "invB":
                         // Silently ignore known BMFont keys we don't map
                         break;
 
@@ -369,6 +399,8 @@ public static class BmfcConfigReader
             options.Padding = new Padding(paddingUp, paddingRight, paddingDown, paddingLeft);
         if (hasSpacing)
             options.Spacing = new Spacing(spacingHoriz, spacingVert);
+        if (hasChannels)
+            options.Channels = new ChannelConfig(chnlAlpha, chnlRed, chnlGreen, chnlBlue, invA, invR, invG, invB);
 
         // Build character set from parsed ranges
         if (hasChars && unicodeRanges.Count > 0)
@@ -405,6 +437,21 @@ public static class BmfcConfigReader
 
         return config;
     }
+
+    /// <summary>
+    /// Maps a BMFont per-channel content value (alphaChnl/redChnl/greenChnl/blueChnl) to <see cref="ChannelContent"/>.
+    /// BMFont semantics: 0=glyph, 1=outline, 2=glyph+outline, 3=zero, 4=one. Unknown values default to glyph.
+    /// </summary>
+    private static ChannelContent ParseChannelContent(string value) =>
+        int.Parse(value, CultureInfo.InvariantCulture) switch
+        {
+            0 => ChannelContent.Glyph,
+            1 => ChannelContent.Outline,
+            2 => ChannelContent.GlyphAndOutline,
+            3 => ChannelContent.Zero,
+            4 => ChannelContent.One,
+            _ => ChannelContent.Glyph
+        };
 
     /// <summary>
     /// Parses BMFont chars= format: comma-separated decimal codepoints and ranges.

@@ -76,8 +76,11 @@ internal static class BmFontModelBuilder
         var packed = options.ChannelPacking;
 
         // Per-channel configuration: write the channel content values to the common block.
+        // Only emit the separated-channel layout when it was actually honored during
+        // compositing (see BmFont.ShouldApplyChannelConfig). A skipped font writes default
+        // channel values consistent with its baked single-composite output.
         int alphaChnl = 0, redChnl = 0, greenChnl = 0, blueChnl = 0;
-        if (options.Channels is { } channelConfig && !channelConfig.IsDefault)
+        if (BmFont.ShouldApplyChannelConfig(options) && options.Channels is { } channelConfig)
         {
             alphaChnl = (int)channelConfig.Alpha;
             redChnl = (int)channelConfig.Red;

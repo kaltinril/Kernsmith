@@ -406,16 +406,18 @@ public static class BmFont
         // the larger outline glyphs spill onto extra pages — while the default-channel path,
         // which expands glyphs during rasterization, sizes correctly.
         IReadOnlyList<RasterizedGlyph>? channelOutlineGlyphs = null;
-        if (options.Channels is { } cfg && !cfg.IsDefault)
+        if (ShouldApplyChannelConfig(options) && options.Channels is { } cfg)
         {
             var needsOutline = cfg.Alpha is ChannelContent.Outline or ChannelContent.GlyphAndOutline
                 || cfg.Red is ChannelContent.Outline or ChannelContent.GlyphAndOutline
                 || cfg.Green is ChannelContent.Outline or ChannelContent.GlyphAndOutline
                 || cfg.Blue is ChannelContent.Outline or ChannelContent.GlyphAndOutline;
-            if (needsOutline)
+            // Only synthesize an outline layer when a real outline width is configured.
+            // With outlineThickness=0 a forced 1px outline would grow every glyph by ~1px;
+            // instead the Outline-content channels fall back to glyph coverage in the compositor.
+            if (needsOutline && options.Outline > 0)
             {
-                var outlineWidth = options.Outline > 0 ? options.Outline : 1;
-                var outlineProcessor = new OutlinePostProcessor(outlineWidth, options.OutlineR, options.OutlineG, options.OutlineB);
+                var outlineProcessor = new OutlinePostProcessor(options.Outline, options.OutlineR, options.OutlineG, options.OutlineB);
                 channelOutlineGlyphs = glyphs.Select(g => outlineProcessor.Process(g)).ToList();
             }
         }
@@ -587,7 +589,7 @@ public static class BmFont
             IReadOnlyList<AtlasPage> pages;
             IReadOnlyDictionary<int, int>? glyphChannels = null;
 
-            if (options.Channels is { } channelConfig && !channelConfig.IsDefault)
+            if (ShouldApplyChannelConfig(options) && options.Channels is { } channelConfig)
             {
                 // Outline glyphs (when any channel needs them) were generated up front and
                 // already drove the atlas size estimate, the AutofitTexture verification, and
@@ -1034,6 +1036,21 @@ public static class BmFont
     /// <returns>A new fluent builder instance.</returns>
     public static BmFontBuilder Builder() => new();
 
+    /// <summary>
+    /// Decides whether a non-default per-channel <see cref="ChannelConfig"/> should be honored.
+    /// Applying a separated-channel layout tears apart a baked Rgba32 composite (gradient color,
+    /// soft outline, drop shadow), so it is only applied when channel-packing is enabled OR the
+    /// font has no baked composite effects. Otherwise the default single-composite path is used
+    /// for both the atlas pixels and the emitted .fnt channel metadata.
+    /// </summary>
+    internal static bool ShouldApplyChannelConfig(FontGeneratorOptions options)
+    {
+        if (options.Channels is not { } cfg || cfg.IsDefault)
+            return false;
+
+        return options.ChannelPacking || !HasAnyEffects(options);
+    }
+
     /// <summary>Checks if any built-in effects (outline, gradient, shadow) are enabled.</summary>
     private static bool HasAnyEffects(FontGeneratorOptions options)
     {
@@ -1080,7 +1097,10 @@ public static class BmFont
         }
 
         // Detect outline: from options properties or from an OutlinePostProcessor in the list.
-        if (options.Outline > 0 && (options.Channels is null || options.Channels.IsDefault))
+        // When a non-default channel layout is honored, the outline is routed into a channel
+        // layer instead of being baked here. When that layout is skipped by the gate
+        // (ShouldApplyChannelConfig false), the outline is baked into the composite as usual.
+        if (options.Outline > 0 && !ShouldApplyChannelConfig(options))
         {
             effects.Add(new OutlineEffect(options.Outline, options.OutlineR, options.OutlineG, options.OutlineB));
         }

@@ -51,6 +51,7 @@ internal static class BmfcParser
             Spacing = gen.Spacing,
             PackingAlgorithm = gen.PackingAlgorithm,
             ChannelPacking = gen.ChannelPacking,
+            Channels = gen.Channels,
             AutofitTexture = gen.AutofitTexture,
             MaxTextureWidth = gen.MaxTextureWidth,
             MaxTextureHeight = gen.MaxTextureHeight,
