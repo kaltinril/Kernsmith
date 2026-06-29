@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.2] - 2026-06-28
+
+### Fixed
+
+- Outline effect now draws the inner ring on enclosed glyph counters (e.g. `a`, `d`, `e`, `o`, `g`, `b`, `p`, `q`, `0`, `6`, `8`, `9`). The layered outline pipeline previously skipped all counter (hole) pixels, so interior outlines were missing — most visibly when combined with a drop shadow, where the shadow showed through the unoutlined hole. (#126)
+- CLI now honors per-channel content declared in `.bmfc` config files (`alphaChnl`/`redChnl`/`greenChnl`/`blueChnl`), gated so configs without channel routing keep their baked effects unchanged. Previously the CLI `.bmfc` path silently ignored channel configuration that the UI/Gum path already respected.
+
 ## [0.15.1] - 2026-06-15
 
 ### Fixed

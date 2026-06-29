@@ -31,7 +31,7 @@ Effects are configured through the Builder API. When any effect is active, `Glyp
 
 ### Outline
 
-Adds a colored border around each glyph using Euclidean Distance Transform (EDT). The outline expands the glyph bitmap by `width` pixels in each direction. Interior counters (holes in glyphs like O, B, e) are preserved -- only the exterior outline is drawn.
+Adds a colored border around each glyph using Euclidean Distance Transform (EDT). The outline expands the glyph bitmap by `width` pixels in each direction. The outline follows the glyph's true edge on both the exterior and the interior counter walls, so enclosed holes (e.g. `a`, `d`, `e`, `o`, `g`, `0`, `8`) get an inner outline ring while the open center of the counter stays transparent.
 
 **Parameters:**
 - `width` -- outline thickness in pixels

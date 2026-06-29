@@ -100,7 +100,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `ChannelPacking` | `bool` | `false` | Pack multiple glyphs into separate RGBA channels. Incompatible with effects and color fonts. |
-| `Channels` | `ChannelConfig?` | `null` | Per-channel control of glyph/outline content and inversion. |
+| `Channels` | `ChannelConfig?` | `null` | Per-channel content routing -- which of glyph/outline (etc.) each of R/G/B/A holds, plus optional inversion. When `null`, the default single-composite layout is used. |
 
 ## Color and variable fonts
 

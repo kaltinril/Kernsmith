@@ -12,7 +12,7 @@
       files. (Avoid writing the literal Version XML tag in this comment — the release tooling
       greps for it.)
     -->
-    <Version>0.15.1</Version>
+    <Version>0.15.2</Version>
   </PropertyGroup>
 
   <!--

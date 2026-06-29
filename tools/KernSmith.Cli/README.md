@@ -623,6 +623,8 @@ kernsmith generate --config old.bmfc -s 64 --save-config updated.bmfc
 
 Paths in the config file are resolved relative to the config file's directory. In `.bmfc` files, lines starting with `#` are comments and boolean values accept `true`/`false`, `1`/`0`, or `yes`/`no`. `.hiero` files use UTF-8 `key=value` lines with blank lines as separators.
 
+The CLI honors the per-channel content fields in `.bmfc` files -- `alphaChnl`, `redChnl`, `greenChnl`, and `blueChnl` -- using BMFont's channel semantics: `0` = glyph, `1` = outline, `2` = glyph + outline, `3` = zero, `4` = one. This is gated: configs without explicit channel routing keep their baked effects unchanged.
+
 ## Output Formats
 
 ### .fnt Descriptor Formats
