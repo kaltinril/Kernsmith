@@ -5,9 +5,10 @@ using KernSmith.Font.Models;
 namespace KernSmith.Rasterizer;
 
 /// <summary>
-/// Generates an outline ring layer using Euclidean Distance Transform.
-/// Z-order 1: renders behind the body, in front of shadow.
-/// The layer does NOT include the glyph body -- just the outline ring.
+/// Generates the outline layer via a Euclidean Distance Transform: an anti-aliased ring
+/// around the glyph on both the exterior and the interior counter walls, plus a solid
+/// (full-opacity) backing beneath the glyph body so the body composites on top without a seam.
+/// Z-order 1: renders behind the body, in front of the shadow.
 /// </summary>
 internal sealed class OutlineEffect : IGlyphEffect
 {
