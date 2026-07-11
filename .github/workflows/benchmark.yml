@@ -7,7 +7,7 @@ jobs:
   benchmark:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v5
         with:
           # Install both SDKs: the benchmark project (and its referenced
