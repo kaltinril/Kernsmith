@@ -38,7 +38,7 @@ internal class TtfParser
     /// </summary>
     public bool IsValid { get; private set; }
 
-    public TtfParser(ReadOnlySpan<byte> fontData, int faceIndex = 0, HashSet<int>? requestedCodepoints = null)
+    public TtfParser(ReadOnlySpan<byte> fontData, int faceIndex = 0, HashSet<int>? requestedCodepoints = null, bool parseAdvancedTables = true)
     {
         _data = fontData.ToArray();
         _requestedCodepoints = requestedCodepoints;
@@ -52,16 +52,19 @@ internal class TtfParser
         ParseName();
         ParseCmap();
         if (!IsValid) return;
-        ParseKern();
-        ParseGpos();
-        ParseFvar();
-        DetectColorTables();
+        if (parseAdvancedTables)
+        {
+            ParseKern();
+            ParseGpos();
+            ParseFvar();
+            DetectColorTables();
+        }
     }
 
     /// <summary>
     /// Creates a parser that shares an existing byte array (avoids an extra copy).
     /// </summary>
-    internal TtfParser(byte[] fontBytes, int faceIndex = 0, HashSet<int>? requestedCodepoints = null)
+    internal TtfParser(byte[] fontBytes, int faceIndex = 0, HashSet<int>? requestedCodepoints = null, bool parseAdvancedTables = true)
     {
         _data = fontBytes;
         _requestedCodepoints = requestedCodepoints;
@@ -75,10 +78,13 @@ internal class TtfParser
         ParseName();
         ParseCmap();
         if (!IsValid) return;
-        ParseKern();
-        ParseGpos();
-        ParseFvar();
-        DetectColorTables();
+        if (parseAdvancedTables)
+        {
+            ParseKern();
+            ParseGpos();
+            ParseFvar();
+            DetectColorTables();
+        }
     }
 
     private static uint Tag(char a, char b, char c, char d) =>
