@@ -624,7 +624,17 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     /// </summary>
     private static List<SystemFontInfo> ScanFontDirectories()
     {
-        var directories = GetFontDirectories();
+        return ScanFontDirectories(GetFontDirectories());
+    }
+
+    /// <summary>
+    /// Scans the given directories and parses every font file with
+    /// <see cref="TtfParser"/> to extract metadata. Extracted from the no-arg
+    /// overload so tests can point it at a controlled directory instead of the
+    /// hardcoded platform-specific system font directories.
+    /// </summary>
+    internal static List<SystemFontInfo> ScanFontDirectories(IEnumerable<string> directories)
+    {
         var results = new List<SystemFontInfo>();
 
         foreach (var dir in directories)
@@ -661,7 +671,7 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
                     {
                         try
                         {
-                            var parser = new TtfParser(data, faceIndex);
+                            var parser = new TtfParser(data, faceIndex, parseAdvancedTables: false);
                             if (!parser.IsValid)
                             {
                                 continue;

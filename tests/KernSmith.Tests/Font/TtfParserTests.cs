@@ -6,7 +6,7 @@ namespace KernSmith.Tests.Font;
 public class TtfParserTests
 {
     private static byte[] LoadTestFont() =>
-        File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Roboto-Regular.ttf"));
+        File.ReadAllBytes(Path.Join(AppContext.BaseDirectory, "Fixtures", "Roboto-Regular.ttf"));
 
     private static TtfParser CreateParser() => new(LoadTestFont());
 
@@ -92,5 +92,71 @@ public class TtfParserTests
 
         // Assert
         Should.Throw<FontParsingException>(act, "invalid font data should cause a parsing exception");
+    }
+
+    [Fact]
+    public void ParseAdvancedTablesFalse_StillParsesNamesAndIsValid()
+    {
+        // Arrange & Act
+        var parser = new TtfParser(LoadTestFont(), parseAdvancedTables: false);
+
+        // Assert
+        parser.IsValid.ShouldBeTrue();
+        parser.Names.ShouldNotBeNull();
+        parser.Names!.FontFamily.ShouldBe("Roboto");
+        parser.Names!.FontSubfamily.ShouldBe("Regular");
+    }
+
+    [Fact]
+    public void ParseAdvancedTablesFalse_SkipsKernAndGposParsing()
+    {
+        // Arrange
+        // Sanity check: Roboto-Regular.ttf has GPOS kerning data when parsed normally.
+        var fullParser = new TtfParser(LoadTestFont());
+        fullParser.GposPairs.ShouldNotBeEmpty("Roboto-Regular.ttf is expected to have GPOS kerning pairs");
+
+        // Act
+        var parser = new TtfParser(LoadTestFont(), parseAdvancedTables: false);
+
+        // Assert
+        parser.GposPairs.ShouldBeEmpty("GPOS parsing should be skipped when parseAdvancedTables is false");
+        parser.KernPairs.ShouldBeEmpty("kern table parsing should be skipped when parseAdvancedTables is false");
+    }
+
+    [Fact]
+    public void ParseAdvancedTablesFalse_SkipsFvarParsing()
+    {
+        // Arrange
+        var fontData = File.ReadAllBytes(Path.Join(AppContext.BaseDirectory, "Fixtures", "RobotoFlex-Variable.ttf"));
+
+        // Act
+        var parser = new TtfParser(fontData, parseAdvancedTables: false);
+
+        // Assert
+        (parser.VariationAxes is null || parser.VariationAxes.Count == 0).ShouldBeTrue(
+            "fvar parsing should be skipped when parseAdvancedTables is false");
+    }
+
+    [Fact]
+    public void ParseAdvancedTablesFalse_SkipsColorTableDetection()
+    {
+        // Arrange
+        var fontData = File.ReadAllBytes(Path.Join(AppContext.BaseDirectory, "Fixtures", "NotoColorEmoji.ttf"));
+
+        // Act
+        var parser = new TtfParser(fontData, parseAdvancedTables: false);
+
+        // Assert
+        parser.HasColorGlyphs.ShouldBeFalse("color table detection should be skipped when parseAdvancedTables is false");
+    }
+
+    [Fact]
+    public void ParseAdvancedTablesDefaultTrue_StillParsesGpos()
+    {
+        // Arrange & Act — explicit default-parameter case alongside the false-path tests above.
+        var parser = new TtfParser(LoadTestFont());
+
+        // Assert
+        parser.GposPairs.ShouldNotBeEmpty("default parseAdvancedTables=true should still parse GPOS kerning pairs");
     }
 }
