@@ -6,7 +6,7 @@ namespace KernSmith.Tests.Font;
 public class TtfParserTests
 {
     private static byte[] LoadTestFont() =>
-        File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Roboto-Regular.ttf"));
+        File.ReadAllBytes(Path.Join(AppContext.BaseDirectory, "Fixtures", "Roboto-Regular.ttf"));
 
     private static TtfParser CreateParser() => new(LoadTestFont());
 
@@ -127,7 +127,7 @@ public class TtfParserTests
     public void ParseAdvancedTablesFalse_SkipsFvarParsing()
     {
         // Arrange
-        var fontData = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "RobotoFlex-Variable.ttf"));
+        var fontData = File.ReadAllBytes(Path.Join(AppContext.BaseDirectory, "Fixtures", "RobotoFlex-Variable.ttf"));
 
         // Act
         var parser = new TtfParser(fontData, parseAdvancedTables: false);
@@ -141,7 +141,7 @@ public class TtfParserTests
     public void ParseAdvancedTablesFalse_SkipsColorTableDetection()
     {
         // Arrange
-        var fontData = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "NotoColorEmoji.ttf"));
+        var fontData = File.ReadAllBytes(Path.Join(AppContext.BaseDirectory, "Fixtures", "NotoColorEmoji.ttf"));
 
         // Act
         var parser = new TtfParser(fontData, parseAdvancedTables: false);

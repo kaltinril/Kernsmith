@@ -9,7 +9,7 @@ public class DefaultSystemFontProviderScanTests : IDisposable
 
     public DefaultSystemFontProviderScanTests()
     {
-        _tempDir = Path.Combine(Path.GetTempPath(), "kernsmith-sysfont-tests-" + Guid.NewGuid().ToString("N")[..8]);
+        _tempDir = Path.Join(Path.GetTempPath(), "kernsmith-sysfont-tests-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(_tempDir);
     }
 
@@ -23,8 +23,8 @@ public class DefaultSystemFontProviderScanTests : IDisposable
     public void ScanFontDirectories_FindsFontInProvidedDirectory()
     {
         // Arrange
-        var sourcePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "Roboto-Regular.ttf");
-        var destPath = Path.Combine(_tempDir, "Roboto-Regular.ttf");
+        var sourcePath = Path.Join(AppContext.BaseDirectory, "Fixtures", "Roboto-Regular.ttf");
+        var destPath = Path.Join(_tempDir, "Roboto-Regular.ttf");
         File.Copy(sourcePath, destPath);
 
         // Act
@@ -42,9 +42,9 @@ public class DefaultSystemFontProviderScanTests : IDisposable
     public void ScanFontDirectories_EmptyOrMissingDirectory_ReturnsEmptyList()
     {
         // Arrange — one dir with only a non-font file, one dir that doesn't exist at all.
-        var nonFontPath = Path.Combine(_tempDir, "notes.txt");
+        var nonFontPath = Path.Join(_tempDir, "notes.txt");
         File.WriteAllText(nonFontPath, "not a font");
-        var missingDir = Path.Combine(_tempDir, "does-not-exist");
+        var missingDir = Path.Join(_tempDir, "does-not-exist");
 
         // Act
         var results = DefaultSystemFontProvider.ScanFontDirectories(new[] { _tempDir, missingDir });
@@ -57,7 +57,7 @@ public class DefaultSystemFontProviderScanTests : IDisposable
     public void ScanFontDirectories_CorruptFontFile_SkippedWithoutThrowing()
     {
         // Arrange
-        var corruptPath = Path.Combine(_tempDir, "corrupt.ttf");
+        var corruptPath = Path.Join(_tempDir, "corrupt.ttf");
         File.WriteAllBytes(corruptPath, new byte[] { 1, 2, 3, 4, 5 });
 
         // Act
