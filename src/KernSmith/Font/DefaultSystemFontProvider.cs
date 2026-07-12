@@ -540,11 +540,21 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     /// </summary>
     private static List<SystemFontInfo>? TryScanFromFcList()
     {
+        return TryScanFromFcList("fc-list");
+    }
+
+    /// <summary>
+    /// Enumerates system fonts using the given fontconfig-compatible executable.
+    /// Extracted from the no-arg overload so tests can point it at a controlled
+    /// (non-existent) executable name instead of the hardcoded <c>fc-list</c>.
+    /// </summary>
+    internal static List<SystemFontInfo>? TryScanFromFcList(string executableName)
+    {
         try
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = "fc-list",
+                FileName = executableName,
                 Arguments = "--format=%{family}|%{style}|%{file}|%{index}\\n",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -611,9 +621,22 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
 
             return results.Count > 0 ? results : null;
         }
+        catch (System.ComponentModel.Win32Exception ex)
+        {
+            // Thrown by Process.Start when the target executable can't be found or
+            // launched (e.g. stock macOS, which uses CoreText rather than fontconfig
+            // and typically has no fc-list binary installed). This is a common,
+            // expected fallback path — log it so it isn't silent, then fall back to
+            // the full font directory scan.
+            Trace.TraceInformation(
+                $"KernSmith: '{executableName}' was not found ({ex.Message}). " +
+                "Falling back to a full font directory scan.");
+            return null;
+        }
         catch
         {
-            // fc-list not found or any other error — fall back to directory scan.
+            // Any other error (timeout, non-zero exit, malformed output, etc.) —
+            // fall back to directory scan without additional logging.
             return null;
         }
     }
