@@ -42,6 +42,11 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     private readonly object _seedAttemptedLock = new();
     private readonly HashSet<string> _seedAttempted = new(StringComparer.OrdinalIgnoreCase);
 
+    // Test seam: when set, overrides GetFontDirectories() for the heuristic
+    // filename-match tier, so tests can point it at a fixture directory instead of
+    // the real OS's actual font directories.
+    internal List<string>? FontDirectoriesOverride { get; set; }
+
     /// <inheritdoc />
     public IReadOnlyList<SystemFontInfo> GetInstalledFonts()
     {
@@ -88,6 +93,18 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
             return null;
         }
 
+        // Heuristic filename-targeted parse: narrow candidates by filename first (cheap),
+        // then verify with a real parse, before paying for a full directory enumeration +
+        // parse of every installed font. A filename match that fails to parse to the
+        // requested family (e.g. "Helvetica" matching "HelveticaNeue-Bold.ttf") is treated
+        // as a definitive miss, not a signal to escalate — only a total absence of
+        // filename-narrowed candidates falls through to the full scan.
+        var fontDirs = FontDirectoriesOverride ?? GetFontDirectories();
+        if (TryHeuristicFilenameMatch(familyName, styleName, fontDirs, out FontLoadResult? heuristicResult))
+        {
+            return heuristicResult;
+        }
+
         var fonts = GetInstalledFonts();
 
         // Find all fonts matching the family name (case-insensitive)
@@ -101,41 +118,15 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
         if (matches.Count == 0)
             return null;
 
-        SystemFontInfo? best = null;
-
-        if (styleName is not null)
-        {
-            // Match the requested style
-            foreach (var m in matches)
-            {
-                if (string.Equals(m.StyleName, styleName, StringComparison.OrdinalIgnoreCase))
-                {
-                    best = m;
-                    break;
-                }
-            }
-        }
-        else
-        {
-            // Prefer "Regular"
-            foreach (var m in matches)
-            {
-                if (string.Equals(m.StyleName, "Regular", StringComparison.OrdinalIgnoreCase))
-                {
-                    best = m;
-                    break;
-                }
-            }
-        }
+        var best = SelectBestMatch(matches, styleName);
 
         // When a specific style was requested but not found, return null
         // so the caller knows it needs synthetic bold/italic. Only fall back
         // to the first match when no style was requested.
-        if (best == null && styleName != null)
+        if (best == null)
         {
             return null;
         }
-        best ??= matches[0];
 
         if (styleName is null)
         {
@@ -154,6 +145,199 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Selects the best match from a family-matched candidate list: an exact style match
+    /// if <paramref name="styleName"/> was given, otherwise a preferred "Regular" match,
+    /// otherwise the first candidate. Returns null when a specific style was requested and
+    /// not found among <paramref name="matches"/> — the caller should treat that as
+    /// "not found" (so it can fall back to synthetic styling), not fall back to an
+    /// arbitrary style.
+    /// </summary>
+    private static SystemFontInfo? SelectBestMatch(List<SystemFontInfo> matches, string? styleName)
+    {
+        if (matches.Count == 0)
+        {
+            return null;
+        }
+
+        if (styleName is not null)
+        {
+            foreach (var m in matches)
+            {
+                if (string.Equals(m.StyleName, styleName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return m;
+                }
+            }
+
+            return null;
+        }
+
+        foreach (var m in matches)
+        {
+            if (string.Equals(m.StyleName, "Regular", StringComparison.OrdinalIgnoreCase))
+            {
+                return m;
+            }
+        }
+
+        return matches[0];
+    }
+
+    /// <summary>
+    /// Cheap narrowing tier that runs before the full directory scan: enumerates filenames
+    /// only (no parsing) across <paramref name="fontDirs"/>, keeps files whose normalized
+    /// name contains the normalized family name as a substring, then parses ONLY those
+    /// narrowed candidates to verify the real family name — a filename match is just a
+    /// hint, never trusted on its own.
+    /// </summary>
+    /// <returns>
+    /// <c>true</c> if this tier produced a definitive outcome (via <paramref name="result"/>,
+    /// which may still be null if a specific style wasn't found among the heuristic
+    /// matches) — the caller must NOT fall through to the full scan in that case.
+    /// <c>false</c> only when there were no filename-narrowed candidates at all, meaning
+    /// the caller should fall through to the full scan as the correctness backstop.
+    /// </returns>
+    private bool TryHeuristicFilenameMatch(string familyName, string? styleName, List<string> fontDirs, out FontLoadResult? result)
+    {
+        result = null;
+
+        var normalizedFamily = NormalizeForFilenameMatch(familyName);
+        var narrowedFiles = new List<string>();
+
+        foreach (var dir in fontDirs)
+        {
+            if (!Directory.Exists(dir))
+                continue;
+
+            IEnumerable<string> files;
+            try
+            {
+                files = Directory.EnumerateFiles(dir, "*.*", SearchOption.AllDirectories);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                continue;
+            }
+            catch (IOException)
+            {
+                continue;
+            }
+
+            foreach (var filePath in files)
+            {
+                var ext = Path.GetExtension(filePath);
+                if (!IsFontExtension(ext))
+                    continue;
+
+                var fileNameOnly = Path.GetFileNameWithoutExtension(filePath);
+                if (NormalizeForFilenameMatch(fileNameOnly).Contains(normalizedFamily, StringComparison.Ordinal))
+                {
+                    narrowedFiles.Add(filePath);
+                }
+            }
+        }
+
+        if (narrowedFiles.Count == 0)
+        {
+            // No filename hint at all — fall through to the full scan (correctness backstop).
+            return false;
+        }
+
+        var matches = new List<SystemFontInfo>();
+        foreach (var filePath in narrowedFiles)
+        {
+            try
+            {
+                var data = File.ReadAllBytes(filePath);
+                var faceCount = GetFaceCount(data);
+
+                for (var faceIndex = 0; faceIndex < faceCount; faceIndex++)
+                {
+                    try
+                    {
+                        var parser = new TtfParser(data, faceIndex, parseAdvancedTables: false);
+                        if (!parser.IsValid)
+                            continue;
+
+                        var parsedFamily = parser.Names?.FontFamily;
+                        if (string.IsNullOrWhiteSpace(parsedFamily))
+                            continue;
+
+                        // The filename match was just a hint — the parsed family name is
+                        // the real source of truth. Reject anything that doesn't actually
+                        // match (e.g. "Helvetica" matching "HelveticaNeue-Bold.ttf").
+                        if (!string.Equals(parsedFamily, familyName, StringComparison.OrdinalIgnoreCase))
+                            continue;
+
+                        matches.Add(new SystemFontInfo
+                        {
+                            FamilyName = parsedFamily,
+                            StyleName = parser.Names?.FontSubfamily ?? "Regular",
+                            FilePath = filePath,
+                            FaceIndex = faceIndex
+                        });
+                    }
+                    catch (Exception ex) when (ex is FontParsingException or IOException or UnauthorizedAccessException)
+                    {
+                        // Skip faces that can't be parsed
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is FontParsingException or IOException or UnauthorizedAccessException)
+            {
+                // Skip files that can't be read or parsed
+            }
+        }
+
+        // A filename hint existed — this tier is done regardless of outcome. Even if every
+        // narrowed candidate turned out to be a false positive (matches is empty), we do
+        // NOT fall through to the full scan; that's a deliberate design tradeoff (a bounded
+        // failed heuristic, not an escalation).
+        var best = SelectBestMatch(matches, styleName);
+        if (best == null)
+        {
+            return true;
+        }
+
+        if (styleName is null)
+        {
+            CacheResolvedFont(familyName, best);
+        }
+
+        try
+        {
+            result = new FontLoadResult(File.ReadAllBytes(best.FilePath), best.FaceIndex);
+        }
+        catch (IOException)
+        {
+            result = null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            result = null;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Normalizes a family name or filename for heuristic comparison: lowercased, with
+    /// spaces, hyphens, and underscores stripped (so e.g. "Times New Roman" and
+    /// "TimesNewRoman.ttf" compare equal on the parts that matter).
+    /// </summary>
+    private static string NormalizeForFilenameMatch(string value)
+    {
+        var builder = new System.Text.StringBuilder(value.Length);
+        foreach (var c in value)
+        {
+            if (c is ' ' or '-' or '_')
+                continue;
+            builder.Append(char.ToLowerInvariant(c));
+        }
+        return builder.ToString();
     }
 
     /// <summary>
