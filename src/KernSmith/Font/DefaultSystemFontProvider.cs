@@ -25,6 +25,10 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     private readonly object _resolvedFontCacheLock = new();
     internal readonly Dictionary<string, SystemFontInfo> _resolvedFontCache = new(StringComparer.OrdinalIgnoreCase);
 
+    // Instance-level (not static) so tests can substitute it per-provider to count
+    // reads without any cross-test interference from parallel test execution.
+    internal Func<string, byte[]> ReadFileBytes { get; set; } = File.ReadAllBytes;
+
     /// <inheritdoc />
     public IReadOnlyList<SystemFontInfo> GetInstalledFonts()
     {
@@ -141,8 +145,10 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
 
     /// <summary>
     /// Looks up <paramref name="familyName"/> in the lazy resolved-font cache. Returns
-    /// true only if a cached entry exists and is still valid (see <see cref="IsCacheEntryValid"/>);
-    /// stale entries are evicted so the caller falls through to the normal resolution path.
+    /// true only if a cached entry exists and is still valid — validated and read in a
+    /// single pass via <see cref="IsCacheEntryValidCore"/> so a cache hit costs exactly
+    /// one file read, not two. Stale entries are evicted so the caller falls through to
+    /// the normal resolution path.
     /// </summary>
     private bool TryGetValidCachedFont(string familyName, out FontLoadResult? result)
     {
@@ -159,21 +165,10 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
             return false;
         }
 
-        if (IsCacheEntryValid(entry, familyName))
+        if (IsCacheEntryValidCore(entry, familyName, ReadFileBytes, out byte[]? data) && data is not null)
         {
-            try
-            {
-                result = new FontLoadResult(File.ReadAllBytes(entry.FilePath), entry.FaceIndex);
-                return true;
-            }
-            catch (IOException)
-            {
-                // Fall through to eviction below.
-            }
-            catch (UnauthorizedAccessException)
-            {
-                // Fall through to eviction below.
-            }
+            result = new FontLoadResult(data, entry.FaceIndex);
+            return true;
         }
 
         lock (_resolvedFontCacheLock)
@@ -201,7 +196,12 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     /// detect entries invalidated by files being deleted, moved, or replaced.
     /// </summary>
     internal static bool IsCacheEntryValid(SystemFontInfo entry, string familyName)
+        => IsCacheEntryValidCore(entry, familyName, File.ReadAllBytes, out _);
+
+    private static bool IsCacheEntryValidCore(SystemFontInfo entry, string familyName, Func<string, byte[]> readFileBytes, out byte[]? data)
     {
+        data = null;
+
         if (!File.Exists(entry.FilePath))
         {
             return false;
@@ -209,10 +209,14 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
 
         try
         {
-            var data = File.ReadAllBytes(entry.FilePath);
-            var parser = new TtfParser(data, entry.FaceIndex, parseAdvancedTables: false);
-            return parser.IsValid
-                   && string.Equals(parser.Names?.FontFamily, familyName, StringComparison.OrdinalIgnoreCase);
+            var bytes = readFileBytes(entry.FilePath);
+            var parser = new TtfParser(bytes, entry.FaceIndex, parseAdvancedTables: false);
+            if (parser.IsValid && string.Equals(parser.Names?.FontFamily, familyName, StringComparison.OrdinalIgnoreCase))
+            {
+                data = bytes;
+                return true;
+            }
+            return false;
         }
         catch (Exception ex) when (ex is FontParsingException or IOException or UnauthorizedAccessException)
         {

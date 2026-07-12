@@ -199,6 +199,39 @@ public class DefaultSystemFontProviderCacheTests : IDisposable
     }
 
     [Fact]
+    public void LoadFont_ValidCacheEntry_ReadsFontFileExactlyOnce()
+    {
+        // Arrange — a cache hit should cost exactly one file read. Previously,
+        // IsCacheEntryValid read the file once to validate it, then
+        // TryGetValidCachedFont read it again to build the FontLoadResult,
+        // silently doubling the I/O cost of every "cached" lookup (worst on
+        // large multi-face .ttc collections, e.g. macOS's ~67MB Songti.ttc).
+        var provider = new DefaultSystemFontProvider();
+        provider._resolvedFontCache["Roboto"] = new SystemFontInfo
+        {
+            FamilyName = "Roboto",
+            StyleName = "Regular",
+            FilePath = _fixtureFontPath,
+            FaceIndex = 0
+        };
+
+        var readCount = 0;
+        provider.ReadFileBytes = path =>
+        {
+            readCount++;
+            return File.ReadAllBytes(path);
+        };
+
+        // Act
+        var result = provider.LoadFont("Roboto");
+
+        // Assert
+        result.ShouldNotBeNull();
+        result!.Data.ShouldBe(File.ReadAllBytes(_fixtureFontPath));
+        readCount.ShouldBe(1);
+    }
+
+    [Fact]
     public void IsCacheEntryValid_ValidFileAndMatchingFamily_ReturnsTrue()
     {
         var entry = new SystemFontInfo
