@@ -56,7 +56,9 @@ The red→green cycle is mandatory, not ceremonial:
 
 ### Regression & Output Comparison (IMPORTANT)
 
-When the user asks to **"run a comparison"**, **"regress"**, **"a regression"**, or refers to **"the comparison script"**, they mean the purpose-built harness at **`tests/bmfont-compare/`** — NOT an ad-hoc byte/hash check. Do not improvise; run the real tool:
+**Any change to a rasterizer backend, atlas packing, or other pixel-output code path needs this harness run before the work is considered done — not just xUnit green.** Unit tests check bitmap values in isolation; they can't show whether a fix bled into another backend/config or whether the visual delta is actually what was intended. Run it proactively as part of finishing the change, the same way you'd run `dotnet test` — don't wait to be asked. If no existing `.bmfc` config in `tests/bmfont-compare/gum-bmfont/` exercises the option you changed (e.g. a flag that's normally left at its default), add one so the harness actually covers the new path; otherwise main vs. branch reports "identical" for reasons that have nothing to do with correctness.
+
+When the user asks to **"run a comparison"**, **"regress"**, **"a regression"**, or refers to **"the comparison script"**, they mean this same purpose-built harness at **`tests/bmfont-compare/`** — NOT an ad-hoc byte/hash check. Do not improvise; run the real tool:
 
 ```bash
 # Full main-vs-branch regression (stash → checkout base → generate → checkout branch → regenerate → diff)
