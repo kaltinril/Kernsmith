@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `BmFont.HintFontLocation(familyName, path)` — lets a consumer pre-populate the system font resolver's cache with a known file path for a family name, as a lighter-weight alternative to `RegisterFont` when the font doesn't need to be loaded into memory up front. Validated the same way as any other cache/seed entry (file exists, parsed family matches) before being trusted. (#152)
+
+### Changed
+
+- `DefaultSystemFontProvider` now logs a `Trace.TraceInformation` message at each font-resolution tier miss (invalid cache/hint/seed entry, no filename-narrowed heuristic candidates, heuristic candidates failing verification, and full directory scan fallback), so a consumer can identify which family names are paying for the expensive resolution tiers without profiling. (#152)
+
 ## [0.15.3] - 2026-07-12
 
 ### Fixed

@@ -111,3 +111,26 @@ var result = BmFont.GenerateFromSystem("MyFont", new FontGeneratorOptions
     Bold = true
 });
 ```
+
+## Font location hints
+
+If you already know where a system font lives on disk, `HintFontLocation` is a lighter-weight
+alternative to `RegisterFont` — it skips OS-specific resolution (Windows registry, filename
+heuristics, full directory scan) for that family without loading the font's bytes into memory
+up front. The hint is validated the same way as any other cached/seeded entry (the file must
+exist and its parsed family name must match) before it's trusted, so a wrong hint just falls
+through to normal resolution.
+
+| Method | Description |
+|--------|-------------|
+| `HintFontLocation(string familyName, string path, int faceIndex = 0)` | Pre-populate the system font resolver's cache with a known file path for a family name. |
+
+```csharp
+BmFont.HintFontLocation("Arial", @"C:\Windows\Fonts\arial.ttf");
+
+var result = BmFont.GenerateFromSystem("Arial", new FontGeneratorOptions { Size = 32 });
+```
+
+If a family name resolves through the expensive full directory scan (the last-resort tier),
+`DefaultSystemFontProvider` logs a `Trace.TraceInformation` message naming that family — a
+good signal to add a hint (or call `RegisterFont`) for it.

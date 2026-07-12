@@ -44,6 +44,32 @@ public static class BmFont
     }
 
     /// <summary>
+    /// Pre-populates the system font resolver's cache with a consumer-supplied file path for
+    /// a family name, so <see cref="GenerateFromSystem(string, FontGeneratorOptions?)"/> can
+    /// skip OS-specific resolution (Windows registry, heuristic filename match, full directory
+    /// scan) for it entirely. This is the lightweight alternative to <see cref="RegisterFont"/>
+    /// for a consumer who already knows where one of its fonts lives on disk but doesn't want
+    /// to load its bytes up front.
+    /// </summary>
+    /// <remarks>
+    /// The hint is validated exactly like any other cache or seed-table entry — the file must
+    /// exist and its parsed font-table family name must match <paramref name="familyName"/> —
+    /// before it is ever trusted. A wrong hint costs one bounded failed check, then normal
+    /// resolution proceeds as if no hint had been given; a correct hint skips OS resolution
+    /// entirely on the next lookup for that family.
+    /// </remarks>
+    /// <param name="familyName">Font family name the hint applies to (e.g., "Arial").</param>
+    /// <param name="path">Path to the font file believed to contain that family.</param>
+    /// <param name="faceIndex">TTC face index (0 for single-face font files).</param>
+    public static void HintFontLocation(string familyName, string path, int faceIndex = 0)
+    {
+        ArgumentNullException.ThrowIfNull(familyName);
+        ArgumentNullException.ThrowIfNull(path);
+
+        s_systemFontProvider.Value.AddResolvedFontHint(familyName, path, faceIndex);
+    }
+
+    /// <summary>
     /// Removes a previously registered font. Returns true if a font was removed.
     /// </summary>
     /// <param name="familyName">Font family name.</param>
