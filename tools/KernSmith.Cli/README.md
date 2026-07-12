@@ -311,6 +311,32 @@ kernsmith list-fonts --json
 
 ---
 
+### benchmark-fonts
+
+Benchmark font *resolution* (`LoadFont`) cost across every installed font family — distinct from `benchmark`, which times font *generation*. Runs two passes in the same process: a cold pass (first resolution per family) and a warm pass (repeat resolution per family), so the effect of the per-family resolved-font cache is visible in one invocation.
+
+```
+kernsmith benchmark-fonts [--filter <pattern>] [--json]
+```
+
+| Flag | Description |
+|------|-------------|
+| `--filter <pattern>` | Only benchmark families matching this substring (case-insensitive) |
+| `--json` | Output as JSON |
+
+```
+# Benchmark every installed font family
+kernsmith benchmark-fonts
+
+# Scope to a subset for a quick check
+kernsmith benchmark-fonts --filter "roboto"
+
+# JSON output for scripting
+kernsmith benchmark-fonts --json
+```
+
+---
+
 ### list-rasterizers
 
 List available rasterizer backends and their capabilities.

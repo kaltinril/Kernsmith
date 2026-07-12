@@ -16,7 +16,18 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     private static readonly string[] FontExtensions = { ".ttf", ".otf", ".ttc" };
 
     private readonly object _lock = new();
-    private List<SystemFontInfo>? _cachedFonts;
+    internal List<SystemFontInfo>? _cachedFonts;
+
+    // Lazy per-family-name cache populated incrementally by LoadFont, distinct
+    // from _cachedFonts (the full enumerated list backing GetInstalledFonts()).
+    // Internal so tests can seed/inspect entries directly instead of depending
+    // on OS registry/font-directory state.
+    private readonly object _resolvedFontCacheLock = new();
+    internal readonly Dictionary<string, SystemFontInfo> _resolvedFontCache = new(StringComparer.OrdinalIgnoreCase);
+
+    // Instance-level (not static) so tests can substitute it per-provider to count
+    // reads without any cross-test interference from parallel test execution.
+    internal Func<string, byte[]> ReadFileBytes { get; set; } = File.ReadAllBytes;
 
     /// <inheritdoc />
     public IReadOnlyList<SystemFontInfo> GetInstalledFonts()
@@ -37,10 +48,22 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     /// <inheritdoc />
     public FontLoadResult? LoadFont(string familyName, string? styleName = null)
     {
+        // Style-aware caching is out of scope for now — the resolved-font cache
+        // is keyed by family name only, so only consult/populate it when no
+        // specific style was requested.
+        if (styleName is null && TryGetValidCachedFont(familyName, out FontLoadResult? cachedResult))
+        {
+            return cachedResult;
+        }
+
         // Try fast registry-based lookup on Windows before falling back to
         // the full font directory scan, which can take several seconds.
-        if (TryLoadFontFromRegistry(familyName, styleName, out FontLoadResult? registryResult, out bool familyFound))
+        if (TryLoadFontFromRegistry(familyName, styleName, out FontLoadResult? registryResult, out bool familyFound, out SystemFontInfo? registryInfo))
         {
+            if (styleName is null && registryInfo is not null)
+            {
+                CacheResolvedFont(familyName, registryInfo);
+            }
             return registryResult;
         }
 
@@ -101,6 +124,11 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
         }
         best ??= matches[0];
 
+        if (styleName is null)
+        {
+            CacheResolvedFont(familyName, best);
+        }
+
         try
         {
             return new FontLoadResult(File.ReadAllBytes(best.FilePath), best.FaceIndex);
@@ -116,14 +144,96 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     }
 
     /// <summary>
+    /// Looks up <paramref name="familyName"/> in the lazy resolved-font cache. Returns
+    /// true only if a cached entry exists and is still valid — validated and read in a
+    /// single pass via <see cref="IsCacheEntryValidCore"/> so a cache hit costs exactly
+    /// one file read, not two. Stale entries are evicted so the caller falls through to
+    /// the normal resolution path.
+    /// </summary>
+    private bool TryGetValidCachedFont(string familyName, out FontLoadResult? result)
+    {
+        result = null;
+
+        SystemFontInfo? entry;
+        lock (_resolvedFontCacheLock)
+        {
+            _resolvedFontCache.TryGetValue(familyName, out entry);
+        }
+
+        if (entry is null)
+        {
+            return false;
+        }
+
+        if (IsCacheEntryValidCore(entry, familyName, ReadFileBytes, out byte[]? data) && data is not null)
+        {
+            result = new FontLoadResult(data, entry.FaceIndex);
+            return true;
+        }
+
+        lock (_resolvedFontCacheLock)
+        {
+            _resolvedFontCache.Remove(familyName);
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Stores the resolved <see cref="SystemFontInfo"/> for a family name so the next
+    /// no-style-requested lookup for that family is a pure cache hit.
+    /// </summary>
+    private void CacheResolvedFont(string familyName, SystemFontInfo info)
+    {
+        lock (_resolvedFontCacheLock)
+        {
+            _resolvedFontCache[familyName] = info;
+        }
+    }
+
+    /// <summary>
+    /// Validates a cached resolved-font entry: the file must still exist and must still
+    /// parse as a font whose family name matches <paramref name="familyName"/>. Used to
+    /// detect entries invalidated by files being deleted, moved, or replaced.
+    /// </summary>
+    internal static bool IsCacheEntryValid(SystemFontInfo entry, string familyName)
+        => IsCacheEntryValidCore(entry, familyName, File.ReadAllBytes, out _);
+
+    private static bool IsCacheEntryValidCore(SystemFontInfo entry, string familyName, Func<string, byte[]> readFileBytes, out byte[]? data)
+    {
+        data = null;
+
+        if (!File.Exists(entry.FilePath))
+        {
+            return false;
+        }
+
+        try
+        {
+            var bytes = readFileBytes(entry.FilePath);
+            var parser = new TtfParser(bytes, entry.FaceIndex, parseAdvancedTables: false);
+            if (parser.IsValid && string.Equals(parser.Names?.FontFamily, familyName, StringComparison.OrdinalIgnoreCase))
+            {
+                data = bytes;
+                return true;
+            }
+            return false;
+        }
+        catch (Exception ex) when (ex is FontParsingException or IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Attempts to find and load a font file using the Windows registry, avoiding
     /// the expensive full font directory scan. Returns false on non-Windows platforms
     /// or if the font cannot be found via the registry.
     /// </summary>
-    private static bool TryLoadFontFromRegistry(string familyName, string? styleName, out FontLoadResult? fontResult, out bool familyFound)
+    private static bool TryLoadFontFromRegistry(string familyName, string? styleName, out FontLoadResult? fontResult, out bool familyFound, out SystemFontInfo? resolvedInfo)
     {
         fontResult = null;
         familyFound = false;
+        resolvedInfo = null;
 
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
@@ -132,7 +242,7 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
 
         try
         {
-            return TryLoadFontFromRegistryCore(familyName, styleName, out fontResult, out familyFound);
+            return TryLoadFontFromRegistryCore(familyName, styleName, out fontResult, out familyFound, out resolvedInfo);
         }
         catch (Exception ex) when (ex is PlatformNotSupportedException
                                      or TypeLoadException
@@ -149,10 +259,11 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     /// handling remain in the caller.
     /// </summary>
     [SupportedOSPlatform("windows")]
-    private static bool TryLoadFontFromRegistryCore(string familyName, string? styleName, out FontLoadResult? fontResult, out bool familyFound)
+    private static bool TryLoadFontFromRegistryCore(string familyName, string? styleName, out FontLoadResult? fontResult, out bool familyFound, out SystemFontInfo? resolvedInfo)
     {
         fontResult = null;
         familyFound = false;
+        resolvedInfo = null;
 
         // Registry keys that contain font entries. The HKLM key has system-wide fonts;
         // the HKCU key has per-user installed fonts.
@@ -219,6 +330,13 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
         }
 
         fontResult = new FontLoadResult(File.ReadAllBytes(fontPath), faceIndex);
+        resolvedInfo = new SystemFontInfo
+        {
+            FamilyName = familyName,
+            StyleName = styleName ?? "Regular",
+            FilePath = fontPath,
+            FaceIndex = faceIndex
+        };
         return true;
     }
 #pragma warning restore CA1416
