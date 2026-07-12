@@ -8,7 +8,8 @@ namespace KernSmith.Rasterizers.Gdi;
 
 /// <summary>
 /// Windows GDI-based rasterizer backend. Produces output compatible with BMFont's built-in rasterizer.
-/// Windows-only; uses GetGlyphOutlineW with GGO_GRAY8_BITMAP for grayscale rendering.
+/// Windows-only; uses GetGlyphOutlineW with GGO_GRAY8_BITMAP for grayscale rendering, or
+/// GGO_BITMAP for <see cref="AntiAliasMode.None"/> to produce a true 1-bit outline.
 /// <para>
 /// <b>Fractional sizes:</b> GDI's <c>LOGFONTW.lfHeight</c> is an integer-pixel field, so fractional
 /// values in <see cref="RasterOptions.Size"/> are rounded to the nearest integer when this backend
@@ -389,11 +390,16 @@ public sealed class GdiRasterizer : IRasterizer
     {
         var mat2 = GetMat2(options);
 
+        // AntiAliasMode.None must render a true 1-bit-per-pixel outline: GGO_GRAY8_BITMAP
+        // always returns GDI's antialiased grayscale coverage regardless of the HFONT's
+        // lfQuality, so respecting "no smoothing" requires switching output formats (#144).
+        uint format = options.AntiAlias == AntiAliasMode.None ? GGO_BITMAP : GGO_GRAY8_BITMAP;
+
         // First call: get the required buffer size.
         var bufferSize = GetGlyphOutlineW(
             hdc,
             (uint)codepoint,
-            GGO_GRAY8_BITMAP,
+            format,
             out var gm,
             0,
             IntPtr.Zero,
@@ -440,7 +446,7 @@ public sealed class GdiRasterizer : IRasterizer
             var result = GetGlyphOutlineW(
                 hdc,
                 (uint)codepoint,
-                GGO_GRAY8_BITMAP,
+                format,
                 out gm,
                 bufferSize,
                 buffer,
@@ -449,27 +455,51 @@ public sealed class GdiRasterizer : IRasterizer
             if (result == GDI_ERROR)
                 return null;
 
-            // GGO_GRAY8_BITMAP rows are DWORD-aligned.
-            int srcPitch = (width + 3) & ~3;
-            if ((long)srcPitch * height > bufferSize)
-                return null;
-
             // Output: tightly packed rows (1 byte per pixel, width bytes per row).
             long totalPixels = (long)width * height;
             if (totalPixels > int.MaxValue)
                 return null;
             var bitmapData = new byte[totalPixels];
 
-            unsafe
+            if (format == GGO_BITMAP)
             {
-                var src = (byte*)buffer;
-                for (int y = 0; y < height; y++)
+                // GGO_BITMAP is 1 bit per pixel, MSB-first, rows DWORD-aligned.
+                int srcPitch = ((width + 31) / 32) * 4;
+                if ((long)srcPitch * height > bufferSize)
+                    return null;
+
+                unsafe
                 {
-                    for (int x = 0; x < width; x++)
+                    var src = (byte*)buffer;
+                    for (int y = 0; y < height; y++)
                     {
-                        // GGO_GRAY8_BITMAP values are 0-64, remap to 0-255.
-                        byte value = src[y * srcPitch + x];
-                        bitmapData[y * width + x] = (byte)Math.Min(value * 255 / 64, 255);
+                        for (int x = 0; x < width; x++)
+                        {
+                            byte srcByte = src[y * srcPitch + x / 8];
+                            bool set = ((srcByte >> (7 - x % 8)) & 1) != 0;
+                            bitmapData[y * width + x] = set ? (byte)255 : (byte)0;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // GGO_GRAY8_BITMAP rows are DWORD-aligned.
+                int srcPitch = (width + 3) & ~3;
+                if ((long)srcPitch * height > bufferSize)
+                    return null;
+
+                unsafe
+                {
+                    var src = (byte*)buffer;
+                    for (int y = 0; y < height; y++)
+                    {
+                        for (int x = 0; x < width; x++)
+                        {
+                            // GGO_GRAY8_BITMAP values are 0-64, remap to 0-255.
+                            byte value = src[y * srcPitch + x];
+                            bitmapData[y * width + x] = (byte)Math.Min(value * 255 / 64, 255);
+                        }
                     }
                 }
             }
