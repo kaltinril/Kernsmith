@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `BmFont.HintFontLocation(familyName, path)` — lets a consumer pre-populate the system font resolver's cache with a known file path for a family name, as a lighter-weight alternative to `RegisterFont` when the font doesn't need to be loaded into memory up front. Validated the same way as any other cache/seed entry (file exists, parsed family matches) before being trusted. (#152)
+- [System Font Resolution](docs/core/system-font-resolution.md) docfx guide — documents the four-tier fallback chain, the built-in seed table, the heuristic filename-match tier, and what each diagnostic message means, with a focus on macOS (the one platform that regularly exercises every tier). (#155)
 
 ### Changed
 

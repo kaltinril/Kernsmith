@@ -133,4 +133,6 @@ var result = BmFont.GenerateFromSystem("Arial", new FontGeneratorOptions { Size 
 
 If a family name resolves through the expensive full directory scan (the last-resort tier),
 `DefaultSystemFontProvider` logs a `Trace.TraceInformation` message naming that family — a
-good signal to add a hint (or call `RegisterFont`) for it.
+good signal to add a hint (or call `RegisterFont`) for it. See
+[System Font Resolution](../core/system-font-resolution.md) for the full fallback chain, the
+built-in seed table, and what each diagnostic message means.
