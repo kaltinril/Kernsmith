@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.3] - 2026-07-12
+
+### Fixed
+
+- System font directory scans (`GetInstalledFonts()`, `GenerateFromSystem()`'s scan fallback) no longer parse GPOS kerning, `kern`, `fvar`, and color-glyph tables per font face when only the family/style name is needed. This cut a real-world 699-font directory scan from ~2.7-3.0s to ~600-650ms in local testing. (#139)
+- `fc-list` (used for fast font discovery on Linux/macOS) failing to launch — most commonly on stock macOS, which doesn't ship fontconfig — is now logged via `Trace.TraceInformation` instead of silently falling back with no visibility. (#139)
+
 ## [0.15.2] - 2026-06-28
 
 ### Fixed
