@@ -37,6 +37,7 @@ The main entry point. Provides static methods for font generation:
 - <xref:KernSmith.BmFont>.RegisterFont() -- register raw font data for use with `GenerateFromSystem()` on platforms without system font access
 - <xref:KernSmith.BmFont>.UnregisterFont() -- remove a previously registered font
 - <xref:KernSmith.BmFont>.ClearRegisteredFonts() -- remove all registered fonts
+- <xref:KernSmith.BmFont>.HintFontLocation() -- pre-populate the system font resolver's cache with a known file path for a family name, skipping OS-specific resolution for it
 
 ### BmFontResult
 
