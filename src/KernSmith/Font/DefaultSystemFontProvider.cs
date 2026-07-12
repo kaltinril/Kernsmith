@@ -64,6 +64,42 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// Resolves a family through four tiers, in order, each cheaper than the next fallback
+    /// so the common case (a family already seen, or a well-known one) never pays for the
+    /// expensive tiers at all:
+    /// <list type="number">
+    /// <item><description>
+    /// <b>Cache / seed</b> (<see cref="TryGetValidCachedFont"/>, no-style requests only) —
+    /// a hit against <c>_resolvedFontCache</c> from a prior call, or a lazy one-shot attempt
+    /// against <see cref="WellKnownFontSeeds"/>'s best-guess candidate paths
+    /// (<see cref="TryResolveFromSeed"/>) the first time a family is requested. Every
+    /// candidate — cached or seeded — is validated identically via
+    /// <see cref="IsCacheEntryValidCore"/> before being trusted.
+    /// </description></item>
+    /// <item><description>
+    /// <b>Windows registry</b> (<see cref="TryLoadFontFromRegistry"/>) — fast, Windows-only;
+    /// no-op elsewhere. If the registry confirms the family exists but not the requested
+    /// style, resolution stops here and returns null (no separate file for that style).
+    /// </description></item>
+    /// <item><description>
+    /// <b>Heuristic filename match</b> (<see cref="TryHeuristicFilenameMatch"/>) — narrows
+    /// candidates by filename first (cheap directory enumeration, no parsing), then verifies
+    /// with a real parse. A filename hint that fails to verify is a bounded, definitive miss
+    /// (does not escalate); only a total absence of filename-narrowed candidates falls
+    /// through to the next tier.
+    /// </description></item>
+    /// <item><description>
+    /// <b>Full scan</b> (<see cref="GetInstalledFonts"/>) — the correctness backstop: every
+    /// installed font is enumerated and parsed. Always eventually finds a real, installed
+    /// font regardless of whether the earlier tiers' guesses were right.
+    /// </description></item>
+    /// </list>
+    /// A successful no-style resolution from any of tiers 2-4 is written back into
+    /// <c>_resolvedFontCache</c> via <see cref="CacheResolvedFont"/>, so the next no-style
+    /// request for that family is a pure tier-1 cache hit regardless of which tier
+    /// originally resolved it.
+    /// </remarks>
     public FontLoadResult? LoadFont(string familyName, string? styleName = null)
     {
         // Style-aware caching is out of scope for now — the resolved-font cache
