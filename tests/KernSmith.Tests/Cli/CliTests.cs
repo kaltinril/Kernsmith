@@ -652,6 +652,105 @@ public class CliTests : IDisposable
         stderr.ShouldContain("No .bmfc or .hiero config files specified");
     }
 
+    // -- benchmark-fonts --
+
+    [Fact]
+    public void BenchmarkFonts_NoFilter_RunsColdAndWarmPasses()
+    {
+        // Act
+        var (exitCode, stdout, stderr) = RunCli("benchmark-fonts");
+
+        // Assert
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain("Benchmarking font resolution");
+        stdout.ShouldContain("Cold pass:");
+        stdout.ShouldContain("Warm pass");
+    }
+
+    [Fact]
+    public void BenchmarkFonts_Filter_NarrowsResults()
+    {
+        // Arrange — first get the unfiltered family list/count via JSON so this test
+        // doesn't hardcode a specific font name that may not exist on every machine.
+        var (unfilteredExit, unfilteredStdout, unfilteredStderr) = RunCli("benchmark-fonts", "--json");
+        unfilteredExit.ShouldBe(0, $"stderr: {unfilteredStderr}");
+
+        using var unfilteredDoc = System.Text.Json.JsonDocument.Parse(unfilteredStdout);
+        var totalFamilies = unfilteredDoc.RootElement.GetProperty("families").GetInt32();
+        totalFamilies.ShouldBeGreaterThan(0, "a real machine should have at least one installed font family");
+
+        var firstFamily = unfilteredDoc.RootElement
+            .GetProperty("coldPass").GetProperty("results")[0]
+            .GetProperty("family").GetString();
+
+        // Act — filter down to just that one family name.
+        var (exitCode, stdout, stderr) = RunCli("benchmark-fonts", "--json", "--filter", firstFamily!);
+
+        // Assert
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        using var filteredDoc = System.Text.Json.JsonDocument.Parse(stdout);
+        var filteredFamilies = filteredDoc.RootElement.GetProperty("families").GetInt32();
+        filteredFamilies.ShouldBeGreaterThan(0);
+        filteredFamilies.ShouldBeLessThanOrEqualTo(totalFamilies);
+    }
+
+    [Fact]
+    public void BenchmarkFonts_Json_ProducesParseableJsonWithExpectedShape()
+    {
+        // Act
+        var (exitCode, stdout, stderr) = RunCli("benchmark-fonts", "--json");
+
+        // Assert
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        using var doc = System.Text.Json.JsonDocument.Parse(stdout);
+        var root = doc.RootElement;
+
+        root.GetProperty("families").GetInt32().ShouldBeGreaterThan(0);
+
+        foreach (var passName in new[] { "coldPass", "warmPass" })
+        {
+            var pass = root.GetProperty(passName);
+            var results = pass.GetProperty("results");
+            results.GetArrayLength().ShouldBeGreaterThan(0);
+
+            var firstResult = results[0];
+            firstResult.GetProperty("family").GetString().ShouldNotBeNullOrEmpty();
+            firstResult.TryGetProperty("ms", out _).ShouldBeTrue();
+
+            pass.TryGetProperty("min", out _).ShouldBeTrue();
+            pass.TryGetProperty("mean", out _).ShouldBeTrue();
+            pass.TryGetProperty("max", out _).ShouldBeTrue();
+            pass.TryGetProperty("totalMs", out _).ShouldBeTrue();
+        }
+    }
+
+    [Fact]
+    public void BenchmarkFonts_Help_ShowsHelp_ExitCode0()
+    {
+        // Act
+        var (exitCode, stdout, _) = RunCli("benchmark-fonts", "--help");
+
+        // Assert
+        exitCode.ShouldBe(0);
+        stdout.ShouldContain("Usage: kernsmith benchmark-fonts");
+        stdout.ShouldContain("--filter");
+        stdout.ShouldContain("--json");
+    }
+
+    [Fact]
+    public void BenchmarkFonts_FilterMatchesNothing_ExitsCleanlyWithoutThrowing()
+    {
+        // Arrange — a pattern guaranteed not to match any real installed font family.
+        var noSuchFamily = "KernSmithZzzNoSuchFontFamily_" + Guid.NewGuid().ToString("N")[..8];
+
+        // Act
+        var (exitCode, stdout, stderr) = RunCli("benchmark-fonts", "--filter", noSuchFamily);
+
+        // Assert
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain("No font families");
+    }
+
     // -- Helper methods --
 
     private static int ExtractIntAttribute(string fntContent, string attributeName)

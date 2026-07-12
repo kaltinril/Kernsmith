@@ -29,6 +29,7 @@ return processedArgs switch
     ["inspect", .. var rest] => InspectCommand.Execute(rest),
     ["convert", .. var rest] => ConvertCommand.Execute(rest),
     ["list-fonts", .. var rest] => ListFontsCommand.Execute(rest),
+    ["benchmark-fonts", .. var rest] => BenchmarkFontsCommand.Execute(rest),
     ["list-rasterizers", .. var rest] => ListRasterizersCommand.Execute(rest),
     ["info", .. var rest] => InfoCommand.Execute(rest),
     _ => UnknownCommand(processedArgs[0])
@@ -47,6 +48,7 @@ static int ShowHelp()
           kernsmith inspect <path>
           kernsmith convert <input> -o <output> [--format <text|xml|binary>]
           kernsmith list-fonts [--filter <pattern>]
+          kernsmith benchmark-fonts [--filter <pattern>]
           kernsmith list-rasterizers
           kernsmith info <path>
           kernsmith --help
@@ -59,6 +61,7 @@ static int ShowHelp()
           inspect       Inspect an existing .fnt file
           convert       Convert between BMFont formats (text/xml/binary)
           list-fonts        List system-installed fonts
+          benchmark-fonts   Benchmark font resolution (LoadFont) cost across installed families
           list-rasterizers  List available rasterizer backends on this platform
           info              Show font file metadata (TTF/OTF/WOFF)
 
