@@ -166,6 +166,22 @@ public class GdiRasterizerTests : IDisposable
         maxValue.ShouldBeGreaterThan((byte)64);
     }
 
+    // ── 9b. AntiAlias.None produces a binary (non-antialiased) bitmap ──
+
+    [Fact]
+    public void RasterizeGlyph_AntiAliasNone_ProducesOnlyBlackOrWhitePixels()
+    {
+        _rasterizer = CreateAndLoadRasterizer();
+        var options = new RasterOptions { Size = 32, AntiAlias = AntiAliasMode.None };
+
+        var glyph = _rasterizer.RasterizeGlyph(65, options); // 'A'
+
+        glyph.ShouldNotBeNull();
+        // GGO_BITMAP (used for AntiAliasMode.None) is 1-bit per pixel, so every
+        // decoded pixel must be fully on (255) or fully off (0) — no gray shades.
+        glyph.BitmapData.ShouldAllBe(b => b == 0 || b == 255);
+    }
+
     // ── 10. Dispose releases resources ──────────────────────────────
 
     [Fact]

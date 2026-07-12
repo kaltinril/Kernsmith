@@ -9,6 +9,7 @@ internal static partial class NativeMethods
 {
     // ── Constants ────────────────────────────────────────────────────
 
+    internal const uint GGO_BITMAP = 1;
     internal const uint GGO_GRAY8_BITMAP = 6;
     internal const uint GGO_METRICS = 0;
     internal const int MM_TEXT = 1;
