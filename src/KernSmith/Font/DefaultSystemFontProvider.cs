@@ -71,10 +71,11 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     /// <list type="number">
     /// <item><description>
     /// <b>Cache / seed</b> (<see cref="TryGetValidCachedFont"/>, no-style requests only) —
-    /// a hit against <c>_resolvedFontCache</c> from a prior call, or a lazy one-shot attempt
-    /// against <see cref="WellKnownFontSeeds"/>'s best-guess candidate paths
-    /// (<see cref="TryResolveFromSeed"/>) the first time a family is requested. Every
-    /// candidate — cached or seeded — is validated identically via
+    /// a hit against <c>_resolvedFontCache</c> from a prior call, a consumer-supplied hint
+    /// (<see cref="AddResolvedFontHint"/>, exposed via <see cref="KernSmith.BmFont.HintFontLocation"/>),
+    /// or a lazy one-shot attempt against <see cref="WellKnownFontSeeds"/>'s best-guess
+    /// candidate paths (<see cref="TryResolveFromSeed"/>) the first time a family is
+    /// requested. Every candidate — cached, hinted, or seeded — is validated identically via
     /// <see cref="IsCacheEntryValidCore"/> before being trusted.
     /// </description></item>
     /// <item><description>
@@ -140,6 +141,10 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
         {
             return heuristicResult;
         }
+
+        Trace.TraceInformation(
+            $"KernSmith: '{familyName}' requires a full font directory scan — the most expensive " +
+            "resolution path. Consider BmFont.HintFontLocation or BmFont.RegisterFont for this family.");
 
         var fonts = GetInstalledFonts();
 
@@ -279,6 +284,9 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
         if (narrowedFiles.Count == 0)
         {
             // No filename hint at all — fall through to the full scan (correctness backstop).
+            Trace.TraceInformation(
+                $"KernSmith: no filename-narrowed candidates found for '{familyName}' — falling back " +
+                "to a full font directory scan.");
             return false;
         }
 
@@ -335,6 +343,12 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
         var best = SelectBestMatch(matches, styleName);
         if (best == null)
         {
+            if (matches.Count == 0)
+            {
+                Trace.TraceInformation(
+                    $"KernSmith: {narrowedFiles.Count} filename-narrowed candidate(s) for '{familyName}' " +
+                    "failed real verification (parsed family name did not match) — treating as a definitive miss.");
+            }
             return true;
         }
 
@@ -408,6 +422,11 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
             return true;
         }
 
+        Trace.TraceInformation(
+            $"KernSmith: cached/hinted font entry for '{familyName}' at '{entry.FilePath}' is no longer valid " +
+            (File.Exists(entry.FilePath) ? "(parsed family name no longer matches)." : "(file no longer exists).") +
+            " Falling back to normal resolution.");
+
         lock (_resolvedFontCacheLock)
         {
             _resolvedFontCache.Remove(familyName);
@@ -448,6 +467,10 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
                 result = new FontLoadResult(data, candidate.FaceIndex);
                 return true;
             }
+
+            Trace.TraceInformation(
+                $"KernSmith: seed candidate for '{familyName}' at '{candidatePath}' was invalid " +
+                (File.Exists(candidatePath) ? "(parsed family name did not match)." : "(file does not exist)."));
         }
 
         return false;
@@ -495,6 +518,24 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
         }
 
         return new List<string>();
+    }
+
+    /// <summary>
+    /// Pre-populates <see cref="_resolvedFontCache"/> with a consumer-supplied file path for a
+    /// family name, exposed publicly via <see cref="KernSmith.BmFont.HintFontLocation"/>. The
+    /// next <see cref="LoadFont"/> call for this family is a tier-1 cache lookup, validated by
+    /// <see cref="IsCacheEntryValidCore"/> exactly like any other cache/seed entry before being
+    /// trusted — an invalid hint is evicted and normal resolution proceeds unchanged.
+    /// </summary>
+    internal void AddResolvedFontHint(string familyName, string filePath, int faceIndex = 0)
+    {
+        CacheResolvedFont(familyName, new SystemFontInfo
+        {
+            FamilyName = familyName,
+            StyleName = "Regular",
+            FilePath = filePath,
+            FaceIndex = faceIndex
+        });
     }
 
     /// <summary>
