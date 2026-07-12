@@ -2,3 +2,5 @@
   href: index.md
 - name: Effects and Post-Processing
   href: effects.md
+- name: System Font Resolution
+  href: system-font-resolution.md
