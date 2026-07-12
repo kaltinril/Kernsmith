@@ -46,12 +46,12 @@
 
 KernSmith supports pluggable rasterizer backends. Install at least one backend package to generate fonts.
 
-| Backend | Package | Platform | Notes |
-|---------|---------|----------|-------|
-| **FreeType** | `KernSmith.Rasterizers.FreeType` | Windows, Linux, macOS | Cross-platform, full feature support. |
-| **GDI** | `KernSmith.Rasterizers.Gdi` | Windows only | Matches BMFont reference output for pixel-perfect parity. |
-| **DirectWrite** | `KernSmith.Rasterizers.DirectWrite.TerraFX` | Windows only | Modern Windows rendering with natural/symmetric hinting. Color and variable fonts are not yet implemented; use FreeType for those. |
-| **StbTrueType** | `KernSmith.Rasterizers.StbTrueType` | Cross-platform | Pure C#, no native dependencies. Ideal for WASM, AOT, serverless. |
+| Backend | Package | Platform | Hinting | Color Fonts | Variable Fonts | SDF | Notes |
+|---------|---------|----------|---------|-------------|-----------------|-----|-------|
+| **FreeType** | `KernSmith.Rasterizers.FreeType` | Windows, Linux, macOS | Yes (native bytecode + autohint fallback) | Yes | Yes | Yes | Cross-platform, full feature support. Default choice unless you have a platform- or environment-specific reason to pick another backend. |
+| **GDI** | `KernSmith.Rasterizers.Gdi` | Windows only | Yes (native Windows hinting) | No | No | No | Matches BMFont reference output for pixel-perfect parity. |
+| **DirectWrite** | `KernSmith.Rasterizers.DirectWrite.TerraFX` | Windows only | Yes (natural/symmetric hinting) | No | No | No | Modern Windows rendering. Color and variable fonts are not yet implemented; use FreeType for those. |
+| **StbTrueType** | `KernSmith.Rasterizers.StbTrueType` | Cross-platform | No | No | No | Yes | Pure C#, no native dependencies. Ideal for WASM, AOT, serverless. No hinting engine, so small sizes with `AntiAlias.None` can look rough on thin stems -- prefer `AntiAlias.Grayscale` or raise `SuperSample` for crisper small-size text. |
 
 Install a backend:
 
