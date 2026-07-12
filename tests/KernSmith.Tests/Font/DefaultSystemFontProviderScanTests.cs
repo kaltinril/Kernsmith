@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Text;
 using KernSmith.Font;
 using Shouldly;
 
@@ -66,5 +68,38 @@ public class DefaultSystemFontProviderScanTests : IDisposable
         // Assert
         var results = Should.NotThrow(act);
         results.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void TryScanFromFcList_ExecutableNotFound_ReturnsNullAndTracesFailure()
+    {
+        // Arrange
+        var missingExecutable = "kernsmith-definitely-not-a-real-binary-" + Guid.NewGuid().ToString("N");
+        var captured = new StringBuilder();
+        var listener = new StringBuilderTraceListener(captured);
+
+        Trace.Listeners.Add(listener);
+        try
+        {
+            // Act
+            var result = DefaultSystemFontProvider.TryScanFromFcList(missingExecutable);
+
+            // Assert — behavior unchanged (still falls back to null)...
+            result.ShouldBeNull();
+
+            // ...but the failure is now visible via Trace instead of silently swallowed.
+            captured.ToString().ShouldContain(missingExecutable);
+        }
+        finally
+        {
+            Trace.Listeners.Remove(listener);
+        }
+    }
+
+    private sealed class StringBuilderTraceListener(StringBuilder buffer) : TraceListener
+    {
+        public override void Write(string? message) => buffer.Append(message);
+
+        public override void WriteLine(string? message) => buffer.AppendLine(message);
     }
 }
