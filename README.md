@@ -290,6 +290,18 @@ BmFont.ClearRegisteredFonts();                 // Remove all registrations
 
 Registering fonts explicitly also ensures cross-platform consistency -- the same fonts render identically everywhere regardless of what the OS has installed.
 
+### Font Location Hints
+
+If you already know where a system font lives on disk, `HintFontLocation` is a lighter-weight alternative to `RegisterFont` -- it skips OS-specific resolution (Windows registry, filename heuristics, full directory scan) for that family without loading the font's bytes into memory up front:
+
+```csharp
+BmFont.HintFontLocation("Arial", @"C:\Windows\Fonts\arial.ttf");
+
+var result = BmFont.GenerateFromSystem("Arial", new FontGeneratorOptions { Size = 32 });
+```
+
+The hint is validated the same way as any other cached/seeded entry (the file must exist and its parsed family name must match) before it's trusted, so a wrong hint just falls through to normal resolution. See [System Font Resolution](docs/core/system-font-resolution.md) for the full resolution chain and diagnostics.
+
 ## Batch Generation
 
 Generate multiple fonts in parallel with shared font caching:

@@ -51,4 +51,4 @@ var result = BmFont.Builder()
 | `KernSmith.Output.Model` | `BmFontModel` and its blocks (`InfoBlock`, `CommonBlock`, `CharEntry`, `PageEntry`, `KerningEntry`, `ExtendedMetadata`) |
 | `KernSmith.Atlas` | `AtlasPage`, `PixelFormat` |
 
-> All public types in this guide were verified against the source for KernSmith 0.15.1.
+> All public types in this guide were verified against the source for KernSmith 0.16.0.
