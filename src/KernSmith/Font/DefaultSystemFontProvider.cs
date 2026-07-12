@@ -29,6 +29,19 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
     // reads without any cross-test interference from parallel test execution.
     internal Func<string, byte[]> ReadFileBytes { get; set; } = File.ReadAllBytes;
 
+    // Test seam: when set, overrides WellKnownFontSeeds with a caller-supplied
+    // family -> fully-resolved candidate path list, so tests can exercise seeding
+    // deterministically against a fixture directory instead of the real OS's
+    // actual font paths.
+    internal Dictionary<string, string[]>? SeedTableOverride { get; set; }
+
+    // Tracks families we've already attempted to seed this instance, so a missed
+    // guess isn't retried on every call — one bounded attempt per family, then
+    // fall through to the normal resolution chain for the rest of this
+    // provider's lifetime.
+    private readonly object _seedAttemptedLock = new();
+    private readonly HashSet<string> _seedAttempted = new(StringComparer.OrdinalIgnoreCase);
+
     /// <inheritdoc />
     public IReadOnlyList<SystemFontInfo> GetInstalledFonts()
     {
@@ -162,7 +175,11 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
 
         if (entry is null)
         {
-            return false;
+            // Not yet resolved this instance — try the well-known seed table before
+            // falling through to the registry/full-scan tiers. A miss here is one
+            // bounded, harmless failed check (see WellKnownFontSeeds); a hit skips
+            // both directory enumeration and heuristic filtering entirely.
+            return TryResolveFromSeed(familyName, out result);
         }
 
         if (IsCacheEntryValidCore(entry, familyName, ReadFileBytes, out byte[]? data) && data is not null)
@@ -176,6 +193,88 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
             _resolvedFontCache.Remove(familyName);
         }
         return false;
+    }
+
+    /// <summary>
+    /// Attempts to resolve a family from <see cref="WellKnownFontSeeds"/> (or
+    /// <see cref="SeedTableOverride"/> in tests): tries each candidate path in order,
+    /// validating it exactly like any other cache entry via
+    /// <see cref="IsCacheEntryValidCore"/>. The family is marked as attempted regardless
+    /// of outcome, so a miss is never retried within this provider instance's lifetime.
+    /// </summary>
+    private bool TryResolveFromSeed(string familyName, out FontLoadResult? result)
+    {
+        result = null;
+
+        lock (_seedAttemptedLock)
+        {
+            if (!_seedAttempted.Add(familyName))
+                return false; // already tried (and failed) this family this instance
+        }
+
+        foreach (var candidatePath in GetSeedCandidatePaths(familyName))
+        {
+            var candidate = new SystemFontInfo
+            {
+                FamilyName = familyName,
+                StyleName = "Regular",
+                FilePath = candidatePath,
+                FaceIndex = 0
+            };
+
+            if (IsCacheEntryValidCore(candidate, familyName, ReadFileBytes, out byte[]? data) && data is not null)
+            {
+                CacheResolvedFont(familyName, candidate);
+                result = new FontLoadResult(data, candidate.FaceIndex);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Returns the best-guess candidate file paths for a family, in try-order. Uses
+    /// <see cref="SeedTableOverride"/> when set (tests), otherwise the real OS-specific
+    /// <see cref="WellKnownFontSeeds"/> table. Windows candidates are filenames resolved
+    /// against <see cref="GetFontDirectories"/> (same directories LoadFont's registry path
+    /// already resolves against); macOS candidates are already-absolute paths. No seeding
+    /// on Linux — <c>fc-list</c> already covers the fast path there.
+    /// </summary>
+    private List<string> GetSeedCandidatePaths(string familyName)
+    {
+        if (SeedTableOverride is not null)
+        {
+            return SeedTableOverride.TryGetValue(familyName, out var overridePaths)
+                ? new List<string>(overridePaths)
+                : new List<string>();
+        }
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            if (!WellKnownFontSeeds.WindowsFileNames.TryGetValue(familyName, out var fileNames))
+                return new List<string>();
+
+            var dirs = GetFontDirectories();
+            var candidates = new List<string>();
+            foreach (var fileName in fileNames)
+            {
+                foreach (var dir in dirs)
+                {
+                    candidates.Add(Path.Combine(dir, fileName));
+                }
+            }
+            return candidates;
+        }
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            return WellKnownFontSeeds.MacPaths.TryGetValue(familyName, out var macPaths)
+                ? new List<string>(macPaths)
+                : new List<string>();
+        }
+
+        return new List<string>();
     }
 
     /// <summary>
