@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Bumped `MonoGame.Framework.DesktopGL` to 3.8.5 and the Gum packages (`Gum.MonoGame`, `Gum.Themes.Editor.MonoGame`) to 2026.7.6.1.
+
+### Removed
+
+- The four Gum integration packages — `KernSmith.GumCommon`, `KernSmith.KniGum`, `KernSmith.MonoGameGum`, and `KernSmith.FnaGum` — are no longer built or published from this repository. They are now maintained and published from the upstream Gum repository (https://github.com/vchelaru/Gum) and consumed from NuGet.
+
 ## [0.16.0] - 2026-07-12
 
 ### Added

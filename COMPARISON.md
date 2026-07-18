@@ -215,15 +215,15 @@ KernSmith supports four pluggable rasterizer backends. Each has different platfo
 | **WOFF** | ✅ | ❌ | ✅ | ❌ |
 | **WOFF2** | ❌ | ❌ | ❌ | ❌ |
 | **TTC (font collections)** | ✅ | ❌ | ✅ | ✅ |
-| **Anti-aliasing** | Grayscale, Light, LCD, None | Grayscale, None | Grayscale, ClearType | Grayscale, None |
+| **Anti-aliasing** | Grayscale, Light, LCD, None | Grayscale, None | None, Grayscale | Grayscale, None |
 | **SDF Rendering** | ✅ | ❌ | ❌ | ✅ |
 | **Hinting** | ✅ | ✅ | ✅ | ❌ |
-| **Synthetic Bold** | ✅ | ✅ | ✅ | ❌ |
-| **Synthetic Italic** | ✅ | ✅ | ✅ | ❌ |
+| **Synthetic Bold** | ✅ | ✅ | ✅ | ✅ |
+| **Synthetic Italic** | ✅ | ✅ | ✅ | ✅ |
 | **Outline Stroke** | ✅ | ❌ | ❌ | ❌ |
 | **Super Sampling** | ✅ | ✅ | ✅ | ✅ |
-| **Color Fonts (COLR/CPAL)** | ❌ | ❌ | ✅ | ❌ |
-| **Variable Fonts** | ❌ | ❌ | ✅ | ❌ |
+| **Color Fonts (COLR/CPAL)** | ✅ | ❌ | ❌ | ❌ |
+| **Variable Fonts** | ✅ | ❌ | ❌ | ❌ |
 | **System Font Loading** | ❌ | ✅ | ✅ | ❌ |
 | **BMFont.exe Parity** | ❌ | ✅ | ❌ | ❌ |
 
@@ -231,7 +231,7 @@ KernSmith supports four pluggable rasterizer backends. Each has different platfo
 
 - **FreeType** -- Default for most use cases. Cross-platform, full-featured, industry-standard quality.
 - **GDI** -- Pixel-perfect BMFont.exe compatibility on Windows. Use for validating against BMFont reference output.
-- **DirectWrite** -- Color fonts, variable fonts, or ClearType on Windows. Highest quality Windows rendering.
+- **DirectWrite** -- Windows system-font loading with ClearType-hinted grayscale rendering. High-quality Windows text output. (For color fonts or variable fonts, use FreeType.)
 - **StbTrueType** -- Blazor WASM, NativeAOT, iOS, consoles, or anywhere native libraries are unavailable. Pure C#, zero dependencies.
 
 ## Tool Descriptions

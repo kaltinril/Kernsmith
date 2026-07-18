@@ -31,7 +31,8 @@ KernSmith                                    (core — no sibling deps)
 ├── KernSmith.Rasterizers.FreeType          → KernSmith
 ├── KernSmith.Rasterizers.Gdi               → KernSmith
 ├── KernSmith.Rasterizers.DirectWrite.TerraFX → KernSmith
-└── KernSmith.Rasterizers.StbTrueType       → KernSmith
+├── KernSmith.Rasterizers.StbTrueType       → KernSmith
+└── KernSmith.Fonts.Web                     → KernSmith
 ```
 
 > **Gum integration packages moved out of this repo.**

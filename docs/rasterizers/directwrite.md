@@ -1,6 +1,6 @@
 # DirectWrite Rasterizer
 
-DirectWrite rasterizer backend using [TerraFX.Interop.Windows](https://github.com/terrafx/terrafx.interop.windows) bindings. Provides access to Windows' modern text rendering APIs, including high-quality ClearType subpixel rendering and system font loading.
+DirectWrite rasterizer backend using [TerraFX.Interop.Windows](https://github.com/terrafx/terrafx.interop.windows) bindings. Provides access to Windows' modern text rendering APIs, including ClearType-hinted grayscale rendering and system font loading.
 
 ## Installation
 
@@ -39,7 +39,7 @@ var result = BmFont.GenerateFromSystem("Segoe UI", new FontGeneratorOptions
 
 ## Capabilities
 
-- High-quality ClearType-style subpixel rendering
+- ClearType-hinted grayscale rendering
 - System font loading by family name
 - Synthetic bold and italic
 - TTF, OTF, WOFF input
@@ -60,4 +60,4 @@ Uses an isolated `IDWriteFactory5` instance and loads fonts into memory via `IDW
 
 ## When to Use
 
-Use DirectWrite when you want Windows' high-quality ClearType subpixel rendering or need to load system-installed fonts by family name on Windows. For color fonts (COLR/CPAL) or variable font axes (fvar), use [FreeType](freetype.md) -- those DirectWrite code paths are currently stubbed and not yet functional.
+Use DirectWrite when you want Windows' ClearType-hinted grayscale rendering or need to load system-installed fonts by family name on Windows. For color fonts (COLR/CPAL) or variable font axes (fvar), use [FreeType](freetype.md) -- those DirectWrite code paths are currently stubbed and not yet functional.
