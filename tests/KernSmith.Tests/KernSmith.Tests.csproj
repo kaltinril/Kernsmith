@@ -29,8 +29,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\KernSmith\KernSmith.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.FreeType\KernSmith.Rasterizers.FreeType.csproj" />
-    <ProjectReference Include="..\..\integrations\KernSmith.GumCommon\KernSmith.GumCommon.csproj" />
-    <ProjectReference Include="..\..\integrations\KernSmith.MonoGameGum\KernSmith.MonoGameGum.csproj" />
+    <PackageReference Include="KernSmith.GumCommon" />
+    <PackageReference Include="KernSmith.MonoGameGum" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.StbTrueType\KernSmith.Rasterizers.StbTrueType.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Fonts.Web\KernSmith.Fonts.Web.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.Gdi\KernSmith.Rasterizers.Gdi.csproj"

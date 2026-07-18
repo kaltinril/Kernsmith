@@ -7,19 +7,18 @@ All projects (library, CLI, UI) inherit it automatically.
 
 ## Multi-Package Architecture
 
-KernSmith ships as a family of NuGet packages. Projects under `src/` and
-`integrations/` each produce a separate `.nupkg`. The core library has no
-dependencies on sibling packages; extension packages depend on the core
-(or on each other) via `ProjectReference`.
+KernSmith ships as a family of NuGet packages. Projects under `src/` each
+produce a separate `.nupkg`. The core library has no dependencies on sibling
+packages; extension packages depend on the core via `ProjectReference`.
 
 ### How it works
 
 - **During development** — projects reference each other with `<ProjectReference>`.
 - **At pack time** — `dotnet pack` automatically converts each `ProjectReference`
   into a NuGet dependency (e.g. `KernSmith >= 0.9.6`) in the resulting `.nupkg`.
-- **For consumers** — installing a leaf package like `KernSmith.FnaGum` from NuGet
-  automatically pulls in all transitive dependencies (`KernSmith.GumCommon` →
-  `KernSmith`). Users only install the one package they need.
+- **For consumers** — installing a leaf package like `KernSmith.Rasterizers.FreeType`
+  from NuGet automatically pulls in all transitive dependencies (`KernSmith`).
+  Users only install the one package they need.
 
 > **Never reference your own packages via `PackageReference`** in this repo.
 > Always use `ProjectReference` — the NuGet dependency chain is generated
@@ -32,23 +31,17 @@ KernSmith                                    (core — no sibling deps)
 ├── KernSmith.Rasterizers.FreeType          → KernSmith
 ├── KernSmith.Rasterizers.Gdi               → KernSmith
 ├── KernSmith.Rasterizers.DirectWrite.TerraFX → KernSmith
-├── KernSmith.Rasterizers.StbTrueType       → KernSmith
-├── KernSmith.GumCommon                     → KernSmith, FreeType
-│   ├── KernSmith.FnaGum                    → GumCommon (gets KernSmith + FreeType transitively)
-│   ├── KernSmith.KniGum                    → GumCommon
-│   └── KernSmith.MonoGameGum              → GumCommon
+└── KernSmith.Rasterizers.StbTrueType       → KernSmith
 ```
 
-> **`KernSmith.FnaGum` is intentionally excluded from the publish workflow.**
-> The pack step in `.github/workflows/publish.yml` deliberately skips it (and the
-> GitHub Release notes omit its package link) because it does not build cleanly
-> yet — it needs an FNA framework reference before it can be re-added. Until those
-> build issues are resolved, FnaGum is not packed or published to nuget.org even
-> though it appears in the dependency graph above.
+> **Gum integration packages moved out of this repo.**
+> `KernSmith.GumCommon`, `KernSmith.MonoGameGum`, `KernSmith.KniGum`, and
+> `KernSmith.FnaGum` are now maintained and published from the Gum repository,
+> not here. This repo consumes them from nuget.org.
 
 ### Adding a new package
 
-1. Create the project under `src/` or `integrations/` (e.g. `src/KernSmith.NewThing/`).
+1. Create the project under `src/` (e.g. `src/KernSmith.NewThing/`).
 2. Add a `<PackageId>` and `<Description>` in the `.csproj`.
 3. Add a `<ProjectReference>` to whichever sibling(s) it depends on.
 4. The shared `<Version>` from `Directory.Build.props` is inherited — all
@@ -68,7 +61,6 @@ KernSmith                                    (core — no sibling deps)
 opts in by setting `<IsPackable>true</IsPackable>` in its own `.csproj`:
 
 - **`src/` projects** — core library and rasterizer backends.
-- **`integrations/` projects** — Gum/MonoGame/FNA/KNI integration packages.
 - **Everything else** (tests, tools, samples, benchmarks, apps) — not packable.
 
 ### Packing locally
@@ -79,7 +71,7 @@ dotnet pack KernSmith.sln -c Release --output ./nupkg
 
 # Pack a single package
 dotnet pack src/KernSmith -c Release --output ./nupkg
-dotnet pack integrations/KernSmith.MonoGameGum -c Release --output ./nupkg
+dotnet pack src/KernSmith.Rasterizers.FreeType -c Release --output ./nupkg
 ```
 
 ## Workflow
@@ -100,7 +92,7 @@ dotnet pack integrations/KernSmith.MonoGameGum -c Release --output ./nupkg
 4. The workflow automatically:
    - Validates the version matches `Directory.Build.props`
    - Builds CLI and UI binaries for all platforms (win-x64, win-arm64, linux-x64, osx-arm64, osx-x64)
-   - Packs and publishes **all** NuGet packages (from `src/` and `integrations/`)
+   - Packs and publishes **all** NuGet packages (from `src/`)
    - Creates a git tag (manual dispatch only — tag push already has one)
    - Creates a GitHub Release page with downloadable binaries (.zip for Windows, .tar.gz for Linux/macOS)
 

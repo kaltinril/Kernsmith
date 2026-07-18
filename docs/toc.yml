@@ -22,17 +22,6 @@
       href: cli/commands.md
 - name: UI Guide
   href: ui/index.md
-- name: Integrations
-  href: integrations/index.md
-  items:
-    - name: MonoGameGum
-      href: integrations/monogamegum.md
-    - name: KniGum
-      href: integrations/knigum.md
-    - name: FnaGum
-      href: integrations/fnagum.md
-    - name: GumCommon
-      href: integrations/gumcommon.md
 - name: Rasterizers
   href: rasterizers/index.md
   items:
