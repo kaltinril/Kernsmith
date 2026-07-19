@@ -69,6 +69,7 @@ Spawn an Explore agent to check whether all documentation layers are consistent 
 
 - **XML doc comments**: Do all public methods/types added since the last release have `<summary>` tags?
 - **Root README.md**: Does the features list reflect current capabilities?
+- **Feature comparison** (`COMPARISON.md`): Do the KernSmith feature columns and — especially — the rasterizer backend capability table match the code? Verify every backend claim (color fonts, variable fonts, SDF, outline stroke, synthetic bold/italic, anti-aliasing modes, system fonts) against the `IRasterizerCapabilities` implementations (`src/KernSmith.Rasterizers.*/*Capabilities.cs` and `FreeTypeRasterizer.cs`) — do NOT assume; these tables have drifted from the code before (e.g. color/variable-font rows were once inverted between FreeType and DirectWrite). Also check the two capability tables agree with each other.
 - **CLI README** (`tools/KernSmith.Cli/README.md`): Are all CLI commands and flags documented?
 - **UI README** (`apps/KernSmith.Ui/README.md`): Does the feature list match current UI?
 - **DocFX docs** (`docs/`): Are doc pages consistent with the code?
