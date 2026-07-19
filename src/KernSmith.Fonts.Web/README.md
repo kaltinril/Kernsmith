@@ -63,4 +63,4 @@ new WebFontSource(WebFontProvider.BunnyFonts, diskCachePath: "cache/fonts");
 dotnet build src/KernSmith.Fonts.Web/KernSmith.Fonts.Web.csproj
 ```
 
-See the [KernSmith repository](https://github.com/kaltinril/KernSmith) for full project documentation.
+See the [KernSmith repository](https://github.com/kaltinril/Kernsmith) for full project documentation.

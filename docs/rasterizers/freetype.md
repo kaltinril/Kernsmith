@@ -1,6 +1,6 @@
 # FreeType (Default)
 
-The FreeType rasterizer backend for KernSmith. Uses [FreeTypeSharp](https://github.com/nicholasgasior/FreeTypeSharp) 3.1.0 for glyph rasterization.
+The FreeType rasterizer backend for KernSmith. Uses [FreeTypeSharp](https://github.com/ryancheung/FreeTypeSharp) 3.1.0 for glyph rasterization.
 
 ## Platform
 
@@ -38,7 +38,7 @@ var options = new FontGeneratorOptions
 - TTF, OTF, WOFF input
 - Color fonts (COLR/CPAL)
 - Variable font axes (fvar)
-- Hinting and anti-aliasing (Grayscale, Light, None modes)
+- Hinting and anti-aliasing (None, Grayscale, Light, Lcd modes)
 - SDF (Signed Distance Field) rendering
 - Outline stroke
 - Synthetic bold and italic

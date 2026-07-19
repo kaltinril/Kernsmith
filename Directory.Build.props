@@ -27,7 +27,7 @@
   <PropertyGroup>
     <Authors>Kaltinril (Jeremy Swartwood)</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/kaltinril/KernSmith</RepositoryUrl>
+    <RepositoryUrl>https://github.com/kaltinril/Kernsmith</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Copyright>Copyright (c) 2026 KernSmith contributors</Copyright>
   </PropertyGroup>

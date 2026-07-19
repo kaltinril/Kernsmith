@@ -174,7 +174,7 @@ bottomBar.Height = 60;
 ```
 
 ### 4. Namespace Collision: KernSmith.Gum vs Gum
-Adding `KernSmith.MonoGameGum` as a project reference introduces the `KernSmith.Gum` namespace, which collides with `Gum.Wireframe`, `Gum.Forms`, etc. Use `global::` prefix:
+Adding `KernSmith.MonoGameGum` as a NuGet package reference introduces the `KernSmith.Gum` namespace, which collides with `Gum.Wireframe`, `Gum.Forms`, etc. Use `global::` prefix:
 ```csharp
 using global::Gum.DataTypes;
 using global::Gum.Forms.Controls;

@@ -11,25 +11,20 @@
     <PackageVersion Include="StbImageWriteSharp" Version="1.16.7" />
     <PackageVersion Include="TerraFX.Interop.Windows" Version="10.0.26100.6" />
     <!-- SourceLink -->
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.300" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.301" />
     <!-- Test dependencies -->
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
-    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <!-- Benchmark dependencies -->
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <!-- UI dependencies -->
-    <PackageVersion Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
-    <PackageVersion Include="nkast.Xna.Framework" Version="4.2.9001" />
-    <PackageVersion Include="nkast.Xna.Framework.Graphics" Version="4.2.9001" />
-    <PackageVersion Include="FlatRedBall.GumCommon" Version="2026.7.3.1" />
-    <PackageVersion Include="Gum.MonoGame" Version="2026.5.31.1" />
-    <PackageVersion Include="Gum.KNI" Version="2026.7.3.1" />
-    <PackageVersion Include="Gum.FNA" Version="2026.5.31.1" />
-    <PackageVersion Include="Gum.Themes.Editor.MonoGame" Version="2026.5.31.1" />
-    <PackageVersion Include="MonoGame.Extended" Version="5.4.0" />
-    <PackageVersion Include="NativeFileDialogSharp" Version="0.5.0" />
+    <PackageVersion Include="MonoGame.Framework.DesktopGL" Version="3.8.5" />
+    <PackageVersion Include="Gum.MonoGame" Version="2026.7.6.1" />
+    <PackageVersion Include="Gum.Themes.Editor.MonoGame" Version="2026.7.6.1" />
+    <PackageVersion Include="KernSmith.GumCommon" Version="2026.7.6.1" />
+    <PackageVersion Include="KernSmith.MonoGameGum" Version="2026.7.6.1" />
   </ItemGroup>
 </Project>

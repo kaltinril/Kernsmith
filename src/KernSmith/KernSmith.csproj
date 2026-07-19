@@ -8,7 +8,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>KernSmith</PackageId>
     <Description>Generate BMFont-compatible bitmap font atlases from TTF/OTF/WOFF files. Reads and writes BMFont .bmfc and Hiero .hiero (libGDX) configuration formats. Features layered effects (outline, fill color, gradient, shadow), gamma correction, per-glyph advance adjustment, color font support (COLRv0/CPAL, sbix, CBDT), variable fonts, SDF rendering, font subsetting, channel packing, super sampling, TGA/DDS/PNG output, and extended metadata. In-memory pipeline with text/XML/binary .fnt output. Includes bitmap post-processors (bold, italic). Supports pluggable rasterizer backends (FreeType, GDI, DirectWrite, and StbTrueType available as separate packages).</Description>
-    <PackageProjectUrl>https://github.com/kaltinril/KernSmith</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/kaltinril/Kernsmith</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
     <Authors>Kaltinril (Jeremy Swartwood)</Authors>

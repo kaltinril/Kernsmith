@@ -57,16 +57,11 @@ component's upstream `LICENSE`/`COPYING` file. Nothing here is paraphrased.
 | StbTrueTypeSharp | 1.26.12 | Public Domain (`Unlicense`-equivalent) | NuGet (StbTrueType backend) |
 | stb_truetype SDF (`StbTrueTypeSdfVendored.cs`) | n/a (source) | Public Domain / `MIT` | Source in StbTrueType backend |
 | TerraFX.Interop.Windows | 10.0.26100.6 | `MIT` | NuGet (DirectWrite backend) |
-| MonoGame.Framework.DesktopGL | 3.8.4.1 | `Ms-PL` | NuGet + native runtime (UI / Gum integrations) |
+| MonoGame.Framework.DesktopGL | 3.8.5 | `Ms-PL` | NuGet + native runtime (KernSmith.Ui desktop app) |
 | SDL2 (bundled by MonoGame DesktopGL) | n/a (native) | `Zlib` | Native binary (UI) |
 | OpenAL Soft (bundled by MonoGame DesktopGL) | 1.24.3 | `LGPL-2.0-or-later` (GNU Library GPL v2) | Native binary (UI) |
-| nkast.Xna.Framework (KNI) | 4.2.9001 | `Ms-PL` | NuGet (KNI / Gum integration) |
-| nkast.Xna.Framework.Graphics (KNI) | 4.2.9001 | `Ms-PL` | NuGet (KNI / Gum integration) |
-| FlatRedBall.GumCommon | 2026.4.10.1 | `MIT` | NuGet (Gum integration) |
-| Gum.MonoGame | 2026.4.5.1 | `MIT` | NuGet (Gum integration) |
-| Gum.KNI | 2026.4.5.1 | `MIT` | NuGet (Gum integration) |
-| Gum.FNA | 2026.4.5.1 | `MIT` | NuGet (Gum integration) |
-| Gum.Themes.Editor.MonoGame | 2026.4.5.1 | `MIT` | NuGet (Gum integration) |
+| Gum.MonoGame | 2026.7.6.1 | `MIT` | NuGet (KernSmith.Ui desktop app) |
+| Gum.Themes.Editor.MonoGame | 2026.7.6.1 | `MIT` | NuGet (KernSmith.Ui desktop app) |
 | NativeFileDialogNET | 2.0.2 | `Zlib` | NuGet (UI / CLI file dialogs) |
 | nativefiledialog-extended (native, underlying) | n/a (native) | `Zlib` | Native binary (UI / CLI) |
 
@@ -137,10 +132,9 @@ is identical across them and is reproduced once in
   Copyright © Tanner Gooding and Contributors
   ```
 
-### Gum and FlatRedBall packages
-Applies to **FlatRedBall.GumCommon 2026.4.10.1**, **Gum.MonoGame 2026.4.5.1**,
-**Gum.KNI 2026.4.5.1**, **Gum.FNA 2026.4.5.1**, and
-**Gum.Themes.Editor.MonoGame 2026.4.5.1**.
+### Gum packages
+Applies to **Gum.MonoGame 2026.7.6.1** and **Gum.Themes.Editor.MonoGame 2026.7.6.1**
+(dependencies of the `KernSmith.Ui` desktop app).
 - **Project URL:** https://github.com/vchelaru/Gum
 - **SPDX:** `MIT`
 - **Copyright (verbatim):**
@@ -180,7 +174,7 @@ dual license). The file already carries an in-source attribution header.
 The following components are under the **Microsoft Public License (Ms-PL)**. The
 full Ms-PL text is reproduced once in [Appendix A.3](#a3-microsoft-public-license-ms-pl).
 
-### MonoGame.Framework.DesktopGL 3.8.4.1
+### MonoGame.Framework.DesktopGL 3.8.5
 - **Project URL:** https://github.com/MonoGame/MonoGame
 - **SPDX:** `Ms-PL` (with a portion under MIT — see below)
 - **Copyright (verbatim, from MonoGame `LICENSE.txt`):**
@@ -197,17 +191,6 @@ full Ms-PL text is reproduced once in [Appendix A.3](#a3-microsoft-public-licens
 - MonoGame DesktopGL bundles native libraries that have their own licenses; see
   [§6 (SDL2)](#6-zlib-licensed-components) and
   [§7 (OpenAL Soft)](#7-openal-soft--gnu-library-general-public-license).
-
-### nkast.Xna.Framework 4.2.9001 and nkast.Xna.Framework.Graphics 4.2.9001 (KNI)
-- **Project URL:** https://github.com/kniEngine/kni
-- **SPDX:** `Ms-PL`
-- **Copyright (verbatim, from KNI `LICENSE.txt`):**
-  ```
-  Microsoft Public License (Ms-PL)
-  Kni - Copyright © 2014-2025 Nick Kastellanos
-  ```
-  (KNI is a fork of MonoGame and its `LICENSE.txt` also reproduces the MonoGame
-  Ms-PL notice: `MonoGame - Copyright © 2009-2021 The MonoGame Team`.)
 
 ---
 
@@ -455,7 +438,7 @@ Legal Terms
 ### A.2 MIT License (template)
 
 The MIT License text below applies to **FreeTypeSharp**, **TerraFX.Interop.Windows**,
-the **Gum / FlatRedBall** packages, and the **Mono.Xna** portion of MonoGame. Insert
+the **Gum** packages, and the **Mono.Xna** portion of MonoGame. Insert
 the relevant copyright line (see each component's entry above) where indicated.
 
 ```
@@ -484,9 +467,8 @@ SOFTWARE.
 
 ### A.3 Microsoft Public License (Ms-PL)
 
-Applies to **MonoGame.Framework.DesktopGL** and the **KNI** packages
-(`nkast.Xna.Framework`, `nkast.Xna.Framework.Graphics`). Reproduced verbatim from
-MonoGame's `LICENSE.txt` (the operative copyright lines are listed in
+Applies to **MonoGame.Framework.DesktopGL**. Reproduced verbatim from
+MonoGame's `LICENSE.txt` (the operative copyright line is listed in
 [§5](#5-microsoft-public-license-ms-pl-components)).
 
 ```

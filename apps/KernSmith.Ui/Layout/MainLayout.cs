@@ -296,7 +296,7 @@ public class MainLayout : ContainerRuntime
         contentStack.AddChild(creditsLabel);
 
         var urlLabel = new Label();
-        urlLabel.Text = "https://github.com/kaltinril/kernsmith";
+        urlLabel.Text = "https://github.com/kaltinril/Kernsmith";
         contentStack.AddChild(urlLabel);
 
         var okButton = new Button();

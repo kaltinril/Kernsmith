@@ -42,5 +42,5 @@ sufficient.
 dotnet build src/KernSmith.Rasterizers.Native/KernSmith.Rasterizers.Native.csproj
 ```
 
-See the [KernSmith repository](https://github.com/kaltinril/KernSmith) for full project
+See the [KernSmith repository](https://github.com/kaltinril/Kernsmith) for full project
 documentation.

@@ -4,7 +4,7 @@ The core library for generating BMFont-compatible bitmap fonts from TTF/OTF/WOFF
 
 ## Overview
 
-KernSmith combines FreeTypeSharp for glyph rasterization with custom TTF table parsers for GPOS kerning extraction. It packs glyphs into texture atlases and outputs BMFont `.fnt` + `.png`/`.tga`/`.dds` pairs.
+KernSmith combines a pluggable rasterizer backend (FreeType, GDI, DirectWrite, or StbTrueType -- installed separately) for glyph rasterization with custom TTF table parsers for GPOS kerning extraction. It packs glyphs into texture atlases and outputs BMFont `.fnt` + `.png`/`.tga`/`.dds` pairs.
 
 Key features include layered effects (outline, gradient, shadow), color font support (COLRv0/CPAL, sbix, CBDT), variable fonts, SDF rendering, font subsetting, channel packing, super sampling, and extended metadata. The pipeline runs entirely in memory by default.
 

@@ -14,6 +14,5 @@ Explore the documentation sections below.
 | [API Reference Guide](docs/api-reference/index.md) | Curated guide to the public API surface |
 | [CLI Reference](docs/cli/index.md) | Command-line tool for generating bitmap fonts |
 | [UI Guide](docs/ui/index.md) | Visual interface for font configuration and preview |
-| [Integrations](docs/integrations/index.md) | Gum framework packages for MonoGame, FNA, and KNI |
-| [Alternative Rasterizers](docs/rasterizers/index.md) | DirectWrite and GDI rasterizer backends (Windows) |
+| [Alternative Rasterizers](docs/rasterizers/index.md) | GDI and DirectWrite (Windows-only) plus StbTrueType (cross-platform, managed) backends |
 | [API Reference](api/KernSmith.html) | Auto-generated API documentation |

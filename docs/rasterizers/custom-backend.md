@@ -84,7 +84,7 @@ new RasterizedGlyph
 
 Backends register with `RasterizerFactory` via a `[ModuleInitializer]`. This runs automatically when your assembly loads — no manual wiring needed.
 
-Since `RasterizerBackend` is an enum in the core assembly, third-party backends use a numeric cast. Pick a value of 100 or higher to avoid collisions with built-in backends (FreeType=0, Gdi=1, DirectWrite=2):
+Since `RasterizerBackend` is an enum in the core assembly, third-party backends use a numeric cast. Pick a value of 100 or higher to avoid collisions with built-in backends (values 0-4 are reserved: FreeType=0, Gdi=1, DirectWrite=2, StbTrueType=3, Native=4):
 
 ```csharp
 using System.Runtime.CompilerServices;

@@ -215,15 +215,15 @@ KernSmith supports four pluggable rasterizer backends. Each has different platfo
 | **WOFF** | ✅ | ❌ | ✅ | ❌ |
 | **WOFF2** | ❌ | ❌ | ❌ | ❌ |
 | **TTC (font collections)** | ✅ | ❌ | ✅ | ✅ |
-| **Anti-aliasing** | Grayscale, Light, LCD, None | Grayscale, None | Grayscale, ClearType | Grayscale, None |
+| **Anti-aliasing** | Grayscale, Light, LCD, None | Grayscale, None | None, Grayscale | Grayscale, None |
 | **SDF Rendering** | ✅ | ❌ | ❌ | ✅ |
 | **Hinting** | ✅ | ✅ | ✅ | ❌ |
-| **Synthetic Bold** | ✅ | ✅ | ✅ | ❌ |
-| **Synthetic Italic** | ✅ | ✅ | ✅ | ❌ |
+| **Synthetic Bold** | ✅ | ✅ | ✅ | ✅ |
+| **Synthetic Italic** | ✅ | ✅ | ✅ | ✅ |
 | **Outline Stroke** | ✅ | ❌ | ❌ | ❌ |
 | **Super Sampling** | ✅ | ✅ | ✅ | ✅ |
-| **Color Fonts (COLR/CPAL)** | ❌ | ❌ | ✅ | ❌ |
-| **Variable Fonts** | ❌ | ❌ | ✅ | ❌ |
+| **Color Fonts (COLR/CPAL)** | ✅ | ❌ | ❌ | ❌ |
+| **Variable Fonts** | ✅ | ❌ | ❌ | ❌ |
 | **System Font Loading** | ❌ | ✅ | ✅ | ❌ |
 | **BMFont.exe Parity** | ❌ | ✅ | ❌ | ❌ |
 
@@ -231,12 +231,12 @@ KernSmith supports four pluggable rasterizer backends. Each has different platfo
 
 - **FreeType** -- Default for most use cases. Cross-platform, full-featured, industry-standard quality.
 - **GDI** -- Pixel-perfect BMFont.exe compatibility on Windows. Use for validating against BMFont reference output.
-- **DirectWrite** -- Color fonts, variable fonts, or ClearType on Windows. Highest quality Windows rendering.
+- **DirectWrite** -- Windows system-font loading with ClearType-hinted grayscale rendering. High-quality Windows text output. (For color fonts or variable fonts, use FreeType.)
 - **StbTrueType** -- Blazor WASM, NativeAOT, iOS, consoles, or anywhere native libraries are unavailable. Pure C#, zero dependencies.
 
 ## Tool Descriptions
 
-- **[KernSmith](https://github.com/kernsmith/kernsmith)** -- Cross-platform .NET library and CLI for generating BMFont-compatible bitmap fonts. In-memory API, pluggable rasterizers, layered effects. Reads and writes both its native BMFont `.bmfc` config and the libGDX **Hiero `.hiero`** config format for interop. MIT licensed.
+- **[KernSmith](https://github.com/kaltinril/Kernsmith)** -- Cross-platform .NET library and CLI for generating BMFont-compatible bitmap fonts. In-memory API, pluggable rasterizers, layered effects. Reads and writes both its native BMFont `.bmfc` config and the libGDX **Hiero `.hiero`** config format for interop. MIT licensed.
 - **[BMFont (AngelCode)](https://www.angelcode.com/products/bmfont/)** -- The original Windows-only tool that defined the `.fnt` format. Open source (zlib license, hosted on SourceForge). Includes both a GUI and CLI executable (`bmfont.com`). Uses GDI and TrueType outline rasterization with multiple anti-aliasing modes and super sampling. Last updated with v1.14b beta in 2025.
 - **[Hiero](https://libgdx.com/wiki/tools/hiero)** -- LibGDX's open-source Java bitmap font generator. Supports both Java AWT and FreeType rendering backends, with outline, shadow, gradient, and SDF effects. Cross-platform via Java.
 - **[msdf-atlas-gen](https://github.com/Chlumsky/msdf-atlas-gen)** -- Cross-platform C++ CLI tool and in-memory library API focused on multi-channel signed distance field atlas generation. Built on msdfgen with FreeType for glyph loading. Outputs JSON, CSV, and Artery Font formats. Strong SDF/MSDF support but no traditional rasterization or effects.

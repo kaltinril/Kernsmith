@@ -32,7 +32,7 @@ The rasterizer auto-registers via `[ModuleInitializer]`, so referencing the pack
 dotnet build src/KernSmith.Rasterizers.FreeType/KernSmith.Rasterizers.FreeType.csproj
 ```
 
-See the [KernSmith repository](https://github.com/kaltinril/KernSmith) for full project documentation.
+See the [KernSmith repository](https://github.com/kaltinril/Kernsmith) for full project documentation.
 
 ## Third-Party Licenses
 

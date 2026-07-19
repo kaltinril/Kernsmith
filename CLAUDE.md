@@ -20,7 +20,6 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 | `tests/KernSmith.Tests/` | **xUnit + Shouldly test suite** |
 | `tools/KernSmith.Cli/` | **CLI tool** for bitmap font generation |
 | `samples/` | **Usage examples** — KernSmith.Samples, Rasterizer.Example, Samples.BlazorWasm |
-| `integrations/` | **Gum UI integrations** — MonoGameGum, KniGum, FnaGum, GumCommon |
 | `benchmarks/KernSmith.Benchmarks/` | **BenchmarkDotNet performance benchmarks** |
 | `apps/` | **Future app projects** — Ui, Web, Mobile (placeholders) |
 | `plan/` | **Technical plan docs** — active plans; completed plans archived in `plan/done/` |
