@@ -81,8 +81,18 @@ public class RegressionBaseline
         new("dpi-144-32", b => b.WithFont(FontData.Value).WithSize(32).WithCharacters(CharacterSet.Ascii).WithDpi(144)),
     ];
 
+    // Baselines are ephemeral (output/ is gitignored), so this is an in-session
+    // determinism check: generate, regenerate, and compare. Generation and comparison
+    // run in one ordered test so they never depend on xunit's test-case ordering
+    // (xunit v3 does not guarantee the v2 order that let two separate Facts work).
     [Fact]
-    public void GenerateAllBaselines()
+    public void GenerateAndCompareBaselines()
+    {
+        GenerateAllBaselines();
+        CompareAgainstBaselines();
+    }
+
+    private void GenerateAllBaselines()
     {
         Directory.CreateDirectory(BaselineDir);
         var results = new List<string>();
@@ -158,8 +168,7 @@ public class RegressionBaseline
         Assert.True(results.Count == Configs.Length, $"Generated {results.Count}/{Configs.Length} baselines");
     }
 
-    [Fact]
-    public void CompareAgainstBaselines()
+    private void CompareAgainstBaselines()
     {
         var manifestPath = Path.Combine(BaselineDir, "MANIFEST.txt");
         Assert.True(File.Exists(manifestPath), "No baselines found. Run GenerateAllBaselines first.");
