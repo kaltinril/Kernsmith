@@ -124,6 +124,7 @@ jobs:
           dotnet pack src/KernSmith/KernSmith.csproj --configuration Release --no-build --output ./nupkg
           dotnet pack src/KernSmith.Rasterizers.FreeType/KernSmith.Rasterizers.FreeType.csproj --configuration Release --no-build --output ./nupkg
           dotnet pack src/KernSmith.Rasterizers.StbTrueType/KernSmith.Rasterizers.StbTrueType.csproj --configuration Release --no-build --output ./nupkg
+          dotnet pack src/KernSmith.Fonts.Web/KernSmith.Fonts.Web.csproj --configuration Release --no-build --output ./nupkg
       - uses: actions/upload-artifact@v7
         with:
           name: nupkg-cross-platform

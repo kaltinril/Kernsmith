@@ -23,7 +23,7 @@ KernSmith supports multiple rasterizer backends through a pluggable `IRasterizer
 | System font loading | No | Yes | Yes | No |
 | BMFont.exe parity | No | Yes | No | No |
 | ClearType-hinted grayscale | No | No | Yes | No |
-| Synthetic bold/italic | Yes | Partial | Yes | Yes |
+| Synthetic bold/italic | Yes | Yes | Yes | Yes |
 | Font formats | TTF, OTF, WOFF | System fonts only | TTF, OTF, WOFF | TTF only |
 | Native dependencies | Yes | Yes | Yes | None |
 
