@@ -34,7 +34,7 @@ The rasterizer auto-registers via `[ModuleInitializer]`, so referencing the pack
 dotnet build src/KernSmith.Rasterizers.DirectWrite.TerraFX/KernSmith.Rasterizers.DirectWrite.TerraFX.csproj
 ```
 
-See the [KernSmith repository](https://github.com/kaltinril/KernSmith) for full project documentation.
+See the [KernSmith repository](https://github.com/kaltinril/Kernsmith) for full project documentation.
 
 ## Third-Party Licenses
 

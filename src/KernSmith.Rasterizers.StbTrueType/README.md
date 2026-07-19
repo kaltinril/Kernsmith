@@ -52,7 +52,7 @@ Enable AOT for production performance:
 <RunAOTCompilation>true</RunAOTCompilation>
 ```
 
-See the [Blazor WASM sample](https://github.com/kaltinril/KernSmith/tree/main/samples/KernSmith.Samples.BlazorWasm) for a complete working example.
+See the [Blazor WASM sample](https://github.com/kaltinril/Kernsmith/tree/main/samples/KernSmith.Samples.BlazorWasm) for a complete working example.
 
 ## Build
 
@@ -60,7 +60,7 @@ See the [Blazor WASM sample](https://github.com/kaltinril/KernSmith/tree/main/sa
 dotnet build src/KernSmith.Rasterizers.StbTrueType/KernSmith.Rasterizers.StbTrueType.csproj
 ```
 
-See the [KernSmith repository](https://github.com/kaltinril/KernSmith) for full project documentation.
+See the [KernSmith repository](https://github.com/kaltinril/Kernsmith) for full project documentation.
 
 ## Third-Party Licenses
 

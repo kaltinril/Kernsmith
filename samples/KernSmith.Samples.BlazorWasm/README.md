@@ -58,4 +58,4 @@ AOT compilation is strongly recommended for production use. The browser caches c
 | `Pages/Index.razor` | Validation checks + font generation UI |
 | `wwwroot/index.html` | Host page with JS download helper |
 
-See the [KernSmith repository](https://github.com/kaltinril/KernSmith) for full project documentation.
+See the [KernSmith repository](https://github.com/kaltinril/Kernsmith) for full project documentation.

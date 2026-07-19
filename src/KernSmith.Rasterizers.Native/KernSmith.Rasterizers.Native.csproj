@@ -10,7 +10,7 @@
     <IsAotCompatible>true</IsAotCompatible>
     <PackageId>KernSmith.Rasterizers.Native</PackageId>
     <Description>Native KernSmith rasterizer backend. Fully custom, pure C#, cross-platform. Zero external NuGet dependencies. Ideal for Blazor WASM, iOS AOT, and serverless.</Description>
-    <PackageProjectUrl>https://github.com/kaltinril/KernSmith</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/kaltinril/Kernsmith</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Authors>Kaltinril (Jeremy Swartwood)</Authors>
     <PackageTags>kernsmith;native;rasterizer;bitmap-font;game-dev;cross-platform;wasm;pure-csharp;sdf</PackageTags>

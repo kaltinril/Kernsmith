@@ -6,7 +6,7 @@
     <NoWarn>CS1591</NoWarn>
     <PackageId>KernSmith.Fonts.Web</PackageId>
     <Description>Web font source for KernSmith. Fetches WOFF fonts from CSS-based font CDNs (Bunny Fonts, Google Fonts) by parsing @font-face responses. Ideal for browser/WASM scenarios where there is no filesystem.</Description>
-    <PackageProjectUrl>https://github.com/kaltinril/KernSmith</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/kaltinril/Kernsmith</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Authors>Kaltinril (Jeremy Swartwood)</Authors>
     <PackageTags>kernsmith;web-font;woff;bunny-fonts;google-fonts;font-cdn;bitmap-font;game-dev;wasm</PackageTags>

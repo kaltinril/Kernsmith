@@ -100,7 +100,7 @@ The core library works in Blazor WebAssembly when paired with the StbTrueType ra
 - System font loading returns empty results — use `BmFont.RegisterFont()` to provide font data
 - Enable `<RunAOTCompilation>true</RunAOTCompilation>` for production performance
 
-See the [Blazor WASM sample](https://github.com/kaltinril/KernSmith/tree/main/samples/KernSmith.Samples.BlazorWasm) for a complete working example.
+See the [Blazor WASM sample](https://github.com/kaltinril/Kernsmith/tree/main/samples/KernSmith.Samples.BlazorWasm) for a complete working example.
 
 ### Web font sourcing
 
@@ -116,4 +116,4 @@ BmFont.RegisterFont("Roboto", bytes);
 var result = BmFont.GenerateFromSystem("Roboto", size: 32);
 ```
 
-> Only `.woff` is supported -- `.woff2` URLs are skipped because WOFF2's Brotli compression is not yet decoded. See the [package README](https://github.com/kaltinril/KernSmith/tree/main/src/KernSmith.Fonts.Web) for providers, caching, and subset options.
+> Only `.woff` is supported -- `.woff2` URLs are skipped because WOFF2's Brotli compression is not yet decoded. See the [package README](https://github.com/kaltinril/Kernsmith/tree/main/src/KernSmith.Fonts.Web) for providers, caching, and subset options.
