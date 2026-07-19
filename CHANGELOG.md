@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-07-18
+
+### Added
+
+- `KernSmith.Fonts.Web` is now published to NuGet. It provides `WebFontSource`, an `IFontSource` implementation that fetches WOFF fonts from CSS-based font CDNs (Bunny Fonts, Google Fonts) by parsing `@font-face` responses — useful in browser/WASM scenarios (e.g. Blazor WebAssembly) where there is no filesystem.
+
 ### Changed
 
 - Bumped `MonoGame.Framework.DesktopGL` to 3.8.5 and the Gum packages (`Gum.MonoGame`, `Gum.Themes.Editor.MonoGame`) to 2026.7.6.1.
@@ -14,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - The four Gum integration packages — `KernSmith.GumCommon`, `KernSmith.KniGum`, `KernSmith.MonoGameGum`, and `KernSmith.FnaGum` — are no longer built or published from this repository. They are now maintained and published from the upstream Gum repository (https://github.com/vchelaru/Gum) and consumed from NuGet.
+
+### Fixed
+
+- Corrected the rasterizer backend capability tables in `COMPARISON.md` to match the code: color and variable fonts are supported by FreeType (not DirectWrite, which stubs both), StbTrueType supports synthetic bold/italic, and DirectWrite antialiasing is ClearType-hinted grayscale rather than subpixel.
 
 ## [0.16.0] - 2026-07-12
 

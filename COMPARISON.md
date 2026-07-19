@@ -42,7 +42,7 @@ How does KernSmith compare to other bitmap font generators?
 
 | | KernSmith | BMFont | Hiero | msdf-atlas-gen | bmGlyph | Glyph Designer | ShoeBox |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Rasterizer** | FreeType + GDI + DWrite | GDI + TT outline | Java AWT / FreeType | msdfgen (FreeType) | Core Text | Core Text | Flash |
+| **Rasterizer** | FreeType + GDI + DWrite + Stb | GDI + TT outline | Java AWT / FreeType | msdfgen (FreeType) | Core Text | Core Text | Flash |
 | **Pluggable Rasterizers** | ✅ | ❌ | ⚠️ | ❌ | ❌ | ❌ | ❌ |
 | **Anti-Aliasing** | 4 modes | Multiple modes | Basic | N/A | Basic | Basic | Basic |
 | **Super Sampling** | 1-4x | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
