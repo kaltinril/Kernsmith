@@ -12,6 +12,7 @@ internal static class ChannelCompositor
     public static IReadOnlyList<AtlasPage> Build(
         IReadOnlyList<RasterizedGlyph> glyphs,
         IReadOnlyList<RasterizedGlyph>? outlineGlyphs,
+        IReadOnlyList<RasterizedGlyph>? shadowGlyphs,
         PackResult packResult,
         Padding padding,
         ChannelConfig channelConfig,
@@ -33,6 +34,13 @@ internal static class ChannelCompositor
         {
             foreach (var g in outlineGlyphs)
                 outlineById[g.Codepoint] = g;
+        }
+
+        var shadowById = new Dictionary<int, RasterizedGlyph>();
+        if (shadowGlyphs != null)
+        {
+            foreach (var g in shadowGlyphs)
+                shadowById[g.Codepoint] = g;
         }
 
         var placementsByPage = new Dictionary<int, List<GlyphPlacement>>();
@@ -62,13 +70,50 @@ internal static class ChannelCompositor
                         continue;
 
                     outlineById.TryGetValue(placement.Id, out var outlineGlyph);
+                    shadowById.TryGetValue(placement.Id, out var shadowGlyph);
+                    var hasShadow = shadowGlyph != null;
 
-                    // Use the larger of base/outline dimensions for iteration
-                    // so outline fringe is not clipped.
-                    var iterW = outlineGlyph != null ? Math.Max(glyph.Width, outlineGlyph.Width) : glyph.Width;
-                    var iterH = outlineGlyph != null ? Math.Max(glyph.Height, outlineGlyph.Height) : glyph.Height;
-                    var offsetX = outlineGlyph != null ? (outlineGlyph.Width - glyph.Width) / 2 : 0;
-                    var offsetY = outlineGlyph != null ? (outlineGlyph.Height - glyph.Height) / 2 : 0;
+                    // Outline expands symmetrically (same width added on every side), so its
+                    // offset from the base glyph is derived from the width/height delta.
+                    var outlineExpandLeft = outlineGlyph != null ? (outlineGlyph.Width - glyph.Width) / 2 : 0;
+                    var outlineExpandTop = outlineGlyph != null ? (outlineGlyph.Height - glyph.Height) / 2 : 0;
+
+                    // Shadow expansion is generally asymmetric (an offset can push the shadow
+                    // further to one side than the other), unlike outline's symmetric ring,
+                    // so its offset is derived from the actual bearing delta baked into the
+                    // shadow glyph's metrics rather than assumed to be centered.
+                    var shadowExpandLeft = shadowGlyph != null ? glyph.Metrics.BearingX - shadowGlyph.Metrics.BearingX : 0;
+                    var shadowExpandTop = shadowGlyph != null ? shadowGlyph.Metrics.BearingY - glyph.Metrics.BearingY : 0;
+
+                    // The iteration canvas is the union of the base glyph and any outline/shadow
+                    // footprints, expressed in a coordinate frame where the base glyph's own
+                    // top-left is (0,0). This keeps neither overlay clipped even when outline
+                    // and shadow expand by different amounts on each side.
+                    var minX = 0;
+                    var minY = 0;
+                    var maxX = glyph.Width;
+                    var maxY = glyph.Height;
+
+                    if (outlineGlyph != null)
+                    {
+                        minX = Math.Min(minX, -outlineExpandLeft);
+                        minY = Math.Min(minY, -outlineExpandTop);
+                        maxX = Math.Max(maxX, -outlineExpandLeft + outlineGlyph.Width);
+                        maxY = Math.Max(maxY, -outlineExpandTop + outlineGlyph.Height);
+                    }
+                    if (shadowGlyph != null)
+                    {
+                        minX = Math.Min(minX, -shadowExpandLeft);
+                        minY = Math.Min(minY, -shadowExpandTop);
+                        maxX = Math.Max(maxX, -shadowExpandLeft + shadowGlyph.Width);
+                        maxY = Math.Max(maxY, -shadowExpandTop + shadowGlyph.Height);
+                    }
+
+                    var iterW = maxX - minX;
+                    var iterH = maxY - minY;
+                    // Canvas offset relative to the base glyph's own top-left.
+                    var offsetX = -minX;
+                    var offsetY = -minY;
 
                     var destX = placement.X + padding.Left;
                     var destY = placement.Y + padding.Up;
@@ -77,7 +122,7 @@ internal static class ChannelCompositor
                     {
                         for (var col = 0; col < iterW; col++)
                         {
-                            // Map from outline-expanded coords back to base glyph coords.
+                            // Map from canvas coords back to base glyph coords.
                             var baseRow = row - offsetY;
                             var baseCol = col - offsetX;
                             var inGlyph = baseRow >= 0 && baseRow < glyph.Height && baseCol >= 0 && baseCol < glyph.Width;
@@ -90,17 +135,20 @@ internal static class ChannelCompositor
                             var glyphGreen = inGlyph ? GetGlyphComponent(glyph, baseRow, baseCol, 1) : (byte)0;
                             var glyphBlue = inGlyph ? GetGlyphComponent(glyph, baseRow, baseCol, 2) : (byte)0;
                             var outlineValue = outlineGlyph != null
-                                ? GetOutlineAlphaDirect(outlineGlyph, row, col)
+                                ? GetOutlineAlphaDirect(outlineGlyph, row - offsetY + outlineExpandTop, col - offsetX + outlineExpandLeft)
+                                : (byte)0;
+                            var shadowValue = shadowGlyph != null
+                                ? GetShadowAlphaDirect(shadowGlyph, row - offsetY + shadowExpandTop, col - offsetX + shadowExpandLeft)
                                 : (byte)0;
 
                             var dstIdx = ((destY + row) * pageWidth + destX + col) * 4;
                             if (dstIdx < 0 || dstIdx + 3 >= pixelData.Length)
                                 continue;
 
-                            pixelData[dstIdx + 0] = ResolveChannel(channelConfig.Red, channelConfig.InvertRed, glyphRed, outlineValue, hasOutline);
-                            pixelData[dstIdx + 1] = ResolveChannel(channelConfig.Green, channelConfig.InvertGreen, glyphGreen, outlineValue, hasOutline);
-                            pixelData[dstIdx + 2] = ResolveChannel(channelConfig.Blue, channelConfig.InvertBlue, glyphBlue, outlineValue, hasOutline);
-                            pixelData[dstIdx + 3] = ResolveChannel(channelConfig.Alpha, channelConfig.InvertAlpha, glyphValue, outlineValue, hasOutline);
+                            pixelData[dstIdx + 0] = ResolveChannel(channelConfig.Red, channelConfig.InvertRed, glyphRed, outlineValue, hasOutline, shadowValue, hasShadow);
+                            pixelData[dstIdx + 1] = ResolveChannel(channelConfig.Green, channelConfig.InvertGreen, glyphGreen, outlineValue, hasOutline, shadowValue, hasShadow);
+                            pixelData[dstIdx + 2] = ResolveChannel(channelConfig.Blue, channelConfig.InvertBlue, glyphBlue, outlineValue, hasOutline, shadowValue, hasShadow);
+                            pixelData[dstIdx + 3] = ResolveChannel(channelConfig.Alpha, channelConfig.InvertAlpha, glyphValue, outlineValue, hasOutline, shadowValue, hasShadow);
                         }
                     }
                 }
@@ -174,6 +222,26 @@ internal static class ChannelCompositor
     }
 
     /// <summary>
+    /// Gets the shadow-only coverage alpha value directly using shadow glyph coordinates.
+    /// </summary>
+    private static byte GetShadowAlphaDirect(RasterizedGlyph shadowGlyph, int row, int col)
+    {
+        if (row < 0 || row >= shadowGlyph.Height || col < 0 || col >= shadowGlyph.Width)
+            return 0;
+
+        if (shadowGlyph.Format == PixelFormat.Rgba32)
+        {
+            var idx = row * shadowGlyph.Pitch + col * 4 + 3;
+            return idx < shadowGlyph.BitmapData.Length ? shadowGlyph.BitmapData[idx] : (byte)0;
+        }
+        else
+        {
+            var idx = row * shadowGlyph.Pitch + col;
+            return idx < shadowGlyph.BitmapData.Length ? shadowGlyph.BitmapData[idx] : (byte)0;
+        }
+    }
+
+    /// <summary>
     /// Gets the outline alpha value for a pixel. The outline glyph may be larger than
     /// the original glyph due to the outline expansion, so we map coordinates accordingly.
     /// </summary>
@@ -202,7 +270,7 @@ internal static class ChannelCompositor
         }
     }
 
-    private static byte ResolveChannel(ChannelContent content, bool invert, byte glyphValue, byte outlineValue, bool hasOutline)
+    private static byte ResolveChannel(ChannelContent content, bool invert, byte glyphValue, byte outlineValue, bool hasOutline, byte shadowValue, bool hasShadow)
     {
         var value = content switch
         {
@@ -213,6 +281,10 @@ internal static class ChannelCompositor
             ChannelContent.GlyphAndOutline => hasOutline ? ThresholdEncode(glyphValue, outlineValue) : glyphValue,
             ChannelContent.Zero => (byte)0,
             ChannelContent.One => (byte)255,
+            // Unlike Outline, Shadow has no glyph-coverage fallback: with no shadow configured
+            // there is nothing to show, so the channel is empty (0) rather than reusing the
+            // glyph's own coverage (which would defeat the point of an isolated shadow channel).
+            ChannelContent.Shadow => hasShadow ? shadowValue : (byte)0,
             _ => glyphValue
         };
 

@@ -19,5 +19,8 @@ public enum ChannelContent
     Zero = 3,
 
     /// <summary>Channel is always one / 255 (value 4).</summary>
-    One = 4
+    One = 4,
+
+    /// <summary>Channel holds shadow-only coverage, excluding the glyph itself (value 5).</summary>
+    Shadow = 5
 }

@@ -440,7 +440,8 @@ public static class BmfcConfigReader
 
     /// <summary>
     /// Maps a BMFont per-channel content value (alphaChnl/redChnl/greenChnl/blueChnl) to <see cref="ChannelContent"/>.
-    /// BMFont semantics: 0=glyph, 1=outline, 2=glyph+outline, 3=zero, 4=one. Unknown values default to glyph.
+    /// BMFont semantics: 0=glyph, 1=outline, 2=glyph+outline, 3=zero, 4=one. Value 5 (shadow-only
+    /// coverage) is a KernSmith extension with no BMFont.exe equivalent. Unknown values default to glyph.
     /// </summary>
     private static ChannelContent ParseChannelContent(string value) =>
         int.Parse(value, CultureInfo.InvariantCulture) switch
@@ -450,6 +451,7 @@ public static class BmfcConfigReader
             2 => ChannelContent.GlyphAndOutline,
             3 => ChannelContent.Zero,
             4 => ChannelContent.One,
+            5 => ChannelContent.Shadow,
             _ => ChannelContent.Glyph
         };
 

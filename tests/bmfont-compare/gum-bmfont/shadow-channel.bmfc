@@ -1,0 +1,48 @@
+# AngelCode Bitmap Font Generator configuration file
+fileVersion=1
+
+# font settings
+fontName=Georgia
+fontFile=
+fontSize=48
+isBold=0
+isItalic=0
+useSmoothing=1
+aa=1
+useHinting=1
+scaleH=100
+dontIncludeKerningPairs=0
+
+# character alignment
+paddingUp=0
+paddingDown=0
+paddingRight=0
+paddingLeft=0
+spacingHoriz=1
+spacingVert=1
+useFixedHeight=0
+forceZero=0
+
+# output file
+outWidth=1024
+outHeight=1024
+outBitDepth=32
+fontDescFormat=0
+textureFormat=png
+fourChnlPacked=0
+alphaChnl=5
+redChnl=0
+greenChnl=0
+blueChnl=0
+
+# selected chars
+chars=32-126
+
+# output path
+outputPath=shadow-channel-text
+
+# kernsmith extensions (issue #167: shadow-only coverage channel)
+shadowOffsetX=6
+shadowOffsetY=6
+shadowBlur=3
+autofit=1
