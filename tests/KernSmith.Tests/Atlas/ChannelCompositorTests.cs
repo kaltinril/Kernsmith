@@ -44,11 +44,13 @@ public class ChannelCompositorTests
     };
 
     private static (byte r, byte g, byte b, byte a) CompositePixel(
-        RasterizedGlyph glyph, ChannelConfig config, IReadOnlyList<RasterizedGlyph>? outlineGlyphs = null)
+        RasterizedGlyph glyph, ChannelConfig config, IReadOnlyList<RasterizedGlyph>? outlineGlyphs = null,
+        IReadOnlyList<RasterizedGlyph>? shadowGlyphs = null)
     {
         var pages = ChannelCompositor.Build(
             new[] { glyph },
             outlineGlyphs,
+            shadowGlyphs,
             OneGlyphPack(),
             new Padding(0, 0, 0, 0),
             config,
@@ -142,6 +144,76 @@ public class ChannelCompositorTests
 
         // Falls back to glyph coverage rather than 0 (empty) or a synthetic outline value.
         a.ShouldBe((byte)200);
+    }
+
+    // == Shadow-only coverage (issue #167) ===================================
+
+    [Fact]
+    public void ShadowContent_UsesShadowGlyphCoverage_NotBaseGlyphAlpha()
+    {
+        // Base glyph pixel is fully transparent (no glyph coverage here), but the
+        // shadow-only glyph has coverage at the same position (e.g. shadow offset
+        // pushed the shadow footprint over a spot the glyph body doesn't cover).
+        var glyph = new RasterizedGlyph
+        {
+            Codepoint = 65,
+            GlyphIndex = 1,
+            BitmapData = new byte[] { 0 },
+            Width = 1,
+            Height = 1,
+            Pitch = 1,
+            Metrics = new GlyphMetrics(BearingX: 0, BearingY: 1, Advance: 1, Width: 1, Height: 1),
+            Format = PixelFormat.Grayscale8
+        };
+
+        var shadowGlyph = new RasterizedGlyph
+        {
+            Codepoint = 65,
+            GlyphIndex = 1,
+            BitmapData = new byte[] { 0, 0, 0, 150 },
+            Width = 1,
+            Height = 1,
+            Pitch = 4,
+            Metrics = new GlyphMetrics(BearingX: 0, BearingY: 1, Advance: 1, Width: 1, Height: 1),
+            Format = PixelFormat.Rgba32
+        };
+
+        var config = new ChannelConfig(
+            Alpha: ChannelContent.Shadow,
+            Red: ChannelContent.One,
+            Green: ChannelContent.One,
+            Blue: ChannelContent.One);
+
+        var (_, _, _, a) = CompositePixel(glyph, config, shadowGlyphs: new[] { shadowGlyph });
+
+        a.ShouldBe((byte)150);
+    }
+
+    [Fact]
+    public void ShadowContent_WithNoShadowGlyphs_YieldsZero()
+    {
+        var glyph = new RasterizedGlyph
+        {
+            Codepoint = 65,
+            GlyphIndex = 1,
+            BitmapData = new byte[] { 200 },
+            Width = 1,
+            Height = 1,
+            Pitch = 1,
+            Metrics = new GlyphMetrics(BearingX: 0, BearingY: 1, Advance: 1, Width: 1, Height: 1),
+            Format = PixelFormat.Grayscale8
+        };
+
+        var config = new ChannelConfig(
+            Alpha: ChannelContent.Shadow,
+            Red: ChannelContent.One,
+            Green: ChannelContent.One,
+            Blue: ChannelContent.One);
+
+        var (_, _, _, a) = CompositePixel(glyph, config, shadowGlyphs: null);
+
+        // No shadow layer was generated, so the shadow channel has nothing to show.
+        a.ShouldBe((byte)0);
     }
 
     // == White-fill (One content) ============================================

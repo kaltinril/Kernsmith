@@ -432,6 +432,10 @@ public static class BmFont
         // the larger outline glyphs spill onto extra pages — while the default-channel path,
         // which expands glyphs during rasterization, sizes correctly.
         IReadOnlyList<RasterizedGlyph>? channelOutlineGlyphs = null;
+        // Issue #167: a Shadow-content channel needs the shadow's own expanded coverage
+        // (no glyph composited on top) so it can be recolored independently at draw time.
+        // Generated up front for the same sizing reason as outline above.
+        IReadOnlyList<RasterizedGlyph>? channelShadowGlyphs = null;
         if (ShouldApplyChannelConfig(options) && options.Channels is { } cfg)
         {
             var needsOutline = cfg.Alpha is ChannelContent.Outline or ChannelContent.GlyphAndOutline
@@ -446,11 +450,33 @@ public static class BmFont
                 var outlineProcessor = new OutlinePostProcessor(options.Outline, options.OutlineR, options.OutlineG, options.OutlineB);
                 channelOutlineGlyphs = glyphs.Select(g => outlineProcessor.Process(g)).ToList();
             }
+
+            var needsShadow = cfg.Alpha == ChannelContent.Shadow
+                || cfg.Red == ChannelContent.Shadow
+                || cfg.Green == ChannelContent.Shadow
+                || cfg.Blue == ChannelContent.Shadow;
+            if (needsShadow && options.HasShadow)
+            {
+                var shadowProcessor = new ShadowCoveragePostProcessor(
+                    options.ShadowOffsetX, options.ShadowOffsetY, options.ShadowBlur,
+                    options.ShadowOpacity, options.HardShadow, options.ShadowBlurPasses, options.ShadowBlurKernelSize);
+                channelShadowGlyphs = glyphs.Select(g => shadowProcessor.Process(g)).ToList();
+            }
         }
 
-        // Use the outline-expanded glyphs (when present) for atlas sizing/packing so the
-        // packed rectangles match the glyphs that actually get composited.
-        var rectGlyphs = channelOutlineGlyphs ?? glyphs;
+        // Use the larger of the outline/shadow-expanded glyphs (when present) for atlas
+        // sizing/packing so the packed rectangles match the glyphs that actually get
+        // composited. When both outline and shadow channels are configured together, size
+        // against whichever expands each glyph further so neither overlay is clipped.
+        var rectGlyphs = (channelOutlineGlyphs, channelShadowGlyphs) switch
+        {
+            (not null, not null) => channelOutlineGlyphs
+                .Zip(channelShadowGlyphs, (o, s) => o.Width * o.Height >= s.Width * s.Height ? o : s)
+                .ToList(),
+            (not null, null) => channelOutlineGlyphs,
+            (null, not null) => channelShadowGlyphs,
+            _ => glyphs
+        };
         var glyphRects = rectGlyphs.Select(g => new GlyphRect(
             g.Codepoint,
             g.Width + padding.Left + padding.Right + spacing.Horizontal,
@@ -617,21 +643,24 @@ public static class BmFont
 
             if (ShouldApplyChannelConfig(options) && options.Channels is { } channelConfig)
             {
-                // Outline glyphs (when any channel needs them) were generated up front and
-                // already drove the atlas size estimate, the AutofitTexture verification, and
-                // packResult above — so the packed cells are sized for the outline fringe and
-                // the result stays on a single page when it fits (issue #115).
+                // Outline/shadow glyphs (when any channel needs them) were generated up front
+                // and already drove the atlas size estimate, the AutofitTexture verification,
+                // and packResult above — so the packed cells are sized for the largest fringe
+                // and the result stays on a single page when it fits (issue #115, issue #167).
                 var outlineGlyphs = channelOutlineGlyphs;
+                var shadowGlyphs = channelShadowGlyphs;
 
-                // Build atlas pages with original glyphs for glyph channels and
-                // outline glyphs for outline channels.
-                pages = ChannelCompositor.Build(glyphs, outlineGlyphs, packResult, padding, channelConfig, encoder);
+                // Build atlas pages with original glyphs for glyph channels, outline glyphs
+                // for outline channels, and shadow glyphs for the shadow-only channel.
+                pages = ChannelCompositor.Build(glyphs, outlineGlyphs, shadowGlyphs, packResult, padding, channelConfig, encoder);
 
-                if (outlineGlyphs != null)
+                if (outlineGlyphs != null || shadowGlyphs != null)
                 {
-                    // Use outline glyphs for the model so .fnt metrics (width, height,
-                    // xoffset, yoffset, xadvance) reflect the expanded dimensions.
-                    glyphs = outlineGlyphs.ToList();
+                    // Use the per-glyph larger of outline/shadow (rectGlyphs, computed above)
+                    // for the model so .fnt metrics (width, height, xoffset, yoffset, xadvance)
+                    // reflect whichever expansion the packed cell was actually sized for —
+                    // otherwise the unused overlay's pixels would be cropped by the quad.
+                    glyphs = rectGlyphs.ToList();
                 }
             }
             else if (options.ChannelPacking)

@@ -558,6 +558,57 @@ public class EndToEndTests
     }
 
     [Fact]
+    public void Generate_WithShadowAndCustomChannels_ShadowChannelCoversAreaGlyphChannelDoesNot()
+    {
+        // Arrange — alpha=shadow, RGB=glyph (white text with shadow-only coverage in alpha).
+        // The shadow is offset far enough that its footprint doesn't overlap the glyph body,
+        // so the shadow (alpha) channel must show coverage where the glyph (red) channel is 0.
+        var fontData = LoadTestFont();
+        var chars = CharacterSet.FromChars("A");
+
+        var result = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 48,
+            Characters = chars,
+            ShadowOffsetX = 6,
+            ShadowOffsetY = 6,
+            Channels = new ChannelConfig(
+                Alpha: ChannelContent.Shadow,
+                Red: ChannelContent.Glyph,
+                Green: ChannelContent.Glyph,
+                Blue: ChannelContent.Glyph)
+        });
+
+        // Assert — the shadow-only channel (alpha) should have non-zero pixels where the
+        // glyph channel (red) is zero, since the shadow's own coverage should never include
+        // the glyph shape composited on top (that's the whole point of a Shadow channel).
+        var page = result.Pages[0];
+        var charEntry = result.Model.Characters.First(c => c.Id == 65);
+        var hasShadowBeyondGlyph = false;
+
+        for (var y = charEntry.Y; y < charEntry.Y + charEntry.Height && y < page.Height; y++)
+        {
+            for (var x = charEntry.X; x < charEntry.X + charEntry.Width && x < page.Width; x++)
+            {
+                var idx = (y * page.Width + x) * 4;
+                var red = page.PixelData[idx + 0];   // glyph channel
+                var alpha = page.PixelData[idx + 3]; // shadow channel
+
+                if (alpha > 0 && red == 0)
+                {
+                    hasShadowBeyondGlyph = true;
+                    break;
+                }
+            }
+            if (hasShadowBeyondGlyph) break;
+        }
+
+        hasShadowBeyondGlyph.ShouldBeTrue(
+            "shadow channel should contain coverage beyond the glyph boundary — " +
+            "if the shadow channel never differs from the glyph channel, the shadow is empty/missing");
+    }
+
+    [Fact]
     public void Generate_OutlineChannelConfig_DoesNotSpillExtraPagesVersusDefaultChannels()
     {
         // Regression for issue #115: a custom outline ChannelConfig sized the atlas from the
