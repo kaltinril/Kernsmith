@@ -5,12 +5,13 @@ using Shouldly;
 namespace KernSmith.Tests.Integration;
 
 /// <summary>
-/// Tests for the channel-content gate: a non-default <see cref="ChannelConfig"/> is only
-/// honored when channel-packing is on OR the font has no baked composite effects
-/// (gradient, shadow, or outline&gt;0). When a font has baked effects, applying a
-/// separated-channel layout would tear apart the baked Rgba32 composite (gradient color,
-/// soft outline, drop shadow), so the channel layout is skipped and the default
-/// single-composite path (and default .fnt channel metadata) is used instead.
+/// Tests for the channel-content gate: a non-default <see cref="ChannelConfig"/> is honored
+/// whenever it is present, regardless of whether the font has baked composite effects
+/// (gradient, shadow, outline&gt;0). <see cref="ChannelCompositor"/> reads the actual RGBA
+/// component bytes from the composited glyph for <see cref="ChannelContent.Glyph"/>, so any
+/// baked color (e.g. a gradient) survives being routed through a channel that also reads
+/// Glyph content — only channels the caller explicitly sets to <see cref="ChannelContent.Zero"/>
+/// or <see cref="ChannelContent.One"/> are overwritten, which is the caller's intent (issue #169).
 /// </summary>
 [Collection("RasterizerFactory")]
 public class ChannelGatingTests
@@ -19,17 +20,17 @@ public class ChannelGatingTests
         File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Roboto-Regular.ttf"));
 
     /// <summary>
-    /// A gradient font with a separated-channel layout (glyph-in-RGB, outline-in-alpha)
-    /// must SKIP the channel layout: the baked gradient survives in RGB (so RGB is not
-    /// flattened to the coverage byte), and the result is identical to the no-Channels path.
+    /// A gradient font with a separated-channel layout (glyph-in-Red, One-in-Green/Blue) must
+    /// APPLY the channel layout: the gradient's Red component survives via Glyph content
+    /// (issue #169 — a non-default ChannelConfig must not be silently skipped just because an
+    /// effect is active), while Green/Blue are overwritten to 255 as configured.
     /// </summary>
     [Fact]
-    public void Gradient_WithSeparatedChannels_SkipsChannelApplication_PreservesComposite()
+    public void Gradient_WithSeparatedChannels_AppliesChannelConfig()
     {
         var fontData = LoadTestFont();
         var chars = CharacterSet.FromChars("O");
 
-        // Baseline: same gradient, no Channels (the default single-composite path).
         FontGeneratorOptions BaseOptions() => new()
         {
             Size = 48,
@@ -43,12 +44,7 @@ public class ChannelGatingTests
             GradientEndB = 0x00,
         };
 
-        var resultDefault = BmFont.Generate(fontData, BaseOptions());
-
         var withChannels = BaseOptions();
-        // Separated layout that, if honored, would destroy the baked composite: force
-        // Green/Blue to One (white), which flattens the gradient color away. Gating must
-        // skip this so the gradient survives and the pixels equal the no-Channels path.
         withChannels.Channels = new ChannelConfig(
             Alpha: ChannelContent.Glyph,
             Red: ChannelContent.Glyph,
@@ -56,29 +52,27 @@ public class ChannelGatingTests
             Blue: ChannelContent.One);
         var resultChanneled = BmFont.Generate(fontData, withChannels);
 
-        // The pixel output must equal the no-Channels path (composite preserved).
-        resultChanneled.Pages.Count.ShouldBe(resultDefault.Pages.Count);
-        resultChanneled.Pages[0].PixelData.ShouldBe(resultDefault.Pages[0].PixelData);
-
-        // The gradient must survive: somewhere in the glyph, R != G (red-gold gradient),
-        // proving RGB was not flattened to a single coverage value.
+        // The gradient's Red component must survive (Glyph content reads the actual RGBA byte).
         var page = resultChanneled.Pages[0];
-        var sawColor = false;
+        var sawGradientRed = false;
+        var sawForcedOne = false;
         for (var i = 0; i + 3 < page.PixelData.Length; i += 4)
         {
             var r = page.PixelData[i + 0];
             var g = page.PixelData[i + 1];
+            var b = page.PixelData[i + 2];
             var a = page.PixelData[i + 3];
-            if (a > 0 && r != g) { sawColor = true; break; }
+            if (a > 0 && r > 0) sawGradientRed = true;
+            if (a > 0 && g == 255 && b == 255) sawForcedOne = true;
         }
-        sawColor.ShouldBeTrue("gradient color (R != G) must survive — RGB must not be flattened to coverage");
+        sawGradientRed.ShouldBeTrue("Glyph content in Red must preserve the gradient's Red component");
+        sawForcedOne.ShouldBeTrue("Green/Blue configured as One must be forced to 255");
 
-        // The .fnt common-block channel metadata must be the DEFAULT (all 0 = glyph),
-        // NOT the separated layout (alpha=1=outline). A skipped font writes default values.
-        resultChanneled.Model.Common.AlphaChnl.ShouldBe(0);
-        resultChanneled.Model.Common.RedChnl.ShouldBe(0);
-        resultChanneled.Model.Common.GreenChnl.ShouldBe(0);
-        resultChanneled.Model.Common.BlueChnl.ShouldBe(0);
+        // The .fnt common-block channel metadata must reflect the configured layout, not defaults.
+        resultChanneled.Model.Common.AlphaChnl.ShouldBe((int)ChannelContent.Glyph);
+        resultChanneled.Model.Common.RedChnl.ShouldBe((int)ChannelContent.Glyph);
+        resultChanneled.Model.Common.GreenChnl.ShouldBe((int)ChannelContent.One);
+        resultChanneled.Model.Common.BlueChnl.ShouldBe((int)ChannelContent.One);
     }
 
     /// <summary>

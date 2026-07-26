@@ -609,6 +609,66 @@ public class EndToEndTests
     }
 
     [Fact]
+    public void Generate_WithShadowAndCustomChannels_SameColorAsGlyph_ShadowChannelStillRoutesIndependently()
+    {
+        // Regression for issue #169: ShouldApplyChannelConfig's gate silently skipped
+        // ChannelCompositor whenever an effect (shadow/outline) was active, falling back to
+        // the plain composited path — where the Shadow-content channel just re-reads the
+        // baked composite. Prior tests happened to pass anyway because the default shadow
+        // color (black) differs from the default glyph fill (white), so "alpha>0 where red==0"
+        // was true by color contrast alone, not by real per-channel routing.
+        //
+        // Here the shadow color is set equal to the glyph fill color (both white), so the
+        // composited-path coincidence is impossible: a pixel painted by the glyph would have
+        // Red>0 in that fallback path too. Only genuine ChannelCompositor routing — where the
+        // Alpha channel comes from the shadow-only coverage layer, independent of the Red
+        // (glyph-only) layer — can produce alpha>0 at a pixel where red==0.
+        var fontData = LoadTestFont();
+        var chars = CharacterSet.FromChars("A");
+
+        var result = BmFont.Generate(fontData, new FontGeneratorOptions
+        {
+            Size = 48,
+            Characters = chars,
+            ShadowOffsetX = 6,
+            ShadowOffsetY = 6,
+            ShadowR = 255,
+            ShadowG = 255,
+            ShadowB = 255,
+            Channels = new ChannelConfig(
+                Alpha: ChannelContent.Shadow,
+                Red: ChannelContent.Glyph,
+                Green: ChannelContent.Glyph,
+                Blue: ChannelContent.Glyph)
+        });
+
+        var page = result.Pages[0];
+        var charEntry = result.Model.Characters.First(c => c.Id == 65);
+        var hasShadowBeyondGlyph = false;
+
+        for (var y = charEntry.Y; y < charEntry.Y + charEntry.Height && y < page.Height; y++)
+        {
+            for (var x = charEntry.X; x < charEntry.X + charEntry.Width && x < page.Width; x++)
+            {
+                var idx = (y * page.Width + x) * 4;
+                var red = page.PixelData[idx + 0];   // glyph channel
+                var alpha = page.PixelData[idx + 3]; // shadow channel
+
+                if (alpha > 0 && red == 0)
+                {
+                    hasShadowBeyondGlyph = true;
+                    break;
+                }
+            }
+            if (hasShadowBeyondGlyph) break;
+        }
+
+        hasShadowBeyondGlyph.ShouldBeTrue(
+            "with shadow color == glyph color, only real per-channel routing (not color contrast) " +
+            "can produce shadow-only alpha coverage where the glyph channel has none");
+    }
+
+    [Fact]
     public void Generate_OutlineChannelConfig_DoesNotSpillExtraPagesVersusDefaultChannels()
     {
         // Regression for issue #115: a custom outline ChannelConfig sized the atlas from the
