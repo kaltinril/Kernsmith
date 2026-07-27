@@ -306,6 +306,13 @@ internal sealed class GenerateCommand
         }
         if (options.HardShadow)
             genOptions.HardShadow = true;
+        if (options.ShadowVariant)
+        {
+            genOptions.Variants = new List<AtlasVariant>
+            {
+                new("shadow", AtlasVariantKind.ShadowSilhouette, genOptions.ShadowBlur, genOptions.HardShadow)
+            };
+        }
 
         // Rendering options (Phase 100) — only set when explicitly provided so defaults are preserved.
         if (options.SdfSpread.HasValue)
@@ -567,6 +574,9 @@ internal sealed class GenerateCommand
                     break;
                 case "--hard-shadow":
                     options.HardShadow = true;
+                    break;
+                case "--shadow-variant":
+                    options.ShadowVariant = true;
                     break;
                 case "--instance":
                     options.InstanceName = NextArg(args, ref i, args[i]);
@@ -965,6 +975,9 @@ internal sealed class GenerateCommand
               --shadow-blur-kernel <n>    Shadow blur kernel size (default: 0)
               --shadow-blur-passes <n>    Number of shadow blur passes; more = softer (default: 1)
               --hard-shadow               Use a crisp shadow silhouette instead of soft edges
+              --shadow-variant             Also emit a "-shadow" .fnt/atlas: an unoffset, untinted
+                                           silhouette variant so the shadow can be positioned and
+                                           colored at draw time instead of baked in
 
             Kerning:
               --no-kerning                Disable kerning pair extraction

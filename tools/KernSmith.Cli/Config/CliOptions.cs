@@ -57,6 +57,7 @@ internal sealed class CliOptions
     public int ShadowBlurKernelSize { get; set; }
     public int ShadowBlurPasses { get; set; } = 1;
     public bool HardShadow { get; set; }
+    public bool ShadowVariant { get; set; }
 
     // Kerning
     public bool? Kerning { get; set; } = true;

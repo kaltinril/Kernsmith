@@ -135,6 +135,8 @@ public static class BmfcConfigWriter
             extensions.AppendLine($"shadowBlurKernelSize={options.ShadowBlurKernelSize}");
         if (options.ShadowBlurPasses != 1)
             extensions.AppendLine($"shadowBlurPasses={options.ShadowBlurPasses}");
+        if (options.Variants is { Count: > 0 } && options.Variants.Any(v => v.Name == "shadow" && v.Kind == AtlasVariantKind.ShadowSilhouette))
+            extensions.AppendLine("variantShadow=1");
         if (options.FillColorR != 255 || options.FillColorG != 255 || options.FillColorB != 255 || options.FillColorA != 255)
             extensions.AppendLine($"fillColor={options.FillColorR:X2}{options.FillColorG:X2}{options.FillColorB:X2}{options.FillColorA:X2}");
         if (options.SdfSpread != 8f)

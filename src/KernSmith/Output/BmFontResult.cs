@@ -33,6 +33,15 @@ public sealed class BmFontResult
     /// <summary>The system font family name used to produce this result, if available.</summary>
     internal string? SourceFontName { get; }
 
+    /// <summary>
+    /// Additional character-set renderings requested via <see cref="FontGeneratorOptions.Variants"/>,
+    /// keyed by <see cref="AtlasVariant.Name"/>. Empty when no variants were requested.
+    /// </summary>
+    public IReadOnlyDictionary<string, BmFontModel> VariantModels { get; }
+
+    /// <summary>Atlas pages for each entry in <see cref="VariantModels"/>, keyed the same way.</summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<AtlasPage>> VariantPages { get; }
+
     private readonly Lazy<string> _fntText;
     private readonly Lazy<string> _fntXml;
     private readonly Lazy<byte[]> _fntBinary;
@@ -44,7 +53,9 @@ public sealed class BmFontResult
         PipelineMetrics? metrics = null,
         FontGeneratorOptions? sourceOptions = null,
         string? sourceFontFile = null,
-        string? sourceFontName = null)
+        string? sourceFontName = null,
+        IReadOnlyDictionary<string, BmFontModel>? variantModels = null,
+        IReadOnlyDictionary<string, IReadOnlyList<AtlasPage>>? variantPages = null)
     {
         Model = model;
         Pages = pages;
@@ -53,6 +64,8 @@ public sealed class BmFontResult
         SourceOptions = sourceOptions;
         SourceFontFile = sourceFontFile;
         SourceFontName = sourceFontName;
+        VariantModels = variantModels ?? new Dictionary<string, BmFontModel>();
+        VariantPages = variantPages ?? new Dictionary<string, IReadOnlyList<AtlasPage>>();
 
         _fntText = new Lazy<string>(() => new TextFormatter().FormatText(Model));
         _fntXml = new Lazy<string>(() => new XmlFormatter().FormatText(Model));
@@ -229,6 +242,33 @@ public sealed class BmFontResult
         };
 
         FileWriter.Write(fixedModel, Pages, outputPath, format, textFormatter, encoder);
+
+        // Write each variant as its own .fnt + atlas image, named "<outputPath>-<variantName>".
+        foreach (var (variantName, variantModel) in VariantModels)
+        {
+            if (!VariantPages.TryGetValue(variantName, out var variantPages))
+                continue;
+
+            var variantOutputPath = $"{outputPath}-{variantName}";
+            var variantBaseName = Path.GetFileNameWithoutExtension(variantOutputPath);
+            var variantFixedPages = new List<PageEntry>();
+            for (int i = 0; i < variantModel.Pages.Count; i++)
+            {
+                var ext = Path.GetExtension(variantModel.Pages[i].File);
+                variantFixedPages.Add(new PageEntry(variantModel.Pages[i].Id, $"{variantBaseName}_{i}{ext}"));
+            }
+            var variantFixedModel = new BmFontModel
+            {
+                Info = variantModel.Info,
+                Common = variantModel.Common,
+                Pages = variantFixedPages,
+                Characters = variantModel.Characters,
+                KerningPairs = variantModel.KerningPairs,
+                Extended = variantModel.Extended
+            };
+
+            FileWriter.Write(variantFixedModel, variantPages, variantOutputPath, format, textFormatter, encoder);
+        }
 
         // Write .bmfc file if source options are available
         if (SourceOptions is not null)
