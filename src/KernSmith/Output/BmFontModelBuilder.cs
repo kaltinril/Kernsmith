@@ -215,6 +215,44 @@ internal static class BmFontModelBuilder
         };
     }
 
+    /// <summary>
+    /// Returns a copy of <paramref name="model"/> with its <see cref="ExtendedMetadata"/>
+    /// sibling-linkage fields set, so a variant model and its primary can each discover the
+    /// other (stock BMFont has no such field). See <see cref="AtlasVariant"/>.
+    /// </summary>
+    internal static BmFontModel WithVariantLinks(BmFontModel model, string? variantOf, IReadOnlyList<string>? variants)
+    {
+        var meta = model.Extended;
+        var newMeta = new ExtendedMetadata
+        {
+            GeneratorVersion = meta?.GeneratorVersion ?? KernSmithVersionInfo.Version,
+            SdfSpread = meta?.SdfSpread,
+            OutlineThickness = meta?.OutlineThickness,
+            GradientTopColor = meta?.GradientTopColor,
+            GradientBottomColor = meta?.GradientBottomColor,
+            ShadowOffsetX = meta?.ShadowOffsetX,
+            ShadowOffsetY = meta?.ShadowOffsetY,
+            ShadowColor = meta?.ShadowColor,
+            SuperSampleLevel = meta?.SuperSampleLevel,
+            VariationAxes = meta?.VariationAxes,
+            ColorFont = meta?.ColorFont,
+            FallbackCharacter = meta?.FallbackCharacter,
+            AdvanceAdjustY = meta?.AdvanceAdjustY,
+            VariantOf = variantOf,
+            Variants = variants
+        };
+
+        return new BmFontModel
+        {
+            Info = model.Info,
+            Common = model.Common,
+            Pages = model.Pages,
+            Characters = model.Characters,
+            KerningPairs = model.KerningPairs,
+            Extended = newMeta
+        };
+    }
+
     private static ExtendedMetadata? BuildExtendedMetadata(FontGeneratorOptions options)
     {
         var version = KernSmithVersionInfo.Version;

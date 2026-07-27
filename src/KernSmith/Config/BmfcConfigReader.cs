@@ -55,6 +55,7 @@ public static class BmfcConfigReader
         int paddingUp = 0, paddingDown = 0, paddingRight = 0, paddingLeft = 0;
         int spacingHoriz = 1, spacingVert = 1;
         bool hasPadding = false, hasSpacing = false;
+        bool wantsShadowVariant = false;
 
         // Accumulate character ranges
         var unicodeRanges = new List<(int Start, int End)>();
@@ -282,6 +283,9 @@ public static class BmfcConfigReader
                     case "shadowBlurPasses":
                         options.ShadowBlurPasses = int.Parse(value, CultureInfo.InvariantCulture);
                         break;
+                    case "variantShadow":
+                        wantsShadowVariant = value == "1";
+                        break;
                     case "gradientOffset":
                         options.GradientOffset = float.Parse(value, CultureInfo.InvariantCulture);
                         break;
@@ -401,6 +405,13 @@ public static class BmfcConfigReader
             options.Spacing = new Spacing(spacingHoriz, spacingVert);
         if (hasChannels)
             options.Channels = new ChannelConfig(chnlAlpha, chnlRed, chnlGreen, chnlBlue, invA, invR, invG, invB);
+        if (wantsShadowVariant)
+        {
+            options.Variants = new List<AtlasVariant>
+            {
+                new("shadow", AtlasVariantKind.ShadowSilhouette, options.ShadowBlur, options.HardShadow)
+            };
+        }
 
         // Build character set from parsed ranges
         if (hasChars && unicodeRanges.Count > 0)

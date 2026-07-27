@@ -322,4 +322,11 @@ public class FontGeneratorOptions
 
     /// <summary>When set, renders glyphs into a region of an existing PNG image.</summary>
     public AtlasTargetRegion? TargetRegion { get; set; }
+
+    /// <summary>
+    /// Additional character-set renderings (e.g. a dropshadow silhouette) generated alongside
+    /// the primary font. Not supported together with <see cref="TargetRegion"/>. See
+    /// <see cref="AtlasVariant"/> and phase-181 plan doc (issue #175).
+    /// </summary>
+    public IReadOnlyList<AtlasVariant>? Variants { get; set; }
 }

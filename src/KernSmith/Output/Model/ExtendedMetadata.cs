@@ -49,6 +49,19 @@ public sealed class ExtendedMetadata
     public float? AdvanceAdjustY { get; init; }
 
     /// <summary>
+    /// Name of the primary font this model is a variant of (e.g. "shadow" variant points back
+    /// at its base font), or null on the primary model itself. See <see cref="AtlasVariant"/>.
+    /// </summary>
+    public string? VariantOf { get; init; }
+
+    /// <summary>
+    /// Names of the <see cref="AtlasVariant"/>s generated alongside this (primary) model, or
+    /// null on a variant model itself. Lets a variant/primary pair discover each other without
+    /// relying on file-naming convention, since stock BMFont has no such field.
+    /// </summary>
+    public IReadOnlyList<string>? Variants { get; init; }
+
+    /// <summary>
     /// Returns true if any extended field (beyond GeneratorVersion) is set.
     /// </summary>
     internal bool HasExtendedFields =>
@@ -63,5 +76,7 @@ public sealed class ExtendedMetadata
         VariationAxes is { Count: > 0 } ||
         ColorFont is true ||
         FallbackCharacter.HasValue ||
-        AdvanceAdjustY.HasValue;
+        AdvanceAdjustY.HasValue ||
+        VariantOf != null ||
+        Variants is { Count: > 0 };
 }

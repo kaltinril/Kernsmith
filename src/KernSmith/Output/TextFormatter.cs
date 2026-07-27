@@ -140,6 +140,10 @@ internal sealed class TextFormatter : IBmFontTextFormatter
             foreach (var (tag, value) in extended.VariationAxes)
                 sb.Append($" axis_{tag}={value}");
         }
+        if (extended.VariantOf != null)
+            sb.Append($" variantOf=\"{extended.VariantOf}\"");
+        if (extended.Variants is { Count: > 0 })
+            sb.Append($" variants=\"{string.Join(",", extended.Variants)}\"");
 
         sb.AppendLine();
     }
