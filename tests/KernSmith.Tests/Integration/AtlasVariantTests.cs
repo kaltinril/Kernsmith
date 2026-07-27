@@ -1,18 +1,43 @@
+using KernSmith.Output;
 using KernSmith.Output.Model;
 using Shouldly;
 
 namespace KernSmith.Tests.Integration;
 
 /// <summary>
-/// Tests for <see cref="AtlasVariant"/> (phase-181, issue #175): an additional character-set
-/// rendering (e.g. a dropshadow silhouette) packed alongside the primary font, generated as
-/// its own <see cref="BmFontModel"/> with no baked offset or color.
+/// Tests for <see cref="AtlasVariant"/> (phase-182, issue #175): an additional character-set
+/// rendering (e.g. a dropshadow silhouette) packed into the SAME shared atlas PNG as the
+/// primary font (via <see cref="KernSmith.Atlas.AtlasGroupBuilder"/>), generated as its own
+/// <see cref="BmFontModel"/> with no baked offset or color.
 /// </summary>
 [Collection("RasterizerFactory")]
 public class AtlasVariantTests
 {
     private static byte[] LoadTestFont() =>
         File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Roboto-Regular.ttf"));
+
+    /// <summary>
+    /// Extracts a sub-rectangle's per-pixel coverage value (alpha for RGBA pages, the raw byte
+    /// for grayscale pages) so regions can be compared regardless of whether the page happens
+    /// to be grayscale or RGBA (a shared atlas with a shadow variant promotes to RGBA even
+    /// though the primary-only atlas would have stayed grayscale).
+    /// </summary>
+    private static byte[] ExtractCoverageRegion(byte[] pixelData, int pageWidth, PixelFormat format, int x, int y, int width, int height)
+    {
+        var bytesPerPixel = format == PixelFormat.Rgba32 ? 4 : 1;
+        var alphaOffset = format == PixelFormat.Rgba32 ? 3 : 0;
+
+        var region = new byte[width * height];
+        for (var row = 0; row < height; row++)
+        {
+            for (var col = 0; col < width; col++)
+            {
+                var srcIdx = ((y + row) * pageWidth + (x + col)) * bytesPerPixel + alphaOffset;
+                region[row * width + col] = pixelData[srcIdx];
+            }
+        }
+        return region;
+    }
 
     [Fact]
     public void NoVariants_ProducesEmptyVariantModels()
@@ -45,9 +70,10 @@ public class AtlasVariantTests
         var variantCodepoints = variantModel.Characters.Select(c => c.Id).ToHashSet();
         variantCodepoints.ShouldBe(requestedCodepoints, ignoreOrder: true);
 
-        // Same page filenames referenced by the variant's Pages list are its own (not shared
-        // with the primary in this implementation — see phase-181 doc deviations).
+        // phase-182: the variant is packed into the SAME shared atlas as the primary, so its
+        // Pages list references the exact same filenames as the primary model's Pages.
         variantModel.Pages.ShouldNotBeEmpty();
+        variantModel.Pages.Select(p => p.File).ShouldBe(result.Model.Pages.Select(p => p.File));
     }
 
     [Fact]
@@ -85,8 +111,13 @@ public class AtlasVariantTests
     }
 
     [Fact]
-    public void ShadowSilhouetteVariant_DoesNotAffectPrimaryPixels()
+    public void ShadowSilhouetteVariant_DoesNotAlterPrimaryGlyphPixels()
     {
+        // phase-182: the primary and shadow glyphs now share one page, so the shadow's
+        // presence can shift where the primary glyph itself lands within that page (more
+        // rects packed together). What must NOT change is the primary glyph's own rendered
+        // pixel content — so compare sub-regions extracted at each run's own placement,
+        // not the whole page buffer.
         var options = new FontGeneratorOptions
         {
             Size = 32,
@@ -101,7 +132,103 @@ public class AtlasVariantTests
             Characters = CharacterSet.FromChars("O")
         });
 
-        withVariant.Pages[0].PixelData.ShouldBe(withoutVariant.Pages[0].PixelData);
+        var withChar = withVariant.Model.Characters.Single(c => c.Id == 'O');
+        var withoutChar = withoutVariant.Model.Characters.Single(c => c.Id == 'O');
+
+        withChar.Width.ShouldBe(withoutChar.Width);
+        withChar.Height.ShouldBe(withoutChar.Height);
+
+        var withPage = withVariant.Pages[withChar.Page];
+        var withoutPage = withoutVariant.Pages[withoutChar.Page];
+
+        var withRegion = ExtractCoverageRegion(withPage.PixelData, withPage.Width, withPage.Format, withChar.X, withChar.Y, withChar.Width, withChar.Height);
+        var withoutRegion = ExtractCoverageRegion(withoutPage.PixelData, withoutPage.Width, withoutPage.Format, withoutChar.X, withoutChar.Y, withoutChar.Width, withoutChar.Height);
+
+        withRegion.ShouldBe(withoutRegion);
+    }
+
+    [Fact]
+    public void ShadowSilhouetteVariant_SharesOnePngWithNonOverlappingRegions()
+    {
+        // Pixel-level proof (not just placement math) that primary and shadow glyphs both
+        // land in the same shared PNG at non-overlapping regions.
+        var options = new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars("ABC"),
+            Variants = new[] { new AtlasVariant("shadow", AtlasVariantKind.ShadowSilhouette) }
+        };
+
+        var result = BmFont.Generate(LoadTestFont(), options);
+        var variantModel = result.VariantModels["shadow"];
+
+        // Same physical page count/dimensions -- it's the same atlas.
+        result.Pages.Count.ShouldBe(result.VariantPages["shadow"].Count);
+        for (var i = 0; i < result.Pages.Count; i++)
+        {
+            result.Pages[i].Width.ShouldBe(result.VariantPages["shadow"][i].Width);
+            result.Pages[i].Height.ShouldBe(result.VariantPages["shadow"][i].Height);
+            result.Pages[i].PixelData.ShouldBeSameAs(result.VariantPages["shadow"][i].PixelData);
+        }
+
+        // No primary char rect overlaps any shadow char rect on the same page.
+        foreach (var primaryChar in result.Model.Characters)
+        {
+            foreach (var shadowChar in variantModel.Characters)
+            {
+                if (primaryChar.Page != shadowChar.Page)
+                    continue;
+
+                var overlaps =
+                    primaryChar.X < shadowChar.X + shadowChar.Width &&
+                    primaryChar.X + primaryChar.Width > shadowChar.X &&
+                    primaryChar.Y < shadowChar.Y + shadowChar.Height &&
+                    primaryChar.Y + primaryChar.Height > shadowChar.Y;
+
+                overlaps.ShouldBeFalse(
+                    $"primary char {primaryChar.Id} and shadow char {shadowChar.Id} overlap on page {primaryChar.Page}");
+            }
+        }
+    }
+
+    [Fact]
+    public void ShadowSilhouetteVariant_ToFile_WritesOnlyOnePngSharedByBothFntFiles()
+    {
+        var options = new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars("O"),
+            Variants = new[] { new AtlasVariant("shadow", AtlasVariantKind.ShadowSilhouette) }
+        };
+
+        var result = BmFont.Generate(LoadTestFont(), options);
+
+        var tempDir = Path.Combine(Path.GetTempPath(), $"KernSmith_ShadowVariant_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var outputPath = Path.Combine(tempDir, "testfont");
+            result.ToFile(outputPath);
+
+            File.Exists(outputPath + ".fnt").ShouldBeTrue();
+            File.Exists(outputPath + "-shadow.fnt").ShouldBeTrue();
+
+            var pngFiles = Directory.GetFiles(tempDir, "*.png");
+            pngFiles.Length.ShouldBe(result.Pages.Count, "primary and shadow must share the same PNG file(s), not duplicate them");
+
+            var primaryFntText = File.ReadAllText(outputPath + ".fnt");
+            var shadowFntText = File.ReadAllText(outputPath + "-shadow.fnt");
+
+            var primaryPageLine = primaryFntText.Split('\n').Single(l => l.StartsWith("page "));
+            var shadowPageLine = shadowFntText.Split('\n').Single(l => l.StartsWith("page "));
+            primaryPageLine.ShouldBe(shadowPageLine, "both .fnt files must reference the identical shared PNG filename");
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
     }
 
     [Fact]

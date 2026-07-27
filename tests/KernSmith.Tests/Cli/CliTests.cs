@@ -751,6 +751,36 @@ public class CliTests : IDisposable
         stdout.ShouldContain("No font families");
     }
 
+    // -- Shadow variant (phase-182, issue #175) --
+
+    [Fact]
+    public void Generate_ShadowVariant_WritesPrimaryAndShadowFntSharingOnePng()
+    {
+        // Arrange
+        var outputBase = Path.Combine(_tempDir, "shadow-test");
+
+        // Act
+        var (exitCode, stdout, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "32", "-o", outputBase, "--shadow-variant");
+
+        // Assert
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain("Done.");
+
+        File.Exists(outputBase + ".fnt").ShouldBeTrue("should produce the primary .fnt file");
+        File.Exists(outputBase + "-shadow.fnt").ShouldBeTrue("should produce the shadow variant's .fnt file");
+
+        // Both .fnt files must reference the same shared PNG -- no duplicate image written.
+        var pngFiles = Directory.GetFiles(_tempDir, "*.png");
+        pngFiles.Length.ShouldBe(1, "primary and shadow variant should share one PNG, not duplicate it");
+
+        var primaryFnt = File.ReadAllText(outputBase + ".fnt");
+        var shadowFnt = File.ReadAllText(outputBase + "-shadow.fnt");
+        var primaryPageLine = primaryFnt.Split('\n').Single(l => l.StartsWith("page "));
+        var shadowPageLine = shadowFnt.Split('\n').Single(l => l.StartsWith("page "));
+        shadowPageLine.ShouldBe(primaryPageLine);
+    }
+
     // -- Helper methods --
 
     private static int ExtractIntAttribute(string fntContent, string attributeName)

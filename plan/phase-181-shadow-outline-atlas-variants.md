@@ -1,8 +1,8 @@
 # Phase 181 — Atlas Variants: Padded Silhouette Regions (Shadow/Outline/etc.)
 
-> **Status**: Planning
+> **Status**: Superseded by [Phase 182](phase-182-shared-atlas-groups.md) — dropshadow-only variant packing was too narrow; the same "pack N independent glyph sets into one shared atlas" need also applies to mixing multiple fonts in one PNG (avoid texture/render-state switches when drawing). Phase 182 covers both.
 > **Tracks**: [GitHub issue #175](https://github.com/kaltinril/Kernsmith/issues/175)
-> **Related**: `ChannelContent.Shadow` (PR #167). Phase 50 (in-memory layer retention) is a different approach, not folded in here.
+> **Related**: `ChannelContent.Shadow` (PR #167). Phase 50 (in-memory layer retention) is a different approach, not folded in here. PR #176 is a first-draft implementation of this doc (separate PNG per variant) — needs rework against Phase 182's shared-atlas design before merging.
 
 ## Problem
 

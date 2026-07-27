@@ -93,7 +93,8 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 | `ForceOffsetsToZero` | `bool` | `false` | Zero out all xoffset/yoffset values. |
 | `TextureFormat` | `TextureFormat` | `Png` | PNG, TGA, or DDS. |
 | `SizeConstraints` | `AtlasSizeConstraints?` | `null` | Force square, power-of-two, or fixed width. |
-| `TargetRegion` | `AtlasTargetRegion?` | `null` | Render glyphs into a region of an existing PNG. |
+| `TargetRegion` | `AtlasTargetRegion?` | `null` | Render glyphs into a region of an existing PNG. Not supported together with `Variants`. |
+| `Variants` | `IReadOnlyList<AtlasVariant>?` | `null` | Additional character-set renderings (e.g. a dropshadow silhouette) packed into the same shared atlas as the primary glyphs. See [Atlas Variants](../core/atlas-variants.md). |
 
 ## Channels and packing
 

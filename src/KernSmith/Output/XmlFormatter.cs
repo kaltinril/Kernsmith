@@ -167,6 +167,10 @@ internal sealed class XmlFormatter : IBmFontTextFormatter
             foreach (var (tag, value) in extended.VariationAxes)
                 writer.WriteAttributeString($"axis_{tag}", value.ToString());
         }
+        if (extended.VariantOf != null)
+            writer.WriteAttributeString("variantOf", extended.VariantOf);
+        if (extended.Variants is { Count: > 0 })
+            writer.WriteAttributeString("variants", string.Join(",", extended.Variants));
 
         writer.WriteEndElement();
     }
