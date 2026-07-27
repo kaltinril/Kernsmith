@@ -79,6 +79,23 @@ top from `myfont.fnt`:
 Because both `.fnt` files' pages reference the same PNG, this is a single texture bind for both
 draw calls.
 
+## Design note: this is a general shared-atlas mechanism
+
+Dropshadow is the only thing wired up today, but it's built on a general-purpose packer,
+`AtlasGroupBuilder` (`KernSmith.Atlas`), that packs rects from any number of independently-tagged
+glyph sources into one shared atlas pass, then splits the placements back out per source. The
+dropshadow variant is just two sources (primary glyphs + shadow silhouette glyphs, same character
+set) submitted to it.
+
+The same mechanism is intended to eventually support **multi-font packing** -- mixing glyphs from
+two entirely different fonts into one shared atlas, so drawing mixed-font text never switches
+texture either. That is **not implemented** -- there's no public API today for submitting a second
+font's glyphs as an atlas-group source, and `FontGeneratorOptions.Variants` only expresses
+same-font variants of one character set. If you're building something that wants multi-font
+packing, treat this as the extension point to design against, not a ready-made feature: expect to
+add a new config surface (something that isn't `AtlasVariant`, since that assumes one font) and
+wire it through `AtlasGroupBuilder` the same way the dropshadow variant does in `BmFont.cs`.
+
 ## CLI / `.bmfc`
 
 ```bash
