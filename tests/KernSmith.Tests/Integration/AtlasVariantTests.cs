@@ -174,11 +174,8 @@ public class AtlasVariantTests
         // No primary char rect overlaps any shadow char rect on the same page.
         foreach (var primaryChar in result.Model.Characters)
         {
-            foreach (var shadowChar in variantModel.Characters)
+            foreach (var shadowChar in variantModel.Characters.Where(c => c.Page == primaryChar.Page))
             {
-                if (primaryChar.Page != shadowChar.Page)
-                    continue;
-
                 var overlaps =
                     primaryChar.X < shadowChar.X + shadowChar.Width &&
                     primaryChar.X + primaryChar.Width > shadowChar.X &&
@@ -203,12 +200,12 @@ public class AtlasVariantTests
 
         var result = BmFont.Generate(LoadTestFont(), options);
 
-        var tempDir = Path.Combine(Path.GetTempPath(), $"KernSmith_ShadowVariant_{Guid.NewGuid():N}");
+        var tempDir = Path.Join(Path.GetTempPath(), $"KernSmith_ShadowVariant_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
 
         try
         {
-            var outputPath = Path.Combine(tempDir, "testfont");
+            var outputPath = Path.Join(tempDir, "testfont");
             result.ToFile(outputPath);
 
             File.Exists(outputPath + ".fnt").ShouldBeTrue();

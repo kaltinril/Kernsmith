@@ -757,7 +757,7 @@ public class CliTests : IDisposable
     public void Generate_ShadowVariant_WritesPrimaryAndShadowFntSharingOnePng()
     {
         // Arrange
-        var outputBase = Path.Combine(_tempDir, "shadow-test");
+        var outputBase = Path.Join(_tempDir, "shadow-test");
 
         // Act
         var (exitCode, stdout, stderr) = RunCli(
