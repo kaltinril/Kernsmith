@@ -1093,18 +1093,15 @@ public static class BmFont
 
     /// <summary>
     /// Decides whether a non-default per-channel <see cref="ChannelConfig"/> should be honored.
-    /// Applying a separated-channel layout tears apart a baked Rgba32 composite (gradient color,
-    /// soft outline, drop shadow), so it is only applied when channel-packing is enabled OR the
-    /// font has no baked composite effects. Otherwise the default single-composite path is used
-    /// for both the atlas pixels and the emitted .fnt channel metadata.
+    /// Honored whenever a non-default config is present — <see cref="ChannelCompositor"/> (the
+    /// path this gate guards) natively supports routing outline/shadow content into individual
+    /// channels, whether or not other effects are active. This is a separate mechanism from
+    /// <see cref="FontGeneratorOptions.ChannelPacking"/> (grayscale-per-glyph packing via
+    /// <c>ChannelPackedAtlasBuilder</c>), which remains mutually exclusive with effects via its
+    /// own guard in <c>Generate</c>.
     /// </summary>
-    internal static bool ShouldApplyChannelConfig(FontGeneratorOptions options)
-    {
-        if (options.Channels is not { } cfg || cfg.IsDefault)
-            return false;
-
-        return options.ChannelPacking || !HasAnyEffects(options);
-    }
+    internal static bool ShouldApplyChannelConfig(FontGeneratorOptions options) =>
+        options.Channels is { IsDefault: false };
 
     /// <summary>Checks if any built-in effects (outline, gradient, shadow) are enabled.</summary>
     private static bool HasAnyEffects(FontGeneratorOptions options)
