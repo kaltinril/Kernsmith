@@ -34,6 +34,28 @@ internal static class FileWriter
         WriteAtlasPages(model, pages, outputPath, encoder);
     }
 
+    /// <summary>
+    /// Writes only the .fnt descriptor file, with no atlas page images. Used for a variant
+    /// (phase-182 / issue #175) whose <see cref="BmFontModel.Pages"/> reference the same shared
+    /// PNG the primary model already wrote — writing the image again would duplicate it.
+    /// </summary>
+    /// <param name="model">The BMFont model to serialize.</param>
+    /// <param name="outputPath">Base path without extension (e.g., "output/myfont-shadow").</param>
+    /// <param name="format">The output format for the .fnt file.</param>
+    /// <param name="textFormatter">Formatter for text-based output.</param>
+    public static void WriteDescriptorOnly(
+        BmFontModel model,
+        string outputPath,
+        OutputFormat format,
+        IBmFontTextFormatter textFormatter)
+    {
+        var directory = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(directory))
+            Directory.CreateDirectory(directory);
+
+        WriteFntFile(model, outputPath, format, textFormatter);
+    }
+
     private static void WriteFntFile(
         BmFontModel model,
         string outputPath,

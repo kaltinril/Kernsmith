@@ -401,4 +401,66 @@ public sealed class KernSmithReaderTests
 
         result.Model.Extended!.AdvanceAdjustY.ShouldBeNull();
     }
+
+    // ------------------------------------------------------------------
+    // VariantOf/Variants extended-metadata round-trip (phase-182, issue #175)
+    // ------------------------------------------------------------------
+
+    private static BmFontResult GenerateWithShadowVariant() =>
+        BmFont.Generate(LoadTestFont(), new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars("O"),
+            Variants = new[] { new AtlasVariant("shadow", AtlasVariantKind.ShadowSilhouette) }
+        });
+
+    [Fact]
+    public void RoundTrip_Variants_TextFormat()
+    {
+        var result = GenerateWithShadowVariant();
+
+        var parsedPrimary = BmFontReader.ReadText(result.ToString());
+        parsedPrimary.Extended.ShouldNotBeNull();
+        parsedPrimary.Extended!.Variants.ShouldNotBeNull();
+        parsedPrimary.Extended!.Variants!.ShouldContain("shadow");
+        parsedPrimary.Extended!.VariantOf.ShouldBeNull();
+
+        var parsedVariant = BmFontReader.ReadText(result.VariantModels["shadow"].Extended is null
+            ? throw new InvalidOperationException("Variant model missing extended metadata.")
+            : new TextFormatter().FormatText(result.VariantModels["shadow"]));
+        parsedVariant.Extended.ShouldNotBeNull();
+        parsedVariant.Extended!.VariantOf.ShouldNotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public void RoundTrip_Variants_XmlFormat()
+    {
+        var result = GenerateWithShadowVariant();
+
+        var parsedPrimary = BmFontReader.ReadXml(result.ToXml());
+        parsedPrimary.Extended.ShouldNotBeNull();
+        parsedPrimary.Extended!.Variants.ShouldNotBeNull();
+        parsedPrimary.Extended!.Variants!.ShouldContain("shadow");
+
+        var variantXml = new XmlFormatter().FormatText(result.VariantModels["shadow"]);
+        var parsedVariant = BmFontReader.ReadXml(variantXml);
+        parsedVariant.Extended.ShouldNotBeNull();
+        parsedVariant.Extended!.VariantOf.ShouldNotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public void RoundTrip_Variants_BinaryFormat()
+    {
+        var result = GenerateWithShadowVariant();
+
+        var parsedPrimary = BmFontReader.ReadBinary(result.ToBinary());
+        parsedPrimary.Extended.ShouldNotBeNull();
+        parsedPrimary.Extended!.Variants.ShouldNotBeNull();
+        parsedPrimary.Extended!.Variants!.ShouldContain("shadow");
+
+        var variantBinary = new BmFontBinaryFormatter().FormatBinary(result.VariantModels["shadow"]);
+        var parsedVariant = BmFontReader.ReadBinary(variantBinary);
+        parsedVariant.Extended.ShouldNotBeNull();
+        parsedVariant.Extended!.VariantOf.ShouldNotBeNullOrEmpty();
+    }
 }

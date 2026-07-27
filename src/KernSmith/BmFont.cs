@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using KernSmith.Atlas;
 using KernSmith.Font;
+using KernSmith.Font.Models;
 using KernSmith.Output;
 using KernSmith.Output.Model;
 using KernSmith.Rasterizer;
@@ -394,6 +395,10 @@ public static class BmFont
             throw new ArgumentOutOfRangeException(nameof(options), $"MaxTextureHeight must be positive, was {options.MaxTextureHeight}.");
         if (options.Variants is { Count: > 0 } && options.TargetRegion is not null)
             throw new NotSupportedException("FontGeneratorOptions.Variants is not supported together with TargetRegion.");
+        if (options.Variants is { Count: > 0 } && options.ChannelPacking)
+            throw new NotSupportedException("FontGeneratorOptions.Variants is not supported together with ChannelPacking.");
+        if (options.Variants is { Count: > 0 } && ShouldApplyChannelConfig(options))
+            throw new NotSupportedException("FontGeneratorOptions.Variants is not supported together with a custom Channels configuration.");
 
         var metrics = options.CollectMetrics ? new PipelineMetrics() : null;
 
@@ -607,6 +612,15 @@ public static class BmFont
             EqualizedCellHeights = options.EqualizeCellHeights,
         };
 
+        // Atlas variants (phase-182 / issue #175): additional character-set renderings (e.g. a
+        // dropshadow silhouette), packed into the SAME shared atlas as the primary glyphs via
+        // AtlasGroupBuilder, each still producing its own complete BmFontModel/.fnt.
+        if (options.Variants is { Count: > 0 })
+        {
+            return GenerateWithVariants(fontInfo, glyphs, glyphRects, options, packer, padding, spacing,
+                sizingOptions, rasterResult, failedCodepoints, metrics, sourceFontFile, sourceFontName);
+        }
+
         metrics?.Begin("AtlasSizeEstimation");
         var (estWidth, estHeight) = AtlasSizeEstimator.Estimate(glyphRects, sizingOptions);
         pageWidth = estWidth;
@@ -697,68 +711,159 @@ public static class BmFont
                 rasterizerKerningPairs: rasterResult.RasterizerKerningPairs);
             metrics?.End();
 
-            // 8. Atlas variants (phase-181 / issue #175): additional character-set renderings
-            // (e.g. a dropshadow silhouette), each its own BmFontModel/atlas pages, generated
-            // from the same rasterized glyphs. Not packed into the primary's atlas pages —
-            // each variant gets its own page set.
-            IReadOnlyDictionary<string, BmFontModel>? variantModelsOut = null;
-            IReadOnlyDictionary<string, IReadOnlyList<AtlasPage>>? variantPagesOut = null;
-            if (options.Variants is { Count: > 0 })
-            {
-                metrics?.Begin("VariantGeneration");
-                var variantModelsDict = new Dictionary<string, BmFontModel>();
-                var variantPagesDict = new Dictionary<string, IReadOnlyList<AtlasPage>>();
-
-                foreach (var variant in options.Variants)
-                {
-                    IGlyphPostProcessor variantProcessor = variant.Kind switch
-                    {
-                        AtlasVariantKind.ShadowSilhouette => new ShadowCoveragePostProcessor(
-                            offsetX: 0, offsetY: 0, blurRadius: variant.BlurRadius,
-                            opacity: 1.0f, hardShadow: variant.HardShadow),
-                        _ => throw new NotSupportedException($"Unsupported AtlasVariantKind: {variant.Kind}")
-                    };
-
-                    // Guaranteed non-null: RasterizeFont populates this whenever options.Variants is non-empty.
-                    var variantSourceGlyphs = rasterResult.RawGlyphsForVariants!;
-                    var variantGlyphs = variantSourceGlyphs.Select(variantProcessor.Process).ToList();
-                    var variantRects = variantGlyphs.Select(g => new GlyphRect(
-                        g.Codepoint,
-                        g.Width + padding.Left + padding.Right + spacing.Horizontal,
-                        g.Height + padding.Up + padding.Down + spacing.Vertical
-                    )).ToList();
-
-                    var variantSizingOptions = sizingOptions with { ChannelPacking = false, EqualizedCellHeights = false };
-                    var (variantWidth, variantHeight) = AtlasSizeEstimator.Estimate(variantRects, variantSizingOptions);
-
-                    var variantPacker = options.Packer ?? (options.PackingAlgorithm == PackingAlgorithm.Skyline
-                        ? new SkylinePacker()
-                        : new MaxRectsPacker());
-                    var variantPackResult = variantPacker.Pack(variantRects, variantWidth, variantHeight);
-
-                    var variantAtlasPages = AtlasBuilder.Build(variantGlyphs, variantPackResult, padding, encoder);
-
-                    var variantModel = BmFontModelBuilder.Build(fontInfo, variantGlyphs, variantPackResult, options,
-                        outputBaseName: $"{fontInfo.FamilyName}-{variant.Name}",
-                        effectiveSize: rasterResult.EffectiveSize,
-                        rasterizerFontMetrics: rasterResult.RasterizerFontMetrics,
-                        rasterizerKerningPairs: rasterResult.RasterizerKerningPairs);
-                    variantModel = BmFontModelBuilder.WithVariantLinks(variantModel, variantOf: fontInfo.FamilyName, variants: null);
-
-                    variantModelsDict[variant.Name] = variantModel;
-                    variantPagesDict[variant.Name] = variantAtlasPages;
-                }
-
-                model = BmFontModelBuilder.WithVariantLinks(model, variantOf: null,
-                    variants: options.Variants.Select(v => v.Name).ToList());
-                variantModelsOut = variantModelsDict;
-                variantPagesOut = variantPagesDict;
-                metrics?.End();
-            }
-
-            return new BmFontResult(model, pages, failedCodepoints, metrics, options, sourceFontFile, sourceFontName,
-                variantModelsOut, variantPagesOut);
+            return new BmFontResult(model, pages, failedCodepoints, metrics, options, sourceFontFile, sourceFontName);
         }
+    }
+
+    /// <summary>
+    /// Generates a <see cref="BmFontResult"/> when <see cref="FontGeneratorOptions.Variants"/> is
+    /// non-empty: primary glyphs and each variant's glyphs (e.g. a dropshadow silhouette) are
+    /// packed together into ONE shared atlas via <see cref="AtlasGroupBuilder"/>, so the primary
+    /// and every variant <see cref="BmFontModel"/> reference the exact same <see cref="PageEntry"/>
+    /// filenames — one physical PNG serves all of them. See phase-182 (issue #175).
+    /// </summary>
+    private static BmFontResult GenerateWithVariants(
+        FontInfo fontInfo,
+        IReadOnlyList<RasterizedGlyph> glyphs,
+        IReadOnlyList<GlyphRect> primaryRects,
+        FontGeneratorOptions options,
+        IAtlasPacker packer,
+        Padding padding,
+        Spacing spacing,
+        AtlasSizingOptions sizingOptions,
+        RasterizationResult rasterResult,
+        IReadOnlyList<int> failedCodepoints,
+        PipelineMetrics? metrics,
+        string? sourceFontFile,
+        string? sourceFontName)
+    {
+        metrics?.Begin("VariantGeneration");
+
+        // Guaranteed non-null: RasterizeFont populates this whenever options.Variants is non-empty.
+        var variantSourceGlyphs = rasterResult.RawGlyphsForVariants!;
+
+        var variantGlyphsByName = new Dictionary<string, List<RasterizedGlyph>>();
+        var groupSources = new List<AtlasGroupBuilder.GroupSource> { new("primary", primaryRects) };
+
+        foreach (var variant in options.Variants!)
+        {
+            IGlyphPostProcessor variantProcessor = variant.Kind switch
+            {
+                AtlasVariantKind.ShadowSilhouette => new ShadowCoveragePostProcessor(
+                    offsetX: 0, offsetY: 0, blurRadius: variant.BlurRadius,
+                    opacity: 1.0f, hardShadow: variant.HardShadow),
+                _ => throw new NotSupportedException($"Unsupported AtlasVariantKind: {variant.Kind}")
+            };
+
+            var variantGlyphs = variantSourceGlyphs.Select(variantProcessor.Process).ToList();
+            var variantRects = variantGlyphs.Select(g => new GlyphRect(
+                g.Codepoint,
+                g.Width + padding.Left + padding.Right + spacing.Horizontal,
+                g.Height + padding.Up + padding.Down + spacing.Vertical
+            )).ToList();
+
+            variantGlyphsByName[variant.Name] = variantGlyphs;
+            groupSources.Add(new AtlasGroupBuilder.GroupSource(variant.Name, variantRects));
+        }
+
+        // Combined sizing across every source's rects (phase-182 item 2), not just the primary's.
+        var combinedRects = groupSources.SelectMany(s => s.Rects).ToList();
+        var groupSizingOptions = sizingOptions with { ChannelPacking = false, EqualizedCellHeights = false };
+
+        metrics?.Begin("AtlasSizeEstimation");
+        var (groupWidth, groupHeight) = AtlasSizeEstimator.Estimate(combinedRects, groupSizingOptions);
+        metrics?.End();
+
+        if (options.SizeConstraints is { } sizeConstraints)
+        {
+            var (cw, ch) = AtlasSizeEstimator.ApplyConstraints(
+                groupWidth, groupHeight, sizeConstraints, groupSizingOptions, combinedRects);
+            groupWidth = cw;
+            groupHeight = ch;
+        }
+
+        metrics?.Begin("AtlasPacking");
+        var (shared, placementsByTag) = AtlasGroupBuilder.Pack(packer, groupSources, groupWidth, groupHeight);
+
+        if (options.AutofitTexture && shared.PageCount > 1)
+        {
+            // One-step bump: double the smaller dimension (or next POT), then repack once.
+            if (groupWidth <= groupHeight)
+                groupWidth = groupSizingOptions.PowerOfTwo ? groupWidth * 2 : (int)(groupWidth * 1.5);
+            else
+                groupHeight = groupSizingOptions.PowerOfTwo ? groupHeight * 2 : (int)(groupHeight * 1.5);
+
+            groupWidth = Math.Min(groupWidth, options.MaxTextureWidth);
+            groupHeight = Math.Min(groupHeight, options.MaxTextureHeight);
+
+            (shared, placementsByTag) = AtlasGroupBuilder.Pack(packer, groupSources, groupWidth, groupHeight);
+        }
+        metrics?.End();
+
+        // Render ALL sources' glyphs onto one shared set of atlas pages. AtlasBuilder.Build
+        // keys glyphs by Codepoint against packResult.Placements' Id — since composite ids
+        // (not original codepoints) are what shared.Placements carries, re-tag each render
+        // glyph's Codepoint with the same composite id AtlasGroupBuilder computed internally.
+        metrics?.Begin("AtlasEncoding");
+        var encoder = options.AtlasEncoder ?? (options.TextureFormat switch
+        {
+            TextureFormat.Tga => (IAtlasEncoder)new TgaEncoder(),
+            TextureFormat.Dds => new DdsEncoder(),
+            _ => new StbPngEncoder()
+        });
+
+        var renderGlyphs = new List<RasterizedGlyph>();
+        for (var sourceIndex = 0; sourceIndex < groupSources.Count; sourceIndex++)
+        {
+            var sourceGlyphs = sourceIndex == 0 ? glyphs : variantGlyphsByName[groupSources[sourceIndex].Tag];
+            foreach (var g in sourceGlyphs)
+            {
+                renderGlyphs.Add(new RasterizedGlyph
+                {
+                    Codepoint = AtlasGroupBuilder.MakeCompositeId(sourceIndex, g.Codepoint),
+                    GlyphIndex = g.GlyphIndex,
+                    BitmapData = g.BitmapData,
+                    Width = g.Width,
+                    Height = g.Height,
+                    Pitch = g.Pitch,
+                    Metrics = g.Metrics,
+                    Format = g.Format
+                });
+            }
+        }
+
+        var pages = AtlasBuilder.Build(renderGlyphs, shared, padding, encoder);
+        metrics?.End();
+
+        metrics?.Begin("ModelAssembly");
+        var model = BmFontModelBuilder.Build(fontInfo, glyphs, shared, options,
+            placementOverride: placementsByTag["primary"],
+            effectiveSize: rasterResult.EffectiveSize,
+            rasterizerFontMetrics: rasterResult.RasterizerFontMetrics,
+            rasterizerKerningPairs: rasterResult.RasterizerKerningPairs);
+        model = BmFontModelBuilder.WithVariantLinks(model, variantOf: null,
+            variants: options.Variants.Select(v => v.Name).ToList());
+
+        var variantModelsDict = new Dictionary<string, BmFontModel>();
+        var variantPagesDict = new Dictionary<string, IReadOnlyList<AtlasPage>>();
+
+        foreach (var variant in options.Variants)
+        {
+            var variantModel = BmFontModelBuilder.Build(fontInfo, variantGlyphsByName[variant.Name], shared, options,
+                placementOverride: placementsByTag[variant.Name],
+                effectiveSize: rasterResult.EffectiveSize,
+                rasterizerFontMetrics: rasterResult.RasterizerFontMetrics,
+                rasterizerKerningPairs: rasterResult.RasterizerKerningPairs);
+            variantModel = BmFontModelBuilder.WithVariantLinks(variantModel, variantOf: fontInfo.FamilyName, variants: null);
+
+            variantModelsDict[variant.Name] = variantModel;
+            // Same physical pages as the primary -- one shared PNG.
+            variantPagesDict[variant.Name] = pages;
+        }
+        metrics?.End();
+
+        return new BmFontResult(model, pages, failedCodepoints, metrics, options, sourceFontFile, sourceFontName,
+            variantModelsDict, variantPagesDict);
     }
 
     /// <summary>Generates a BMFont from raw font bytes at the given size.</summary>

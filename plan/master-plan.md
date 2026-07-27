@@ -134,7 +134,8 @@ Pure C# TTF/OTF rasterizer initiative; see Phase 160 for design decisions. Phase
 | 178 | [WOFF2 Decompression](phase-178-woff-decompression.md) | WOFF2 decompression | Planning |
 | 179 | [Validation / Golden Masters](phase-179-validation-golden-masters.md) | Validation / golden masters | Planning |
 | 180 | [Innovation Research](phase-180-innovation-research.md) | Innovation research (ongoing experiments) | Planning |
-| 181 | [Atlas Variants: Padded Silhouette Regions](phase-181-shadow-outline-atlas-variants.md) | GitHub #175 — N variant character-set renderings (dropshadow silhouette first) packed into their own padded regions of one shared atlas, sampleable as ordinary glyphs with no custom shader | Planning |
+| 181 | [Atlas Variants: Padded Silhouette Regions](phase-181-shadow-outline-atlas-variants.md) | GitHub #175 — superseded by Phase 182 (dropshadow-only framing was too narrow) | Superseded |
+| 182 | [Shared Atlas Groups](phase-182-shared-atlas-groups.md) | GitHub #175 — generic mechanism to pack N independent glyph sources (dropshadow variant, later multi-font) into one shared atlas PNG | Complete |
 
 ---
 

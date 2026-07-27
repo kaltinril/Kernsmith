@@ -250,13 +250,28 @@ public sealed class BmFontResult
                 continue;
 
             var variantOutputPath = $"{outputPath}-{variantName}";
-            var variantBaseName = Path.GetFileNameWithoutExtension(variantOutputPath);
-            var variantFixedPages = new List<PageEntry>();
-            for (int i = 0; i < variantModel.Pages.Count; i++)
+
+            // phase-182: a variant packed via AtlasGroupBuilder shares the exact same atlas
+            // pages as the primary (same object reference). Its .fnt must reference the SAME
+            // physical PNG the primary already wrote, not a duplicate copy under its own name.
+            var sharesPrimaryAtlas = ReferenceEquals(variantPages, Pages);
+
+            List<PageEntry> variantFixedPages;
+            if (sharesPrimaryAtlas)
             {
-                var ext = Path.GetExtension(variantModel.Pages[i].File);
-                variantFixedPages.Add(new PageEntry(variantModel.Pages[i].Id, $"{variantBaseName}_{i}{ext}"));
+                variantFixedPages = fixedPages;
             }
+            else
+            {
+                var variantBaseName = Path.GetFileNameWithoutExtension(variantOutputPath);
+                variantFixedPages = new List<PageEntry>();
+                for (int i = 0; i < variantModel.Pages.Count; i++)
+                {
+                    var ext = Path.GetExtension(variantModel.Pages[i].File);
+                    variantFixedPages.Add(new PageEntry(variantModel.Pages[i].Id, $"{variantBaseName}_{i}{ext}"));
+                }
+            }
+
             var variantFixedModel = new BmFontModel
             {
                 Info = variantModel.Info,
@@ -267,7 +282,10 @@ public sealed class BmFontResult
                 Extended = variantModel.Extended
             };
 
-            FileWriter.Write(variantFixedModel, variantPages, variantOutputPath, format, textFormatter, encoder);
+            if (sharesPrimaryAtlas)
+                FileWriter.WriteDescriptorOnly(variantFixedModel, variantOutputPath, format, textFormatter);
+            else
+                FileWriter.Write(variantFixedModel, variantPages, variantOutputPath, format, textFormatter, encoder);
         }
 
         // Write .bmfc file if source options are available

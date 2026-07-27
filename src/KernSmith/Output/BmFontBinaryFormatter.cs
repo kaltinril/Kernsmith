@@ -191,6 +191,8 @@ internal sealed class BmFontBinaryFormatter : IBmFontBinaryFormatter
         if (extended.AdvanceAdjustY.HasValue) dict["advanceAdjustY"] = extended.AdvanceAdjustY.Value;
         if (extended.ColorFont is true) dict["colorFont"] = true;
         if (extended.VariationAxes is { Count: > 0 }) dict["variationAxes"] = extended.VariationAxes;
+        if (extended.VariantOf != null) dict["variantOf"] = extended.VariantOf;
+        if (extended.Variants is { Count: > 0 }) dict["variants"] = extended.Variants;
 
         using var stream = new MemoryStream();
         using (var jsonWriter = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = false }))
@@ -220,6 +222,12 @@ internal sealed class BmFontBinaryFormatter : IBmFontBinaryFormatter
                         foreach (var (axisKey, axisValue) in axes)
                             jsonWriter.WriteNumber(axisKey, axisValue);
                         jsonWriter.WriteEndObject();
+                        break;
+                    case IReadOnlyList<string> names:
+                        jsonWriter.WriteStartArray(key);
+                        foreach (var name in names)
+                            jsonWriter.WriteStringValue(name);
+                        jsonWriter.WriteEndArray();
                         break;
                 }
             }

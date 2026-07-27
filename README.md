@@ -18,6 +18,7 @@
 - **Fill color** -- tint the glyph body with a custom RGBA fill color
 - **Gradient fill** -- per-glyph vertical/angled gradients with midpoint, offset, scale, and cyclic control
 - **Drop shadow** -- offset, color, opacity, and two-parameter blur control (kernel size + passes)
+- **Atlas variants** -- an unoffset dropshadow silhouette packed into the same shared atlas PNG as the primary font, with its own `.fnt` (see [Atlas Variants](docs/core/atlas-variants.md))
 - **Gamma correction** -- adjust grayscale coverage to darken or lighten rendered glyphs
 - **SDF rendering** -- signed distance field output with configurable spread for resolution-independent text
 - **Super sampling** -- 2x-4x rasterization with box-filter downscale for smoother edges

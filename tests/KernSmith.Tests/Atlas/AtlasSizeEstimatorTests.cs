@@ -571,6 +571,32 @@ public class AtlasSizeEstimatorTests
     }
 
     // ---------------------------------------------------------------
+    // Combined-source sizing (phase-182): a caller packing multiple glyph
+    // sources (e.g. a primary font + a shadow variant) into one shared atlas
+    // must size for the concatenated rect list, not just one source.
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void Estimate_ConcatenatedTwoSourceRects_GrowsToFitBothSources()
+    {
+        // Arrange -- same shapes duplicated for a second "source" (e.g. a shadow variant
+        // with the same character set as the primary font).
+        var primaryRects = Enumerable.Range(0, 20).Select(i => Rect(i, 24, 30)).ToArray();
+        var shadowRects = Enumerable.Range(0, 20).Select(i => Rect(1000 + i, 24, 30)).ToArray();
+        var combinedRects = primaryRects.Concat(shadowRects).ToArray();
+
+        // Act
+        var (primaryOnlyWidth, primaryOnlyHeight) = AtlasSizeEstimator.Estimate(primaryRects, DefaultOptions);
+        var (combinedWidth, combinedHeight) = AtlasSizeEstimator.Estimate(combinedRects, DefaultOptions);
+
+        // Assert -- combined area must be large enough for double the rects; since both
+        // dimensions are independently rounded to POT, at least one must have grown.
+        var primaryOnlyArea = (long)primaryOnlyWidth * primaryOnlyHeight;
+        var combinedArea = (long)combinedWidth * combinedHeight;
+        combinedArea.ShouldBeGreaterThan(primaryOnlyArea);
+    }
+
+    // ---------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------
 
