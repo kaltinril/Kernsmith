@@ -37,10 +37,10 @@ public class AtlasVariantTests
 
         var result = BmFont.Generate(LoadTestFont(), options);
 
-        result.VariantModels.ContainsKey("shadow").ShouldBeTrue();
+        result.VariantModels.TryGetValue("shadow", out var variantModel).ShouldBeTrue();
+        variantModel.ShouldNotBeNull();
         result.VariantPages.ContainsKey("shadow").ShouldBeTrue();
 
-        var variantModel = result.VariantModels["shadow"];
         var requestedCodepoints = new[] { 'A', 'B', 'C' }.Select(c => (int)c).ToHashSet();
         var variantCodepoints = variantModel.Characters.Select(c => c.Id).ToHashSet();
         variantCodepoints.ShouldBe(requestedCodepoints, ignoreOrder: true);
