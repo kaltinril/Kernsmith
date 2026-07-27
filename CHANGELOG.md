@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-07-27
+
+### Added
+
+- `AtlasVariant` — a shadow silhouette variant packed alongside the primary font glyphs, sharing atlas layout via a new `AtlasGroupBuilder` mechanism (general-purpose, not dropshadow-specific). (#172, #174)
+- `ChannelContent.Shadow` for routing isolated shadow-coverage into its own atlas channel. (#167)
+
+### Fixed
+
+- `ShouldApplyChannelConfig` gate now honors `Channels` configuration when effects are active, instead of skipping channel routing. (#169)
+
 ## [0.17.0] - 2026-07-18
 
 ### Added

@@ -160,6 +160,7 @@ kernsmith generate -f font.ttf -s 32 --no-pot --packer skyline
 | `--shadow-blur-kernel <n>` | Shadow blur kernel size (default: 0) |
 | `--shadow-blur-passes <n>` | Number of shadow blur passes; more = softer (default: 1) |
 | `--hard-shadow` | Use crisp shadow silhouette instead of soft antialiased edges |
+| `--shadow-variant` | Also emit an unoffset, untinted "-shadow" .fnt/atlas so the shadow can be positioned and colored at draw time instead of baked in |
 
 See the [Effects](#effects) section below for detailed examples.
 
@@ -519,6 +520,16 @@ kernsmith generate -f font.ttf -s 32 --shadow 2,2
 # Hard shadow — same offset, crisp edges
 kernsmith generate -f font.ttf -s 32 --shadow 2,2 --hard-shadow
 ```
+
+### Shadow Variant (Shared Atlas)
+
+Use `--shadow-variant` to also emit a second, unoffset/untinted "-shadow" `.fnt`/atlas packed alongside the primary font in one shared atlas pass — useful when you want to position and color the shadow yourself at draw time instead of baking it in.
+
+```
+kernsmith generate -f font.ttf -s 32 --shadow 0,0,,2 --shadow-variant --hard-shadow
+```
+
+See [Atlas Variants](../../docs/core/atlas-variants.md) for details on the shared-atlas mechanism.
 
 ### Combining Effects
 

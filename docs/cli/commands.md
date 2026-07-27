@@ -100,6 +100,7 @@ kernsmith generate -f font.ttf -s 32 --range 0020-007E --range 00A0-00FF
 | `--shadow-blur-kernel <n>` | Shadow blur kernel size (default: 0) |
 | `--shadow-blur-passes <n>` | Number of shadow blur passes; more = softer (default: 1) |
 | `--hard-shadow` | Use a crisp shadow silhouette instead of soft antialiased edges |
+| `--shadow-variant` | Also emit an unoffset, untinted "-shadow" .fnt/atlas (shared atlas pass) for draw-time positioning/coloring; `.bmfc` equivalent is `variantShadow=1` |
 
 Effects can be combined freely. All color values are hex (e.g., `FF0000` for red).
 
