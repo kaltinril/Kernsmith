@@ -99,10 +99,10 @@ wire it through `AtlasGroupBuilder` the same way the dropshadow variant does in 
 ## CLI / `.bmfc`
 
 ```bash
-kernsmith generate -f MyFont.ttf -s 32 -o myfont --shadow-variant --shadow-blur 2 --hard-shadow
+kernsmith generate -f MyFont.ttf -s 32 -o myfont --shadow 0,0,,2 --shadow-variant --hard-shadow
 ```
 
 `--shadow-variant` requests the `AtlasVariant("shadow", AtlasVariantKind.ShadowSilhouette, ...)`
-variant; `--shadow-blur` and `--hard-shadow` map to `BlurRadius`/`HardShadow`. In a `.bmfc` file,
-the equivalent extension line is `variantShadow=1` (alongside the existing `shadowBlur=`/
-`hardShadow=` keys).
+variant; the blur radius comes from the 4th field of `--shadow <x>,<y>,<color>,<blur>`, and
+`--hard-shadow` maps to `HardShadow`. In a `.bmfc` file, the equivalent extension line is
+`variantShadow=1` (alongside the existing `shadowBlur=`/`hardShadow=` keys).
