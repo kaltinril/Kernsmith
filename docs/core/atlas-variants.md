@@ -52,6 +52,15 @@ Not supported together with `Variants`: `TargetRegion` (rendering into an existi
 name. Neither field exists in stock BMFont -- see [`ExtendedMetadata`](../api-reference/model.md)
 for KernSmith's extended-metadata fields and their text/XML/binary round-trip.
 
+### In-memory .fnt text
+
+`BmFontResult.GetVariantFntText(variantName)` returns a variant's `.fnt` text directly, without
+writing to disk. Throws `KeyNotFoundException` if no variant with that name exists.
+
+```csharp
+string shadowFnt = result.GetVariantFntText("shadow");
+```
+
 ### Writing to disk
 
 `BmFontResult.ToFile(outputPath)` writes the primary as `<outputPath>.fnt` + `<outputPath>_0.png`

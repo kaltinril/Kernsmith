@@ -14,6 +14,8 @@ computed lazily on first access.
 | `Pages` | `IReadOnlyList<AtlasPage>` | The rendered atlas pages (raw pixel data). |
 | `FailedCodepoints` | `IReadOnlyList<int>` | Requested codepoints that could not be rasterized (missing from the font). |
 | `Metrics` | `PipelineMetrics?` | Per-stage timing. Only populated when `CollectMetrics` was enabled. |
+| `VariantModels` | `IReadOnlyDictionary<string, BmFontModel>` | Additional character-set renderings requested via `FontGeneratorOptions.Variants` (e.g. a dropshadow silhouette), keyed by variant name. Empty when no variants were requested. See [Atlas Variants](../core/atlas-variants.md). |
+| `VariantPages` | `IReadOnlyDictionary<string, IReadOnlyList<AtlasPage>>` | Atlas pages for each entry in `VariantModels`, keyed the same way. |
 
 ## Descriptor (.fnt) content
 
@@ -25,6 +27,7 @@ computed lazily on first access.
 | `ToString()` | `string` | Same as `FntText`. |
 | `ToXml()` | `string` | Same as `FntXml`. |
 | `ToBinary()` | `byte[]` | Same as `FntBinary`. |
+| `GetVariantFntText(string variantName)` | `string` | The `.fnt` text for a variant produced via `FontGeneratorOptions.Variants`, keyed by name as in `VariantModels`. Throws `KeyNotFoundException` if no variant with that name exists. |
 
 ## Atlas image bytes
 
