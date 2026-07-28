@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.1] - 2026-07-28
+
+### Fixed
+
+- `ShadowCoveragePostProcessor` now bakes the `AtlasVariantKind.ShadowSilhouette` glyph as white RGB with coverage in alpha, instead of black, so consumers can tint the shadow at draw time. (#175)
+
 ## [0.18.0] - 2026-07-27
 
 ### Added
