@@ -13,3 +13,7 @@
       href: docs/rasterizers/index.md
 - name: API Reference
   href: api/
+- name: NuGet
+  href: https://www.nuget.org/packages/KernSmith
+- name: GitHub
+  href: https://github.com/kaltinril/Kernsmith

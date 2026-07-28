@@ -16,3 +16,8 @@ Explore the documentation sections below.
 | [UI Guide](docs/ui/index.md) | Visual interface for font configuration and preview |
 | [Alternative Rasterizers](docs/rasterizers/index.md) | GDI and DirectWrite (Windows-only) plus StbTrueType (cross-platform, managed) backends |
 | [API Reference](api/KernSmith.html) | Auto-generated API documentation |
+
+## Links
+
+- [NuGet package](https://www.nuget.org/packages/KernSmith)
+- [GitHub repository](https://github.com/kaltinril/Kernsmith)
