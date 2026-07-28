@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.2] - 2026-07-28
+
+### Added
+
+- `BmFontResult.GetVariantFntText` — public serialization of a variant `BmFontModel` (e.g. a shadow `AtlasVariant`) to BMFont `.fnt` text. (#184)
+
 ## [0.18.1] - 2026-07-28
 
 ### Fixed
