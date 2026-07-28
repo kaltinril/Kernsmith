@@ -60,7 +60,11 @@ Delivery is a **built-in catalog of named effects** plus a **C# registry** so ca
 - **stripes / bands**, **checker** — angled bands or cells, two colors
 - **sdf-bands** — concentric color rings driven by distance-to-edge (requires SDF input)
 
-**Registry extension point** — mirror the existing rasterizer-backend registry `RasterizerFactory.Register` (`src/KernSmith/Rasterizer/RasterizerFactory.cs`): a thread-safe `Register(name, factory)` that resolves a name to an `IGlyphShader`. The same trimming/AOT posture applies — keep built-in name resolution a static `switch` (not reflection), and let consumers `Register` their own custom `IGlyphShader` explicitly:
+**Registry extension point** — mirror the existing rasterizer-backend registry `RasterizerFactory` (`src/KernSmith/Rasterizer/RasterizerFactory.cs`), with one deliberate difference. `RasterizerFactory` is genuinely thread-safe (a `ConcurrentDictionary` at `:15` plus a discovery `lock` at `:88`/`:110`), but its signature is `Register(RasterizerBackend backend, Func<IRasterizer> factory)` (`:32`) — keyed by a **closed enum**, not a string. Shaders are open-ended and user-extensible, so a shader registry needs a **string** key; that is the intended divergence, not a copy.
+
+Note also that `RasterizerFactory`'s built-in resolution is **not** a static `switch` — it is reflection-based auto-discovery. `DiscoverBackends()` (`:105-141`) walks a `KnownBackends` table of assembly-qualified type names (`:17-24`), resolves each with `Type.GetType(typeName)`, and invokes its `Register` method via `GetMethod("Register")`, swallowing failures so absent backends are simply skipped. Three `UnconditionalSuppressMessage` attributes (`:99-104`) acknowledge that this is trim/AOT-unsafe. The real trimming posture is therefore: **auto-discovery is a convenience for the normal case, and explicit `Register()` is the trim/AOT path** — the suppression justifications say exactly that ("explicit Register() is the trim/AOT path").
+
+For shader presets, a static `switch` over built-in names *is* the right call (presets are known at compile time and there is no optional-assembly problem to solve), but the doc should not claim it as an existing precedent — it is a simplification over what `RasterizerFactory` actually does. Consumers `Register` their own custom `IGlyphShader` explicitly:
 
 ```csharp
 // Illustrative — mirrors RasterizerFactory.Register
@@ -235,11 +239,11 @@ They can **compose**: a shader function can take the texture-sampled pixel as an
 
 ## Deferred Future Track — runtime user-supplied shaders (NOT this phase)
 
-A separate, later idea: let users supply *real* shader source (HLSL) and apply it to text **at runtime** in the Gum integrations (MonoGame/KNI/FNA, incl. WASM), rather than baking a static look. This is explicitly **out of scope for Phase 112** and recorded here only so the boundary is clear:
+A separate, later idea: let users supply *real* shader source (HLSL) and apply it to text **at runtime** in a consuming engine integration (MonoGame/KNI/FNA, incl. WASM), rather than baking a static look. This is explicitly **out of scope for Phase 112** and recorded here only so the boundary is clear:
 
 - **ShadowDusk** (the author's separate repo) is a *runtime* cross-platform HLSL→`.mgfx` compiler for MonoGame/KNI/FNA. It compiles shaders for *GPU execution at runtime*.
 - Baking a static atlas needs the opposite tool: a **CPU evaluator at generation time**, not a runtime GPU compiler. Phase 112 burns the result into the PNG; nothing ships a shader to a GPU.
-- So ShadowDusk fits a possible *future, separate* "runtime user-supplied shaders on text" feature living in the **Gum integrations** (`integrations/`), not in this bake-time phase. The "drop your shader source in a folder" authoring model also belongs to that track, not here.
+- So ShadowDusk fits a possible *future, separate* "runtime user-supplied shaders on text" feature living in **whatever engine integration renders the text** — note this repo has no `integrations/` directory and no Gum project in `KernSmith.sln`; the Gum integration was migrated out to the upstream Gum repo, so such a feature would live there (or in another consumer), not in KernSmith. Either way it is not part of this bake-time phase. The "drop your shader source in a folder" authoring model also belongs to that track, not here.
 
 Keeping these apart avoids conflating "compute a color in C# and bake it" (this phase) with "ship HLSL to a GPU and run it live" (the deferred track).
 

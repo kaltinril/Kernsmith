@@ -3,7 +3,7 @@
 > **Status**: Planning
 > **Size**: Medium
 > **Created**: 2026-03-30
-> **Updated**: 2026-03-30
+> **Updated**: 2026-07-28
 > **Dependencies**: Phase 78C (DirectWrite backend)
 > **Origin**: [Phase 78G -- Remaining Rasterizer Issues](done/phase-78g-remaining-issues.md)
 > **Goal**: Track and resolve deferred rasterizer issues from Phase 78G that require significant effort or carry notable risk.
@@ -14,7 +14,7 @@
 
 During Phase 78C DirectWrite implementation and Phase 78G triage, four issues were identified as worth tracking but not blocking Phase 78 completion. These issues involve complex API surface (DirectWrite COM interfaces, GDI sizing edge cases) and are deferred until there is user demand or strategic need.
 
-> **Last validated 2026-03-30** — re-check the GDI MatchCharHeight bug (Issue 4) on next DirectWrite/GDI work.
+> **Last validated 2026-07-28** — issues 1-3 still match the code byte-for-byte. Issue 4 was re-confirmed as **still reproducing** via a full end-to-end trace (the hedge asking for re-validation has been replaced with the root-cause chain below).
 
 ## Priority Rankings
 
@@ -37,11 +37,17 @@ Each issue is ranked 1 (low) to 5 (high) on three dimensions:
 
 `SupportsColorFonts` is set to `false`. `SelectColorPalette()` stores the palette index in `_colorPaletteIndex` but it is never used during rasterization. Implementing color font support requires `IDWriteFactory4.TranslateColorGlyphRun` to decompose COLR/CPAL color glyphs into layered runs, plus a D2D dependency to render each color layer with the appropriate brush color. The current `IDWriteGlyphRunAnalysis` approach cannot render color glyphs.
 
+Note that `BmFont.cs:201-205` gates the call on `rasterizer.Capabilities.SupportsColorFonts`, so with the flag `false` (`DirectWriteCapabilities.cs:12`) `SelectColorPalette` is unreachable from the generation pipeline today — it is dead code until the capability flips.
+
 ### 2. Variable Font Support (DirectWrite) — Open
 
 > Ease: 2 | Break Risk: 2 | Importance: 2
 
-`SupportsVariableFonts` is set to `false`. `SetVariationAxes()` stores axes in `_variationAxes` but the stored values are never applied during rasterization. No code casts `_fontFace` to `IDWriteFontFace5` or calls `GetFontAxisValues()`/`SetFontAxisValues()`. Needs querying available axes via `IDWriteFontFace5.GetFontAxisValues` and applying user-specified axis values before rasterization.
+`SupportsVariableFonts` is set to `false`. `SetVariationAxes()` stores axes in `_variationAxes` but the stored values are never applied during rasterization. No code casts `_fontFace` to `IDWriteFontFace5`.
+
+**API correction**: there is no `SetFontAxisValues` — that API does not exist. `IDWriteFontFace5` exposes `GetFontAxisValues`, `GetFontAxisValueCount`, `HasVariations`, and `GetFontResource`. Axis values are *read* from an existing face, never set on it; applying them means creating a **new** face: `IDWriteFontFace5::GetFontResource` → `IDWriteFontResource::CreateFontFace(simulations, axisValues, axisValueCount, &newFace)`. So the implementation is: cast `_fontFace` to `IDWriteFontFace5`, query available axes with `GetFontAxisValueCount`/`GetFontAxisValues`, obtain the `IDWriteFontResource`, and call `CreateFontFace` with the user-specified axis values to get the instanced face used for rasterization.
+
+As with issue 1, `BmFont.cs:194-199` gates `SetVariationAxes` on `rasterizer.Capabilities.SupportsVariableFonts`, so with the flag `false` (`DirectWriteCapabilities.cs:13`) the method is unreachable from the pipeline today.
 
 ### 3. Native DirectWrite Kerning — Open
 
@@ -53,11 +59,39 @@ Each issue is ranked 1 (low) to 5 (high) on three dimensions:
 
 > Ease: 2 | Break Risk: 3 | Importance: 2
 
-GDI with `HandlesOwnSizing=true` produces wrong metrics when `MatchCharHeight=true` (negative fontSize in .bmfc). Example: Bahnschrift size -12 produces lineHeight=12 instead of the expected 14. FreeType and DirectWrite handle MatchCharHeight correctly. `HandlesOwnSizing` is implemented and the sizing logic exists in `CreateHFont`, but the specific negative-fontSize scenario described here needs re-validation to confirm whether this is still reproducing.
+GDI with `HandlesOwnSizing=true` produces wrong metrics when `MatchCharHeight=true` (negative fontSize in `.bmfc`). Example: Bahnschrift size `-12` produces `lineHeight=12 base=10` instead of BMFont's `lineHeight=14 base=12`.
+
+**Confirmed still reproducing (2026-07-28).** Root-cause chain, end to end:
+
+1. `src/KernSmith/Config/BmfcConfigReader.cs:102-113` — a negative `fontSize` is immediately absolutized: `options.Size = Math.Abs(sizeVal); options.MatchCharHeight = true;`. The sign itself is discarded here.
+2. `src/KernSmith/Rasterizer/RasterOptions.cs:76-97` — `FromGeneratorOptions` copies 15 fields but **not** `MatchCharHeight`; `RasterOptions` has no such member, so the flag can never reach *any* backend.
+3. `src/KernSmith/BmFont.cs:227-240` — the sole consumer of `MatchCharHeight`. It only decides whether to run the cell-height→ppem conversion, and the entire block is **skipped** when `Capabilities.HandlesOwnSizing` is true.
+4. `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs:733` — `HandlesOwnSizing => true` (the interface default is `false`, `src/KernSmith/Rasterizer/IRasterizerCapabilities.cs:27`). GDI is therefore handed `Size=12` with no knowledge that an em-height match was requested.
+5. `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs:345` — `LfHeight` is **always positive**, i.e. GDI cell-height mode. GDI's em-height mode requires a **negative** `lfHeight`, and nothing in the file ever produces one.
+6. `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs:260-268` — `GetFontMetrics` returns `LineHeight = ceil(tm.TmHeight / aa) = 12` and `Ascent = 10`.
+7. `src/KernSmith/Output/BmFontModelBuilder.cs:52-56` — rasterizer-supplied metrics are used verbatim, so the `.fnt` gets `common lineHeight=12 base=10`.
+
+Corroborating generated artifacts (local; `tests/bmfont-compare/` is gitignored):
+
+- BMFont reference — `tests/bmfont-compare/gum-bmfont/Font12Bahnschrift.fnt:2` → `lineHeight=14 base=12`
+- KernSmith GDI — `tests/bmfont-compare/output/Font12Bahnschrift-gdi.fnt:2` → `lineHeight=12 base=10`
+
+**Other backends**: FreeType and DirectWrite **honor** `MatchCharHeight` — they take the `!HandlesOwnSizing` branch and use `fontSize` directly as ppem. Only GDI ignores it. They are not pixel-exact with BMFont either (`output/Font12Bahnschrift-freetype.fnt:2` and `output/Font12Bahnschrift-directwrite.fnt:2` are both `lineHeight=15 base=12` vs BMFont's `14`/`12`), but that residual ±1 is the separate accepted-limitation rounding issue documented in [phase-78g-remaining-issues.md:84-89](done/phase-78g-remaining-issues.md), not this bug.
+
+**Fix shape (not yet implemented)** — two viable paths:
+
+- Add `MatchCharHeight` to `RasterOptions` (copy it in `FromGeneratorOptions`) and let `GdiRasterizer.CreateHFont` negate `LfHeight` when the flag is set; or
+- Preserve the `.bmfc` sign end to end instead of calling `Math.Abs` at `BmfcConfigReader.cs:106`, letting a negative size flow through to `LfHeight`.
+
+Either path changes pixel output, so `python tests/bmfont-compare/regression_check.py` is required before the work is considered done.
 
 ## Files Reference
 
 | File | Relevance |
 |------|-----------|
 | `src/KernSmith.Rasterizers.DirectWrite.TerraFX/DirectWriteRasterizer.cs` | Issues 1-3 |
-| `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs` | Issue 4 |
+| `src/KernSmith.Rasterizers.DirectWrite.TerraFX/DirectWriteCapabilities.cs` | Issues 1-2 — `:12-13` is where `SupportsColorFonts`/`SupportsVariableFonts` actually live |
+| `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs` | Issue 4 — `HandlesOwnSizing` (`:733`), `LfHeight` (`:345`), `GetFontMetrics` (`:260-268`) |
+| `src/KernSmith/Config/BmfcConfigReader.cs` | Issue 4 — `:102-113`, where the negative-size sign is discarded |
+| `src/KernSmith/Rasterizer/RasterOptions.cs` | Issue 4 — `:76-97`, `MatchCharHeight` is never copied to the backend options |
+| `src/KernSmith/BmFont.cs` | Issue 4 — `:227-240`, the sizing decision point; also gates issues 1-2 at `:194-205` |

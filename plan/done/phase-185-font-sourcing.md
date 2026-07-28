@@ -1,6 +1,6 @@
 # Phase 185 — Font Sourcing: IFontSource + Web Font Package
 
-> **Status**: Planned
+> **Status**: Complete — shipped in 0.17.0 (`KernSmith.Fonts.Web` published to NuGet; see CHANGELOG)
 > **Created**: 2026-04-09
 > **Related**: Phase 178 (WOFF decompression)
 

@@ -12,8 +12,8 @@
 
 KernSmith currently supports three fill modes for glyphs:
 - **White/flat**: Default — renders glyphs in solid white (game engine applies color at runtime)
-- **Gradient**: Two-color linear gradient via `GradientEffect`
-- **Outline + fill**: Outline color with inner fill via `OutlineEffect`
+- **Gradient**: Two-color linear gradient via `GradientPostProcessor` (public) / `GradientEffect` (internal)
+- **Outline + fill**: Outline color with inner fill via `OutlinePostProcessor` (public) / `OutlineEffect` (internal)
 
 Many bitmap font tools (and game UIs in general) support filling text with a texture or pattern. This is especially popular for:
 - Fantasy/RPG game UI (stone, metal, wood lettering)
@@ -26,6 +26,8 @@ Many bitmap font tools (and game UIs in general) support filling text with a tex
 ### 1. Texture Fill Effect
 
 A new `IGlyphEffect` implementation that composites a source texture image into the glyph shape.
+
+> **`IGlyphEffect` is internal** (`src/KernSmith/Rasterizer/IGlyphEffect.cs:10`), so it is *not* a third-party extension point — only KernSmith itself can add effects. A texture fill built on `IGlyphEffect` is an in-library feature. If external extensibility is wanted, the public contract is `IGlyphPostProcessor`; see the post-processor vs. effect trade-off in [Phase 112](phase-112-shader-fill.md#implementation-post-processor-vs-effect), which applies identically here.
 
 - **Input**: A texture image (PNG, TGA, or any supported format) + configuration
 - **Behavior**: The glyph's alpha channel acts as a mask — texture pixels are visible only where the glyph has coverage
@@ -81,10 +83,10 @@ TextureFillOptions
 
 ### Implementation as IGlyphEffect
 
-The texture fill fits naturally as an `IGlyphEffect`:
+The texture fill fits naturally as an `IGlyphEffect` — an **internal** interface (`src/KernSmith/Rasterizer/IGlyphEffect.cs:10`), so `TextureFillEffect` would ship as part of KernSmith rather than as a consumer-supplied plugin:
 
 ```
-TextureFillEffect : IGlyphEffect
+TextureFillEffect : IGlyphEffect   // internal — in-library only
     - Loads texture image once (cached across glyphs)
     - For each glyph: samples texture at appropriate coordinates, composites with glyph alpha
     - Effect ordering matters: texture fill should typically be the base layer, with outline/shadow applied after

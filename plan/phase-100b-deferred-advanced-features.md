@@ -1,6 +1,6 @@
 # Phase 100b — Deferred Advanced Effect Features
 
-> **Status**: P2/P3 core items (SdfScale render path + AdvanceAdjustY metadata) landed 2026-06-07 and are verified (regression + unit tests). P4 (outline wobble/zigzag) and P5 (native render mode) are intentionally DEFERRED as low-priority decorative/low-impact items — not abandoned.
+> **Status**: P2/P3 core items (SdfScale render path + AdvanceAdjustY metadata) landed 2026-06-07 and are verified (regression + unit tests). P5 (native render mode) is RESOLVED — superseded by the Gdi/DirectWrite rasterizer backends. P4 (outline wobble/zigzag) is the only item still intentionally DEFERRED, as low-priority decorative work — not abandoned.
 > **Created**: 2026-06-05
 > **Depends on**: Phase 100
 > **Goal**: Land the advanced-effect items that were deferred when Phase 100 shipped its core.
@@ -17,7 +17,7 @@ Phase 100 (Hiero Advanced Feature Support) shipped its core set of new effect pr
 
 ### 1. `SdfScale` — render-at-larger-ppem SDF path (P3) — ✅ DONE (2026-06-07)
 
-`SdfScale` was plumbed through `RasterOptions` but not applied — a no-op at its default value of `1`. Now implemented at the BmFont pipeline level (`BmFont.cs`, `RasterizeFont`), mirroring the existing SuperSample path: when `Sdf` and `SdfScale > 1`, glyphs are rasterized at `Size × SdfScale` and downscaled via `SuperSampleDownscale`. For a single-channel SDF, box-averaging the 8-bit distance values is the correct, SDF-aware downscale — the field is locally linear and the `128 = edge` zero-crossing is preserved, so this is the standard "render SDF at high res, then downsample" technique. The non-SDF supersample path is untouched, and the `SuperSampleLevel + SDF` guard remains in force (`SdfScale` is the separate SDF-specific knob).
+`SdfScale` was plumbed through `RasterOptions` but not applied — a no-op at its default value of `1`. Now implemented at the BmFont pipeline level (`BmFont.cs`, `RasterizeFont`), mirroring the existing SuperSample path: when `Sdf` and `SdfScale > 1`, glyphs are rasterized at `Size × SdfScale` and downscaled via `SuperSampleDownscale`. The factor is clamped — `Math.Clamp(options.SdfScale, 1, 4)` (`BmFont.cs:251`), the same 1–4 ceiling `SuperSampleLevel` uses (`:242`) — so values above 4 are silently capped rather than rejected. For a single-channel SDF, box-averaging the 8-bit distance values is the correct, SDF-aware downscale — the field is locally linear and the `128 = edge` zero-crossing is preserved, so this is the standard "render SDF at high res, then downsample" technique. The non-SDF supersample path is untouched, and the `SuperSampleLevel + SDF` guard remains in force (`SdfScale` is the separate SDF-specific knob).
 
 **Result**: Default (`SdfScale = 1`) is byte-identical — confirmed by the bmfont-compare regression (150/150 FNT + 24/24 images identical, including the SDF configs) and a byte-identical unit test. New tests cover non-throw, downscale-back-to-target dimensions, and valid-SDF (inside > 128, outside < 128).
 
@@ -33,11 +33,14 @@ New `IGlyphEffect` implementations for pixel-level outline distortion, mapping H
 
 **Notes**: Highest-effort item in this phase; requires pixel-level outline path manipulation. Low impact — purely decorative.
 
-### 4. Native rendering mode (P5) — DEFERRED (low-impact, very high effort)
+### 4. Native rendering mode (P5) — ✅ RESOLVED (superseded by the rasterizer backends)
 
-Support OS-native font rendering as an alternative to FreeType, mapping Hiero's `glyph.native.rendering`. Lowest priority — FreeType covers the vast majority of use cases.
+Originally scoped as "support OS-native font rendering as an alternative to FreeType, mapping Hiero's `glyph.native.rendering`", and deferred as very-high-effort. That framing is stale on both halves:
 
-**Notes**: Would require an alternative rasterizer implementation. Very high effort, very low impact; track but do not prioritize.
+- **The OS-native rasterizers already ship.** `src/KernSmith.Rasterizers.Gdi/` (Windows GDI) and `src/KernSmith.Rasterizers.DirectWrite.TerraFX/` (Windows DirectWrite) are real, selectable backends, alongside FreeType and StbTrueType. "Would require an alternative rasterizer implementation" was answered by the backend architecture, not by this phase.
+- **The Hiero key is already handled.** `HieroConfigReader` explicitly and deliberately ignores `glyph.native.rendering` (`src/KernSmith/Config/HieroConfigReader.cs:215-217`) with the comment *"KernSmith always uses its configured rasterizer backend"*, and `HieroConfigWriter` emits a constant `glyph.native.rendering=false` (`HieroConfigWriter.cs:78`). Rasterizer choice is a KernSmith setting, not something a `.hiero` file dictates — which is the correct behavior, since the backend is a build-time/package-level concern.
+
+**Notes**: Nothing is outstanding. Mapping the Hiero key to backend selection would be a *regression* in intent, not a completion. Closed.
 
 ### 5. Channel-packing fill guard (P3, conditional)
 
@@ -54,7 +57,7 @@ Fill-tint (`FillColorR/G/B/A`) is not factored into `HasAnyEffects`, which feeds
 | `SdfScale` render path | Low | Medium | P3 | ✅ Done (2026-06-07) |
 | `AdvanceAdjustY` | Medium | Medium | P2 | ✅ Done — optional extended metadata (2026-06-07) |
 | Outline wobble/zigzag | Low | High | P4 | Deferred (decorative, not started) |
-| Native rendering | Very Low | Very High | P5 | Deferred (not started) |
+| Native rendering | Very Low | — | P5 | ✅ Resolved — OS-native backends (Gdi, DirectWrite) ship; Hiero key intentionally ignored |
 | Channel-packing fill guard | Low | Low | P3 | Intentionally excluded |
 
 ---

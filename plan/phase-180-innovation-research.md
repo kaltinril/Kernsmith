@@ -5,6 +5,8 @@
 > **Depends on**: Phases 161–165 (working MVP rasterizer to benchmark against)
 > **Type**: Exploratory — no fixed deliverables, each area explored independently
 
+> **Note**: Phase 161 is **COMPLETE** (merged 2026-06-09); Phases 162–165 are still outstanding, so no working MVP rasterizer exists to benchmark against yet.
+
 ## Goal
 
 Explore alternative algorithms, novel mathematical approaches, and cutting-edge techniques that could make KernSmith's rasterizer genuinely unique — not just another reimplementation of stb_truetype or FreeType. Each section is a self-contained research area with a concrete experiment to try.

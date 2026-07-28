@@ -45,7 +45,7 @@ None currently.
 - `src/KernSmith/Atlas/AtlasSizeEstimator.cs`
 - `src/KernSmith/Output/BmFontModelBuilder.cs`, `BmFontResult.cs`
 - `src/KernSmith/BmFont.cs`
-- `src/KernSmith/Rasterizer/ShadowSilhouetteEffect.cs` (new, or `ShadowEffect` flat-mode)
+- ~~`src/KernSmith/Rasterizer/ShadowSilhouetteEffect.cs` (new, or `ShadowEffect` flat-mode)~~ — what actually shipped under Phase 182 is `src/KernSmith/Rasterizer/ShadowCoveragePostProcessor.cs`, an internal `IGlyphPostProcessor` rather than an `IGlyphEffect`. No `ShadowSilhouetteEffect.cs` exists.
 - `src/KernSmith/Output/Model/ExtendedMetadata.cs` — `VariantOf`/`Variants` fields
 - `tools/KernSmith.Cli/` — `.bmfc` parsing + CLI flags for `AtlasVariant`
 - `src/KernSmith/Output/FileWriter.cs` — write variant `.fnt` files alongside primary

@@ -4,6 +4,8 @@
 > **Created**: 2026-04-01
 > **Depends on**: All previous phases (161–178)
 
+> **Note**: Phase 161 is **COMPLETE** (merged 2026-06-09). Phases 162–178 remain outstanding.
+
 ## Goal
 
 Comprehensive validation of the Native rasterizer against FreeType and StbTrueType baselines, establishment of golden master regression tests, and preparation for production use.
