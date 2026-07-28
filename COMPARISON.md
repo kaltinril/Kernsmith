@@ -162,8 +162,8 @@ KernSmith now supports the libGDX **Hiero `.hiero`** format for interop: it can 
 | Padding advance X/Y | ❌ | 🔜 | 🔜 |
 | Spacing (H/V) | ✅ | ❌ | 🔜 |
 | Channel packing | ✅ | ❌ | 🔜 |
-| Per-channel config | 🔜 | ❌ | 🔜 |
-| Channel inversion | 🔜 | ❌ | 🔜 |
+| Per-channel config | ✅ | ❌ | 🔜 |
+| Channel inversion | ✅ | ❌ | 🔜 |
 | Power of two | ✅ | ❌ | 🔜 |
 | Autofit texture | ✅ | ❌ | 🔜 |
 | Equalize cell heights | ✅ | ❌ | 🔜 |

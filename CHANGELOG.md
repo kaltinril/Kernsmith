@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `BmfcConfigWriter` now writes the per-channel `.bmfc` keys (`alphaChnl`, `redChnl`, `greenChnl`, `blueChnl`, `invA`, `invR`, `invG`, `invB`), which `BmfcConfigReader` has always parsed. A `ChannelConfig` previously survived a read but was silently dropped on write, so a load/save round trip lost the channel routing. Nothing is emitted for an unset or all-default configuration, so `.bmfc` output stays byte-identical for fonts that do not use channel routing; a channel-configured font gains the eight keys.
+- **`.bmfc` `aa` key no longer corrupts the anti-alias mode.** The writer emitted the AA mode into `aa` (`2` for `AntiAliasMode.Light`, otherwise `1`), but `aa` is BMFont's *supersampling factor* -- which is how `BmfcConfigReader` and BMFont.exe both read it. Generating with `--anti-alias light` and re-loading the emitted config silently produced `SuperSampleLevel = 2` with the mode downgraded to `Grayscale`, changing pixel output. `aa` now carries `SuperSampleLevel`, and `Light`/`Lcd` round-trip through a new `antiAlias` extension key (`None` is still conveyed by `useSmoothing=0`, `Grayscale` is the default). The now-redundant `superSample` extension is no longer written; it is still read, so configs written by earlier versions keep working.
+- `.bmfc` now persists `ShadowOpacity`, `SdfScale`, `HardShadow`, and `VariationAxes`, which were silently dropped on write despite `.hiero` persisting several of them. `HardShadow` also feeds the `variantShadow` round trip -- `BmfcConfigReader` rebuilds the shadow `AtlasVariant` from it -- so losing it degraded the variant too. All four emit nothing at their defaults.
+
 ## [0.18.2] - 2026-07-28
 
 ### Added

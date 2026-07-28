@@ -30,7 +30,7 @@
 - **Variable fonts** -- set variation axes (weight, width, slant, etc.)
 - **Color fonts** -- COLR/CPAL emoji and color glyph rendering with palette selection
 - **Channel packing** -- pack multiple glyphs into RGBA channels for compact atlases
-- **Per-channel compositing** -- independent control of what each RGBA channel contains (glyph, outline, both, zero, one)
+- **Per-channel compositing** -- independent control of what each RGBA channel contains (glyph, outline, both, zero, one, shadow)
 - **Font subsetting** -- only parses tables for requested codepoints
 - **Custom glyphs** -- replace or add glyphs with user-supplied images
 - **Texture formats** -- PNG (default), TGA, and DDS atlas output
