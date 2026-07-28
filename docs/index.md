@@ -26,7 +26,7 @@ KernSmith is a cross-platform .NET library that generates BMFont-compatible bitm
 
 ## Quick Start
 
-Install the NuGet package:
+Install the [NuGet package](https://www.nuget.org/packages/KernSmith):
 
 ```
 dotnet add package KernSmith

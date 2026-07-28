@@ -6,10 +6,10 @@ KernSmith supports multiple rasterizer backends through a pluggable `IRasterizer
 
 | Backend | Package | Platform |
 |---------|---------|----------|
-| [FreeType](freetype.md) | `KernSmith.Rasterizers.FreeType` | Cross-platform |
-| [GDI](gdi.md) | `KernSmith.Rasterizers.Gdi` | Windows only |
-| [DirectWrite](directwrite.md) | `KernSmith.Rasterizers.DirectWrite.TerraFX` | Windows only |
-| [StbTrueType](stbtruetype.md) | `KernSmith.Rasterizers.StbTrueType` | Cross-platform (managed) |
+| [FreeType](freetype.md) | [`KernSmith.Rasterizers.FreeType`](https://www.nuget.org/packages/KernSmith.Rasterizers.FreeType) | Cross-platform |
+| [GDI](gdi.md) | [`KernSmith.Rasterizers.Gdi`](https://www.nuget.org/packages/KernSmith.Rasterizers.Gdi) | Windows only |
+| [DirectWrite](directwrite.md) | [`KernSmith.Rasterizers.DirectWrite.TerraFX`](https://www.nuget.org/packages/KernSmith.Rasterizers.DirectWrite.TerraFX) | Windows only |
+| [StbTrueType](stbtruetype.md) | [`KernSmith.Rasterizers.StbTrueType`](https://www.nuget.org/packages/KernSmith.Rasterizers.StbTrueType) | Cross-platform (managed) |
 
 ## Capability Comparison
 
