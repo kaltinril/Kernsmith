@@ -148,6 +148,50 @@ public class AtlasVariantTests
     }
 
     [Fact]
+    public void ShadowSilhouetteVariant_CoveredPixelsAreWhiteSoRuntimeTintingWorks()
+    {
+        // The shadow silhouette variant is packed as an ordinary RGBA glyph, and consumers
+        // multiply it by their own tint color at draw time. If the coverage were baked in as
+        // black (RGB=0,0,0), black * anyTint == black and no consumer could ever recolor it.
+        var options = new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars("O"),
+            Variants = new[] { new AtlasVariant("shadow", AtlasVariantKind.ShadowSilhouette) }
+        };
+
+        var result = BmFont.Generate(LoadTestFont(), options);
+        var variantModel = result.VariantModels["shadow"];
+        var shadowChar = variantModel.Characters.Single(c => c.Id == 'O');
+        var shadowPage = result.VariantPages["shadow"][shadowChar.Page];
+
+        shadowPage.Format.ShouldBe(PixelFormat.Rgba32);
+
+        var foundCoveredPixel = false;
+        for (var row = 0; row < shadowChar.Height; row++)
+        {
+            for (var col = 0; col < shadowChar.Width; col++)
+            {
+                var srcIdx = ((shadowChar.Y + row) * shadowPage.Width + (shadowChar.X + col)) * 4;
+                var r = shadowPage.PixelData[srcIdx];
+                var g = shadowPage.PixelData[srcIdx + 1];
+                var b = shadowPage.PixelData[srcIdx + 2];
+                var a = shadowPage.PixelData[srcIdx + 3];
+
+                if (a > 0)
+                {
+                    foundCoveredPixel = true;
+                    r.ShouldBe((byte)255, $"pixel ({col},{row}) had alpha {a} but R={r}");
+                    g.ShouldBe((byte)255, $"pixel ({col},{row}) had alpha {a} but G={g}");
+                    b.ShouldBe((byte)255, $"pixel ({col},{row}) had alpha {a} but B={b}");
+                }
+            }
+        }
+
+        foundCoveredPixel.ShouldBeTrue("expected at least one covered (alpha > 0) pixel in the shadow silhouette region");
+    }
+
+    [Fact]
     public void ShadowSilhouetteVariant_SharesOnePngWithNonOverlappingRegions()
     {
         // Pixel-level proof (not just placement math) that primary and shadow glyphs both

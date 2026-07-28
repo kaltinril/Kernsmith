@@ -23,10 +23,13 @@ internal sealed class ShadowCoveragePostProcessor : IGlyphPostProcessor
         int blurPasses = 1,
         int blurKernelSize = 0)
     {
-        // Color is irrelevant here: only alpha is ever read out of a Shadow channel.
+        // White (coverage in alpha): the ChannelContent.Shadow consumer only ever reads alpha,
+        // but the AtlasVariantKind.ShadowSilhouette consumer packs this as an ordinary RGBA
+        // glyph and multiplies it by its own tint color at draw time — black RGB would make
+        // that tint unreachable (black * tint == black), so white lets the tint through.
         _shadowEffect = new ShadowEffect(
             offsetX, offsetY, blurRadius,
-            shadowR: 0, shadowG: 0, shadowB: 0,
+            shadowR: 255, shadowG: 255, shadowB: 255,
             opacity: opacity, hardShadow: hardShadow,
             blurPasses: blurPasses, blurKernelSize: blurKernelSize);
     }
