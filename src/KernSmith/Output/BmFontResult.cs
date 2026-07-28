@@ -103,6 +103,22 @@ public sealed class BmFontResult
     public byte[] FntBinary => _fntBinary.Value;
 
     /// <summary>
+    /// Returns the BMFont descriptor in text format for a variant produced via
+    /// <see cref="FontGeneratorOptions.Variants"/> (e.g. a dropshadow silhouette).
+    /// </summary>
+    /// <param name="variantName">The variant's name, as keyed in <see cref="VariantModels"/>.</param>
+    /// <returns>The <c>.fnt</c> text for the requested variant.</returns>
+    /// <exception cref="KeyNotFoundException">Thrown when no variant with the given name exists.</exception>
+    public string GetVariantFntText(string variantName)
+    {
+        if (!VariantModels.TryGetValue(variantName, out var variantModel))
+            throw new KeyNotFoundException(
+                $"No variant named \"{variantName}\" was found. Available variants: {string.Join(", ", VariantModels.Keys)}");
+
+        return new TextFormatter().FormatText(variantModel);
+    }
+
+    /// <summary>
     /// Encodes all atlas pages as PNG byte arrays.
     /// </summary>
     /// <returns>An array of PNG-encoded byte arrays, one per page.</returns>

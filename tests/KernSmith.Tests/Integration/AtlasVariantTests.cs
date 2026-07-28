@@ -294,6 +294,40 @@ public class AtlasVariantTests
     }
 
     [Fact]
+    public void GetVariantFntText_ReturnsFormattedTextForThatVariant()
+    {
+        var options = new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars("O"),
+            Variants = new[] { new AtlasVariant("shadow", AtlasVariantKind.ShadowSilhouette) }
+        };
+
+        var result = BmFont.Generate(LoadTestFont(), options);
+
+        var shadowFntText = result.GetVariantFntText("shadow");
+
+        shadowFntText.ShouldNotBe(result.FntText);
+        shadowFntText.ShouldContain("chars count=1");
+        shadowFntText.ShouldContain($"id={(int)'O'}");
+    }
+
+    [Fact]
+    public void GetVariantFntText_UnknownVariant_Throws()
+    {
+        var options = new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars("O"),
+            Variants = new[] { new AtlasVariant("shadow", AtlasVariantKind.ShadowSilhouette) }
+        };
+
+        var result = BmFont.Generate(LoadTestFont(), options);
+
+        Should.Throw<KeyNotFoundException>(() => result.GetVariantFntText("outline"));
+    }
+
+    [Fact]
     public void TargetRegion_WithVariants_Throws()
     {
         var options = new FontGeneratorOptions
