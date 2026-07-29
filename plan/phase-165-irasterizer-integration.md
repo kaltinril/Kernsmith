@@ -4,7 +4,7 @@
 > **Created**: 2026-04-01
 > **Depends on**: Phase 161 (core table parsers), Phase 164 (scanline rasterizer core)
 
-> **Note**: Phase 161's core table parsers (`HeadTable`, `HheaTable`, `HmtxTable`, `Os2Table`, `CmapTable`, `MaxpTable` in `src/KernSmith.Rasterizers.Native/`) are already implemented and available for integration. This phase still awaits Phases 162-164 (outline extraction / rasterization) before the `IRasterizer` wiring below can be completed.
+> **Note**: Phase 161's core table parsers (`HeadTable`, `HheaTable`, `HmtxTable`, `Os2Table`, `CmapTable`, `MaxpTable` in `src/KernSmith.Rasterizers.Native/Internal/Tables/`) are already implemented and available for integration. This phase still awaits Phases 162-164 (outline extraction / rasterization) before the `IRasterizer` wiring below can be completed.
 
 ## Goal
 

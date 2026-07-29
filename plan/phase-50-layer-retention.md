@@ -1,4 +1,4 @@
-# Phase 19 — In-Memory Layer Retention
+# Phase 50 — In-Memory Layer Retention
 
 > **Status**: Planning (future — no timeline)
 > **Created**: 2026-03-20
@@ -12,6 +12,11 @@ The pipeline composites all effect layers (shadow → outline → body) into a s
 
 The individual layer bitmaps only exist temporarily during rendering. After compositing, they are discarded.
 
+Two details of the real compositor materially affect this design:
+
+- **There are no layers at all in the default path.** `GlyphCompositor.Composite` early-returns the source glyph untouched when there are no effects *and* no fill tint (`GlyphCompositor.cs:31-33`). A plain white-glyph generation never produces `GlyphLayer` objects, so `RetainLayers` would have nothing to retain beyond the body — which is just the source glyph.
+- **Shadow is not independent of outline.** "shadow → outline → body" understates a dependency: when an outline effect is present, the shadow is generated from a **merged outline + glyph alpha**, not the raw glyph silhouette (`GlyphCompositor.cs:74-131`), and the resulting layer's offsets are then rebased onto the outline canvas (`:121-125`). A retained shadow layer is therefore *outline-sized* and carries the outline offset folded in — a consumer that draws it standalone at its own offset will get a doubly-offset, oversized shadow. Any retained-layer contract has to either document this or normalize the shadow back to glyph-relative space. This is a design constraint, not an implementation detail.
+
 ---
 
 ## What This Feature Would Add
@@ -19,6 +24,12 @@ The individual layer bitmaps only exist temporarily during rendering. After comp
 An option to retain the per-glyph layer bitmaps alongside the normal composed output. The composed atlas remains the primary output — layers are bonus data for consumers who want to pull things apart in their engine.
 
 Nothing changes about file output, atlas packing, or the default behavior. This is purely in-memory retention of data that already exists during the pipeline but is currently thrown away.
+
+### Relationship to Phase 182 (narrows the motivation)
+
+[Phase 182 — Shared Atlas Groups](phase-182-shared-atlas-groups.md) is **complete** and already ships the "separate shadow" use case at the *bake* level: `AtlasGroupBuilder` packs a primary glyph set and a `ShadowCoveragePostProcessor`-generated shadow silhouette into one shared atlas, each with its own `BmFontModel`. If the goal is "draw the shadow separately, translated and tinted", that is solved — use an atlas variant, not this phase.
+
+What remains distinctly Phase 50's is the **runtime / in-memory per-layer** case, where the consumer needs the raw layer pixels in process and the set of layers isn't known at bake time: parallax depth stacking, per-layer runtime shaders, and dynamic per-layer offset/color/opacity changes without regenerating. The use cases below should be read through that lens.
 
 ### Use Cases
 
@@ -99,6 +110,8 @@ Minimal changes to `GlyphCompositor.Composite()`:
 1. After generating `GlyphLayer` objects (which already happens internally), if `RetainLayers` is true, copy each layer's bitmap into a `GlyphLayerData` object.
 2. Compositing still runs normally — the composed glyph is the primary output.
 3. Attach the layer data to the result.
+
+> **Open question — naming collision with the existing `GlyphLayer`.** An internal record `GlyphLayer` **already exists** (`src/KernSmith/Rasterizer/IGlyphEffect.cs:22-28`) with the shape `(byte[] RgbaData, int Width, int Height, int OffsetX, int OffsetY, int ZOrder)`. That is what the compositor actually produces. The `LayerBitmap` proposed above is *nearly* the same thing but not identical — `BitmapData` instead of `RgbaData`, a `PixelFormat Format` instead of `ZOrder` (the existing layer is always RGBA and carries compositing order instead). Shipping both would put two near-identical layer types in the same `KernSmith.Rasterizer` namespace. Resolve before implementation: either promote/adapt the existing `GlyphLayer` to public (dropping or exposing `ZOrder`), or keep `LayerBitmap` strictly as a public DTO projected from `GlyphLayer` and name it so the distinction is obvious.
 
 ### Result Changes
 

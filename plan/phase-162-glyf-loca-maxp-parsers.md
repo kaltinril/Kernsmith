@@ -1,18 +1,20 @@
-# Phase 162 — Native Rasterizer: Glyph Table Parsers (glyf, loca, maxp)
+# Phase 162 — Native Rasterizer: Glyph Table Parsers (glyf, loca, + maxp profile fields)
 
 > **Status**: Future
 > **Created**: 2026-04-01
 > **Depends on**: Phase 161 (project scaffold, binary reader, core table parsers)
 
+> **Note**: Phase 161 is **COMPLETE** (merged 2026-06-09) — the binary reader, table directory parser, and core table parsers (`head`, `hhea`, `hmtx`, `maxp`, `OS/2`, `cmap`) are in place, so this phase is unblocked.
+
 ## Goal
 
-Parse the three tables required to extract glyph outline data from TrueType fonts: `maxp` (glyph count/limits), `loca` (glyph offsets), and `glyf` (glyph outlines).
+Extract glyph outline data from TrueType fonts: parse `loca` (glyph offsets) and `glyf` (glyph outlines), and extend the existing `maxp` parser with the profile fields needed to bound composite recursion.
 
 ## Scope
 
-### maxp Table Parser
-- Version 0.5 (CFF): just `numGlyphs`
-- Version 1.0 (TrueType): `numGlyphs`, `maxPoints`, `maxContours`, `maxCompositePoints`, `maxCompositeContours`, `maxComponentElements`, `maxComponentDepth`
+### maxp Table Parser — EXTEND (numGlyphs landed in Phase 161)
+- `numGlyphs` is **already parsed and in use** (`Internal/Tables/MaxpTable.cs`, wired at `NativeFontFace.Load`). The version field (Fixed, 4 bytes) precedes `numGlyphs` in both v0.5 (CFF) and v1.0 (TrueType), so the existing parser reads it correctly for either version without a version check.
+- Remaining work — the v1.0 extended profile fields: `maxPoints`, `maxContours`, `maxCompositePoints`, `maxCompositeContours`, `maxComponentElements`, `maxComponentDepth`
 - Use `maxComponentDepth` for composite glyph recursion limit (default cap: 64)
 
 ### loca Table Parser
@@ -88,7 +90,8 @@ internal sealed class ParsedGlyph
 
 ## Success Criteria
 
-- [ ] maxp table parsed correctly for Roboto-Regular
+- [x] maxp `numGlyphs` parsed correctly for Roboto-Regular (satisfied by Phase 161 — `CoreTableTests.cs`)
+- [ ] maxp v1.0 extended profile fields (`maxPoints`, `maxContours`, `maxCompositePoints`, `maxCompositeContours`, `maxComponentElements`, `maxComponentDepth`) parsed correctly for Roboto-Regular
 - [ ] loca table parsed correctly (both short and long formats tested)
 - [ ] Simple glyphs parsed with correct contour/point data
 - [ ] Composite glyphs recursively resolved with transforms applied

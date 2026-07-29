@@ -38,13 +38,15 @@ None currently.
 
 ## Affected Files
 
+*(Updated to match what actually shipped.)*
+
 - `src/KernSmith/Output/BmFontModelBuilder.cs` — shared-`PageEntry` build path
-- `src/KernSmith/Atlas/AtlasSizeEstimator.cs` — combined-rect sizing
 - `src/KernSmith/Atlas/AtlasGroupBuilder.cs` (new) — rect submission + placement splitting by source
+- `src/KernSmith/BmFont.cs` — combines each source's rects and calls `AtlasSizeEstimator.Estimate(combinedRects, groupSizingOptions)` (`:774`). **`AtlasSizeEstimator.cs` itself was not modified** — the combining happens at the call site
 - `src/KernSmith/Config/AtlasVariant.cs`, `FontGeneratorOptions.cs` — carried over from phase 181
 - `src/KernSmith/Output/Model/ExtendedMetadata.cs` — `VariantOf`/`Variants`, including XML/binary round-trip (gap left open in PR #176)
 - `tools/KernSmith.Cli/` — `.bmfc`/CLI surface, carried over from phase 181
-- `src/KernSmith/Rasterizer/ShadowSilhouetteEffect.cs` — carried over from phase 181
+- `src/KernSmith/Rasterizer/ShadowCoveragePostProcessor.cs` — the shipped shadow-silhouette implementation. It is an internal `IGlyphPostProcessor`, **not** an `IGlyphEffect`; there is no `ShadowSilhouetteEffect.cs`
 
 ## Implementation Checklist (TDD, red→green per step)
 

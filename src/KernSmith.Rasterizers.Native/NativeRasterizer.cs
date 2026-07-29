@@ -9,7 +9,7 @@ namespace KernSmith.Rasterizers.Native;
 /// </summary>
 /// <remarks>
 /// This is the Phase 161 scaffold: it loads and validates a font and parses the core
-/// tables (<c>head</c>, <c>hhea</c>, <c>hmtx</c>, <c>OS/2</c>, <c>cmap</c>), but glyph
+/// tables (<c>head</c>, <c>hhea</c>, <c>hmtx</c>, <c>maxp</c>, <c>OS/2</c>, <c>cmap</c>), but glyph
 /// outline decoding and rasterization arrive in later phases (162+). Rendering methods
 /// throw <see cref="NotImplementedException"/> until then.
 ///

@@ -317,6 +317,286 @@ public sealed class BmfcConfigReaderWriterTests
     }
 
     [Fact]
+    public void WriteThenParse_RoundTripsChannelConfig()
+    {
+        // Arrange -- the white-on-alpha layout BMFont writes: glyph in alpha, RGB forced to one.
+        var original = new FontGeneratorOptions
+        {
+            Channels = new ChannelConfig(
+                Alpha: ChannelContent.Glyph,
+                Red: ChannelContent.One,
+                Green: ChannelContent.One,
+                Blue: ChannelContent.One),
+        };
+        var config = BmfcConfig.FromOptions(original);
+
+        // Act
+        var result = BmfcConfigReader.Parse(BmfcConfigWriter.Write(config)).Options;
+
+        // Assert
+        result.Channels.ShouldNotBeNull();
+        result.Channels!.Alpha.ShouldBe(ChannelContent.Glyph);
+        result.Channels!.Red.ShouldBe(ChannelContent.One);
+        result.Channels!.Green.ShouldBe(ChannelContent.One);
+        result.Channels!.Blue.ShouldBe(ChannelContent.One);
+    }
+
+    [Fact]
+    public void WriteThenParse_RoundTripsChannelInversionFlags()
+    {
+        // Arrange
+        var original = new FontGeneratorOptions
+        {
+            Channels = new ChannelConfig(
+                Alpha: ChannelContent.Outline,
+                Red: ChannelContent.Zero,
+                Green: ChannelContent.GlyphAndOutline,
+                Blue: ChannelContent.One,
+                InvertAlpha: true,
+                InvertRed: false,
+                InvertGreen: true,
+                InvertBlue: false),
+        };
+        var config = BmfcConfig.FromOptions(original);
+
+        // Act
+        var result = BmfcConfigReader.Parse(BmfcConfigWriter.Write(config)).Options;
+
+        // Assert
+        result.Channels.ShouldNotBeNull();
+        result.Channels!.Alpha.ShouldBe(ChannelContent.Outline);
+        result.Channels!.Red.ShouldBe(ChannelContent.Zero);
+        result.Channels!.Green.ShouldBe(ChannelContent.GlyphAndOutline);
+        result.Channels!.Blue.ShouldBe(ChannelContent.One);
+        result.Channels!.InvertAlpha.ShouldBeTrue();
+        result.Channels!.InvertRed.ShouldBeFalse();
+        result.Channels!.InvertGreen.ShouldBeTrue();
+        result.Channels!.InvertBlue.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void WriteThenParse_RoundTripsShadowChannelContent()
+    {
+        // ChannelContent.Shadow (5) is a KernSmith extension beyond BMFont's 0-4 range.
+        var original = new FontGeneratorOptions
+        {
+            Channels = new ChannelConfig(Blue: ChannelContent.Shadow),
+        };
+        var config = BmfcConfig.FromOptions(original);
+
+        var result = BmfcConfigReader.Parse(BmfcConfigWriter.Write(config)).Options;
+
+        result.Channels.ShouldNotBeNull();
+        result.Channels!.Blue.ShouldBe(ChannelContent.Shadow);
+    }
+
+    [Fact]
+    public void Write_DefaultChannelConfig_EmitsNoChannelKeys()
+    {
+        // An unset or all-default ChannelConfig must not emit the keys: doing so would turn
+        // Channels from null into a non-null default on round-trip, which downstream code
+        // treats as "channel routing requested".
+        var unset = BmfcConfigWriter.Write(BmfcConfig.FromOptions(new FontGeneratorOptions()));
+        var explicitDefault = BmfcConfigWriter.Write(
+            BmfcConfig.FromOptions(new FontGeneratorOptions { Channels = new ChannelConfig() }));
+
+        foreach (var text in new[] { unset, explicitDefault })
+        {
+            text.ShouldNotContain("alphaChnl");
+            text.ShouldNotContain("redChnl");
+            text.ShouldNotContain("greenChnl");
+            text.ShouldNotContain("blueChnl");
+            text.ShouldNotContain("invA=");
+            text.ShouldNotContain("invR=");
+            text.ShouldNotContain("invG=");
+            text.ShouldNotContain("invB=");
+        }
+    }
+
+    [Theory]
+    [InlineData(AntiAliasMode.None)]
+    [InlineData(AntiAliasMode.Grayscale)]
+    [InlineData(AntiAliasMode.Light)]
+    [InlineData(AntiAliasMode.Lcd)]
+    public void WriteThenParse_RoundTripsAllAntiAliasModes(AntiAliasMode mode)
+    {
+        // Regression: the writer used to emit the AA mode into `aa`, which BMFont (and our own
+        // reader) define as the supersampling factor. AntiAliasMode.Light wrote aa=2 and came
+        // back as Grayscale with SuperSampleLevel=2 -- a silent 2x supersample on reload.
+        var config = BmfcConfig.FromOptions(new FontGeneratorOptions { AntiAlias = mode });
+
+        var result = BmfcConfigReader.Parse(BmfcConfigWriter.Write(config)).Options;
+
+        result.AntiAlias.ShouldBe(mode);
+        result.SuperSampleLevel.ShouldBe(1);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(4)]
+    public void WriteThenParse_AaKeyCarriesSuperSampleLevel(int level)
+    {
+        // `aa` is BMFont's supersampling factor, so it must carry SuperSampleLevel -- both for
+        // our own round trip and so BMFont.exe reads a KernSmith config correctly.
+        var config = BmfcConfig.FromOptions(
+            new FontGeneratorOptions { SuperSampleLevel = level });
+
+        var text = BmfcConfigWriter.Write(config);
+
+        text.ShouldContain($"aa={level}");
+        BmfcConfigReader.Parse(text).Options.SuperSampleLevel.ShouldBe(level);
+    }
+
+    [Fact]
+    public void WriteThenParse_RoundTripsShadowOpacity()
+    {
+        var config = BmfcConfig.FromOptions(new FontGeneratorOptions { ShadowOpacity = 0.5f });
+
+        BmfcConfigReader.Parse(BmfcConfigWriter.Write(config)).Options
+            .ShadowOpacity.ShouldBe(0.5f);
+    }
+
+    [Fact]
+    public void WriteThenParse_RoundTripsSdfScale()
+    {
+        var config = BmfcConfig.FromOptions(
+            new FontGeneratorOptions { Sdf = true, SdfScale = 3 });
+
+        BmfcConfigReader.Parse(BmfcConfigWriter.Write(config)).Options
+            .SdfScale.ShouldBe(3);
+    }
+
+    [Fact]
+    public void WriteThenParse_RoundTripsHardShadow()
+    {
+        // HardShadow also feeds the variantShadow round trip: BmfcConfigReader rebuilds the
+        // shadow AtlasVariant from options.HardShadow, so losing it degrades the variant too.
+        var config = BmfcConfig.FromOptions(new FontGeneratorOptions { HardShadow = true });
+
+        BmfcConfigReader.Parse(BmfcConfigWriter.Write(config)).Options
+            .HardShadow.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void WriteThenParse_RoundTripsVariationAxes()
+    {
+        var config = BmfcConfig.FromOptions(new FontGeneratorOptions
+        {
+            VariationAxes = new Dictionary<string, float> { ["wght"] = 700f, ["wdth"] = 87.5f },
+        });
+
+        var result = BmfcConfigReader.Parse(BmfcConfigWriter.Write(config)).Options;
+
+        result.VariationAxes.ShouldNotBeNull();
+        result.VariationAxes!["wght"].ShouldBe(700f);
+        result.VariationAxes!["wdth"].ShouldBe(87.5f);
+    }
+
+    [Fact]
+    public void Write_DefaultsForNewlyPersistedOptions_EmitNothing()
+    {
+        // Keeps default .bmfc output byte-identical as these keys were added.
+        var text = BmfcConfigWriter.Write(BmfcConfig.FromOptions(new FontGeneratorOptions()));
+
+        text.ShouldNotContain("shadowOpacity");
+        text.ShouldNotContain("sdfScale");
+        text.ShouldNotContain("hardShadow");
+        text.ShouldNotContain("variationAxes");
+        text.ShouldNotContain("antiAlias=");
+    }
+
+    [Theory]
+    // The white-on-alpha layout every BMFont-authored config in tests/bmfont-compare uses.
+    [InlineData(0, 4, 4, 4)]
+    // Outline in alpha, glyph in RGB (Font48Bauhaus_93_o4_Bold.bmfc).
+    [InlineData(1, 0, 0, 0)]
+    public void ParseThenWrite_PreservesChannelKeysFromRealConfig(
+        int alpha, int red, int green, int blue)
+    {
+        // The reported bug is load->save, so drive the round trip from .bmfc text inward --
+        // the other tests all start from options and would miss a BmfcConfig plumbing break.
+        var source =
+            $"alphaChnl={alpha}\nredChnl={red}\ngreenChnl={green}\nblueChnl={blue}\n";
+
+        var written = BmfcConfigWriter.Write(BmfcConfigReader.Parse(source));
+
+        written.ShouldContain($"alphaChnl={alpha}");
+        written.ShouldContain($"redChnl={red}");
+        written.ShouldContain($"greenChnl={green}");
+        written.ShouldContain($"blueChnl={blue}");
+    }
+
+    [Fact]
+    public void ParseThenWrite_PartialChannelKeys_NormalizesToFullKeySet()
+    {
+        // A config carrying only an inversion flag is still non-default, so the writer must
+        // emit the whole set rather than the single key it came from.
+        var written = BmfcConfigWriter.Write(BmfcConfigReader.Parse("invA=1\n"));
+
+        written.ShouldContain("alphaChnl=0");
+        written.ShouldContain("redChnl=0");
+        written.ShouldContain("greenChnl=0");
+        written.ShouldContain("blueChnl=0");
+        written.ShouldContain("invA=1");
+        written.ShouldContain("invR=0");
+        written.ShouldContain("invG=0");
+        written.ShouldContain("invB=0");
+    }
+
+    [Fact]
+    public void Write_IsFixedPointAfterOneRoundTrip()
+    {
+        // Guards key ordering, duplication, and the partial-key normalization path above.
+        var config = BmfcConfig.FromOptions(new FontGeneratorOptions
+        {
+            Channels = new ChannelConfig(
+                Alpha: ChannelContent.Outline,
+                Red: ChannelContent.One,
+                Green: ChannelContent.Zero,
+                Blue: ChannelContent.GlyphAndOutline,
+                InvertGreen: true),
+        });
+
+        var once = BmfcConfigWriter.Write(config);
+        var twice = BmfcConfigWriter.Write(BmfcConfigReader.Parse(once));
+
+        twice.ShouldBe(once);
+    }
+
+    [Fact]
+    public void ParseThenWrite_ExplicitlyDefaultChannelKeys_AreIntentionallyDropped()
+    {
+        // Pins a deliberate asymmetry: a config whose channel keys all hold their default
+        // values reads as a non-null-but-default ChannelConfig, which the writer suppresses.
+        // Behaviourally free -- both BmFont.ShouldApplyChannelConfig and BmFontModelBuilder
+        // gate on `is { IsDefault: false }`, so null and all-default render identically.
+        // Documented here so a future reader change cannot flip it silently.
+        var source = "alphaChnl=0\nredChnl=0\ngreenChnl=0\nblueChnl=0\n"
+            + "invA=0\ninvR=0\ninvG=0\ninvB=0\n";
+
+        var parsed = BmfcConfigReader.Parse(source).Options;
+        var reparsed = BmfcConfigReader.Parse(
+            BmfcConfigWriter.Write(BmfcConfig.FromOptions(parsed))).Options;
+
+        parsed.Channels.ShouldNotBeNull();
+        parsed.Channels!.IsDefault.ShouldBeTrue();
+        reparsed.Channels.ShouldBeNull();
+    }
+
+    [Fact]
+    public void Write_DefaultChannelConfig_LeavesOutputUnchanged()
+    {
+        // Guards the byte-identical-by-default promise: an all-default ChannelConfig must
+        // produce exactly the same .bmfc text as no ChannelConfig at all.
+        var unset = BmfcConfigWriter.Write(BmfcConfig.FromOptions(new FontGeneratorOptions()));
+        var explicitDefault = BmfcConfigWriter.Write(
+            BmfcConfig.FromOptions(new FontGeneratorOptions { Channels = new ChannelConfig() }));
+
+        explicitDefault.ShouldBe(unset);
+    }
+
+    [Fact]
     public void WriteToFile_CreatesReadableFile()
     {
         // Arrange

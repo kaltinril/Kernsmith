@@ -1,6 +1,6 @@
 # Phase 161 — Native Rasterizer: Project Scaffold & Binary Reader
 
-> **Status**: Future
+> **Status**: Complete (merged 2026-06-09)
 > **Created**: 2026-04-01
 > **Depends on**: Phase 160 (design decisions)
 
@@ -12,7 +12,7 @@ Create the `KernSmith.Rasterizers.Native` project with the binary font reader fo
 
 ### Project Setup
 - Create `src/KernSmith.Rasterizers.Native/KernSmith.Rasterizers.Native.csproj`
-  - `net10.0`, `<IsTrimmable>true</IsTrimmable>`, `<IsAotCompatible>true</IsAotCompatible>`
+  - `net8.0;net10.0`, `<IsTrimmable>true</IsTrimmable>`, `<IsAotCompatible>true</IsAotCompatible>`
   - Reference only `KernSmith` core project (for `IRasterizer`, types)
   - Zero external NuGet dependencies
 - Add to solution file
@@ -55,6 +55,8 @@ The Native rasterizer needs its own parsers for tables required by downstream ph
   - Required by Phase 162 (loca format selection) and Phase 163 (scaling)
 - **`hhea` table**: `ascender`, `descender`, `lineGap`, `numberOfHMetrics`
   - Required by Phase 165 (font metrics)
+- **`maxp` table**: `numGlyphs`
+  - Required by `hmtx` sizing here, and by Phase 162 (`loca` entry count). The v1.0 extended profile fields are deferred to Phase 162.
 - **`hmtx` table**: per-glyph `advanceWidth` and `leftSideBearing`
   - Required by Phase 165 (glyph metrics)
 - **`OS/2` table**: `sTypoAscender`, `sTypoDescender`, `usWinAscent`, `usWinDescent`, `sxHeight`, `sCapHeight`
@@ -94,6 +96,6 @@ These are self-contained parsers (not shared with the core `KernSmith` font read
 - [ ] `NativeRasterizer` registers and is selectable via `RasterizerBackend.Native`
 - [ ] `RasterizerBackend.Native` enum value added
 - [ ] `FontFormatException` created
-- [ ] Core table parsers (`head`, `hhea`, `hmtx`, `OS/2`, `cmap`) produce correct values for Roboto-Regular.ttf
+- [ ] Core table parsers (`head`, `hhea`, `hmtx`, `maxp`, `OS/2`, `cmap`) produce correct values for Roboto-Regular.ttf
 - [ ] All tests pass
 - [ ] Trimming and AOT analyzers produce no warnings

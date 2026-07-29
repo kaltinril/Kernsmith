@@ -15,7 +15,7 @@ Trim- and AOT-friendly — ideal for Blazor WASM, iOS AOT, and serverless.
 ## Status
 
 This is an early scaffold (Phase 161). It loads and validates fonts and parses the core
-SFNT tables (`head`, `hhea`, `hmtx`, `OS/2`, `cmap`), but glyph outline decoding and
+SFNT tables (`head`, `hhea`, `hmtx`, `maxp`, `OS/2`, `cmap`), but glyph outline decoding and
 rasterization arrive in later phases. Calling the render methods currently throws
 `NotImplementedException`.
 

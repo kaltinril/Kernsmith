@@ -72,7 +72,7 @@ For each texel center, compute the signed distance to the nearest outline segmen
 
 - [ ] SDF generation produces correct signed distance values
 - [ ] Edge values ≈ 128 (±1)
-- [ ] Inside negative, outside positive
+- [ ] Inside positive (> 128, bright), outside negative (< 128, dark) — per Phase 160 D13
 - [ ] Smooth distance gradient (no discontinuities)
 - [ ] `SupportsSdf = true` in capabilities
 - [ ] All tests pass

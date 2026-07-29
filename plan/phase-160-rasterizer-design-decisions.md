@@ -3,13 +3,13 @@
 > **Status**: Active
 > **Created**: 2026-04-01
 > **Supersedes**: Phase 34 (Custom Pure C# Rasterizer research)
-> **Related**: Phases 161–179 (implementation phases)
+> **Related**: Phases 161–180 (implementation phases)
 
 ## Goal
 
 Resolve all open design decisions and architectural questions before beginning implementation of KernSmith's pure C# font rasterizer. This phase is the "decision record" — all subsequent phases reference it.
 
-## Implementation Status (as of June 2026)
+## Implementation Status (verified 2026-07-28)
 
 - **Phase 161 (Project Scaffold)** merged 2026-06-09: binary reader, table directory parser, core tables (head, hhea, hmtx, OS/2, cmap, maxp), and the `NativeRasterizer` shell with NotImplemented rendering stubs.
 - **Phases 162-165** (outline extraction → scanline rasterizer → IRasterizer integration) are next.
@@ -18,11 +18,13 @@ Resolve all open design decisions and architectural questions before beginning i
 
 ## Context
 
-KernSmith currently has two rasterizer backends:
-- **FreeTypeSharp** — full-featured, native C dependency
+KernSmith already had four rasterizer backends before this work (`RasterizerBackend` in `src/KernSmith/Config/RasterizerBackend.cs`):
+- **FreeType** (FreeTypeSharp) — full-featured, native C dependency
+- **Gdi** — Windows-only, wraps GDI
+- **DirectWrite** (TerraFX) — Windows-only, high quality
 - **StbTrueTypeSharp** — pure C# wrapper around stb_truetype port, limited features
 
-We are building a **third backend**: a fully custom, pure C# rasterizer owned entirely by KernSmith. Zero external NuGet dependencies for font rasterization. The goal is feature parity with FreeType over time, with the ability to do synthetic bold/italic/everything at the outline level.
+We are building a **fifth backend**, `Native`: a fully custom, pure C# rasterizer owned entirely by KernSmith. It is the only backend with **zero external rasterization dependencies** — no native libraries and no third-party font NuGet packages. The goal is feature parity with FreeType over time, with the ability to do synthetic bold/italic/everything at the outline level.
 
 ## Project Structure Decision
 
@@ -30,9 +32,10 @@ We are building a **third backend**: a fully custom, pure C# rasterizer owned en
 
 - Namespace: `KernSmith.Rasterizers.Native`
 - Registers as `RasterizerBackend.Native` (new enum value)
-- Self-registers via `[ModuleInitializer]`
-- Target: `net10.0`
+- Registration is dual-path: self-registers via `[ModuleInitializer]` (`NativeRegistration.cs:9`) AND is reflection auto-discovered by `RasterizerFactory` (`RasterizerFactory.cs:23`), with an `ILLink.Descriptors.xml` trim root so the initializer survives trimming
+- Target: `net8.0;net10.0` (multi-targets with the rest of the repo)
 - Must set `<IsTrimmable>true</IsTrimmable>`, `<IsAotCompatible>true</IsAotCompatible>`
+- `<AllowUnsafeBlocks>true</AllowUnsafeBlocks>` (csproj:5) — permitted here per CLAUDE.md's "unsafe only in rasterizer backend projects" policy
 - Zero NuGet dependencies (the entire point)
 - WASM-compatible: no `Parallel.ForEach`, no `.Result`/`.Wait()`, no `Reflection.Emit`
 
@@ -198,12 +201,12 @@ The signed-area trapezoid method with cumulative sum naturally implements non-ze
 | D12 | Edge direction: keep original winding | Signed-area algorithm uses direction for sign; matches stb_truetype/font-rs |
 | D13 | SDF convention: inside = positive/bright | Matches stb_truetype and common shader expectations (inside > 128) |
 | D14 | Hinting pipeline position: after pixel scaling | Auto-hinting needs pixel grid; runs between scale and rasterize |
-| D15 | Core table parsing in Phase 161 | head, hhea, hmtx, OS/2, cmap parsed in scaffold phase, not deferred |
+| D15 | Core table parsing in Phase 161 | head, hhea, hmtx, maxp, OS/2, cmap parsed in scaffold phase, not deferred |
 
 ## What Phase 34 Contained (Now Superseded)
 
 Phase 34 was a research/investigation document covering:
-- glyf/loca/maxp table parsing → Now Phase 162
+- glyf/loca/maxp table parsing → maxp's `numGlyphs` landed in Phase 161; only glyf/loca (plus maxp's extended profile fields) remain for Phase 162
 - Outline extraction + bezier flattening → Now Phase 163
 - Scanline rasterizer core → Now Phase 164
 - IRasterizer integration → Now Phase 165

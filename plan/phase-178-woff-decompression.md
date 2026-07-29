@@ -1,8 +1,10 @@
-# Phase 178 — Native Rasterizer: WOFF/WOFF2 Decompression
+# Phase 178 — Native Rasterizer: WOFF2 Decompression
 
 > **Status**: Future
 > **Created**: 2026-04-01
 > **Depends on**: Phase 161 (binary reader, table directory)
+
+> **Note**: Phase 161 is **COMPLETE** (merged 2026-06-09) — the binary reader and table directory parser this phase builds on are already in place.
 
 > **Existing implementation (reference)**: WOFF 1.0 decompression is ALREADY COMPLETE in the core library (`src/KernSmith/Font/WoffDecompressor.cs`, zlib per-table; auto-detected in `BmFont.cs`). Only WOFF 2.0 remains (Brotli + glyf triplet transform), which currently throws `NotSupportedException`. This phase is therefore re-scoped to WOFF2-only; cite the existing WOFF1 implementation as the reference.
 

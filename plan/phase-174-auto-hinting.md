@@ -68,9 +68,9 @@ GlyphOutline (font units)
           → Scanline rasterizer
 ```
 
-This is a deviation from Phase 160's simplified pipeline diagram, which shows scaling as the last step before rasterization. Phase 160's pipeline should be read as: "outline transforms happen in font units; hinting + rasterization happen in pixel space."
+This AGREES with Phase 160, which already shows `Scale to pixels → AutoHinter → CoverageRasterizer` in its pipeline diagram and records the same ordering in D14 ("hinting after pixel scaling"). Both docs read as: "outline transforms happen in font units; hinting + rasterization happen in pixel space."
 
-- New option: `RasterOptions.EnableHinting` (already exists, default true)
+- Option: `RasterOptions.EnableHinting` (already exists — `src/KernSmith/Rasterizer/RasterOptions.cs`, default true)
 - When hinting enabled and backend is Native AND Phase 174 is implemented, apply auto-hinting
 - When hinting disabled, render unhinted (current behavior, skip this step)
 - Auto-hinting data (blue zones, stem widths) computed once per font load, cached per size

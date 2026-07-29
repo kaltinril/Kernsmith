@@ -1,7 +1,14 @@
 # KernSmith -- Master Plan
 
-> **Status**: Phases 1-19, 21, 30-33, 33B, 32B, 32d, 55, 60-69, 72-78, 77B, 79, 80, 90, 97, 161, 185 complete (185 -- Font Sourcing: IFontSource abstraction + KernSmith.Fonts.Web -- is the latest landed work). Phase 34 (custom rasterizer) is planning/future. Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper). Phase 36 superseded by Phase 110. Phase 95 complete. Phase 98 rejected (invalid bug report). Phase 99, 150 planning. Phases 110, 111, 112 exploratory (111 texture fill, 112 shader fill are the newest design docs). Phase 300 deferred/future (Perf 6 B/C carried from Phase 95).
-> **Date**: 2026-06-28
+> **Status**: Current release **v0.18.2**. The latest landed work is **Phase 182 -- Shared Atlas Groups** (`AtlasVariant` + `AtlasGroupBuilder` shipped in 0.18.0, shadow-silhouette tint fix in 0.18.1, `BmFontResult.GetVariantFntText` in 0.18.2).
+>
+> **Complete** (all archived in `done/`): Phases 1-18 (there is no Phase 19), 20, 21 + 21R, 30-34 (including 32b, 32c, 32d and 33b), 37, 55, 60-86 (including 74b, 75L, 76b, 77b, the full 78 series, and 81-85), 90, 95, 96, 97, 100, 105, 161, 185. Phase 34 is Complete (Superseded) by the 160-180 native rasterizer series; Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper); Phase 36 superseded by Phase 110; Phase 98 rejected (invalid bug report). Phase 182 is complete but its doc still lives in `plan/`.
+>
+> **In flight**: Phase 160 (active design record for the native rasterizer series); Phase 250 (UI cleanup -- Phase 1 landed with changed scope, Phase 2's Generate-bar issue needs re-validation, Phases 3-5 largely done); Phase 100b (P2/P3 landed, P4/P5 deferred); Phases 99 and 150 (planning).
+>
+> **Future / deferred**: Phase 50 (in-memory layer retention); Phase 110 (partially done -- the core post-processor architecture is complete, the remainder is future); Phases 111 and 112 (deferred / not started); Phases 162-180 (native rasterizer implementation, all Future); Phase 181 (superseded by 182); Phase 200 (FontCrafter -- not started); Phase 300 (Perf 6 B/C carried from Phase 95).
+>
+> **Date**: 2026-07-28
 
 ---
 
@@ -20,7 +27,7 @@
 | **Texture packing** | MaxRects (BestShortSideFit) primary, Skyline as fast mode | MaxRects achieves 93-97% packing efficiency. Skyline is 2-5x faster with 2-5% less efficiency. Our own implementation based on public domain reference code. |
 | **API design** | In-memory model first, output methods on top | Core pipeline produces a format-agnostic model. `.ToString()`, `.ToXml()`, `.ToBinary()`, `.ToFile()` render it. Zero disk I/O by default. |
 | **Licensing** | MIT open source, no paid/restrictive dependencies | FreeTypeSharp: MIT. FreeType native: FreeType License (BSD-like). Our code: MIT. SixLabors: explicitly excluded (split license). |
-| **Cross-platform** | Anywhere .NET + FreeType native binaries run | Windows, macOS, Linux, Android, iOS, tvOS via FreeTypeSharp's bundled natives. No Linux ARM64 or WASM (FreeTypeSharp gap). |
+| **Cross-platform** | Anywhere .NET + FreeType native binaries run | Windows, macOS, Linux, Android, iOS, tvOS via FreeTypeSharp's bundled natives. FreeTypeSharp still has no Linux ARM64 build. WASM/browser is covered instead by the pure-C# StbTrueType backend (Phases 32/33, see `samples/KernSmith.Samples.BlazorWasm`). |
 
 ---
 
@@ -77,35 +84,21 @@ Output Layer
 
 ## Active Plans
 
+> **Table scope**: this table lists only plan docs that still live in `plan/`. Anything archived under `plan/done/` belongs in [Completed Phases](#completed-phases-archived-in-done) below -- do not add `done/` rows here. Phases 181 and 182 are already closed (superseded / complete) but their docs have not been archived yet, so they are still listed here.
+
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
-| 31 | [WASM Platform Restrictions Research](done/phase-31-wasm-restrictions-research.md) | Research WASM/AOT platform restrictions affecting rasterizer strategy | Complete |
-| 32 | [StbTrueType Managed Rasterizer](done/phase-32-stbtruetype-rasterizer.md) | Pure C# rasterizer plugin using StbTrueTypeSharp for WASM/AOT support | Complete |
-| 32b | [StbTrueType Docs & Publishing](done/phase-32b-stbtruetype-docs-publishing.md) | Documentation, DocFX pages, and CI/CD publishing for StbTrueType plugin | Complete |
-| 32c | [StbTrueType Validation Fixes](done/phase-32c-stbtruetype-fixes.md) | Bug fixes, missing guards, and test gaps from Phase 30-32 validation | Complete |
-| 32d | [StbTrueType Synthetic Bold & Italic](done/phase-32d-stbtruetype-synthetic-bold-italic.md) | Outline-level synthetic bold/italic using stb_truetype shape API | Complete |
-| 33 | [WASM Integration and Validation](done/phase-33-wasm-validation.md) | Validate KernSmith + StbTrueType works in Blazor WASM | Complete |
-| 34 | [Custom Pure C# Rasterizer](done/phase-34-custom-rasterizer.md) | Research/prototype a fully custom pure C# TTF rasterizer from scratch | Future |
-| 35 | [FontStashSharp Rasterizer](done/phase-35-fontstashsharp-rasterizer.md) | Rejected — FontStashSharp is just a stbTrueTypeSharp wrapper; useful techniques distilled into Phases 160-180 | Done |
-| 36 | [Bitmap Bold & Italic Post-Processing](done/phase-36-bitmap-bold-italic-postprocessing.md) | Superseded — absorbed into Phase 110 | Done |
-| 37 | [QA, Security & Performance Fixes](done/phase-37-qa-security-perf-fixes.md) | Correctness, security hardening, and perf fixes from full codebase review | Complete |
 | 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
-| 81 | [Hiero Format Support](done/phase-81-hiero-format-support.md) | Hiero `.hiero` config format specification and design decisions | Complete |
-| 82 | [Hiero Core Library](done/phase-82-hiero-core-library.md) | Add `.hiero` config read/write to the NuGet library | Complete |
-| 83 | [Hiero UI Changes](done/phase-83-hiero-ui-changes.md) | Update UI for `.hiero` file dialogs, drag-drop, project service | Complete |
-| 84 | [Hiero CLI Changes](done/phase-84-hiero-cli-changes.md) | Update CLI for `.hiero` format auto-detection and batch support | Complete |
-| 85 | [Hiero Documentation](done/phase-85-hiero-documentation.md) | Document `.hiero` support in README, CLI docs, samples | Complete |
-| 97 | [Rasterizer Auto-Discovery](done/phase-97-rasterizer-auto-discovery.md) | Auto-discover rasterizer backends via Type.GetType(); remove 13 manual workarounds; add ILLink trimmer protection | Complete |
-| 95 | [Performance Optimization & Bug Fixes](done/phase-95-performance-and-bugs.md) | Fix confirmed bugs (outline field, batch encoding, options mutation) and optimize generation performance | Complete |
 | 99 | [BMFont Parity Remaining Gaps](phase-99-bmfont-parity-gaps.md) | Investigate and close remaining metrics differences from Phase 78BB | Planning |
 | 100b | [Deferred Advanced Features](phase-100b-deferred-advanced-features.md) | Deferred advanced effects (SdfScale/AdvanceAdjustY done; outline wobble + native render mode deferred) | Partial |
-| 105 | [Text Layout Engine](done/phase-105-text-layout-engine.md) | Core text layout engine + framework rendering examples; pixel format helpers resolved | Complete |
-| 110 | [Post-Processing Enhancements](phase-110-post-processing-enhancements.md) | Exploratory plan for post-processing pipeline enhancements | Exploratory |
-| 111 | [Texture Fill for Glyphs](phase-111-texture-fill.md) | Exploratory plan for texture/pattern fill effects on glyphs | Exploratory |
-| 112 | [Shader Fill for Glyphs](phase-112-shader-fill.md) | Exploratory plan for shader-computed (per-pixel) fill effects on glyphs | Exploratory |
+| 110 | [Post-Processing Enhancements](phase-110-post-processing-enhancements.md) | Post-processing pipeline enhancements; the core post-processor architecture landed in Phase 32d | Partially done (core architecture complete; remainder future) |
+| 111 | [Texture Fill for Glyphs](phase-111-texture-fill.md) | Design for texture/pattern fill effects on glyphs; no `TextureFillEffect` exists yet | Deferred / not started |
+| 112 | [Shader Fill for Glyphs](phase-112-shader-fill.md) | Design for shader-computed (per-pixel) fill effects on glyphs; no `ShaderFillEffect` exists yet | Deferred / not started |
 | 150 | [Deferred Rasterizer Issues](phase-150-deferred-rasterizer-issues.md) | Color fonts, variable fonts, native DW kerning, GDI MatchCharHeight bug (deferred from Phase 78G) | Planning |
-| 200 | [FontCrafter & Platform Rasterizers](phase-200-fontcrafter-and-platform-rasterizers.md) | FontCrafter product concept and platform-specific rasterizer distribution | Idea |
-| 250 | [UI Cleanup & Polish](phase-250-ui-cleanup.md) | Collapsible sections, consistent grids, shared UI helpers, spacing polish | Future |
+| 181 | [Atlas Variants: Padded Silhouette Regions](phase-181-shadow-outline-atlas-variants.md) | GitHub #175 — superseded by Phase 182 (dropshadow-only framing was too narrow) | Superseded |
+| 182 | [Shared Atlas Groups](phase-182-shared-atlas-groups.md) | GitHub #175 — generic mechanism to pack N independent glyph sources (dropshadow variant, later multi-font) into one shared atlas PNG; shipped in 0.18.0-0.18.2 | Complete |
+| 200 | [FontCrafter & Platform Rasterizers](phase-200-fontcrafter-and-platform-rasterizers.md) | FontCrafter product concept and platform-specific rasterizer distribution | Not started / Future |
+| 250 | [UI Cleanup & Polish](phase-250-ui-cleanup.md) | Collapsible sections, consistent grids, shared UI helpers, spacing polish. Day-to-day snapshot: [ui-cleanup-progress.md](ui-cleanup-progress.md) | In progress (Phase 1 landed with changed scope, Phases 3-5 largely done; Phase 2's Generate-bar issue needs re-validation) |
 | 300 | [Deferred Performance Work](phase-300-deferred-performance.md) | Perf 6 Phases B/C carried from Phase 95 -- pool atlas page & per-glyph buffers; needs IDisposable/ownership redesign (Perf 10 excluded -- proven impossible) | Deferred / Future |
 
 ### Native Rasterizer Series (Phases 160-180)
@@ -115,27 +108,25 @@ Pure C# TTF/OTF rasterizer initiative; see Phase 160 for design decisions. Phase
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
 | 160 | [Rasterizer Design Decisions](phase-160-rasterizer-design-decisions.md) | Rasterizer design decisions / overview (decision record for the series) | Active |
-| 162 | [glyf/loca/maxp Parsers](phase-162-glyf-loca-maxp-parsers.md) | glyf/loca/maxp table parsers | Planning |
-| 163 | [Outline Extraction](phase-163-outline-extraction.md) | Glyph outline extraction + bezier flattening | Planning |
-| 164 | [Scanline Rasterizer](phase-164-scanline-rasterizer.md) | Scanline rasterizer (coverage/anti-aliasing) | Planning |
-| 165 | [IRasterizer Integration](phase-165-irasterizer-integration.md) | IRasterizer integration (wire native backend into pipeline) | Planning |
-| 166 | [CFF/Type2 Charstring Interpreter](phase-166-cff-charstring-interpreter.md) | CFF/Type2 charstring interpreter (OTF outlines) | Planning |
-| 167 | [Synthetic Bold & Italic](phase-167-synthetic-bold-italic.md) | Synthetic bold + italic transforms | Planning |
-| 168 | [Synthetic Outline/Stroke](phase-168-synthetic-outline-stroke.md) | Synthetic outline/stroke | Planning |
-| 169 | [SDF Generation](phase-169-sdf-generation.md) | SDF generation (native backend) | Planning |
-| 170 | [MSDF Generation](phase-170-msdf-generation.md) | MSDF generation | Planning |
-| 171 | [Variable Font Support](phase-171-variable-font-support.md) | Variable font support (native backend) | Planning |
-| 172 | [Color Font Support](phase-172-color-font-support.md) | Color font support / COLR-CPAL (native backend) | Planning |
-| 173 | [LCD Subpixel Rendering](phase-173-lcd-subpixel-rendering.md) | LCD subpixel rendering | Planning |
-| 174 | [Auto-Hinting](phase-174-auto-hinting.md) | Auto-hinting | Planning |
-| 175 | [GSUB Layout](phase-175-gsub-layout.md) | GSUB layout (ligatures/substitution) | Planning |
-| 176 | [Supersampling + Height Stretch](phase-176-supersampling-height-stretch.md) | Supersampling + height stretch (native integration) | Planning |
-| 177 | [Performance Optimization](phase-177-performance-optimization.md) | Performance optimization | Planning |
-| 178 | [WOFF2 Decompression](phase-178-woff-decompression.md) | WOFF2 decompression | Planning |
-| 179 | [Validation / Golden Masters](phase-179-validation-golden-masters.md) | Validation / golden masters | Planning |
-| 180 | [Innovation Research](phase-180-innovation-research.md) | Innovation research (ongoing experiments) | Planning |
-| 181 | [Atlas Variants: Padded Silhouette Regions](phase-181-shadow-outline-atlas-variants.md) | GitHub #175 — superseded by Phase 182 (dropshadow-only framing was too narrow) | Superseded |
-| 182 | [Shared Atlas Groups](phase-182-shared-atlas-groups.md) | GitHub #175 — generic mechanism to pack N independent glyph sources (dropshadow variant, later multi-font) into one shared atlas PNG | Complete |
+| 162 | [glyf/loca/maxp Parsers](phase-162-glyf-loca-maxp-parsers.md) | glyf/loca/maxp table parsers | Future |
+| 163 | [Outline Extraction](phase-163-outline-extraction.md) | Glyph outline extraction + bezier flattening | Future |
+| 164 | [Scanline Rasterizer](phase-164-scanline-rasterizer.md) | Scanline rasterizer (coverage/anti-aliasing) | Future |
+| 165 | [IRasterizer Integration](phase-165-irasterizer-integration.md) | IRasterizer integration (wire native backend into pipeline) | Future |
+| 166 | [CFF/Type2 Charstring Interpreter](phase-166-cff-charstring-interpreter.md) | CFF/Type2 charstring interpreter (OTF outlines) | Future |
+| 167 | [Synthetic Bold & Italic](phase-167-synthetic-bold-italic.md) | Synthetic bold + italic transforms | Future |
+| 168 | [Synthetic Outline/Stroke](phase-168-synthetic-outline-stroke.md) | Synthetic outline/stroke | Future |
+| 169 | [SDF Generation](phase-169-sdf-generation.md) | SDF generation (native backend) | Future |
+| 170 | [MSDF Generation](phase-170-msdf-generation.md) | MSDF generation | Future |
+| 171 | [Variable Font Support](phase-171-variable-font-support.md) | Variable font support (native backend) | Future |
+| 172 | [Color Font Support](phase-172-color-font-support.md) | Color font support / COLR-CPAL (native backend) | Future |
+| 173 | [LCD Subpixel Rendering](phase-173-lcd-subpixel-rendering.md) | LCD subpixel rendering | Future |
+| 174 | [Auto-Hinting](phase-174-auto-hinting.md) | Auto-hinting | Future |
+| 175 | [GSUB Layout](phase-175-gsub-layout.md) | GSUB layout (ligatures/substitution) | Future |
+| 176 | [Supersampling + Height Stretch](phase-176-supersampling-height-stretch.md) | Supersampling + height stretch (native integration) | Future |
+| 177 | [Performance Optimization](phase-177-performance-optimization.md) | Performance optimization | Future |
+| 178 | [WOFF2 Decompression](phase-178-woff-decompression.md) | WOFF2 decompression | Future |
+| 179 | [Validation / Golden Masters](phase-179-validation-golden-masters.md) | Validation / golden masters | Future |
+| 180 | [Innovation Research](phase-180-innovation-research.md) | Innovation research (ongoing experiments) | Future (Ongoing Research) |
 
 ---
 
@@ -165,6 +156,17 @@ Pure C# TTF/OTF rasterizer initiative; see Phase 160 for design decisions. Phase
 | 21 | [Atlas Output Modes](done/phase-21-atlas-output-modes.md) | Combined batch atlas, render-to-existing-PNG, atlas size query & constraints |
 | 21R | [Atlas Output Modes Review](done/phase-21-review-findings.md) | Code review findings from Phase 21 implementation |
 | 30 | [WASM Rasterization](done/phase-30-wasm-rasterization.md) | Extract FreeTypeRasterizer from core library into standalone plugin package |
+| 31 | [WASM Platform Restrictions Research](done/phase-31-wasm-restrictions-research.md) | Research WASM/AOT platform restrictions affecting rasterizer strategy |
+| 32 | [StbTrueType Managed Rasterizer](done/phase-32-stbtruetype-rasterizer.md) | Pure C# rasterizer plugin using StbTrueTypeSharp for WASM/AOT support |
+| 32b | [StbTrueType Docs & Publishing](done/phase-32b-stbtruetype-docs-publishing.md) | Documentation, DocFX pages, and CI/CD publishing for StbTrueType plugin |
+| 32c | [StbTrueType Validation Fixes](done/phase-32c-stbtruetype-fixes.md) | Bug fixes, missing guards, and test gaps from Phase 30-32 validation |
+| 32d | [StbTrueType Synthetic Bold & Italic](done/phase-32d-stbtruetype-synthetic-bold-italic.md) | Outline-level synthetic bold/italic using stb_truetype shape API |
+| 33 | [WASM Integration and Validation](done/phase-33-wasm-validation.md) | Validate KernSmith + StbTrueType works in Blazor WASM |
+| 33B | [FontCreator Backend Support](done/phase-33b-fontcreator-backend-support.md) | Backend selection for `KernSmithFontCreator` / `GumFontGenerator` instead of reimplementing to swap rasterizers |
+| 34 | [Custom Pure C# Rasterizer](done/phase-34-custom-rasterizer.md) | Complete (Superseded) -- research into a fully custom pure C# TTF rasterizer; superseded by the Phase 160-180 native rasterizer series |
+| 35 | [FontStashSharp Rasterizer](done/phase-35-fontstashsharp-rasterizer.md) | Rejected -- FontStashSharp is just a stbTrueTypeSharp wrapper; useful techniques distilled into Phases 160-180 |
+| 36 | [Bitmap Bold & Italic Post-Processing](done/phase-36-bitmap-bold-italic-postprocessing.md) | Superseded -- absorbed into Phase 110 |
+| 37 | [QA, Security & Performance Fixes](done/phase-37-qa-security-perf-fixes.md) | Correctness, security hardening, and perf fixes from full codebase review |
 | 55 | [UI Core Library Prerequisites](done/phase-55-ui-core-library-prerequisites.md) | API additions needed by the UI: font reader, builder methods, FontInfo expansion |
 | 60 | [UI MVP](done/phase-60-ui-mvp.md) | MonoGame + GUM UI app: project scaffold, three-panel layout, font loading, basic generation |
 | 61 | [Font Loading & Character Selection](done/phase-61-ui-font-character-selection.md) | System font browser, BMFont-style character grid, Unicode block sidebar, text-based selection |
@@ -181,6 +183,7 @@ Pure C# TTF/OTF rasterizer initiative; see Phase 160 for design decisions. Phase
 | 72 | [UI Issues Round 2](done/phase-72-ui-issues-round2.md) | Fix remaining UI issues from manual testing -- 21 issues resolved |
 | 73 | [Documentation Review](done/phase-73-documentation-review.md) | XML doc comments, class/method summaries, README gaps across library, CLI, and UI |
 | 74 | [MIT License](done/phase-74-mit-license.md) | Switch all license references to MIT |
+| 74B | [License Attribution & Compliance](done/phase-74b-license-attribution-compliance.md) | Third-party license attribution for redistributed/linked dependencies |
 | 75 | [DocFX Docs Site Fixes](done/phase-75-docs-site-fixes.md) | Fix issues found on the deployed DocFX documentation site |
 | 75L | [DocFX Logo Fix](done/phase-docfx-logo-fix.md) | Fix oversized navbar logo on DocFX documentation site |
 | 76 | [Metrics Parity with BMFont](done/phase-76-metrics-parity.md) | Investigate and fix glyph metric differences between KernSmith and BMFont output |
@@ -200,10 +203,19 @@ Pure C# TTF/OTF rasterizer initiative; see Phase 160 for design decisions. Phase
 | 78S | [Documentation & Code Quality](done/phase-78s-documentation.md) | XML doc comments, UI tooltips, CLI help text, READMEs |
 | 79 | [Replace FluentAssertions with Shouldly](done/phase-79-replace-fluentassertions.md) | Replace FluentAssertions (paid licensing) with Shouldly across test suite |
 | 80 | [Atlas Preview Rendering](done/phase-80-atlas-preview-rendering.md) | Fix atlas preview rendering quality in UI to match saved PNG |
+| 81 | [Hiero Format Support](done/phase-81-hiero-format-support.md) | Hiero `.hiero` config format specification and design decisions |
+| 82 | [Hiero Core Library](done/phase-82-hiero-core-library.md) | Add `.hiero` config read/write to the NuGet library |
+| 83 | [Hiero UI Changes](done/phase-83-hiero-ui-changes.md) | Update UI for `.hiero` file dialogs, drag-drop, project service |
+| 84 | [Hiero CLI Changes](done/phase-84-hiero-cli-changes.md) | Update CLI for `.hiero` format auto-detection and batch support |
+| 85 | [Hiero Documentation](done/phase-85-hiero-documentation.md) | Document `.hiero` support in README, CLI docs, samples |
 | 86 | [RegisterFont File-Path Overload](done/phase-86-register-font-file-path-overload.md) | Add string filePath overload to KernSmithFontCreator.RegisterFont using TitleContainer.OpenStream |
 | 90 | [Native AOT Compliance](done/phase-90-aot-compliance.md) | Native AOT / trimming compatibility for core library -- analyzers enabled, version reflection replaced with compile-time constant, RasterizerFactory reflection contained (Option A); AOT consumers register backends explicitly |
+| 95 | [Performance Optimization & Bug Fixes](done/phase-95-performance-and-bugs.md) | Fix confirmed bugs (outline field, batch encoding, options mutation) and optimize generation performance |
+| 96 | [Documentation Audit](done/phase-96-documentation-audit.md) | Audit of plan, reference, root-level, and CI docs against the actual codebase; stale/missing/inaccurate claims corrected |
+| 97 | [Rasterizer Auto-Discovery](done/phase-97-rasterizer-auto-discovery.md) | Auto-discover rasterizer backends via Type.GetType(); remove 13 manual workarounds; add ILLink trimmer protection |
 | 98 | [Outline Advance Bug](done/phase-98-outline-advance-bug.md) | Rejected -- outline not adjusting xadvance is correct BMFont behavior, not a bug |
 | 100 | [Hiero Advanced Features](done/phase-100-hiero-advanced-features.md) | Advanced Hiero features requiring new KernSmith properties |
+| 105 | [Text Layout Engine](done/phase-105-text-layout-engine.md) | Core text layout engine + framework rendering examples; pixel format helpers resolved |
 | 161 | [Native Rasterizer Scaffold](done/phase-161-native-project-scaffold.md) | Pure C# binary font reader, table directory parser, core table parsers (head/hhea/hmtx/OS2/cmap/maxp), NativeRasterizer IRasterizer shell -- Complete |
 | 185 | [Font Sourcing](done/phase-185-font-sourcing.md) | IFontSource abstraction + KernSmith.Fonts.Web package for web font CDNs (WOFF) -- Complete |
 
@@ -213,7 +225,7 @@ These detailed docs were used during implementation and remain as reference mate
 
 | Document | Description |
 |----------|-------------|
-| [Vision](done/KernSmith-vision.md) | Original project vision and goals |
+| [Vision](done/kernsmith-vision.md) | Original project vision and goals |
 | [Data Types](done/plan-data-types.md) | All shared types, interfaces, and error handling (source of truth) |
 | [Project Structure](done/plan-project-structure.md) | Solution layout, namespace mapping, dependencies |
 | [API Design](done/plan-api-design.md) | Public API surface, builder pattern, configuration types |
@@ -258,11 +270,11 @@ These detailed docs were used during implementation and remain as reference mate
 | # | Question | Decision | Details |
 |---|----------|----------|---------|
 | 1 | **PNG encoding library** | **StbImageWriteSharp** (public domain) | Confirmed. See [done/plan-project-structure.md](done/plan-project-structure.md). |
-| 2 | **Target framework** | **net10.0** | Migrated from net8.0 in Phase 11. All projects unified on net10.0 via Directory.Build.props. |
+| 2 | **Target framework** | **Multi-target `net8.0;net10.0`** | Migrated to net10.0 in Phase 11, then multi-targeted again from 0.15.0 (CI builds and tests both). `Directory.Build.props` sets the repo default `<TargetFrameworks>net8.0;net10.0</TargetFrameworks>`; projects are *not* unified on a single TFM -- five distinct sets exist: core/`KernSmith.Fonts.Web`/`Rasterizers.FreeType`/`.StbTrueType`/`.Native` use the default; `Rasterizers.Gdi` is `net8.0-windows;net10.0-windows`; `Rasterizers.DirectWrite.TerraFX` is `net10.0-windows` only; `KernSmith.Cli` is `net8.0;net10.0;net8.0-windows;net10.0-windows`; `KernSmith.Ui` is `net10.0;net10.0-windows`; `Samples.BlazorWasm` is `net10.0` only. |
 | 3 | **Project license** | **MIT** | Finalized as MIT open source (2026-03-22). See Phase 74. |
 | 4 | **NuGet package name** | **KernSmith** | Package ID `KernSmith`, main API class `KernSmith`. |
 | 5 | **FreeTypeSharp usage boundary** | Use everything it can do | Our parser only covers what FreeTypeSharp cannot (GPOS, OS/2, name, cmap). No duplication. |
-| 6 | **Unsafe code policy** | `AllowUnsafeBlocks` in main project | Isolated to FreeType interop (`FreeTypeRasterizer.cs`, `FreeTypeNative.cs`). Rest is safe C#. |
+| 6 | **Unsafe code policy** | `AllowUnsafeBlocks` in rasterizer backend projects only | `src/KernSmith/KernSmith.csproj` (the core library) does **not** set `AllowUnsafeBlocks` and has no FreeTypeSharp reference -- the core is entirely safe C#. Unsafe is enabled only in the five backend projects (`Rasterizers.FreeType`, `.StbTrueType`, `.Gdi`, `.DirectWrite.TerraFX`, `.Native`), plus the internal `tests/bmfont-compare/GenerateAll` harness. Matches the rule in CLAUDE.md. |
 | 7 | **FreeType memory** | Manual lifecycle via `IDisposable` | Pin font data with `GCHandle`. Do NOT use `FreeTypeFaceFacade`. See [done/plan-rasterization.md](done/plan-rasterization.md). |
 | 8 | **Test framework** | **xUnit** + Shouldly | FluentAssertions replaced with Shouldly in Phase 79 (FluentAssertions moved to paid licensing). See [done/plan-testing.md](done/plan-testing.md). |
 | 9 | **Error handling** | Custom exception hierarchy | `FontParsingException`, `RasterizationException`, `AtlasPackingException`. See [done/plan-data-types.md](done/plan-data-types.md). |

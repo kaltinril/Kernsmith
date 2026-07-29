@@ -52,7 +52,9 @@ Currently handled by `HeightStretchPostProcessor` outside the rasterizer. Moving
 ### Integration
 
 - Both features use the existing `RasterOptions` fields (`SuperSample`, plus height percent from `FontGeneratorOptions`)
-- The main pipeline detects `HandlesOwnSizing` or similar capability to avoid double-processing
+- The main pipeline needs a **new** capability flag to avoid double-processing. `HandlesOwnSizing` is NOT it: that flag (`IRasterizerCapabilities.HandlesOwnSizing`) only governs whether the rasterizer does its own ppem/cell-height conversion, and Phase 165 deliberately sets the Native rasterizer's to `false`. A separate flag (e.g. `HandlesOwnSuperSampling` / `HandlesOwnHeightStretch`) is required so the pipeline can skip its supersample pass and `HeightStretchPostProcessor`.
+
+> **OPEN QUESTION**: What is the new flag (or flags) called, and does it live on `IRasterizerCapabilities` as a default-`false` interface member (matching `HandlesOwnSizing`/`SupportsSystemFonts`)? One combined flag vs. two independent ones is also undecided — supersampling and height stretch are separate pipeline stages and a backend could plausibly own one but not the other. Must be resolved before this phase starts.
 
 ## Testing
 

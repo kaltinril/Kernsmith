@@ -1,14 +1,22 @@
 # Phase 99 -- BMFont Parity Remaining Gaps
 
-> **Status**: Planning
+> **Status**: Planning -- 2 of the 8 originally listed gaps are no longer gaps (see below)
 > **Size**: Medium
 > **Created**: 2026-03-27
+> **Updated**: 2026-07-28
 > **Origin**: Remaining gaps from Phase 78BB (GDI parity)
 > **Goal**: Investigate and close remaining metrics differences between KernSmith's GDI backend and BMFont's output.
 
 ## Background
 
 Phase 78BB achieved near-exact BMFont parity: 14/15 lineHeight exact, 15/15 base exact, 14/15 xadvance exact, kerning amounts exact on all shared pairs. The remaining gaps documented below are systematic differences rooted in architectural choices (GDI rendering path vs BMFont's proprietary outline renderer) and edge cases.
+
+**Since this doc was written, gaps 6 and 7 as originally stated are no longer accurate:**
+
+- **Gap 7 (GDI `lfHeight` sign) is fully resolved** and has been moved to the [Resolved](#resolved) section. The Phase 78C work is merged (`plan/done/`).
+- **Gap 6 (atlas PNG channel configuration) shipped on the core/CLI path.** KernSmith no longer ignores `alphaChnl`/`redChnl`/`greenChnl`/`blueChnl`. The `.bmfc` writer round-trip was closed on 2026-07-28. What remains under gap 6 is confined to the desktop UI, which drops `Channels` on generate and conflates it with channel *packing* on load, so the section has been rewritten to track only those.
+
+Gaps 1-5 and 8 are unchanged.
 
 ## Remaining Gaps
 
@@ -37,17 +45,33 @@ GPOS class 0 fix reduced but didn't fully resolve this. The remaining missing pa
 - BMFont's 32-bit GPOS parser may handle edge cases differently than our implementation
 - There may be additional kerning sources (kern table fallback after GPOS) that BMFont merges
 
-### 6. Atlas PNG channel configuration
+### 6. Atlas PNG channel configuration -- core/CLI shipped, UI + `.bmfc` round-trip still open
 
-KernSmith ignores `alphaChnl`/`redChnl`/`greenChnl`/`blueChnl` from .bmfc configs. Produces white-on-black instead of BMFont's white-on-alpha. Not a metrics issue -- tracked separately.
+**Core/CLI path: IMPLEMENTED.** `alphaChnl`/`redChnl`/`greenChnl`/`blueChnl` are parsed at `src/KernSmith/Config/BmfcConfigReader.cs:208-223` (plus `invA`/`invR`/`invG`/`invB` at `:224-239`), mapped by `ParseChannelContent` at `:457-467` (`0`=Glyph, `1`=Outline, `2`=GlyphAndOutline, `3`=Zero, `4`=One, `5`=Shadow -- `5` is a KernSmith extension with no BMFont.exe equivalent), and assigned to `options.Channels` at `:406-407`. The gate is `BmFont.ShouldApplyChannelConfig` (`src/KernSmith/BmFont.cs:1282-1283`): `options.Channels is { IsDefault: false }`, with `IsDefault` defined at `src/KernSmith/Config/ChannelConfig.cs:20-25`. Compositing runs at `BmFont.cs:672-683` via `ChannelCompositor.Build`, with per-channel resolution at `src/KernSmith/Atlas/ChannelCompositor.cs:148-151` and `ResolveChannel` at `:273-292`. The `alphaChnl`/`redChnl`/... descriptor is written by `src/KernSmith/Output/BmFontModelBuilder.cs:83-88`. CLI wiring: `BmfcParser.cs:53-54` and `GenerateCommand.cs:212-213`.
 
-### 7. GDI lfHeight sign -- cell height vs em height (FIXED in Phase 78C)
+The old "gated to preserve effect fonts" caveat is **also** outdated: CHANGELOG 0.18.0 (#169) removed the effects exclusion, so the gate is now purely "a non-default channel config is present". Tests: `tests/KernSmith.Tests/BmFontChannelGateTests.cs:13-46` and `tests/KernSmith.Tests/Integration/ChannelGatingTests.cs:28-70`.
 
-**Root cause**: Our GDI backend was passing negative `lfHeight` to `CreateFontIndirectW` (em height mode), while BMFont passes positive `lfHeight` (cell height mode). For Georgia at size 56, this produced `tmHeight=65` (negative/em) vs `tmHeight=56` (positive/cell) because negative lfHeight excludes internal leading.
+**Still open (what this gap now tracks):**
 
-**Fix**: Changed `LfHeight = -(size * dpi / 72)` to `LfHeight = (size * dpi / 72)` in `GdiRasterizer.CreateHFont()`. This makes `lineHeight` and `base` match BMFont exactly for all tested fonts.
+1. **Desktop UI generation drops `Channels` entirely** -- `apps/KernSmith.Ui/Services/GenerationService.cs:25-53` builds `FontGeneratorOptions` and never assigns `Channels`. Its only channel-ish line (`:91-92`) sets `ChannelPacking`, which is a **different** mechanism (per-glyph grayscale channel packing).
+2. **`ProjectService` mis-maps the two mechanisms** -- `apps/KernSmith.Ui/Services/ProjectService.cs:112` does `effects.ChannelPackingEnabled = options.Channels != null;`, so loading a `.bmfc` with `redChnl=4` silently enables per-glyph channel **packing** instead of channel **content**.
+3. **UI save loses channel config** -- `ProjectService.BuildOptions` (`:136-203`) never sets `Channels`.
+4. ~~**`.bmfc` writer never round-trips channel config**~~ -- **RESOLVED (2026-07-28)**. `BmfcConfigWriter.WriteChannelConfig` now emits `alphaChnl`/`redChnl`/`greenChnl`/`blueChnl` and `invA`-`invB` at the end of the `# output file` section, matching where BMFont's own `.bmfc` files place them. Nothing is written for a null or all-default `ChannelConfig`, so existing output stays byte-identical and an unset `Channels` does not become non-null on round-trip (which item 2 below would misread as "channel routing requested"). Covered by nine round-trip tests in `tests/KernSmith.Tests/Config/BmfcConfigReaderWriterTests.cs`.
 
-**Status**: Fixed in Phase 78C branch.
+> **Note**: the CHANGELOG 0.15.2 phrase "the UI/Gum path already respected" referred to the Gum integration **packages** (removed from this repo in 0.17.0), not `apps/KernSmith.Ui`.
+
+### 9. `.bmfc` write-side round-trip gaps (RESOLVED 2026-07-28)
+
+Found while closing gap 6 item 4 -- the same defect class (reader parses it, writer never emits it), across other options.
+
+- **`aa` was written with the wrong meaning.** The writer emitted the AA *mode* (`aa=2` for `AntiAliasMode.Light`, else `aa=1`), while `BmfcConfigReader:130-133` reads `aa` as BMFont's **supersampling factor** -- and its own code comment said so. Because the corrective `superSample` extension was only written when `SuperSampleLevel != 1`, nothing cancelled it: `--anti-alias light` at the default supersample wrote `aa=2`, which reloaded as `SuperSampleLevel = 2` with the mode silently downgraded to `Grayscale`. That is a real pixel-output change on a path users hit, since `BmFontResult.ToFile` writes a companion `.bmfc` that gets fed back in. `aa` now carries `SuperSampleLevel`; `Light`/`Lcd` ride on a new `antiAlias` extension key; `superSample` is still *read* for older configs but no longer written, removing a fragile dependence on key ordering within the file.
+- **`ShadowOpacity`, `SdfScale`, `HardShadow`, `VariationAxes`** were dropped on write. `.hiero` already persisted `ShadowOpacity` (`HieroConfigWriter.cs:166`) and `SdfScale` (`:178`), so `.bmfc` was the lossier of the two formats for those. `HardShadow` additionally degraded the `variantShadow` round trip, because `BmfcConfigReader:412` rebuilds the shadow `AtlasVariant` from `options.HardShadow`.
+
+All new keys emit nothing at their defaults, so default `.bmfc` output is unchanged. Verified against the regression harness: output is pixel-identical to `main` (see the harness caveat in *Comparison Tooling* below).
+
+### Still open on the write side (interop-only, deliberate)
+
+These BMFont keys are parsed-then-ignored and are not re-emitted, so a `.bmfc` round-tripped through KernSmith loses them for BMFont.exe: `charSet`, `useUnicode`, `disableBoxChars`, `outputInvalidCharGlyph`, `renderFromOutline`, `useClearType`, `outBitDepth`, `textureCompression`, `widthPaddingFactor`, `autoFitFontSizeMin`/`Max`. Also `autoFitNumPages` maps to an option but is re-emitted as the KernSmith-only `autofit=1`. None affect KernSmith's own output.
 
 ### 8. Anti-aliasing gradient -- GGO_GRAY8_BITMAP vs GGO_NATIVE polygon fill
 
@@ -55,15 +79,44 @@ KernSmith ignores `alphaChnl`/`redChnl`/`greenChnl`/`blueChnl` from .bmfc config
 
 **Status**: Not fixable without implementing BMFont's `GGO_NATIVE` polygon extraction and manual scanline rasterization (Path A: `DrawGlyphFromOutline`). Same root cause as gaps 1-2 (xoffset/yoffset). This is the fundamental architectural difference between our approach and BMFont's.
 
+## Resolved
+
+### 7. GDI lfHeight sign -- cell height vs em height (RESOLVED in Phase 78C)
+
+**Original root cause**: our GDI backend passed a negative `lfHeight` to `CreateFontIndirectW` (em height mode), while BMFont passes a positive `lfHeight` (cell height mode). For Georgia at size 56, this produced `tmHeight=65` (negative/em) vs `tmHeight=56` (positive/cell), because a negative `lfHeight` excludes internal leading.
+
+**Fix**: `GdiRasterizer.CreateHFont()` now computes `LfHeight = (int)Math.Round((double)size * options.Dpi / 72)` -- positive, with integer-pixel rounding (rounding behavior documented at `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs:339-341`, assignment at `:345`). There is no negation anywhere in the file. Note that `size` here is the `sizeOverride` parameter (`:337-342`), which every caller passes as `options.Size * aa` (`:122`, `:158`, `:199`, `:255`) -- not `options.Size` directly. This makes `lineHeight` and `base` match BMFont exactly for all tested fonts.
+
+**Status**: Resolved and merged -- `phase-78c` lives in `plan/done/`, so the old "Fixed in Phase 78C branch" note is stale.
+
 ## Comparison Tooling
 
-Reference the existing comparison tools:
+All tooling lives under `tests/bmfont-compare/`; see `tests/bmfont-compare/README.md` for the full per-tool breakdown. (The directory itself is gitignored -- only the tool projects, `README.md`, the Python scripts, and a handful of `.bmfc` configs are tracked.)
+
+> **Known false positive (observed 2026-07-28)**: `regression_check.py` can report a small non-zero pixel diff that has nothing to do with the change under test. A run on a branch touching only `.bmfc` reader/writer code reported 42 differing pixels across `Font18Arial`, `Font24Arial` and `plain-nosmoothing`. Regenerating `main` into a clean `git worktree` and re-diffing showed **main vs main produced the same 41/37/36-pixel diff**, while **main vs branch produced 0**. Roughly half the pixels are in the harness's own GDI+ title label (`GenerateAll/Program.cs:519` draws it with `new Font("Arial", 11, FontStyle.Italic)`); the rest are ±8-11 alpha on glyph edges, i.e. beyond what `--tolerance 1` absorbs. Two back-to-back runs on the same commit are bit-identical, so the instability appears tied to process/system state around the harness's `git checkout` rather than to run-to-run randomness.
+>
+> **If you see a small diff, confirm it before believing it**: generate `main` into a separate worktree and diff main-vs-main. Note also that `diff_comparisons.py` only discovers `*.png` and `*.fnt` -- it never diffs `.bmfc`, so the harness gives **zero** coverage of config reader/writer changes regardless.
+
+**Canonical entry point**
+
+- `tests/bmfont-compare/regression_check.py` -- the main-vs-branch regression harness; this is what CLAUDE.md and `README.md:40-61` mean by "run a comparison". Stashes, checks out the base branch, generates, checks out the feature branch, regenerates, then diffs. Flags: `--base`, `--branch`, `--output`, `--tolerance`, `--skip-generate`. Exit codes: `0` = identical, `1` = differences, `2` = error. Usage: `python tests/bmfont-compare/regression_check.py`
+- `tests/bmfont-compare/diff_comparisons.py` -- the diff step `regression_check.py` drives (`README.md:99-132`): magenta-highlighted (`#FF00FF`) pixel diffs of `comparison.png`-`comparison4.png` and the auto-discovered per-font `comparison-*.png`, plus line-by-line `.fnt` metadata diffs (skipping the version line). Ignores the top 41 rows by default (`--ignore-top 41`, the header label band).
+- `tests/bmfont-compare/README.md` -- per-tool documentation, flags, and exit codes.
+
+**Generators**
+
+- `tests/bmfont-compare/GenerateAll/` -- drives **four** KernSmith backends (FreeType, GDI, DirectWrite, **stbtruetype** -- `GenerateAll/Program.cs:70-76`), plus BMFont64.exe when it is found (`:64-68`, `:122`). It iterates **every** `.bmfc` file in the input directory (`:59`, `:82`) -- roughly 20 configs in `gum-bmfont/`, not just the fire-effect and plain ones -- and additionally synthesizes real and synthetic bold/italic passes (`:177`, `:262`). Outputs `comparison.png`/`comparison2.png`/`comparison3.png`/`comparison4.png` (`:342-345`) plus a per-font `comparison-{config}.png` for every remaining config (`:444-449`). Usage: `dotnet run --framework net10.0-windows -- [bmfc-dir] [output-dir]` (`Program.cs:40-49`). **A single positional argument is read as the BMFC directory, not the output directory** -- passing only an output dir points the tool at a nonexistent config dir and exits 1 (`:51-55`).
+- `tests/bmfont-compare/GenerateGdi/` -- regenerate KernSmith GDI output
+- `tests/bmfont-compare/GenerateDirectWrite/` -- regenerate KernSmith DirectWrite output
+- `tests/bmfont-compare/CompareGlyphs/` -- character-by-character visual comparison across all backends + BMFont64, outputs `comparison.png` (fire effects) and `comparison2.png` (plain white). Usage: `dotnet run --framework net10.0-windows -- <data-dir>`. Gracefully skips missing backends.
+
+**Single-purpose diff scripts**
+
 - `tests/bmfont-compare/diff_all_fonts.py` -- multi-font BMFont vs GDI diff
 - `tests/bmfont-compare/diff_fnt.py` -- single-font comparison
 - `tests/bmfont-compare/diff_images.py` -- visual atlas comparison
-- `tests/bmfont-compare/GenerateGdi/` -- regenerate KernSmith GDI output
-- `tests/bmfont-compare/GenerateAll/` -- generates atlas PNGs from all 3 backends (FreeType, GDI, DirectWrite) with both fire-effect and plain configs. Usage: `dotnet run --framework net10.0-windows -- <output-dir>`
-- `tests/bmfont-compare/CompareGlyphs/` -- character-by-character visual comparison across all backends + BMFont64, outputs `comparison.png` (fire effects) and `comparison2.png` (plain white). Usage: `dotnet run --framework net10.0-windows -- <data-dir>`. Gracefully skips missing backends.
+
+**Data directories**: `gum-bmfont/` (source `.bmfc` configs + BMFont64 reference output), `gum-gdi/`, `gum-freetype/`, `gum-directwrite/`, `bmfont/`, `kernsmith/`, and `output/` (generated output, baselines, and diff images).
 
 ## Potential Approaches
 

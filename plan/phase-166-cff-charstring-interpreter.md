@@ -12,7 +12,7 @@ Add CFF (Compact Font Format) and CFF2 support so the Native rasterizer can hand
 
 CFF outlines use cubic Bezier curves (vs TrueType's quadratic) encoded as Type 2 charstrings — a stack-based bytecode format. CFF is common in professional fonts and all Adobe fonts.
 
-Since Phase 163 already established cubic Beziers as the internal representation, CFF outlines feed directly into the existing pipeline without conversion.
+Since Phase 163 will establish cubic Beziers as the internal representation, CFF outlines feed directly into the pipeline without conversion.
 
 ## Scope
 

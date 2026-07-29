@@ -1,6 +1,6 @@
 # Phase 17 — Rebrand to KernSmith
 
-> **Status**: Partial — namespace rebrand completed; type-name rebrand deferred
+> **Status**: Complete — namespace/assembly/directory rebrand shipped; the optional type-name rebrand was deliberately dropped (see note below)
 > **Created**: 2026-03-20
 > **Goal**: Rename the entire project from "bmfontier" to "KernSmith" — namespaces, assemblies, directories, project files, docs, CLI commands, NuGet package, and all references.
 

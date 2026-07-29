@@ -20,14 +20,19 @@ The `IGlyphPostProcessor` architecture and its core post-processors are implemen
 - `HeightStretchPostProcessor` — vertical scaling
 - `BoldPostProcessor` — morphological dilation for bitmap-level bold
 - `ItalicPostProcessor` — pixel-level shear for bitmap-level italic
+- `ShadowCoveragePostProcessor` (**internal**) — flat shadow silhouette for atlas variants (`src/KernSmith/Rasterizer/ShadowCoveragePostProcessor.cs:13`)
 
-This is the "plugin-like" architecture this phase envisioned. Each processor takes a `RasterizedGlyph` and returns a modified one; they chain naturally in sequence. No new abstraction is needed for these — they are complete.
+That is **seven** implementations of `IGlyphPostProcessor` — six public, one internal. This list is the authoritative one for this document.
+
+**Not the same thing as the effects pipeline.** Three *internal* `IGlyphEffect` implementations — `GradientEffect` (`GradientEffect.cs:9`), `OutlineEffect` (`OutlineEffect.cs:13`), and `ShadowEffect` (`ShadowEffect.cs:10`) — are what actually run during generation, producing layers that `GlyphCompositor` blends back-to-front. The public gradient/outline/shadow *post-processors* are the standalone, chainable form of the same looks; they are a separate contract, not the pipeline path (see *Stacking & Composability* for how the two interact).
+
+This is the "plugin-like" architecture this phase envisioned. Each processor takes a `RasterizedGlyph` and returns a modified one. No new abstraction is needed for these — they are complete.
 
 ### FUTURE / still exploratory
 
 The items below are **not started** and remain design exploration:
 
-- **PNG / image import pipeline** — load existing `.fnt` + `.png` back into memory for modification
+- **PNG / image import pipeline** — *partially available already*: `StbPngDecoder.DecodePng` (`src/KernSmith/Atlas/StbPngDecoder.cs:15`, internal) decodes a PNG to RGBA today, and `BmFont` already loads + validates an existing PNG for the `AtlasTargetRegion` render-into-existing-image path (`BmFont.cs:532`). `BmFontReader` already recovers the glyph regions from a `.fnt`. The genuinely missing piece is the **glyph-region extraction and round-trip layer** — slicing the decoded atlas into per-glyph `RasterizedGlyph`s the post-processors can consume, then re-packing and re-emitting — not "load a PNG"
 - **Advanced / shader-like effects** — blur, sharpen, glow, emboss, edge detect, noise, chromatic aberration
 - **Colorization** beyond `GradientPostProcessor` (hue shift, channel remap, color ramp, flat tint)
 - **Compositing operations** — layer blending, masks, multi-pass chaining
@@ -55,13 +60,9 @@ Phase 32d (StbTrueType Synthetic Bold & Italic) implements the first two post-pr
 - **`BoldPostProcessor`** — morphological dilation for bitmap-level bold
 - **`ItalicPostProcessor`** — pixel-level shear for bitmap-level italic
 
-These use the existing `IGlyphPostProcessor` interface (`src/KernSmith/Rasterizer/IGlyphPostProcessor.cs`), which already has four implementations:
-- `GradientPostProcessor` — two-color linear gradient
-- `OutlinePostProcessor` — colored outline via EDT
-- `ShadowPostProcessor` — configurable drop shadow
-- `HeightStretchPostProcessor` — vertical scaling
+These use the existing `IGlyphPostProcessor` interface (`src/KernSmith/Rasterizer/IGlyphPostProcessor.cs`) — see the DONE list under *Status Summary* above for the full set of shipped implementations.
 
-The `IGlyphPostProcessor` pattern is already the "plugin-like" architecture this phase envisions. Each processor takes a `RasterizedGlyph` and returns a modified one. They chain naturally in sequence. No new abstraction is needed — just more implementations.
+The `IGlyphPostProcessor` pattern is already the "plugin-like" architecture this phase envisions. Each processor takes a `RasterizedGlyph` and returns a modified one, and they chain in sequence — with the pipeline caveats noted under *Stacking & Composability*. No new abstraction is needed — just more implementations.
 
 ### What Phase 32d Covers (remove from Phase 110 scope)
 - Bold / Thicken (bitmap-level dilation)
@@ -83,9 +84,9 @@ The `IGlyphPostProcessor` pattern is already the "plugin-like" architecture this
 Load an existing BMFont .fnt + .png pair back into an in-memory representation suitable for per-glyph or whole-atlas manipulation.
 
 - Parse the .fnt file to recover glyph regions (already supported via `BmFontReader`)
-- Load the PNG atlas into a pixel buffer
-- Extract individual glyph images using the .fnt region data
-- Produce a `GlyphImage[]` or similar structure that the post-processors can operate on
+- Load the PNG atlas into a pixel buffer (already supported via `StbPngDecoder.DecodePng`, currently internal — would need to be exposed or wrapped)
+- Extract individual glyph images using the .fnt region data — **the actual missing piece**
+- Produce a `GlyphImage[]` or similar structure that the post-processors can operate on — **also missing**; post-processors consume `RasterizedGlyph`, so extraction should produce that rather than a new type
 
 ### 2. Colorization / Recoloring
 
@@ -101,18 +102,32 @@ Apply color transformations to existing glyph textures.
 
 Modify glyph shapes in the pixel domain.
 
-- **Bold / Thicken**: Dilate glyph pixels (morphological dilation) to simulate bolder weight. Algorithm: separable max filter — horizontal pass then vertical pass, each using a sliding window of width `2*radius + 1`. Use an O(n) deque-based sliding window max for efficiency (cost is independent of radius). Grayscale dilation produces smooth expanded edges, which is superior to binary dilation. Metrics adjustment: `Width += 2 * radius`, `Height += 2 * radius`, `BearingX -= radius`, `Advance += 2 * radius`, pitch updated to match new width.
+- **Bold / Thicken**: Dilate glyph pixels (morphological dilation) to simulate bolder weight. **As shipped in `BoldPostProcessor`**: a *single-pass circular kernel with distance falloff*, not a separable max filter. The kernel offsets are precomputed once (`BoldPostProcessor.cs:43-56`) — offsets outside the disc are rejected via `distSq > strengthSq`, and each surviving offset gets `falloff = 1f - dist / (s + 1f)`. Every destination pixel then brute-forces the whole kernel (`:71-91` grayscale, `:104-134` RGBA), taking the max of `srcAlpha * falloff`. That is **O(r²) per pixel — cost grows with radius**, unlike a deque-based sliding-window max. Grayscale dilation with falloff produces smooth expanded edges, which is superior to binary dilation. Metrics adjustment as implemented: `Width += 2*s`, `Height += 2*s` (`:150-151`), `BearingX -= s` (`:147`), `BearingY += s` (`:148`), `Advance += Strength` (i.e. `+= s`, **not** `2*s`) (`:149`), pitch updated to match the new width. *(A separable O(n) sliding-window max remains a viable future optimization for large radii, but it is not what runs today, and it would not reproduce the distance falloff without further work.)*
 - **Thin / Erode**: Erode glyph pixels for a lighter appearance
 - **Stretch / Scale**: Non-uniform scaling (stretch horizontally for wide, vertically for tall)
-- **Skew / Italicize**: Apply shear transform to simulate italic. Shear formula: for each row y from baseline, `shift_x = (y - baseline) * shear_factor`. Default shear factor: `tan(12°) ≈ 0.2126` for FreeType parity (configurable). For fractional shift values, use sub-pixel bilinear interpolation between adjacent pixels for smooth results. Metrics adjustment: `Width += abs(total_shear)`, `BearingX` adjusted for shear direction, height unchanged.
+- **Skew / Italicize**: Apply shear transform to simulate italic. **As shipped in `ItalicPostProcessor`**: the shear is anchored to the **bottom row of the bitmap**, not to a baseline — `Process` receives no baseline at all. The formula is `shearOffset = (srcH - 1 - dy) * ShearFactor` (`ItalicPostProcessor.cs:43`), so the bottom row is unshifted and the shift grows toward the top. Default shear factor `0.2126f = tan(12°)` for FreeType parity, configurable (`:18`). Fractional shifts use **1-D linear interpolation in X only** — two horizontally adjacent samples from the *same* row (`:59` grayscale, `:67` RGBA); it is not bilinear (no vertical term). Metrics adjustment as implemented: `Width += ceil(srcH * shear)` (`:32-33`), height unchanged (`:34`, `:82`), `Advance += extraWidth` (`:80`), and `BearingX` is **explicitly not adjusted** — `BearingX: metrics.BearingX` (`:78`), per the code comment at `:73-75`: because the shear is anchored at the bottom, the bearing stays put and the extra width goes to the right.
 - **Outline extraction**: Generate outline-only version from filled glyphs
 - These operations would need to update the .fnt metrics (xadvance, width, height, offsets) to match the modified glyph dimensions
 
 ### Stacking & Composability
 
-Post-processors can be stacked and composed freely:
+Post-processors can be stacked and composed — but **only the ones the pipeline actually forwards**. `BmFont` filters `FontGeneratorOptions.PostProcessors` before running the chain (`src/KernSmith/BmFont.cs:281-295`):
 
-- **Stacking**: Multiple instances of the same post-processor chain naturally (e.g., `.Bold().Bold().Bold()` applies dilation three times for progressively bolder glyphs). Each processor operates on the output of the previous one.
+- `OutlinePostProcessor`, `GradientPostProcessor`, and `ShadowPostProcessor` are **skipped from the chain entirely** (`BmFont.cs:285-286`). Those looks are re-expressed as layered `IGlyphEffect`s (`OutlineEffect`/`GradientEffect`/`ShadowEffect`) and applied by `GlyphCompositor` instead, so they participate in back-to-front compositing rather than a linear chain.
+- `BoldPostProcessor` is skipped when `options.Bold` is set, and `ItalicPostProcessor` when `options.Italic` is set (`BmFont.cs:287-290`) — the outline-level transform wins, avoiding a double application.
+- Only what survives that filter is chained, in order, per glyph (`BmFont.cs:316-320`).
+
+So "chains naturally in sequence" is true of the *interface*, and true of the surviving processors, but it is not true of every processor you hand to `FontGeneratorOptions.PostProcessors`. Standalone use of a post-processor (calling `Process` directly) is of course unfiltered.
+
+- **Stacking**: Multiple instances of the same post-processor chain naturally — pass several into `FontGeneratorOptions.PostProcessors` (`src/KernSmith/Config/FontGeneratorOptions.cs:315`), e.g. three `BoldPostProcessor` instances for progressively bolder glyphs. Each operates on the output of the previous one. Note the fluent `BmFontBuilder` (`src/KernSmith/BmFontBuilder.cs:11`) does **not** expose per-processor chaining methods — it has `WithBold(bool)` (`:103`), a flag, not a repeatable `.Bold()` step; stacking is a `PostProcessors` list concern:
+
+  ```csharp
+  var options = new FontGeneratorOptions
+  {
+      PostProcessors = [new BoldPostProcessor(1), new BoldPostProcessor(1), new BoldPostProcessor(1)]
+  };
+  ```
+
 - **Composing with outline-level effects**: Bitmap-level bold/italic (this phase) and outline-level bold/italic (Phase 32d) are independent. Both can be applied together — outline bold modifies the glyph shape before rasterization, then bitmap bold dilates the rendered result. A user could also skip outline bold entirely and use only bitmap bold (lower quality but backend-agnostic).
 - **Backend-agnostic**: Because bitmap post-processors operate after rasterization, they work with any rasterizer backend (FreeType, GDI, DirectWrite, StbTrueType, or future custom rasterizers).
 
@@ -179,7 +194,7 @@ If post-processing changes glyph dimensions (bold, stretch), the atlas may need 
 
 ### Namespace
 
-`KernSmith.PostProcess` — keeps it separate from the generation-time rasterizer effects.
+`KernSmith.Rasterizer` — there is **no** `KernSmith.PostProcess` namespace, and none should be introduced. Every shipped post-processor lives in `KernSmith.Rasterizer` alongside the generation-time effects, and CLAUDE.md's Namespace Rules explicitly assign post-processors there ("`KernSmith.Rasterizer`: IRasterizer, post-processors, effects (IGlyphEffect), GlyphCompositor"). New post-processors from this phase follow suit. Separation from the generation-time effects is by *interface* (`IGlyphPostProcessor` vs. `IGlyphEffect`), not by namespace.
 
 ## Open Questions
 

@@ -324,8 +324,31 @@ public static class BmfcConfigReader
                     case "useSdf":
                         options.Sdf = value == "1";
                         break;
+                    // Retained for configs written before `aa` carried the supersample factor.
                     case "superSample":
                         options.SuperSampleLevel = int.Parse(value, CultureInfo.InvariantCulture);
+                        break;
+                    case "sdfScale":
+                        options.SdfScale = int.Parse(value, CultureInfo.InvariantCulture);
+                        break;
+                    case "antiAlias":
+                        options.AntiAlias = value.ToLowerInvariant() switch
+                        {
+                            "none" => AntiAliasMode.None,
+                            "grayscale" => AntiAliasMode.Grayscale,
+                            "light" => AntiAliasMode.Light,
+                            "lcd" => AntiAliasMode.Lcd,
+                            _ => options.AntiAlias
+                        };
+                        break;
+                    case "shadowOpacity":
+                        options.ShadowOpacity = float.Parse(value, CultureInfo.InvariantCulture);
+                        break;
+                    case "hardShadow":
+                        options.HardShadow = value == "1";
+                        break;
+                    case "variationAxes":
+                        options.VariationAxes = ParseVariationAxes(value);
                         break;
                     case "packer":
                         options.PackingAlgorithm = value.ToLowerInvariant() switch
@@ -454,6 +477,27 @@ public static class BmfcConfigReader
     /// BMFont semantics: 0=glyph, 1=outline, 2=glyph+outline, 3=zero, 4=one. Value 5 (shadow-only
     /// coverage) is a KernSmith extension with no BMFont.exe equivalent. Unknown values default to glyph.
     /// </summary>
+    /// <summary>
+    /// Parses a comma-separated <c>tag:value</c> variable-font axis list, e.g.
+    /// <c>wght:700,wdth:87.5</c>. Malformed entries are skipped rather than throwing, matching
+    /// how the rest of this reader treats unrecognized input.
+    /// </summary>
+    private static Dictionary<string, float>? ParseVariationAxes(string value)
+    {
+        var axes = new Dictionary<string, float>();
+        foreach (var entry in value.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var parts = entry.Split(':', 2);
+            if (parts.Length == 2 &&
+                float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var axisValue))
+            {
+                axes[parts[0].Trim()] = axisValue;
+            }
+        }
+
+        return axes.Count > 0 ? axes : null;
+    }
+
     private static ChannelContent ParseChannelContent(string value) =>
         int.Parse(value, CultureInfo.InvariantCulture) switch
         {

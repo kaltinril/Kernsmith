@@ -11,7 +11,9 @@
 ## Overview
 
 Phase 95 completed Perf 6 **Phase A** (ArrayPool for the safe local scratch buffers in
-`OutlineEffect`, `OutlinePostProcessor`, `ShadowEffect`, `ShadowPostProcessor`, and `GlyphCompositor`).
+`OutlineEffect`, `OutlinePostProcessor`, `ShadowEffect`, `ShadowPostProcessor`, and `GlyphCompositor`
+— all five verified still in place). `src/KernSmith/Atlas/EuclideanDistanceTransform.cs` (`:31-68`)
+also rents and returns its four scratch arrays, though it was not part of the original Phase A list.
 Two further sub-phases of Perf 6 -- **Phase B** (pool atlas page buffers) and **Phase C**
 (pool the per-glyph `RasterizedGlyph.BitmapData` in the transform pipeline) -- were deliberately
 **not** done. They are real, workable optimizations (the biggest remaining LOH allocation wins), but
@@ -88,15 +90,21 @@ ownership tracking today to know when the page buffer is safe to reclaim.
   must be versioned/communicated accordingly.
 - **Use-after-dispose** -- the inverse of use-after-return: if disposal happens before a consumer is
   done (e.g. async GPU upload), reads corrupt. Needs clear ownership rules and tests.
-- **Integrations / samples** -- MonoGameGum / KniGum / GumCommon and the samples consume page pixels;
-  all need review.
+- **External downstream consumers** -- the four Gum integration packages (`KernSmith.MonoGameGum`,
+  `KernSmith.KniGum`, `KernSmith.GumCommon`, `KernSmith.FnaGum`) were removed from this repo in 0.17.0
+  and are now maintained and published from the upstream Gum repo. They (and any other consumer that
+  uploads page pixels to a texture) still hold `AtlasPage.PixelData`, but they can no longer be
+  reviewed or updated in lockstep from here. That makes the lifetime change an **external breaking
+  change coordinated across repos**, not an in-repo refactor -- which materially raises the cost of
+  Phase B versus when this doc was written. The in-repo samples remain reviewable normally.
 
 ### Validation requirement
 
 The change must be **output-neutral**: the bmfont-compare regression harness
-(`tests/bmfont-compare/regression_check.py`) must pass with **exit 0 -- 0 diffs** across every backend
-(150/150 FNT files identical, all atlas pages pixel-identical). Pooling only changes where bytes come
-from, never their values.
+(`tests/bmfont-compare/regression_check.py`) must pass with **exit 0 -- 0 diffs** across every backend:
+every generated FNT file identical and every atlas page pixel-identical, for all `.bmfc` configs in
+`tests/bmfont-compare/gum-bmfont/` (the config set grows over time -- do not hardcode a file count).
+Pooling only changes where bytes come from, never their values.
 
 ---
 

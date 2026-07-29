@@ -59,7 +59,10 @@ public static class BmfcConfigWriter
         sb.AppendLine($"isBold={(options.Bold ? 1 : 0)}");
         sb.AppendLine($"isItalic={(options.Italic ? 1 : 0)}");
         sb.AppendLine($"useSmoothing={(options.AntiAlias == AntiAliasMode.None ? 0 : 1)}");
-        sb.AppendLine($"aa={(options.AntiAlias == AntiAliasMode.Light ? 2 : 1)}");
+        // BMFont's `aa` is the supersampling factor (1, 2 or 4), not the anti-alias mode --
+        // which is also how BmfcConfigReader reads it. The mode itself rides on useSmoothing
+        // (for None) plus the `antiAlias` extension below (for Light/Lcd).
+        sb.AppendLine($"aa={options.SuperSampleLevel}");
         sb.AppendLine($"useHinting={(options.EnableHinting ? 1 : 0)}");
         sb.AppendLine($"scaleH={options.HeightPercent}");
         sb.AppendLine($"dontIncludeKerningPairs={(options.Kerning ? 0 : 1)}");
@@ -86,6 +89,7 @@ public static class BmfcConfigWriter
         sb.AppendLine($"fontDescFormat={FormatOutputFormat(config.OutputFormat)}");
         sb.AppendLine($"textureFormat={FormatTextureFormat(options.TextureFormat)}");
         sb.AppendLine($"fourChnlPacked={(options.ChannelPacking ? 1 : 0)}");
+        WriteChannelConfig(sb, options.Channels);
         sb.AppendLine();
 
         // Outline
@@ -151,8 +155,18 @@ public static class BmfcConfigWriter
             extensions.AppendLine($"outlineColor={FormatColor(options.OutlineR, options.OutlineG, options.OutlineB)}");
         if (options.Sdf)
             extensions.AppendLine("useSdf=1");
-        if (options.SuperSampleLevel != 1)
-            extensions.AppendLine($"superSample={options.SuperSampleLevel}");
+        if (options.SdfScale != 1)
+            extensions.AppendLine($"sdfScale={options.SdfScale}");
+        // None is already conveyed by useSmoothing=0 and Grayscale is the default, so only the
+        // two modes the standard keys cannot express need an extension.
+        if (options.AntiAlias is AntiAliasMode.Light or AntiAliasMode.Lcd)
+            extensions.AppendLine($"antiAlias={options.AntiAlias.ToString().ToLowerInvariant()}");
+        if (options.ShadowOpacity != 1.0f)
+            extensions.AppendLine($"shadowOpacity={options.ShadowOpacity.ToString(CultureInfo.InvariantCulture)}");
+        if (options.HardShadow)
+            extensions.AppendLine("hardShadow=1");
+        if (options.VariationAxes is { Count: > 0 })
+            extensions.AppendLine($"variationAxes={FormatVariationAxes(options.VariationAxes)}");
         if (options.PackingAlgorithm != PackingAlgorithm.MaxRects)
             extensions.AppendLine("packer=skyline");
         // FallbackCodepoint takes precedence over FallbackCharacter
@@ -186,6 +200,46 @@ public static class BmfcConfigWriter
         }
 
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Formats variable-font axis settings as a comma-separated <c>tag:value</c> list,
+    /// e.g. <c>wght:700,wdth:87.5</c>.
+    /// </summary>
+    private static string FormatVariationAxes(Dictionary<string, float> axes) =>
+        string.Join(',', axes.Select(a =>
+            $"{a.Key}:{a.Value.ToString(CultureInfo.InvariantCulture)}"));
+
+    /// <summary>
+    /// Writes the per-channel content and inversion keys, mirroring the keys
+    /// <see cref="BmfcConfigReader"/> parses so a channel configuration survives a
+    /// write/read round trip.
+    /// </summary>
+    /// <remarks>
+    /// Nothing is written for a null or all-default configuration. Emitting the keys
+    /// unconditionally would turn an unset <see cref="FontGeneratorOptions.Channels"/> into a
+    /// non-null default on round trip, which downstream code reads as "channel routing was
+    /// requested" -- so silence here keeps default output byte-identical.
+    /// <para>
+    /// <see cref="ChannelContent"/> values map 1:1 onto BMFont's numbering, except
+    /// <see cref="ChannelContent.Shadow"/> (5), which is a KernSmith extension outside
+    /// BMFont's documented 0-4 range. It is written faithfully so the value survives the round
+    /// trip; BMFont.exe itself does not define a meaning for it.
+    /// </para>
+    /// </remarks>
+    private static void WriteChannelConfig(StringBuilder sb, ChannelConfig? channels)
+    {
+        if (channels is null || channels.IsDefault)
+            return;
+
+        sb.AppendLine($"alphaChnl={(int)channels.Alpha}");
+        sb.AppendLine($"redChnl={(int)channels.Red}");
+        sb.AppendLine($"greenChnl={(int)channels.Green}");
+        sb.AppendLine($"blueChnl={(int)channels.Blue}");
+        sb.AppendLine($"invA={(channels.InvertAlpha ? 1 : 0)}");
+        sb.AppendLine($"invR={(channels.InvertRed ? 1 : 0)}");
+        sb.AppendLine($"invG={(channels.InvertGreen ? 1 : 0)}");
+        sb.AppendLine($"invB={(channels.InvertBlue ? 1 : 0)}");
     }
 
     private static int FormatOutputFormat(OutputFormat format) => format switch
