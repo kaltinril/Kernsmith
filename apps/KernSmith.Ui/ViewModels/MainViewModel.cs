@@ -300,6 +300,7 @@ public class MainViewModel : ViewModel
                 GradientScale = Effects.GradientScale,
                 GradientCyclic = Effects.GradientCyclic,
                 ChannelPackingEnabled = Effects.ChannelPackingEnabled,
+                Channels = Effects.Channels,
                 SdfEnabled = Effects.SdfEnabled,
                 SdfSpread = Effects.SdfSpread,
                 ColorFontEnabled = Effects.ColorFontEnabled,

@@ -53,8 +53,14 @@ public class EffectsViewModel : ViewModel
     public float GradientScale { get => Get<float>(); set => Set(value); }
     public bool GradientCyclic { get => Get<bool>(); set => Set(value); }
 
-    // Channel Packing
+    // Channel Packing -- packs four grayscale glyph variants into RGBA. Distinct from
+    // per-channel content routing below; do not conflate the two.
     public bool ChannelPackingEnabled { get => Get<bool>(); set => Set(value); }
+
+    // Per-channel content routing (alphaChnl/redChnl/... in a .bmfc). The UI has no editor
+    // for this yet, so it is carried through load -> generate -> save unmodified rather than
+    // being silently dropped. Null means "not configured".
+    public ChannelConfig? Channels { get => Get<ChannelConfig?>(); set => Set(value); }
 
     // SDF
     public bool SdfEnabled { get => Get<bool>(); set => Set(value); }

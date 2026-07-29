@@ -91,6 +91,10 @@ public class GenerationService
             if (request.ChannelPackingEnabled)
                 options.ChannelPacking = true;
 
+            // Per-channel content routing is a separate mechanism from channel packing. The UI
+            // cannot edit it yet, but a config loaded with routing must still generate with it.
+            options.Channels = request.Channels;
+
             if (request.ForceSyntheticBold)
             {
                 options.Bold = true;

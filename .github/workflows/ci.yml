@@ -29,6 +29,14 @@ jobs:
       - name: Test (${{ matrix.framework }})
         run: dotnet test tests/KernSmith.Tests/KernSmith.Tests.csproj --no-build -f ${{ matrix.framework }} --verbosity normal --blame-hang --blame-hang-timeout 3m
         continue-on-error: ${{ matrix.os == 'ubuntu-latest' }}
+      - name: Test rasterizers (${{ matrix.framework }})
+        run: dotnet test tests/KernSmith.Rasterizers.Native.Tests/KernSmith.Rasterizers.Native.Tests.csproj --no-build -f ${{ matrix.framework }} --verbosity normal --blame-hang --blame-hang-timeout 3m
+        continue-on-error: ${{ matrix.os == 'ubuntu-latest' }}
+      # KernSmith.Ui targets net10.0 only, so this project cannot be tested on the net8.0 leg.
+      - name: Test UI services
+        if: matrix.framework == 'net10.0'
+        run: dotnet test tests/KernSmith.Ui.Tests/KernSmith.Ui.Tests.csproj --no-build -f net10.0 --verbosity normal --blame-hang --blame-hang-timeout 3m
+        continue-on-error: ${{ matrix.os == 'ubuntu-latest' }}
       - name: Verify tests passed (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: echo "Ubuntu test step completed (may have been force-killed due to known .NET test host hang)"

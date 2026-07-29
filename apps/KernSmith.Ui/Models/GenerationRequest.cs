@@ -133,6 +133,11 @@ public record GenerationRequest
     public bool GradientCyclic { get; init; }
     /// <summary>Pack glyph data into separate RGBA channels for multi-font atlases.</summary>
     public bool ChannelPackingEnabled { get; init; }
+    /// <summary>
+    /// Per-channel content routing (which of glyph/outline/zero/one each of R/G/B/A holds).
+    /// Distinct from <see cref="ChannelPackingEnabled"/>. Null means "not configured".
+    /// </summary>
+    public ChannelConfig? Channels { get; init; }
     /// <summary>Generate Signed Distance Field glyphs for scalable rendering.</summary>
     public bool SdfEnabled { get; init; }
     /// <summary>SDF spread (search radius) in pixels. Range: 2..32. Default 8.</summary>
