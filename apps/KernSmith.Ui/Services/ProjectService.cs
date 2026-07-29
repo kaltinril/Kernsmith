@@ -109,7 +109,10 @@ public class ProjectService
         effects.GradientOffset = options.GradientOffset;
         effects.GradientScale = options.GradientScale;
         effects.GradientCyclic = options.GradientCyclic;
-        effects.ChannelPackingEnabled = options.Channels != null;
+        // Channel packing and per-channel content are separate features: the checkbox tracks
+        // ChannelPacking, while Channels is preserved for round-tripping (no editor for it yet).
+        effects.ChannelPackingEnabled = options.ChannelPacking;
+        effects.Channels = options.Channels;
         effects.SdfEnabled = options.Sdf;
         effects.SdfSpread = options.SdfSpread;
         effects.ColorFontEnabled = options.ColorFont;
@@ -196,7 +199,9 @@ public class ProjectService
             FaceIndex = fontConfig.FaceIndex,
             Sdf = effects.SdfEnabled,
             SdfSpread = effects.SdfSpread,
-            ColorFont = effects.ColorFontEnabled
+            ColorFont = effects.ColorFontEnabled,
+            ChannelPacking = effects.ChannelPackingEnabled,
+            Channels = effects.Channels
         };
 
         return options;

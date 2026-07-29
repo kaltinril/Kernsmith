@@ -51,11 +51,15 @@ GPOS class 0 fix reduced but didn't fully resolve this. The remaining missing pa
 
 The old "gated to preserve effect fonts" caveat is **also** outdated: CHANGELOG 0.18.0 (#169) removed the effects exclusion, so the gate is now purely "a non-default channel config is present". Tests: `tests/KernSmith.Tests/BmFontChannelGateTests.cs:13-46` and `tests/KernSmith.Tests/Integration/ChannelGatingTests.cs:28-70`.
 
-**Still open (what this gap now tracks):**
+**Status: CLOSED (2026-07-29).** All four items below are resolved.
 
-1. **Desktop UI generation drops `Channels` entirely** -- `apps/KernSmith.Ui/Services/GenerationService.cs:25-53` builds `FontGeneratorOptions` and never assigns `Channels`. Its only channel-ish line (`:91-92`) sets `ChannelPacking`, which is a **different** mechanism (per-glyph grayscale channel packing).
-2. **`ProjectService` mis-maps the two mechanisms** -- `apps/KernSmith.Ui/Services/ProjectService.cs:112` does `effects.ChannelPackingEnabled = options.Channels != null;`, so loading a `.bmfc` with `redChnl=4` silently enables per-glyph channel **packing** instead of channel **content**.
-3. **UI save loses channel config** -- `ProjectService.BuildOptions` (`:136-203`) never sets `Channels`.
+1. ~~**Desktop UI generation drops `Channels` entirely**~~ -- **RESOLVED**. `GenerationRequest.Channels` now carries the config, `MainViewModel` maps it from `Effects.Channels`, and `GenerationService` assigns `options.Channels = request.Channels`.
+2. ~~**`ProjectService` mis-maps the two mechanisms**~~ -- **RESOLVED**. `ProjectService` now reads `effects.ChannelPackingEnabled = options.ChannelPacking` (it previously never read `ChannelPacking` at all, so `fourChnlPacked=1` did not tick its own checkbox) and preserves `options.Channels` separately.
+3. ~~**UI save loses channel config**~~ -- **RESOLVED**. `BuildOptions` now sets both `Channels` and `ChannelPacking`; the latter was also being dropped on save.
+
+> **Note on scope**: the UI still has **no per-channel content editor** -- the "Channels" expander contains only a "Channel Packing" checkbox. The fix is *preservation*, not editing: a `ChannelConfig` loaded from a project now survives load -> generate -> save unmodified instead of being silently discarded. Building an actual per-channel editor is a separate feature.
+>
+> Covered by `tests/KernSmith.Ui.Tests/ChannelConfigRoundTripTests.cs`, a new test project -- the UI services previously had **zero** automated coverage.
 4. ~~**`.bmfc` writer never round-trips channel config**~~ -- **RESOLVED (2026-07-28)**. `BmfcConfigWriter.WriteChannelConfig` now emits `alphaChnl`/`redChnl`/`greenChnl`/`blueChnl` and `invA`-`invB` at the end of the `# output file` section, matching where BMFont's own `.bmfc` files place them. Nothing is written for a null or all-default `ChannelConfig`, so existing output stays byte-identical and an unset `Channels` does not become non-null on round-trip (which item 2 below would misread as "channel routing requested"). Covered by nine round-trip tests in `tests/KernSmith.Tests/Config/BmfcConfigReaderWriterTests.cs`.
 
 > **Note**: the CHANGELOG 0.15.2 phrase "the UI/Gum path already respected" referred to the Gum integration **packages** (removed from this repo in 0.17.0), not `apps/KernSmith.Ui`.
