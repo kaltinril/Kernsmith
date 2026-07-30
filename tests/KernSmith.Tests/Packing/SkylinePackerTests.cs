@@ -144,6 +144,36 @@ public sealed class SkylinePackerTests
         result.Placements.Select(p => p.Id).ShouldBeUnique();
     }
 
+    [Fact]
+    public void Pack_ZeroWidthGlyph_DoesNotCorruptSkylineForLaterGlyphs()
+    {
+        // A glyph with no bitmap (space) packs as a zero-width rect whenever padding and
+        // spacing are both zero. Such a rect covers no skyline segment, so placing it must
+        // leave the skyline untouched — otherwise the segment recording the height already
+        // consumed by glyph 1 is lost and glyph 3 gets packed on top of it.
+        var glyphs = new List<GlyphRect>
+        {
+            new(Id: 1, Width: 32, Height: 30),
+            new(Id: 2, Width: 0, Height: 8),
+            new(Id: 3, Width: 20, Height: 5),
+        };
+
+        // Act
+        var result = _packer.Pack(glyphs, 32, 64);
+
+        // Assert
+        var byId = glyphs.ToDictionary(g => g.Id);
+        foreach (var a in result.Placements)
+        {
+            foreach (var b in result.Placements)
+            {
+                if (a.Id >= b.Id) continue;
+                Overlaps(a, byId[a.Id], b, byId[b.Id])
+                    .ShouldBeFalse($"glyph {a.Id} at ({a.X},{a.Y}) overlaps glyph {b.Id} at ({b.X},{b.Y})");
+            }
+        }
+    }
+
     private static bool Overlaps(GlyphPlacement a, GlyphRect aRect, GlyphPlacement b, GlyphRect bRect)
     {
         if (a.PageIndex != b.PageIndex) return false;

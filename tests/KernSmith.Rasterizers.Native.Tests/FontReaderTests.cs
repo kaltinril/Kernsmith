@@ -147,4 +147,31 @@ public class FontReaderTests
             reader.Seek(5);
         });
     }
+
+    [Fact]
+    public void SkipCountThatOverflowsPosition_ThrowsFontFormatException()
+    {
+        // position + count is evaluated as int, so a huge count wraps negative and slips
+        // past the bounds check, leaving the cursor at a negative position.
+        Should.Throw<FontFormatException>(() =>
+        {
+            ReadOnlySpan<byte> data = [0x01, 0x02, 0x03, 0x04];
+            var reader = new FontReader(data);
+            reader.ReadUInt8();
+            reader.Skip(int.MaxValue);
+        });
+    }
+
+    [Fact]
+    public void ReadBytesCountThatOverflowsPosition_ThrowsFontFormatException()
+    {
+        // Same wrap-around in the shared availability check behind every read.
+        Should.Throw<FontFormatException>(() =>
+        {
+            ReadOnlySpan<byte> data = [0x01, 0x02, 0x03, 0x04];
+            var reader = new FontReader(data);
+            reader.ReadUInt8();
+            reader.ReadBytes(int.MaxValue);
+        });
+    }
 }

@@ -95,6 +95,28 @@ public class GlyphTableTests
     }
 
     [Fact]
+    public void Loca_OffsetBeyondIntRange_ThrowsFontFormatException()
+    {
+        // A hostile font can declare a long-format offset above int.MaxValue. Offsets are
+        // narrowed to int to slice the glyf table, so this must be rejected at parse time
+        // rather than wrapping to a negative offset that slips past the later range check.
+        byte[] data = Bytes(U32(0), U32(0x8000_0000));
+
+        Should.Throw<FontFormatException>(() => LocaTable.Parse(data, numGlyphs: 1, longFormat: true));
+    }
+
+    [Fact]
+    public void Glyf_GlyphRangeBeyondTable_ThrowsFontFormatException()
+    {
+        // GetGlyph documents FontFormatException for malformed data. An offset past the end
+        // of glyf must surface as that, not as a raw slicing ArgumentOutOfRangeException.
+        var loca = LocaTable.Parse(Bytes(U32(0), U32(4096)), numGlyphs: 1, longFormat: true);
+        var glyf = new GlyfTable(new byte[64], loca, maxComponentDepth: 4);
+
+        Should.Throw<FontFormatException>(() => glyf.GetGlyph(0));
+    }
+
+    [Fact]
     public void Loca_GlyphIndexOutOfRange_Throws()
     {
         var face = LoadRoboto();
