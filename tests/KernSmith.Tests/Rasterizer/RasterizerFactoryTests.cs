@@ -100,7 +100,7 @@ public class RasterizerFactoryTests
             RasterizerFactory.ResetForTesting();
 
             var exceptions = new ConcurrentBag<Exception>();
-            var barrier = new Barrier(10);
+            using var barrier = new Barrier(10);
 
             var tasks = Enumerable.Range(0, 10).Select(_ => Task.Run(() =>
             {

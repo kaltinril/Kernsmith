@@ -34,6 +34,9 @@ jobs:
           # security-and-quality adds maintainability/quality queries on top of
           # the default security suite, giving lightweight static analysis.
           queries: security-and-quality
+          # Filters the suite's recommendation-severity style queries back out;
+          # see the config file for why.
+          config-file: ./.github/codeql/codeql-config.yml
 
       - name: Build solution
         run: |

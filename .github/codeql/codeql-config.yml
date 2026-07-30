@@ -1,0 +1,16 @@
+name: KernSmith CodeQL config
+
+# The security-and-quality suite is kept for its genuine correctness queries
+# (unused collections, constant conditions, undisposed locals, useless type
+# tests). It also ships a large set of purely stylistic "recommendation"
+# queries — missed LINQ operators, ternary suggestions, nested ifs, readonly
+# hints, Path.Combine advice. Those accounted for roughly 390 of 450 open
+# alerts, none of them security-classified, which buried the handful of real
+# findings and made the alert count useless as a signal.
+#
+# Filtering by severity rather than by rule id keeps this honest: nothing that
+# CodeQL rates error or warning is suppressed, so a genuine defect can still
+# surface. Drop this filter to see the style suggestions again.
+query-filters:
+  - exclude:
+      problem.severity: recommendation
