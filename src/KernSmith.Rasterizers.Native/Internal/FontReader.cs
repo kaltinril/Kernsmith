@@ -44,10 +44,11 @@ internal ref struct FontReader
     /// <exception cref="FontFormatException">If the resulting position is out of range.</exception>
     public void Skip(int count)
     {
-        int newPosition = _position + count;
-        if (count < 0 || newPosition > _data.Length)
+        // Compared against the remaining byte count rather than _position + count, which
+        // would wrap negative for a large count and slip past the check.
+        if (count < 0 || count > Remaining)
             throw new FontFormatException($"Skip of {count} bytes from offset {_position} is outside the font data (length {_data.Length}).");
-        _position = newPosition;
+        _position += count;
     }
 
     /// <summary>Reads an unsigned 8-bit integer and advances the cursor.</summary>
@@ -143,7 +144,9 @@ internal ref struct FontReader
 
     private readonly void EnsureAvailable(int count)
     {
-        if (_position + count > _data.Length)
+        // See Skip: comparing against Remaining avoids the int wrap-around that
+        // _position + count would suffer for a hostile count near int.MaxValue.
+        if (count > Remaining)
             throw new FontFormatException(
                 $"Attempted to read {count} byte(s) at offset {_position}, but only {_data.Length - _position} remain.");
     }

@@ -62,6 +62,13 @@ internal sealed class LocaTable
             // glyf tables up to 128 KB and requires 2-byte-aligned glyph entries.
             offsets[i] = longFormat ? reader.ReadUInt32() : (uint)reader.ReadUInt16() * 2;
 
+            // Offsets are narrowed to int by GetGlyphRange to slice the glyf table. Reject
+            // anything that would not survive that cast here, so a hostile long-format
+            // offset cannot wrap to a negative value and slip past the bounds check.
+            if (offsets[i] > int.MaxValue)
+                throw new FontFormatException("loca", reader.Position,
+                    $"offset {i} ({offsets[i]}) exceeds the maximum addressable offset of {int.MaxValue}.");
+
             if (i > 0 && offsets[i] < offsets[i - 1])
                 throw new FontFormatException("loca", reader.Position,
                     $"offset {i} ({offsets[i]}) is less than offset {i - 1} ({offsets[i - 1]}).");

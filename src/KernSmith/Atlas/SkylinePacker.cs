@@ -56,6 +56,13 @@ internal sealed class SkylinePacker : IAtlasPacker
 
     private static (int X, int Y)? TryPlace(List<Segment> skyline, int width, int height, int maxWidth, int maxHeight)
     {
+        // A degenerate rect covers no pixels, so it must not disturb the skyline. It also
+        // cannot be positioned by the search below: with rightEdge == X the coverage loop
+        // exits before recording anything, which would drop a real segment and lose the
+        // height already consumed there. Give it the origin and leave the skyline alone.
+        if (width <= 0 || height <= 0)
+            return (0, 0);
+
         var bestX = -1;
         var bestY = int.MaxValue;
         var bestIndex = -1;

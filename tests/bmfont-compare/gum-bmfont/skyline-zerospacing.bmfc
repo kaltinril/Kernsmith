@@ -1,0 +1,66 @@
+# AngelCode Bitmap Font Generator configuration file
+#
+# Covers the Skyline packer, which every other config leaves at the MaxRects default,
+# so changes to it show up in the comparison harness instead of reporting "identical"
+# for reasons unrelated to correctness.
+#
+# Spacing and padding are both zero so the packer sees glyph rects with no slack —
+# the layout is fully determined by the packer, which makes placement changes visible.
+# `packer` is a KernSmith extension; BMFont64.exe ignores the unknown key.
+fileVersion=1
+
+# font settings
+fontName=Georgia
+fontFile=
+charSet=0
+fontSize=56
+aa=1
+scaleH=100
+useSmoothing=1
+isBold=0
+isItalic=0
+useUnicode=1
+disableBoxChars=1
+outputInvalidCharGlyph=0
+dontIncludeKerningPairs=0
+useHinting=1
+renderFromOutline=0
+useClearType=0
+autoFitNumPages=0
+
+# character alignment
+paddingDown=0
+paddingUp=0
+paddingRight=0
+paddingLeft=0
+spacingHoriz=0
+spacingVert=0
+useFixedHeight=0
+forceZero=0
+widthPaddingFactor=0.00
+
+# packing
+packer=skyline
+
+# output file
+outWidth=1024
+outHeight=1024
+outBitDepth=8
+fontDescFormat=0
+fourChnlPacked=0
+textureFormat=png
+textureCompression=0
+alphaChnl=1
+redChnl=0
+greenChnl=0
+blueChnl=0
+invA=0
+invR=0
+invG=0
+invB=0
+
+# outline
+outlineThickness=0
+
+# selected chars
+chars=32-126

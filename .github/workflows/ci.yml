@@ -26,20 +26,57 @@ jobs:
             10.0.x
       - run: dotnet restore
       - run: dotnet build --no-restore
+      # The .NET test host hangs on Linux after the run completes; --blame-hang kills it and
+      # reports exit code 1 regardless of the results. continue-on-error keeps that shutdown
+      # hang from blocking PRs, so the trx gate below — not the exit code — decides the job.
       - name: Test (${{ matrix.framework }})
-        run: dotnet test tests/KernSmith.Tests/KernSmith.Tests.csproj --no-build -f ${{ matrix.framework }} --verbosity normal --blame-hang --blame-hang-timeout 3m
+        run: dotnet test tests/KernSmith.Tests/KernSmith.Tests.csproj --no-build -f ${{ matrix.framework }} --verbosity normal --blame-hang --blame-hang-timeout 3m --logger "trx;LogFileName=core.trx" --results-directory testresults
         continue-on-error: ${{ matrix.os == 'ubuntu-latest' }}
       - name: Test rasterizers (${{ matrix.framework }})
-        run: dotnet test tests/KernSmith.Rasterizers.Native.Tests/KernSmith.Rasterizers.Native.Tests.csproj --no-build -f ${{ matrix.framework }} --verbosity normal --blame-hang --blame-hang-timeout 3m
+        run: dotnet test tests/KernSmith.Rasterizers.Native.Tests/KernSmith.Rasterizers.Native.Tests.csproj --no-build -f ${{ matrix.framework }} --verbosity normal --blame-hang --blame-hang-timeout 3m --logger "trx;LogFileName=rasterizers.trx" --results-directory testresults
         continue-on-error: ${{ matrix.os == 'ubuntu-latest' }}
       # KernSmith.Ui targets net10.0 only, so this project cannot be tested on the net8.0 leg.
       - name: Test UI services
         if: matrix.framework == 'net10.0'
-        run: dotnet test tests/KernSmith.Ui.Tests/KernSmith.Ui.Tests.csproj --no-build -f net10.0 --verbosity normal --blame-hang --blame-hang-timeout 3m
+        run: dotnet test tests/KernSmith.Ui.Tests/KernSmith.Ui.Tests.csproj --no-build -f net10.0 --verbosity normal --blame-hang --blame-hang-timeout 3m --logger "trx;LogFileName=ui.trx" --results-directory testresults
         continue-on-error: ${{ matrix.os == 'ubuntu-latest' }}
-      - name: Verify tests passed (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        run: echo "Ubuntu test step completed (may have been force-killed due to known .NET test host hang)"
+      - name: Verify test results
+        if: always()
+        shell: bash
+        run: |
+          # Gate on the recorded results rather than the runner's exit code: Ubuntu masks its
+          # exit code for the shutdown hang, which would otherwise let real failures through.
+          shopt -s nullglob
+          files=(testresults/*.trx)
+          expected=2
+          if [ "${{ matrix.framework }}" = "net10.0" ]; then expected=3; fi
+          status=0
+          if [ "${#files[@]}" -ne "$expected" ]; then
+            echo "::error::Expected $expected result file(s) in testresults/, found ${#files[@]} — a test project did not report."
+            status=1
+          fi
+          for f in "${files[@]}"; do
+            # || true throughout: a missing match makes grep exit 1, which pipefail would
+            # otherwise turn into a step crash before the diagnostics below can run.
+            counters=$(grep -o '<Counters [^>]*>' "$f" | head -1 || true)
+            total=$(printf '%s' "$counters" | grep -o 'total="[0-9]*"' | tr -dc '0-9' || true)
+            failed=$(printf '%s' "$counters" | grep -o 'failed="[0-9]*"' | tr -dc '0-9' || true)
+            if [ -z "$total" ] || [ -z "$failed" ]; then
+              echo "::error::$f has no result counters — the run did not complete."
+              status=1
+              continue
+            fi
+            echo "$f: total=$total failed=$failed"
+            if [ "$total" -eq 0 ]; then
+              echo "::error::$f ran zero tests."
+              status=1
+            fi
+            if [ "$failed" -ne 0 ]; then
+              echo "::error::$failed test(s) failed in $f."
+              status=1
+            fi
+          done
+          exit $status
 
   code-quality:
     runs-on: ubuntu-latest
