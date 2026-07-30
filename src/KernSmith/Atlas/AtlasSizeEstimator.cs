@@ -189,8 +189,8 @@ internal static class AtlasSizeEstimator
                 if (!options.AllowNonSquare)
                     h = Math.Max(h, w);
 
-                if (options.PowerOfTwo)
-                    h = NextPowerOfTwo(h);
+                // Already inside the PowerOfTwo branch — no need to re-test it.
+                h = NextPowerOfTwo(h);
 
                 h = Math.Max(h, minSize);
 

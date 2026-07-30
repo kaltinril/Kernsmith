@@ -1,4 +1,5 @@
 #if DIRECTWRITE
+using KernSmith.Font.Tables;
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.DirectWrite.TerraFX;
 using Shouldly;
@@ -207,6 +208,29 @@ public class DirectWriteRasterizerTests : IDisposable
 
         glyph.ShouldNotBeNull();
         glyph.Format.ShouldBe(PixelFormat.Grayscale8);
+    }
+
+    // -- 12. Unimplemented capabilities are rejected, not silently ignored --
+
+    [Fact]
+    public void SetVariationAxes_ThrowsNotSupportedException()
+    {
+        // Capabilities.SupportsVariableFonts is false, so the pipeline never calls this.
+        // Accepting the axes and discarding them would let a direct caller believe a
+        // variable-font instance was applied when the glyphs are still the default master.
+        _rasterizer = CreateAndLoadRasterizer();
+
+        Should.Throw<NotSupportedException>(() =>
+            _rasterizer.SetVariationAxes(Array.Empty<VariationAxis>(), new Dictionary<string, float>()));
+    }
+
+    [Fact]
+    public void SelectColorPalette_ThrowsNotSupportedException()
+    {
+        // Same reasoning as SetVariationAxes: SupportsColorFonts is false.
+        _rasterizer = CreateAndLoadRasterizer();
+
+        Should.Throw<NotSupportedException>(() => _rasterizer.SelectColorPalette(1));
     }
 
     // -- Helpers ----------------------------------------------------------

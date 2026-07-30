@@ -28,8 +28,6 @@ public sealed unsafe class DirectWriteRasterizer : IRasterizer
     private GCHandle _pinnedFontData;
     private string? _familyName;
     private bool _disposed;
-    private int _colorPaletteIndex;
-    private Dictionary<string, float>? _variationAxes;
 
     // Font face creation parameters (needed to create simulation variants).
     private ComPtr<IDWriteFontFile> _fontFile;
@@ -316,21 +314,25 @@ public sealed unsafe class DirectWriteRasterizer : IRasterizer
     }
 
     /// <summary>
-    /// Applies variable font axis values. Recreates the font face if needed.
+    /// Not supported: this backend has no IDWriteFontFace5 axis implementation, which is
+    /// why <see cref="DirectWriteCapabilities.SupportsVariableFonts"/> is false.
     /// </summary>
+    /// <exception cref="NotSupportedException">Always.</exception>
     public void SetVariationAxes(IReadOnlyList<VariationAxis> fvarAxes, Dictionary<string, float> userAxes)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        _variationAxes = new Dictionary<string, float>(userAxes);
+        throw new NotSupportedException("DirectWrite rasterizer does not support variable fonts.");
     }
 
     /// <summary>
-    /// Stores the color palette index for future color font rendering.
+    /// Not supported: this backend has no TranslateColorGlyphRun implementation, which is
+    /// why <see cref="DirectWriteCapabilities.SupportsColorFonts"/> is false.
     /// </summary>
+    /// <exception cref="NotSupportedException">Always.</exception>
     public void SelectColorPalette(int paletteIndex)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        _colorPaletteIndex = paletteIndex;
+        throw new NotSupportedException("DirectWrite rasterizer does not support color fonts.");
     }
 
     /// <summary>Releases unmanaged COM resources if Dispose was not called.</summary>
