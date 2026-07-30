@@ -15,7 +15,9 @@ internal sealed class NativeFontFace
         MaxpTable maxp,
         HmtxTable hmtx,
         Os2Table os2,
-        CmapTable cmap)
+        CmapTable cmap,
+        LocaTable? loca,
+        GlyfTable? glyf)
     {
         Tables = tables;
         Head = head;
@@ -24,6 +26,8 @@ internal sealed class NativeFontFace
         Hmtx = hmtx;
         Os2 = os2;
         Cmap = cmap;
+        Loca = loca;
+        Glyf = glyf;
     }
 
     /// <summary>Lazy access to the raw table bytes by tag.</summary>
@@ -47,8 +51,29 @@ internal sealed class NativeFontFace
     /// <summary>The parsed <c>cmap</c> table.</summary>
     public CmapTable Cmap { get; }
 
+    /// <summary>The parsed <c>loca</c> table, or null for CFF fonts (which have no <c>glyf</c>).</summary>
+    public LocaTable? Loca { get; }
+
+    /// <summary>The <c>glyf</c> outline table, or null for CFF fonts.</summary>
+    public GlyfTable? Glyf { get; }
+
+    /// <summary>True when this face carries TrueType (<c>glyf</c>) outlines.</summary>
+    public bool HasGlyfOutlines => Glyf is not null;
+
     /// <summary>Maps a Unicode codepoint to its glyph index (0 when unmapped).</summary>
     public int GetGlyphIndex(int codepoint) => Cmap.GetGlyphIndex(codepoint);
+
+    /// <summary>
+    /// Decodes a glyph outline in font design units, with composites resolved.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">If the glyph index is outside the font.</exception>
+    /// <exception cref="FontFormatException">
+    /// If the font has no <c>glyf</c> table (CFF outlines are parsed in a later phase),
+    /// or the glyph's data is malformed.
+    /// </exception>
+    public ParsedGlyph GetGlyph(int glyphIndex) =>
+        Glyf?.GetGlyph(glyphIndex)
+        ?? throw new FontFormatException("This font uses CFF outlines, which have no 'glyf' table.");
 
     /// <summary>
     /// Parses a font face from raw bytes: validates the table directory and parses the
@@ -69,6 +94,15 @@ internal sealed class NativeFontFace
         var os2 = Os2Table.Parse(tables.GetTable("OS/2").Span);
         var cmap = CmapTable.Parse(tables.GetTable("cmap").Span);
 
-        return new NativeFontFace(tables, head, hhea, maxp, hmtx, os2, cmap);
+        // CFF faces have no glyf/loca; their outlines are parsed in a later phase.
+        LocaTable? loca = null;
+        GlyfTable? glyf = null;
+        if (!tables.IsCff)
+        {
+            loca = LocaTable.Parse(tables.GetTable("loca").Span, maxp.NumGlyphs, head.LongLocaFormat);
+            glyf = new GlyfTable(tables.GetTable("glyf"), loca, maxp.ComponentDepthLimit);
+        }
+
+        return new NativeFontFace(tables, head, hhea, maxp, hmtx, os2, cmap, loca, glyf);
     }
 }
