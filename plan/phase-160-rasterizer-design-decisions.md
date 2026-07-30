@@ -206,7 +206,7 @@ The signed-area trapezoid method with cumulative sum naturally implements non-ze
 ## What Phase 34 Contained (Now Superseded)
 
 Phase 34 was a research/investigation document covering:
-- glyf/loca/maxp table parsing → maxp's `numGlyphs` landed in Phase 161; only glyf/loca (plus maxp's extended profile fields) remain for Phase 162
+- glyf/loca/maxp table parsing → Complete: maxp's `numGlyphs` landed in Phase 161; glyf/loca plus maxp's extended profile fields landed in Phase 162
 - Outline extraction + bezier flattening → Now Phase 163
 - Scanline rasterizer core → Now Phase 164
 - IRasterizer integration → Now Phase 165

@@ -1,10 +1,28 @@
 # Phase 162 — Native Rasterizer: Glyph Table Parsers (glyf, loca, + maxp profile fields)
 
-> **Status**: Future
+> **Status**: **COMPLETE** (2026-07-29)
 > **Created**: 2026-04-01
 > **Depends on**: Phase 161 (project scaffold, binary reader, core table parsers)
 
 > **Note**: Phase 161 is **COMPLETE** (merged 2026-06-09) — the binary reader, table directory parser, and core table parsers (`head`, `hhea`, `hmtx`, `maxp`, `OS/2`, `cmap`) are in place, so this phase is unblocked.
+
+## What Shipped
+
+| Item | Where |
+|------|-------|
+| `maxp` v1.0 extended profile + `ComponentDepthLimit` (capped at 64) | `src/KernSmith.Rasterizers.Native/Internal/Tables/MaxpTable.cs` |
+| `loca` parser (short/long, monotonic validation, empty-glyph ranges) | `Internal/Tables/LocaTable.cs` |
+| `GlyphPoint` / `GlyphContour` / `ParsedGlyph` outline model | `Internal/Tables/ParsedGlyph.cs` |
+| `glyf` parser — simple + composite glyphs, implicit midpoints | `Internal/Tables/GlyfTable.cs` |
+| `NativeFontFace.Loca` / `.Glyf` / `.HasGlyfOutlines` / `.GetGlyph(int)` | `Internal/NativeFontFace.cs` |
+| 16 tests (real font + synthetic `glyf`) | `tests/KernSmith.Rasterizers.Native.Tests/GlyphTableTests.cs` |
+
+**Deviations from the plan as written**
+
+- `ParsedGlyph.Contours` is an **empty array** for outline-less glyphs, not `null` — the plan's own "Key Implementation Details" asked for "empty contours, not an error", and a non-null array keeps every caller free of null checks. `IsEmpty` exposes the distinction.
+- Implicit on-curve midpoints are inserted **after** a composite is fully assembled, not during simple-glyph parsing. Composite point-matching arguments index the *raw* point stream, so inserting midpoints first would shift those indices and mis-place components.
+- Direct and indirect composite cycles are both caught by the recursion depth limit rather than by a separate self-reference guard.
+- CFF (`OTTO`) faces expose `Loca`/`Glyf` as `null`; `GetGlyph` throws a clear `FontFormatException` pointing at the later CFF phase (Phase 166).
 
 ## Goal
 
@@ -91,10 +109,10 @@ internal sealed class ParsedGlyph
 ## Success Criteria
 
 - [x] maxp `numGlyphs` parsed correctly for Roboto-Regular (satisfied by Phase 161 — `CoreTableTests.cs`)
-- [ ] maxp v1.0 extended profile fields (`maxPoints`, `maxContours`, `maxCompositePoints`, `maxCompositeContours`, `maxComponentElements`, `maxComponentDepth`) parsed correctly for Roboto-Regular
-- [ ] loca table parsed correctly (both short and long formats tested)
-- [ ] Simple glyphs parsed with correct contour/point data
-- [ ] Composite glyphs recursively resolved with transforms applied
-- [ ] Implicit on-curve midpoints inserted correctly
-- [ ] Empty glyphs handled without error
-- [ ] All tests pass
+- [x] maxp v1.0 extended profile fields (`maxPoints`, `maxContours`, `maxCompositePoints`, `maxCompositeContours`, `maxComponentElements`, `maxComponentDepth`) parsed correctly for Roboto-Regular
+- [x] loca table parsed correctly (both short and long formats tested, plus a v0.5 maxp and a decreasing-offset rejection)
+- [x] Simple glyphs parsed with correct contour/point data (delta decoding verified against a synthetic square)
+- [x] Composite glyphs recursively resolved with transforms applied (scale + unscaled offset verified exactly; depth limit verified)
+- [x] Implicit on-curve midpoints inserted correctly (asserted across **every** glyph in Roboto-Regular)
+- [x] Empty glyphs handled without error
+- [x] All tests pass — 61 in `KernSmith.Rasterizers.Native.Tests` (net8.0 + net10.0), full solution green, `bmfont-compare` regression identical (175/175 FNT)
