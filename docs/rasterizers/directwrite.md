@@ -18,7 +18,7 @@ The rasterizer auto-registers via `[ModuleInitializer]` -- referencing the packa
 var options = new FontGeneratorOptions
 {
     Size = 32,
-    RasterizerBackend = RasterizerBackend.DirectWrite
+    Backend = RasterizerBackend.DirectWrite
 };
 
 var result = BmFont.Generate("path/to/font.ttf", options);
@@ -30,7 +30,7 @@ For system fonts, use `GenerateFromSystem`:
 var result = BmFont.GenerateFromSystem("Segoe UI", new FontGeneratorOptions
 {
     Size = 32,
-    RasterizerBackend = RasterizerBackend.DirectWrite
+    Backend = RasterizerBackend.DirectWrite
 });
 ```
 

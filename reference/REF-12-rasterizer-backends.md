@@ -22,7 +22,7 @@
 
 KernSmith uses a pluggable rasterizer architecture. All backends implement the `IRasterizer` interface and expose their feature set through `IRasterizerCapabilities`. The core library selects a backend at runtime via `RasterizerFactory`, which maintains a thread-safe registry of `RasterizerBackend` -> factory function mappings.
 
-FreeType is the default backend, pre-registered in `RasterizerFactory`. The GDI, DirectWrite, StbTrueType, and Native backends ship as separate NuGet packages and register themselves when their assembly is loaded.
+FreeType is the *default* backend in the sense that `FontGeneratorOptions.Backend` defaults to it, but nothing is pre-registered: `RasterizerFactory` reflection-discovers all backends identically on first use. Every backend ships as a separate NuGet package (FreeType included — it is not part of the core `KernSmith` package) and registers itself when its assembly is loaded. The Native backend is the exception: it is not packable and not published (see its status note below).
 
 ```
 RasterizerBackend enum:
@@ -30,10 +30,10 @@ RasterizerBackend enum:
   Gdi           — Windows-only
   DirectWrite   — Windows-only, high quality
   StbTrueType   — Cross-platform, pure C#, no native dependencies
-  Native        — Cross-platform, pure C#, no external dependencies (Phase 161 scaffold)
+  Native        — Cross-platform, pure C#, no external dependencies (in-progress scaffold, unpublished)
 ```
 
-> **Native backend status**: The Native backend is a Phase 161 scaffold. It loads and validates fonts and parses the core tables (`head`, `hhea`, `hmtx`, `OS/2`, `cmap`), but glyph outline decoding and rasterization are not yet implemented — its rendering methods throw `NotImplementedException` until Phases 162–165 land. It is documented here for completeness; do not select it for production output yet.
+> **Native backend status**: The Native backend is an in-progress scaffold. Phase 161 (font loading/validation plus the core `head`, `hhea`, `hmtx`, `maxp`, `OS/2`, `cmap` tables) and Phase 162 (`glyf`/`loca` outline parsing) have landed, but outline extraction and rasterization have not — its rendering methods still throw `NotImplementedException` until Phases 163–165 land. The project is `IsPackable=false` and is not published to NuGet, so `RasterizerBackend.Native` can never resolve from a released build. It is documented here for contributors; do not select it for production output yet.
 
 ---
 
@@ -42,7 +42,7 @@ RasterizerBackend enum:
 | Capability | FreeType | GDI | DirectWrite | StbTrueType | Native |
 |---|---|---|---|---|---|
 | **Platform** | Cross-platform (Windows, Linux, macOS) | Windows only | Windows only | Cross-platform (Windows, Linux, macOS, WASM) | Cross-platform (Windows, Linux, macOS, WASM) |
-| **NuGet package** | `KernSmith` (built-in) | `KernSmith.Rasterizers.Gdi` | `KernSmith.Rasterizers.DirectWrite.TerraFX` | `KernSmith.Rasterizers.StbTrueType` | `KernSmith.Rasterizers.Native` |
+| **NuGet package** | `KernSmith.Rasterizers.FreeType` | `KernSmith.Rasterizers.Gdi` | `KernSmith.Rasterizers.DirectWrite.TerraFX` | `KernSmith.Rasterizers.StbTrueType` | none (not published) |
 | **Color fonts** (COLR/CPAL, CBDT/CBLC, sbix) | Yes | No | No (stubbed, no impl yet) | No | No |
 | **Variable fonts** (fvar axes) | Yes | No | No (stubbed, no impl yet) | No | No |
 | **SDF rendering** | Yes | No | No | Yes | No |
@@ -63,7 +63,7 @@ RasterizerBackend enum:
 
 ## 3. FreeType
 
-**Package**: Built into `KernSmith` (via FreeTypeSharp 3.1.0).
+**Package**: `KernSmith.Rasterizers.FreeType` (via FreeTypeSharp 3.1.0).
 
 **When to use**: Default choice for all platforms. Required when you need color fonts, variable fonts, SDF output, or outline stroke effects.
 
@@ -162,7 +162,7 @@ RasterizerBackend enum:
 
 ## 7. Native
 
-**Package**: `KernSmith.Rasterizers.Native` (separate NuGet, cross-platform TFMs: `net8.0`, `net10.0`).
+**Package**: none. The `KernSmith.Rasterizers.Native` project is `IsPackable=false` and is not published to NuGet; it builds in-repo only (cross-platform TFMs: `net8.0`, `net10.0`).
 
 **Status**: Phase 161 scaffold. Font loading and core-table parsing work, but glyph outline decoding and rasterization are not yet implemented. `RasterizeGlyph` and `RasterizeAll` throw `NotImplementedException` until Phases 162–165 land. Do not use it for production output yet.
 

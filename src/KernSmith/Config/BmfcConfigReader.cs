@@ -473,11 +473,6 @@ public static class BmfcConfigReader
     }
 
     /// <summary>
-    /// Maps a BMFont per-channel content value (alphaChnl/redChnl/greenChnl/blueChnl) to <see cref="ChannelContent"/>.
-    /// BMFont semantics: 0=glyph, 1=outline, 2=glyph+outline, 3=zero, 4=one. Value 5 (shadow-only
-    /// coverage) is a KernSmith extension with no BMFont.exe equivalent. Unknown values default to glyph.
-    /// </summary>
-    /// <summary>
     /// Parses a comma-separated <c>tag:value</c> variable-font axis list, e.g.
     /// <c>wght:700,wdth:87.5</c>. Malformed entries are skipped rather than throwing, matching
     /// how the rest of this reader treats unrecognized input.
@@ -498,6 +493,11 @@ public static class BmfcConfigReader
         return axes.Count > 0 ? axes : null;
     }
 
+    /// <summary>
+    /// Maps a BMFont per-channel content value (alphaChnl/redChnl/greenChnl/blueChnl) to <see cref="ChannelContent"/>.
+    /// BMFont semantics: 0=glyph, 1=outline, 2=glyph+outline, 3=zero, 4=one. Value 5 (shadow-only
+    /// coverage) is a KernSmith extension with no BMFont.exe equivalent. Unknown values default to glyph.
+    /// </summary>
     private static ChannelContent ParseChannelContent(string value) =>
         int.Parse(value, CultureInfo.InvariantCulture) switch
         {

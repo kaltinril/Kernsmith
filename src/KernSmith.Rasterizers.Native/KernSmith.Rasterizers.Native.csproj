@@ -12,7 +12,7 @@
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <IsAotCompatible>true</IsAotCompatible>
     <PackageId>KernSmith.Rasterizers.Native</PackageId>
-    <Description>Native KernSmith rasterizer backend. Fully custom, pure C#, cross-platform. Zero external NuGet dependencies. Ideal for Blazor WASM, iOS AOT, and serverless.</Description>
+    <Description>Native KernSmith rasterizer backend. Fully custom, pure C#, cross-platform, with zero external NuGet dependencies. IN DEVELOPMENT — glyph rendering is not implemented yet and this project is deliberately not published; the description above describes the intended end state.</Description>
     <PackageProjectUrl>https://github.com/kaltinril/Kernsmith</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Authors>Kaltinril (Jeremy Swartwood)</Authors>

@@ -18,7 +18,7 @@ The rasterizer auto-registers via `[ModuleInitializer]` -- referencing the packa
 var options = new FontGeneratorOptions
 {
     Size = 32,
-    RasterizerBackend = RasterizerBackend.StbTrueType
+    Backend = RasterizerBackend.StbTrueType
 };
 
 var result = BmFont.Generate("path/to/font.ttf", options);

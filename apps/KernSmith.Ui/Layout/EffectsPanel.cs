@@ -504,7 +504,7 @@ public class EffectsPanel : Panel
         sdfCheck.Checked += (_, _) => _effects.SdfEnabled = true;
         sdfCheck.Unchecked += (_, _) => _effects.SdfEnabled = false;
         advancedGrid.AddRow("SDF:", sdfCheck);
-        TooltipService.SetTooltip(sdfCheck, "Signed Distance Field rendering for resolution-independent scaling. Only supported by the FreeType backend.");
+        TooltipService.SetTooltip(sdfCheck, "Signed Distance Field rendering for resolution-independent scaling. Supported by the FreeType and StbTrueType backends.");
 
         // SDF incompatibility warning (covers super-sample, outline, shadow, gradient)
         var sdfWarning = new TextRuntime();
@@ -532,7 +532,7 @@ public class EffectsPanel : Panel
         colorCheck.Checked += (_, _) => _effects.ColorFontEnabled = true;
         colorCheck.Unchecked += (_, _) => _effects.ColorFontEnabled = false;
         advancedGrid.AddRow("Color Font:", colorCheck);
-        TooltipService.SetTooltip(colorCheck, "Render color glyphs (emoji). Requires DirectWrite backend and a font with color tables (COLR/CPAL or CBDT/CBLC).");
+        TooltipService.SetTooltip(colorCheck, "Render color glyphs (emoji). Requires the FreeType backend and a font with color tables (COLR/CPAL or CBDT/CBLC).");
 
         // Color font + Gradient mutual exclusion feedback
         var colorGradientWarning = new TextRuntime();
@@ -666,7 +666,7 @@ public class EffectsPanel : Panel
         var expander = UiFactory.CreateExpander("Variable Font", isExpanded: false);
         expander.Visual.Visible = false;
         stack.Children.Add(expander.Visual);
-        TooltipService.SetTooltip(expander, "Variable font axis controls. Requires DirectWrite backend and a variable font (with fvar table).");
+        TooltipService.SetTooltip(expander, "Variable font axis controls. Requires the FreeType backend and a variable font (with fvar table).");
 
         // Container for dynamically rebuilt axis sliders
         var varFontContainer = new ContainerRuntime();

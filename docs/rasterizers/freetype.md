@@ -29,7 +29,7 @@ To explicitly select it:
 var options = new FontGeneratorOptions
 {
     Size = 32,
-    RasterizerBackend = RasterizerBackend.FreeType
+    Backend = RasterizerBackend.FreeType
 };
 ```
 
