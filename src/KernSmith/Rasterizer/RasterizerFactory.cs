@@ -54,10 +54,17 @@ public static class RasterizerFactory
             ? $"Available backends: {string.Join(", ", available)}."
             : "No backends have been registered.";
 
+        // Native has no published package to install, so the generic advice below would
+        // send consumers looking for something that does not exist (issue #146).
+        var remedyText = backend == RasterizerBackend.Native
+            ? "The native KernSmith rasterizer is still in development and is not published to NuGet yet. " +
+              "Use one of the released backends instead."
+            : "Install the corresponding NuGet package (e.g., KernSmith.Rasterizers.StbTrueType) and ensure it is referenced by your project.";
+
         throw new InvalidOperationException(
             $"Rasterizer backend '{backend}' is not registered. " +
             $"{availableText} " +
-            $"Install the corresponding NuGet package (e.g., KernSmith.Rasterizers.StbTrueType) and ensure it is referenced by your project.");
+            $"{remedyText}");
     }
 
     /// <summary>

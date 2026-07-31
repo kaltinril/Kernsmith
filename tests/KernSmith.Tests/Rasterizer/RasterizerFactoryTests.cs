@@ -33,6 +33,31 @@ public class RasterizerFactoryTests
     }
 
     [Fact]
+    public void Create_UnregisteredBackend_SuggestsInstallingTheNuGetPackage()
+    {
+        // Shipped-but-absent backends really are a missing package reference, so the
+        // install hint stays for them.
+        var ex = Should.Throw<InvalidOperationException>(
+            () => RasterizerFactory.Create((RasterizerBackend)999));
+
+        ex.Message.ShouldContain("Install the corresponding NuGet package");
+    }
+
+    [Fact]
+    public void Create_Native_ExplainsItIsUnreleasedRatherThanMissing()
+    {
+        // Issue #146: Native has no published package, so the generic "install the
+        // corresponding NuGet package" advice sends consumers hunting for something
+        // that does not exist. The message must say it is still in development.
+        var ex = Should.Throw<InvalidOperationException>(
+            () => RasterizerFactory.Create(RasterizerBackend.Native));
+
+        ex.Message.ShouldContain("is not registered");
+        ex.Message.ShouldContain("in development");
+        ex.Message.ShouldNotContain("Install the corresponding NuGet package");
+    }
+
+    [Fact]
     public void Register_ThenCreate_ReturnsRegisteredInstance()
     {
         var called = false;
