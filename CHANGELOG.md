@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`RasterizerBackend.Native` now states that it is unfinished instead of advertising itself as a shipped backend.** Its XML doc described a working pure-C# rasterizer, and `RasterizerFactory.Create(RasterizerBackend.Native)` failed with the generic "install the corresponding NuGet package" advice -- but no such package is published, so the value type-checked, compiled, and then always threw with no way to tell why. The doc now says it is under development and points at the released backends, and the factory gives `Native` its own message. The enum value is retained so the API does not change shape when the backend ships. (#146)
+- `KernSmith.Rasterizers.Native` is no longer packable. The publish workflow packs backends by explicit path so it was never released, but a solution-wide `dotnet pack` would have produced a package whose rendering methods throw.
+
 - CI now runs `KernSmith.Rasterizers.Native.Tests` (42 tests that were built but never executed on CI) and the new `KernSmith.Ui.Tests`.
 
 - `BmfcConfigWriter` now writes the per-channel `.bmfc` keys (`alphaChnl`, `redChnl`, `greenChnl`, `blueChnl`, `invA`, `invR`, `invG`, `invB`), which `BmfcConfigReader` has always parsed. A `ChannelConfig` previously survived a read but was silently dropped on write, so a load/save round trip lost the channel routing. Nothing is emitted for an unset or all-default configuration, so `.bmfc` output stays byte-identical for fonts that do not use channel routing; a channel-configured font gains the eight keys.
