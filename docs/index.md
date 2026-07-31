@@ -21,7 +21,7 @@ KernSmith is a cross-platform .NET library that generates BMFont-compatible bitm
 | [API Reference Guide](api-reference/index.md) | Curated guide to the public API: `BmFont`, the fluent builder, `FontGeneratorOptions`, `BmFontResult`, `BmFontModel`, and exceptions |
 | [CLI Reference](cli/index.md) | Command-line tool for generating bitmap fonts |
 | [UI Guide](ui/index.md) | Visual interface for font configuration and preview |
-| [Alternative Rasterizers](rasterizers/index.md) | GDI, DirectWrite (Windows), and StbTrueType (cross-platform managed) backends |
+| [Rasterizer Backends](rasterizers/index.md) | All four backends ship as separate packages: FreeType (cross-platform default), GDI and DirectWrite (Windows), StbTrueType (cross-platform managed) |
 | [API Reference](../api/KernSmith.html) | Auto-generated API documentation |
 
 ## Quick Start

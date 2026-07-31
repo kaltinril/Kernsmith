@@ -34,6 +34,7 @@ kernsmith generate --system-font "Arial" -s 32
 | [init](commands.md#init) | Scaffold a `.bmfc` or `.hiero` config file without rendering |
 | [batch](commands.md#batch) | Process multiple `.bmfc` / `.hiero` files in one invocation |
 | [benchmark](commands.md#benchmark) | Benchmark generation performance |
+| [benchmark-fonts](commands.md#benchmark-fonts) | Benchmark font resolution (`LoadFont`) across installed families |
 | [inspect](commands.md#inspect) | Inspect an existing `.fnt` file |
 | [convert](commands.md#convert) | Convert between `.fnt` formats (text, XML, binary) |
 | [list-fonts](commands.md#list-fonts) | List system-installed fonts |

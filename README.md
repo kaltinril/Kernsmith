@@ -14,7 +14,7 @@
 
 ## Features
 
-- **Font format support** -- TTF, OTF, and WOFF input
+- **Font format support** -- TTF, OTF, WOFF, and TTC collections (select a face with `FaceIndex`)
 - **BMFont output** -- text, XML, and binary `.fnt` formats with `.png` atlas pages
 - **GPOS kerning** -- extracts kerning pairs directly from OpenType GPOS tables
 - **Atlas packing** -- MaxRects (default) and Skyline algorithms with autofit, power-of-two, and non-square texture support
@@ -594,7 +594,7 @@ var model2 = BmFont.LoadModel(fntTextContent);
 
 A reference command-line tool is included in `tools/KernSmith.Cli/`. See the [CLI README](tools/KernSmith.Cli/README.md) for usage.
 
-Available commands: `generate`, `init`, `batch`, `benchmark`, `inspect`, `convert`, `list-fonts`, `list-rasterizers`, `info`.
+Available commands: `generate`, `init`, `batch`, `benchmark`, `benchmark-fonts`, `inspect`, `convert`, `list-fonts`, `list-rasterizers`, `info`.
 
 The `init` command generates a `.bmfc` or `.hiero` config file from CLI flags without rendering a font (the format is chosen by the output extension), so you can scaffold a config and tweak it by hand. `generate --config` and `batch` accept both `.bmfc` and `.hiero` configs, auto-detecting the format by inspecting file content.
 

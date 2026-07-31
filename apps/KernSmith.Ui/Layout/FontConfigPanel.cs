@@ -291,7 +291,7 @@ public class FontConfigPanel : Panel
             if (_rasterizerCombo.SelectedIndex < 0) _rasterizerCombo.SelectedIndex = 0;
             _rasterizerCombo.SelectionChanged += (_, _) => OnRasterizerComboSelectionChanged();
             sizeGrid.AddRow("Rasterizer:", _rasterizerCombo);
-            TooltipService.SetTooltip(_rasterizerCombo, "Glyph rasterizer backend. FreeType: cross-platform default. GDI: Windows-only, matches BMFont output. DirectWrite: Windows-only, modern rendering with color/variable font support.");
+            TooltipService.SetTooltip(_rasterizerCombo, "Glyph rasterizer backend. FreeType: cross-platform default, and the only backend supporting color and variable fonts. GDI: Windows-only, matches BMFont.exe output. DirectWrite: Windows-only, ClearType-hinted grayscale. StbTrueType: fully managed, no native dependencies.");
 
             var advanceXBox = UiFactory.CreateSmallFloatBox(_mainViewModel.Effects.AdvanceAdjustX,
                 v => _mainViewModel.Effects.AdvanceAdjustX = v);

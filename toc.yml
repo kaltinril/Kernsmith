@@ -9,7 +9,7 @@
       href: docs/cli/index.md
     - name: UI Guide
       href: docs/ui/index.md
-    - name: Alternative Rasterizers
+    - name: Rasterizer Backends
       href: docs/rasterizers/index.md
 - name: API Reference
   href: api/

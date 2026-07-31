@@ -24,7 +24,7 @@ KernSmith supports multiple rasterizer backends through a pluggable `IRasterizer
 | BMFont.exe parity | No | Yes | No | No |
 | ClearType-hinted grayscale | No | No | Yes | No |
 | Synthetic bold/italic | Yes | Yes | Yes | Yes |
-| Font formats | TTF, OTF, WOFF | System fonts only | TTF, OTF, WOFF | TTF only |
+| Font formats | TTF, OTF, WOFF | TTF, OTF | TTF, OTF, WOFF | TTF only |
 | Native dependencies | Yes | Yes | Yes | None |
 
 ## Auto-Registration
@@ -93,10 +93,10 @@ Pass the `RasterizerBackend` enum in your options:
 var options = new FontGeneratorOptions
 {
     Size = 32,
-    RasterizerBackend = RasterizerBackend.FreeType      // default
-    // RasterizerBackend = RasterizerBackend.Gdi         // Windows GDI
-    // RasterizerBackend = RasterizerBackend.DirectWrite  // Windows DirectWrite
-    // RasterizerBackend = RasterizerBackend.StbTrueType  // managed, no native deps
+    Backend = RasterizerBackend.FreeType      // default
+    // Backend = RasterizerBackend.Gdi         // Windows GDI
+    // Backend = RasterizerBackend.DirectWrite  // Windows DirectWrite
+    // Backend = RasterizerBackend.StbTrueType  // managed, no native deps
 };
 ```
 

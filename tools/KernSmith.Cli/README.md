@@ -771,12 +771,12 @@ Output shows font source, size, character count, effects, and output path.
 
 ## Global Options
 
-These flags work with any command:
+Only `--no-color` is truly global — it is stripped before command dispatch, so it works alongside any command. The rest are scoped:
 
-| Flag | Description |
-|------|-------------|
-| `--help, -h` | Show help |
-| `--version` | Show version |
-| `--no-color` | Disable colored output |
-| `-v, --verbose` | Show detailed progress |
-| `-q, --quiet` | Suppress all output except errors |
+| Flag | Scope | Description |
+|------|-------|-------------|
+| `--no-color` | Any command | Disable colored output |
+| `--help, -h` | Alone (`kernsmith --help`), or `kernsmith <command> --help` | Show help |
+| `--version` | Alone (`kernsmith --version`) | Show version |
+| `-v, --verbose` | Parsed per command | Show detailed progress |
+| `-q, --quiet` | Parsed per command | Suppress all output except errors |
