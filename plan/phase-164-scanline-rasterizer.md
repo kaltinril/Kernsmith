@@ -4,6 +4,11 @@
 > **Created**: 2026-04-01
 > **Depends on**: Phase 163 (outline extraction, edge generation)
 
+> **Input contract from Phase 163** (complete — see `done/phase-163-outline-extraction.md`):
+> - `OutlineFlattener.Flatten(outline, transform, tolerance)` returns `EdgeSegment[]` already in **pixel space** (scale and Y-flip applied via `OutlineTransform`), in original winding order, with horizontal edges already dropped. This phase does not re-scale or re-flip.
+> - Contours arrive **already closed**: `OutlineCommandType.Close` carries the contour's start point, so the flattener emits the closing segment itself. There is no unclosed-contour case to handle here.
+> - `GlyphOutline.XMin/YMin/XMax/YMax` is a **conservative control-hull box** (bounds control points too), not the tight `glyf` declared box. Sizing the bitmap from it is safe — it can only over-estimate — but it may leave a row/column of empty pixels beyond the 1-pixel padding, so trim from actual coverage if a tight box is required.
+
 ## Goal
 
 Implement the core scanline rasterizer using the signed-area trapezoid coverage method. This is the heart of the rasterizer — it converts directed edge segments into an 8-bit grayscale bitmap.

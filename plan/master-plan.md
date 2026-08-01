@@ -1,14 +1,14 @@
 # KernSmith -- Master Plan
 
-> **Status**: Current release **v0.18.2**. The latest landed work is **Phase 182 -- Shared Atlas Groups** (`AtlasVariant` + `AtlasGroupBuilder` shipped in 0.18.0, shadow-silhouette tint fix in 0.18.1, `BmFontResult.GetVariantFntText` in 0.18.2).
+> **Status**: Current release **v0.19.0**. The latest landed work is **Phase 163 -- Native Rasterizer: Outline Extraction & Bezier Processing** (`GlyphOutline` command model, quadratic-to-cubic elevation, and adaptive De Casteljau flattening to `EdgeSegment`s; internal to the native backend, not yet wired into the pipeline).
 >
-> **Complete** (all archived in `done/`): Phases 1-18 (there is no Phase 19), 20, 21 + 21R, 30-34 (including 32b, 32c, 32d and 33b), 37, 55, 60-86 (including 74b, 75L, 76b, 77b, the full 78 series, and 81-85), 90, 95, 96, 97, 100, 105, 161, 162, 185. Phase 34 is Complete (Superseded) by the 160-180 native rasterizer series; Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper); Phase 36 superseded by Phase 110; Phase 98 rejected (invalid bug report). Phase 182 is complete but its doc still lives in `plan/`.
+> **Complete** (all archived in `done/`): Phases 1-18 (there is no Phase 19), 20, 21 + 21R, 30-34 (including 32b, 32c, 32d and 33b), 37, 55, 60-86 (including 74b, 75L, 76b, 77b, the full 78 series, and 81-85), 90, 95, 96, 97, 100, 105, 161, 162, 163, 185. Phase 34 is Complete (Superseded) by the 160-180 native rasterizer series; Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper); Phase 36 superseded by Phase 110; Phase 98 rejected (invalid bug report). Phase 182 is complete but its doc still lives in `plan/`.
 >
 > **In flight**: Phase 160 (active design record for the native rasterizer series); Phase 250 (UI cleanup -- Phase 1 landed with changed scope, Phase 2's Generate-bar issue needs re-validation, Phases 3-5 largely done); Phase 100b (P2/P3 landed, P4/P5 deferred); Phases 99 and 150 (planning).
 >
-> **Future / deferred**: Phase 50 (in-memory layer retention); Phase 110 (partially done -- the core post-processor architecture is complete, the remainder is future); Phases 111 and 112 (deferred / not started); Phases 163-180 (native rasterizer implementation, all Future); Phase 181 (superseded by 182); Phase 200 (FontCrafter -- not started); Phase 300 (Perf 6 B/C carried from Phase 95).
+> **Future / deferred**: Phase 50 (in-memory layer retention); Phase 110 (partially done -- the core post-processor architecture is complete, the remainder is future); Phases 111 and 112 (deferred / not started); Phases 164-180 (native rasterizer implementation, all Future); Phase 181 (superseded by 182); Phase 200 (FontCrafter -- not started); Phase 300 (Perf 6 B/C carried from Phase 95).
 >
-> **Date**: 2026-07-29
+> **Date**: 2026-07-31
 
 ---
 
@@ -103,12 +103,11 @@ Output Layer
 
 ### Native Rasterizer Series (Phases 160-180)
 
-Pure C# TTF/OTF rasterizer initiative; see Phase 160 for design decisions. Phases 161 (scaffold) and 162 (glyph table parsers) are complete (see done/).
+Pure C# TTF/OTF rasterizer initiative; see Phase 160 for design decisions. Phases 161 (scaffold), 162 (glyph table parsers) and 163 (outline extraction) are complete (see done/); Phase 164 (scanline rasterizer) is next.
 
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
 | 160 | [Rasterizer Design Decisions](phase-160-rasterizer-design-decisions.md) | Rasterizer design decisions / overview (decision record for the series) | Active |
-| 163 | [Outline Extraction](phase-163-outline-extraction.md) | Glyph outline extraction + bezier flattening | Future |
 | 164 | [Scanline Rasterizer](phase-164-scanline-rasterizer.md) | Scanline rasterizer (coverage/anti-aliasing) | Future |
 | 165 | [IRasterizer Integration](phase-165-irasterizer-integration.md) | IRasterizer integration (wire native backend into pipeline) | Future |
 | 166 | [CFF/Type2 Charstring Interpreter](phase-166-cff-charstring-interpreter.md) | CFF/Type2 charstring interpreter (OTF outlines) | Future |
@@ -217,6 +216,7 @@ Pure C# TTF/OTF rasterizer initiative; see Phase 160 for design decisions. Phase
 | 105 | [Text Layout Engine](done/phase-105-text-layout-engine.md) | Core text layout engine + framework rendering examples; pixel format helpers resolved |
 | 161 | [Native Rasterizer Scaffold](done/phase-161-native-project-scaffold.md) | Pure C# binary font reader, table directory parser, core table parsers (head/hhea/hmtx/OS2/cmap/maxp), NativeRasterizer IRasterizer shell -- Complete |
 | 162 | [glyf/loca/maxp Parsers](done/phase-162-glyf-loca-maxp-parsers.md) | Pure C# `loca` + `glyf` outline parsers (simple + composite with transforms, implicit on-curve midpoints) and the `maxp` v1.0 extended profile -- Complete |
+| 163 | [Outline Extraction](done/phase-163-outline-extraction.md) | `ParsedGlyph` -> normalized MoveTo/LineTo/CubicTo/Close commands, exact quadratic-to-cubic elevation, font-unit -> pixel transform, adaptive De Casteljau flattening to directed `EdgeSegment`s -- Complete |
 | 185 | [Font Sourcing](done/phase-185-font-sourcing.md) | IFontSource abstraction + KernSmith.Fonts.Web package for web font CDNs (WOFF) -- Complete |
 
 ### Topical Plan Docs (archived in `done/`)

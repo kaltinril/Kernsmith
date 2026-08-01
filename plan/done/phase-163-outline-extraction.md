@@ -1,8 +1,28 @@
 # Phase 163 — Native Rasterizer: Outline Extraction & Bezier Processing
 
-> **Status**: Future
+> **Status**: **COMPLETE** (2026-07-31)
 > **Created**: 2026-04-01
 > **Depends on**: Phase 162 (glyf/loca/maxp parsers)
+
+> **Note**: Phase 162 is **COMPLETE** (merged 2026-07-30) — `loca`/`glyf`/`maxp` parsing and the `ParsedGlyph` model are in place, so this phase was unblocked.
+
+## What Shipped
+
+| Item | Where |
+|------|-------|
+| `OutlineCommandType` / `OutlineCommand` / `GlyphOutline` command model | `src/KernSmith.Rasterizers.Native/Internal/Outlines/GlyphOutline.cs` |
+| `ParsedGlyph` → outline commands, quadratic-to-cubic elevation | `Internal/Outlines/OutlineExtractor.cs` |
+| `EdgeSegment` directed line segment | `Internal/Outlines/EdgeSegment.cs` |
+| Font-unit → pixel scale + Y-flip transform | `Internal/Outlines/OutlineTransform.cs` |
+| Adaptive De Casteljau flattening + edge generation | `Internal/Outlines/OutlineFlattener.cs` |
+| 24 tests (14 extraction + 10 flattening) | `tests/KernSmith.Rasterizers.Native.Tests/OutlineTests.cs`, `OutlineFlattenerTests.cs` |
+
+**Deviations from the plan as written**
+
+- `Close` **carries the contour's start point** in its endpoint fields and implies the closing segment. The plan's step 5 said only "close each contour with `Close`"; carrying the start means consumers (the flattener, and Phase 164's edge feed) never have to track the contour start themselves, and no redundant `LineTo` back to the start is emitted.
+- `GlyphOutline`'s bounding box is computed from the **emitted commands, control points included**, not from the `glyf` declared box. A cubic never leaves its control hull, so the box is a conservative control-hull box: it can over-estimate the ink extent, never clip it.
+- Quadratic elevation is written `(p + 2c) / 3` rather than `p + 2/3 * (c - p)`. Algebraically identical, but it avoids rounding the `2/3` factor, so the elevation is bit-exact for whole-unit font coordinates.
+- Contours that **start on an off-curve point** are handled explicitly (start = the contour's last on-curve point, or the implicit midpoint when that is also off-curve). The plan's processing-step list omitted this case, which real fonts do use.
 
 ## Goal
 
@@ -100,9 +120,9 @@ internal readonly record struct EdgeSegment(float X0, float Y0, float X1, float 
 
 ## Success Criteria
 
-- [ ] Outline commands correctly extracted from simple and composite glyphs
-- [ ] Quadratic-to-cubic elevation is exact
-- [ ] Bezier flattening produces edges within tolerance
-- [ ] Scaling and Y-flip correct
-- [ ] Edge segments properly directed for winding rule
-- [ ] All tests pass
+- [x] Outline commands correctly extracted from simple and composite glyphs ('I', 'A', 'B', 'O' from Roboto-Regular, plus every glyph checked for MoveTo-opened / Close-terminated contours)
+- [x] Quadratic-to-cubic elevation is exact (asserted bit-exactly on whole-unit control points; implicit midpoints between consecutive off-curve points verified)
+- [x] Bezier flattening produces edges within tolerance (measured against the true cubic; tighter tolerance verified to trade edge count for accuracy, and the depth cap verified with an unreachable tolerance)
+- [x] Scaling and Y-flip correct (`pixelSize / unitsPerEm` scale and baseline placement verified synthetically and against the real face's `hhea` ascender)
+- [x] Edge segments properly directed for winding rule (reversed contour produces reversed edges; horizontal edges dropped; real glyph flattens to a closed chain)
+- [x] All tests pass — 89 in `KernSmith.Rasterizers.Native.Tests` (net8.0 + net10.0), 24 of them new here
