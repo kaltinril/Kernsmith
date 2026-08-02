@@ -15,9 +15,13 @@ query-filters:
   - exclude:
       problem.severity: recommendation
 
-# Build intermediates are not source. Roslyn source generators (the regex
+# Deliberately NO paths-ignore here. Roslyn source generators (the regex
 # generator in particular) emit code under obj/ that trips quality queries we
-# cannot act on, since the file is regenerated on every build.
-paths-ignore:
-  - "**/obj/**"
-  - "**/bin/**"
+# cannot act on, and excluding it looks like the obvious fix. It does not work:
+# for C#, paths/paths-ignore apply only when CodeQL analyses without building,
+# and codeql.yml builds the solution explicitly. Adding the block is inert and
+# only misleads the next reader into thinking obj/ is out of scope.
+#
+# Generated-code alerts are dismissed individually as "won't fix" instead. If
+# that ever becomes too noisy, the real lever is the build step in codeql.yml,
+# not this file.
