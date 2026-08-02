@@ -187,45 +187,48 @@ KernSmith now supports the libGDX **Hiero `.hiero`** format for interop: it can 
 
 ## Rasterizer Backend Comparison
 
-KernSmith supports four pluggable rasterizer backends. Each has different platform support, feature coverage, and trade-offs.
+KernSmith supports five pluggable rasterizer backends. Each has different platform support, feature coverage, and trade-offs. Four are released on NuGet; the fifth, **Native**, is experimental and currently available only from the repository and the CLI.
 
 ### Platform Support
 
-| | FreeType | GDI | DirectWrite | StbTrueType |
-|---|:---:|:---:|:---:|:---:|
-| **Windows** | ✅ | ✅ | ✅ | ✅ |
-| **Linux** | ✅ | ❌ | ❌ | ✅ |
-| **macOS** | ✅ | ❌ | ❌ | ✅ |
-| **Blazor WASM** | ❌ | ❌ | ❌ | ✅ |
-| **NativeAOT** | ⚠️ | ⚠️ | ⚠️ | ✅ |
-| **Android** | ✅ | ❌ | ❌ | ✅ |
-| **iOS** | ⚠️ | ❌ | ❌ | ✅ |
-| **Serverless / Containers** | ✅ | ❌ | ❌ | ✅ |
-| **Console (Xbox/PS/Switch)** | ❌ | ❌ | ❌ | ✅ |
-| **Native Dependencies** | FreeType native libs | Win32 GDI | Win32 DirectWrite | None |
-| **Trimming Safe** | ⚠️ | N/A | N/A | ✅ |
-| **AOT Compatible** | ⚠️ | N/A | N/A | ✅ |
+| | FreeType | GDI | DirectWrite | StbTrueType | Native |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **Windows** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Linux** | ✅ | ❌ | ❌ | ✅ | ✅ |
+| **macOS** | ✅ | ❌ | ❌ | ✅ | ✅ |
+| **Blazor WASM** | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **NativeAOT** | ⚠️ | ⚠️ | ⚠️ | ✅ | ✅ |
+| **Android** | ✅ | ❌ | ❌ | ✅ | ✅ |
+| **iOS** | ⚠️ | ❌ | ❌ | ✅ | ✅ |
+| **Serverless / Containers** | ✅ | ❌ | ❌ | ✅ | ✅ |
+| **Console (Xbox/PS/Switch)** | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **Native Dependencies** | FreeType native libs | Win32 GDI | Win32 DirectWrite | None | None |
+| **Trimming Safe** | ⚠️ | N/A | N/A | ✅ | ✅ |
+| **AOT Compatible** | ⚠️ | N/A | N/A | ✅ | ✅ |
+| **Published on NuGet** | ✅ | ✅ | ✅ | ✅ | ❌ |
+
+Native's platform rows follow from it being pure managed code with no native dependencies (it is marked `IsTrimmable`/`IsAotCompatible`); the WASM, console, and mobile targets have not been exercised for it yet. StbTrueType remains the recommended managed backend for those environments.
 
 ### Feature Support
 
-| | FreeType | GDI | DirectWrite | StbTrueType |
-|---|:---:|:---:|:---:|:---:|
-| **TTF** | ✅ | ✅ | ✅ | ✅ |
-| **OTF (CFF)** | ✅ | ✅ | ✅ | ❌ |
-| **WOFF** | ✅ | ❌ | ✅ | ❌ |
-| **WOFF2** | ❌ | ❌ | ❌ | ❌ |
-| **TTC (font collections)** | ✅ | ❌ | ✅ | ✅ |
-| **Anti-aliasing** | Grayscale, Light, LCD, None | Grayscale, None | None, Grayscale | Grayscale, None |
-| **SDF Rendering** | ✅ | ❌ | ❌ | ✅ |
-| **Hinting** | ✅ | ✅ | ✅ | ❌ |
-| **Synthetic Bold** | ✅ | ✅ | ✅ | ✅ |
-| **Synthetic Italic** | ✅ | ✅ | ✅ | ✅ |
-| **Outline Stroke** | ✅ | ❌ | ❌ | ❌ |
-| **Super Sampling** | ✅ | ✅ | ✅ | ✅ |
-| **Color Fonts (COLR/CPAL)** | ✅ | ❌ | ❌ | ❌ |
-| **Variable Fonts** | ✅ | ❌ | ❌ | ❌ |
-| **System Font Loading** | ❌ | ✅ | ✅ | ❌ |
-| **BMFont.exe Parity** | ❌ | ✅ | ❌ | ❌ |
+| | FreeType | GDI | DirectWrite | StbTrueType | Native |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **TTF** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **OTF (CFF)** | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **WOFF** | ✅ | ❌ | ✅ | ❌ | ❌ |
+| **WOFF2** | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **TTC (font collections)** | ✅ | ❌ | ✅ | ✅ | ✅ |
+| **Anti-aliasing** | Grayscale, Light, LCD, None | Grayscale, None | None, Grayscale | Grayscale, None | Grayscale, None |
+| **SDF Rendering** | ✅ | ❌ | ❌ | ✅ | ❌ |
+| **Hinting** | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Synthetic Bold** | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Synthetic Italic** | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Outline Stroke** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Super Sampling** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Color Fonts (COLR/CPAL)** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Variable Fonts** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **System Font Loading** | ❌ | ✅ | ✅ | ❌ | ❌ |
+| **BMFont.exe Parity** | ❌ | ✅ | ❌ | ❌ | ❌ |
 
 ### When to Use
 
@@ -233,6 +236,7 @@ KernSmith supports four pluggable rasterizer backends. Each has different platfo
 - **GDI** -- Pixel-perfect BMFont.exe compatibility on Windows. Use for validating against BMFont reference output.
 - **DirectWrite** -- Windows system-font loading with ClearType-hinted grayscale rendering. High-quality Windows text output. (For color fonts or variable fonts, use FreeType.)
 - **StbTrueType** -- Blazor WASM, NativeAOT, iOS, consoles, or anywhere native libraries are unavailable. Pure C#, zero dependencies.
+- **Native** -- Experimental. Plain TrueType text with no third-party code at all, when you are building from source and can live without hinting, SDF, stroke, or synthetic styles. Not published to NuGet; use StbTrueType for shipping managed-only builds.
 
 ## Tool Descriptions
 

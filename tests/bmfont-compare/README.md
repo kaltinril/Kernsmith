@@ -1,6 +1,6 @@
 # BMFont Comparison Tools
 
-Side-by-side comparison of glyph output across four backends: FreeType, GDI, DirectWrite, and BMFont64.
+Side-by-side comparison of glyph output across backends: FreeType, GDI, DirectWrite, StbTrueType, Native, and BMFont64.
 
 ## Quick Start
 
@@ -68,8 +68,10 @@ Reads `.bmfc` files from a source directory and generates `.fnt` + `.png` output
 dotnet run --project tests/bmfont-compare/GenerateAll/ --framework net10.0-windows -- <bmfc-dir> <output-dir>
 ```
 
-- Runs FreeType, GDI, DirectWrite, and StbTrueType via KernSmith
+- Runs FreeType, GDI, DirectWrite, StbTrueType, and Native via KernSmith
 - Runs BMFont64.exe if found at `c:\tools\bmfont64.exe` or on PATH
+- Native renders TrueType (`glyf`) fonts only; CFF/OTF configs fail per-config (logged, run continues)
+  and show as red cells in the comparison images
 - Output naming: `{configname}-{backend}.fnt` / `{configname}-{backend}_0.png`
 - Also generates `comparison*.png` side-by-side images
 

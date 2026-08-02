@@ -11,6 +11,7 @@ RuntimeHelpers.RunClassConstructor(typeof(KernSmith.Rasterizers.FreeType.FreeTyp
 RuntimeHelpers.RunClassConstructor(typeof(KernSmith.Rasterizers.Gdi.GdiRasterizer).TypeHandle);
 RuntimeHelpers.RunClassConstructor(typeof(KernSmith.Rasterizers.DirectWrite.TerraFX.DirectWriteRasterizer).TypeHandle);
 RuntimeHelpers.RunClassConstructor(typeof(KernSmith.Rasterizers.StbTrueType.StbTrueTypeRasterizer).TypeHandle);
+RuntimeHelpers.RunClassConstructor(typeof(KernSmith.Rasterizers.Native.NativeRasterizer).TypeHandle);
 
 // Parse flags
 bool compare = true;
@@ -73,6 +74,9 @@ var backends = new (string Name, Func<IRasterizer> Factory)[]
     ("gdi", () => new KernSmith.Rasterizers.Gdi.GdiRasterizer()),
     ("directwrite", () => new KernSmith.Rasterizers.DirectWrite.TerraFX.DirectWriteRasterizer()),
     ("stbtruetype", () => RasterizerFactory.Create(RasterizerBackend.StbTrueType)),
+    // Native handles TrueType (glyf) only — CFF/OTF configs fail per-config and are skipped
+    // by the per-backend try/catch below (CFF support is Phase 166).
+    ("native", () => RasterizerFactory.Create(RasterizerBackend.Native)),
 };
 
 int totalSucceeded = 0;
@@ -330,8 +334,8 @@ if (compare)
 {
     Console.WriteLine("\n=== Generating comparison images ===");
 
-    var allBackendNames = new[] { "freetype", "gdi", "directwrite", "stbtruetype", "bmfont" };
-    var allBackendLabels = new[] { "FreeType", "GDI", "DW", "StbTT", "BMFont" };
+    var allBackendNames = new[] { "freetype", "gdi", "directwrite", "stbtruetype", "native", "bmfont" };
+    var allBackendLabels = new[] { "FreeType", "GDI", "DW", "StbTT", "Native", "BMFont" };
 
     var mixBoldBackendNames = new[] { "ft-norm", "ft-real", "ft-syn", "gdi-norm", "gdi-real", "gdi-syn", "dw-norm", "dw-real", "dw-syn", "stb-norm", "stb-real", "stb-syn", "bmf-norm", "bmf-style" };
     var mixBoldBackendLabels = new[] { "FT", "FT real", "FT syn", "GDI", "GDI real", "GDI syn", "DW", "DW real", "DW syn", "StbTT", "StbTT real", "StbTT syn", "BMF", "BMF style" };

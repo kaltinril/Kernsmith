@@ -57,6 +57,7 @@ KernSmith supports pluggable rasterizer backends. Install at least one backend p
 | **GDI**<br>[![NuGet](https://img.shields.io/nuget/v/KernSmith.Rasterizers.Gdi.svg?label=&color=blue)](https://www.nuget.org/packages/KernSmith.Rasterizers.Gdi) | Windows only | Yes (native Windows hinting) | No | No | No | Matches BMFont reference output for pixel-perfect parity. |
 | **DirectWrite**<br>[![NuGet](https://img.shields.io/nuget/v/KernSmith.Rasterizers.DirectWrite.TerraFX.svg?label=&color=blue)](https://www.nuget.org/packages/KernSmith.Rasterizers.DirectWrite.TerraFX) | Windows only | Yes (natural/symmetric hinting) | No | No | No | Modern Windows rendering. Color and variable fonts are not yet implemented; use FreeType for those. |
 | **StbTrueType**<br>[![NuGet](https://img.shields.io/nuget/v/KernSmith.Rasterizers.StbTrueType.svg?label=&color=blue)](https://www.nuget.org/packages/KernSmith.Rasterizers.StbTrueType) | Cross-platform | No | No | No | Yes | Pure C#, no native dependencies. Ideal for WASM, AOT, serverless. No hinting engine, so small sizes with `AntiAlias.None` can look rough on thin stems -- prefer `AntiAlias.Grayscale` or raise `SuperSample` for crisper small-size text. |
+| **Native**<br>_experimental, not on NuGet yet_ | Cross-platform | No | No | No | No | KernSmith's own rasterizer -- pure C#, zero third-party dependencies. **TrueType (`glyf`) outlines only**; CFF/OTF fonts are rejected. No WOFF, hinting, SDF, outline stroke, or synthetic bold/italic yet, and only `AntiAlias.None` / `AntiAlias.Grayscale`. Available today from the repository and the CLI (`--rasterizer native`); the package is not published, so it cannot be resolved from a NuGet-only build. |
 
 Install a backend:
 
@@ -66,6 +67,8 @@ dotnet add package KernSmith.Rasterizers.Gdi
 dotnet add package KernSmith.Rasterizers.DirectWrite.TerraFX
 dotnet add package KernSmith.Rasterizers.StbTrueType
 ```
+
+The experimental Native backend has no package yet -- reference `src/KernSmith.Rasterizers.Native` from a source build, or use the CLI's `--rasterizer native`.
 
 Select a backend when generating:
 

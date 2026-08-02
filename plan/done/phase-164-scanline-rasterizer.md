@@ -1,6 +1,6 @@
 # Phase 164 — Native Rasterizer: Scanline Rasterizer Core
 
-> **Status**: Future
+> **Status**: **COMPLETE** (2026-08-01)
 > **Created**: 2026-04-01
 > **Depends on**: Phase 163 (outline extraction, edge generation)
 
@@ -8,6 +8,45 @@
 > - `OutlineFlattener.Flatten(outline, transform, tolerance)` returns `EdgeSegment[]` already in **pixel space** (scale and Y-flip applied via `OutlineTransform`), in original winding order, with horizontal edges already dropped. This phase does not re-scale or re-flip.
 > - Contours arrive **already closed**: `OutlineCommandType.Close` carries the contour's start point, so the flattener emits the closing segment itself. There is no unclosed-contour case to handle here.
 > - `GlyphOutline.XMin/YMin/XMax/YMax` is a **conservative control-hull box** (bounds control points too), not the tight `glyf` declared box. Sizing the bitmap from it is safe — it can only over-estimate — but it may leave a row/column of empty pixels beyond the 1-pixel padding, so trim from actual coverage if a tight box is required.
+
+## What Shipped
+
+| Item | Where |
+|------|-------|
+| `RasterResult` output record (bitmap + width/height + bearings) | `src/KernSmith.Rasterizers.Native/Internal/Raster/RasterResult.cs` |
+| Signed-area trapezoid scanline rasterizer with active-edge table | `Internal/Raster/ScanlineRasterizer.cs` |
+| `area[]` / `cover[]` from `ArrayPool<float>.Shared` (cleared after rent, returned in `finally`) | `Internal/Raster/ScanlineRasterizer.cs` |
+| Output bitmap allocated with `new byte[]` (never pooled — the caller holds it for the glyph's lifetime) | `Internal/Raster/ScanlineRasterizer.cs` |
+| 35 tests (19 rasterizer + 16 SSIM), bringing `KernSmith.Rasterizers.Native.Tests` to 137 per TFM | `tests/KernSmith.Rasterizers.Native.Tests/ScanlineRasterizerTests.cs`, `ScanlineRasterizerSsimTests.cs` |
+| `ProjectReference` to `KernSmith.Rasterizers.StbTrueType` as the SSIM baseline (**test-only** — nothing shipped depends on it) | `tests/KernSmith.Rasterizers.Native.Tests/KernSmith.Rasterizers.Native.Tests.csproj` |
+
+Entry point as shipped:
+
+```csharp
+internal static RasterResult Rasterize(
+    EdgeSegment[] edges,
+    int width,
+    int height,
+    float originX = 0f,
+    float originY = 0f,
+    AntiAliasMode antiAlias = AntiAliasMode.Grayscale,
+    int bearingX = 0,
+    int bearingY = 0);
+```
+
+All accumulation math is `float` throughout, matching the reference implementations. Nothing is wired into `NativeRasterizer` yet; that is Phase 165.
+
+**Deviations from the plan as written**
+
+- The **existing core `KernSmith.AntiAliasMode` enum is reused** rather than adding a parallel Native-only one. `AntiAliasMode.None` thresholds coverage at 128; every other value passes the grayscale coverage through unchanged. This keeps Phase 165's `RasterOptions.AntiAlias` a straight pass-through with no mapping layer.
+- **`originX` / `originY` were added beyond the literal spec signature.** They define which pixel-space point maps to bitmap (0, 0), so Phase 165 can place the glyph box without allocating a translated `EdgeSegment[]` per glyph.
+- **Per-glyph `RasterEdge[]` arrays are plain allocations, not pooled.** Only the `area` / `cover` buffers were required to be pooled, and pooling the edge array adds a lifetime/clearing concern for no measured win. Flagged as a follow-up if Phase 165 benchmarking shows GC pressure.
+- **A real bug was caught by TDD**: non-finite edge coordinates (NaN/Infinity) propagated into the scanline bounds and threw `IndexOutOfRangeException`. Fixed with an `IsFinite` filter in `Prepare`, which drops such edges before they reach the active-edge table.
+- **SSIM vs StbTrueType**: all 15 glyph/size cases clear the > 0.95 floor. Straight-edged glyphs ('I', 'X', 'W' at 12/32/96 px) score > 0.999. Curved cases: 'O' 12px **0.9509**, 16px 0.9863, 24px 0.9937, 32px 0.9718, 48px 0.9867, 96px 0.9958; 'e' 16px 0.9814; '8' 48px 0.9982.
+  - ⚠️ **'O' @ 12px at 0.9509 is a thin margin against the 0.95 floor** — it is the first test that will trip if `OutlineFlattener` changes. Treat any flattener tolerance/subdivision edit as requiring a re-run of `ScanlineRasterizerSsimTests`.
+  - The curved residual was traced to **curve tessellation, not coverage**: tightening the flattener tolerance moved scores *away* from stb, indicating stb's subdivision is the coarser approximation, not ours.
+- **The stb prefilter idea was deliberately not implemented.** The `stbtt__h_prefilter` / `stbtt__v_prefilter` note below is carried forward as a possible later optimization for sub-20px quality — it is deferred, not dropped.
+- **Performance was not benchmarked.** No benchmark was written for the "within 3x of StbTrueType for ASCII at 32px" criterion, so it is left unticked and explicitly unverified. Add it under `benchmarks/KernSmith.Benchmarks/` when the backend is wired up in Phase 165.
 
 ## Goal
 
@@ -133,10 +172,10 @@ Phase 165 converts `RasterResult` to the public `RasterizedGlyph` type:
 
 ## Success Criteria
 
-- [ ] Rasterizer produces correct 8-bit grayscale output
-- [ ] Coverage values match reference (SSIM > 0.95 vs StbTrueType)
-- [ ] Both anti-alias modes work (Grayscale, None)
-- [ ] No buffer overruns or out-of-bounds access
-- [ ] ArrayPool buffers properly rented and returned
-- [ ] Performance within 3x of StbTrueType for ASCII set at 32px
-- [ ] All tests pass
+- [x] Rasterizer produces correct 8-bit grayscale output (row-major, pitch == width, coverage verified against hand-computed trapezoid areas for axis-aligned, diagonal and sub-pixel edges)
+- [x] Coverage values match reference (SSIM > 0.95 vs StbTrueType) — all 15 glyph/size cases pass; straight-edged glyphs > 0.999, curved glyphs 0.9509–0.9982 (see the SSIM bullet above; 'O' @ 12px is the thin margin)
+- [x] Both anti-alias modes work (Grayscale, None) — `None` asserted to emit only 0 or 255 via a 128 threshold; every other mode passes coverage through
+- [x] No buffer overruns or out-of-bounds access (edges far outside the bitmap on all four sides, zero-size bitmaps, and non-finite coordinates all clip or drop instead of overrunning)
+- [x] ArrayPool buffers properly rented and returned (`area`/`cover` rented from `ArrayPool<float>.Shared`, cleared after rent since the pool does not zero, returned in a `finally`)
+- [ ] Performance within 3x of StbTrueType for ASCII set at 32px — **NOT VERIFIED / DEFERRED**: no benchmark was written in this phase. Add one under `benchmarks/KernSmith.Benchmarks/` once Phase 165 wires the backend into `IRasterizer` so the comparison can run end-to-end.
+- [x] All tests pass — 137 in `KernSmith.Rasterizers.Native.Tests` (net8.0 + net10.0), 35 of them new here

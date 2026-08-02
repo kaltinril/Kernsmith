@@ -1,9 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
-    <!-- Not packable until glyph rendering lands (Phase 165). The publish workflow packs
-         backends by explicit path so this never shipped, but a solution-wide `dotnet pack`
-         (see RELEASING.md) would otherwise produce a package that throws on every render. -->
+    <!-- Glyph rendering works as of Phase 165, but packaging is still pending a release
+         decision (CFF outlines, synthetic styles and SDF are not implemented yet). The
+         publish workflow packs backends by explicit path so this never ships accidentally;
+         this flag also keeps a solution-wide `dotnet pack` (see RELEASING.md) from
+         producing a package that has not been signed off for release. -->
     <IsPackable>false</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -12,7 +14,7 @@
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <IsAotCompatible>true</IsAotCompatible>
     <PackageId>KernSmith.Rasterizers.Native</PackageId>
-    <Description>Native KernSmith rasterizer backend. Fully custom, pure C#, cross-platform, with zero external NuGet dependencies. IN DEVELOPMENT — glyph rendering is not implemented yet and this project is deliberately not published; the description above describes the intended end state.</Description>
+    <Description>Native KernSmith rasterizer backend. Fully custom, pure C#, cross-platform, with zero external NuGet dependencies. EXPERIMENTAL — renders TrueType ('glyf') outlines only (CFF/OTF fonts are rejected) with no hinting, SDF, outline stroke or synthetic bold/italic, and this project is deliberately not published yet.</Description>
     <PackageProjectUrl>https://github.com/kaltinril/Kernsmith</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Authors>Kaltinril (Jeremy Swartwood)</Authors>

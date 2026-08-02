@@ -1,6 +1,6 @@
 # Rasterizers
 
-KernSmith supports multiple rasterizer backends through a pluggable `IRasterizer` interface. All backends are available as separate NuGet packages -- two cross-platform (FreeType, StbTrueType) and two Windows-only (GDI, DirectWrite). You can also [write your own](custom-backend.md).
+KernSmith supports multiple rasterizer backends through a pluggable `IRasterizer` interface. Four backends are available as separate NuGet packages -- two cross-platform (FreeType, StbTrueType) and two Windows-only (GDI, DirectWrite). A fifth, [Native](native.md), is experimental and not published to NuGet yet. You can also [write your own](custom-backend.md).
 
 ## Backends
 
@@ -10,22 +10,25 @@ KernSmith supports multiple rasterizer backends through a pluggable `IRasterizer
 | [GDI](gdi.md) | [`KernSmith.Rasterizers.Gdi`](https://www.nuget.org/packages/KernSmith.Rasterizers.Gdi) | Windows only |
 | [DirectWrite](directwrite.md) | [`KernSmith.Rasterizers.DirectWrite.TerraFX`](https://www.nuget.org/packages/KernSmith.Rasterizers.DirectWrite.TerraFX) | Windows only |
 | [StbTrueType](stbtruetype.md) | [`KernSmith.Rasterizers.StbTrueType`](https://www.nuget.org/packages/KernSmith.Rasterizers.StbTrueType) | Cross-platform (managed) |
+| [Native](native.md) (experimental) | `KernSmith.Rasterizers.Native` -- not published yet | Cross-platform (managed) |
 
 ## Capability Comparison
 
-| Feature | FreeType | GDI | DirectWrite | StbTrueType |
-|---------|----------|-----|-------------|-------------|
-| Cross-platform | Yes | No | No | Yes |
-| Color fonts (COLR/CPAL) | Yes | No | No | No |
-| Variable fonts | Yes | No | No | No |
-| SDF rendering | Yes | No | No | Yes |
-| Outline stroke | Yes | No | No | No |
-| System font loading | No | Yes | Yes | No |
-| BMFont.exe parity | No | Yes | No | No |
-| ClearType-hinted grayscale | No | No | Yes | No |
-| Synthetic bold/italic | Yes | Yes | Yes | Yes |
-| Font formats | TTF, OTF, WOFF | TTF, OTF | TTF, OTF, WOFF | TTF only |
-| Native dependencies | Yes | Yes | Yes | None |
+| Feature | FreeType | GDI | DirectWrite | StbTrueType | Native |
+|---------|----------|-----|-------------|-------------|--------|
+| Cross-platform | Yes | No | No | Yes | Yes |
+| Color fonts (COLR/CPAL) | Yes | No | No | No | No |
+| Variable fonts | Yes | No | No | No | No |
+| SDF rendering | Yes | No | No | Yes | No |
+| Outline stroke | Yes | No | No | No | No |
+| System font loading | No | Yes | Yes | No | No |
+| BMFont.exe parity | No | Yes | No | No | No |
+| ClearType-hinted grayscale | No | No | Yes | No | No |
+| Synthetic bold/italic | Yes | Yes | Yes | Yes | No |
+| Anti-aliasing modes | Grayscale, Light, LCD, None | Grayscale, None | Grayscale, None | Grayscale, None | Grayscale, None |
+| Font formats | TTF, OTF, WOFF | TTF, OTF | TTF, OTF, WOFF | TTF only | TTF only |
+| Native dependencies | Yes | Yes | Yes | None | None |
+| Published on NuGet | Yes | Yes | Yes | Yes | No |
 
 ## Auto-Registration
 
@@ -41,7 +44,7 @@ Because this discovery relies on reflection and name-based type resolution, it *
 
 Auto-discovery resolves backend assemblies by name via reflection, which is **not compatible with Native AOT or trimming**. Under AOT or trimming the backend types may be removed from the published output or cannot be resolved by name, so auto-discovery finds nothing and generation fails with a "backend is not registered" error.
 
-**You must register a backend explicitly** before generating a font. The recommended AOT backend is [**StbTrueType**](stbtruetype.md): it is pure C#, has no native dependencies, and is the only backend marked AOT-compatible.
+**You must register a backend explicitly** before generating a font. The recommended AOT backend is [**StbTrueType**](stbtruetype.md): it is pure C#, has no native dependencies, and is the only released backend marked AOT-compatible. (The experimental [Native](native.md) backend is also pure C# and AOT-annotated, but it is not published to NuGet.)
 
 Force the backend assembly to load so its module initializer registers the rasterizer. Reference its public `StbTrueTypeRasterizer` type by name to keep it from being trimmed away:
 
@@ -83,7 +86,8 @@ Use this decision tree to pick the right backend:
 4. **Need SDF (Signed Distance Field) output?** Use [FreeType](freetype.md) or [StbTrueType](stbtruetype.md) -- they are the only backends with SDF rendering.
 5. **Need cross-platform SDF without native binaries?** Use [StbTrueType](stbtruetype.md) -- it supports SDF and runs fully managed.
 6. **Need WASM/Blazor or NativeAOT without native binaries?** Use [StbTrueType](stbtruetype.md) -- it is the only fully managed backend with zero native dependencies. See the [Blazor WASM sample](https://github.com/kaltinril/Kernsmith/tree/main/samples/KernSmith.Samples.BlazorWasm) for a working example. Enable AOT compilation for production performance.
-7. **Not sure?** Start with FreeType. It covers the majority of use cases.
+7. **Want zero third-party code, and building from source?** Try [Native](native.md) -- KernSmith's own rasterizer. It handles plain TrueType text with no external dependencies at all, but it is experimental: TrueType outlines only (no CFF/OTF), and no hinting, SDF, stroke, or synthetic bold/italic.
+8. **Not sure?** Start with FreeType. It covers the majority of use cases.
 
 ## Selecting a Backend in Code
 
@@ -97,6 +101,7 @@ var options = new FontGeneratorOptions
     // Backend = RasterizerBackend.Gdi         // Windows GDI
     // Backend = RasterizerBackend.DirectWrite  // Windows DirectWrite
     // Backend = RasterizerBackend.StbTrueType  // managed, no native deps
+    // Backend = RasterizerBackend.Native       // experimental, TrueType only
 };
 ```
 

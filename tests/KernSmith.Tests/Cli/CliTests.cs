@@ -350,6 +350,54 @@ public class CliTests : IDisposable
         File.Exists(pngPath).ShouldBeTrue();
     }
 
+    // -- Rasterizer option --
+
+    [Fact]
+    public void ListRasterizers_IncludesNativeBackend()
+    {
+        // Act
+        var (exitCode, stdout, stderr) = RunCli("list-rasterizers");
+
+        // Assert -- the CLI references KernSmith.Rasterizers.Native, so auto-discovery
+        // must find it and report it as available rather than "(not available)".
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain("native");
+        stdout.ShouldNotContain("native          (not available)");
+    }
+
+    [Fact]
+    public void Generate_NativeRasterizer_ProducesFntAndPng()
+    {
+        // Arrange
+        var outputBase = Path.Combine(_tempDir, "native-out");
+
+        // Act
+        var (exitCode, stdout, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "24", "-o", outputBase,
+            "--rasterizer", "native");
+
+        // Assert
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain("Done.");
+        File.Exists(outputBase + ".fnt").ShouldBeTrue();
+
+        var pngPath = Path.Combine(_tempDir, "native-out_0.png");
+        File.Exists(pngPath).ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Generate_UnknownRasterizer_ListsNativeAmongValidValues()
+    {
+        // Act
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "24", "--rasterizer", "bogus");
+
+        // Assert
+        exitCode.ShouldBe(1);
+        stderr.ShouldContain("Unknown rasterizer backend: 'bogus'");
+        stderr.ShouldContain("native");
+    }
+
     // -- Short flag aliases --
 
     [Fact]
