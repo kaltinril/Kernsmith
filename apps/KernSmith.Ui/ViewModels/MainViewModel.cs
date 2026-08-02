@@ -146,8 +146,8 @@ public class MainViewModel : ViewModel
     /// </summary>
     public void OpenFont()
     {
-        using var dialog = new NativeFileDialog()
-            .SelectFile()
+        using var dialog = new NativeFileDialog();
+        dialog.SelectFile()
             .AddFilter("Font Files", "ttf,otf,woff,ttc")
             .AddFilter("All Files", "*");
         var result = dialog.Open(out string? path);
@@ -385,8 +385,8 @@ public class MainViewModel : ViewModel
         }
 
         var initialDir = _sessionService.State.LastOutputDir;
-        using var dialog = new NativeFileDialog()
-            .SaveFile()
+        using var dialog = new NativeFileDialog();
+        dialog.SaveFile()
             .AddFilter("BMFont Files", "*.fnt");
         var result = dialog.Open(out string? path, initialDir, "myfont.fnt");
         if (result == DialogResult.Okay && path != null)
@@ -431,8 +431,8 @@ public class MainViewModel : ViewModel
         // current path or its extension is not a recognized config format.
         var defaultExt = GetDefaultProjectExtension();
         var initialDir = _sessionService.State.LastOutputDir;
-        using var dialog = new NativeFileDialog()
-            .SaveFile()
+        using var dialog = new NativeFileDialog();
+        dialog.SaveFile()
             .AddFilter("KernSmith Projects", "bmfc,hiero");
         var result = dialog.Open(out string? savePath, initialDir, $"myproject.{defaultExt}");
         if (result == DialogResult.Okay && savePath != null)
@@ -579,8 +579,8 @@ public class MainViewModel : ViewModel
     /// </summary>
     public void LoadProject()
     {
-        using var dialog = new NativeFileDialog()
-            .SelectFile()
+        using var dialog = new NativeFileDialog();
+        dialog.SelectFile()
             .AddFilter("KernSmith Projects", "bmfc,hiero")
             .AddFilter("All Files", "*");
         var result = dialog.Open(out string? path);

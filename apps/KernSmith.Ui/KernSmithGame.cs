@@ -12,6 +12,10 @@ using Gum.Themes.Editor;
 using GumRuntime;
 using Microsoft.Xna.Framework.Graphics;
 
+// MonoGameGum.GumService is an obsolete back-compat alias; bind the name to the
+// current type so the call sites below stay unchanged.
+using GumService = global::Gum.GumService;
+
 namespace KernSmith.Ui;
 
 /// <summary>

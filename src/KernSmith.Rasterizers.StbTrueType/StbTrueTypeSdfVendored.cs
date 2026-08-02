@@ -213,7 +213,8 @@ internal static unsafe class StbTrueTypeSdfVendored
 
         var edges = new Edge[edgeCount];
         int idx = 0;
-        float startX = 0, startY = 0; // Contour start (for implicit close)
+        // No contour-start tracking is needed: stbtt_GetGlyphShape already emits an
+        // explicit closing VLine back to the first point of each contour.
         float prevX = 0, prevY = 0;
 
         for (int i = 0; i < numVerts; i++)
@@ -226,8 +227,6 @@ internal static unsafe class StbTrueTypeSdfVendored
 
             if (vtype == VMove)
             {
-                startX = vx;
-                startY = vy;
                 prevX = vx;
                 prevY = vy;
             }

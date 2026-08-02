@@ -662,7 +662,7 @@ public static class BmFont
             metrics?.Begin("AtlasEncoding");
             var encoder = options.AtlasEncoder ?? (options.TextureFormat switch
             {
-                TextureFormat.Tga => (IAtlasEncoder)new TgaEncoder(),
+                TextureFormat.Tga => new TgaEncoder(),
                 TextureFormat.Dds => new DdsEncoder(),
                 _ => new StbPngEncoder()
             });
@@ -807,7 +807,7 @@ public static class BmFont
         metrics?.Begin("AtlasEncoding");
         var encoder = options.AtlasEncoder ?? (options.TextureFormat switch
         {
-            TextureFormat.Tga => (IAtlasEncoder)new TgaEncoder(),
+            TextureFormat.Tga => new TgaEncoder(),
             TextureFormat.Dds => new DdsEncoder(),
             _ => new StbPngEncoder()
         });
@@ -1718,7 +1718,7 @@ public static class BmFont
         // 5. Build shared atlas pages.
         var encoder = firstOptions.AtlasEncoder ?? (firstOptions.TextureFormat switch
         {
-            TextureFormat.Tga => (IAtlasEncoder)new TgaEncoder(),
+            TextureFormat.Tga => new TgaEncoder(),
             TextureFormat.Dds => new DdsEncoder(),
             _ => new StbPngEncoder()
         });

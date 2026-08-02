@@ -149,7 +149,7 @@ public sealed unsafe class DirectWriteRasterizer : IRasterizer
 
             // Get system font collection.
             IDWriteFontCollection* fontCollection;
-            hr = factory5->GetSystemFontCollection((IDWriteFontCollection**)&fontCollection, false);
+            hr = factory5->GetSystemFontCollection(&fontCollection, false);
             ThrowIfFailed(hr, "GetSystemFontCollection");
 
             try
