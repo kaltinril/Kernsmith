@@ -96,9 +96,21 @@ foreach (var bmfcPath in bmfcFiles)
 
         try
         {
+            var rasterizer = factory();
+
+            // A backend declining a capability the config asks for is expected, not a
+            // regression — skip it so it doesn't fail the run. Without this, adding an
+            // SDF config would permanently red the harness on GDI/DirectWrite/Native.
+            if (!rasterizer.Capabilities.SupportsSdf && ConfigRequestsSdf(bmfcPath))
+            {
+                (rasterizer as IDisposable)?.Dispose();
+                Console.WriteLine("SKIPPED (backend has no SDF support)");
+                continue;
+            }
+
             var result = BmFont.Builder()
                 .FromConfig(bmfcPath)
-                .WithRasterizer(factory())
+                .WithRasterizer(rasterizer)
                 .Build();
 
             var baseName = $"{configName}-{backendName}";
@@ -390,7 +402,6 @@ if (compare)
 
     foreach (var (mixPrefix, style, map) in mixMappings)
     {
-        bool allFound = true;
         foreach (var (slot, sourcePrefix, sourceBackend) in map)
         {
             var srcFnt = Path.Combine(outDir, $"{sourcePrefix}-{sourceBackend}.fnt");
@@ -402,10 +413,6 @@ if (compare)
             {
                 File.Copy(srcFnt, dstFnt, true);
                 File.Copy(srcPng, dstPng, true);
-            }
-            else
-            {
-                allFound = false;
             }
         }
         generatedConfigs.Add(mixPrefix);
@@ -463,6 +470,21 @@ if (compare)
 }
 
 return totalFailed > 0 ? 1 : 0;
+
+/// <summary>
+/// True when the .bmfc turns on the KernSmith SDF extension. Read straight from the
+/// file so the check stays independent of how FromConfig maps options.
+/// </summary>
+static bool ConfigRequestsSdf(string bmfcPath)
+{
+    foreach (var raw in File.ReadLines(bmfcPath))
+    {
+        var line = raw.Trim();
+        if (line.StartsWith("useSdf=", StringComparison.OrdinalIgnoreCase))
+            return line["useSdf=".Length..].Trim() == "1";
+    }
+    return false;
+}
 
 // --- Comparison helpers ---
 

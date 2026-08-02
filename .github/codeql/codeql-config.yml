@@ -14,3 +14,10 @@ name: KernSmith CodeQL config
 query-filters:
   - exclude:
       problem.severity: recommendation
+
+# Build intermediates are not source. Roslyn source generators (the regex
+# generator in particular) emit code under obj/ that trips quality queries we
+# cannot act on, since the file is regenerated on every build.
+paths-ignore:
+  - "**/obj/**"
+  - "**/bin/**"

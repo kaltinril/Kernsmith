@@ -75,7 +75,6 @@ public sealed class BinaryFormatterTests
         var output = _formatter.FormatBinary(model);
 
         // Assert
-        var fontNameBytes = Encoding.ASCII.GetBytes("TestFont");
         var outputString = Encoding.ASCII.GetString(output);
         outputString.ShouldContain("TestFont");
     }

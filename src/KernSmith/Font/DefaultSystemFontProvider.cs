@@ -306,7 +306,11 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
                         if (!parser.IsValid)
                             continue;
 
-                        var parsedFamily = parser.Names?.FontFamily;
+                        var names = parser.Names;
+                        if (names is null)
+                            continue;
+
+                        var parsedFamily = names.FontFamily;
                         if (string.IsNullOrWhiteSpace(parsedFamily))
                             continue;
 
@@ -319,7 +323,7 @@ public sealed class DefaultSystemFontProvider : ISystemFontProvider
                         matches.Add(new SystemFontInfo
                         {
                             FamilyName = parsedFamily,
-                            StyleName = parser.Names?.FontSubfamily ?? "Regular",
+                            StyleName = names.FontSubfamily ?? "Regular",
                             FilePath = filePath,
                             FaceIndex = faceIndex
                         });

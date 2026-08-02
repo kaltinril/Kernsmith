@@ -115,8 +115,8 @@ public class FontConfigPanel : Panel
             browseBtn.Visual.Width = 0;
             browseBtn.Click += (_, _) =>
             {
-                using var dialog = new NativeFileDialog()
-                    .SelectFile()
+                using var dialog = new NativeFileDialog();
+                dialog.SelectFile()
                     .AddFilter("Font Files", "ttf,otf,woff,ttc")
                     .AddFilter("All Files", "*");
                 var result = dialog.Open(out string? path);

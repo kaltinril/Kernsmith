@@ -32,7 +32,7 @@ public class EffectsPanel : Panel
 
     private void BuildContent()
     {
-        var (scrollViewer, inner) = UiFactory.CreateScrollablePanel(this);
+        var (_, inner) = UiFactory.CreateScrollablePanel(this);
 
         var stack = inner;
 

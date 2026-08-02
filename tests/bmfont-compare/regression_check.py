@@ -100,17 +100,40 @@ def checkout_branch(branch):
 
 
 def generate_fonts(output_dir, repo_root):
-    """Run the GenerateAll dotnet project to produce bitmap fonts."""
+    """Run the GenerateAll dotnet project to produce bitmap fonts.
+
+    A nonzero exit only means some (config, backend) pair failed -- normally a
+    backend declining a capability the config asks for, such as SDF on GDI or a
+    CFF/OTF outline on Native. Those pairs simply produce no output on either
+    side of the comparison, so the diff step stays meaningful. Let it decide
+    pass/fail rather than aborting the run here; a wholesale generation failure
+    still surfaces, as the diff reports the missing files.
+    """
     project = repo_root / "tests" / "bmfont-compare" / "GenerateAll"
     bmfont_dir = repo_root / "tests" / "bmfont-compare" / "gum-bmfont"
+
+    # Build separately and keep it fatal. 'dotnet run' exits 1 for both a build
+    # failure and a partial generation, and swallowing the former would leave
+    # stale output in place for the diff to compare against itself -- a silent
+    # pass that proves nothing.
     run_cmd([
+        "dotnet", "build", str(project),
+        "--framework", "net10.0-windows",
+        "--nologo", "-v", "q",
+    ])
+
+    result = run_cmd([
         "dotnet", "run",
         "--project", str(project),
         "--framework", "net10.0-windows",
+        "--no-build",
         "--",
         str(bmfont_dir),
         str(output_dir),
-    ])
+    ], check=False)
+    if result.returncode != 0:
+        print(f"  WARNING: some (config, backend) pairs failed to generate "
+              f"(exit {result.returncode}); relying on the diff step below.")
 
 
 def copy_baselines(output_dir, prefix="main_"):

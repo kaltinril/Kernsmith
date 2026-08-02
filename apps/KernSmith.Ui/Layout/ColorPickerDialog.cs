@@ -431,13 +431,10 @@ public class ColorPickerDialog
 
         UpdateSvIndicator();
 
-        // Mouse interaction
-        if (svContainer is InteractiveGue svInteractive)
-        {
-            svInteractive.Push += OnSvPush;
-            svInteractive.RollOver += OnSvRollOver;
-            svInteractive.LosePush += OnSvLosePush;
-        }
+        // Mouse interaction (ContainerRuntime already derives from InteractiveGue)
+        svContainer.Push += OnSvPush;
+        svContainer.RollOver += OnSvRollOver;
+        svContainer.LosePush += OnSvLosePush;
     }
 
     private void BuildHueBar(ContainerRuntime parent)
@@ -488,13 +485,10 @@ public class ColorPickerDialog
 
         UpdateHueIndicator();
 
-        // Mouse interaction
-        if (hueContainer is InteractiveGue hueInteractive)
-        {
-            hueInteractive.Push += OnHuePush;
-            hueInteractive.RollOver += OnHueRollOver;
-            hueInteractive.LosePush += OnHueLosePush;
-        }
+        // Mouse interaction (ContainerRuntime already derives from InteractiveGue)
+        hueContainer.Push += OnHuePush;
+        hueContainer.RollOver += OnHueRollOver;
+        hueContainer.LosePush += OnHueLosePush;
     }
 
     // --- Mouse event handlers ---

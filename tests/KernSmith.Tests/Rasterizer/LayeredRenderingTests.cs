@@ -354,7 +354,7 @@ public class LayeredRenderingTests
         var customProcessor = new TrackingPostProcessor();
 
         // Act -- use gradient (handled by compositor) + custom processor (runs after)
-        var result = BmFont.Generate(fontData, new FontGeneratorOptions
+        BmFont.Generate(fontData, new FontGeneratorOptions
         {
             Size = 32,
             Characters = SingleChar,

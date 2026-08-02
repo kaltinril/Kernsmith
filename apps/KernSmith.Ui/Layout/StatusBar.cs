@@ -1,5 +1,6 @@
 using global::Gum.DataTypes;
 using global::Gum.Forms.Controls;
+using global::Gum.Wireframe;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using Gum.GueDeriving;
@@ -148,7 +149,7 @@ public class StatusBar : Panel
                 return textRuntime;
         }
         // Also check if the element itself wraps text
-        var textChild = element.GetChildByNameRecursively("TextInstance");
+        var textChild = element.FindByName("TextInstance");
         return textChild as TextRuntime;
     }
 }
