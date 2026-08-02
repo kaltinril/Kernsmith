@@ -89,7 +89,7 @@ static int ShowHelp()
           -b, --bold                   Enable synthetic bold
           -i, --italic                 Enable synthetic italic
           --super-sample <n>           Super sampling 1-4 (default: 1)
-          --rasterizer <backend>       Rasterizer backend: freetype (default), stbtruetype, gdi, directwrite
+          --rasterizer <backend>       Rasterizer backend: freetype (default), stbtruetype, gdi, directwrite, native
           --hinting / --no-hinting     Enable/disable hinting (default: on)
           --height-percent <n>         Height scaling percentage (default: 100)
           --match-char-height          Match rendered to pixel height

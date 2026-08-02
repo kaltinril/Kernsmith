@@ -121,7 +121,7 @@ Call exactly one of these before `Build()`.
 
 | Method | Description |
 |--------|-------------|
-| `WithBackend(RasterizerBackend backend)` | Choose the rasterizer backend (FreeType, Gdi, DirectWrite, StbTrueType). |
+| `WithBackend(RasterizerBackend backend)` | Choose the rasterizer backend (FreeType, Gdi, DirectWrite, StbTrueType, or the experimental Native). |
 | `WithRasterizer(IRasterizer rasterizer)` | Supply a custom rasterizer instance. |
 | `WithPacker(IAtlasPacker packer)` | Supply a custom atlas packer. |
 | `WithEncoder(IAtlasEncoder encoder)` | Supply a custom atlas encoder. |

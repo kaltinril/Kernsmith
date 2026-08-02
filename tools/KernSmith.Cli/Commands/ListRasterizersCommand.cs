@@ -25,6 +25,7 @@ internal static class ListRasterizersCommand
             [RasterizerBackend.StbTrueType] = "All platforms",
             [RasterizerBackend.Gdi] = "Windows only",
             [RasterizerBackend.DirectWrite] = "Windows only",
+            [RasterizerBackend.Native] = "All platforms",
         };
 
         foreach (var backend in Enum.GetValues<RasterizerBackend>())

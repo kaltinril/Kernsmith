@@ -1,6 +1,6 @@
 # KernSmith
 
-KernSmith is a cross-platform .NET library that generates BMFont-compatible bitmap fonts from TTF, OTF, and WOFF files. It combines a pluggable rasterizer backend (FreeType, GDI, DirectWrite, or StbTrueType -- installed separately) for glyph rasterization with custom TTF table parsers for GPOS kerning, packs glyphs into texture atlases, and outputs BMFont `.fnt` + `.png` pairs ready for game engines and rendering frameworks.
+KernSmith is a cross-platform .NET library that generates BMFont-compatible bitmap fonts from TTF, OTF, and WOFF files. It combines a pluggable rasterizer backend (FreeType, GDI, DirectWrite, or StbTrueType -- installed separately, plus the experimental in-repo [Native](rasterizers/native.md) backend) for glyph rasterization with custom TTF table parsers for GPOS kerning, packs glyphs into texture atlases, and outputs BMFont `.fnt` + `.png` pairs ready for game engines and rendering frameworks.
 
 ## Key Capabilities
 
@@ -21,7 +21,7 @@ KernSmith is a cross-platform .NET library that generates BMFont-compatible bitm
 | [API Reference Guide](api-reference/index.md) | Curated guide to the public API: `BmFont`, the fluent builder, `FontGeneratorOptions`, `BmFontResult`, `BmFontModel`, and exceptions |
 | [CLI Reference](cli/index.md) | Command-line tool for generating bitmap fonts |
 | [UI Guide](ui/index.md) | Visual interface for font configuration and preview |
-| [Rasterizer Backends](rasterizers/index.md) | All four backends ship as separate packages: FreeType (cross-platform default), GDI and DirectWrite (Windows), StbTrueType (cross-platform managed) |
+| [Rasterizer Backends](rasterizers/index.md) | Four backends ship as separate packages: FreeType (cross-platform default), GDI and DirectWrite (Windows), StbTrueType (cross-platform managed). A fifth, Native (KernSmith's own pure-C# rasterizer), is experimental and not published to NuGet yet |
 | [API Reference](../api/KernSmith.html) | Auto-generated API documentation |
 
 ## Quick Start

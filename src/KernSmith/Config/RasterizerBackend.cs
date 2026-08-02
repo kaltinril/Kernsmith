@@ -20,12 +20,18 @@ public enum RasterizerBackend
     /// <summary>
     /// Native KernSmith rasterizer. Pure C#, cross-platform, no external dependencies.
     /// <para>
-    /// <b>Not usable yet.</b> This backend is still under development: it has no published
-    /// NuGet package, so it can never be resolved from a released build and
-    /// <see cref="KernSmith.Rasterizer.RasterizerFactory.Create"/> will throw for it.
-    /// The value is reserved so the enum does not change shape when the backend ships.
-    /// Use <see cref="FreeType"/>, <see cref="Gdi"/>, <see cref="DirectWrite"/>, or
-    /// <see cref="StbTrueType"/> instead.
+    /// <b>Experimental, and not published to NuGet yet.</b> The backend renders TrueType
+    /// (<c>glyf</c>) outlines and is supplied by the <c>KernSmith.Rasterizers.Native</c>
+    /// project, which currently ships only in the KernSmith repository and CLI. Until that
+    /// package is released, <see cref="KernSmith.Rasterizer.RasterizerFactory.Create"/>
+    /// throws for this value in apps built against the NuGet packages.
+    /// </para>
+    /// <para>
+    /// Limitations: TrueType outlines only — CFF/PostScript fonts (typically <c>.otf</c>)
+    /// are rejected — plus no WOFF, hinting, SDF, outline stroking, synthetic bold/italic,
+    /// variable fonts, color fonts, or system-font lookup, and only
+    /// <see cref="AntiAliasMode.None"/> and <see cref="AntiAliasMode.Grayscale"/>
+    /// anti-aliasing. Use <see cref="FreeType"/> or <see cref="StbTrueType"/> for those.
     /// </para>
     /// </summary>
     Native

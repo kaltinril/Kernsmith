@@ -605,7 +605,8 @@ internal sealed class GenerateCommand
                         "stbtruetype" => RasterizerBackend.StbTrueType,
                         "gdi" => RasterizerBackend.Gdi,
                         "directwrite" => RasterizerBackend.DirectWrite,
-                        _ => throw new ArgumentException($"Unknown rasterizer backend: '{backendStr}'. Valid: freetype, stbtruetype, gdi, directwrite")
+                        "native" => RasterizerBackend.Native,
+                        _ => throw new ArgumentException($"Unknown rasterizer backend: '{backendStr}'. Valid: freetype, stbtruetype, gdi, directwrite, native")
                     };
                     break;
                 case "--fallback-char":
@@ -923,7 +924,7 @@ internal sealed class GenerateCommand
               --sdf-spread <n>            SDF search radius (spread) in pixels (default: 8)
               --mono                      Disable anti-aliasing (alias for --aa none)
               --super-sample <n>          Super sampling level 1-4 (default: 1)
-              --rasterizer <backend>      Rasterizer backend: freetype (default), stbtruetype, gdi, directwrite
+              --rasterizer <backend>      Rasterizer backend: freetype (default), stbtruetype, gdi, directwrite, native
               --hinting / --no-hinting    Enable/disable FreeType hinting (default: on)
               --gamma <n>                 Gamma correction applied during rasterization (default: 1.8)
               --height-percent <n>        Vertical height scaling percentage (default: 100)

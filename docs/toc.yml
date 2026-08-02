@@ -33,5 +33,7 @@
       href: rasterizers/directwrite.md
     - name: StbTrueType
       href: rasterizers/stbtruetype.md
+    - name: Native (Experimental)
+      href: rasterizers/native.md
     - name: Writing a Custom Backend
       href: rasterizers/custom-backend.md

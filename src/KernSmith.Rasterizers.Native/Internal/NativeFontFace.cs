@@ -8,6 +8,14 @@ namespace KernSmith.Rasterizers.Native.Internal;
 /// </summary>
 internal sealed class NativeFontFace
 {
+    /// <summary>
+    /// Memoizes cmap lookups, which every glyph pays and which cost a binary search each.
+    /// A plain <see cref="Dictionary{TKey, TValue}"/> is deliberate: Phase 165 defers the
+    /// specialized integer map FontStashSharp uses until a large-glyph-set benchmark shows it
+    /// is worth the extra code.
+    /// </summary>
+    private readonly Dictionary<int, int> _glyphIndexCache = [];
+
     private NativeFontFace(
         TableProvider tables,
         HeadTable head,
@@ -60,8 +68,16 @@ internal sealed class NativeFontFace
     /// <summary>True when this face carries TrueType (<c>glyf</c>) outlines.</summary>
     public bool HasGlyfOutlines => Glyf is not null;
 
-    /// <summary>Maps a Unicode codepoint to its glyph index (0 when unmapped).</summary>
-    public int GetGlyphIndex(int codepoint) => Cmap.GetGlyphIndex(codepoint);
+    /// <summary>Maps a Unicode codepoint to its glyph index (0 when unmapped), memoized.</summary>
+    public int GetGlyphIndex(int codepoint)
+    {
+        if (_glyphIndexCache.TryGetValue(codepoint, out int cached))
+            return cached;
+
+        int glyphIndex = Cmap.GetGlyphIndex(codepoint);
+        _glyphIndexCache[codepoint] = glyphIndex;
+        return glyphIndex;
+    }
 
     /// <summary>
     /// Decodes a glyph outline in font design units, with composites resolved.

@@ -14,26 +14,42 @@ Trim- and AOT-friendly — ideal for Blazor WASM, iOS AOT, and serverless.
 
 ## Status
 
-This is an early scaffold (Phase 161). It loads and validates fonts and parses the core
-SFNT tables (`head`, `hhea`, `hmtx`, `maxp`, `OS/2`, `cmap`), but glyph outline decoding and
-rasterization arrive in later phases. Calling the render methods currently throws
-`NotImplementedException`.
+In development. As of Phase 165 the backend renders TrueType (`glyf`) outlines end to end:
+SFNT table parsing, cmap lookup (formats 4 and 12), outline extraction, adaptive curve
+flattening, and a signed-area scanline fill, with font and glyph metrics that track FreeType
+to within a pixel.
+
+Not yet supported — each raises a clear error or is ignored:
+
+- **CFF/OTF (PostScript) outlines** — rejected at `LoadFont` with a `RasterizationException` (Phase 166)
+- **WOFF/WOFF2** — supply raw TTF/TTC bytes
+- **Hinting** — none, so small sizes are softer than FreeType or GDI output
+- **Synthetic bold/italic** (Phase 167), **outline stroking** (Phase 168), **SDF** (Phase 169),
+  **variable fonts** (Phase 171), **color fonts** (Phase 172)
+- **System fonts by name** — load font bytes instead
+- **Anti-aliasing** — `None` and `Grayscale` only; no `Light` or `LCD`
+
+The package is not published to NuGet yet, so `RasterizerBackend.Native` resolves only in
+builds that reference this project directly. The KernSmith CLI ships it — try
+`kernsmith generate -f font.ttf -s 32 --rasterizer native`.
 
 ## Usage
 
-```
-dotnet add package KernSmith.Rasterizers.Native
+Reference the project from a source build (there is no `dotnet add package` yet):
+
+```xml
+<ProjectReference Include="path/to/src/KernSmith.Rasterizers.Native/KernSmith.Rasterizers.Native.csproj" />
 ```
 
 ```csharp
 var options = new FontGeneratorOptions
 {
     Size = 32,
-    RasterizerBackend = RasterizerBackend.Native
+    Backend = RasterizerBackend.Native
 };
 ```
 
-The rasterizer auto-registers via `[ModuleInitializer]`, so referencing the package is
+The rasterizer auto-registers via `[ModuleInitializer]`, so referencing the project is
 sufficient.
 
 ## Build

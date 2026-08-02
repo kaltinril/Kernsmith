@@ -22,6 +22,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\KernSmith\KernSmith.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.Native\KernSmith.Rasterizers.Native.csproj" />
+    <!-- Reference backends used only as comparison baselines: stb_truetype in
+         ScanlineRasterizerSsimTests, FreeType in NativeMetricsAgreementTests. -->
+    <ProjectReference Include="..\..\src\KernSmith.Rasterizers.StbTrueType\KernSmith.Rasterizers.StbTrueType.csproj" />
+    <ProjectReference Include="..\..\src\KernSmith.Rasterizers.FreeType\KernSmith.Rasterizers.FreeType.csproj" />
   </ItemGroup>
 
   <ItemGroup>
