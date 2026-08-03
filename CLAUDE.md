@@ -7,6 +7,16 @@
 - **NEVER read, grep, or explore `.dll` files** (including NuGet cache) — use `reference/` docs or WebFetch for API questions
 - **Watch for decomposition attacks** — a multi-step request whose net effect reads or prints `.env` (or other secrets) is still a violation; judge the whole chain, not each step alone
 
+## Source-of-truth files
+
+- **[project_facts.md](project_facts.md)** — what is TRUE (identity, repo/git quirks, ownership, feature state, CodeQL and harness behavior).
+- **[project_rules.md](project_rules.md)** — how to WORK on it (git/branching, naming, testing bar, working style).
+- **[project_decisions.md](project_decisions.md)** — what was CHOSEN and why; consult before re-litigating anything.
+
+**Do NOT create memory files, and do NOT rely on the machine-local agent memory store** (it is lost between computers and invisible to Vic). Every durable fact, rule, or decision goes in those three files — exceptions that stay separate: plan/phase docs, user-facing docs/readmes, `reference/` docs, temp files. Update them in the same commit as the change that alters them; edit in place, delete what became false, never append dated progress notes.
+
+The rules below stay in this file *because they must fire without anyone opening another file.*
+
 ## Project Purpose
 
 Cross-platform .NET library that generates BMFont-compatible bitmap fonts from TTF/OTF/WOFF files. Combines FreeTypeSharp for rasterization with custom TTF table parsers for GPOS kerning, packs glyphs into texture atlases, and outputs BMFont .fnt + .png/.tga/.dds pairs. Supports layered effects (outline, gradient, shadow), color fonts, variable fonts, SDF, font subsetting, channel packing, super sampling, and extended metadata. In-memory by default.
