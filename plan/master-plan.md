@@ -22,14 +22,9 @@
 
 ## Decisions Made
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| **Font rasterization** | FreeTypeSharp (MIT, wraps FreeType 2.13.2 via P/Invoke) | Industry-standard rasterizer, small native footprint (~12 MB), MIT license, supports SDF, hinting, AA modes. Use everything it exposes -- metrics, kerning (kern table), glyph bitmaps. |
-| **TTF table parsing** | Our own pure C# parser | FreeTypeSharp cannot expose GPOS kerning pairs, OS/2 metadata, name table strings, or variable font axes. We parse the tables FreeTypeSharp cannot reach. No additional dependencies. |
-| **Texture packing** | MaxRects (BestShortSideFit) primary, Skyline as fast mode | MaxRects achieves 93-97% packing efficiency. Skyline is 2-5x faster with 2-5% less efficiency. Our own implementation based on public domain reference code. |
-| **API design** | In-memory model first, output methods on top | Core pipeline produces a format-agnostic model. `.ToString()`, `.ToXml()`, `.ToBinary()`, `.ToFile()` render it. Zero disk I/O by default. |
-| **Licensing** | MIT open source, no paid/restrictive dependencies | FreeTypeSharp: MIT. FreeType native: FreeType License (BSD-like). Our code: MIT. SixLabors: explicitly excluded (split license). |
-| **Cross-platform** | Anywhere .NET + FreeType native binaries run | Windows, macOS, Linux, Android, iOS, tvOS via FreeTypeSharp's bundled natives. FreeTypeSharp still has no Linux ARM64 build. WASM/browser is covered instead by the pure-C# StbTrueType backend (Phases 32/33, see `samples/KernSmith.Samples.BlazorWasm`). |
+Architecture decisions and their rationale live in **[../project_decisions.md](../project_decisions.md)** —
+rasterization backend, TTF table parsing, texture packing, API shape, licensing, memory
+model, error hierarchy and UI framework. They are not restated here.
 
 ---
 
@@ -271,28 +266,21 @@ These detailed docs were used during implementation and remain as reference mate
 
 ## Resolved Decisions
 
-| # | Question | Decision | Details |
-|---|----------|----------|---------|
-| 1 | **PNG encoding library** | **StbImageWriteSharp** (public domain) | Confirmed. See [done/plan-project-structure.md](done/plan-project-structure.md). |
-| 2 | **Target framework** | **Multi-target `net8.0;net10.0`** | Migrated to net10.0 in Phase 11, then multi-targeted again from 0.15.0 (CI builds and tests both). `Directory.Build.props` sets the repo default `<TargetFrameworks>net8.0;net10.0</TargetFrameworks>`; projects are *not* unified on a single TFM -- five distinct sets exist: core/`KernSmith.Fonts.Web`/`Rasterizers.FreeType`/`.StbTrueType`/`.Native` use the default; `Rasterizers.Gdi` is `net8.0-windows;net10.0-windows`; `Rasterizers.DirectWrite.TerraFX` is `net10.0-windows` only; `KernSmith.Cli` is `net8.0;net10.0;net8.0-windows;net10.0-windows`; `KernSmith.Ui` is `net10.0;net10.0-windows`; `Samples.BlazorWasm` is `net10.0` only. |
-| 3 | **Project license** | **MIT** | Finalized as MIT open source (2026-03-22). See Phase 74. |
-| 4 | **NuGet package name** | **KernSmith** | Package ID `KernSmith`, main API class `KernSmith`. |
-| 5 | **FreeTypeSharp usage boundary** | Use everything it can do | Our parser only covers what FreeTypeSharp cannot (GPOS, OS/2, name, cmap). No duplication. |
-| 6 | **Unsafe code policy** | `AllowUnsafeBlocks` in rasterizer backend projects only | `src/KernSmith/KernSmith.csproj` (the core library) does **not** set `AllowUnsafeBlocks` and has no FreeTypeSharp reference -- the core is entirely safe C#. Unsafe is enabled only in the five backend projects (`Rasterizers.FreeType`, `.StbTrueType`, `.Gdi`, `.DirectWrite.TerraFX`, `.Native`), plus the internal `tests/bmfont-compare/GenerateAll` harness. Matches the rule in CLAUDE.md. |
-| 7 | **FreeType memory** | Manual lifecycle via `IDisposable` | Pin font data with `GCHandle`. Do NOT use `FreeTypeFaceFacade`. See [done/plan-rasterization.md](done/plan-rasterization.md). |
-| 8 | **Test framework** | **xUnit** + Shouldly | FluentAssertions replaced with Shouldly in Phase 79 (FluentAssertions moved to paid licensing). See [done/plan-testing.md](done/plan-testing.md). |
-| 9 | **Error handling** | Custom exception hierarchy | `FontParsingException`, `RasterizationException`, `AtlasPackingException`. See [done/plan-data-types.md](done/plan-data-types.md). |
-| 10 | **UI framework** | **MonoGame (DesktopGL) + GUM UI + MonoGame.Extended** | Cross-platform, game-engine-native rendering, GUM provides Forms controls with MVVM binding. Code-only (no XAML, no GUM editor). NativeFileDialogSharp for OS file dialogs. Evaluated Avalonia, WPF, MAUI — chose MonoGame+GUM for alignment with target audience (game developers). For future web deployment, KNI (API-compatible MonoGame fork) provides Blazor WebGL — swap is NuGet-only, no code changes. Web rasterization tracked in Phase 30. |
+Settled questions now live in the source-of-truth files rather than this plan:
+**[../project_facts.md](../project_facts.md)** for the stack, target-framework matrix,
+package identity, namespaces and license; **[../project_decisions.md](../project_decisions.md)**
+for the choices and their reasons.
 
 ---
 
 ## Disallowed Technologies
 
-> **Do not use these packages or libraries.** Any agent working on this project must avoid introducing these dependencies.
+> **Do not use these packages or libraries.**
 
 | Package | Reason | Alternative |
 |---------|--------|-------------|
-| **FluentAssertions** | Moving to paid/commercial licensing (2026). Removed in Phase 79. | **Shouldly** (MIT, `using Shouldly;`) |
+| **FluentAssertions** | Moved to paid/commercial licensing. Removed in Phase 79. | **Shouldly** (MIT, `using Shouldly;`) |
+| **SixLabors.*** | Split license, incompatible with this project's MIT-only dependency rule. | StbImageSharp / StbImageWriteSharp |
 
 ---
 
