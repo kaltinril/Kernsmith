@@ -158,6 +158,10 @@ coverage*/[*.json, *.xml, *.info]
 
 # Visual Studio code coverage results
 *.coverage
+
+# Test result files written by --results-directory in ci.yml and publish.yml
+testresults/
+*.trx
 *.coveragexml
 
 # NCrunch

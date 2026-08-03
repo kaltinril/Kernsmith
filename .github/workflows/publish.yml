@@ -113,12 +113,52 @@ jobs:
             10.0.x
       - run: dotnet restore
       - run: dotnet build --configuration Release --no-restore
+      # Same shape as ci.yml: the .NET test host hangs on Linux after the run completes, and
+      # --blame-hang then reports exit 1 regardless of the results, so continue-on-error keeps
+      # that shutdown hang from failing a release. The trx gate below — not the exit code —
+      # decides whether we ship. Without that gate these steps masked real failures outright:
+      # the 0.19.0 release published while every CliTest was failing.
       - name: Test (net8.0)
-        run: dotnet test tests/KernSmith.Tests/KernSmith.Tests.csproj --configuration Release --no-build -f net8.0 --blame-hang --blame-hang-timeout 3m
+        run: dotnet test tests/KernSmith.Tests/KernSmith.Tests.csproj --configuration Release --no-build -f net8.0 --blame-hang --blame-hang-timeout 3m --logger "trx;LogFileName=core-net8.0.trx" --results-directory testresults
         continue-on-error: true
       - name: Test (net10.0)
-        run: dotnet test tests/KernSmith.Tests/KernSmith.Tests.csproj --configuration Release --no-build -f net10.0 --blame-hang --blame-hang-timeout 3m
+        run: dotnet test tests/KernSmith.Tests/KernSmith.Tests.csproj --configuration Release --no-build -f net10.0 --blame-hang --blame-hang-timeout 3m --logger "trx;LogFileName=core-net10.0.trx" --results-directory testresults
         continue-on-error: true
+      - name: Verify test results
+        if: always()
+        shell: bash
+        run: |
+          # Gate on the recorded results rather than the runner's exit code, which is masked
+          # above. A release must not pack or publish when a test failed or never ran.
+          shopt -s nullglob
+          files=(testresults/*.trx)
+          status=0
+          if [ "${#files[@]}" -ne 2 ]; then
+            echo "::error::Expected 2 result file(s) in testresults/, found ${#files[@]} — a test run did not report."
+            status=1
+          fi
+          for f in "${files[@]}"; do
+            # || true throughout: a missing match makes grep exit 1, which pipefail would
+            # otherwise turn into a step crash before the diagnostics below can run.
+            counters=$(grep -o '<Counters [^>]*>' "$f" | head -1 || true)
+            total=$(printf '%s' "$counters" | grep -o 'total="[0-9]*"' | tr -dc '0-9' || true)
+            failed=$(printf '%s' "$counters" | grep -o 'failed="[0-9]*"' | tr -dc '0-9' || true)
+            if [ -z "$total" ] || [ -z "$failed" ]; then
+              echo "::error::$f has no result counters — the run did not complete."
+              status=1
+              continue
+            fi
+            echo "$f: total=$total failed=$failed"
+            if [ "$total" -eq 0 ]; then
+              echo "::error::$f ran zero tests."
+              status=1
+            fi
+            if [ "$failed" -ne 0 ]; then
+              echo "::error::$failed test(s) failed in $f."
+              status=1
+            fi
+          done
+          exit $status
       - name: Pack cross-platform packages
         run: |
           dotnet pack src/KernSmith/KernSmith.csproj --configuration Release --no-build --output ./nupkg
