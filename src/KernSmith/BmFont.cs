@@ -284,9 +284,16 @@ public static class BmFont
                 {
                     if (processor is OutlinePostProcessor or GradientPostProcessor or ShadowPostProcessor)
                         continue;
-                    if (processor is BoldPostProcessor && options.Bold)
+
+                    // Skip the dilation/shear fallback only when the backend really did apply the
+                    // transform itself, or the glyph gets styled twice. A backend that reports
+                    // false ignores Bold/Italic outright, so dropping the caller's post-processor
+                    // there produced unstyled glyphs with no error (Phase 150 Issue 5).
+                    if (processor is BoldPostProcessor && options.Bold
+                        && rasterizer.Capabilities.SupportsSyntheticBold)
                         continue;
-                    if (processor is ItalicPostProcessor && options.Italic)
+                    if (processor is ItalicPostProcessor && options.Italic
+                        && rasterizer.Capabilities.SupportsSyntheticItalic)
                         continue;
 
                     activePostProcessors ??= [];
