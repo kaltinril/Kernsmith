@@ -27,11 +27,12 @@ Cross-platform .NET library that generates BMFont-compatible bitmap fonts from T
 |--------|---------|
 | `src/KernSmith/` | **Main library** — the NuGet package |
 | `src/KernSmith.Rasterizers.*/` | **Rasterizer backends** — FreeType, StbTrueType, Gdi, DirectWrite.TerraFX, Native |
+| `src/KernSmith.Fonts.Web/` | **Web font source** — fetches WOFF from CSS font CDNs; for browser/WASM where there is no filesystem |
 | `tests/KernSmith.Tests/` | **xUnit + Shouldly test suite** |
 | `tools/KernSmith.Cli/` | **CLI tool** for bitmap font generation |
-| `samples/` | **Usage examples** — KernSmith.Samples, Rasterizer.Example, Samples.BlazorWasm |
+| `samples/` | **Usage examples** |
 | `benchmarks/KernSmith.Benchmarks/` | **BenchmarkDotNet performance benchmarks** |
-| `apps/` | **App projects** — Ui (desktop), Web, Mobile |
+| `apps/` | **App projects** — `KernSmith.Ui` is the real desktop app; `Web` and `Mobile` are still stubs |
 | `plan/` | **Technical plan docs** — active plans; completed plans archived in `plan/done/` |
 | `reference/` | **Reference docs** — TTF spec, BMFont format, algorithm research |
 

@@ -46,7 +46,7 @@ Source of truth for statements about the project. One short fact per line. Updat
 
 - `.bmfc` channel config (`alphaChnl`/`redChnl`/`greenChnl`/`blueChnl`) is parsed by `BmfcConfigReader` into `ChannelConfig` and honored on the CLI/core path (shipped 0.15.2, PR #128).
 - The desktop UI carries channel config end-to-end (`EffectsViewModel.Channels` → `GenerationRequest.Channels` → `GenerationService` sets `options.Channels`).
-- The Native rasterizer renders TrueType (`glyf`) outlines end to end as of Phases 164-165, and is exposed in the CLI (`--rasterizer native`) and the README as clearly-labeled experimental. CFF/OTF is rejected (Phase 166); no WOFF, hinting, SDF, outline stroke, or synthetic bold/italic yet; only `AntiAlias.None` / `Grayscale`. Not published to NuGet.
+- The Native rasterizer renders TrueType (`glyf`) outlines end to end as of Phases 164-165, and is exposed in the CLI (`--rasterizer native`) and the README as clearly-labeled experimental. CFF/OTF (PostScript) outlines are rejected at load time until Phase 166 adds a CFF interpreter; no WOFF, hinting, SDF, outline stroke, or synthetic bold/italic yet; only `AntiAlias.None` / `Grayscale`. Not published to NuGet.
 
 ## Build & Test Gotchas
 

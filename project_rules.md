@@ -60,7 +60,7 @@ Git workflow, TDD, the regression harness, context management and security live 
 - Stay in scope: review/validate/doc requests don't authorize implementation; don't let prior-turn momentum widen a bounded task.
 - Debug then ask: trace the path once and form a hypothesis; if the cause isn't clear, ask what Jeremy observes rather than re-running static analysis. Scope debug agents narrowly (one file, one theory).
 - Surface decisions in chat with context and a recommendation in plain text before asking; don't bury the question inside a tool batch.
-- Verify before asserting. A claim copied forward without re-checking is how stale facts get enshrined.
+- Verify before asserting, and re-check a claim before carrying it forward — a fact copied from a previous session without re-checking is how stale information gets enshrined as truth.
 - Prefers thorough manual testing via `.bat` files with timing output; test output to a gitignored `output/` folder.
 - Report actual generation time vs startup overhead — performance is a first-class concern.
 - Parallel agents for independent tasks.
@@ -74,10 +74,9 @@ Git workflow, TDD, the regression harness, context management and security live 
 
 The next session starts with CLAUDE.md and these three files and nothing else. Anything known only to a finished conversation is lost work.
 
-- `project_facts.md`, `project_rules.md` and `project_decisions.md` are the only home for durable facts, rules and decisions. Do not create memory files.
+- These three files are the only home for durable facts, rules and decisions; CLAUDE.md carries the prohibition on memory files that makes that true.
 - Update them in the same commit as the change that alters them.
 - Edit in place and delete entries that become false; never append changelogs or dated progress notes, since history lives in git.
 - When a conversation surfaces a new durable fact, a correction to behavior, or a resolved choice, write it to the right file immediately without being asked.
 - Facts state what is true; rules state how to work; decisions state what was chosen and why. An entry with no rejected alternative and no reason is a fact, not a decision.
-- Record only what reading the code cannot tell you. Folder layout, file names and format constants are derivable and belong in the code or the docs.
-- Verify a claim before carrying it forward. A fact copied from a previous session without re-checking is how stale information gets enshrined as truth.
+- Favor what reading the code cannot tell you — a rationale, a gotcha, a constraint, a convention for where new code goes. Don't inventory what a directory listing or a grep would show.

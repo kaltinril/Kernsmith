@@ -10,8 +10,8 @@ Decisions made, with the why — consult before re-litigating anything. One per 
 - The API is in-memory-model-first with output methods on top (`.ToString()`, `.ToXml()`, `.ToBinary()`, `.ToFile()`), so the core pipeline stays format-agnostic and does zero disk I/O by default.
 - MIT throughout, with no paid or split-license dependencies — SixLabors is explicitly excluded for its split license.
 - FreeType memory is managed manually via `IDisposable`, pinning font data with `GCHandle`; do NOT use `FreeTypeFaceFacade`.
-- Errors use a custom exception hierarchy: `FontParsingException`, `RasterizationException`, `AtlasPackingException`.
-- The desktop UI is MonoGame (DesktopGL) + GUM, code-only (no XAML, no GUM editor). Avalonia, WPF and MAUI were evaluated and rejected: MonoGame+GUM aligns with the game-developer audience, and KNI (an API-compatible MonoGame fork) gives a NuGet-only swap to Blazor WebGL later.
+- Errors use a custom exception hierarchy rooted at `BmFontException`, so a consumer can catch everything this library throws with one clause.
+- The desktop UI is MonoGame (DesktopGL) + GUM, code-only (no XAML, no GUM editor). Avalonia, WPF and MAUI were evaluated and rejected because MonoGame+GUM aligns with the game-developer audience. The original rationale also counted on KNI (an API-compatible MonoGame fork) for a cheap Blazor WebGL path later; re-check that assumption before relying on it, since the Gum integrations now live in Vic's repo.
 - Cross-platform reach is wherever .NET plus FreeType natives run; FreeTypeSharp still has no Linux ARM64 build, and WASM/browser is covered by the pure-C# StbTrueType backend instead.
 
 ## Channels & Compositing
