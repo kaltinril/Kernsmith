@@ -15,6 +15,20 @@ internal sealed class GlyfTable
     /// <summary>numberOfContours(2) + xMin/yMin/xMax/yMax(2 each).</summary>
     private const int GlyphHeaderLength = 10;
 
+    /// <summary>
+    /// Ceiling on how many components a single top-level glyph may resolve in total, across
+    /// every level rather than per level.
+    /// </summary>
+    /// <remarks>
+    /// The depth limit alone does not bound the work. In a chain where every glyph carries two
+    /// components pointing at the next one, every path is exactly as deep as the chain, so the
+    /// depth guard never fires — yet the call tree is 2^depth nodes, and a table of a few dozen
+    /// 22-byte glyphs pins a core indefinitely. Fonts can arrive from an untrusted source, so
+    /// the total is capped as well. Real composites resolve a handful of components; accented
+    /// Latin is two.
+    /// </remarks>
+    public const int MaxComponentsPerGlyph = 4096;
+
     // Simple glyph point flags.
     private const byte OnCurvePoint = 0x01;
     private const byte XShortVector = 0x02;
@@ -60,7 +74,8 @@ internal sealed class GlyfTable
     /// <exception cref="FontFormatException">If the glyph's data is malformed or truncated.</exception>
     public ParsedGlyph GetGlyph(int glyphIndex)
     {
-        var glyph = ParseGlyph(glyphIndex, depth: 0);
+        int componentBudget = MaxComponentsPerGlyph;
+        var glyph = ParseGlyph(glyphIndex, depth: 0, ref componentBudget);
         return InsertImplicitOnCurvePoints(glyph);
     }
 
@@ -69,7 +84,14 @@ internal sealed class GlyfTable
     /// arguments index the raw point stream, so assembly must happen before midpoints are
     /// inserted or the indices would shift.
     /// </summary>
-    private ParsedGlyph ParseGlyph(int glyphIndex, int depth)
+    /// <param name="glyphIndex">Index of the glyph to parse.</param>
+    /// <param name="depth">Current composite recursion depth; 0 for a top-level glyph.</param>
+    /// <param name="componentBudget">
+    /// Remaining components this top-level glyph may still resolve; see
+    /// <see cref="MaxComponentsPerGlyph"/>. Carried by reference so it counts the whole
+    /// expansion rather than resetting down each branch.
+    /// </param>
+    private ParsedGlyph ParseGlyph(int glyphIndex, int depth, ref int componentBudget)
     {
         if (depth > _maxComponentDepth)
             throw new FontFormatException("glyf", 0,
@@ -98,7 +120,7 @@ internal sealed class GlyfTable
 
         GlyphContour[] contours = numberOfContours >= 0
             ? ParseSimpleContours(ref reader, glyphIndex, numberOfContours)
-            : ParseCompositeContours(ref reader, glyphIndex, depth);
+            : ParseCompositeContours(ref reader, glyphIndex, depth, ref componentBudget);
 
         return new ParsedGlyph(glyphIndex, contours, xMin, yMin, xMax, yMax, numberOfContours < 0);
     }
@@ -201,7 +223,7 @@ internal sealed class GlyfTable
         return coordinates;
     }
 
-    private GlyphContour[] ParseCompositeContours(ref FontReader reader, int glyphIndex, int depth)
+    private GlyphContour[] ParseCompositeContours(ref FontReader reader, int glyphIndex, int depth, ref int componentBudget)
     {
         var contours = new List<GlyphContour>();
         ushort flags;
@@ -242,8 +264,13 @@ internal sealed class GlyfTable
                 d = reader.ReadF2Dot14();
             }
 
-            // Cyclic references (direct or indirect) are caught by the depth limit.
-            var component = ParseGlyph(componentIndex, depth + 1);
+            // Cyclic references (direct or indirect) are caught by the depth limit; a wide but
+            // legal-depth expansion is caught by the budget.
+            if (--componentBudget < 0)
+                throw new FontFormatException("glyf", reader.Position,
+                    $"glyph {glyphIndex} expands to more than {MaxComponentsPerGlyph} components.");
+
+            var component = ParseGlyph(componentIndex, depth + 1, ref componentBudget);
             var transformed = ApplyLinearTransform(component.Contours, a, b, c, d);
 
             float dx, dy;

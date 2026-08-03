@@ -3,7 +3,7 @@
 > **Status**: Planning
 > **Size**: Medium
 > **Created**: 2026-03-30
-> **Updated**: 2026-08-01
+> **Updated**: 2026-08-02
 > **Dependencies**: Phase 78C (DirectWrite backend)
 > **Origin**: [Phase 78G -- Remaining Rasterizer Issues](done/phase-78g-remaining-issues.md)
 > **Goal**: Track and resolve deferred rasterizer issues from Phase 78G that require significant effort or carry notable risk.
@@ -12,7 +12,7 @@
 
 ## Overview
 
-During Phase 78C DirectWrite implementation and Phase 78G triage, four issues were identified as worth tracking but not blocking Phase 78 completion. These issues involve complex API surface (DirectWrite COM interfaces, GDI sizing edge cases) and are deferred until there is user demand or strategic need. **Issue 5 was added 2026-08-01** from Phase 165 — it is a *core* (not backend-specific) defect and is the highest-importance item in this doc.
+During Phase 78C DirectWrite implementation and Phase 78G triage, four issues were identified as worth tracking but not blocking Phase 78 completion. These issues involve complex API surface (DirectWrite COM interfaces, GDI sizing edge cases) and are deferred until there is user demand or strategic need. Issue 5 came later, from Phase 165, and was a *core* (not backend-specific) defect rather than a deferred feature.
 
 > **Last validated 2026-07-28** — issues 1-3 still match the code byte-for-byte. Issue 4 was re-confirmed as **still reproducing** via a full end-to-end trace (the hedge asking for re-validation has been replaced with the root-cause chain below).
 
@@ -26,7 +26,7 @@ Each issue is ranked 1 (low) to 5 (high) on three dimensions:
 | 2 | Variable Font Support (DW) | 2 | 2 | 2 | Open |
 | 3 | Native DW Kerning | 3 | 2 | 1 | Open |
 | 4 | GDI MatchCharHeight Bug | 2 | 3 | 2 | Open |
-| 5 | **Synthetic Bold/Italic Ignores Capabilities (core)** | 4 | 2 | 4 | Open |
+| 5 | Synthetic Bold/Italic Ignores Capabilities (core) | 4 | 2 | 4 | Fixed |
 
 **Legend**: Ease = ease to implement (5=easy). Break Risk = chance of breaking other things (5=high risk). Importance = importance to implement (5=critical).
 
@@ -86,30 +86,14 @@ Corroborating generated artifacts (local; `tests/bmfont-compare/` is gitignored)
 
 Either path changes pixel output, so `python tests/bmfont-compare/regression_check.py` is required before the work is considered done.
 
-### 5. Synthetic Bold/Italic Silently No-Op When the Backend Can't Do It — Open
+### 5. Synthetic Bold/Italic Silently No-Op When the Backend Can't Do It — Fixed
 
 > Ease: 4 | Break Risk: 2 | Importance: 4
-> **Found**: 2026-08-01 during [Phase 165](done/phase-165-irasterizer-integration.md) (Native rasterizer `IRasterizer` integration).
-> **Unlike issues 1-4 this is a core defect, not a backend limitation** — the bug is in `src/KernSmith/BmFont.cs`, shared by every backend.
+> **Unlike issues 1-4 this was a core defect, not a backend limitation** — the bug was in `src/KernSmith/BmFont.cs`, shared by every backend.
 
-`src/KernSmith/BmFont.cs:287` skips `BoldPostProcessor` / `ItalicPostProcessor` whenever `options.Bold` / `options.Italic` is set:
+`src/KernSmith/BmFont.cs` skipped a caller-supplied `BoldPostProcessor` / `ItalicPostProcessor` whenever `options.Bold` / `options.Italic` was set, on the assumption that the rasterizer had already applied the transform. The gate never consulted `IRasterizerCapabilities.SupportsSyntheticBold` / `SupportsSyntheticItalic`, so on a backend that reports false — Native is the first — the transform was applied by nobody and requesting bold produced *thinner* glyphs than not requesting it, with no error.
 
-```csharp
-if (processor is BoldPostProcessor && options.Bold)
-    continue;
-if (processor is ItalicPostProcessor && options.Italic)
-    continue;
-```
-
-The assumption is "the rasterizer already applied the emboldening/slant, so don't double-apply it." But the gate **never consults `IRasterizerCapabilities.SupportsSyntheticBold` / `SupportsSyntheticItalic`** — it keys off the *user option* alone.
-
-**Why it went unnoticed**: all four previously shipped backends (FreeType, GDI, DirectWrite, StbTrueType) declare `SupportsSyntheticBold => true`, so the gate has been accidentally correct for the entire life of the code.
-
-**How it surfaced**: the Native backend is the first to declare `SupportsSyntheticBold => false` / `SupportsSyntheticItalic => false` (synthetic transforms are Phase 167). Native therefore *ignores* `Bold`/`Italic`, and the core *also* skips the post-processor — so `Bold = true` + `RasterizerBackend.Native` produces **regular-weight glyphs with no warning, no error, and no diagnostic**.
-
-The `tests/bmfont-compare` harness corroborates this: bold/italic/outlined configs show the largest Native-vs-FreeType deltas (`Font48Bauhaus_93_Italic` mean 3.93px width delta; plain-synbold 1.98px), while regular upright faces are near-identical.
-
-**Fix shape**: gate on the capability, not just the option — run the post-processor when the backend reports it cannot apply the transform itself. Roughly:
+The gate now requires the capability as well:
 
 ```csharp
 if (processor is BoldPostProcessor && options.Bold
@@ -117,7 +101,9 @@ if (processor is BoldPostProcessor && options.Bold
     continue;
 ```
 
-**Regression requirement**: this is a **core shared-pixel-path change**, so `python tests/bmfont-compare/regression_check.py` is required before it is considered done. It should come back **identical for FreeType, GDI, DirectWrite and StbTrueType** (all four report `true`, so the branch is unchanged for them) — any pixel delta on those four means the fix is wrong. Native is the only column expected to change.
+FreeType, GDI, DirectWrite and StbTrueType all report `true`, so their branch is unchanged; `regression_check.py` confirms all 193 FNT files and every pixel comparison identical across all backends. The harness cannot cover the fix itself, because `PostProcessors` is a programmatic-only option with no `.bmfc` equivalent — `SyntheticStyleFallbackTests` carries that coverage, including the inverse case that a capable backend must still skip the fallback rather than styling twice.
+
+Native still renders bold/italic configs differently from FreeType, but that is the backend genuinely lacking synthetic styling (Phase 167), not this defect.
 
 ## Files Reference
 
@@ -128,6 +114,7 @@ if (processor is BoldPostProcessor && options.Bold
 | `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs` | Issue 4 — `HandlesOwnSizing` (`:733`), `LfHeight` (`:345`), `GetFontMetrics` (`:260-268`) |
 | `src/KernSmith/Config/BmfcConfigReader.cs` | Issue 4 — `:102-113`, where the negative-size sign is discarded |
 | `src/KernSmith/Rasterizer/RasterOptions.cs` | Issue 4 — `:76-97`, `MatchCharHeight` is never copied to the backend options |
-| `src/KernSmith/BmFont.cs` | Issue 4 — `:227-240`, the sizing decision point; also gates issues 1-2 at `:194-205`. Issue 5 — `:287-290`, the bold/italic post-processor skip that ignores capabilities |
-| `src/KernSmith/Rasterizer/IRasterizerCapabilities.cs` | Issue 5 — `SupportsSyntheticBold` / `SupportsSyntheticItalic`, the flags the fix must consult |
+| `src/KernSmith/BmFont.cs` | Issue 4 — `:227-240`, the sizing decision point; also gates issues 1-2 at `:194-205`. Issue 5 — the capability-gated bold/italic post-processor skip |
+| `src/KernSmith/Rasterizer/IRasterizerCapabilities.cs` | Issue 5 — `SupportsSyntheticBold` / `SupportsSyntheticItalic`, the flags the gate consults |
 | `src/KernSmith.Rasterizers.Native/NativeCapabilities.cs` | Issue 5 — the first backend to report `false`, which is what exposed the bug |
+| `tests/KernSmith.Rasterizers.Native.Tests/SyntheticStyleFallbackTests.cs` | Issue 5 — regression coverage, both directions of the gate |

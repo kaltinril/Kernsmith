@@ -227,6 +227,17 @@ internal sealed class CmapTable
         reader.Skip(4); // language
         uint numGroups = reader.ReadUInt32();
 
+        // numGroups is untrusted and sizes three arrays. Check it against the bytes actually
+        // present before allocating any of them: a declared count near uint.MaxValue overflows
+        // the array length outright, and a merely large one demands gigabytes — either way a
+        // malformed font escapes as OverflowException/OutOfMemoryException instead of the
+        // FontFormatException every other parse path here raises.
+        const int GroupLength = 12; // startCharCode + endCharCode + startGlyphID, uint32 each.
+        if (numGroups > reader.Remaining / GroupLength)
+            throw new FontFormatException("cmap", reader.Position,
+                $"format 12 subtable declares {numGroups} group(s), which needs "
+                + $"{(long)numGroups * GroupLength} bytes, but only {reader.Remaining} remain.");
+
         var startChar = new uint[numGroups];
         var endChar = new uint[numGroups];
         var startGlyph = new uint[numGroups];

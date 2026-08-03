@@ -379,4 +379,70 @@ public class GlyphTableTests
         BinaryPrimitives.WriteUInt32BigEndian(buffer, value);
         return buffer;
     }
+
+    // ------------------------------------------------- composite expansion budget
+
+    /// <summary>
+    /// The depth limit does not bound the parsing WORK. In a chain where every glyph has two
+    /// components pointing at the next one, every path is exactly as deep as the chain, so the
+    /// depth guard never fires — but the call tree is 2^chain nodes. A table of a few dozen
+    /// 22-byte glyphs then pins a core indefinitely, which matters because fonts can arrive
+    /// from an untrusted source (KernSmith.Fonts.Web fetches them over the network).
+    /// </summary>
+    [Fact]
+    public void Glyf_CompositeChainThatStaysWithinTheDepthLimit_IsStillRejected()
+    {
+        // 2^24 nodes: about a second unfixed, and every extra link quadruples it.
+        var (glyf, loca) = BalancedCompositeChain(chain: 24);
+        var table = new GlyfTable(glyf, loca, maxComponentDepth: 64);
+
+        var error = Should.Throw<FontFormatException>(() => table.GetGlyph(0));
+        error.Message.ShouldContain("component", Case.Insensitive);
+    }
+
+    [Fact]
+    public void Glyf_ShallowCompositeChain_StillParses()
+    {
+        // The budget must not reject ordinary nesting; real fonts declare a depth of 1-2.
+        var (glyf, loca) = BalancedCompositeChain(chain: 3);
+        var table = new GlyfTable(glyf, loca, maxComponentDepth: 64);
+
+        Should.NotThrow(() => table.GetGlyph(0));
+    }
+
+    /// <summary>
+    /// Builds a <c>glyf</c>/<c>loca</c> pair of <paramref name="chain"/> composite glyphs where
+    /// glyph <c>i</c> has two components both referencing glyph <c>i + 1</c>, terminated by one
+    /// empty glyph.
+    /// </summary>
+    private static (byte[] Glyf, LocaTable Loca) BalancedCompositeChain(int chain)
+    {
+        const int CompositeLength = 22; // header(10) + two 6-byte components
+        const ushort ArgsAreXyValues = 0x0002;
+        const ushort MoreComponents = 0x0020;
+
+        var glyf = new byte[chain * CompositeLength];
+        for (int i = 0; i < chain; i++)
+        {
+            var span = glyf.AsSpan(i * CompositeLength);
+            BinaryPrimitives.WriteInt16BigEndian(span, -1); // numberOfContours < 0 => composite
+            BinaryPrimitives.WriteInt16BigEndian(span[2..], 0);
+            BinaryPrimitives.WriteInt16BigEndian(span[4..], 0);
+            BinaryPrimitives.WriteInt16BigEndian(span[6..], 10);
+            BinaryPrimitives.WriteInt16BigEndian(span[8..], 10);
+
+            BinaryPrimitives.WriteUInt16BigEndian(span[10..], ArgsAreXyValues | MoreComponents);
+            BinaryPrimitives.WriteUInt16BigEndian(span[12..], (ushort)(i + 1));
+
+            BinaryPrimitives.WriteUInt16BigEndian(span[16..], ArgsAreXyValues);
+            BinaryPrimitives.WriteUInt16BigEndian(span[18..], (ushort)(i + 1));
+        }
+
+        int glyphCount = chain + 1;
+        var loca = new byte[(glyphCount + 1) * 4];
+        for (int i = 0; i <= glyphCount; i++)
+            BinaryPrimitives.WriteUInt32BigEndian(loca.AsSpan(i * 4), (uint)(Math.Min(i, chain) * CompositeLength));
+
+        return (glyf, LocaTable.Parse(loca, glyphCount, longFormat: true));
+    }
 }
