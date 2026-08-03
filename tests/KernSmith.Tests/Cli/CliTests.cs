@@ -17,7 +17,13 @@ public class CliTests : IDisposable
         var baseDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
         var repoRoot = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", "..", ".."));
         var tfm = Path.GetFileName(baseDir);
-        CliDllPath = Path.Combine(repoRoot, "tools", "KernSmith.Cli", "bin", "Debug", tfm, "KernSmith.Cli.dll");
+
+        // The CLI is built in the same configuration as this test assembly, so derive it from
+        // our own output path. Hardcoding "Debug" made every test here fail under
+        // `dotnet test --configuration Release`, which is exactly what publish.yml runs.
+        var configuration = Path.GetFileName(Path.GetDirectoryName(baseDir)!);
+
+        CliDllPath = Path.Combine(repoRoot, "tools", "KernSmith.Cli", "bin", configuration, tfm, "KernSmith.Cli.dll");
     }
 
     public CliTests()
@@ -34,6 +40,14 @@ public class CliTests : IDisposable
 
     private static (int ExitCode, string StdOut, string StdErr) RunCli(params string[] args)
     {
+        // Without this the whole suite fails with an opaque "dotnet exec" error and no clue
+        // that the CLI simply was not built for this configuration/TFM.
+        if (!File.Exists(CliDllPath))
+            throw new FileNotFoundException(
+                $"The CLI was not built at '{CliDllPath}'. Build the solution for this " +
+                "configuration first; these tests run the real CLI as a child process.",
+                CliDllPath);
+
         var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
