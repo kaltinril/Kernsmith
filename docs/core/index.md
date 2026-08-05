@@ -15,7 +15,7 @@ The `KernSmith` NuGet package is the core library that powers bitmap font genera
 |-----------|---------|
 | `KernSmith` | Entry point (<xref:KernSmith.BmFont>), configuration types (<xref:KernSmith.FontGeneratorOptions>, <xref:KernSmith.CharacterSet>, <xref:KernSmith.Padding>, <xref:KernSmith.Spacing>, <xref:KernSmith.ChannelConfig>, <xref:KernSmith.BmfcConfig>, <xref:KernSmith.AtlasSizeConstraints>, <xref:KernSmith.AntiAliasMode>, <xref:KernSmith.OutputFormat>, <xref:KernSmith.TextureFormat>), exceptions, enums |
 | `KernSmith.Font` | Font reading and TTF table parsing |
-| `KernSmith.Font.Models` | Data models: <xref:KernSmith.Font.Models.FontInfo>, <xref:KernSmith.Font.Models.KerningPair>, <xref:KernSmith.Font.Models.GlyphMetrics> |
+| `KernSmith.Font.Models` | Data models: <xref:KernSmith.Font.Models.FontInfo>, <xref:KernSmith.Font.Models.KerningPair>, <xref:KernSmith.Font.Models.GlyphMetrics>, <xref:KernSmith.Font.Models.GlyphDesignMetrics> |
 | `KernSmith.Font.Tables` | Parsed table structures: <xref:KernSmith.Font.Tables.HeadTable>, <xref:KernSmith.Font.Tables.HheaTable>, <xref:KernSmith.Font.Tables.Os2Metrics>, <xref:KernSmith.Font.Tables.NameInfo> |
 | `KernSmith.Rasterizer` | <xref:KernSmith.Rasterizer.IRasterizer>, glyph effects (<xref:KernSmith.Rasterizer.IGlyphEffect>), <xref:KernSmith.Rasterizer.GlyphCompositor> |
 | `KernSmith.Atlas` | <xref:KernSmith.Atlas.IAtlasPacker>, packing algorithms, texture encoders (PNG/TGA/DDS), <xref:KernSmith.Atlas.AtlasBuilder> |

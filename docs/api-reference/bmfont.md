@@ -59,7 +59,7 @@ var result = BmFont.FromConfig("MyFont.bmfc");
 
 | Method | Description |
 |--------|-------------|
-| `ReadFontInfo(byte[] fontData, int faceIndex = 0)` | Read family name, metrics, available codepoints, and kerning without generating a font. |
+| `ReadFontInfo(byte[] fontData, int faceIndex = 0)` | Read family name, metrics, available codepoints, and kerning without generating a font, including per-glyph design-unit advance widths (`FontInfo.DesignMetrics`). |
 | `ReadFontInfo(string fontPath, int faceIndex = 0)` | Same, from a file on disk. |
 
 Returns a `KernSmith.Font.Models.FontInfo`.
