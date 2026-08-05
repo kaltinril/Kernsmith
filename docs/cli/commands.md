@@ -29,6 +29,7 @@ kernsmith generate -f <font> -s <size> [options]
 | `--super-sample <n>` | Super sampling level 1-4 (default: 1) |
 | `--gamma <n>` | Gamma correction applied during rasterization (FreeType, default: 1.8) |
 | `--hinting / --no-hinting` | Enable/disable FreeType hinting (default: on) |
+| `--rasterizer <name>` | Rasterizer backend: `freetype` (default), `gdi`, `directwrite`, `stbtruetype`, `native` (experimental, TrueType only) |
 | `--height-percent <n>` | Vertical height scaling percentage (default: 100) |
 | `--match-char-height` | Match rendered height to requested pixel height |
 | `--advance-x <n>` | Global horizontal advance adjustment added to every glyph (alias `--advance-adjust-x`, default: 0) |
@@ -321,6 +322,24 @@ FreeType is the default backend and is available on all platforms. The GDI and D
 ```bash
 kernsmith list-rasterizers
 ```
+
+### Rasterizer Examples
+
+```bash
+# Use GDI for BMFont-parity rendering (Windows only)
+kernsmith generate -f font.ttf -s 32 --rasterizer gdi
+
+# Use FreeType for color/variable font support (cross-platform)
+kernsmith generate -f font.ttf -s 32 --rasterizer freetype --color-font
+
+# KernSmith's own pure-C# rasterizer (experimental)
+kernsmith generate -f font.ttf -s 32 --rasterizer native
+
+# Default (FreeType, cross-platform)
+kernsmith generate -f font.ttf -s 32
+```
+
+The `native` backend is experimental and ships with the CLI only (there is no NuGet package yet). It renders **TrueType (`glyf`) outlines only** -- a CFF/OTF font is rejected with an error -- and does not support hinting, SDF, outline stroke, synthetic bold/italic, color fonts, variable fonts, system fonts, or `--aa light` / `--aa lcd`.
 
 ---
 

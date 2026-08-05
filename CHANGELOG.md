@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-08-05
+
 ### Added
 
+- `FontInfo.DesignMetrics` — per-glyph advance width and left side bearing, in unscaled font design units, keyed by codepoint. Backed by a new `hmtx` table parser in core. Lets consumers measure text width (e.g. word-wrap) without rasterizing, and avoids the small cross-size jitter a hinted, rasterized advance width can show. (#205)
 - **The Native rasterizer is now selectable from the CLI**: `--rasterizer native`, and `list-rasterizers` reports it as available. The CLI project-references `KernSmith.Rasterizers.Native`, so auto-discovery registers it. (#146)
 - `docs/rasterizers/native.md` documents the backend, and it now appears in the backend/capability tables in `README.md`, `COMPARISON.md`, `docs/index.md`, `docs/rasterizers/index.md` and the CLI README. Every entry states the same limits: **TrueType (`glyf`) outlines only** (a CFF/OTF font is rejected with a `RasterizationException`), no WOFF, hinting, SDF, outline stroke, synthetic bold/italic, variable fonts, color fonts or system fonts, and `None`/`Grayscale` anti-aliasing only. The package is still unpublished, so `RasterizerBackend.Native` resolves from a source build or the CLI, not from the released NuGet packages.
 
