@@ -19,6 +19,7 @@ internal class TtfParser
 
     public HeadTable? Head { get; private set; }
     public HheaTable? Hhea { get; private set; }
+    public HmtxTable? Hmtx { get; private set; }
     public Os2Metrics? Os2 { get; private set; }
     public NameInfo? Names { get; private set; }
     public IReadOnlyDictionary<int, int> CmapTable { get; private set; } = ReadOnlyDictionary<int, int>.Empty;
@@ -196,10 +197,29 @@ internal class TtfParser
             minLeftSideBearing, minRightSideBearing, xMaxExtent);
     }
 
-    // 2D: hmtx Table — intentionally skipped.
-    // FreeType provides per-glyph advance widths via FT_Load_Glyph,
-    // so parsing hmtx here would be redundant.
-    private void ParseHmtx() { }
+    // 2D: hmtx Table — per-glyph advance width and left side bearing, in font design units.
+    // Note: FreeType (used by the rasterizer) also provides per-glyph advance widths via
+    // FT_Load_Glyph, but that's only available at rasterization time. Parsing hmtx here lets
+    // FontInfo expose design-space metrics for measurement (e.g. word-wrap) without rasterizing.
+    private void ParseHmtx()
+    {
+        if (Hhea == null || Hhea.NumberOfHMetrics <= 0)
+            return;
+
+        var table = GetTable(Tag('h', 'm', 't', 'x'));
+        if (table.IsEmpty)
+            return;
+
+        try
+        {
+            Hmtx = HmtxTable.Parse(table, Hhea.NumberOfHMetrics);
+        }
+        catch (FontFormatException)
+        {
+            // Malformed hmtx table — leave Hmtx null rather than throwing, matching the
+            // nullable pattern used for other optional tables like Os2/Names.
+        }
+    }
 
     // 2E: OS/2 Table
     private void ParseOs2()

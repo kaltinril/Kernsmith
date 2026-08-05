@@ -46,6 +46,14 @@ public sealed class FontInfo
     /// <summary>Kerning pairs (spacing tweaks between specific character pairs like "AV").</summary>
     public IReadOnlyList<KerningPair> KerningPairs { get; init; } = Array.Empty<KerningPair>();
 
+    /// <summary>
+    /// Per-glyph advance width and left side bearing, in unscaled font design units, keyed by
+    /// Unicode codepoint. Has one entry for every codepoint in <see cref="AvailableCodepoints"/>.
+    /// Useful for text-width measurement (e.g. word-wrap) without rasterizing.
+    /// </summary>
+    public IReadOnlyDictionary<int, GlyphDesignMetrics> DesignMetrics { get; init; } =
+        new Dictionary<int, GlyphDesignMetrics>();
+
     /// <summary>OS/2 table data (weight, width, platform-specific metrics). Null if the table is missing.</summary>
     public Os2Metrics? Os2 { get; init; }
 

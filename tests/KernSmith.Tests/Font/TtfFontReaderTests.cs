@@ -53,4 +53,41 @@ public class TtfFontReaderTests
         foreach (var cp in expectedCodepoints)
             fontInfo.AvailableCodepoints.ShouldContain(cp);
     }
+
+    [Fact]
+    public void ReadFont_DesignMetrics_HasEntryForEveryAvailableCodepoint()
+    {
+        // Arrange
+        var reader = new TtfFontReader();
+        var fontData = LoadTestFont();
+
+        // Act
+        var fontInfo = reader.ReadFont(fontData);
+
+        // Assert
+        fontInfo.DesignMetrics.Count.ShouldBe(fontInfo.AvailableCodepoints.Count);
+        foreach (var cp in fontInfo.AvailableCodepoints)
+            fontInfo.DesignMetrics.ContainsKey(cp).ShouldBeTrue($"codepoint {cp} should have design metrics");
+    }
+
+    [Fact]
+    public void ReadFont_DesignMetrics_PlausibleAdvanceWidths()
+    {
+        // Arrange
+        var reader = new TtfFontReader();
+        var fontData = LoadTestFont();
+
+        // Act
+        var fontInfo = reader.ReadFont(fontData);
+
+        // Assert — 'A', 'a', and space should have non-zero advance widths, well within
+        // the unitsPerEm scale for this font.
+        foreach (var cp in new[] { (int)'A', (int)'a', (int)' ' })
+        {
+            fontInfo.DesignMetrics.ContainsKey(cp).ShouldBeTrue($"codepoint {cp} should have design metrics");
+            var metrics = fontInfo.DesignMetrics[cp];
+            metrics.AdvanceWidth.ShouldBeGreaterThan(0, $"'{cp}' should have a non-zero advance width");
+            metrics.AdvanceWidth.ShouldBeLessThan(fontInfo.UnitsPerEm, $"'{cp}' advance width should be less than unitsPerEm");
+        }
+    }
 }

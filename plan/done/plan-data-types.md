@@ -30,6 +30,7 @@ public sealed class FontInfo
     public required int NumGlyphs { get; init; }
     public required IReadOnlyList<int> AvailableCodepoints { get; init; }       // from cmap
     public IReadOnlyList<KerningPair> KerningPairs { get; init; } = Array.Empty<KerningPair>();
+    public IReadOnlyDictionary<int, GlyphDesignMetrics> DesignMetrics { get; init; } = ...; // per-codepoint advance width + LSB, from hmtx, unscaled font design units
     public Os2Metrics? Os2 { get; init; }                // optional OS/2 table data
     public HeadTable? Head { get; init; }                // head table data, null if missing
     public HheaTable? Hhea { get; init; }                // hhea table data, null if missing
@@ -47,6 +48,14 @@ public readonly record struct KerningPair(int LeftCodepoint, int RightCodepoint,
 ```
 
 > **Note:** `XAdvanceAdjustment` is in font units. Callers scale to pixels: `value * targetSize / unitsPerEm`.
+
+### GlyphDesignMetrics
+
+```csharp
+public readonly record struct GlyphDesignMetrics(int AdvanceWidth, int LeftSideBearing);
+```
+
+> **Note:** Both fields are in unscaled font design units (the `hmtx` table), same space as `FontInfo.UnitsPerEm`/`Ascender`. Right side bearing is intentionally not included — it needs glyph bounding boxes from `glyf`/`loca`, which the core library does not parse.
 
 ### Table Model Types
 

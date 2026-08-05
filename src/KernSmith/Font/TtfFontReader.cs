@@ -73,6 +73,24 @@ internal class TtfFontReader : IFontReader
 
         var numGlyphs = parser.CmapTable.Values.Distinct().Count();
 
+        // Per-codepoint design metrics (advance width + left side bearing), keyed the same
+        // way as availableCodepoints. Empty if the font has no hmtx table (or one that failed
+        // to parse) — this only affects DesignMetrics, not core metadata or rasterization.
+        var designMetrics = new Dictionary<int, GlyphDesignMetrics>();
+        if (parser.Hmtx != null)
+        {
+            foreach (var codepoint in availableCodepoints)
+            {
+                var glyphIndex = parser.CmapTable[codepoint];
+                if ((uint)glyphIndex >= (uint)parser.Hmtx.GlyphCount)
+                    continue;
+
+                designMetrics[codepoint] = new GlyphDesignMetrics(
+                    parser.Hmtx.GetAdvanceWidth(glyphIndex),
+                    parser.Hmtx.GetLeftSideBearing(glyphIndex));
+            }
+        }
+
         return new FontInfo
         {
             FamilyName = parser.Names?.FontFamily ?? "Unknown",
@@ -87,6 +105,7 @@ internal class TtfFontReader : IFontReader
             NumGlyphs = numGlyphs,
             AvailableCodepoints = availableCodepoints,
             KerningPairs = kerningPairs,
+            DesignMetrics = designMetrics,
             Os2 = parser.Os2,
             Head = parser.Head,
             Hhea = parser.Hhea,
