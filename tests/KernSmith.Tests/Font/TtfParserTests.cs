@@ -35,6 +35,23 @@ public class TtfParserTests
     }
 
     [Fact]
+    public void Hmtx_ParsesCorrectly()
+    {
+        // Arrange & Act
+        var parser = CreateParser();
+
+        // Assert
+        parser.Hmtx.ShouldNotBeNull();
+        parser.Hmtx!.GlyphCount.ShouldBeGreaterThan(0);
+
+        // 'A' should have a plausible non-zero advance width in font design units.
+        parser.CmapTable.TryGetValue('A', out var glyphIndex).ShouldBeTrue();
+        var advanceWidth = parser.Hmtx!.GetAdvanceWidth(glyphIndex);
+        advanceWidth.ShouldBeGreaterThan((ushort)0);
+        advanceWidth.ShouldBeLessThan((ushort)parser.Head!.UnitsPerEm);
+    }
+
+    [Fact]
     public void Os2_ParsesCorrectly()
     {
         // Arrange & Act
