@@ -85,8 +85,14 @@ def has_uncommitted_changes():
 
 
 def stash_changes():
-    """Stash uncommitted changes."""
-    run_cmd(["git", "stash", "push", "-m", "regression_check: auto-stash"])
+    """Stash uncommitted changes, including untracked files.
+
+    --include-untracked matters: a feature branch's NEW source files would
+    otherwise remain in the tree on the base branch and poison the baseline
+    build with a hybrid of old tracked + new untracked code. (Gitignored
+    files, e.g. the output/ dir, are not touched.)
+    """
+    run_cmd(["git", "stash", "push", "--include-untracked", "-m", "regression_check: auto-stash"])
 
 
 def stash_pop():
