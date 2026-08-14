@@ -10,34 +10,113 @@ whole page.
 The session is built for a game loop: the font is parsed once (unfiltered, so *any* character
 the font contains stays addable later), the rasterizer stays loaded, and the packer's
 free-rectangle state is held between calls. A per-add costs work proportional to the glyphs
-being added, never to the font or the atlas.
+being added, never to the font or the atlas. The session is not thread-safe: use one session
+per thread, or synchronize access externally.
 
-## Starting a session
+## The normal case: a character your font doesn't have
 
-```csharp
-// Fresh session — the first AddGlyphs sizes the atlas exactly as Generate would.
-using var session = BmFont.BeginIncremental(fontBytes, new FontGeneratorOptions { Size = 32 });
-session.AddGlyphs("ASDF");
-
-// Later, at runtime: a text box receives a character the atlas doesn't have.
-GlyphAdditionResult result = session.AddGlyphs("Q");
-```
-
-Or resume from an existing generation — occupancy, characters, and kerning are recovered from
-the `BmFontModel` (which a `.fnt` loads back into via `BmFont.LoadModel`):
+You made a font the usual way — `BmFont.Generate`, or a `.fnt` already on disk — with, say,
+ASCII. Later the string `"café"` needs `é`, which was never in the character set:
 
 ```csharp
-var generated = BmFont.Generate(fontBytes, options);
-// ... upload generated.Pages[0] to a texture ...
+// day 1 — the normal one-shot path, no sessions involved
+var result = BmFont.Generate(fontBytes, options);      // Characters = ASCII: no 'é'
+// ... ship result.FntText and result.GetPngData(0) ...
 
-using var session = BmFont.ResumeIncremental(fontBytes, options, generated.Model);
-var result = session.AddGlyphs("QW");
+// later — 'é' comes up missing
+var model = BmFont.LoadModel(fntText);                 // or result.Model in-process
+using var session = BmFont.ResumeIncremental(fontBytes, options, model);
+var add = session.AddGlyphs("é");                      // bytes + position for just 'é'
 ```
+
+This works even though `é` was outside the original character set: the session parses the font
+unfiltered, so any character the font file contains is addable. Occupancy, characters, and
+kerning are all recovered from the model.
+
+The natural integration is a draw-time miss handler — the session is created lazily the first
+time any character is missing, then kept for the rest of the run:
+
+```csharp
+if (!glyphs.ContainsKey(ch))
+{
+    _session ??= BmFont.ResumeIncremental(fontBytes, options, loadedModel);
+    var add = _session.AddGlyphs(ch.ToString());
+    foreach (var g in add.Added)
+    {
+        // blit g at (g.X + pad.Left, g.Y + pad.Up) — see the blit contract below
+        glyphs[g.Codepoint] = g.Char;                  // also merge add.NewKerning
+    }
+}
+```
+
+Persist `session.CurrentModel` as the updated `.fnt` on shutdown to make the character
+permanent — or don't; re-adding it next run costs microseconds.
 
 `ResumeIncremental` must be given the **same options** the model was generated with — padding,
 spacing, size and outline are verified against the model's info block and a mismatch throws.
 `Bold`, `Italic` and `MatchCharHeight` cannot be verified from the model and must match the
 original generation.
+
+## Starting from scratch
+
+`BeginIncremental` builds an atlas from nothing instead — the first `AddGlyphs` sizes the page
+exactly as `Generate` would:
+
+```csharp
+using var session = BmFont.BeginIncremental(fontBytes, new FontGeneratorOptions { Size = 32 });
+session.AddGlyphs("ASDF");
+GlyphAdditionResult result = session.AddGlyphs("Q");
+```
+
+## How positions are known (important)
+
+You never compute or track a glyph's position — you are told it:
+
+1. **At add time**: `AddGlyphs` returns each new glyph's `PageIndex`/`X`/`Y`. The session keeps
+   a free-rectangle map of the atlas, updated on every add, so each call knows where everything
+   already is.
+2. **After that**: `session.CurrentModel.Characters` holds one `CharEntry` per glyph ever
+   placed — literally the `.fnt` chars block (`char id=.. x=.. y=.. width=.. height=.. page=..`),
+   the same data any BMFont renderer uses at draw time.
+
+A returned position never changes. Each add writes one new rectangle to the texture and appends
+one row to the model; nothing already uploaded is ever repainted.
+
+```csharp
+using var session = BmFont.BeginIncremental(fontBytes, options);
+Blit(session.AddGlyphs("ABCDEFG"));   // initial set — 7 positions returned
+Blit(session.AddGlyphs("Q"));         // Q slots into a remaining hole; A–G untouched
+Blit(session.AddGlyphs("I"));
+Blit(session.AddGlyphs("H"));
+```
+
+Example run (Georgia 32 px): `ABCDEFG` fills a 128×128 page; `Q` then lands at `(19,94)` in the
+gap beside `F`, `I` at `(20,71)` beside `E`, `H` at `(24,47)` beside `A`.
+
+### Across restarts: the `.fnt` is the occupancy map
+
+The packer never reads the atlas image. The free-rectangle map lives only as long as the
+session, so on shutdown persist `CurrentModel` as a `.fnt` next to the texture. On the next run,
+`ResumeIncremental` rebuilds the same map by subtracting the ledger's rectangles from an empty
+page:
+
+```
+seed: one free rect per page          subtract each char rect        what's left = free space
+┌────────────────┐                    ┌──G──┬─B──┬───────┐          ┌─────┬────┬───────┐
+│                │                    ├──C──┼─D──┤       │          │     │    │ free  │
+│   all free     │   -- for each  →   ├──A──┴─┬──┘       │    →     │     │    │       │
+│                │      char rect     ├──E──┬─┘          │          │     ├────┘       │
+│                │                    ├──F──┘            │          │     │   free     │
+└────────────────┘                    └──────────────────┘          └─────┴────────────┘
+```
+
+Free space is derived from the rectangles, not from how they were originally packed — so resume
+works with an atlas from an older run, a different packer, or a hand-authored `.fnt`. A resumed
+session places subsequent glyphs identically to a session that never died (tested).
+
+One consequence: **anything not in the chars block is assumed free.** Non-glyph art sharing the
+texture is invisible to the packer and can be placed over. v1 cannot declare extra reserved
+rectangles — keep incremental atlases glyphs-only.
 
 ## What an add returns
 
@@ -67,14 +146,19 @@ Each `AddedGlyph` is blitted at:
 packed cell (which includes padding); `Char` carries the padded cell dimensions for the `.fnt`
 side.
 
-Two pixel views are offered:
+Three pixel views are offered:
 
 | Property | Layout | Use |
 |----------|--------|-----|
 | `Pixels` | Tightly packed RGBA32, `Width * Height * 4` bytes; grayscale coverage promoted to `(255, 255, 255, alpha)` | The default path — ready for `Texture2D.SetData<Color>`. Computed lazily on first access and cached. |
+| `PremultipliedPixels` | Premultiplied RGBA32 (`(a,a,a,a)` for grayscale coverage) | MonoGame/XNA default `BlendState.AlphaBlend` pipelines. Lazy, cached. |
 | `RawPixels` + `RawFormat` + `Pitch` | The rasterization pipeline's own buffer, zero-copy (usually `Grayscale8`, `Pitch` bytes per row) | Max-performance callers that consume the native format directly. Treat as read-only. |
 
-Callers that read only `RawPixels` never pay for the RGBA expansion.
+Callers that read only `RawPixels` never pay for the RGBA expansions.
+
+> **Alpha note (MonoGame/XNA):** `Pixels` is straight (non-premultiplied) alpha — draw it with
+> `BlendState.NonPremultiplied`. Or upload `PremultipliedPixels` instead and keep the default
+> `BlendState.AlphaBlend`.
 
 ```csharp
 foreach (var g in result.Added)
