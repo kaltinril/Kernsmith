@@ -52,7 +52,7 @@ Git workflow, TDD, the regression harness, context management and security live 
 - Verify PR CodeQL results on `refs/pull/N/merge`, never `/head`.
 - Keep dismissal comments under 280 characters, and surface API stderr rather than swallowing it.
 - Do not re-add a `paths-ignore` block to the CodeQL config — it is inert for C# here.
-- Do not dismiss the rasterizer float-equality alerts without asking.
+- A float comparison that must be exact uses `float.Equals`, never an epsilon — see Float Equality in `project_decisions.md` before touching one.
 
 ## Working Style
 

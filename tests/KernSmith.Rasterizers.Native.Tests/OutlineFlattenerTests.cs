@@ -61,7 +61,7 @@ public class OutlineFlattenerTests
         edges.Length.ShouldBe(2);
         edges[0].ShouldBe(new EdgeSegment(32f, 32f, 32f, 0f));  // right side, running upward
         edges[1].ShouldBe(new EdgeSegment(0f, 0f, 0f, 32f));    // closing left side, downward
-        edges.ShouldAllBe(e => e.Y0 != e.Y1);
+        edges.ShouldAllBe(e => !e.Y0.Equals(e.Y1));             // intentionally exact, not epsilon
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public class OutlineFlattenerTests
 
         // Curves must have been subdivided well past the 20 straight segments of the commands.
         edges.Length.ShouldBeGreaterThan(40);
-        edges.ShouldAllBe(e => e.Y0 != e.Y1);
+        edges.ShouldAllBe(e => !e.Y0.Equals(e.Y1));             // intentionally exact, not epsilon
 
         // Every edge's total displacement cancels out, because both contours are closed and
         // only horizontal (zero net Y) pieces were removed.

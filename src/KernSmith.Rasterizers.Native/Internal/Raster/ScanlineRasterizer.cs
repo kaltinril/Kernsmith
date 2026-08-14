@@ -76,7 +76,10 @@ internal static class ScanlineRasterizer
 
             // Horizontal edges cross no scanline and carry no signed height. Non-finite ones
             // would poison the accumulator (inf/inf is NaN, and NaN spreads across the row).
-            if (y0 == y1 || !float.IsFinite(x0) || !float.IsFinite(y0) || !float.IsFinite(x1) || !float.IsFinite(y1))
+            // Exact comparison is required: the fill relies on signed dY summing to zero over a
+            // closed contour, so an epsilon here would break closure and cause fill artifacts.
+            // Equals is bitwise `==` (plus NaN==NaN, unreachable past the finite check).
+            if (y0.Equals(y1) || !float.IsFinite(x0) || !float.IsFinite(y0) || !float.IsFinite(x1) || !float.IsFinite(y1))
                 continue;
 
             float direction = 1f;
