@@ -49,6 +49,74 @@ internal static class AtlasSizeEstimator
     private const double SafetyMargin = 1.05;
 
     /// <summary>
+    /// Builds the sizing options from generator options — the one shared translation used
+    /// by every atlas-sizing call site so a session sizes exactly as <c>Generate</c> does.
+    /// </summary>
+    public static AtlasSizingOptions BuildSizingOptions(FontGeneratorOptions options) => new()
+    {
+        PackingEfficiency = options.PackingEfficiencyHint,
+        PowerOfTwo = options.AutofitTexture ? true : options.PowerOfTwo,
+        AllowNonSquare = options.MaxTextureWidth != options.MaxTextureHeight,
+        MaxWidth = options.MaxTextureWidth,
+        MaxHeight = options.MaxTextureHeight,
+        ChannelPacking = options.ChannelPacking,
+        EqualizedCellHeights = options.EqualizeCellHeights,
+    };
+
+    /// <summary>
+    /// The full initial-size sequence: estimate, apply size constraints, and — when
+    /// <see cref="FontGeneratorOptions.AutofitTexture"/> is on — verify via
+    /// <paramref name="fitsOnOnePage"/> and apply the one-step <see cref="BumpSize"/>.
+    /// </summary>
+    public static (int Width, int Height) ComputeInitialPageSize(
+        IReadOnlyList<GlyphRect> glyphRects,
+        FontGeneratorOptions options,
+        AtlasSizingOptions sizingOptions,
+        Func<int, int, bool> fitsOnOnePage)
+    {
+        var (width, height) = Estimate(glyphRects, sizingOptions);
+
+        if (options.SizeConstraints is { } sizeConstraints)
+        {
+            (width, height) = ApplyConstraints(
+                width, height, sizeConstraints, sizingOptions, glyphRects);
+        }
+
+        if (options.AutofitTexture && !fitsOnOnePage(width, height))
+        {
+            (width, height) = BumpSize(
+                width, height, sizingOptions.PowerOfTwo,
+                options.MaxTextureWidth, options.MaxTextureHeight);
+        }
+
+        return (width, height);
+    }
+
+    /// <summary>
+    /// One growth step: doubles (or 1.5x for non-power-of-two sizing) the smaller
+    /// dimension that can still grow, capped at the maximums; when the smaller dimension
+    /// is already capped, grows the other. Returns the input unchanged when nothing can
+    /// grow — callers treat that as "at maximum size".
+    /// </summary>
+    public static (int Width, int Height) BumpSize(
+        int width, int height, bool powerOfTwo, int maxWidth, int maxHeight)
+    {
+        var newWidth = width;
+        var newHeight = height;
+
+        if (width <= height && width < maxWidth)
+            newWidth = Math.Min(Step(width, powerOfTwo), maxWidth);
+        else if (height < maxHeight)
+            newHeight = Math.Min(Step(height, powerOfTwo), maxHeight);
+        else if (width < maxWidth)
+            newWidth = Math.Min(Step(width, powerOfTwo), maxWidth);
+
+        return (newWidth, newHeight);
+
+        static int Step(int value, bool powerOfTwo) => powerOfTwo ? value * 2 : (int)(value * 1.5);
+    }
+
+    /// <summary>
     /// Estimates the optimal atlas size for the given glyph rectangles.
     /// </summary>
     /// <param name="glyphRects">Glyph rectangles including padding and spacing.</param>

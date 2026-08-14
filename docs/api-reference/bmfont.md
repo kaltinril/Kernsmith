@@ -33,6 +33,17 @@ var result2 = BmFont.Generate(bytes, 32);
 var result3 = BmFont.GenerateFromSystem("Segoe UI", 24);
 ```
 
+## Incremental glyph addition
+
+Start a `BmFontIncrementalSession` to add glyphs to an atlas at runtime without moving anything
+already placed — see [Incremental Glyph Addition](../core/incremental-glyph-addition.md) for
+the session API, the blit contract, and overflow policies.
+
+| Method | Description |
+|--------|-------------|
+| `BeginIncremental(byte[] fontData, FontGeneratorOptions? options = null, AdditionOverflowPolicy overflowPolicy = Grow)` | Start an empty session; the first `AddGlyphs` sizes the atlas exactly as `Generate` would. |
+| `ResumeIncremental(byte[] fontData, FontGeneratorOptions options, BmFontModel existing, AdditionOverflowPolicy overflowPolicy = Grow)` | Resume from an existing model (e.g. a loaded `.fnt`); occupancy, characters, and kerning are recovered from it. Options must match the ones the model was generated with. |
+
 ## Generating from a config file
 
 | Method | Description |
