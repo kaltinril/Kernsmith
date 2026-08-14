@@ -16,6 +16,7 @@ namespace KernSmith.Output;
 public sealed class AddedGlyph
 {
     private byte[]? _pixels;
+    private byte[]? _premultipliedPixels;
 
     /// <summary>Unicode codepoint of the glyph.</summary>
     public int Codepoint { get; }
@@ -59,6 +60,18 @@ public sealed class AddedGlyph
     /// <see cref="RawPixels"/> never pay for the expansion.
     /// </summary>
     public byte[] Pixels => _pixels ??= ExpandToRgba();
+
+    /// <summary>
+    /// The glyph as tightly-packed <b>premultiplied</b> RGBA32 (<see cref="Width"/> *
+    /// <see cref="Height"/> * 4 bytes) — each color channel scaled by its alpha, for
+    /// premultiplied-alpha pipelines such as MonoGame/XNA's default
+    /// <c>BlendState.AlphaBlend</c>; use <see cref="Pixels"/> with
+    /// <c>BlendState.NonPremultiplied</c> otherwise. Grayscale glyphs become
+    /// <c>(a, a, a, a)</c> — white coverage premultiplied by the coverage value.
+    /// Computed lazily on first access and cached; callers that read only
+    /// <see cref="Pixels"/> or <see cref="RawPixels"/> never pay for it.
+    /// </summary>
+    public byte[] PremultipliedPixels => _premultipliedPixels ??= ExpandToPremultipliedRgba();
 
     internal AddedGlyph(
         int codepoint, int width, int height, int pageIndex, int x, int y,
@@ -108,6 +121,64 @@ public sealed class AddedGlyph
                 rgba[dstIdx + 1] = 255;
                 rgba[dstIdx + 2] = 255;
                 rgba[dstIdx + 3] = RawPixels[srcIdx];
+            }
+        }
+        return rgba;
+    }
+
+    // Same math as AtlasPage.GetPremultipliedRgbaPixelData, but reading through Pitch —
+    // keep the two in sync.
+    private byte[] ExpandToPremultipliedRgba()
+    {
+        var rgba = new byte[Width * Height * 4];
+
+        if (RawFormat == PixelFormat.Rgba32)
+        {
+            // Premultiply each pixel by its alpha, dropping any pitch slack.
+            for (var row = 0; row < Height; row++)
+            {
+                for (var col = 0; col < Width; col++)
+                {
+                    var srcIdx = row * Pitch + col * 4;
+                    if (srcIdx + 3 >= RawPixels.Length)
+                        continue;
+
+                    var dstIdx = (row * Width + col) * 4;
+                    var a = RawPixels[srcIdx + 3];
+                    if (a == 255)
+                    {
+                        rgba[dstIdx] = RawPixels[srcIdx];
+                        rgba[dstIdx + 1] = RawPixels[srcIdx + 1];
+                        rgba[dstIdx + 2] = RawPixels[srcIdx + 2];
+                        rgba[dstIdx + 3] = 255;
+                    }
+                    else if (a != 0) // a == 0 stays transparent black (already zero)
+                    {
+                        rgba[dstIdx] = (byte)(RawPixels[srcIdx] * a / 255);
+                        rgba[dstIdx + 1] = (byte)(RawPixels[srcIdx + 1] * a / 255);
+                        rgba[dstIdx + 2] = (byte)(RawPixels[srcIdx + 2] * a / 255);
+                        rgba[dstIdx + 3] = a;
+                    }
+                }
+            }
+            return rgba;
+        }
+
+        // Grayscale8 → (a, a, a, a): white coverage premultiplied by the coverage value.
+        for (var row = 0; row < Height; row++)
+        {
+            for (var col = 0; col < Width; col++)
+            {
+                var srcIdx = row * Pitch + col;
+                if (srcIdx >= RawPixels.Length)
+                    continue;
+
+                var a = RawPixels[srcIdx];
+                var dstIdx = (row * Width + col) * 4;
+                rgba[dstIdx] = a;
+                rgba[dstIdx + 1] = a;
+                rgba[dstIdx + 2] = a;
+                rgba[dstIdx + 3] = a;
             }
         }
         return rgba;

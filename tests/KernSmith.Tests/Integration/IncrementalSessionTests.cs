@@ -326,6 +326,93 @@ public class IncrementalSessionTests
         ReferenceEquals(g.Pixels, pixels).ShouldBeTrue("Pixels must be cached after first access");
     }
 
+    [Fact]
+    public void AddedGlyph_PremultipliedPixels_GrayscaleIsAlphaInAllChannels()
+    {
+        var fontData = LoadTestFont();
+        using var session = BmFont.BeginIncremental(fontData, Options());
+
+        var g = session.AddGlyphs("A").Added.ShouldHaveSingleItem();
+        g.RawFormat.ShouldBe(PixelFormat.Grayscale8);
+
+        var premultiplied = g.PremultipliedPixels;
+        premultiplied.Length.ShouldBe(g.Width * g.Height * 4);
+        premultiplied.ShouldContain(b => b > 0, "an antialiased 'A' must have nonzero coverage");
+
+        // White coverage premultiplied by alpha → every channel equals the alpha.
+        for (var i = 0; i < premultiplied.Length; i += 4)
+        {
+            var a = g.Pixels[i + 3];
+            premultiplied[i].ShouldBe(a);
+            premultiplied[i + 1].ShouldBe(a);
+            premultiplied[i + 2].ShouldBe(a);
+            premultiplied[i + 3].ShouldBe(a);
+        }
+    }
+
+    [Fact]
+    public void AddedGlyph_PremultipliedPixels_MatchesManuallyPremultipliedPixels()
+    {
+        var fontData = LoadTestFont();
+        using var session = BmFont.BeginIncremental(fontData, Options());
+
+        var g = session.AddGlyphs("Q").Added.ShouldHaveSingleItem();
+
+        var expected = (byte[])g.Pixels.Clone();
+        for (var i = 0; i < expected.Length; i += 4)
+        {
+            var a = expected[i + 3];
+            expected[i] = (byte)(expected[i] * a / 255);
+            expected[i + 1] = (byte)(expected[i + 1] * a / 255);
+            expected[i + 2] = (byte)(expected[i + 2] * a / 255);
+        }
+
+        g.PremultipliedPixels.ShouldBe(expected);
+    }
+
+    [Fact]
+    public void AddedGlyph_PremultipliedPixels_IsCachedAfterFirstAccess()
+    {
+        var fontData = LoadTestFont();
+        using var session = BmFont.BeginIncremental(fontData, Options());
+
+        var g = session.AddGlyphs("B").Added.ShouldHaveSingleItem();
+
+        var first = g.PremultipliedPixels;
+        ReferenceEquals(g.PremultipliedPixels, first)
+            .ShouldBeTrue("PremultipliedPixels must be cached after first access");
+    }
+
+    [Fact]
+    public void AddedGlyph_PremultipliedPixels_DoesNotAffectPixelsLaziness()
+    {
+        var fontData = LoadTestFont();
+        using var session = BmFont.BeginIncremental(fontData, Options());
+
+        var g = session.AddGlyphs("A").Added.ShouldHaveSingleItem();
+        g.RawFormat.ShouldBe(PixelFormat.Grayscale8);
+
+        // Read the premultiplied view first, before Pixels has ever been computed.
+        var premultiplied = g.PremultipliedPixels;
+
+        // Pixels must still compute its own straight-alpha buffer, unaffected.
+        var pixels = g.Pixels;
+        ReferenceEquals(pixels, premultiplied)
+            .ShouldBeFalse("Pixels and PremultipliedPixels must be distinct buffers");
+        for (var row = 0; row < g.Height; row++)
+        {
+            for (var col = 0; col < g.Width; col++)
+            {
+                var i = (row * g.Width + col) * 4;
+                pixels[i].ShouldBe((byte)255);
+                pixels[i + 1].ShouldBe((byte)255);
+                pixels[i + 2].ShouldBe((byte)255);
+                pixels[i + 3].ShouldBe(g.RawPixels[row * g.Pitch + col]);
+            }
+        }
+        ReferenceEquals(g.Pixels, pixels).ShouldBeTrue("Pixels must still be cached after first access");
+    }
+
     // ---------------------------------------------------------------
     // 8. Guards, re-adds, unknown codepoints.
     // ---------------------------------------------------------------
