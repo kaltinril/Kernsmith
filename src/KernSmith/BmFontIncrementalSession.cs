@@ -459,43 +459,43 @@ public sealed class BmFontIncrementalSession : IDisposable
                     $"overflow policy is {nameof(AdditionOverflowPolicy.Throw)}.");
 
             case AdditionOverflowPolicy.NewPage:
-            {
-                state.AddPage();
-                var placement = state.TryPlace(rect);
-                if (placement is null)
-                    throw new AtlasPackingException(
-                        $"Glyph U+{rect.Id:X4} ({rect.Width}x{rect.Height}) is larger than an entire " +
-                        $"{state.PageWidth}x{state.PageHeight} page.");
-                return placement.Value;
-            }
+                {
+                    state.AddPage();
+                    var placement = state.TryPlace(rect);
+                    if (placement is null)
+                        throw new AtlasPackingException(
+                            $"Glyph U+{rect.Id:X4} ({rect.Width}x{rect.Height}) is larger than an entire " +
+                            $"{state.PageWidth}x{state.PageHeight} page.");
+                    return placement.Value;
+                }
 
             default: // AdditionOverflowPolicy.Grow
-            {
-                while (true)
                 {
-                    var width = state.PageWidth;
-                    var height = state.PageHeight;
+                    while (true)
+                    {
+                        var width = state.PageWidth;
+                        var height = state.PageHeight;
 
-                    // POT-double the smaller growable dimension (mirroring the
-                    // AutofitTexture bump), capped at the configured maximums.
-                    var (newWidth, newHeight) = AtlasSizeEstimator.BumpSize(
-                        width, height, powerOfTwo: true,
-                        _options.MaxTextureWidth, _options.MaxTextureHeight);
+                        // POT-double the smaller growable dimension (mirroring the
+                        // AutofitTexture bump), capped at the configured maximums.
+                        var (newWidth, newHeight) = AtlasSizeEstimator.BumpSize(
+                            width, height, powerOfTwo: true,
+                            _options.MaxTextureWidth, _options.MaxTextureHeight);
 
-                    if (newWidth == width && newHeight == height)
-                        throw new AtlasPackingException(
-                            $"Glyph U+{rect.Id:X4} ({rect.Width}x{rect.Height}) does not fit and the atlas " +
-                            $"is already at its maximum size ({width}x{height}, " +
-                            $"MaxTextureWidth={_options.MaxTextureWidth}, MaxTextureHeight={_options.MaxTextureHeight}).");
+                        if (newWidth == width && newHeight == height)
+                            throw new AtlasPackingException(
+                                $"Glyph U+{rect.Id:X4} ({rect.Width}x{rect.Height}) does not fit and the atlas " +
+                                $"is already at its maximum size ({width}x{height}, " +
+                                $"MaxTextureWidth={_options.MaxTextureWidth}, MaxTextureHeight={_options.MaxTextureHeight}).");
 
-                    state.Grow(newWidth, newHeight);
-                    pageGrown = true;
+                        state.Grow(newWidth, newHeight);
+                        pageGrown = true;
 
-                    var placement = state.TryPlace(rect);
-                    if (placement is not null)
-                        return placement.Value;
+                        var placement = state.TryPlace(rect);
+                        if (placement is not null)
+                            return placement.Value;
+                    }
                 }
-            }
         }
     }
 
