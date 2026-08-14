@@ -160,7 +160,10 @@ internal static class OutlineFlattener
     /// <summary>Appends an edge unless it is horizontal, which no scanline can see.</summary>
     private static void AddEdge(List<EdgeSegment> edges, float x0, float y0, float x1, float y1)
     {
-        if (y0 == y1)
+        // Exactly-horizontal only — an epsilon would drop near-horizontal edges and break the
+        // rasterizer's closed-contour invariant (signed dY must sum to zero). Equals, not ==,
+        // because the comparison is intentionally exact.
+        if (y0.Equals(y1))
             return;
 
         edges.Add(new EdgeSegment(x0, y0, x1, y1));

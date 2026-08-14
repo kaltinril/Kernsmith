@@ -22,20 +22,21 @@ Decisions made, with the why — consult before re-litigating anything. One per 
 
 ## Float Equality
 
-- Exact `==` on floats is kept at every CodeQL-flagged site (not an epsilon), for four distinct reasons. An epsilon would be a bug at most of them, not a fix.
+- Exact comparison on floats is kept at every CodeQL-flagged site (not an epsilon), for four distinct reasons. An epsilon would be a bug at most of them, not a fix.
 - *Bit-copy*: `MathF.Max` selects one of its arguments rather than computing a new value, so `max == rf` is an identity test; an epsilon could match two near-equal channels and pick the wrong hue sector.
 - *Divide-by-zero guard*: `delta == 0` guards `x / delta`, and IEEE gives exactly `0.0` for `x - x`, so a true gray always trips it; an epsilon would flatten faintly-colored pixels to gray.
 - *Fast-path skip*: `(1*x)+(0*y)` is exactly `x` and `(t - 0f)/1f` is exactly `t`, so taking the branch or skipping it is output-identical — these cannot produce a wrong answer at all.
 - *Default round-trip*: `if (options.SdfSpread != 8f)` asks "did the user change this field", not "is this equal to 8"; an epsilon would silently fail to persist a user-set 8.0001, which is data loss.
-- `y0 == y1` horizontal-edge rejection stays exact because the fill relies on signed Δy summing to zero over a closed contour — dropping an epsilon-Δy edge would break closure and produce fill artifacts. `OutlineFlattenerTests` asserts exactly this invariant.
+- Horizontal-edge rejection (`ScanlineRasterizer.Prepare`, `OutlineFlattener.AddEdge`) stays exact because the fill relies on signed Δy summing to zero over a closed contour — dropping an epsilon-Δy edge would break closure and produce fill artifacts. `OutlineFlattenerTests` asserts exactly this invariant.
 - The genuinely risky shape — comparing two independently-computed values, e.g. `computedAdvance * scale == target` — does not appear in this codebase; that is why the alerts were dismissed individually rather than filtering the rule.
+- The four rasterizer horizontal-edge sites use `float.Equals` instead of `==` (chosen with Jeremy, Aug 2026): `Single.Equals` is defined as bitwise `==` plus NaN==NaN (unreachable at these sites — non-finite edges are dropped by the adjacent `IsFinite` check), so semantics are identical, but `cs/equality-on-floats` only flags the `==`/`!=` operators and stays quiet. GitHub code scanning has no working inline-suppression comment for C#, so restructuring the expression is the only line-level silencer. Do not "simplify" these back to `==`.
 
 ## CodeQL Configuration
 
 - Filter by `problem.severity: recommendation`, never by rule id, so nothing CodeQL rates error or warning is ever hidden. Dropping the filter restores the style-suggestion noise that previously buried real findings.
 - No `paths-ignore` block in the config (removed in PR #197): it is inert for C# when the workflow builds, and dead config that looks load-bearing is worse than no config.
 - Generated-code alerts (`RegexGenerator.g.cs`) are dismissed "won't fix" rather than filtered — the finding is real (an unread `timeout` local) but the file is emitted by Microsoft's regex source generator on every build.
-- The rasterizer float-equality alerts stay OPEN deliberately, as a standing prompt to re-check if that code changes.
+- The rasterizer float-equality alerts were resolved in code (`float.Equals`, see Float Equality above) rather than dismissed, so the alert list stays at zero and a *new* float-equality alert is always signal, not known noise.
 - If generated-code noise ever grows, the real lever is the build step in `codeql.yml`, not the config file.
 
 ## Regression Harness
