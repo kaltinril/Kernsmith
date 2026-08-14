@@ -4,5 +4,7 @@
   href: effects.md
 - name: Atlas Variants (Dropshadow)
   href: atlas-variants.md
+- name: Incremental Glyph Addition
+  href: incremental-glyph-addition.md
 - name: System Font Resolution
   href: system-font-resolution.md

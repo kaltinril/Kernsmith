@@ -31,81 +31,17 @@ internal static class BmFontModelBuilder
         // use the effective size; for the InfoBlock we record the original.
         var metricSize = effectiveSize ?? options.Size;
 
-        var info = new InfoBlock(
-            Face: fontInfo.FamilyName,
-            Size: options.Size,
-            Bold: fontInfo.IsBold || options.Bold,
-            Italic: fontInfo.IsItalic || options.Italic,
-            Unicode: true,
-            Smooth: options.AntiAlias != AntiAliasMode.None,
-            FixedHeight: false,
-            StretchH: 100,
-            Charset: "",
-            Aa: 1,
-            Padding: options.Padding,
-            Spacing: options.Spacing,
-            Outline: options.Outline);
+        var info = BuildInfo(fontInfo, options);
 
-        int lineHeight;
-        int baseLine;
+        var (lineHeight, baseLine) = ComputeLineMetrics(fontInfo, metricSize, rasterizerFontMetrics);
 
-        if (rasterizerFontMetrics is not null)
-        {
-            // Use rasterizer-provided metrics directly (already in pixels).
-            lineHeight = rasterizerFontMetrics.LineHeight;
-            baseLine = rasterizerFontMetrics.Ascent;
-        }
-        else if (fontInfo.Os2 is { } os2 && os2.WinAscent > 0)
-        {
-            // Use OS/2 usWinAscent/usWinDescent when available. These match what
-            // Windows GDI uses for TEXTMETRIC.tmAscent/tmDescent, and therefore
-            // what bmfont.exe uses for lineHeight and base. This produces consistent
-            // line spacing across generators. Note: WinDescent is positive (unlike
-            // hhea Descender which is negative).
-            lineHeight = (int)Math.Ceiling((double)(os2.WinAscent + os2.WinDescent) * metricSize / fontInfo.UnitsPerEm);
-            baseLine = (int)Math.Ceiling((double)os2.WinAscent * metricSize / fontInfo.UnitsPerEm);
-        }
-        else
-        {
-            lineHeight = (int)Math.Ceiling((double)fontInfo.LineHeight * metricSize / fontInfo.UnitsPerEm);
-            baseLine = (int)Math.Ceiling((double)fontInfo.Ascender * metricSize / fontInfo.UnitsPerEm);
-        }
+        var common = BuildCommon(
+            options, lineHeight, baseLine,
+            overrideScaleW ?? packResult.PageWidth,
+            overrideScaleH ?? packResult.PageHeight,
+            packResult.PageCount);
 
-        // When channel packing is enabled, mark the font as packed and indicate
-        // that each channel holds glyph data (value 0 = glyph data per BMFont spec).
-        var packed = options.ChannelPacking;
-
-        // Per-channel configuration: write the channel content values to the common block.
-        // Only emit the separated-channel layout when it was actually honored during
-        // compositing (see BmFont.ShouldApplyChannelConfig). A skipped font writes default
-        // channel values consistent with its baked single-composite output.
-        int alphaChnl = 0, redChnl = 0, greenChnl = 0, blueChnl = 0;
-        if (BmFont.ShouldApplyChannelConfig(options) && options.Channels is { } channelConfig)
-        {
-            alphaChnl = (int)channelConfig.Alpha;
-            redChnl = (int)channelConfig.Red;
-            greenChnl = (int)channelConfig.Green;
-            blueChnl = (int)channelConfig.Blue;
-        }
-
-        var common = new CommonBlock(
-            LineHeight: lineHeight,
-            Base: baseLine,
-            ScaleW: overrideScaleW ?? packResult.PageWidth,
-            ScaleH: overrideScaleH ?? packResult.PageHeight,
-            Pages: packResult.PageCount,
-            Packed: packed,
-            AlphaChnl: alphaChnl,
-            RedChnl: redChnl,
-            GreenChnl: greenChnl,
-            BlueChnl: blueChnl);
-
-        var textureExtension = options.TextureFormat switch
-        {
-            TextureFormat.Tga => ".tga",
-            TextureFormat.Dds => ".dds",
-            _ => ".png"
-        };
+        var textureExtension = TextureExtension(options);
         var pages = new List<PageEntry>();
         for (int i = 0; i < packResult.PageCount; i++)
         {
@@ -142,29 +78,8 @@ internal static class BmFontModelBuilder
 
             var channel = glyphChannels != null && glyphChannels.TryGetValue(glyph.Codepoint, out var ch) ? ch : 15;
 
-            var xOffset = options.ForceOffsetsToZero ? 0 : glyph.Metrics.BearingX;
-            var yOffset = options.ForceOffsetsToZero ? 0 : baseLine - glyph.Metrics.BearingY;
-
-            // BMFont applies padding to the character entry: offsets shift inward,
-            // dimensions expand to cover the full padded cell. This matches
-            // CFontPage::AddChar in the reference implementation.
-            var pad = options.Padding;
-            xOffset -= pad.Left;
-            yOffset -= pad.Up;
-            var charWidth = glyph.Width + pad.Left + pad.Right;
-            var charHeight = glyph.Height + pad.Up + pad.Down;
-
-            characters.Add(new CharEntry(
-                Id: glyph.Codepoint,
-                X: placement.X + charOffsetX,
-                Y: placement.Y + charOffsetY,
-                Width: charWidth,
-                Height: charHeight,
-                XOffset: xOffset,
-                YOffset: yOffset,
-                XAdvance: glyph.Metrics.Advance + advanceAdjustX,
-                Page: placement.PageIndex,
-                Channel: channel));
+            characters.Add(BuildCharEntry(
+                glyph, placement, options, baseLine, advanceAdjustX, channel, charOffsetX, charOffsetY));
         }
 
         // Build kerning pairs, filtering to glyphs in the generated set.
@@ -216,6 +131,134 @@ internal static class BmFontModelBuilder
     }
 
     /// <summary>
+    /// Builds one BMFont char entry from a placed glyph. Shared with
+    /// <see cref="BmFontIncrementalSession"/> so incremental entries stay identical
+    /// to full-generate entries.
+    /// </summary>
+    internal static CharEntry BuildCharEntry(
+        RasterizedGlyph glyph, GlyphPlacement placement, FontGeneratorOptions options,
+        int baseLine, int advanceAdjustX, int channel, int charOffsetX = 0, int charOffsetY = 0)
+    {
+        var xOffset = options.ForceOffsetsToZero ? 0 : glyph.Metrics.BearingX;
+        var yOffset = options.ForceOffsetsToZero ? 0 : baseLine - glyph.Metrics.BearingY;
+
+        // BMFont applies padding to the character entry: offsets shift inward,
+        // dimensions expand to cover the full padded cell. This matches
+        // CFontPage::AddChar in the reference implementation.
+        var pad = options.Padding;
+
+        return new CharEntry(
+            Id: glyph.Codepoint,
+            X: placement.X + charOffsetX,
+            Y: placement.Y + charOffsetY,
+            Width: glyph.Width + pad.Left + pad.Right,
+            Height: glyph.Height + pad.Up + pad.Down,
+            XOffset: xOffset - pad.Left,
+            YOffset: yOffset - pad.Up,
+            XAdvance: glyph.Metrics.Advance + advanceAdjustX,
+            Page: placement.PageIndex,
+            Channel: channel);
+    }
+
+    /// <summary>
+    /// Builds the BMFont info block from the parsed font and generation options.
+    /// Shared with <see cref="BmFontIncrementalSession"/> so incremental models
+    /// stay identical to full-generate models.
+    /// </summary>
+    internal static InfoBlock BuildInfo(FontInfo fontInfo, FontGeneratorOptions options)
+    {
+        return new InfoBlock(
+            Face: fontInfo.FamilyName,
+            Size: options.Size,
+            Bold: fontInfo.IsBold || options.Bold,
+            Italic: fontInfo.IsItalic || options.Italic,
+            Unicode: true,
+            Smooth: options.AntiAlias != AntiAliasMode.None,
+            FixedHeight: false,
+            StretchH: 100,
+            Charset: "",
+            Aa: 1,
+            Padding: options.Padding,
+            Spacing: options.Spacing,
+            Outline: options.Outline);
+    }
+
+    /// <summary>
+    /// Computes lineHeight and base (ascent) in pixels for the common block.
+    /// Shared with <see cref="BmFontIncrementalSession"/>.
+    /// </summary>
+    internal static (int LineHeight, int BaseLine) ComputeLineMetrics(
+        FontInfo fontInfo, float metricSize, RasterizerFontMetrics? rasterizerFontMetrics)
+    {
+        if (rasterizerFontMetrics is not null)
+        {
+            // Use rasterizer-provided metrics directly (already in pixels).
+            return (rasterizerFontMetrics.LineHeight, rasterizerFontMetrics.Ascent);
+        }
+
+        if (fontInfo.Os2 is { } os2 && os2.WinAscent > 0)
+        {
+            // Use OS/2 usWinAscent/usWinDescent when available. These match what
+            // Windows GDI uses for TEXTMETRIC.tmAscent/tmDescent, and therefore
+            // what bmfont.exe uses for lineHeight and base. This produces consistent
+            // line spacing across generators. Note: WinDescent is positive (unlike
+            // hhea Descender which is negative).
+            return (
+                (int)Math.Ceiling((double)(os2.WinAscent + os2.WinDescent) * metricSize / fontInfo.UnitsPerEm),
+                (int)Math.Ceiling((double)os2.WinAscent * metricSize / fontInfo.UnitsPerEm));
+        }
+
+        return (
+            (int)Math.Ceiling((double)fontInfo.LineHeight * metricSize / fontInfo.UnitsPerEm),
+            (int)Math.Ceiling((double)fontInfo.Ascender * metricSize / fontInfo.UnitsPerEm));
+    }
+
+    /// <summary>
+    /// Builds the BMFont common block. Shared with <see cref="BmFontIncrementalSession"/>.
+    /// </summary>
+    internal static CommonBlock BuildCommon(
+        FontGeneratorOptions options, int lineHeight, int baseLine,
+        int scaleW, int scaleH, int pageCount)
+    {
+        // When channel packing is enabled, mark the font as packed and indicate
+        // that each channel holds glyph data (value 0 = glyph data per BMFont spec).
+        var packed = options.ChannelPacking;
+
+        // Per-channel configuration: write the channel content values to the common block.
+        // Only emit the separated-channel layout when it was actually honored during
+        // compositing (see BmFont.ShouldApplyChannelConfig). A skipped font writes default
+        // channel values consistent with its baked single-composite output.
+        int alphaChnl = 0, redChnl = 0, greenChnl = 0, blueChnl = 0;
+        if (BmFont.ShouldApplyChannelConfig(options) && options.Channels is { } channelConfig)
+        {
+            alphaChnl = (int)channelConfig.Alpha;
+            redChnl = (int)channelConfig.Red;
+            greenChnl = (int)channelConfig.Green;
+            blueChnl = (int)channelConfig.Blue;
+        }
+
+        return new CommonBlock(
+            LineHeight: lineHeight,
+            Base: baseLine,
+            ScaleW: scaleW,
+            ScaleH: scaleH,
+            Pages: pageCount,
+            Packed: packed,
+            AlphaChnl: alphaChnl,
+            RedChnl: redChnl,
+            GreenChnl: greenChnl,
+            BlueChnl: blueChnl);
+    }
+
+    /// <summary>Atlas page file extension for the configured texture format.</summary>
+    internal static string TextureExtension(FontGeneratorOptions options) => options.TextureFormat switch
+    {
+        TextureFormat.Tga => ".tga",
+        TextureFormat.Dds => ".dds",
+        _ => ".png"
+    };
+
+    /// <summary>
     /// Returns a copy of <paramref name="model"/> with its <see cref="ExtendedMetadata"/>
     /// sibling-linkage fields set, so a variant model and its primary can each discover the
     /// other (stock BMFont has no such field). See <see cref="AtlasVariant"/>.
@@ -253,7 +296,7 @@ internal static class BmFontModelBuilder
         };
     }
 
-    private static ExtendedMetadata? BuildExtendedMetadata(FontGeneratorOptions options)
+    internal static ExtendedMetadata? BuildExtendedMetadata(FontGeneratorOptions options)
     {
         var version = KernSmithVersionInfo.Version;
 

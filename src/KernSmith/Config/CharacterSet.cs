@@ -50,22 +50,28 @@ public class CharacterSet
     public static CharacterSet FromChars(string characters)
     {
         ArgumentNullException.ThrowIfNull(characters);
-        var codepoints = new HashSet<int>();
+        return new CharacterSet(EnumerateCodepoints(characters));
+    }
+
+    /// <summary>
+    /// Enumerates the Unicode codepoints of a string in order, decoding surrogate pairs
+    /// to single codepoints. Duplicates are preserved — callers dedupe as needed.
+    /// Shared with <see cref="BmFontIncrementalSession"/>.
+    /// </summary>
+    internal static IEnumerable<int> EnumerateCodepoints(string characters)
+    {
         for (int i = 0; i < characters.Length; i++)
         {
-            int cp;
             if (char.IsHighSurrogate(characters[i]) && i + 1 < characters.Length && char.IsLowSurrogate(characters[i + 1]))
             {
-                cp = char.ConvertToUtf32(characters[i], characters[i + 1]);
+                yield return char.ConvertToUtf32(characters[i], characters[i + 1]);
                 i++;
             }
             else
             {
-                cp = characters[i];
+                yield return characters[i];
             }
-            codepoints.Add(cp);
         }
-        return new CharacterSet(codepoints);
     }
 
     /// <summary>Creates a character set from an explicit list of Unicode character codes.</summary>

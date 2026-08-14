@@ -305,7 +305,9 @@ public class FontGeneratorOptions
     /// <summary>Which rasterizer backend to use when Rasterizer is not set. Default is FreeType.</summary>
     public RasterizerBackend Backend { get; set; } = RasterizerBackend.FreeType;
 
-    /// <summary>Custom atlas packer. When null, uses the PackingAlgorithm setting.</summary>
+    /// <summary>Custom atlas packer. When null, uses the PackingAlgorithm setting.
+    /// Incremental sessions (<see cref="BmFont.BeginIncremental"/>) ignore a custom packer
+    /// and always use MaxRects for additions.</summary>
     public IAtlasPacker? Packer { get; set; }
 
     /// <summary>Custom atlas encoder. When null, uses the TextureFormat setting.</summary>

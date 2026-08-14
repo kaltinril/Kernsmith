@@ -109,277 +109,96 @@ public static class BmFont
     public static BmFontResult Generate(byte[] fontData, FontGeneratorOptions? options = null)
         => GenerateCore(fontData, options, sourceFontFile: null, sourceFontName: null);
 
-    internal static RasterizationResult RasterizeFont(byte[] fontData, FontGeneratorOptions options, string? systemFontName = null)
+    #region Incremental sessions (phase 183 — runtime glyph addition with stable packing)
+
+    /// <summary>
+    /// Starts an empty <see cref="BmFontIncrementalSession"/> for adding glyphs at runtime.
+    /// The font is parsed once without a character-set filter, so any character the font
+    /// contains can be added later. The first
+    /// <see cref="BmFontIncrementalSession.AddGlyphs(string)"/> call computes the initial
+    /// atlas page size exactly as <see cref="Generate(byte[], FontGeneratorOptions?)"/> would for that batch.
+    /// </summary>
+    /// <remarks>
+    /// Not supported in a session (throws <see cref="NotSupportedException"/>):
+    /// <see cref="FontGeneratorOptions.Variants"/>, <see cref="FontGeneratorOptions.ChannelPacking"/>,
+    /// <see cref="FontGeneratorOptions.TargetRegion"/>, <see cref="FontGeneratorOptions.CustomGlyphs"/>.
+    /// A <see cref="PackingAlgorithm.Skyline"/> configuration — or a custom
+    /// <see cref="FontGeneratorOptions.Packer"/> — silently uses MaxRects for
+    /// additions (arbitrary packer state cannot be reconstructed incrementally).
+    /// </remarks>
+    /// <param name="fontData">Raw TTF/OTF/WOFF file bytes.</param>
+    /// <param name="options">Generation options, or null for defaults.</param>
+    /// <param name="overflowPolicy">What to do when a new glyph does not fit (default: grow the page).</param>
+    public static BmFontIncrementalSession BeginIncremental(
+        byte[] fontData,
+        FontGeneratorOptions? options = null,
+        AdditionOverflowPolicy overflowPolicy = AdditionOverflowPolicy.Grow)
     {
         ArgumentNullException.ThrowIfNull(fontData);
+        options ??= new FontGeneratorOptions();
+        ValidateIncrementalOptions(options);
+        return BmFontIncrementalSession.Begin(fontData, options, overflowPolicy);
+    }
 
-        if (options.Size <= 0 || options.Size > 10000)
-            throw new ArgumentOutOfRangeException(nameof(options), $"Size must be between 1 and 10000, was {options.Size}.");
+    /// <summary>
+    /// Resumes a <see cref="BmFontIncrementalSession"/> from an existing model (e.g. a
+    /// parsed .fnt or a previous <see cref="Generate(byte[], FontGeneratorOptions?)"/> result): occupancy, page geometry,
+    /// character list and kerning are recovered from <paramref name="existing"/>, and new
+    /// glyphs are placed without moving anything already there. <paramref name="options"/>
+    /// must be the same settings the model was generated with — padding, spacing, size and
+    /// outline mismatches throw <see cref="ArgumentException"/>. See
+    /// <see cref="BeginIncremental"/> for the options unsupported in a session.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="FontGeneratorOptions.Bold"/>, <see cref="FontGeneratorOptions.Italic"/> and
+    /// <see cref="FontGeneratorOptions.MatchCharHeight"/> cannot be verified from the model
+    /// and must match the original generation, or added glyphs will not match the atlas.
+    /// </remarks>
+    /// <param name="fontData">Raw TTF/OTF/WOFF file bytes of the same font the model was generated from.</param>
+    /// <param name="options">The generation options the existing model was generated with.</param>
+    /// <param name="existing">The existing font model providing occupancy and metrics.</param>
+    /// <param name="overflowPolicy">What to do when a new glyph does not fit (default: grow the page).</param>
+    public static BmFontIncrementalSession ResumeIncremental(
+        byte[] fontData,
+        FontGeneratorOptions options,
+        BmFontModel existing,
+        AdditionOverflowPolicy overflowPolicy = AdditionOverflowPolicy.Grow)
+    {
+        ArgumentNullException.ThrowIfNull(fontData);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(existing);
+        ValidateIncrementalOptions(options);
+        return BmFontIncrementalSession.Resume(fontData, options, existing, overflowPolicy);
+    }
 
-        // 0. Auto-detect and decompress WOFF/WOFF2 to standard sfnt
-        if (WoffDecompressor.IsWoff(fontData) || WoffDecompressor.IsWoff2(fontData))
-            fontData = WoffDecompressor.Decompress(fontData);
+    /// <summary>v1 unsupported-options guard for incremental sessions (phase 183).</summary>
+    private static void ValidateIncrementalOptions(FontGeneratorOptions options)
+    {
+        if (options.MaxTextureWidth <= 0)
+            throw new ArgumentOutOfRangeException(nameof(options), $"MaxTextureWidth must be positive, was {options.MaxTextureWidth}.");
+        if (options.MaxTextureHeight <= 0)
+            throw new ArgumentOutOfRangeException(nameof(options), $"MaxTextureHeight must be positive, was {options.MaxTextureHeight}.");
+        if (options.Variants is { Count: > 0 })
+            throw new NotSupportedException("FontGeneratorOptions.Variants is not supported in an incremental session.");
+        if (options.ChannelPacking)
+            throw new NotSupportedException("FontGeneratorOptions.ChannelPacking is not supported in an incremental session.");
+        if (options.TargetRegion is not null)
+            throw new NotSupportedException("FontGeneratorOptions.TargetRegion is not supported in an incremental session.");
+        if (options.CustomGlyphs is { Count: > 0 })
+            throw new NotSupportedException("FontGeneratorOptions.CustomGlyphs is not supported in an incremental session.");
+    }
 
-        // 0b. Guard: SDF + super sampling is invalid — box filter corrupts distance values.
-        if (options.Sdf && options.SuperSampleLevel > 1)
-            throw new InvalidOperationException(
-                "SDF rendering cannot be combined with super sampling (SuperSampleLevel > 1). " +
-                "The box-filter downscale corrupts signed distance field values.");
+    #endregion
 
-        // 1. Parse font
-        var fontReader = options.FontReader ?? new TtfFontReader();
-
-        if (fontReader is TtfFontReader ttfReader)
-        {
-            ttfReader.RequestedCodepoints = options.Characters.GetCodepointsHashSet();
-            ttfReader.SharedFontBytes = fontData;
-        }
-
-        var fontInfo = fontReader.ReadFont(fontData, options.FaceIndex);
-
-        // 2. Resolve character set
-        var codepoints = options.Characters.Resolve(fontInfo.AvailableCodepoints).ToList();
-
-        // FallbackCodepoint takes precedence over FallbackCharacter
-        var resolvedFallback = options.FallbackCodepoint
-            ?? (options.FallbackCharacter.HasValue ? (int)options.FallbackCharacter.Value : (int?)null);
-        if (resolvedFallback.HasValue)
-        {
-            if (!codepoints.Contains(resolvedFallback.Value))
-                codepoints.Add(resolvedFallback.Value);
-        }
-
-        // 3. Rasterize glyphs
-        var rasterizer = options.Rasterizer
-            ?? RasterizerFactory.Create(options.Backend);
-        try
-        {
-            // Guard: channel packing is incompatible with color fonts.
-            if (options.ChannelPacking && options.ColorFont)
-                throw new InvalidOperationException(
-                    "Channel packing and color font rendering cannot be used together. " +
-                    "Color glyphs are RGBA and cannot be packed into individual channels.");
-
-            // Guard: channel packing is incompatible with effects (outline, gradient, shadow).
-            if (options.ChannelPacking && HasAnyEffects(options))
-                throw new InvalidOperationException(
-                    "Channel packing cannot be combined with effects (outline, gradient, shadow). " +
-                    "Effects produce RGBA glyphs which cannot be packed into individual channels.");
-
-            if (systemFontName is not null && rasterizer.Capabilities.SupportsSystemFonts)
-                rasterizer.LoadSystemFont(systemFontName);
-            else
-                rasterizer.LoadFont(fontData, options.FaceIndex);
-
-            // Guard: don't apply synthetic bold/italic on fonts that are already styled.
-            // FreeType checks style_flags internally, but GDI and DirectWrite don't —
-            // this ensures consistent behavior across all backends.
-            // ForceSynthetic overrides: the user explicitly wants synthetic on top.
-            var effectiveBold = options.Bold;
-            var effectiveForceSyntheticBold = options.ForceSyntheticBold;
-            var effectiveItalic = options.Italic;
-            var effectiveForceSyntheticItalic = options.ForceSyntheticItalic;
-
-            if (fontInfo.IsBold && effectiveBold && !effectiveForceSyntheticBold)
-            {
-                effectiveBold = false;
-                effectiveForceSyntheticBold = false;
-            }
-            if (fontInfo.IsItalic && effectiveItalic && !effectiveForceSyntheticItalic)
-            {
-                effectiveItalic = false;
-                effectiveForceSyntheticItalic = false;
-            }
-
-            if (rasterizer.Capabilities.SupportsVariableFonts
-                && options.VariationAxes is { Count: > 0 }
-                && fontInfo.VariationAxes is { Count: > 0 })
-            {
-                rasterizer.SetVariationAxes(fontInfo.VariationAxes, options.VariationAxes);
-            }
-
-            if (rasterizer.Capabilities.SupportsColorFonts
-                && options.ColorFont && options.ColorPaletteIndex != 0)
-            {
-                rasterizer.SelectColorPalette(options.ColorPaletteIndex);
-            }
-
-            if (options.Sdf && !rasterizer.Capabilities.SupportsSdf)
-            {
-                throw new NotSupportedException(
-                    $"Rasterizer backend does not support SDF rendering. " +
-                    $"Use a backend that reports SupportsSdf = true (e.g., FreeType or StbTrueType).");
-            }
-
-            var rasterOptions = RasterOptions.FromGeneratorOptions(options) with
-            {
-                Bold = effectiveBold,
-                ForceSyntheticBold = effectiveForceSyntheticBold,
-                Italic = effectiveItalic,
-                ForceSyntheticItalic = effectiveForceSyntheticItalic
-            };
-
-            // BMFont treats fontSize as cell height (usWinAscent + usWinDescent scaled),
-            // not as em-square size (ppem). Compute the effective ppem that produces the
-            // requested cell height. When MatchCharHeight is true (negative fontSize in
-            // .bmfc), use fontSize directly as ppem (em-square mode).
-            // When the rasterizer handles its own sizing (e.g., GDI), skip this conversion.
-            float effectiveSize = options.Size;
-            if (!rasterizer.Capabilities.HandlesOwnSizing)
-            {
-                if (!options.MatchCharHeight
-                    && fontInfo.Os2 is { } os2CellScale
-                    && os2CellScale.WinAscent + os2CellScale.WinDescent > 0)
-                {
-                    effectiveSize = (float)(
-                        (double)options.Size * fontInfo.UnitsPerEm
-                        / (os2CellScale.WinAscent + os2CellScale.WinDescent));
-                    if (effectiveSize < 1f) effectiveSize = 1f;
-                    rasterOptions = rasterOptions with { Size = effectiveSize };
-                }
-            }
-
-            var ssLevel = Math.Clamp(options.SuperSampleLevel, 1, 4);
-
-            // SDF supersampling: render the distance field at a larger ppem, then box-average
-            // back down. Unlike alpha-coverage super sampling (forbidden with SDF at line 96
-            // because averaging coverage corrupts distances), a FreeType SDF byte is locally
-            // linear in signed distance (128 = edge crossing), so box-averaging preserves the
-            // edge zero-crossing — this is the standard "render SDF high-res, then downsample"
-            // technique. SDF and SuperSampleLevel>1 are mutually exclusive (rejected above), so
-            // renderScale collapses to a single upscale factor for both paths.
-            var sdfScale = options.Sdf ? Math.Clamp(options.SdfScale, 1, 4) : 1;
-            var renderScale = sdfScale > 1 ? sdfScale : ssLevel;
-            var effectiveRasterOptions = renderScale > 1
-                ? rasterOptions with { Size = rasterOptions.Size * renderScale }
-                : rasterOptions;
-
-            var glyphs = rasterizer.RasterizeAll(codepoints, effectiveRasterOptions).ToList();
-
-            // HeightStretch first (before custom glyphs, matching original order)
-            if (options.HeightPercent != 100)
-            {
-                var stretch = new HeightStretchPostProcessor(options.HeightPercent);
-                for (var i = 0; i < glyphs.Count; i++)
-                    glyphs[i] = stretch.Process(glyphs[i]);
-            }
-
-            // Custom glyphs (after stretch, before effects - matching original order)
-            if (options.CustomGlyphs is { Count: > 0 })
-            {
-                glyphs = ApplyCustomGlyphs(glyphs, options.CustomGlyphs, codepoints);
-            }
-
-            // Pre-compute transform parameters once
-            var effects = BuildEffects(options);
-            // A non-default (non-opaque-white) fill color must tint the body layer even when no
-            // other effects are present, so it has to trigger compositing on its own.
-            var hasFillTint = options.FillColorR != 255 || options.FillColorG != 255
-                || options.FillColorB != 255 || options.FillColorA != 255;
-            var hasEffects = effects.Count > 0 || hasFillTint;
-            List<IGlyphPostProcessor>? activePostProcessors = null;
-            if (options.PostProcessors != null)
-            {
-                foreach (var processor in options.PostProcessors)
-                {
-                    if (processor is OutlinePostProcessor or GradientPostProcessor or ShadowPostProcessor)
-                        continue;
-
-                    // Skip the dilation/shear fallback only when the backend really did apply the
-                    // transform itself, or the glyph gets styled twice. A backend that reports
-                    // false ignores Bold/Italic outright, so dropping the caller's post-processor
-                    // there produced unstyled glyphs with no error (Phase 150 Issue 5).
-                    if (processor is BoldPostProcessor && options.Bold
-                        && rasterizer.Capabilities.SupportsSyntheticBold)
-                        continue;
-                    if (processor is ItalicPostProcessor && options.Italic
-                        && rasterizer.Capabilities.SupportsSyntheticItalic)
-                        continue;
-
-                    activePostProcessors ??= [];
-                    activePostProcessors.Add(processor);
-                }
-            }
-            var needsDownscale = renderScale > 1;
-
-            // Atlas variants (e.g. a shadow silhouette) need the glyph's own bare coverage —
-            // not a copy that may already have a baked outline/gradient/shadow composited into
-            // its RGBA below — so snapshot the pre-effects glyph here (still applying the same
-            // super-sample downscale as the primary, so scale matches).
-            List<RasterizedGlyph>? rawGlyphsForVariants = options.Variants is { Count: > 0 }
-                ? new List<RasterizedGlyph>(new RasterizedGlyph[glyphs.Count])
-                : null;
-
-            // Apply remaining per-glyph transforms in a single pass (parallelized on non-WASM)
-            if (hasEffects || activePostProcessors != null || needsDownscale || rawGlyphsForVariants != null)
-            {
-                void ProcessGlyph(int i)
-                {
-                    var g = glyphs[i];
-                    if (rawGlyphsForVariants != null)
-                        rawGlyphsForVariants[i] = needsDownscale ? SuperSampleDownscale(g, renderScale) : g;
-                    if (hasEffects) g = GlyphCompositor.Composite(g, effects,
-                        options.FillColorR, options.FillColorG, options.FillColorB, options.FillColorA);
-                    if (activePostProcessors != null)
-                    {
-                        foreach (var processor in activePostProcessors)
-                            g = processor.Process(g);
-                    }
-                    if (needsDownscale) g = SuperSampleDownscale(g, renderScale);
-                    glyphs[i] = g;
-                }
-
-                if (OperatingSystem.IsBrowser())
-                {
-                    for (var i = 0; i < glyphs.Count; i++)
-                        ProcessGlyph(i);
-                }
-                else
-                {
-                    Parallel.For(0, glyphs.Count, ProcessGlyph);
-                }
-            }
-
-            if (options.EqualizeCellHeights && glyphs.Count > 0)
-            {
-                var maxHeight = glyphs.Max(g => g.Height);
-                if (OperatingSystem.IsBrowser())
-                {
-                    for (var i = 0; i < glyphs.Count; i++)
-                        glyphs[i] = EqualizeCellHeight(glyphs[i], maxHeight);
-                }
-                else
-                {
-                    Parallel.For(0, glyphs.Count, i =>
-                        glyphs[i] = EqualizeCellHeight(glyphs[i], maxHeight));
-                }
-            }
-
-            var rasterizedCodepoints = new HashSet<int>(glyphs.Select(g => g.Codepoint));
-            var failedCodepoints = codepoints.Where(cp => !rasterizedCodepoints.Contains(cp)).ToList();
-
-            // Capture rasterizer-provided values before rasterizer is disposed
-            var rasterizerFontMetrics = rasterizer.GetFontMetrics(rasterOptions);
-            var rasterizerKerningPairs = rasterizer.GetKerningPairs(rasterOptions);
-
-            return new RasterizationResult
-            {
-                FontInfo = fontInfo,
-                Glyphs = glyphs,
-                Codepoints = codepoints,
-                FailedCodepoints = failedCodepoints,
-                Options = options,
-                EffectiveSize = effectiveSize,
-                RasterizerFontMetrics = rasterizerFontMetrics,
-                RasterizerKerningPairs = rasterizerKerningPairs,
-                RawGlyphsForVariants = rawGlyphsForVariants
-            };
-        }
-        finally
-        {
-            if (options.Rasterizer == null)
-                rasterizer.Dispose();
-        }
+    internal static RasterizationResult RasterizeFont(byte[] fontData, FontGeneratorOptions options, string? systemFontName = null)
+    {
+        // One-shot composition of the prepare/per-add split (phase 183): setup once, rasterize
+        // the resolved character set once, then release the setup (PreparedRasterization honors
+        // the caller-owned options.Rasterizer rule on Dispose).
+        using var prepared = PreparedRasterization.Prepare(
+            fontData, options, systemFontName, subsetToCharacterSet: true);
+        var codepoints = prepared.ResolveCodepoints();
+        return prepared.RasterizeAndProcess(codepoints, equalizeTargetHeight: null);
     }
 
     internal static int EncodeCombinedId(int fontIndex, int codepoint)
@@ -417,33 +236,8 @@ public static class BmFont
         var glyphs = rasterResult.Glyphs;
         var failedCodepoints = rasterResult.FailedCodepoints;
 
-        // Phase 78F: BMFont creates a 1x1 transparent image for glyphs with no
-        // contours (e.g. space), then AddOutline expands it to (1 + 2*thickness).
-        // Match that behavior so the atlas reserves space and the .fnt has correct dims.
-        if (options.Outline > 0)
-        {
-            var outlineSize = 1 + options.Outline * 2;
-            glyphs = glyphs.Select(g =>
-            {
-                if (g.Width == 0 && g.Height == 0 && g.Metrics.Advance > 0)
-                {
-                    return new RasterizedGlyph
-                    {
-                        Codepoint = g.Codepoint,
-                        GlyphIndex = g.GlyphIndex,
-                        Width = outlineSize,
-                        Height = outlineSize,
-                        Pitch = outlineSize,
-                        BitmapData = new byte[outlineSize * outlineSize],
-                        Metrics = g.Metrics,
-                        Format = g.Format,
-                    };
-                }
-                return g;
-            }).ToList();
-        }
-
-        // 5. Pack into atlas
+        // 5. Pack into atlas (Phase 78F outline empty-glyph substitution already ran
+        // inside RasterizeAndProcess)
         var packer = options.Packer ?? (options.PackingAlgorithm == PackingAlgorithm.Skyline
             ? new SkylinePacker()
             : new MaxRectsPacker());
@@ -608,16 +402,7 @@ public static class BmFont
         }
 
         // Build sizing options from generator options.
-        var sizingOptions = new AtlasSizingOptions
-        {
-            PackingEfficiency = options.PackingEfficiencyHint,
-            PowerOfTwo = options.AutofitTexture ? true : options.PowerOfTwo,
-            AllowNonSquare = options.MaxTextureWidth != options.MaxTextureHeight,
-            MaxWidth = options.MaxTextureWidth,
-            MaxHeight = options.MaxTextureHeight,
-            ChannelPacking = options.ChannelPacking,
-            EqualizedCellHeights = options.EqualizeCellHeights,
-        };
+        var sizingOptions = AtlasSizeEstimator.BuildSizingOptions(options);
 
         // Atlas variants (phase-182 / issue #175): additional character-set renderings (e.g. a
         // dropshadow silhouette), packed into the SAME shared atlas as the primary glyphs via
@@ -629,38 +414,14 @@ public static class BmFont
         }
 
         metrics?.Begin("AtlasSizeEstimation");
-        var (estWidth, estHeight) = AtlasSizeEstimator.Estimate(glyphRects, sizingOptions);
-        pageWidth = estWidth;
-        pageHeight = estHeight;
+        // Estimate + constraints + (with AutofitTexture) a one-page verification pack
+        // and one-step bump — the same sequence a session's first add runs.
+        (pageWidth, pageHeight) = AtlasSizeEstimator.ComputeInitialPageSize(
+            glyphRects, options, sizingOptions,
+            (w, h) => packer.Pack(glyphRects, w, h).PageCount == 1);
         metrics?.End();
 
-        // Apply size constraints if specified.
-        if (options.SizeConstraints is { } sizeConstraints)
-        {
-            var (cw, ch) = AtlasSizeEstimator.ApplyConstraints(
-                pageWidth, pageHeight, sizeConstraints, sizingOptions, glyphRects);
-            pageWidth = cw;
-            pageHeight = ch;
-        }
-
         metrics?.Begin("AtlasPacking");
-        if (options.AutofitTexture)
-        {
-            // Verification pack: confirm the estimate fits on one page.
-            var verifyResult = packer.Pack(glyphRects, pageWidth, pageHeight);
-            if (verifyResult.PageCount > 1)
-            {
-                // One-step bump: double the smaller dimension (or next POT).
-                if (pageWidth <= pageHeight)
-                    pageWidth = sizingOptions.PowerOfTwo ? pageWidth * 2 : (int)(pageWidth * 1.5);
-                else
-                    pageHeight = sizingOptions.PowerOfTwo ? pageHeight * 2 : (int)(pageHeight * 1.5);
-
-                pageWidth = Math.Min(pageWidth, options.MaxTextureWidth);
-                pageHeight = Math.Min(pageHeight, options.MaxTextureHeight);
-            }
-        }
-
         {
             var packResult = packer.Pack(glyphRects, pageWidth, pageHeight);
             metrics?.End();
@@ -1134,16 +895,7 @@ public static class BmFont
             }
 
             // 4. Estimate atlas size
-            var sizingOptions = new AtlasSizingOptions
-            {
-                PackingEfficiency = options.PackingEfficiencyHint,
-                PowerOfTwo = options.AutofitTexture ? true : options.PowerOfTwo,
-                AllowNonSquare = options.MaxTextureWidth != options.MaxTextureHeight,
-                MaxWidth = options.MaxTextureWidth,
-                MaxHeight = options.MaxTextureHeight,
-                ChannelPacking = options.ChannelPacking,
-                EqualizedCellHeights = options.EqualizeCellHeights,
-            };
+            var sizingOptions = AtlasSizeEstimator.BuildSizingOptions(options);
 
             var (estWidth, estHeight) = AtlasSizeEstimator.Estimate(glyphRects, sizingOptions);
 
@@ -1288,279 +1040,6 @@ public static class BmFont
     /// </summary>
     internal static bool ShouldApplyChannelConfig(FontGeneratorOptions options) =>
         options.Channels is { IsDefault: false };
-
-    /// <summary>Checks if any built-in effects (outline, gradient, shadow) are enabled.</summary>
-    private static bool HasAnyEffects(FontGeneratorOptions options)
-    {
-        if (options.Outline > 0 || options.HasGradient || options.HasShadow)
-            return true;
-
-        if (options.PostProcessors != null)
-        {
-            foreach (var pp in options.PostProcessors)
-            {
-                if (pp is OutlinePostProcessor or GradientPostProcessor or ShadowPostProcessor)
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
-    /// <summary>Builds the list of layered effects from the generation options.</summary>
-    private static List<IGlyphEffect> BuildEffects(FontGeneratorOptions options)
-    {
-        var effects = new List<IGlyphEffect>();
-
-        // Detect shadow: from options properties or from a ShadowPostProcessor in the list.
-        if (options.HasShadow)
-        {
-            effects.Add(new ShadowEffect(
-                options.ShadowOffsetX, options.ShadowOffsetY, options.ShadowBlur,
-                options.ShadowR, options.ShadowG, options.ShadowB, options.ShadowOpacity,
-                options.HardShadow, options.ShadowBlurPasses, options.ShadowBlurKernelSize));
-        }
-        else if (options.PostProcessors != null)
-        {
-            foreach (var pp in options.PostProcessors)
-            {
-                if (pp is ShadowPostProcessor sp)
-                {
-                    effects.Add(new ShadowEffect(
-                        sp.OffsetX, sp.OffsetY, sp.BlurRadius,
-                        sp.ShadowR, sp.ShadowG, sp.ShadowB, sp.Opacity));
-                    break;
-                }
-            }
-        }
-
-        // Detect outline: from options properties or from an OutlinePostProcessor in the list.
-        // When a non-default channel layout is honored, the outline is routed into a channel
-        // layer instead of being baked here. When that layout is skipped by the gate
-        // (ShouldApplyChannelConfig false), the outline is baked into the composite as usual.
-        if (options.Outline > 0 && !ShouldApplyChannelConfig(options))
-        {
-            effects.Add(new OutlineEffect(options.Outline, options.OutlineR, options.OutlineG, options.OutlineB));
-        }
-        else if (options.PostProcessors != null)
-        {
-            foreach (var pp in options.PostProcessors)
-            {
-                if (pp is OutlinePostProcessor op && op.OutlineWidth > 0)
-                {
-                    effects.Add(new OutlineEffect(op.OutlineWidth, op.OutlineR, op.OutlineG, op.OutlineB));
-                    break;
-                }
-            }
-        }
-
-        // Detect gradient: from options properties or from a GradientPostProcessor in the list.
-        if (options.HasGradient)
-        {
-            effects.Add(new GradientEffect(
-                options.GradientStartR!.Value, options.GradientStartG ?? 0, options.GradientStartB ?? 0,
-                options.GradientEndR!.Value, options.GradientEndG ?? 0, options.GradientEndB ?? 0,
-                options.GradientAngle, options.GradientMidpoint,
-                options.GradientOffset, options.GradientScale, options.GradientCyclic));
-        }
-        else if (options.PostProcessors != null)
-        {
-            foreach (var pp in options.PostProcessors)
-            {
-                if (pp is GradientPostProcessor gp)
-                {
-                    effects.Add(new GradientEffect(
-                        gp.StartR, gp.StartG, gp.StartB,
-                        gp.EndR, gp.EndG, gp.EndB,
-                        gp.AngleDegrees, gp.Midpoint));
-                    break;
-                }
-            }
-        }
-
-        return effects;
-    }
-
-    /// <summary>Downscales a super-sampled glyph using a box filter.</summary>
-    private static RasterizedGlyph SuperSampleDownscale(RasterizedGlyph glyph, int level)
-    {
-        if (glyph.Width == 0 || glyph.Height == 0)
-            return glyph;
-
-        var srcW = glyph.Width;
-        var srcH = glyph.Height;
-        var dstW = srcW / level;
-        var dstH = srcH / level;
-
-        if (dstW == 0) dstW = 1;
-        if (dstH == 0) dstH = 1;
-
-        var bpp = glyph.Format == PixelFormat.Rgba32 ? 4 : 1;
-        var dst = new byte[dstW * dstH * bpp];
-        var srcPitch = glyph.Pitch;
-        var area = level * level;
-
-        for (var dy = 0; dy < dstH; dy++)
-        {
-            for (var dx = 0; dx < dstW; dx++)
-            {
-                if (bpp == 1)
-                {
-                    int sum = 0;
-                    for (var sy = 0; sy < level; sy++)
-                    {
-                        for (var sx = 0; sx < level; sx++)
-                        {
-                            var srcIdx = (dy * level + sy) * srcPitch + (dx * level + sx);
-                            if (srcIdx < glyph.BitmapData.Length)
-                                sum += glyph.BitmapData[srcIdx];
-                        }
-                    }
-                    dst[dy * dstW + dx] = (byte)(sum / area);
-                }
-                else
-                {
-                    // Use premultiplied alpha for correct edge blending.
-                    // Without this, transparent pixels with gradient colors
-                    // bleed dark halos into the edges during downscale.
-                    float sumR = 0, sumG = 0, sumB = 0, sumA = 0;
-                    for (var sy = 0; sy < level; sy++)
-                    {
-                        for (var sx = 0; sx < level; sx++)
-                        {
-                            var srcIdx = (dy * level + sy) * srcPitch + (dx * level + sx) * 4;
-                            if (srcIdx + 3 < glyph.BitmapData.Length)
-                            {
-                                var a = glyph.BitmapData[srcIdx + 3] / 255f;
-                                sumR += glyph.BitmapData[srcIdx] * a;
-                                sumG += glyph.BitmapData[srcIdx + 1] * a;
-                                sumB += glyph.BitmapData[srcIdx + 2] * a;
-                                sumA += a;
-                            }
-                        }
-                    }
-                    var dstIdx = (dy * dstW + dx) * 4;
-                    if (sumA > 0)
-                    {
-                        dst[dstIdx] = (byte)Math.Min(255, sumR / sumA);
-                        dst[dstIdx + 1] = (byte)Math.Min(255, sumG / sumA);
-                        dst[dstIdx + 2] = (byte)Math.Min(255, sumB / sumA);
-                    }
-                    dst[dstIdx + 3] = (byte)Math.Min(255, sumA * 255 / area);
-                }
-            }
-        }
-
-        var metrics = glyph.Metrics;
-        var newMetrics = new Font.Models.GlyphMetrics(
-            BearingX: metrics.BearingX / level,
-            BearingY: metrics.BearingY / level,
-            Advance: metrics.Advance / level,
-            Width: dstW,
-            Height: dstH);
-
-        return new RasterizedGlyph
-        {
-            Codepoint = glyph.Codepoint,
-            GlyphIndex = glyph.GlyphIndex,
-            BitmapData = dst,
-            Width = dstW,
-            Height = dstH,
-            Pitch = dstW * bpp,
-            Metrics = newMetrics,
-            Format = glyph.Format
-        };
-    }
-
-    /// <summary>Pads a glyph bitmap to the target height for uniform cell sizes.</summary>
-    private static RasterizedGlyph EqualizeCellHeight(RasterizedGlyph glyph, int targetHeight)
-    {
-        if (glyph.Height >= targetHeight)
-            return glyph;
-
-        var bpp = glyph.Format == PixelFormat.Rgba32 ? 4 : 1;
-        var newPitch = glyph.Width * bpp;
-        var dst = new byte[newPitch * targetHeight];
-
-        // Copy the original bitmap at the top (yoffset will handle alignment).
-        for (var row = 0; row < glyph.Height; row++)
-        {
-            var srcOffset = row * glyph.Pitch;
-            var dstOffset = row * newPitch;
-            var rowBytes = Math.Min(glyph.Width * bpp, glyph.BitmapData.Length - srcOffset);
-            if (rowBytes > 0)
-                Array.Copy(glyph.BitmapData, srcOffset, dst, dstOffset, rowBytes);
-        }
-
-        return new RasterizedGlyph
-        {
-            Codepoint = glyph.Codepoint,
-            GlyphIndex = glyph.GlyphIndex,
-            BitmapData = dst,
-            Width = glyph.Width,
-            Height = targetHeight,
-            Pitch = newPitch,
-            Metrics = glyph.Metrics,
-            Format = glyph.Format
-        };
-    }
-
-    /// <summary>Swaps in custom glyph images, replacing rasterized glyphs or adding new ones.</summary>
-    private static List<RasterizedGlyph> ApplyCustomGlyphs(
-        List<RasterizedGlyph> glyphs,
-        Dictionary<int, CustomGlyph> customGlyphs,
-        List<int> codepoints)
-    {
-        var result = new List<RasterizedGlyph>(glyphs.Count);
-        var replaced = new HashSet<int>();
-
-        foreach (var glyph in glyphs)
-        {
-            if (customGlyphs.TryGetValue(glyph.Codepoint, out var custom))
-            {
-                result.Add(CreateFromCustom(glyph.Codepoint, glyph.GlyphIndex, custom));
-                replaced.Add(glyph.Codepoint);
-            }
-            else
-            {
-                result.Add(glyph);
-            }
-        }
-
-        // Add custom glyphs for codepoints that weren't in the rasterized set.
-        foreach (var (cp, custom) in customGlyphs)
-        {
-            if (!replaced.Contains(cp))
-            {
-                result.Add(CreateFromCustom(cp, 0, custom));
-            }
-        }
-
-        return result;
-    }
-
-    private static RasterizedGlyph CreateFromCustom(int codepoint, int glyphIndex, CustomGlyph custom)
-    {
-        var bpp = custom.Format == PixelFormat.Rgba32 ? 4 : 1;
-        var advance = custom.XAdvance ?? custom.Width;
-
-        return new RasterizedGlyph
-        {
-            Codepoint = codepoint,
-            GlyphIndex = glyphIndex,
-            BitmapData = custom.PixelData,
-            Width = custom.Width,
-            Height = custom.Height,
-            Pitch = custom.Width * bpp,
-            Metrics = new Font.Models.GlyphMetrics(
-                BearingX: 0,
-                BearingY: custom.Height,
-                Advance: advance,
-                Width: custom.Width,
-                Height: custom.Height),
-            Format = custom.Format
-        };
-    }
 
     /// <summary>Generates multiple BMFonts in batch, with optional parallelism and font caching.</summary>
     /// <param name="jobs">The batch jobs to run.</param>

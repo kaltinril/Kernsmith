@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`BmFontIncrementalSession` — add glyphs to an existing atlas at runtime without moving anything already placed** (phase 183, #208). `BmFont.BeginIncremental(fontData, options, overflowPolicy)` starts an empty session (the first `AddGlyphs` sizes the atlas exactly as `Generate` would); `BmFont.ResumeIncremental(fontData, options, existingModel, overflowPolicy)` recovers occupancy, character list and kerning from an existing `BmFontModel`/.fnt. `AddGlyphs(string | IEnumerable<int>)` returns a `GlyphAdditionResult`: per-glyph `AddedGlyph` with a reserved placement, the zero-copy `RawPixels` backend buffer, and a lazy tightly-packed RGBA32 `Pixels` promotion ready for GPU upload (blit at `(X + Padding.Left, Y + Padding.Up)`); plus the kerning-pair delta, failed/already-present codepoints, and current page geometry. The font is parsed once unfiltered, the rasterizer stays loaded, and the MaxRects free-rect state is held live, so a per-add costs work proportional to the glyphs added. No-fit behavior is caller-chosen via `AdditionOverflowPolicy`: `Grow` (POT-double the smaller page dimension up to `MaxTextureWidth/Height`, default), `NewPage`, or `Throw`. `CurrentModel` materializes a full `BmFontModel` that round-trips through the standard formatters. Not supported in a session (throws at Begin/Resume): `Variants`, `ChannelPacking`, `TargetRegion`, `CustomGlyphs`; a Skyline packing configuration falls back to MaxRects for additions. Usage, the blit contract, overflow policies and v1 limits are documented in `docs/core/incremental-glyph-addition.md`. Measured (BenchmarkDotNet, Arial ASCII @32px): a 1-glyph add into a warm ~95-char session is ~53x cheaper than a full regenerate (~74 us vs ~3.9 ms) and allocates ~2.6 KB vs ~1.8 MB.
+- Incremental session review hardening: `AddGlyphs` batches are transactional (a mid-batch overflow rolls the session back), page growth exposes free space spanning the old page edge, and `ResumeIncremental` also validates size/outline.
+
 ## [0.20.0] - 2026-08-05
 
 ### Added
