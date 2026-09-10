@@ -22,7 +22,7 @@ to within a pixel.
 Not yet supported — each raises a clear error or is ignored:
 
 - **CFF/OTF (PostScript) outlines** — rejected at `LoadFont` with a `RasterizationException` (Phase 166)
-- **WOFF/WOFF2** — supply raw TTF/TTC bytes
+- **WOFF2** — not yet supported by KernSmith core (WOFF1 is decompressed by core before rasterization, so WOFF-packaged TrueType fonts work)
 - **Hinting** — none, so small sizes are softer than FreeType or GDI output
 - **Synthetic bold/italic** (Phase 167), **outline stroking** (Phase 168), **SDF** (Phase 169),
   **variable fonts** (Phase 171), **color fonts** (Phase 172)

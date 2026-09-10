@@ -45,4 +45,6 @@ dotnet run --project apps/KernSmith.Ui
 
 - **MonoGame.Framework.DesktopGL** — rendering, input, windowing
 - **Gum.MonoGame** — UI framework (panels, controls, MVVM bindings, forms)
+- **Gum.Themes.Editor.MonoGame** — editor visual theme for the Gum controls
+- **NativeFileDialogNET** — native open/save file dialogs
 - **KernSmith** (project reference) — core bitmap font generation library

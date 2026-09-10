@@ -51,7 +51,7 @@ Source of truth for statements about the project. One short fact per line. Updat
 
 ## Build & Test Gotchas
 
-- CliTests run a hardcoded Debug CLI path (`tests/KernSmith.Tests/Cli/CliTests.cs`) — use plain `dotnet test`, not `-c Release --no-build`, which yields false CLI failures.
+- CliTests and `WoffAllBackendsTests` shell out to the real CLI, resolving `tools/KernSmith.Cli/bin/<configuration>/<tfm>/KernSmith.Cli.dll` from their own output path, so they work under any configuration — but they need the solution built first, which is why CI always runs `dotnet build` before `dotnet test`.
 - The regression harness exercises the CLI `GenerateAll` path only, not the UI `GenerationService`; verify UI-generation changes separately.
 - `GenerateAll` skips a (config, backend) pair when the backend declines a capability the config requests — e.g. SDF on GDI/DirectWrite/Native.
 - `dotnet run` exits 1 for **both** a build failure and a partial generation, so the two must be distinguished by building as a separate step.

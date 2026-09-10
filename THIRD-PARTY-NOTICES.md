@@ -52,16 +52,16 @@ component's upstream `LICENSE`/`COPYING` file. Nothing here is paraphrased.
 | FreeType (native, bundled by FreeTypeSharp) | 2.13.2 | `FTL` (FreeType License) | Native binary in FreeType backend / CLI / UI |
 | FreeTypeSharp | 3.1.0 | `MIT` | NuGet (FreeType backend) |
 | FreeType-derived embolden port (`OutlineTransforms.cs`) | n/a (source) | `FTL` (covered by FreeType) | Source in StbTrueType backend |
-| StbImageSharp | 2.30.15 | Public Domain (`Unlicense`-equivalent) | NuGet (core) |
+| StbImageSharp | 2.30.16 | Public Domain (`Unlicense`-equivalent) | NuGet (core) |
 | StbImageWriteSharp | 1.16.7 | Public Domain (`Unlicense`-equivalent) | NuGet (core) |
-| StbTrueTypeSharp | 1.26.12 | Public Domain (`Unlicense`-equivalent) | NuGet (StbTrueType backend) |
+| StbTrueTypeSharp | 1.26.13 | Public Domain (`Unlicense`-equivalent) | NuGet (StbTrueType backend) |
 | stb_truetype SDF (`StbTrueTypeSdfVendored.cs`) | n/a (source) | Public Domain / `MIT` | Source in StbTrueType backend |
 | TerraFX.Interop.Windows | 10.0.26100.6 | `MIT` | NuGet (DirectWrite backend) |
-| MonoGame.Framework.DesktopGL | 3.8.5 | `Ms-PL` | NuGet + native runtime (KernSmith.Ui desktop app) |
+| MonoGame.Framework.DesktopGL | 3.8.5.1 | `Ms-PL` | NuGet + native runtime (KernSmith.Ui desktop app) |
 | SDL2 (bundled by MonoGame DesktopGL) | n/a (native) | `Zlib` | Native binary (UI) |
 | OpenAL Soft (bundled by MonoGame DesktopGL) | 1.24.3 | `LGPL-2.0-or-later` (GNU Library GPL v2) | Native binary (UI) |
-| Gum.MonoGame | 2026.7.6.1 | `MIT` | NuGet (KernSmith.Ui desktop app) |
-| Gum.Themes.Editor.MonoGame | 2026.7.6.1 | `MIT` | NuGet (KernSmith.Ui desktop app) |
+| Gum.MonoGame | 2026.9.2.1 | `MIT` | NuGet (KernSmith.Ui desktop app) |
+| Gum.Themes.Editor.MonoGame | 2026.9.2.1 | `MIT` | NuGet (KernSmith.Ui desktop app) |
 | NativeFileDialogNET | 2.0.2 | `Zlib` | NuGet (UI / CLI file dialogs) |
 | nativefiledialog-extended (native, underlying) | n/a (native) | `Zlib` | Native binary (UI / CLI) |
 
@@ -133,7 +133,7 @@ is identical across them and is reproduced once in
   ```
 
 ### Gum packages
-Applies to **Gum.MonoGame 2026.7.6.1** and **Gum.Themes.Editor.MonoGame 2026.7.6.1**
+Applies to **Gum.MonoGame 2026.9.2.1** and **Gum.Themes.Editor.MonoGame 2026.9.2.1**
 (dependencies of the `KernSmith.Ui` desktop app).
 - **Project URL:** https://github.com/vchelaru/Gum
 - **SPDX:** `MIT`
@@ -146,8 +146,8 @@ Applies to **Gum.MonoGame 2026.7.6.1** and **Gum.Themes.Editor.MonoGame 2026.7.6
 
 ## 4. Public-Domain components (stb / StbSharp)
 
-**StbImageSharp 2.30.15**, **StbImageWriteSharp 1.16.7**, and
-**StbTrueTypeSharp 1.26.12** are C# ports maintained by the **StbSharp**
+**StbImageSharp 2.30.16**, **StbImageWriteSharp 1.16.7**, and
+**StbTrueTypeSharp 1.26.13** are C# ports maintained by the **StbSharp**
 organization (Roman Shapiro). Each project declares its license simply as
 **"Public Domain"** and ships no copyright notice or license-text file.
 
@@ -174,7 +174,7 @@ dual license). The file already carries an in-source attribution header.
 The following components are under the **Microsoft Public License (Ms-PL)**. The
 full Ms-PL text is reproduced once in [Appendix A.3](#a3-microsoft-public-license-ms-pl).
 
-### MonoGame.Framework.DesktopGL 3.8.5
+### MonoGame.Framework.DesktopGL 3.8.5.1
 - **Project URL:** https://github.com/MonoGame/MonoGame
 - **SPDX:** `Ms-PL` (with a portion under MIT — see below)
 - **Copyright (verbatim, from MonoGame `LICENSE.txt`):**
@@ -225,7 +225,7 @@ reproduced once in [Appendix A.4](#a4-zlib-license).
 ## 7. OpenAL Soft — GNU Library General Public License
 
 - **Name:** OpenAL Soft
-- **Version:** **1.24.3** (bundled by MonoGame.Framework.DesktopGL 3.8.4.1 via the
+- **Version:** **1.24.3** (bundled by MonoGame.Framework.DesktopGL 3.8.5.1 via the
   `MonoGame.Library.OpenAL` 1.24.3.2 native package)
 - **Project URL:** https://github.com/kcat/openal-soft
 - **SPDX license:** `LGPL-2.0-or-later`

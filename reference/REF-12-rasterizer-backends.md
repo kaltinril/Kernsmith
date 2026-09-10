@@ -124,7 +124,7 @@ RasterizerBackend enum:
 **Limitations**:
 
 - Windows only.
-- Color fonts and variable fonts are stubbed but not yet implemented. `DirectWriteCapabilities.SupportsColorFonts` and `SupportsVariableFonts` both return `false` (see `DirectWriteCapabilities.cs`), so the core pipeline never invokes the color/variable code paths. The `SetVariationAxes` and `SelectColorPalette` methods exist and accept their arguments, but only store the values — they have no rendering effect yet (no `TranslateColorGlyphRun` or `IDWriteFontFace5` axis implementation). Verified against `DirectWriteRasterizer.cs` and `DirectWriteCapabilities.cs` as of KernSmith 0.14.0.
+- Color fonts and variable fonts are stubbed but not yet implemented. `DirectWriteCapabilities.SupportsColorFonts` and `SupportsVariableFonts` both return `false` (see `DirectWriteCapabilities.cs`), so the core pipeline never invokes the color/variable code paths. The `SetVariationAxes` and `SelectColorPalette` methods exist and accept their arguments, but only store the values — they have no rendering effect yet (no `TranslateColorGlyphRun` or `IDWriteFontFace5` axis implementation). Verified against `DirectWriteRasterizer.cs` and `DirectWriteCapabilities.cs` as of KernSmith 0.22.0.
 - No SDF or outline stroke support.
 - Anti-alias limited to None and Grayscale.
 - Returns `null` for `GetFontMetrics` (delegates to shared OS/2 parser) because DirectWrite's `DWRITE_FONT_METRICS` uses hhea typographic values that produce incorrect `lineHeight` for many fonts.
@@ -177,7 +177,7 @@ RasterizerBackend enum:
 
 **Limitations**:
 
-- TrueType (`glyf`) outlines only — CFF/CFF2 (`.otf`) faces are rejected at load (Phase 166). No WOFF/WOFF2.
+- TrueType (`glyf`) outlines only — CFF/CFF2 (`.otf`) faces are rejected at load (Phase 166). WOFF1 is decompressed by KernSmith core before rasterization, so it is accepted; WOFF2 is not supported by core.
 - No hinting, so small sizes are softer than FreeType or GDI output.
 - No color fonts, variable fonts, SDF, or outline stroke support.
 - Cannot load system-installed fonts by family name (`LoadSystemFont` throws `NotSupportedException`).
