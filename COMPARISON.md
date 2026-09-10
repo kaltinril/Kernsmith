@@ -215,11 +215,13 @@ Native's platform rows follow from it being pure managed code with no native dep
 |---|:---:|:---:|:---:|:---:|:---:|
 | **TTF** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **OTF (CFF)** | ✅ | ✅ | ✅ | ❌ | ❌ |
-| **WOFF** | ✅ | ❌ | ✅ | ❌ | ❌ |
+| **WOFF** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **WOFF2** | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **TTC (font collections)** | ✅ | ❌ | ✅ | ✅ | ✅ |
 | **Anti-aliasing** | Grayscale, Light, LCD, None | Grayscale, None | None, Grayscale | Grayscale, None | Grayscale, None |
 | **SDF Rendering** | ✅ | ❌ | ❌ | ✅ | ❌ |
+
+WOFF1 is decompressed by KernSmith core before rasterization, so all backends accept it for fonts whose outlines they otherwise support (StbTrueType and Native still require TrueType `glyf` outlines inside the WOFF). WOFF2 is not yet supported.
 | **Hinting** | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **Synthetic Bold** | ✅ | ✅ | ✅ | ✅ | ❌ |
 | **Synthetic Italic** | ✅ | ✅ | ✅ | ✅ | ❌ |

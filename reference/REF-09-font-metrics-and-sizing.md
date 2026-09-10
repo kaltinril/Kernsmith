@@ -380,7 +380,7 @@ Compute the effective ppem from the desired cell height:
 effectivePpem = fontSize * unitsPerEm / (usWinAscent + usWinDescent)
 ```
 
-> **Verified against code (KernSmith 0.14.0):** This formula is implemented in
+> **Verified against code (KernSmith 0.22.0):** This formula is implemented in
 > `BmFont.RasterizeFont` (`src/KernSmith/BmFont.cs`) as
 > `effectiveSize = (float)((double)options.Size * fontInfo.UnitsPerEm / (os2.WinAscent + os2.WinDescent))`,
 > applied only when `MatchCharHeight` is `false`, the OS/2 table is present, and

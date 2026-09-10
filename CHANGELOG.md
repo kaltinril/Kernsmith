@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-09-09
+
+### Changed
+
+- Dependencies bumped to the latest stable releases (#222): the Gum family in lockstep to 2026.9.2.1 (`Gum.MonoGame`, `Gum.Themes.Editor.MonoGame`, `KernSmith.GumCommon`, `KernSmith.MonoGameGum`), `xunit.v3` and `xunit.runner.visualstudio` 4.0.0, `Microsoft.NET.Test.Sdk` 18.10.0, `Microsoft.SourceLink.GitHub` 10.0.401, `MonoGame.Framework.DesktopGL` 3.8.5.1, `StbImageSharp` 2.30.16, `StbTrueTypeSharp` 1.26.13. The Blazor WASM sample moves to ASP.NET Core WebAssembly 10.0.12 and the bmfont-compare tools to `System.Drawing.Common` 10.0.12. Generated font output is unchanged (verified with the `tests/bmfont-compare` harness across every backend).
+- `dotnet test` now runs in Microsoft.Testing.Platform mode (`global.json` `test.runner`), which xunit.v3 4.x requires on the .NET 10 SDK. Contributors invoke a project as `dotnet test --project <csproj>`; CI and the publish workflow use `--report-xunit-trx` in place of the VSTest `--logger trx` / `--blame-hang` flags.
+- The desktop UI uses Gum's `AbsoluteWidth`/`AbsoluteHeight` in place of the now-obsolete `GetAbsoluteWidth()`/`GetAbsoluteHeight()`.
+- Dependabot also scans the Blazor WASM sample and the bmfont-compare tool projects, which opt out of Central Package Management and were previously unmonitored.
+
+### Fixed
+
+- Documentation claimed the GDI, StbTrueType and Native backends reject WOFF fonts. They do not: WOFF1 is decompressed to sfnt by KernSmith core before any rasterizer sees the bytes, so every backend accepts a WOFF whose outlines it otherwise supports. The backend capability tables in `README.md`, `COMPARISON.md`, `docs/rasterizers/index.md`, the Native rasterizer README, `reference/REF-12-rasterizer-backends.md` and the `RasterizerBackend.Native` XML doc are corrected, and `WoffAllBackendsTests` now locks the behavior in across every backend. WOFF2 remains unsupported.
+- `THIRD-PARTY-NOTICES.md` package versions, several stale "verified against KernSmith `<version>`" markers in `docs/` and `reference/`, the UI README dependency list, and the core NuGet package description are brought back in line with the code.
+
 ## [0.21.0] - 2026-08-28
 
 ### Added

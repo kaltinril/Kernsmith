@@ -26,9 +26,11 @@ KernSmith supports multiple rasterizer backends through a pluggable `IRasterizer
 | ClearType-hinted grayscale | No | No | Yes | No | No |
 | Synthetic bold/italic | Yes | Yes | Yes | Yes | No |
 | Anti-aliasing modes | Grayscale, Light, LCD, None | Grayscale, None | Grayscale, None | Grayscale, None | Grayscale, None |
-| Font formats | TTF, OTF, WOFF | TTF, OTF | TTF, OTF, WOFF | TTF only | TTF only |
+| Font formats | TTF, OTF, WOFF | TTF, OTF, WOFF | TTF, OTF, WOFF | TTF, WOFF (TrueType outlines only) | TTF, WOFF (TrueType outlines only) |
 | Native dependencies | Yes | Yes | Yes | None | None |
 | Published on NuGet | Yes | Yes | Yes | Yes | No |
+
+WOFF1 is decompressed by KernSmith core before rasterization, so all backends accept it for fonts whose outlines they otherwise support. WOFF2 is not yet supported.
 
 ## Auto-Registration
 
