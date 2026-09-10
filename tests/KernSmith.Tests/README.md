@@ -13,7 +13,7 @@ On Windows, additional tests exercise the GDI rasterizer backend via a condition
 ## Running Tests
 
 ```
-dotnet test tests/KernSmith.Tests/KernSmith.Tests.csproj
+dotnet test --project tests/KernSmith.Tests/KernSmith.Tests.csproj
 ```
 
 See the [root README](../../README.md) for full project documentation.

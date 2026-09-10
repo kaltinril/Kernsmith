@@ -528,8 +528,8 @@ public class PreviewPanel : Panel
         if (_previewContent == null || atlasWidth <= 0 || atlasHeight <= 0) return;
 
         // Available space: panel width minus margins, panel height minus toolbar/nav/sample areas
-        var availableWidth = Math.Max(1f, _previewContent.Visual.GetAbsoluteWidth() - 20);
-        var availableHeight = Math.Max(1f, _previewContent.Visual.GetAbsoluteHeight() - AtlasContentY - 10);
+        var availableWidth = Math.Max(1f, _previewContent.Visual.AbsoluteWidth - 20);
+        var availableHeight = Math.Max(1f, _previewContent.Visual.AbsoluteHeight - AtlasContentY - 10);
 
         var fitZoom = Math.Min(availableWidth / atlasWidth, availableHeight / atlasHeight);
         // Clamp to slider range and don't exceed 100% (no upscaling by default)
@@ -877,8 +877,8 @@ public class PreviewPanel : Panel
 
         var panelLeft = this.Visual.AbsoluteLeft;
         var panelTop = this.Visual.AbsoluteTop;
-        var panelRight = panelLeft + this.Visual.GetAbsoluteWidth();
-        var panelBottom = panelTop + this.Visual.GetAbsoluteHeight();
+        var panelRight = panelLeft + this.Visual.AbsoluteWidth;
+        var panelBottom = panelTop + this.Visual.AbsoluteHeight;
 
         if (scrollDelta != 0 && activeSlider != null)
         {

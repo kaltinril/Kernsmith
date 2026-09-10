@@ -49,6 +49,7 @@ Decisions made, with the why — consult before re-litigating anything. One per 
 
 - All four Gum integration projects were removed from this repo (2026-07-18) and Vic took over every Gum integration; core `KernSmith` stays Jeremy's. This also fixed a UI startup crash, since `Gum.Themes.Editor.MonoGame` was compiled against Gum's own `KernSmith.MonoGameGum` build while the local ProjectReference won restore.
 - Gum family packages are bumped in **lockstep**, never one at a time: merging Dependabot PRs individually caused a GumCommon/Gum.MonoGame version split that broke `main`.
+- Stay on xUnit (xunit.v3 4.x) and run tests in Microsoft.Testing.Platform mode rather than pinning xunit.v3 3.x to keep VSTest: VSTest is being retired by Microsoft across the ecosystem (MSTest, NUnit, and xUnit all moved to MTP), and the opt-in is a three-line `global.json` entry plus CLI-flag renames in CI — no test code changed. `Microsoft.NET.Test.Sdk` and `xunit.runner.visualstudio` stay referenced, per xUnit's guidance, so IDE Test Explorers keep working.
 
 ## Tooling
 

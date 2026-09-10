@@ -84,7 +84,7 @@ Run the full build and test suite to catch issues before shipping.
 
 ```bash
 dotnet build KernSmith.sln -c Release
-dotnet test KernSmith.sln -c Release --no-build
+dotnet test --solution KernSmith.sln -c Release --no-build
 ```
 
 If either fails, stop and report the error to the user. Do not proceed to commit with a broken build.

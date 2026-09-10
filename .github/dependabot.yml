@@ -16,6 +16,27 @@ updates:
       prefix: chore
       include: scope
 
+  # Projects that opt out of Central Package Management and are not in KernSmith.sln,
+  # so the root nuget entry above never sees them: the Blazor WASM sample (built by the
+  # wasm-publish CI job) and the bmfont-compare regression tools.
+  - package-ecosystem: nuget
+    directories:
+      - "/samples/KernSmith.Samples.BlazorWasm"
+      - "/tests/bmfont-compare/GenerateAll"
+      - "/tests/bmfont-compare/CompareGlyphs"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    target-branch: main
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - nuget
+    commit-message:
+      prefix: chore
+      include: scope
+
   # GitHub Actions used by the CI/CD workflows.
   - package-ecosystem: github-actions
     directory: "/"
