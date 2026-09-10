@@ -26,19 +26,21 @@ jobs:
             10.0.x
       - run: dotnet restore
       - run: dotnet build --no-restore
-      # The .NET test host hangs on Linux after the run completes; --blame-hang kills it and
-      # reports exit code 1 regardless of the results. continue-on-error keeps that shutdown
-      # hang from blocking PRs, so the trx gate below — not the exit code — decides the job.
+      # dotnet test runs in Microsoft.Testing.Platform mode (global.json "test.runner"): xunit.v3 4.x
+      # dropped VSTest mode on the .NET 10 SDK. The old VSTest test host hung on Linux after the run
+      # completed; the job-level timeout-minutes is the safety net now that --blame-hang is gone.
+      # continue-on-error keeps a shutdown hang from blocking PRs, so the trx gate below — not the
+      # exit code — decides the job.
       - name: Test (${{ matrix.framework }})
-        run: dotnet test tests/KernSmith.Tests/KernSmith.Tests.csproj --no-build -f ${{ matrix.framework }} --verbosity normal --blame-hang --blame-hang-timeout 3m --logger "trx;LogFileName=core.trx" --results-directory testresults
+        run: dotnet test --project tests/KernSmith.Tests/KernSmith.Tests.csproj --no-build -f ${{ matrix.framework }} --report-xunit-trx --report-xunit-trx-filename core.trx --results-directory testresults
         continue-on-error: ${{ matrix.os == 'ubuntu-latest' }}
       - name: Test rasterizers (${{ matrix.framework }})
-        run: dotnet test tests/KernSmith.Rasterizers.Native.Tests/KernSmith.Rasterizers.Native.Tests.csproj --no-build -f ${{ matrix.framework }} --verbosity normal --blame-hang --blame-hang-timeout 3m --logger "trx;LogFileName=rasterizers.trx" --results-directory testresults
+        run: dotnet test --project tests/KernSmith.Rasterizers.Native.Tests/KernSmith.Rasterizers.Native.Tests.csproj --no-build -f ${{ matrix.framework }} --report-xunit-trx --report-xunit-trx-filename rasterizers.trx --results-directory testresults
         continue-on-error: ${{ matrix.os == 'ubuntu-latest' }}
       # KernSmith.Ui targets net10.0 only, so this project cannot be tested on the net8.0 leg.
       - name: Test UI services
         if: matrix.framework == 'net10.0'
-        run: dotnet test tests/KernSmith.Ui.Tests/KernSmith.Ui.Tests.csproj --no-build -f net10.0 --verbosity normal --blame-hang --blame-hang-timeout 3m --logger "trx;LogFileName=ui.trx" --results-directory testresults
+        run: dotnet test --project tests/KernSmith.Ui.Tests/KernSmith.Ui.Tests.csproj --no-build -f net10.0 --report-xunit-trx --report-xunit-trx-filename ui.trx --results-directory testresults
         continue-on-error: ${{ matrix.os == 'ubuntu-latest' }}
       - name: Verify test results
         if: always()

@@ -90,8 +90,8 @@ public static class TooltipService
         if (_isVisible)
         {
             var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
-            var tipWidth = _tooltipContainer.GetAbsoluteWidth();
-            var tipHeight = _tooltipContainer.GetAbsoluteHeight();
+            var tipWidth = _tooltipContainer.AbsoluteWidth;
+            var tipHeight = _tooltipContainer.AbsoluteHeight;
             var screenWidth = GraphicalUiElement.CanvasWidth;
             var screenHeight = GraphicalUiElement.CanvasHeight;
 
