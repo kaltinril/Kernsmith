@@ -21,3 +21,4 @@ Explore the documentation sections below.
 
 - [NuGet package](https://www.nuget.org/packages/KernSmith)
 - [GitHub repository](https://github.com/kaltinril/Kernsmith)
+- [Discord -- #kernsmith on the FlatRedBall server](https://discord.gg/nmgG28qHNP)

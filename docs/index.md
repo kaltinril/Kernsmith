@@ -56,3 +56,7 @@ var result = BmFont.Builder()
     .WithKerning()
     .Build();
 ```
+
+## Community
+
+Questions, feedback, or showing off what you built? Join the [#kernsmith channel](https://discord.gg/nmgG28qHNP) on the FlatRedBall Discord server.
