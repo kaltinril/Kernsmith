@@ -24,7 +24,7 @@
     <PackageVersion Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" />
     <PackageVersion Include="Gum.MonoGame" Version="2026.9.2.1" />
     <PackageVersion Include="Gum.Themes.Editor.MonoGame" Version="2026.9.2.1" />
-    <PackageVersion Include="KernSmith.GumCommon" Version="2026.9.2.1" />
+    <PackageVersion Include="KernSmith.GumCommon" Version="2026.10.1.1" />
     <PackageVersion Include="KernSmith.MonoGameGum" Version="2026.9.2.1" />
   </ItemGroup>
 </Project>
