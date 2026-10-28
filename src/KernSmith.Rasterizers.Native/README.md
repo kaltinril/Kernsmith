@@ -19,7 +19,8 @@ is expected to work but not yet verified — see the
 In development. As of Phase 165 the backend renders TrueType (`glyf`) outlines end to end:
 SFNT table parsing, cmap lookup (formats 4 and 12), outline extraction, adaptive curve
 flattening, and a signed-area scanline fill, with font and glyph metrics that track FreeType
-to within a pixel.
+to within a pixel. WOFF and WOFF2 files wrapping TrueType outlines work too: KernSmith core
+decompresses them before the backend sees the bytes.
 
 Not yet supported — each raises a clear error or is ignored, as noted:
 

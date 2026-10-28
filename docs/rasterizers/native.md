@@ -33,6 +33,7 @@ kernsmith generate --font Roboto-Regular.ttf --size 32 --rasterizer native --out
 
 - TrueType (`glyf`) outlines
 - TrueType Collections (`.ttc`) via face index
+- WOFF and WOFF2 files wrapping TrueType outlines (KernSmith core decompresses them before the backend sees the bytes)
 - `cmap` formats 4 and 12 for character lookup
 - Anti-aliasing: `Grayscale` and `None` only
 - Super sampling (applied by the core pipeline)
