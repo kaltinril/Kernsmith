@@ -16,7 +16,7 @@
 
 ## Features
 
-- **Font format support** -- TTF, OTF, WOFF, and TTC collections (select a face with `FaceIndex`)
+- **Font format support** -- TTF, OTF, WOFF, WOFF2, and TTC collections (select a face with `FaceIndex`)
 - **BMFont output** -- text, XML, and binary `.fnt` formats with `.png` atlas pages
 - **GPOS kerning** -- extracts kerning pairs directly from OpenType GPOS tables
 - **Atlas packing** -- MaxRects (default) and Skyline algorithms with autofit, power-of-two, and non-square texture support

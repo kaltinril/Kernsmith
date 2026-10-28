@@ -105,7 +105,7 @@ Work order for finishing the backend. Tracks inside a wave are independent and c
 
 - **Wave 0** (foundations, all parallel)
   - **Staged-pipeline refactor** ([166 Part 1](phase-166-cff-charstring-interpreter.md#part-1--staged-pipeline-refactor-wave-0)): `NativeRasterizer.RasterizeGlyph` becomes decode via a new `IOutlineDecoder` (TrueType `glyf` behind it) -> outline transform list (bold/italic/stroke hook) -> bbox computed from the outline (declared `glyf` bbox optional) -> scale/hint hook -> render-mode dispatch (coverage / SDF / LCD / color). Output-identical for existing `glyf` fonts.
-  - **[178](phase-178-woff-decompression.md) WOFF2** -- core only (`WoffDecompressor`), with our own managed Brotli decoder.
+  - **[178](phase-178-woff-decompression.md) WOFF2** -- core decoding done (own managed Brotli decoder); `KernSmith.Fonts.Web` switch pending.
   - **[177](phase-177-performance-optimization.md) benchmark harness** -- BenchmarkDotNet Native vs StbTrueType vs FreeType, so every later wave is measured against a baseline.
 - **Wave 1** (after the Wave 0 refactor, all parallel): [166](phase-166-cff-charstring-interpreter.md) CFF; [167](phase-167-synthetic-bold-italic.md) -> [168](phase-168-synthetic-outline-stroke.md) synthetic styles then stroke/small caps/condensed; [169](phase-169-sdf-generation.md) -> [170](phase-170-msdf-generation.md) SDF then MSDF; [171](phase-171-variable-font-support.md) TrueType variations (`gvar`/`avar`/`HVAR`/`MVAR`); [172](phase-172-color-font-support.md) COLRv0 + CPAL.
 - **Wave 2**: [174](phase-174-auto-hinting.md) auto-hinting (after 167/168); 171 CFF2 `blend` (after 166); 172 COLRv1; [173](phase-173-lcd-subpixel-rendering.md) LCD, including core anti-alias-mode negotiation.
@@ -129,7 +129,7 @@ Every phase that changes Native pixel output runs `regression_check.py` with a `
 | 175 | [GSUB Layout](phase-175-gsub-layout.md) | GSUB substitutions | Needs decision |
 | 176 | [Supersampling + Height Stretch](phase-176-supersampling-height-stretch.md) | In-rasterizer supersample / height stretch | Needs decision |
 | 177 | [Performance Optimization](phase-177-performance-optimization.md) | Benchmark harness, then optimisation | In progress -- harness and baseline done, optimisation Wave 3 |
-| 178 | [WOFF2 Decompression](phase-178-woff-decompression.md) | WOFF2 in core, managed Brotli | Future -- Wave 0 |
+| 178 | [WOFF2 Decompression](phase-178-woff-decompression.md) | WOFF2 in core, managed Brotli | In progress -- core decoding done; Fonts.Web switch pending |
 | 179 | [Validation / Golden Masters](phase-179-validation-golden-masters.md) | Validation, golden masters, release | Future -- Wave 3 |
 | 180 | [Innovation Research](phase-180-innovation-research.md) | Innovation research (ongoing experiments) | Future (Ongoing Research) |
 

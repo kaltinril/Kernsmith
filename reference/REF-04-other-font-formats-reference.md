@@ -263,12 +263,12 @@ Offset  Size  Field
    - `hmtx`: Reconstruct from stored deltas and glyf-derived LSBs.
 4. Reconstruct the sfnt as with WOFF 1.0.
 
-> **Note**: WOFF2 decompression is significantly more complex than WOFF1 due to the preprocessing transforms. Using a library (e.g., Google's `woff2` reference implementation) is strongly recommended over hand-rolling.
+> **Note**: KernSmith decodes WOFF2 in core with its own pure managed RFC 7932 Brotli decoder (`src/KernSmith/Font/Brotli/`) and transform reversal (`src/KernSmith/Font/Woff2/`), written from the specs. `System.IO.Compression.BrotliDecoder` is not used because browser-wasm does not ship its native library (see `project_decisions.md`).
 
 #### C# Implementation Guidance
 
 - **WOFF 1.0 (zlib)**: The compressed data uses the zlib format (RFC 1950), which wraps DEFLATE with a 2-byte header and 4-byte checksum. .NET's `DeflateStream` expects raw DEFLATE, so you must **skip the first 2 bytes** of each compressed table before passing to `DeflateStream` (and ignore the trailing 4-byte Adler-32 checksum). Alternatively, use `System.IO.Compression.ZLibStream` (.NET 6+) which handles the zlib framing natively, or the `SharpZipLib` NuGet package for older .NET targets.
-- **WOFF 2.0 (Brotli)**: Use `System.IO.Compression.BrotliStream` (built into .NET Core 2.1+ / .NET 5+). This handles the Brotli decompression of the single compressed data block. However, the content-aware **inverse transforms** for `glyf`, `loca`, and `hmtx` tables must be implemented separately -- `BrotliStream` only handles the compression layer, not the OpenType-specific preprocessing. For a complete solution, consider wrapping Google's native `woff2` library via P/Invoke, or using a managed port if available.
+- **WOFF 2.0 (Brotli)**: KernSmith does **not** use `System.IO.Compression.BrotliStream`/`BrotliDecoder`: they wrap the runtime's native Brotli library, which browser-wasm does not ship. Core has its own managed RFC 7932 decoder (`ManagedBrotliDecoder`) for the single compressed data block, and reverses the `glyf`/`loca` and `hmtx` transforms itself (`Woff2Decoder`). The BCL encoder is still handy in tests for producing Brotli vectors on desktop.
 
 ### Key Differences Between WOFF 1.0 and WOFF 2.0
 
@@ -297,7 +297,7 @@ KernSmith ships an optional companion package, **`KernSmith.Fonts.Web`**, that *
 
 The flow: request the provider's stylesheet over HTTP, parse the `@font-face` rules, and download the **`.woff`** file for the requested family / weight / style / Unicode subset (results are cached in memory, with an optional `diskCachePath` for cross-run persistence).
 
-- **WOFF only, not WOFF2**: only `.woff` URLs are requested; `.woff2` entries are deliberately ignored because WOFF2's Brotli + transform decoding is not yet implemented (consistent with the "unsupported WOFF2" note above). If a CDN offers only `.woff2` for a font, the fetch fails with a clear error.
+- **WOFF only, not WOFF2 (yet)**: only `.woff` URLs are requested; `.woff2` entries are ignored. Core now decodes WOFF2, so switching the package to prefer `.woff2` is a pending follow-up. If a CDN offers only `.woff2` for a font, the fetch fails with a clear error.
 - **WASM-friendly**: it depends only on `HttpClient` from the BCL and needs no filesystem, so it works in browser/Blazor WebAssembly scenarios (leave `diskCachePath` null there). Cross-platform on `net8.0`/`net10.0`.
 - **No discovery**: CSS CDNs expose no family-listing endpoint, so `ListFamiliesAsync` returns an empty list.
 

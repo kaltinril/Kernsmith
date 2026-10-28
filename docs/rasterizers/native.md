@@ -33,6 +33,7 @@ kernsmith generate --font Roboto-Regular.ttf --size 32 --rasterizer native --out
 
 - TrueType (`glyf`) outlines
 - TrueType Collections (`.ttc`) via face index
+- WOFF and WOFF2 files wrapping TrueType outlines (KernSmith core decompresses them before the backend sees the bytes)
 - `cmap` formats 4 and 12 for character lookup
 - Anti-aliasing: `Grayscale` and `None` only
 - Super sampling (applied by the core pipeline)
@@ -43,7 +44,6 @@ kernsmith generate --font Roboto-Regular.ttf --size 32 --rasterizer native --out
 Each item below either raises a clear error or is ignored, as noted:
 
 - **CFF/OTF (PostScript) outlines** -- rejected at load time with a `RasterizationException`. This is the one that bites: a `.otf` file will not render at all.
-- **WOFF2** -- not supported by KernSmith core for any backend. WOFF1 works: core decompresses it before the backend sees the bytes, so a WOFF1 file wrapping TrueType outlines renders normally
 - **Hinting** -- none, so small sizes are softer than FreeType or GDI output
 - **SDF rendering** -- rejected with `NotSupportedException`
 - **Outline stroke** -- the backend has no stroke of its own; outlines (`Outline` / `outlineThickness`) still work because KernSmith core draws them as a bitmap effect for every backend

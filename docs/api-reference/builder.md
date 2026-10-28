@@ -22,7 +22,7 @@ Call exactly one of these before `Build()`.
 | Method | Description |
 |--------|-------------|
 | `WithFont(byte[] fontData)` | Load a font from raw bytes. |
-| `WithFont(string fontPath)` | Load a font from a `.ttf`, `.otf`, or `.woff` file. |
+| `WithFont(string fontPath)` | Load a font from a `.ttf`, `.otf`, `.woff`, or `.woff2` file. |
 | `WithSystemFont(string familyName)` | Use a system-installed font by family name. |
 | `FromConfig(string bmfcPath)` | Seed the builder from a `.bmfc` or `.hiero` config file. |
 | `FromConfig(BmfcConfig config)` | Seed the builder from an already-parsed config. |

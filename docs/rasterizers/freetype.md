@@ -35,7 +35,7 @@ var options = new FontGeneratorOptions
 
 ## Capabilities
 
-- TTF, OTF, WOFF input
+- TTF, OTF, WOFF, WOFF2 input
 - Color fonts (COLR/CPAL)
 - Variable font axes (fvar)
 - Hinting and anti-aliasing (None, Grayscale, Light, Lcd modes)
@@ -49,7 +49,6 @@ FreeType is the only backend that implements COLR/CPAL color glyphs and fvar var
 
 ## Limitations
 
-- Does not load WOFF2 input -- decompress to TTF/OTF/WOFF first
 - Cannot load system-installed fonts by family name -- provide font file bytes directly
 
 ## When to Use

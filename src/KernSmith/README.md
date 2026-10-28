@@ -1,6 +1,6 @@
 # KernSmith
 
-The core library for generating BMFont-compatible bitmap fonts from TTF/OTF/WOFF files.
+The core library for generating BMFont-compatible bitmap fonts from TTF/OTF/WOFF/WOFF2 files.
 
 ## Overview
 

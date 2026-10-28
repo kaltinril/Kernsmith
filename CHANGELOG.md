@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Benchmarks: `NativeComparison*` BenchmarkDotNet classes compare the Native, StbTrueType and FreeType backends (font load, per-glyph rasterization at 12/32/72px, `GetGlyphMetrics`, full `BmFont.Generate`) with memory diagnostics; the measured baseline is recorded in the phase 177 plan.
 
+- WOFF2 input. Core decodes `.woff2` (including WOFF2 font collections, which become a TTC) before any backend sees the bytes, so every backend (FreeType, GDI, DirectWrite, StbTrueType and Native) renders a WOFF2 exactly like the TTF it was made from. Brotli is decoded by KernSmith's own pure managed RFC 7932 decoder rather than `System.IO.Compression.BrotliDecoder`, so WOFF2 also works on browser-wasm, where the BCL decoder has no native library. Malformed, truncated or corrupt WOFF2 input throws `FontParsingException`. `KernSmith.Fonts.Web` still requests `.woff` only.
+
 ### Changed
 
 - The Native rasterizer renders each glyph through an internal staged pipeline (outline decoder, outline transforms, bounds, scale/hint, render-mode dispatch) so CFF, synthetic styles, SDF, variations, color and LCD can each plug into one stage. Output is byte-identical to before.
