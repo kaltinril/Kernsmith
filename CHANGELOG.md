@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Benchmarks: `NativeComparison*` BenchmarkDotNet classes compare the Native, StbTrueType and FreeType backends (font load, per-glyph rasterization at 12/32/72px, `GetGlyphMetrics`, full `BmFont.Generate`) with memory diagnostics; the measured baseline is recorded in the phase 177 plan.
+
 ### Fixed
 
 - The Native rasterizer docs (`docs/rasterizers/native.md`, the package README) now describe its real behavior: WOFF1 files work (core decompresses them first), a color-font request throws, `Light`/`LCD` anti-aliasing requests render as grayscale, and core still draws outlines and runs `BoldPostProcessor`/`ItalicPostProcessor` for it.
