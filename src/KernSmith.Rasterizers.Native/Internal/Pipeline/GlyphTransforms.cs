@@ -14,6 +14,9 @@ internal static class GlyphTransforms
     /// The rasterizer applies whatever is requested: core has already cleared
     /// <see cref="RasterOptions.Bold"/>/<see cref="RasterOptions.Italic"/> for a face that is
     /// bold/italic already (unless forced), so this must not re-check the font's style.
+    ///
+    /// The full order, once Phase 168's options exist: width scale, small caps, bold, italic;
+    /// a stroke is built from the fully styled outline as a separate layer, never appended here.
     /// </remarks>
     /// <param name="options">The request.</param>
     /// <param name="unitsPerEm">The face's <c>head.unitsPerEm</c>, for pixel-defined strengths.</param>

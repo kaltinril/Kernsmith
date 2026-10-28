@@ -119,7 +119,7 @@ Every phase that changes Native pixel output runs `regression_check.py` with a `
 | 160 | [Rasterizer Design Decisions](phase-160-rasterizer-design-decisions.md) | Decision record for the Native rasterizer | Active |
 | 166 | [CFF/Type2 Charstring Interpreter](phase-166-cff-charstring-interpreter.md) | Part 1: staged pipeline + `IOutlineDecoder`; Part 2: CFF/CFF2 outlines (OTF) | **Next** -- Part 1 complete; Part 2 Wave 1 |
 | 167 | [Synthetic Bold & Italic](done/phase-167-synthetic-bold-italic.md) | Outline-level synthetic bold + italic | Complete |
-| 168 | [Synthetic Outline/Stroke](phase-168-synthetic-outline-stroke.md) | Outline stroke, small caps, condensed/extended | Future -- Wave 1 (after 167) |
+| 168 | [Synthetic Outline/Stroke](phase-168-synthetic-outline-stroke.md) | Outline stroke, small caps, condensed/extended | In progress -- Native geometry done; core plumbing needs decision |
 | 169 | [SDF Generation](phase-169-sdf-generation.md) | Single-channel SDF from outlines | Future -- Wave 1 |
 | 170 | [MSDF Generation](phase-170-msdf-generation.md) | Multi-channel SDF | Future -- Wave 1 (after 169) |
 | 171 | [Variable Font Support](phase-171-variable-font-support.md) | TrueType variations; CFF2 `blend` | Future -- Wave 1 (TrueType), Wave 2 (CFF2) |

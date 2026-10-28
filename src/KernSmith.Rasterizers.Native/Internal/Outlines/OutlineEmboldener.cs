@@ -100,7 +100,7 @@ internal static class OutlineEmboldener
             }
         }
 
-        if (area == 0)
+        if (area.Equals(0d))
             return null;
 
         bool clockwise = area < 0;
@@ -172,7 +172,7 @@ internal static class OutlineEmboldener
                 outX = xs[j] - xs[i];
                 outY = ys[j] - ys[i];
                 lOut = Math.Sqrt((outX * outX) + (outY * outY));
-                if (lOut == 0)
+                if (lOut.Equals(0d))
                 {
                     j = j < last ? j + 1 : first;
                     continue;
@@ -188,7 +188,7 @@ internal static class OutlineEmboldener
                 lOut = lAnchor;
             }
 
-            if (lIn != 0)
+            if (!lIn.Equals(0d))
             {
                 if (k < 0)
                 {
