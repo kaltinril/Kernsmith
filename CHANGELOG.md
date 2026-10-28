@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- FreeType: variable-font axis coordinates are passed to FreeType as pointer-sized `FT_Fixed` values. They were marshalled as 32-bit ints, so FreeType read them in pairs and every variable-font request rendered a scrambled instance regardless of the axes asked for.
+
 ## [0.24.0] - 2026-10-18
 
 ### Added
