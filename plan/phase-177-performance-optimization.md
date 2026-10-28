@@ -1,101 +1,52 @@
-# Phase 177 — Native Rasterizer: Performance Optimization
+# Phase 177 — Native Rasterizer: Benchmarks & Performance Optimization
 
-> **Status**: Future
+> **Status**: Future — benchmark harness Wave 0; optimisation Wave 3
 > **Created**: 2026-04-01
-> **Depends on**: Phases 161–176 (all feature phases)
-
-> **Existing implementation (reference)**: The Phase 161 foundation (binary reader, core tables) is now merged, and benchmark infrastructure exists in `benchmarks/KernSmith.Benchmarks/`. Establish baselines against the native rasterizer once Phases 162-165 make it render. The "within 2x of StbTrueTypeSharp" target remains valid.
+> **Depends on**: nothing for the harness; the feature phases (166–174) for the optimisation pass
 
 ## Goal
 
-Optimize the Native rasterizer for production performance. Target: within 2x of StbTrueTypeSharp for common workloads, competitive with FreeType for large glyph sets.
+1. **Harness (Wave 0)** — a BenchmarkDotNet comparison of Native vs StbTrueType vs FreeType, so each wave's cost is visible as it lands.
+2. **Optimisation (Wave 3)** — reach the release target: within 2× of StbTrueTypeSharp for common workloads (Phase 160 Q9 set 3× for the MVP; neither has been measured yet — the Phase 164 benchmark was deferred to here).
 
-## Performance Target History
+## Starting point
 
-- **Phase 160 (initial)**: Within 3x of StbTrueTypeSharp — acceptable for first implementation
-- **Phase 177 (this phase)**: Tighten to within 2x of StbTrueTypeSharp — production-ready target
+- `benchmarks/KernSmith.Benchmarks/` references only core and the FreeType backend.
+- Native allocates per glyph: outline command and edge lists, the prepared/active edge arrays, `glyf` flag arrays. Only the scanline `area`/`cover` buffers come from `ArrayPool`. The output bitmap is intentionally fresh (Phase 160 D11).
+- WASM rule (Phase 160): no `Parallel.ForEach`, `.Result`/`.Wait()` or `Reflection.Emit` in Native.
 
-This phase supersedes Phase 160 Q9's initial 3x target. The 3x target applies during Phases 161-165 development; this phase tightens it for release.
+## Work items — harness (Wave 0)
 
-## Scope
+- Add `ProjectReference`s to the StbTrueType and Native backends.
+- Scenarios, each parameterized by backend: ASCII (95 glyphs) at 16/32/64px; Latin Extended at 32px; a large CJK-style glyph set at 24px if a suitable committed font exists; single-glyph latency; font load.
+- `[MemoryDiagnoser]` on all; report allocated bytes per glyph.
+- Rasterizer-only benchmarks (calling `IRasterizer.RasterizeAll`) separate from full `BmFont.Generate`, so pipeline cost doesn't mask backend cost.
+- Record the baseline ratios in this doc as the load-bearing numbers the targets are judged against.
 
-### Profiling & Benchmarking
+## Work items — optimisation (Wave 3)
 
-Before optimizing, establish baselines:
-1. Add BenchmarkDotNet benchmarks to `benchmarks/KernSmith.Benchmarks/`
-2. Benchmark scenarios:
-   - ASCII set (95 glyphs) at 16, 32, 64 px
-   - Latin Extended set (~600 glyphs) at 32 px
-   - CJK subset (1000 glyphs) at 24 px
-   - Single glyph rasterization (per-glyph latency)
-3. Compare against FreeType and StbTrueType backends
-4. Profile with `dotnet-trace` / PerfView to find hotspots
+Profile first (`dotnet-trace`/PerfView); do only what the profile justifies.
 
-### Memory Optimization
-
-- **Buffer pooling**: Ensure ALL internal buffers use `ArrayPool<T>.Shared`
-- **Coverage buffer reuse**: Single pair of area/cover buffers reused across all scanlines and glyphs
-- **Span-based parsing**: Zero-allocation font table access via `ReadOnlySpan<byte>`
-- **Struct-based types**: Ensure edge segments, points, commands are value types (no heap allocation per glyph)
-- **Pre-allocate edge list**: Estimate edge count from maxPoints, pre-allocate array
-
-### Algorithmic Optimization
-
-- **Edge sorting**: Use `Array.Sort` with custom comparer (avoid LINQ)
-- **Active edge list**: Use insertion sort (list is nearly sorted between scanlines)
-- **Empty scanline skip**: Track min/max active edge Y, skip scanlines outside range
-- **Glyph bbox clipping**: Only allocate bitmap for glyph bounding box, not full em square
-- **Cache cmap lookups**: Build a dictionary for O(1) codepoint→glyphIndex
-
-> **FontStashSharp insight — Kerning Hash Cache:** Pack two glyph IDs into a single `int` key using `((g1 << 16) | (g1 >> 16)) ^ g2` for O(1) kerning pair lookups. This avoids O(n) kern table scans and eliminates the need for a `(int, int)` tuple key (which boxes on dictionary lookup). Apply to both GPOS and kern table caching.
-
-> **FontStashSharp insight — Specialized Int32Map:** Replace `Dictionary<int, T>` in hot paths (cmap cache, glyph cache, kerning cache) with a specialized integer-keyed hash map. Key optimizations: hash via `key & int.MaxValue` (no virtual GetHashCode calls), static pre-computed primes for bucket sizing, free-list for deleted entries (reduces GC). Most impactful for CJK/full Unicode glyph sets.
-
-### SIMD Acceleration (if measurable benefit)
-
-- **Cumulative sum**: The final scanline pass is a perfect SIMD target
-  ```csharp
-  // The prefix sum itself is sequential, but the clamp + byte conversion
-  // can be vectorized. The main SIMD win is in the final pass:
-  // clamp |area[x] + runningCover| to [0,255] and convert to byte.
-  // Also vectorize the buffer reset (zeroing area/cover arrays).
-  ```
-- **Bezier flattening**: Parallel evaluation of multiple curves (batch mode)
-- **Box filter downscale**: SIMD averaging for supersampling
-- Use `System.Runtime.Intrinsics` with `Vector128`/`Vector256` and `IsHardwareAccelerated` guard
-
-### Font Loading Optimization
-
-- **Lazy table parsing**: Only parse tables when first accessed
-- **Glyph cache**: Cache parsed outlines for glyphs requested more than once
-- **Outline pool**: Reuse `GlyphOutline` arrays across rasterization calls
-
-> **FontStashSharp insight — MRU (Most Recently Used) Cache:** Cache the last-accessed glyph storage bucket to skip dictionary lookups when consecutive glyphs share the same effect config or font size. Sequential glyph processing (e.g., rasterizing "Hello" where all glyphs share the same config) hits this cache nearly 100% of the time. Essentially a free optimization — one field storing the last lookup result.
-
-### Parallel Rasterization (non-WASM only)
-
-- Add optional parallel mode for batch rasterization:
-  ```csharp
-  if (!IsWasm && glyphCount > parallelThreshold)
-      Parallel.ForEach(glyphs, glyph => RasterizeGlyph(glyph));
-  ```
-- Each parallel task gets its own buffer set (no sharing)
-- Guard with `OperatingSystem.IsBrowser()` check for WASM safety
+- **Pooling**: every internal per-glyph scratch buffer (edges, active edges, outline commands, parse temporaries) rented from `ArrayPool<T>.Shared` or reused on the instance (instances are single-threaded, D9); output bitmap stays unpooled.
+- **Parsing**: span-based table access; cache cmap lookups; lazy table parsing; optional parsed-outline cache for repeated glyphs.
+- **Scanline**: edge sort without LINQ; active-edge insertion sort; skip empty rows; vectorize the accumulate/clamp/convert pass and buffer clears with `Vector128/256` behind `IsHardwareAccelerated` (managed intrinsics only — no native code).
+- **Feature paths**: SDF segment bucketing (Phase 169), `gvar` decode caching (Phase 171), COLR layer canvas reuse (Phase 172), as the harness shows them hot.
+- **Parallelism**: optional and only outside the browser (`OperatingSystem.IsBrowser()` guard); one buffer set per worker. Core already parallelizes post-processing, so measure whether backend-level parallelism adds anything.
 
 ## Testing
 
-- Benchmark suite produces consistent results (low variance)
-- Performance within 2x of StbTrueType for ASCII at 32px
-- Memory allocation: measure with `GC.GetAllocatedBytesForCurrentThread()`
-- No regressions in output quality (SSIM unchanged)
-- WASM: verify no parallel code paths execute
+- Low-variance benchmark runs; results recorded here
+- Zero per-glyph scratch allocations in the coverage hot path (`GC.GetAllocatedBytesForCurrentThread`)
+- No quality change: SSIM and golden masters unchanged; `regression_check.py` identical
+- Browser path executes no parallel code
+
+**Regression coverage**: optimisation must be output-neutral, so the existing configs must report Native identical to `main`; no new config needed.
 
 ## Success Criteria
 
-- [ ] Comprehensive benchmark suite established
-- [ ] Performance within 2x of StbTrueType baseline
-- [ ] Zero per-glyph heap allocations in hot path
-- [ ] SIMD acceleration provides measurable speedup (if applicable)
-- [ ] No quality regressions
-- [ ] WASM-safe (no parallel paths)
+- [ ] Harness compares Native, StbTrueType and FreeType with memory diagnostics; baseline recorded
+- [ ] Within 2× of StbTrueType for ASCII at 32px
+- [ ] No per-glyph scratch allocations in the hot path
+- [ ] SIMD paths only where measured faster
+- [ ] No output change; WASM-safe
 - [ ] All tests pass

@@ -38,7 +38,7 @@ Each issue is ranked 1 (low) to 5 (high) on three dimensions:
 
 `SupportsColorFonts` is set to `false`. `SelectColorPalette()` stores the palette index in `_colorPaletteIndex` but it is never used during rasterization. Implementing color font support requires `IDWriteFactory4.TranslateColorGlyphRun` to decompose COLR/CPAL color glyphs into layered runs, plus a D2D dependency to render each color layer with the appropriate brush color. The current `IDWriteGlyphRunAnalysis` approach cannot render color glyphs.
 
-Note that `BmFont.cs:201-205` gates the call on `rasterizer.Capabilities.SupportsColorFonts`, so with the flag `false` (`DirectWriteCapabilities.cs:12`) `SelectColorPalette` is unreachable from the generation pipeline today — it is dead code until the capability flips.
+Note that `PreparedRasterization.Prepare` (`src/KernSmith/PreparedRasterization.cs`) gates the call on `rasterizer.Capabilities.SupportsColorFonts`, so with the flag `false` in `DirectWriteCapabilities` `SelectColorPalette` is unreachable from the generation pipeline today — it is dead code until the capability flips.
 
 ### 2. Variable Font Support (DirectWrite) — Open
 
@@ -48,7 +48,7 @@ Note that `BmFont.cs:201-205` gates the call on `rasterizer.Capabilities.Support
 
 **API correction**: there is no `SetFontAxisValues` — that API does not exist. `IDWriteFontFace5` exposes `GetFontAxisValues`, `GetFontAxisValueCount`, `HasVariations`, and `GetFontResource`. Axis values are *read* from an existing face, never set on it; applying them means creating a **new** face: `IDWriteFontFace5::GetFontResource` → `IDWriteFontResource::CreateFontFace(simulations, axisValues, axisValueCount, &newFace)`. So the implementation is: cast `_fontFace` to `IDWriteFontFace5`, query available axes with `GetFontAxisValueCount`/`GetFontAxisValues`, obtain the `IDWriteFontResource`, and call `CreateFontFace` with the user-specified axis values to get the instanced face used for rasterization.
 
-As with issue 1, `BmFont.cs:194-199` gates `SetVariationAxes` on `rasterizer.Capabilities.SupportsVariableFonts`, so with the flag `false` (`DirectWriteCapabilities.cs:13`) the method is unreachable from the pipeline today.
+As with issue 1, `PreparedRasterization.Prepare` (and the metrics-only path in `BmFont.cs`) gates `SetVariationAxes` on `rasterizer.Capabilities.SupportsVariableFonts`, so with the flag `false` in `DirectWriteCapabilities` the method is unreachable from the pipeline today.
 
 ### 3. Native DirectWrite Kerning — Open
 
@@ -66,7 +66,7 @@ GDI with `HandlesOwnSizing=true` produces wrong metrics when `MatchCharHeight=tr
 
 1. `src/KernSmith/Config/BmfcConfigReader.cs:102-113` — a negative `fontSize` is immediately absolutized: `options.Size = Math.Abs(sizeVal); options.MatchCharHeight = true;`. The sign itself is discarded here.
 2. `src/KernSmith/Rasterizer/RasterOptions.cs:76-97` — `FromGeneratorOptions` copies 15 fields but **not** `MatchCharHeight`; `RasterOptions` has no such member, so the flag can never reach *any* backend.
-3. `src/KernSmith/BmFont.cs:227-240` — the sole consumer of `MatchCharHeight`. It only decides whether to run the cell-height→ppem conversion, and the entire block is **skipped** when `Capabilities.HandlesOwnSizing` is true.
+3. `src/KernSmith/PreparedRasterization.cs` (`Prepare`, the cell-height→ppem block) — the sole consumer of `MatchCharHeight`. It only decides whether to run the cell-height→ppem conversion, and the entire block is **skipped** when `Capabilities.HandlesOwnSizing` is true.
 4. `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs:733` — `HandlesOwnSizing => true` (the interface default is `false`, `src/KernSmith/Rasterizer/IRasterizerCapabilities.cs:27`). GDI is therefore handed `Size=12` with no knowledge that an em-height match was requested.
 5. `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs:345` — `LfHeight` is **always positive**, i.e. GDI cell-height mode. GDI's em-height mode requires a **negative** `lfHeight`, and nothing in the file ever produces one.
 6. `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs:260-268` — `GetFontMetrics` returns `LineHeight = ceil(tm.TmHeight / aa) = 12` and `Ascent = 10`.
@@ -89,9 +89,9 @@ Either path changes pixel output, so `python tests/bmfont-compare/regression_che
 ### 5. Synthetic Bold/Italic Silently No-Op When the Backend Can't Do It — Fixed
 
 > Ease: 4 | Break Risk: 2 | Importance: 4
-> **Unlike issues 1-4 this was a core defect, not a backend limitation** — the bug was in `src/KernSmith/BmFont.cs`, shared by every backend.
+> **Unlike issues 1-4 this was a core defect, not a backend limitation** — the gate is shared by every backend and now lives in `src/KernSmith/PreparedRasterization.cs`.
 
-`src/KernSmith/BmFont.cs` skipped a caller-supplied `BoldPostProcessor` / `ItalicPostProcessor` whenever `options.Bold` / `options.Italic` was set, on the assumption that the rasterizer had already applied the transform. The gate never consulted `IRasterizerCapabilities.SupportsSyntheticBold` / `SupportsSyntheticItalic`, so on a backend that reports false — Native is the first — the transform was applied by nobody and requesting bold produced *thinner* glyphs than not requesting it, with no error.
+The pipeline skipped a caller-supplied `BoldPostProcessor` / `ItalicPostProcessor` whenever `options.Bold` / `options.Italic` was set, on the assumption that the rasterizer had already applied the transform. The gate never consulted `IRasterizerCapabilities.SupportsSyntheticBold` / `SupportsSyntheticItalic`, so on a backend that reports false — Native is the first — the transform was applied by nobody and requesting bold produced *thinner* glyphs than not requesting it, with no error.
 
 The gate now requires the capability as well:
 
@@ -101,7 +101,7 @@ if (processor is BoldPostProcessor && options.Bold
     continue;
 ```
 
-FreeType, GDI, DirectWrite and StbTrueType all report `true`, so their branch is unchanged; `regression_check.py` confirms all 193 FNT files and every pixel comparison identical across all backends. The harness cannot cover the fix itself, because `PostProcessors` is a programmatic-only option with no `.bmfc` equivalent — `SyntheticStyleFallbackTests` carries that coverage, including the inverse case that a capable backend must still skip the fallback rather than styling twice.
+FreeType, GDI, DirectWrite and StbTrueType all report `true`, so their branch is unchanged; `regression_check.py` reported every FNT file and pixel comparison identical across all backends. The harness cannot cover the fix itself, because `PostProcessors` is a programmatic-only option with no `.bmfc` equivalent — `SyntheticStyleFallbackTests` carries that coverage, including the inverse case that a capable backend must still skip the fallback rather than styling twice.
 
 Native still renders bold/italic configs differently from FreeType, but that is the backend genuinely lacking synthetic styling (Phase 167), not this defect.
 
@@ -114,7 +114,7 @@ Native still renders bold/italic configs differently from FreeType, but that is 
 | `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs` | Issue 4 — `HandlesOwnSizing` (`:733`), `LfHeight` (`:345`), `GetFontMetrics` (`:260-268`) |
 | `src/KernSmith/Config/BmfcConfigReader.cs` | Issue 4 — `:102-113`, where the negative-size sign is discarded |
 | `src/KernSmith/Rasterizer/RasterOptions.cs` | Issue 4 — `:76-97`, `MatchCharHeight` is never copied to the backend options |
-| `src/KernSmith/BmFont.cs` | Issue 4 — `:227-240`, the sizing decision point; also gates issues 1-2 at `:194-205`. Issue 5 — the capability-gated bold/italic post-processor skip |
+| `src/KernSmith/PreparedRasterization.cs` | Issue 4 — the sizing decision point in `Prepare`; also the capability gates for issues 1-2. Issue 5 — the capability-gated bold/italic post-processor skip |
 | `src/KernSmith/Rasterizer/IRasterizerCapabilities.cs` | Issue 5 — `SupportsSyntheticBold` / `SupportsSyntheticItalic`, the flags the gate consults |
 | `src/KernSmith.Rasterizers.Native/NativeCapabilities.cs` | Issue 5 — the first backend to report `false`, which is what exposed the bug |
 | `tests/KernSmith.Rasterizers.Native.Tests/SyntheticStyleFallbackTests.cs` | Issue 5 — regression coverage, both directions of the gate |

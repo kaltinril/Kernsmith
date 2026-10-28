@@ -47,13 +47,18 @@ Source of truth for statements about the project. One short fact per line. Updat
 
 - `.bmfc` channel config (`alphaChnl`/`redChnl`/`greenChnl`/`blueChnl`) is parsed by `BmfcConfigReader` into `ChannelConfig` and honored on the CLI/core path (shipped 0.15.2, PR #128).
 - The desktop UI carries channel config end-to-end (`EffectsViewModel.Channels` → `GenerationRequest.Channels` → `GenerationService` sets `options.Channels`).
-- The Native rasterizer renders TrueType (`glyf`) outlines end to end as of Phases 164-165, and is exposed in the CLI (`--rasterizer native`) and the README as clearly-labeled experimental. CFF/OTF (PostScript) outlines are rejected at load time until Phase 166 adds a CFF interpreter; no WOFF, hinting, SDF, outline stroke, or synthetic bold/italic yet; only `AntiAlias.None` / `Grayscale`. Not published to NuGet.
+- The Native rasterizer renders TrueType (`glyf`) outlines end to end (Phases 161-165), and is exposed in the CLI (`--rasterizer native`) and the README as clearly-labeled experimental. Not published to NuGet (`IsPackable=false`).
+- Native today: CFF/OTF faces throw `RasterizationException` at `LoadFont`; `ColorFont` or `Sdf` requests throw `NotSupportedException`; `Bold`/`Italic`, variation axes and hinting are ignored. WOFF1 works because core decompresses it before any backend sees the bytes; WOFF2 throws in core for every backend.
+- Core never reads `SupportedAntiAliasModes` or `SupportsOutlineStroke`: the requested `AntiAlias` mode is passed straight through, and Native renders every mode other than `None` as grayscale. Outlines are always drawn by core's bitmap `OutlineEffect`, and `RasterOptions` carries no outline width.
+- Core already supersamples and height-stretches for any backend with `HandlesOwnSizing = false`, Native included (`PreparedRasterization`).
+- Native's `RasterizeGlyph` is one straight path (`glyf` parse -> `OutlineExtractor` -> `GlyphBox` -> flatten -> scanline fill); there is no `IOutlineDecoder` or transform stage yet, and `GlyphBox` prefers the `glyf` header bbox.
+- The only committed color-font fixture is `NotoColorEmoji.ttf`, which is CBDT/CBLC only (no COLR); there is no committed `.otf` (CFF) or `.woff2` fixture. `RobotoFlex-Variable.ttf` carries `fvar`/`avar`/`gvar`/`HVAR`/`MVAR`.
 
 ## Build & Test Gotchas
 
 - CliTests and `WoffAllBackendsTests` shell out to the real CLI, resolving `tools/KernSmith.Cli/bin/<configuration>/<tfm>/KernSmith.Cli.dll` from their own output path, so they work under any configuration — but they need the solution built first, which is why CI always runs `dotnet build` before `dotnet test`.
 - The regression harness exercises the CLI `GenerateAll` path only, not the UI `GenerationService`; verify UI-generation changes separately.
-- `GenerateAll` skips a (config, backend) pair when the backend declines a capability the config requests — e.g. SDF on GDI/DirectWrite/Native.
+- `GenerateAll` skips a (config, backend) pair when the backend declines a capability the config requests — e.g. SDF on GDI/DirectWrite/Native. Any other per-pair exception (a CFF font or color request on Native) is caught and logged, and `regression_check.py` carries on, so a backend failing a config never reds the run — a new feature's own test has to assert the backend actually produced output.
 - `dotnet run` exits 1 for **both** a build failure and a partial generation, so the two must be distinguished by building as a separate step.
 - `tests/KernSmith.PlatformSmoke` is deliberately **not** in `KernSmith.sln`: its mobile TFMs need the android/ios/maccatalyst workloads, which the normal CI legs don't install. It builds `net10.0;net10.0-android`, adding `net10.0-ios;net10.0-maccatalyst` only on macOS; `-p:SmokeTarget=<tfm>` narrows it to one target. Only `.github/workflows/mobile-smoke.yml` and the `run-*.sh` scripts build it, always in Release (trimming/AOT).
 - Building the Android leg locally needs Android SDK platform API 36: `dotnet build tests/KernSmith.PlatformSmoke -t:InstallAndroidDependencies -f net10.0-android -p:SmokeTarget=net10.0-android -p:AndroidSdkDirectory=<sdk>`.

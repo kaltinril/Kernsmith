@@ -1,14 +1,12 @@
 # Phase 179 — Native Rasterizer: Validation, Golden Masters & Release
 
-> **Status**: Future
+> **Status**: Future — Wave 3
 > **Created**: 2026-04-01
-> **Depends on**: All previous phases (161–178)
-
-> **Note**: Phase 161 is **COMPLETE** (merged 2026-06-09). Phases 162–178 remain outstanding.
+> **Depends on**: Phases 166–174, 177 and 178 (175 and 176 only if they are kept)
 
 ## Goal
 
-Comprehensive validation of the Native rasterizer against FreeType and StbTrueType baselines, establishment of golden master regression tests, and preparation for production use.
+Comprehensive validation of the Native rasterizer against FreeType and StbTrueType baselines, establishment of golden master regression tests, and the release decision (publishing to NuGet is Jeremy's call — the project is `IsPackable=false` today).
 
 ## Scope
 
@@ -32,10 +30,10 @@ For each reference font × size × feature combination:
 | Roboto Regular | 32 | SDF, Outline(2px), Shadow(2,2), Gradient |
 | Noto Sans | 16, 32 | Normal, CJK subset (if TTF available) |
 | DejaVu Sans | 16, 32 | Normal, Full Latin Extended |
-| Variable font (TBD) | 32 | wght: 100, 400, 700, 900 |
-| Color font (TBD) | 32 | COLR v0 color rendering |
-| WOFF font (TBD) | 32 | Normal (verify identical output to raw sfnt) |
-| WOFF2 font (TBD) | 32 | Normal (verify identical output to raw sfnt, including glyf transform) |
+| RobotoFlex-Variable (committed) | 32 | wght: 100, 400, 700, 900 |
+| COLR v0 / v1 fixtures (added by Phase 172) | 32 | Color rendering, palette switch |
+| `.otf` CFF fixture (added by Phase 166) | 16, 32 | Normal, Bold, Italic |
+| WOFF / WOFF2 of a committed font (Phase 178 fixture) | 32 | Identical output to the raw sfnt |
 
 ### Golden Master Tests
 
@@ -66,17 +64,16 @@ For every glyph in ASCII set:
 - CFF fonts (if Phase 166 complete)
 - Variable fonts at axis extremes (if Phase 171 complete)
 - Corrupt/truncated font data — verify graceful errors, not crashes
-- `AntiAliasMode.Light` requested: verify graceful fallback to Grayscale (until Phase 174 adds auto-hinting)
 
 ### Unsupported Feature Behavior
 
-Verify graceful behavior when users request features the Native rasterizer doesn't support:
-- `AntiAliasMode.Light` without Phase 174 → falls back to Grayscale
-- `AntiAliasMode.Lcd` without Phase 173 → falls back to Grayscale (or throws if strict)
-- Variable font axes without Phase 171 → ignored (renders at default instance)
-- Color font without Phase 172 → renders monochrome outline
-- GSUB features without Phase 175 → no substitution applied
-- Document which behaviors are silent fallbacks vs exceptions
+Whatever is still unsupported at release must behave deliberately, and the docs must say which cases are silent fallbacks and which throw. Today's behavior, to be re-verified at release:
+- `AntiAliasMode.Light` / `Lcd` → rendered as grayscale with no signal, because core does not negotiate AA modes; Phase 173 adds negotiation so the degradation happens in core and the `.fnt` metadata matches
+- Variable font axes without Phase 171 → ignored by core's capability gate (default instance rendered)
+- `ColorFont` without Phase 172 → **throws** `NotSupportedException` from the rasterizer (no monochrome fallback)
+- `Sdf` without Phase 169 → core throws `NotSupportedException` before rasterizing
+- CFF/OTF without Phase 166 → `RasterizationException` at `LoadFont`
+- GSUB → no substitution (Phase 175 needs a decision)
 
 ### Performance Validation
 
@@ -86,18 +83,25 @@ Verify graceful behavior when users request features the Native rasterizer doesn
 
 ### Documentation
 
-- Update README with Native rasterizer documentation
+- Update the README backend and platform tables, `COMPARISON.md`, `docs/rasterizers/native.md`, the Native package README, and `reference/REF-12-rasterizer-backends.md`
+- Verify Blazor WASM (the README platform table still shows ⏳ for Native) and record the result
 - Add to `samples/` with usage examples
-- Document known differences vs FreeType (unhinted, algorithm differences)
+- Document known differences vs FreeType (auto-hinting vs bytecode, algorithm differences)
 - Update `plan/done/plan-data-types.md` with new types
 
 ### Release Preparation
 
-- Update `IRasterizerCapabilities` to accurately reflect all supported features
+- `NativeCapabilities` accurately reflects every supported feature and AA mode
+- Decide whether the Native csproj keeps `AllowUnsafeBlocks` (it contains no `unsafe` code)
 - Ensure all analyzer warnings resolved (trimming, AOT, nullable)
 - Code review pass for security (no buffer overflows, bounds checking)
 - License headers on all new files (MIT)
 - Final manual visual inspection of output at multiple sizes
+
+### Regression coverage
+
+- Golden masters live in the Native test project; any change > 1 byte/pixel fails
+- `regression_check.py` runs with every config the feature phases added (`otf-plain`, `msdf`, `variable-wght700`, `color-colr`, `lcd`, hinting pairs, `woff2-plain`); each must show Native output present, not just "no diff"
 
 ## Success Criteria
 

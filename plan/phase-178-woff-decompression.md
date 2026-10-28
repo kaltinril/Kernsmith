@@ -1,121 +1,72 @@
-# Phase 178 — Native Rasterizer: WOFF2 Decompression
+# Phase 178 — WOFF2 Decompression (Core)
 
-> **Status**: Future
+> **Status**: Future — Wave 0 (independent of the Native refactor)
 > **Created**: 2026-04-01
-> **Depends on**: Phase 161 (binary reader, table directory)
-
-> **Note**: Phase 161 is **COMPLETE** (merged 2026-06-09) — the binary reader and table directory parser this phase builds on are already in place.
-
-> **Existing implementation (reference)**: WOFF 1.0 decompression is ALREADY COMPLETE in the core library (`src/KernSmith/Font/WoffDecompressor.cs`, zlib per-table; auto-detected in `BmFont.cs`). Only WOFF 2.0 remains (Brotli + glyf triplet transform), which currently throws `NotSupportedException`. This phase is therefore re-scoped to WOFF2-only; cite the existing WOFF1 implementation as the reference.
+> **Depends on**: nothing
 
 ## Goal
 
-Handle WOFF 2.0 compressed font files natively in the rasterizer, so users can load web fonts directly without external decompression. (WOFF 1.0 is already handled by the core library — see the reference note above.)
+Decode WOFF2 in core so every backend — Native included — accepts `.woff2` files, and `KernSmith.Fonts.Web` can use the WOFF2 files CSS font CDNs serve.
 
-## Background
+## Starting point
 
-WOFF (Web Open Font Format) wraps sfnt fonts with per-table zlib compression. WOFF2 uses Brotli compression with additional preprocessing. The main KernSmith pipeline already handles WOFF 1.0 decompression (`WoffDecompressor.cs`) before passing to rasterizers; WOFF 2.0 remains the outstanding work, and native support means the rasterizer can work standalone.
+- WOFF 1.0 is done in core: `src/KernSmith/Font/WoffDecompressor.cs` (zlib per table). `BmFont` and `PreparedRasterization.Prepare` detect WOFF/WOFF2 by signature and decompress **before** any backend sees the bytes, so this is core-only work — **no change to `NativeRasterizer.LoadFont`**.
+- `WoffDecompressor.Decompress` throws `NotSupportedException` for the `wOF2` signature.
+- `KernSmith.Fonts.Web` deliberately extracts only `.woff` URLs (`CssParser`, `WebFontSource`) and errors when a CDN offers only `.woff2`.
 
-## Research Notes (2026-04-09)
+## Constraint: our own managed Brotli decoder
 
-### Why WOFF2 isn't just "add Brotli decompression"
+WOFF2's Brotli stage is a pure managed decoder we write in core — not `System.IO.Compression.BrotliDecoder`, not a third-party package (decision and reason in `project_decisions.md` → Native Rasterizer). In short: `BrotliDecoder` wraps the runtime's native Brotli library, which browser-wasm does not ship, so it throws `PlatformNotSupportedException` there — the platform `KernSmith.Fonts.Web` exists for.
 
-Brotli decompression itself is trivial — `System.IO.Compression.BrotliDecoder` ships with .NET (since Core 2.1). The complexity is in the **WOFF2 pre-processing transforms**. Before Brotli-compressing, the WOFF2 encoder applies content-aware transforms to certain tables. After Brotli decompression, the output is NOT a valid sfnt — it must be reverse-transformed:
+## Work items
 
-1. **`glyf`/`loca` reconstruction** (the hard part) — WOFF2 re-encodes glyph outlines using "triplet encoding" with separate substreams for flags, points, composites, bounding boxes, and instructions. All must be decoded back to standard glyf format, then loca is reconstructed from decoded glyph sizes.
-2. **`hmtx` transform** — simpler optimization for horizontal metrics.
-3. **UIntBase128 variable-length integers** in the table directory.
-4. **All tables may be merged into a single Brotli stream** (unlike WOFF1 where each table is a separate zlib stream).
+### Brotli decoder (RFC 7932)
 
-Full pipeline: `WOFF2 bytes → Brotli decompress → reverse glyf/loca/hmtx transforms → reconstruct valid sfnt bytes`
+- Bit reader; meta-block headers (including uncompressed and metadata blocks); prefix codes (simple and complex, code-length codes); block-type/count switching for literals, commands and distances; context modeling (literal context modes, distance contexts); distance ring buffer and the distance code mapping; insert-and-copy lengths; the static dictionary (RFC 7932 Appendix A) and its 121 word transforms; sliding window up to 16 MiB.
+- The static dictionary is ~120 KB of data — embed it as a resource or generated array.
+- Hardened: every length/index bounds-checked, output size capped by the WOFF2 header's `totalSfntSize` and an absolute limit, malformed input → `FontParsingException` (as `WoffDecompressor` already throws), never a hang.
 
-### Reference implementation: LayoutFarm/Typography (MIT)
+### WOFF2 container
 
-GitHub: https://github.com/LayoutFarm/Typography
+- Header (`wOF2`), table directory with known-tag flags and `UIntBase128` lengths, collection directory for `.ttc` payloads.
+- One Brotli stream for all tables; slice per table by `transformLength`/`origLength`.
 
-This is a managed C# font library (MIT license) that has a **complete WOFF2 decoder**:
+### Table transforms
 
-- **Main file**: `Typography.OpenFont/WebFont/Woff2Reader.cs` — header parsing, table directory, glyf/loca reconstruction, triplet encoding
-- **Key internals**: `TransformedGlyf` class with `ReconstructGlyfTable()`, `BuildSimpleGlyphStructure()`, `ReadCompositeGlyph()`, `TripleEncodingTable` (full 128-entry lookup per W3C spec), `255UInt16` variable-length decoding, bbox/instruction stream handling
-- **Brotli is decoupled**: injected via delegate (`BrotliDecompressStreamFunc`), so their Brotli code isn't needed — we'd use .NET's built-in `BrotliDecoder`
-- **License**: MIT (2019-present, WinterDev) — compatible with KernSmith's MIT license
-- **Maturity**: Typography has been around since ~2015 with active use; WOFF2 path is likely well-exercised
+- `glyf`/`loca` (transform version 0): the seven substreams (nContour, nPoints, flags, glyph, composite, bbox bitmap + bbox, instructions), triplet decoding, `255UInt16`, composite glyph copy, explicit vs computed bboxes, `overlapSimpleBitmap`; rebuild `loca` in the `head.indexToLocFormat` size.
+- `hmtx` (transform version 1): reconstruct omitted LSBs from `glyf` xMin.
+- Null transforms pass through; reject unknown transform versions.
 
-### WOFF2 spec is frozen
+### sfnt reassembly
 
-WOFF2 is a **W3C Recommendation finalized in 2018**. The spec will not change — no new features, no breaking changes. The triplet encoding, transform tables, and UIntBase128 format are all permanent. This is relevant because it means there's no ongoing maintenance burden from spec evolution, regardless of implementation approach.
+- Rebuild the table directory (sorted tags, 4-byte padding, checksums, `head.checkSumAdjustment`) so the output is a valid sfnt for the core parser and every backend.
 
-### Implementation approach (unresolved: copy/adapt vs rewrite-from-reference)
+### Follow-ups in the same phase
 
-**Option A — Extract and adapt `Woff2Reader.cs` (recommended)**
-- Copy the file, strip Typography's type dependencies, have it output raw sfnt bytes (which `WoffDecompressor.Decompress()` already expects)
-- Add MIT attribution in file header
-- Pro: battle-tested triplet encoding and substream reconstruction; fiddly edge cases (composite glyphs, bboxes, instruction streams) already handled
-- Pro: frozen spec means no need to track upstream changes
-- Pro: bugs found in their code benefit us; bugs in a rewrite are ours alone
-- Con: need to untangle ~5-8 supporting type dependencies (Glyf, GlyphLocations, Glyph, GlyphPointF, Bounds, ByteOrderSwappingBinaryReader)
+- `KernSmith.Fonts.Web`: prefer the `.woff2` URL when present (smaller downloads), keep `.woff` as fallback; update `CssParser`/`WebFontSource` docs and the "CDN may only offer .woff2" error.
+- Docs: remove "WOFF2 not supported" from README, `COMPARISON.md`, `docs/`, the Native README and REF-12; CHANGELOG entry.
 
-**Option B — Rewrite using Typography + W3C spec as reference**
-- Implement from scratch in `WoffDecompressor.cs`, consulting their code for the tricky parts
-- Pro: cleaner integration, no type adaptation needed, output is directly raw sfnt bytes
-- Pro: simpler code since we don't need to populate glyph objects — just reassemble bytes
-- Con: risk of subtle reimplementation bugs in triplet encoding (128-entry lookup table, variable-length coordinate decoding)
-- Con: more effort for equivalent result
+### Reference material
 
-**Either way**: no new NuGet dependencies needed. Brotli and Deflate are both in `System.IO.Compression` (BCL).
-
-## Scope
-
-### WOFF 1.0 — DONE (core library)
-Already implemented in `src/KernSmith/Font/WoffDecompressor.cs` (zlib per-table, auto-detected in `BmFont.cs`). Listed here for reference only; no work remains in this phase.
-- Magic: `wOFF` (0x774F4646)
-- Header: sfntVersion, length, numTables, totalSfntSize, etc.
-- Per-table: tag, offset, compLength, origLength, origChecksum
-- Decompression: zlib (deflate) via `System.IO.Compression.DeflateStream`
-- If compLength == origLength, table is stored uncompressed
-
-### WOFF 2.0 — PENDING (focus of this phase)
-- Magic: `wOF2` (0x774F4632)
-- Uses Brotli compression (available in .NET via `System.IO.Compression.BrotliDecoder`)
-- Additional preprocessing transforms before compression:
-  - Transform type 0 for `glyf` and `loca`: triplet encoding, reconstructed loca
-  - Transform type 0 for `hmtx`: proportional/monospaced optimization
-- Table directory uses variable-length integers (UIntBase128)
-- Tables may be merged into a single Brotli stream
-
-### WOFF2 Transform: glyf/loca Reconstruction
-The most complex part. WOFF2 re-encodes glyf data:
-1. Separate streams for flags, glyphs, composites, bboxes, instructions
-2. Triplet encoding for glyph points (more compact than raw glyf)
-3. loca table is reconstructed from decoded glyf sizes
-4. Must decode back to standard glyf/loca format
-
-### Integration
-
-- Detect font format in `NativeRasterizer.LoadFont` by checking first 4 bytes:
-  - `0x00010000` or `OTTO` → raw sfnt (existing path)
-  - `wOFF` → WOFF 1.0 → decompress → parse as sfnt
-  - `wOF2` → WOFF 2.0 → decompress + detransform → parse as sfnt
-- The decompressed sfnt bytes feed into the existing table parser
-
-### Dependencies
-
-- `DeflateStream` (System.IO.Compression) — built into .NET, no NuGet needed
-- `BrotliDecoder` (System.IO.Compression) — built into .NET 6+, no NuGet needed
-- Both are part of the base class library — this maintains zero-NuGet-dependency goal
+- W3C WOFF2 Recommendation (frozen) and RFC 7932 are the source of truth.
+- LayoutFarm/Typography (MIT) `Woff2Reader.cs` is a readable C# reference for the transforms (its Brotli is injected, so it doesn't help there). Copy/adapt with attribution vs. write from the spec is still open; either way no package dependency.
 
 ## Testing
 
-- Load WOFF 1.0 font: verify tables decompressed correctly
-- Load WOFF 2.0 font: verify Brotli decompression and glyf transform
-- Compare output: WOFF/WOFF2 font should produce identical rasterization as raw TTF/OTF
-- Round-trip: decompress → parse → rasterize → compare with original font
-- Edge cases: WOFF with uncompressed tables, WOFF2 with transformed glyf
+- Brotli: RFC 7932 test vectors and round trips against .NET's `BrotliEncoder` output (test project only — the BCL encoder is fine on desktop test runs)
+- WOFF2 fixture(s) committed with their OFL `.ttf` source: decoded sfnt tables match the source byte-for-byte where the format allows (transformed `glyf` may differ in padding; compare parsed glyphs)
+- `.woff2` and `.ttf` of the same font produce identical BMFont output on every backend (extend `WoffAllBackendsTests`)
+- A `.woff2` wrapping CFF; a WOFF2 collection
+- Malformed/truncated/oversized inputs fail with a clear exception
+- Run the decoder under `samples/KernSmith.Samples.BlazorWasm` if practical, to prove no native dependency
+
+**Regression coverage**: add `tests/bmfont-compare/gum-bmfont/woff2-plain.bmfc` with `fontFile` pointing at the committed `.woff2` fixture, force-added. Every backend should produce output identical to the same font as `.ttf`; assert that in a test, since the harness tolerates a failing pair.
 
 ## Success Criteria
 
-- [x] WOFF 1.0 fonts load and rasterize correctly (done in core library — `WoffDecompressor.cs`)
-- [ ] WOFF 2.0 fonts load and rasterize correctly (including glyf transform)
-- [ ] Output matches raw sfnt version of same font
-- [ ] No external NuGet dependencies added (uses BCL only)
-- [ ] All tests pass
+- [x] WOFF 1.0 decoded in core
+- [ ] Managed Brotli decoder, hardened, no BCL Brotli and no new packages
+- [ ] WOFF2 `glyf`/`loca`/`hmtx` transforms reversed; valid sfnt out
+- [ ] `.woff2` output identical to the source `.ttf` on every backend
+- [ ] `KernSmith.Fonts.Web` uses WOFF2 when offered
+- [ ] All tests pass; `regression_check.py` run with `woff2-plain.bmfc`

@@ -1,114 +1,63 @@
 # Phase 167 — Native Rasterizer: Synthetic Bold & Italic
 
-> **Status**: Future
+> **Status**: Future — Wave 1
 > **Created**: 2026-04-01
-> **Depends on**: Phase 165 (IRasterizer integration)
+> **Depends on**: Phase 166 Part 1 (staged pipeline: transform list, outline-derived bbox)
 
 ## Goal
 
-Implement synthetic bold and synthetic italic at the outline level, operating on glyph outlines before rasterization. This is a key advantage of owning the rasterizer — transforms happen in vector space for maximum quality.
+Synthetic bold and italic as outline transforms in font units (Phase 160 D6), so the glyph is styled before rasterization — and before SDF, stroke and hinting — rather than dilated or sheared as a bitmap.
 
-## Scope
+## Starting point
 
-### Synthetic Bold (Outline Expansion)
+- `NativeCapabilities` reports `SupportsSyntheticBold`/`SupportsSyntheticItalic = false`, and `RasterizeGlyph` ignores `RasterOptions.Bold`/`Italic`.
+- Core already decides *whether* to style: `PreparedRasterization.Prepare` clears `Bold`/`Italic` when the font is already bold/italic unless `ForceSyntheticBold`/`ForceSyntheticItalic` is set. The rasterizer applies the transform whenever the flag it receives is true — it must not re-check font style.
+- Core already runs a caller-supplied `BoldPostProcessor`/`ItalicPostProcessor` only when the backend lacks the capability (Phase 150 Issue 5). Flipping the flags makes core skip them for Native, so the outline transform must actually work before the flags flip.
 
-**Algorithm**: Perpendicular normal offset
+## Parity targets
 
-For each contour:
-1. Determine winding direction (signed area of contour):
-   - Clockwise (outer contour in TrueType): expand outward
-   - Counter-clockwise (inner contour/counter): shrink inward
-2. For each on-curve point:
-   - Compute the outward-facing normal (average of adjacent segment normals)
-   - Offset the point along the normal by `boldStrength` pixels (in font units)
-3. For off-curve control points:
-   - Offset along interpolated normal direction
-4. Update glyph advance width in font units: `advance += boldStrength_fu` (small increase for weight). Pixel advance is recalculated after scaling, same as non-bold glyphs.
+Match the existing backends so switching to Native doesn't change weight or slant:
 
-**Computing normals at a point**:
-- Get tangent vectors from adjacent segments (incoming and outgoing)
-- Rotate each tangent 90° to get normals
-- Average the two normals
-- Normalize to unit length
-- Scale by bold strength
-- For miter joins at sharp corners: scale by `1 / cos(halfAngle)`, capped at 2× to prevent spikes
+- **Bold strength**: FreeType's `EmboldenGlyph` — `max(0.5px, ppem / 24)` total, and the advance grows by that strength. StbTrueType uses `effectiveSize / 24`. Convert to font units: `strength_fu = strength_px * unitsPerEm / ppem`.
+- **Italic**: horizontal shear `x += y * tan(12°)` (`0.2126`), the fixed angle FreeType's `FT_GlyphSlot_Oblique` and StbTrueType use. No `post` table is needed for this default; reading `post.italicAngle` for a configurable angle is a Phase 168 item.
 
-**Bold strength**: Controlled by a configurable parameter. Default: `Math.Max(1, pixelSize / 24)` pixels.
+## Work items
 
-Conversion to font units: `strength_fu = strength_px * unitsPerEm / pixelSize`. All offset operations happen in font units (per Phase 160 D4). The pixel-domain default is only used to compute a reasonable font-unit value.
+### Synthetic bold — outline offset
 
-**Winding direction detection**:
-```csharp
-// Signed area via Shoelace formula — in TrueType's Y-up coordinate system:
-// Positive result = counter-clockwise (inner contour / counter)
-// Negative result = clockwise (outer contour)
-float signedArea = 0;
-for (int i = 0; i < points.Length; i++)
-{
-    var p0 = points[i];
-    var p1 = points[(i + 1) % points.Length];
-    signedArea += p0.X * p1.Y - p1.X * p0.Y;
-}
-bool isOuter = signedArea < 0; // clockwise in Y-up = outer contour
-```
+1. Per contour, determine winding (signed area, shoelace). With non-zero winding the outer and inner contours have opposite direction, so offsetting every point along its contour's outward normal (relative to winding) grows strokes and shrinks counters.
+2. For each on-curve point: average the adjacent segment normals, normalize, scale by `strength_fu / 2`; at sharp corners scale by `1 / cos(halfAngle)`, capped at 2× to prevent spikes.
+3. Off-curve control points move along the interpolated normal.
+4. Advance width grows by `strength_fu`.
 
-### Synthetic Italic (Shear Transform)
+### Synthetic italic — shear
 
-**Algorithm**: Affine shear applied to all outline points
+- Shear all points (on- and off-curve); exact for Béziers. Advance unchanged.
 
-```csharp
-float shearFactor = MathF.Tan(italicAngle * MathF.PI / 180f);
-// Default angle: 12 degrees (tan ≈ 0.2126)
+### Pipeline
 
-foreach (ref var point in outline.Points)
-{
-    point.X += point.Y * shearFactor;
-    // Y unchanged — shear is horizontal only
-}
-```
-
-- Apply BEFORE rasterization (in font units)
-- Update bounding box after transform
-- Advance width unchanged (italic doesn't change advance)
-- This is exact — Bezier curves remain valid after affine transforms
-
-### Integration with RasterOptions
-
-- `RasterOptions.Bold = true` → apply synthetic bold (unless font is natively bold AND `ForceSyntheticBold = false`)
-- `RasterOptions.Italic = true` → apply synthetic italic (unless font is natively italic AND `ForceSyntheticItalic = false`)
-- Update `IRasterizerCapabilities`:
-  - `SupportsSyntheticBold = true`
-  - `SupportsSyntheticItalic = true`
-
-### Outline Transform Pipeline
-
-```
-GlyphOutline (font units)
-  → Synthetic Bold (if requested)
-    → Synthetic Italic (if requested)
-      → Scale to pixels
-        → Flatten to edges
-          → Rasterize
-```
-
-Bold applied before italic so the expansion is uniform (not sheared).
+- Add `BoldTransform` and `ItalicTransform` to the Phase 166 transform list, bold before italic (expansion stays uniform, not sheared).
+- Bbox comes from the transformed outline (Phase 166 Part 1), so slanted glyphs are not clipped.
+- `GetGlyphMetrics` reports the styled bbox and advance.
+- Flip `SupportsSyntheticBold`/`SupportsSyntheticItalic` to `true`; update the `NativeRasterizer`/`NativeCapabilities` XML comments, the Native README, `docs/rasterizers/native.md` and REF-12.
+- `SyntheticStyleFallbackTests` uses Native as its "backend without the capability" case. Move that case to a test-stub rasterizer that reports `false` (the core gate still needs coverage), and add a Native case asserting the fallback is now skipped.
 
 ## Testing
 
-- Bold 'O': verify outer contour expands, inner contour shrinks (counter stays open)
-- Bold 'I': verify stem thickens uniformly
-- Bold at multiple strengths (1px, 2px, 3px): verify no artifacts
-- Italic 'A': verify correct shear angle
-- Bold + Italic combined: verify both transforms applied
-- Compare against FreeType synthetic bold/italic output
-- Edge cases: glyphs with many counters ('B', 'e'), sharp corners, small sizes
-- Regression: verify bold doesn't fill in counters at 12px
+- Bold `'O'`: outer contour grows, counter shrinks but stays open; bold `'I'`: stem thickens uniformly
+- Strengths at 12/32/72px: no spikes, no self-intersection artifacts at sharp corners
+- Italic `'A'`: shear angle correct; bbox contains all ink
+- Bold + italic combined
+- Metrics and SSIM against FreeType synthetic bold/italic at the `NativeMetricsAgreementTests` sizes
+- No counter fill-in at 12px (`'e'`, `'B'`)
+
+**Regression coverage**: `GenerateAll` already synthesizes `plain-bold` / `plain-italic` variants from `plain.bmfc`; they start exercising Native's outline path. Add an assertion (unit or integration) that Native's bold output is wider than its regular output, since the harness can't tell "styled" from "silently unstyled".
 
 ## Success Criteria
 
-- [ ] Synthetic bold expands outlines correctly (outer out, inner in)
-- [ ] Synthetic italic shears outlines at correct angle
-- [ ] Bold + italic compose correctly
+- [ ] Synthetic bold expands outlines (outer out, counters in) at FreeType's strength
+- [ ] Synthetic italic shears at 12°
+- [ ] Bold + italic compose; bbox and advance correct
 - [ ] No counter fill-in at small sizes
-- [ ] Capabilities updated (`SupportsSyntheticBold/Italic = true`)
-- [ ] All tests pass
+- [ ] Capabilities report `true`; fallback tests updated
+- [ ] All tests pass; `regression_check.py` run

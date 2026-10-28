@@ -1,8 +1,8 @@
 # Phase 183 — Runtime Glyph Addition with Stable Packing
 
-> **Status**: Implemented on `feature/incremental-glyph-addition` — pending review/merge
+> **Status**: Complete
 > **Tracks**: [GitHub issue #208](https://github.com/kaltinril/Kernsmith/issues/208)
-> **Related**: [Phase 180 §8c](phase-180-innovation-research.md) "Progressive/Streaming Atlas Generation" — this is that idea minus eviction
+> **Related**: [Phase 180 §8c](../phase-180-innovation-research.md) "Progressive/Streaming Atlas Generation" — this is that idea minus eviction
 
 ## The Ask
 

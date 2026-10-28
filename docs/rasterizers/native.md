@@ -40,17 +40,18 @@ kernsmith generate --font Roboto-Regular.ttf --size 32 --rasterizer native --out
 
 ## Limitations
 
-Everything below is either rejected with a clear error or simply unsupported:
+Each item below either raises a clear error or is ignored, as noted:
 
 - **CFF/OTF (PostScript) outlines** -- rejected at load time with a `RasterizationException`. This is the one that bites: a `.otf` file will not render at all.
-- **WOFF / WOFF2** -- not supported; supply raw TTF/TTC bytes
+- **WOFF2** -- not supported by KernSmith core for any backend. WOFF1 works: core decompresses it before the backend sees the bytes, so a WOFF1 file wrapping TrueType outlines renders normally
 - **Hinting** -- none, so small sizes are softer than FreeType or GDI output
-- **SDF rendering** -- not supported
-- **Outline stroke** -- not supported
-- **Synthetic bold and italic** -- not supported. `Bold` and `Italic` are silently ignored rather than rejected, so requesting them produces regular-weight glyphs. For a bitmap-level approximation, add `BoldPostProcessor` / `ItalicPostProcessor` to `PostProcessors` and leave `Bold` / `Italic` unset (the pipeline skips those post-processors when the matching option is set, on the assumption the backend handled it).
-- **Variable fonts** and **color fonts (COLR/CPAL)** -- not supported
+- **SDF rendering** -- rejected with `NotSupportedException`
+- **Outline stroke** -- the backend has no stroke of its own; outlines (`Outline` / `outlineThickness`) still work because KernSmith core draws them as a bitmap effect for every backend
+- **Synthetic bold and italic** -- not supported. `Bold` and `Italic` are silently ignored rather than rejected, so requesting them produces regular-weight glyphs. For a bitmap-level approximation, add `BoldPostProcessor` / `ItalicPostProcessor` to `PostProcessors`; because Native reports no synthetic-style capability, the pipeline runs them whether or not `Bold` / `Italic` is set.
+- **Variable fonts** -- not supported; axis settings are ignored and the default instance renders
+- **Color fonts** -- requesting color rendering (`ColorFont`) throws `NotSupportedException`
 - **System font loading by name** -- not supported; load font bytes instead
-- **`Light` and `LCD` anti-aliasing** -- not supported
+- **`Light` and `LCD` anti-aliasing** -- not supported; requesting them silently renders `Grayscale`
 
 ## When to Use
 

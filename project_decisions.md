@@ -4,15 +4,21 @@ Decisions made, with the why — consult before re-litigating anything. One per 
 
 ## Architecture
 
-- Rasterization uses FreeTypeSharp (MIT, wrapping FreeType via P/Invoke) and uses everything it exposes — metrics, kern-table kerning, glyph bitmaps: industry-standard, small native footprint, supports SDF/hinting/AA modes.
-- TTF tables are parsed by our own pure C# parser, covering only what FreeTypeSharp cannot reach (GPOS kerning pairs, OS/2, name strings, variable-font axes). No duplication, no extra dependencies.
+- Rasterization is a pluggable `IRasterizer` backend shipped as its own package (FreeType, StbTrueType, GDI, DirectWrite, Native), not a core dependency (Phases 30, 78): no single rasterizer covers every target — FreeType's native library is missing on browser-wasm, Linux arm64 and Mac Catalyst and fails to link on iOS, while BMFont pixel parity needs Windows GDI.
+- The FreeType backend uses FreeTypeSharp (MIT, P/Invoke over native FreeType) and everything it exposes — metrics, glyph bitmaps, SDF, hinting, AA modes: industry-standard and the most complete feature set where its native library exists.
+- TTF tables (GPOS/kern kerning pairs, OS/2, name strings, cmap coverage, variable-font axes) are parsed by our own pure C# parser in core, so kerning and metadata are identical whichever backend renders.
 - Texture packing is MaxRects (BestShortSideFit) primary with Skyline as a fast mode: MaxRects packs ~93-97% efficiently, Skyline is 2-5× faster for 2-5% less efficiency. Own implementation from public-domain reference code.
 - The API is in-memory-model-first with output methods on top (`.ToString()`, `.ToXml()`, `.ToBinary()`, `.ToFile()`), so the core pipeline stays format-agnostic and does zero disk I/O by default.
 - MIT throughout, with no paid or split-license dependencies — SixLabors is explicitly excluded for its split license.
 - FreeType memory is managed manually via `IDisposable`, pinning font data with `GCHandle`; do NOT use `FreeTypeFaceFacade`.
 - Errors use a custom exception hierarchy rooted at `BmFontException`, so a consumer can catch everything this library throws with one clause.
 - The desktop UI is MonoGame (DesktopGL) + GUM, code-only (no XAML, no GUM editor). Avalonia, WPF and MAUI were evaluated and rejected because MonoGame+GUM aligns with the game-developer audience. The original rationale also counted on KNI (an API-compatible MonoGame fork) for a cheap Blazor WebGL path later; re-check that assumption before relying on it, since the Gum integrations now live in Vic's repo.
-- Cross-platform reach is wherever .NET plus FreeType natives run; FreeTypeSharp still has no Linux ARM64 build, and WASM/browser is covered by the pure-C# StbTrueType backend instead.
+- Cross-platform reach comes from the managed backends (StbTrueType, Native), not FreeType: they run wherever .NET runs, including browser-wasm, Linux arm64, iOS and Mac Catalyst.
+
+## Native Rasterizer
+
+- The Native rasterizer, and any core code it depends on, is pure managed C# we write — no P/Invoke, no native libraries, no new third-party packages (not "managed where convenient") — because its reason to exist is running on browser-wasm and iOS/NativeAOT with zero foreign code; a native or P/Invoke dependency reintroduces exactly the platform gaps FreeType has.
+- WOFF2's Brotli stage is a pure managed decoder we write in core (not `System.IO.Compression.BrotliDecoder`, not a third-party package): `BrotliDecoder` wraps the runtime's native Brotli library, which browser-wasm does not ship — it throws `PlatformNotSupportedException` there (dotnet/runtime#91279, open). The API carries no `[UnsupportedOSPlatform("browser")]`, so the analyzer would not catch it. `KernSmith.Fonts.Web` exists to serve browser/WASM, and CSS font CDNs serve WOFF2, so a BCL-Brotli WOFF2 would fail on exactly the platform that needs it.
 
 ## Channels & Compositing
 

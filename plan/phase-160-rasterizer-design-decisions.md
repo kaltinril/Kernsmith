@@ -1,6 +1,6 @@
 # Phase 160 — Pure C# Rasterizer: Design Decisions & Open Questions
 
-> **Status**: Active
+> **Status**: Active — design record for the Native rasterizer; Phases 161–165 are complete and the remaining work is sequenced in [master-plan.md § Native rasterizer completion](master-plan.md#native-rasterizer-completion)
 > **Created**: 2026-04-01
 > **Supersedes**: Phase 34 (Custom Pure C# Rasterizer research)
 > **Related**: Phases 161–180 (implementation phases)
@@ -9,12 +9,10 @@
 
 Resolve all open design decisions and architectural questions before beginning implementation of KernSmith's pure C# font rasterizer. This phase is the "decision record" — all subsequent phases reference it.
 
-## Implementation Status (verified 2026-07-28)
+## Implementation Status
 
-- **Phase 161 (Project Scaffold)** merged 2026-06-09: binary reader, table directory parser, core tables (head, hhea, hmtx, OS/2, cmap, maxp), and the `NativeRasterizer` shell with NotImplemented rendering stubs.
-- **Phases 162-165** (outline extraction → scanline rasterizer → IRasterizer integration) are next.
-- **Phases 166-180** (CFF, effects, validation, research) pending.
-- All design decisions in this doc remain valid.
+- **Phases 161–165 are complete** (`plan/done/`): SFNT/table parsing, `glyf`/`loca`, outline extraction and flattening, the signed-area scanline fill, and full `IRasterizer` integration. TrueType (`glyf`) fonts render end to end.
+- **Phases 166–179** are open; the wave order lives in the master plan. The pipeline below is still the target: today `RasterizeGlyph` is a single straight path with no `IOutlineDecoder` or transform stage — the Wave 0 refactor ([Phase 166 Part 1](phase-166-cff-charstring-interpreter.md#part-1--staged-pipeline-refactor-wave-0)) introduces them.
 
 ## Context
 
@@ -35,8 +33,8 @@ We are building a **fifth backend**, `Native`: a fully custom, pure C# rasterize
 - Registration is dual-path: self-registers via `[ModuleInitializer]` (`NativeRegistration.cs:9`) AND is reflection auto-discovered by `RasterizerFactory` (`RasterizerFactory.cs:23`), with an `ILLink.Descriptors.xml` trim root so the initializer survives trimming
 - Target: `net8.0;net10.0` (multi-targets with the rest of the repo)
 - Must set `<IsTrimmable>true</IsTrimmable>`, `<IsAotCompatible>true</IsAotCompatible>`
-- `<AllowUnsafeBlocks>true</AllowUnsafeBlocks>` (csproj:5) — permitted here per CLAUDE.md's "unsafe only in rasterizer backend projects" policy
-- Zero NuGet dependencies (the entire point)
+- `<AllowUnsafeBlocks>true</AllowUnsafeBlocks>` is set (allowed in backend projects only, per `project_facts.md`), but the backend contains no `unsafe` code and should stay that way
+- **Pure managed C# we write, end to end** — no P/Invoke, no native libraries, zero NuGet dependencies, and no new third-party packages without Jeremy's sign-off. This also binds any core code Native depends on (e.g. WOFF2's Brotli decoder). It is the entire point: Native must keep working on browser-wasm and iOS/NativeAOT (see Native Rasterizer in `project_decisions.md`)
 - WASM-compatible: no `Parallel.ForEach`, no `.Result`/`.Wait()`, no `Reflection.Emit`
 
 ## Architecture Decision
@@ -47,12 +45,13 @@ We are building a **fifth backend**, `Native`: a fully custom, pure C# rasterize
 FontData (bytes)
   → BinaryFontReader (parse table directory + core tables)
     → TableProvider (lazy table access by tag)
-      → OutlineDecoder (glyf/loca or CFF charstrings → GlyphOutline)
-        → OutlineTransformer (synthetic bold/italic/stroke/variable interp — font units)
-          → Scale to pixels
-            → AutoHinter (optional — snap stems/zones to pixel grid)
-              → CoverageRasterizer (signed-area trapezoid → byte[] bitmap)
-                → RasterizedGlyph (output)
+      → OutlineDecoder (glyf/loca or CFF charstrings → GlyphOutline; variation deltas applied here)
+        → OutlineTransformer (synthetic bold/italic/stroke — font units)
+          → Bounding box computed from the transformed outline
+            → Scale to pixels
+              → AutoHinter (optional — snap stems/zones to pixel grid)
+                → Render-mode dispatch: coverage (signed-area trapezoid) / SDF / MSDF / LCD / color
+                  → RasterizedGlyph (output)
 ```
 
 Internal interfaces (not public API — users interact via existing `IRasterizer`):
@@ -148,11 +147,12 @@ Alternatives considered:
 
 ### Q6: Buffer management strategy?
 
-**Decision**: `ArrayPool<byte>.Shared` for all per-glyph bitmap buffers.
+**Decision**: Pool internal per-glyph scratch buffers; never pool the output bitmap.
 
 - Critical for WASM (heap never shrinks)
-- Rent/return pattern for coverage buffers and output bitmaps
-- Document that callers must not hold references to internal buffers
+- Scratch buffers (coverage `area`/`cover`, edge and active-edge arrays, outline command lists, parse temporaries) come from `ArrayPool<T>.Shared` or are reused across glyphs; nothing internal escapes to the caller
+- The output `RasterizedGlyph.BitmapData` is freshly allocated (D11) because the caller owns it for the glyph's lifetime
+- Today only the `area`/`cover` coverage buffers are pooled; pooling the rest is Phase 177 work
 
 ### Q7: Thread safety model?
 
@@ -175,6 +175,7 @@ The signed-area trapezoid method with cumulative sum naturally implements non-ze
 - StbTrueType is already slower than FreeType
 - 3x overhead is acceptable for the first implementation
 - Phase 177 tightens this to 2x for production release
+- Not yet measured: the Phase 164 benchmark was deferred, and Phase 177's Wave 0 harness is what first measures it
 
 ### Q10: What fonts do we test against?
 
@@ -194,7 +195,7 @@ The signed-area trapezoid method with cumulative sum naturally implements non-ze
 | D5 | Hinting: Skip for MVP, auto-hint later | Matches stb_truetype, massive effort for full hinting |
 | D6 | Synthetic bold: Outline-level normal offset | Higher quality than bitmap dilation |
 | D7 | SDF: Direct distance computation | Best quality, MSDF for sharp corners |
-| D8 | Buffers: ArrayPool<byte>.Shared | WASM compatibility, reduce GC pressure |
+| D8 | Buffers: internal scratch pooled (`ArrayPool<T>.Shared`) or reused; output bitmap not pooled | WASM compatibility, reduce GC pressure. Only `area`/`cover` are pooled today — Phase 177 pools the rest |
 | D9 | Thread safety: Single-threaded per instance | Simple, matches FreeType model |
 | D10 | CFF: Defer to Phase 166 | TTF-only MVP ships faster |
 | D11 | ArrayPool for internal buffers only | Output BitmapData freshly allocated — no IDisposable on RasterizedGlyph |
@@ -209,7 +210,7 @@ Phase 34 was a research/investigation document covering:
 - glyf/loca/maxp table parsing → Complete: maxp's `numGlyphs` landed in Phase 161; glyf/loca plus maxp's extended profile fields landed in Phase 162
 - Outline extraction + bezier flattening → Complete: landed in Phase 163
 - Scanline rasterizer core → Complete: landed in Phase 164
-- IRasterizer integration → Now Phase 165
+- IRasterizer integration → Complete: landed in Phase 165
 - Validation testing → Now Phase 179
 
 Phase 34 scoped OUT: CFF, hinting, variable fonts, color fonts, SDF, synthetic bold/italic. Phases 160-179 include all of these with a concrete implementation plan.

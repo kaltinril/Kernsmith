@@ -21,15 +21,18 @@ SFNT table parsing, cmap lookup (formats 4 and 12), outline extraction, adaptive
 flattening, and a signed-area scanline fill, with font and glyph metrics that track FreeType
 to within a pixel.
 
-Not yet supported — each raises a clear error or is ignored:
+Not yet supported — each raises a clear error or is ignored, as noted:
 
 - **CFF/OTF (PostScript) outlines** — rejected at `LoadFont` with a `RasterizationException` (Phase 166)
 - **WOFF2** — not yet supported by KernSmith core (WOFF1 is decompressed by core before rasterization, so WOFF-packaged TrueType fonts work)
 - **Hinting** — none, so small sizes are softer than FreeType or GDI output
-- **Synthetic bold/italic** (Phase 167), **outline stroking** (Phase 168), **SDF** (Phase 169),
-  **variable fonts** (Phase 171), **color fonts** (Phase 172)
+- **Synthetic bold/italic** (Phase 167) — `Bold`/`Italic` are ignored
+- **Outline stroking** (Phase 168) — the backend has none of its own; KernSmith core still draws outlines as a bitmap effect
+- **SDF** (Phase 169) — rejected with `NotSupportedException`
+- **Variable fonts** (Phase 171) — axes are ignored; the default instance renders
+- **Color fonts** (Phase 172) — `ColorFont` throws `NotSupportedException`
 - **System fonts by name** — load font bytes instead
-- **Anti-aliasing** — `None` and `Grayscale` only; no `Light` or `LCD`
+- **Anti-aliasing** — `None` and `Grayscale` only; a `Light` or `LCD` request renders as `Grayscale`
 
 The package is not published to NuGet yet, so `RasterizerBackend.Native` resolves only in
 builds that reference this project directly. The KernSmith CLI ships it — try

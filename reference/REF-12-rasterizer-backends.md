@@ -53,7 +53,7 @@ RasterizerBackend enum:
 | **Anti-alias: Grayscale** | Yes | Yes | Yes | Yes | Yes |
 | **Anti-alias: Light** | Yes | No | No | No | No |
 | **Anti-alias: LCD** | Yes | No | No | No | No |
-| **Hinting** | FreeType auto-hinter + font bytecode | Windows GDI hinter | DirectWrite natural/symmetric hinting | stb_truetype hinting (limited) | None |
+| **Hinting** | FreeType auto-hinter + font bytecode | Windows GDI hinter | DirectWrite natural/symmetric hinting | None | None |
 | **Bold/italic simulation** | FreeType emboldening + oblique shear | GDI font mapper + MAT2 shear | DWRITE_FONT_SIMULATIONS flags | Synthetic bold + oblique shear | No (Phase 167) |
 | **Font collection (TTC) support** | Yes (faceIndex parameter) | No (faceIndex must be 0) | Yes (faceIndex parameter) | Yes (faceIndex parameter) | Yes (faceIndex parameter) |
 | **Kerning source** | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser |
@@ -99,7 +99,7 @@ RasterizerBackend enum:
 **Limitations**:
 
 - Windows only. Will not work on Linux or macOS.
-- No color fonts, variable fonts, SDF, or outline stroke support.
+- No color fonts (`ColorFont` throws `NotSupportedException`), variable fonts (axes ignored), SDF (rejected by core), or backend outline stroke (core's bitmap outline effect still applies).
 - Anti-alias limited to None and Grayscale (via `GGO_GRAY8_BITMAP` 0-64 value range remapped to 0-255).
 - No TTC font collection support (faceIndex must be 0).
 - Grayscale values come from GDI's 65-level quantization (0-64), remapped to 0-255.
@@ -166,7 +166,7 @@ RasterizerBackend enum:
 
 **Status**: Experimental, but functional as of Phase 165. Font loading, table parsing, outline extraction, adaptive curve flattening and a signed-area scanline fill all work, and font/glyph metrics track FreeType to within a pixel. It renders TrueType (`glyf`) outlines only — a CFF/OTF face is rejected at `LoadFont` with a `RasterizationException` (Phase 166). Reachable from a source build or the KernSmith CLI (`--rasterizer native`); not from the released NuGet packages.
 
-**When to use**: A fully-owned, dependency-free fallback for the most constrained environments (Blazor WASM, Native AOT, trimmed/single-file apps) where even StbTrueTypeSharp's `AllowUnsafeBlocks` requirement is undesirable. For those scenarios today, use StbTrueType — it is published, and it adds SDF plus synthetic bold/italic.
+**When to use**: A fully-owned, dependency-free fallback for the most constrained environments (Blazor WASM, Native AOT, trimmed/single-file apps) where no third-party or vendored rasterizer code is wanted — Native contains no `unsafe` code, interop or third-party code. For those scenarios today, use StbTrueType — it is published, and it adds SDF plus synthetic bold/italic.
 
 **Strengths**:
 
@@ -179,10 +179,10 @@ RasterizerBackend enum:
 
 - TrueType (`glyf`) outlines only — CFF/CFF2 (`.otf`) faces are rejected at load (Phase 166). WOFF1 is decompressed by KernSmith core before rasterization, so it is accepted; WOFF2 is not supported by core.
 - No hinting, so small sizes are softer than FreeType or GDI output.
-- No color fonts, variable fonts, SDF, or outline stroke support.
+- No color fonts (`ColorFont` throws `NotSupportedException`), variable fonts (axes ignored), SDF (rejected by core), or backend outline stroke (core's bitmap outline effect still applies).
 - Cannot load system-installed fonts by family name (`LoadSystemFont` throws `NotSupportedException`).
-- Anti-alias modes declared are None and Grayscale only.
-- No synthetic bold or italic (`SupportsSyntheticBold` / `SupportsSyntheticItalic` are `false`).
+- Anti-alias modes declared are None and Grayscale only; core does not negotiate modes, so a `Light` or `LCD` request reaches Native and renders as Grayscale.
+- No synthetic bold or italic (`SupportsSyntheticBold` / `SupportsSyntheticItalic` are `false`); `Bold`/`Italic` are ignored, and caller-supplied `BoldPostProcessor`/`ItalicPostProcessor` still run as a bitmap fallback.
 - Not thread-safe: create one instance per thread for parallel rasterization.
 
 ---

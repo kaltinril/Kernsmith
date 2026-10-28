@@ -1,101 +1,59 @@
-# Phase 170 — Native Rasterizer: Multi-Channel SDF (MSDF) Generation
+# Phase 170 — Native Rasterizer: Multi-Channel SDF (MSDF / MTSDF)
 
-> **Status**: Future
+> **Status**: Future — Wave 1, after Phase 169
 > **Created**: 2026-04-01
-> **Depends on**: Phase 169 (single-channel SDF)
+> **Depends on**: Phase 169 (single-channel SDF and its distance code)
 
 ## Goal
 
-Implement Multi-Channel Signed Distance Field (MSDF) generation, which preserves sharp corners that single-channel SDF rounds off. MSDF uses RGB channels to encode distance to different edge segments.
+Multi-channel signed distance fields (msdfgen-style), which keep sharp corners that single-channel SDF rounds off, plus the MTSDF variant with a true SDF in alpha.
 
 ## Background
 
-Single-channel SDF can't distinguish sharp corners from smooth curves at the same distance. MSDF (by Viktor Chlumsky / msdfgen) assigns edge segments to R, G, or B channels. The median of the three channels reconstructs the true distance, while individual channels preserve corner sharpness.
+Edge segments are assigned to R, G or B. Each channel stores the signed distance to the nearest edge of its color; at render time `median(R, G, B)` reconstructs the distance while corners stay sharp.
 
-## Scope
+## Work items
 
-### Edge Coloring Algorithm
+### Edge coloring
 
-Assign each outline edge segment a color (Red, Green, or Blue):
-1. At sharp corners (angle > threshold, e.g., 3°), adjacent edges MUST have different colors
-2. Use a simple heuristic: cycle through colors at each corner
-3. For smooth segments between corners: assign same color as the chain
+- msdfgen's `edgeColoringSimple`: split each contour into edges at corners (angle above a threshold, e.g. 3°, or a reversal); adjacent edges at a corner get different colors; smooth runs share a color. Single-edge contours get split so they carry at least two colors.
+- Corner test: `|cross(t1, t2)| > threshold || dot(t1, t2) <= 0`.
 
-This is the "edgeColoringSimple" algorithm from msdfgen.
+### Per-channel distance
 
-### Per-Channel Distance Computation
+- Per texel, signed distance to the nearest edge of each color → R, G, B, with the same encoding, `SdfSpread` and padding as Phase 169 (inside bright).
+- Error correction pass (msdfgen's clash detection) to remove artifacts where channels disagree.
 
-For each texel:
-1. Compute signed distance to nearest Red edge → store in R channel
-2. Compute signed distance to nearest Green edge → store in G channel  
-3. Compute signed distance to nearest Blue edge → store in B channel
+### Output and configuration (core API — public surface, additive only)
 
-At render time: `distance = median(R, G, B)` gives the SDF with sharp corners.
+- New `SdfMode { None, Sdf, Msdf, Mtsdf }` in the `KernSmith` root namespace.
+- `RasterOptions` / `FontGeneratorOptions` gain `SdfMode`; the shipped `bool Sdf` stays and keeps meaning `SdfMode.Sdf` (resolve the effective mode as `Sdf ? SdfMode.Sdf : SdfMode` when `SdfMode` is `None`). Soft-deprecate `Sdf` in docs only.
+- `IRasterizerCapabilities` gains `bool SupportsMsdf => false` (default interface member, like `SupportsSyntheticBold`), so existing backends compile unchanged.
+- `PreparedRasterization` rejects `Msdf`/`Mtsdf` on backends without `SupportsMsdf`, mirroring the SDF gate.
+- MSDF: `PixelFormat.Rgba32`, A = 255. MTSDF: `Rgba32`, A = the Phase 169 single-channel SDF.
+- MSDF output is RGB data, not a color glyph: channel packing, effects and the extended `.fnt` metadata must treat it accordingly (check `ChannelPacking` guards and SDF metadata writers).
+- `.bmfc`/CLI: add an extension key (e.g. `sdfMode=msdf|mtsdf`) and CLI flag, written only when non-default; update `GenerateAll`'s `ConfigRequestsSdf` skip logic so backends without MSDF are skipped, not failed.
 
-### MTSDF Option
+### Native
 
-Optionally, add a true SDF in the alpha channel alongside MSDF in RGB:
-- R, G, B = multi-channel distances (for corner preservation)
-- A = true signed distance (for smooth operations like shadow/glow)
-- Output format: `PixelFormat.Rgba32`
-
-### Corner Detection
-
-A corner exists where two adjacent edge segments meet at a sharp angle:
-```csharp
-float crossProduct = tangent1.X * tangent2.Y - tangent1.Y * tangent2.X;
-float dotProduct = tangent1.X * tangent2.X + tangent1.Y * tangent2.Y;
-bool isCorner = Math.Abs(crossProduct) > threshold || dotProduct < 0;
-```
-
-### Output
-
-- SDF mode (Phase 169): `Grayscale8` — single channel
-- MSDF mode: `Rgba32` — R/G/B = multi-channel distances, A = 255 or true SDF
-- MTSDF mode: `Rgba32` — R/G/B = multi-channel, A = true SDF
-
-### Configuration
-
-New enum (in `KernSmith` root namespace):
-```csharp
-public enum SdfMode
-{
-    None = 0,       // Standard rasterization (no SDF)
-    Sdf = 1,        // Single-channel signed distance field
-    Msdf = 2,       // Multi-channel SDF (RGB = per-edge-color distances)
-    Mtsdf = 3       // Multi-channel + true SDF in alpha channel
-}
-```
-
-Changes to `RasterOptions`:
-- Add `SdfMode SdfMode = SdfMode.None` property
-- Deprecate existing `bool Sdf` property (map to `SdfMode.Sdf` for backward compatibility)
-- When `SdfMode == Msdf || SdfMode == Mtsdf`, output format is `PixelFormat.Rgba32`
-
-> **CLARIFYING NOTE (added during plan housekeeping):** `RasterOptions` already ships a `bool Sdf` property (verified). Introduce `SdfMode` **additively** — do not remove or break `bool Sdf`. Keep `bool Sdf == true` working as shorthand for `SdfMode.Sdf` (treat the two as equivalent when resolving the effective mode, e.g. `Sdf ? SdfMode.Sdf : SdfMode` if `SdfMode` is left at its `None` default). "Deprecate" above means soft-deprecate (e.g. an `[Obsolete]`-style steer toward `SdfMode` in docs/comments) — NOT an in-place replacement, since the shipped record is public API.
-
-Changes to `IRasterizerCapabilities`:
-- Add `bool SupportsMsdf { get; }` property (default false)
-- Native rasterizer sets `SupportsMsdf = true` after this phase
-
-> **CLARIFYING NOTE (added during plan housekeeping):** `SupportsMsdf` does **not** exist on `IRasterizerCapabilities` yet (verified — only `SupportsSdf` is present). This phase must ADD it as a new capability flag. Give it a `=> false` default-interface implementation, matching the existing optional flags (`SupportsSystemFonts`, `SupportsSyntheticBold`, etc.), so existing backends compile unchanged.
-
-Update `NativeRasterizer`:
-- Dispatch on `SdfMode`: None → coverage raster, Sdf → Phase 169 path, Msdf/Mtsdf → this phase's path
+- MSDF/MTSDF branches in the render-mode dispatch; `SupportsMsdf = true`.
 
 ## Testing
 
-- MSDF 'A': verify sharp corners at apex and baseline preserved
-- Compare MSDF median vs single-channel SDF: should match on smooth edges, differ at corners
-- Edge coloring: verify no two adjacent edges at a corner share a color
-- Visual test: render MSDF at low resolution, verify corner quality
-- Round-trip: MSDF → median → threshold → compare with rasterized glyph
+- `'A'`: apex and baseline corners sharp after median + threshold
+- Median of MSDF equals single-channel SDF on smooth regions; differs only near corners
+- Edge coloring: no two edges meeting at a corner share a color
+- MTSDF alpha equals Phase 169 output
+- Round trip: median → threshold vs coverage bitmap
+- `bool Sdf` alone still produces single-channel SDF (backward compatibility)
+
+**Regression coverage**: add `tests/bmfont-compare/gum-bmfont/msdf.bmfc` (same font/size as `sdf.bmfc`, `sdfMode=msdf`) and force-add it. Only Native will produce output; add a test that asserts it did.
 
 ## Success Criteria
 
-- [ ] Edge coloring correctly assigns colors at corners
-- [ ] Per-channel distances computed correctly
-- [ ] MSDF median matches single-channel SDF on smooth regions
-- [ ] Sharp corners preserved in MSDF output
-- [ ] MTSDF alpha channel matches single-channel SDF
-- [ ] All tests pass
+- [ ] Edge coloring correct at corners; error correction applied
+- [ ] MSDF median matches SDF on smooth regions; corners preserved
+- [ ] MTSDF alpha matches single-channel SDF
+- [ ] `SdfMode` + `SupportsMsdf` added without breaking `bool Sdf` or other backends
+- [ ] `.bmfc`/CLI surface and `msdf.bmfc` config added
+- [ ] All tests pass; `regression_check.py` run

@@ -1,99 +1,52 @@
-# Phase 173 — Native Rasterizer: LCD Subpixel Rendering
+# Phase 173 — Native Rasterizer: LCD Subpixel Rendering & AA-Mode Negotiation
 
-> **Status**: Future
+> **Status**: Future — Wave 2
 > **Created**: 2026-04-01
-> **Depends on**: Phase 164 (scanline rasterizer core)
+> **Depends on**: Phase 166 Part 1 (render-mode dispatch); Phase 174 for `Light`
 
 ## Goal
 
-Implement LCD subpixel rendering to triple effective horizontal resolution by exploiting RGB subpixel layout, improving text clarity on LCD displays.
+LCD subpixel output from the Native rasterizer, and core anti-alias-mode negotiation so no backend is ever handed a mode it does not advertise.
 
-## Scope
+## Starting point
 
-### Harmony Method (Recommended — Simpler, Patent-Free)
+- **Core does no AA-mode negotiation.** `IRasterizerCapabilities.SupportedAntiAliasModes` is never read in `src/KernSmith`; `RasterOptions.AntiAlias` is passed through exactly as requested.
+- Native advertises `None` and `Grayscale`, but `ScanlineRasterizer` thresholds only for `None` and renders **every other mode — `Light` and `Lcd` included — as grayscale**, silently.
+- FreeType honors `Light` (`FT_RENDER_MODE_LIGHT`) and `Lcd` (`FT_RENDER_MODE_LCD`).
 
-Render the glyph three times with horizontal outline shifts:
-1. **Red channel**: shift outline by -1/3 pixel left
-2. **Green channel**: render at original position  
-3. **Blue channel**: shift outline by +1/3 pixel right
+## Work items
 
-Each render produces an 8-bit grayscale coverage map. Combine into RGB:
-```
-output[x].R = render_left[x]
-output[x].G = render_center[x]
-output[x].B = render_right[x]
-output[x].A = max(R, G, B)  // or average for smoother blending
-```
+### Core AA-mode negotiation (do first)
 
-**Advantages**: No color fringing by construction. No filter needed. Simple.
+1. In `PreparedRasterization.Prepare`, resolve the effective mode against `SupportedAntiAliasModes` before building `RasterOptions`: pass a supported mode through; degrade an unsupported one along `Lcd → Grayscale`, `Light → Grayscale`; `None` is always supported.
+2. Decide whether degradation is silent or surfaced (warning in `PipelineMetrics`/result, or an exception in a strict mode) — ask Jeremy; the default must not break existing configs that request `Light` on GDI/DirectWrite/StbTrueType today.
+3. Use the effective mode everywhere downstream (`.fnt` `smooth`, `OutlineEffect` smoothing) so metadata matches pixels.
+4. Check every backend's `SupportedAntiAliasModes` is truthful before turning negotiation on, and run `regression_check.py` — any backend that currently receives an unadvertised mode will change output.
 
-### ClearType-Style Method (Alternative)
+### Native LCD
 
-Render at 3× horizontal resolution, then apply FIR filter:
-1. Render glyph into a bitmap 3× wider than target
-2. Apply 5-tap FIR low-pass filter to reduce color fringing:
-   `filtered[x] = 1/9 * input[x-2] + 2/9 * input[x-1] + 3/9 * input[x] + 2/9 * input[x+1] + 1/9 * input[x+2]`
-3. Sample every 3rd filtered value for R, G, B channels
+- Harmony method first: render coverage three times with the outline shifted −1/3, 0, +1/3 px horizontally; R/G/B = the three coverages.
+- ClearType-style alternative: 3× horizontal render + 5-tap FIR (1/9, 2/9, 3/9, 2/9, 1/9), sample every third value.
+- Output `PixelFormat.Rgba32`, RGB = subpixel coverage, A = max (or mean) of the three — decide by checking how FreeType's LCD output reaches the atlas today, so Native matches.
+- Configuration: RGB/BGR order, horizontal orientation (vertical optional). Gamma: FreeType's backend applies `RasterOptions.Gamma`; decide whether Native honors `Gamma` for LCD only or for all modes.
+- Advertise `Lcd` in `NativeCapabilities.SupportedAntiAliasModes`.
 
-**Advantages**: Sharper rendering. Industry standard.
-**Disadvantages**: Can produce visible color fringing on high-contrast edges.
+### `Light`
 
-### Implementation
-
-- Implement Harmony method first (simpler, good results)
-- ClearType-style as optional alternative
-- New `AntiAliasMode.Lcd` support in the rasterizer
-- Output format: `PixelFormat.Rgba32` (RGB channels carry subpixel data)
-
-### Gamma Correction
-
-LCD rendering requires gamma correction for correct appearance:
-```csharp
-float gamma = 1.8f; // typical LCD gamma
-byte corrected = (byte)(Math.Pow(coverage / 255f, 1f / gamma) * 255f);
-```
-
-Apply gamma correction AFTER subpixel rendering, BEFORE output.
-
-### Configuration
-
-- LCD orientation: horizontal (default) or vertical
-- Subpixel order: RGB (default) or BGR
-- Gamma value (default: 1.8)
-
-### Integration
-
-- Add `AntiAliasMode.Lcd` to `SupportedAntiAliasModes` in capabilities
-- When LCD mode requested, use subpixel rendering pipeline
-- Output: RGBA bitmap where RGB = subpixel coverage, A = combined coverage
-
-### AntiAliasMode.Light Support
-
-The existing `AntiAliasMode` enum includes `Light` (used by FreeType for light auto-hinting). The Native rasterizer does not support `Light` mode because it has no hinting engine in the MVP (Phases 161-165).
-
-After Phase 174 (Auto-Hinting) is implemented, `Light` mode can be mapped to: auto-hinting with reduced grid-fitting strength (snap blue zones but don't quantize stem widths). Until then:
-
-- The Native backend simply does **not** list `AntiAliasMode.Light` in its `SupportedAntiAliasModes`; until this phase / Phase 174 lands, `NativeCapabilities` advertises only `None` and `Grayscale` (verified)
-- When a user requests `AntiAliasMode.Light`, the pipeline's **capability negotiation** degrades the unsupported request to `Grayscale`. The rasterizer does NOT internally substitute or quietly reinterpret the mode — it just renders what it advertises
-- Phase 174 adds `Light` to `SupportedAntiAliasModes` when auto-hinting is available, at which point the negotiation passes `Light` through unchanged
-
-> **CLARIFYING NOTE (added during plan housekeeping):** `AntiAliasMode.Light` already exists in the enum (verified). The "silent fallback" here is a property of pipeline-level capability negotiation against `SupportedAntiAliasModes`, not an in-rasterizer hack — a backend never receives an AA mode it did not advertise. Implementers should therefore gate `Light` purely by what `NativeCapabilities.SupportedAntiAliasModes` reports, and add no special-case substitution code inside the rasterizer.
+- Native advertises `Light` only once Phase 174 provides light hinting; until then negotiation degrades it to `Grayscale`.
 
 ## Testing
 
-- LCD render 'l' (thin vertical): verify tripled resolution visible in RGB channels
-- Compare Harmony vs ClearType approaches
-- Gamma correction: verify correct application
-- BGR mode: verify reversed channel order
-- Visual test: render text at 12-16px, compare LCD vs grayscale clarity
-- Color fringing test: verify Harmony method produces no visible color artifacts
+- Negotiation: requesting `Lcd`/`Light` on a backend without them yields the degraded mode in both pixels and `.fnt` metadata; supported modes pass through unchanged
+- `'l'` at 12–16px: three distinct channel coverages; BGR swaps channels
+- Harmony output shows no color fringing on flat edges; FIR variant matches its kernel
+- SSIM vs FreeType LCD (Phase 179 threshold > 0.85)
+
+**Regression coverage**: add `tests/bmfont-compare/gum-bmfont/lcd.bmfc` (Georgia, `antiAlias=lcd`) and force-add it. Run the harness once with negotiation alone (expect changes only where a backend was handed an unadvertised mode) and again with Native LCD. Assert in a test that Native's LCD output is actually RGB-distinct, not grayscale.
 
 ## Success Criteria
 
-- [ ] Harmony LCD rendering produces correct per-channel coverage
-- [ ] ClearType-style rendering with FIR filter works
-- [ ] Gamma correction applied
-- [ ] RGB/BGR orientation support
-- [ ] `AntiAliasMode.Lcd` in supported modes
-- [ ] Visual quality improvement visible at small sizes
-- [ ] All tests pass
+- [ ] Core negotiates AA mode against `SupportedAntiAliasModes`; metadata follows the effective mode
+- [ ] Native Harmony LCD (and FIR variant) with RGB/BGR
+- [ ] `Lcd` advertised by Native
+- [ ] All tests pass; `regression_check.py` run with `lcd.bmfc`

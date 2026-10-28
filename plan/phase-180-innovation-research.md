@@ -2,10 +2,8 @@
 
 > **Status**: Future (Ongoing Research)
 > **Created**: 2026-04-01
-> **Depends on**: Phases 161–165 (working MVP rasterizer to benchmark against)
+> **Depends on**: Phases 161–165 (complete — the working MVP rasterizer to benchmark against); Phase 177's benchmark harness for measurements
 > **Type**: Exploratory — no fixed deliverables, each area explored independently
-
-> **Note**: Phase 161 is **COMPLETE** (merged 2026-06-09); Phases 162–165 are still outstanding, so no working MVP rasterizer exists to benchmark against yet.
 
 ## Goal
 

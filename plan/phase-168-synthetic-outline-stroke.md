@@ -1,107 +1,66 @@
-# Phase 168 — Native Rasterizer: Synthetic Outline/Stroke & Advanced Transforms
+# Phase 168 — Native Rasterizer: Outline Stroke, Small Caps & Condensed
 
-> **Status**: Future
+> **Status**: Future — Wave 1, after Phase 167
 > **Created**: 2026-04-01
-> **Depends on**: Phase 167 (synthetic bold/italic)
+> **Depends on**: Phase 167 (outline offset code), Phase 166 Part 1 (transform list)
 
 ## Goal
 
-Implement outline stroke generation and additional synthetic transforms (small caps, condensed/extended) at the outline level.
+Outline-level stroke generation plus small caps and condensed/extended transforms in the Native rasterizer, and the core plumbing that lets the pipeline use a backend's stroke instead of its bitmap `OutlineEffect`.
 
-## Scope
+## Starting point
 
-### Outline Stroke Generation
+- **Core never consults `SupportsOutlineStroke`.** Outlines are always drawn by core's EDT-based `OutlineEffect` from `FontGeneratorOptions.Outline`, for every backend (FreeType reports `true` and is ignored too).
+- **`RasterOptions` has no outline-width field**, so a backend can't see the requested stroke width.
+- `WidthScale`, `SmallCaps` and `SyntheticItalicAngle` do not exist on `RasterOptions` or `FontGeneratorOptions`.
+- Native has no `post` table parser; `FontValidator` only checks `post` is present.
 
-Generate a stroked (outlined) version of a glyph — a hollow ring around the original shape.
+## Work items
 
-**Algorithm**: Dual offset curves
-1. Offset the original contour OUTWARD by `strokeWidth / 2`
-2. Offset the original contour INWARD by `strokeWidth / 2`
-3. Reverse the inner offset contour winding
-4. Result: the area between the two offsets = the stroke
+### Core plumbing (do first — nothing else in this phase is reachable without it)
 
-**Reuse**: The outward offset is the same code as synthetic bold (Phase 167). The inward offset reverses the direction.
+1. Add the stroke request to `RasterOptions` (width in pixels, plus whatever shape/join the existing `OutlineShape` maps to), copied in `RasterOptions.FromGeneratorOptions`.
+2. Decide how a backend-drawn stroke is returned. `OutlineEffect` produces a separate outline layer that `GlyphCompositor` colors and composites under the body, and channel config can route outline and glyph to different channels — a merged single bitmap would break both. The likely shape is an extra layer on `RasterizedGlyph` (or a second rasterize call); settle it with the compositor and `ChannelCompositor` code in view.
+3. In `PreparedRasterization`, when `SupportsOutlineStroke` is true and an outline is requested, use the backend's stroke layer and skip building `OutlineEffect`; otherwise unchanged. Other backends' output must stay identical (`regression_check.py`).
+4. Add `WidthScale` (default 1.0), `SmallCaps` (default false) and `SyntheticItalicAngle` (default 12°) as optional `RasterOptions` properties beside `Bold`/`Italic`; expose matching `FontGeneratorOptions` / `.bmfc` extension keys only if Jeremy wants them user-facing.
 
-**Join styles** (at corners):
-- **Miter**: extend edges until they meet (with miter limit to prevent spikes)
-- **Round**: arc cap at corners (approximate with line segments)
-- **Bevel**: straight cut across the corner
+### `post` table parser (Native)
 
-Default: Miter with limit of 2×strokeWidth.
+- Parse `post` header fields (`italicAngle`, `underlinePosition`/`Thickness`, `isFixedPitch`). `italicAngle` is the optional source for a font-derived `SyntheticItalicAngle`; the 12° default stays the parity value used by Phase 167.
 
-**Output**: A new `GlyphOutline` containing the stroke contours. This can be:
-- Rasterized standalone (just the outline)
-- Composited with the original glyph (outline behind, fill on top)
+### Outline stroke
 
-### Integration with Existing Effects
+- Offset each contour outward and inward by `strokeWidth / 2` (reusing Phase 167's offset code), reverse the inner offset, and emit both as a stroke outline whose non-zero fill is the ring.
+- Joins: miter (default, limit 2× stroke width), round (arc approximated by segments), bevel. Map `OutlineShape` onto these where it has a meaning.
+- Stroke width converts to font units like bold strength: `width_fu = width_px * unitsPerEm / ppem`.
+- The stroke is a separate layer from the fill, never merged into it.
 
-The outline stroke at the rasterizer level replaces the bitmap-level `OutlineEffect` when using the Native backend:
-- `IRasterizerCapabilities.SupportsOutlineStroke = true`
-- When the main pipeline sees `SupportsOutlineStroke`, it can request the rasterizer to generate the stroke directly
-- Falls back to existing `OutlineEffect` (EDT-based) for other backends
+### Small caps
 
-### New RasterOptions Fields
+- Scale uppercase outlines by `OS/2 sxHeight / sCapHeight` (Native already parses OS/2); optional light emboldening to compensate thinner stems. Which codepoints get small-capped (lowercase input mapped to scaled capitals?) must be specified before implementing — it changes which glyph is drawn for a codepoint.
 
-These transforms need user-facing configuration. Add to `RasterOptions` or `FontGeneratorOptions`:
+### Condensed / extended
 
-- `float WidthScale = 1.0f` — horizontal scaling (< 1 = condensed, > 1 = extended)
-- `bool SmallCaps = false` — enable small caps transform
-- Stroke width already exists as `FontGeneratorOptions.Outline`
-- Bold/italic already exist as `RasterOptions.Bold`/`Italic`
-- Italic angle: use font's `post.italicAngle` as default, or add `float SyntheticItalicAngle = 12f` to `RasterOptions`
+- `x *= widthScale` on all points, `advance *= widthScale`.
 
-> **OPEN QUESTION — unbudgeted `post` table parser:** defaulting the italic angle from `post.italicAngle` requires a `post` table parser that **does not exist** in the Native project. `FontValidator` only checks that `post` is *present*; nothing reads its contents, and no phase currently owns writing the parser. This work must be explicitly assigned to Phase 162 (alongside the other table parsers) or to this phase before the `post.italicAngle` default can be relied on. Until then, `SyntheticItalicAngle` must fall back to a fixed default (12°).
+### Transform order
 
-> **CLARIFYING NOTE (added during plan housekeeping):** `WidthScale`, `SmallCaps`, and `SyntheticItalicAngle` do **not** exist on `RasterOptions` or `FontGeneratorOptions` yet (verified). Add them as new **optional** properties (each with the default shown above, so existing call sites are unaffected). Their home is `RasterOptions`: these are per-render geometric outline transforms, the same surface that already carries the other synthetic transforms (`Bold`, `Italic`, `ForceSyntheticBold`, `ForceSyntheticItalic`) which the rasterizer consumes. Follow that convention. `FontGeneratorOptions` may later expose matching pass-through properties (as it already does for bold/italic/SDF) if pipeline-level configuration is wanted, but the rasterizer reads them from `RasterOptions`.
-
-### Small Caps Transform
-
-Scale uppercase glyph outlines to simulate small caps:
-1. Read x-height and cap-height from OS/2 table
-2. Scale factor = x-height / cap-height (typically ~0.68-0.72)
-3. Scale all outline points uniformly: `x *= scale, y *= scale`
-4. Optional: slight boldening to compensate for thinner strokes after scaling
-
-### Condensed / Extended Transform
-
-Horizontal-only scaling:
-```csharp
-foreach (ref var point in outline.Points)
-{
-    point.X *= widthScale;  // < 1.0 = condensed, > 1.0 = extended
-}
-advanceWidth *= widthScale;
-```
-
-### Transform Pipeline (Updated)
-
-```
-GlyphOutline (font units)
-  → Condensed/Extended (if requested)
-    → Small Caps (if requested)
-      → Synthetic Bold (if requested)
-        → Synthetic Italic (if requested)
-          → Outline Stroke (if requested, generates separate stroke contours in font units)
-            → Scale to pixels
-              → Flatten & Rasterize
-```
-
-Stroke width is specified in pixels by the user but converted to font units before applying: `strokeWidth_fu = strokeWidth_px * unitsPerEm / pixelSize` (same conversion as bold strength in Phase 167).
+Condensed/extended → small caps → bold → italic → stroke (stroke generated from the fully styled outline), then scale to pixels.
 
 ## Testing
 
-- Stroke 'O': verify hollow ring, correct width
-- Stroke with sharp corners: verify miter join behavior
-- Small caps: verify scaling factor matches x-height/cap-height ratio
-- Condensed/extended: verify horizontal scaling only
-- Combined transforms: bold + italic + condensed
-- Visual comparison of stroke vs bitmap-level OutlineEffect
+- Stroke `'O'`: ring of the requested width; sharp-corner glyphs (`'A'`, `'M'`): miter limit holds
+- Native stroke vs core `OutlineEffect` at the same width: similar extent (SSIM), and colors/channel routing unchanged
+- Small caps ratio matches OS/2; condensed/extended scales X only; combined transforms
+- `post` parser against Roboto and a CFF fixture
+
+**Regression coverage**: the existing `outline-nosmoothing.bmfc`, `outline-plus-nosmoothing.bmfc`, `outline-square-nosmoothing.bmfc` (hard-edged) and `fire.bmfc` (smoothed, 4px) configs switch Native onto its own stroke once the capability flips — review those Native diffs deliberately; every other backend must stay identical. Small caps / condensed need a config only if they get `.bmfc` keys.
 
 ## Success Criteria
 
-- [ ] Outline stroke generates correct hollow ring
-- [ ] Join styles work (miter default)
-- [ ] Small caps transform uses OS/2 metrics
-- [ ] Condensed/extended scales horizontally only
-- [ ] `SupportsOutlineStroke = true` in capabilities
-- [ ] All tests pass
+- [ ] Core honors `SupportsOutlineStroke` and passes stroke width; other backends byte-identical
+- [ ] Native stroke renders a correct ring with miter/round/bevel joins, as its own layer
+- [ ] `post` table parsed
+- [ ] Small caps and condensed/extended transforms work
+- [ ] `SupportsOutlineStroke = true` on Native
+- [ ] All tests pass; `regression_check.py` run

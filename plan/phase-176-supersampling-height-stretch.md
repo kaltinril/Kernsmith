@@ -1,73 +1,37 @@
 # Phase 176 — Native Rasterizer: Supersampling & Height Stretch
 
-> **Status**: Future
+> **Status**: Needs decision — core already provides both for Native; keep, narrow or drop (see Open question)
 > **Created**: 2026-04-01
-> **Depends on**: Phase 164 (scanline rasterizer core)
+> **Depends on**: Phase 166 Part 1 (scale stage)
 
-> **Existing implementation (reference)**: Supersampling (`RasterOptions.SuperSample`, applied in the pipeline) and height-stretch (`HeightStretchPostProcessor` in `src/KernSmith/Rasterizer/`) ALREADY EXIST as pipeline/post-processor features. This phase is about integrating that behavior INTO the native rasterizer (single-pass) rather than implementing it from scratch — match the existing post-processor behavior as the baseline.
+## Goal (as originally scoped)
 
-## Goal
+Do supersampling and BMFont `heightPercent` stretch inside the Native rasterizer instead of in the pipeline.
 
-Implement native supersampling and height stretch directly in the rasterizer for higher quality output and BMFont-compatible vertical scaling.
+## What already exists
 
-## Scope
+- **Supersampling**: `PreparedRasterization.Prepare` multiplies `Size` by `SuperSampleLevel` for any backend with `HandlesOwnSizing = false` (Native included) and box-filters the result back down in the effects/downscale pass. `RasterOptions.SuperSample` is therefore ignored by Native, correctly.
+- **Height stretch**: `RasterizeAndProcess` runs `HeightStretchPostProcessor` on every backend's output when `HeightPercent != 100`.
+- The `supersample.bmfc` harness config (`aa=2`) already exercises Native's supersampled path.
 
-### Native Supersampling
+## Open question (decide before any work)
 
-The main pipeline already supports supersampling (render at Nx, downscale), but it happens OUTSIDE the rasterizer. Implementing it natively allows:
-- Single rasterization pass at higher resolution (not separate render + scale)
-- Better buffer management (rent larger buffer once)
-- Potential for rotated-grid supersampling (RGSS)
+What would an in-rasterizer version buy?
 
-**Implementation**:
-1. When `RasterOptions.SuperSample > 1`, multiply target size by factor
-2. Rasterize at the larger size using the standard scanline rasterizer
-3. Box-filter downscale in a single pass:
-   ```csharp
-   for each output pixel (ox, oy):
-       sum = 0
-       for dy in 0..factor-1:
-           for dx in 0..factor-1:
-               sum += superBitmap[(oy*factor+dy) * superWidth + (ox*factor+dx)]
-       output[oy * width + ox] = (byte)(sum / (factor * factor))
-   ```
-4. Use premultiplied alpha for RGBA downscaling
+- **Height stretch as an outline transform** (scale Y in font units before rasterizing) is genuinely better than bitmap resampling — it stays sharp and composes with SDF/stroke. It fits naturally as one more Phase 166 transform, next to Phase 168's condensed/extended.
+- **Native supersampling** would be output-identical to the pipeline's box filter at best; the only gain is skipping a buffer copy, which Phase 177 can measure. Alternatives with a quality difference (analytic coverage is already exact; RGSS; stb-style 1D prefilter) are research, not parity.
 
-> **FontStashSharp insight:** stb_truetype includes lightweight 1D box prefilter kernels (`stbtt__h_prefilter`, `stbtt__v_prefilter`) as a cheaper alternative to full NxN supersampling. These blur along a single axis for subpixel positioning quality. Consider offering this as a "light" supersampling option (e.g., `SuperSample = 0` for prefilter-only) that gives most of the quality benefit of 2x supersampling at a fraction of the cost.
+Either path needs a new capability flag so core skips its own pass (`HandlesOwnSizing` is unrelated and must stay `false`): name, one flag or two, and default-interface placement on `IRasterizerCapabilities` are part of the decision.
 
-**RGSS (Rotated Grid Super Sampling)** — optional enhancement:
-- Instead of regular NxN grid, sample at rotated positions
-- Better diagonal quality with only 2×2 samples (4 samples vs 16 for 4x regular)
-- More complex implementation, defer to optimization phase
+Options, for Jeremy to choose:
 
-### Native Height Stretch
+1. Drop the phase; core already covers it.
+2. Narrow it to outline-level height stretch (plus a `HandlesOwnHeightStretch`-style flag), folded into Phase 168.
+3. Keep the full original scope.
 
-Vertical scaling of rasterized output to match BMFont `heightPercent`:
-1. Rasterize at normal size
-2. Scale bitmap vertically using bilinear interpolation
-3. Update metrics (height, bearingY) to match
+## Testing (if pursued)
 
-Currently handled by `HeightStretchPostProcessor` outside the rasterizer. Moving it inside allows single-pass rendering.
+- Outline height stretch vs `HeightStretchPostProcessor`: same metrics, sharper edges
+- Native supersample vs pipeline supersample: identical output (if option 3)
 
-### Integration
-
-- Both features use the existing `RasterOptions` fields (`SuperSample`, plus height percent from `FontGeneratorOptions`)
-- The main pipeline needs a **new** capability flag to avoid double-processing. `HandlesOwnSizing` is NOT it: that flag (`IRasterizerCapabilities.HandlesOwnSizing`) only governs whether the rasterizer does its own ppem/cell-height conversion, and Phase 165 deliberately sets the Native rasterizer's to `false`. A separate flag (e.g. `HandlesOwnSuperSampling` / `HandlesOwnHeightStretch`) is required so the pipeline can skip its supersample pass and `HeightStretchPostProcessor`.
-
-> **OPEN QUESTION**: What is the new flag (or flags) called, and does it live on `IRasterizerCapabilities` as a default-`false` interface member (matching `HandlesOwnSizing`/`SupportsSystemFonts`)? One combined flag vs. two independent ones is also undecided — supersampling and height stretch are separate pipeline stages and a backend could plausibly own one but not the other. Must be resolved before this phase starts.
-
-## Testing
-
-- Supersampling 2x, 4x: verify smoother output vs 1x
-- Downscale quality: verify no banding artifacts
-- Height stretch: verify vertical scaling correct
-- Performance: measure overhead of supersampling at each level
-- Compare native supersampling vs pipeline supersampling (should be identical output)
-
-## Success Criteria
-
-- [ ] Native supersampling produces correct downscaled output
-- [ ] Box filter downscale with premultiplied alpha for RGBA
-- [ ] Height stretch produces correct vertically scaled output
-- [ ] Performance acceptable (2x = ~4x slower, 4x = ~16x slower)
-- [ ] All tests pass
+**Regression coverage**: `supersample.bmfc` already covers supersampling; height stretch needs a config with `scaleH` other than 100 (BMFont's height-percent key) only if option 2 or 3 is chosen — no tracked config sets one.

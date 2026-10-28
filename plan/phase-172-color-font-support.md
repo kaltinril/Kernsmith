@@ -1,87 +1,58 @@
-# Phase 172 — Native Rasterizer: Color Font Support (COLR/CPAL)
+# Phase 172 — Native Rasterizer: Color Font Support
 
-> **Status**: Future
+> **Status**: Future — COLRv0 + CPAL Wave 1; COLRv1 Wave 2; CBDT/sbix stretch (blocked on an open question)
 > **Created**: 2026-04-01
-> **Depends on**: Phase 165 (IRasterizer integration)
-
-> **Existing implementation (reference)**: Color fonts are already supported in the FreeType backend (COLR/CPAL) — `RasterOptions.ColorFont` / `ColorPaletteIndex`, `FreeTypeRasterizer.SelectColorPalette()`, `FreeTypeCapabilities.SupportsColorFonts = true`. DirectWrite is stubbed only. This phase implements color fonts for the NATIVE backend only; cross-reference FreeType's COLR v0/v1 handling.
+> **Depends on**: Phase 166 Part 1 (render-mode dispatch)
 
 ## Goal
 
-Implement color font rendering for COLR v0 (layered color glyphs) and COLR v1 (paint graph), enabling emoji and decorative color fonts.
+Render color glyphs in the Native rasterizer: COLR v0 layered glyphs with CPAL palettes first, then the COLR v1 paint graph.
 
-## Scope
+## Starting point
 
-### CPAL Table Parser
-- Parse color palettes: array of RGBA color entries
-- Support multiple palettes (palette index from `RasterOptions.ColorPaletteIndex`)
-- Parse palette type flags and labels (v1)
+- `NativeCapabilities.SupportsColorFonts = false`. A `ColorFont = true` request reaches Native and **throws `NotSupportedException`** from `RejectUnsupported` — it does not fall back to monochrome.
+- Core calls `SelectColorPalette(index)` only when the capability is true and the index is non-zero; the rasterizer stores it and must not read `RasterOptions.ColorPaletteIndex` itself.
+- FreeType (COLR/CPAL) is the reference backend.
+- **No COLR fixture is committed.** `NotoColorEmoji.ttf` is CBDT/CBLC only.
 
-### COLR v0 — Layered Color Glyphs
-- Parse base glyph records: map base glyph ID → (first layer index, num layers)
-- Parse layer records: array of (glyph ID, palette index) pairs
-- Rendering: for each layer, rasterize the referenced glyph, colorize with palette color, composite bottom-to-top using alpha-over blending
-- Output: `PixelFormat.Rgba32`
+## Work items — COLR v0 + CPAL (Wave 1)
 
-### COLR v1 — Paint Graph
-- Parse paint tables recursively (tree structure):
-  - `PaintColrLayers`: ordered list of paint layers
-  - `PaintSolid`: solid fill color (palette index + alpha)
-  - `PaintLinearGradient`: linear gradient between two points with color stops
-  - `PaintRadialGradient`: radial gradient between two circles
-  - `PaintSweepGradient`: angular sweep gradient
-  - `PaintGlyph`: clip rendering to a glyph outline (mask)
-  - `PaintColrGlyph`: reuse another color glyph definition
-  - `PaintTransform`: apply 2×3 affine matrix
-  - `PaintTranslate`, `PaintScale`, `PaintRotate`, `PaintSkew`: specific transforms
-  - `PaintComposite`: Porter-Duff compositing modes
-- Implement paint tree walker that evaluates recursively
-- Gradient color stops: interpolate in sRGB space (per spec)
-- Porter-Duff modes: Clear, Src, Dest, SrcOver, DestOver, SrcIn, DestIn, SrcOut, DestOut, SrcAtop, DestAtop, Xor, Plus
+- **Add fixtures first**: a small OFL font with COLR v0 + CPAL (several palettes), and one with COLR v1, each with a `FONT-LICENSES.md` entry.
+- CPAL: palettes, color records (BGRA), palette count; v1 type/label fields parsed but unused.
+- COLR v0: base glyph records (binary search by glyph ID) → layer records (glyph ID, palette index; `0xFFFF` = foreground color — render it white and check how core's fill tint treats RGBA glyphs, matching FreeType's behavior).
+- Render: decode each layer glyph through the normal pipeline (so transforms and variations apply), rasterize coverage into a shared canvas sized to the union bbox, tint by palette color, composite bottom-to-top with source-over (premultiplied internally, straight alpha out).
+- Output `PixelFormat.Rgba32` for color glyphs; glyphs with no COLR entry fall through to grayscale coverage.
+- Color branch in the render-mode dispatch; remove the `ColorFont` throw; `SupportsColorFonts = true`.
 
-### Rendering Architecture
+## Work items — COLR v1 (Wave 2)
 
-```
-PaintGraph Walker
-  → For PaintGlyph: rasterize glyph outline as alpha mask
-  → For PaintSolid/Gradient: generate color fill
-  → For PaintComposite: composite layers with Porter-Duff mode
-  → For PaintTransform: transform coordinate space
-  → Intermediate: render to RGBA temp buffers
-  → Final: composite all layers → output RGBA bitmap
-```
+- Paint graph: `PaintColrLayers`, `PaintSolid`, `PaintLinearGradient`, `PaintRadialGradient`, `PaintSweepGradient`, `PaintGlyph` (clip), `PaintColrGlyph`, `PaintTransform` and the translate/scale/rotate/skew variants (including around-center forms), `PaintComposite`.
+- ColorLine extend modes (pad/repeat/reflect); color-stop interpolation per spec.
+- Composite modes: the Porter-Duff set plus the blend modes the spec lists.
+- ClipList for bounds; cycle detection on `PaintColrGlyph` recursion.
+- Variable paints (`Var*` forms) use the Phase 171 ItemVariationStore when variations are active.
 
-### Integration
-- Detect color glyphs via COLR table during `RasterizeGlyph`
-- If codepoint has a COLR entry, use color rendering path
-- If no COLR entry, fall back to standard grayscale rasterization
-- Output format: `PixelFormat.Rgba32` for color glyphs
-- Update `IRasterizerCapabilities.SupportsColorFonts = true`
+## Bitmap color (CBDT/CBLC, sbix) — stretch, blocked
 
-**Palette selection**: The `IRasterizer.SelectColorPalette(int paletteIndex)` method is the stateful setter called by the main pipeline before rasterization begins. `RasterOptions.ColorPaletteIndex` is read by the main pipeline and forwarded via `SelectColorPalette()`. The Native rasterizer stores the palette index from `SelectColorPalette()` and uses it during color glyph rendering. The rasterizer does NOT read `RasterOptions.ColorPaletteIndex` directly — the pipeline handles that translation.
-
-### Bitmap Color Fonts (CBDT/CBLC, sbix) — Lower Priority
-- Parse CBLC index to find bitmap strike closest to requested size
-- Extract PNG/bitmap data from CBDT
-- Parse sbix table for Apple bitmap glyphs
-- Scale bitmap to requested size if exact strike not available
-- This is a stretch goal — COLR is the primary target
+- CBLC strike selection nearest the requested ppem, CBDT/sbix image extraction, scaling to size.
+- **Open question for Jeremy**: these glyphs are PNGs, so Native needs a PNG decoder. Core already depends on StbImageSharp (third-party, managed). Either Native may use it through core, or Native needs our own managed PNG/zlib decoder under the pure-managed rule. Not decided — do not start this part until it is.
 
 ## Testing
 
-- COLR v0: render a color emoji font, verify layered composition
-- COLR v1: render paint graph glyphs, verify gradient fills and compositing
-- Palette selection: switch palettes, verify color changes
-- Transparent layers: verify alpha blending
-- Fallback: non-color glyphs from a color font should render in grayscale
-- Compare against FreeType color output
+- COLR v0: layered composition matches FreeType (SSIM on RGBA)
+- Palette switch changes colors; foreground-color layers match FreeType
+- Transparent layers blend correctly; non-color glyphs in a color font stay grayscale
+- COLR v1: solid, each gradient type and extend mode, transforms, composite modes, `PaintColrGlyph` reuse
+- Malformed/cyclic paint graphs fail gracefully
+
+**Regression coverage**: add `tests/bmfont-compare/gum-bmfont/color-colr.bmfc` with `fontFile` pointing at the committed COLR fixture, `colorFont=1` (and a second palette via `colorPalette=1`); force-add it. Today Native throws on it and the harness tolerates that, so the test must assert Native produced RGBA glyphs.
 
 ## Success Criteria
 
-- [ ] CPAL palettes parsed correctly
-- [ ] COLR v0 layered rendering works
-- [ ] COLR v1 paint graph renders (at least PaintSolid, PaintGlyph, PaintColrLayers)
-- [ ] Gradients render correctly (linear, radial, sweep)
-- [ ] Porter-Duff compositing modes work
-- [ ] `SupportsColorFonts = true` in capabilities
-- [ ] All tests pass
+- [ ] COLR v0 + CPAL fixtures committed
+- [ ] CPAL parsed; palette selection works
+- [ ] COLR v0 layered rendering matches FreeType
+- [ ] COLR v1 paint graph (gradients, transforms, composites) renders
+- [ ] `SupportsColorFonts = true`; `ColorFont` no longer throws
+- [ ] CBDT/sbix decision recorded (implement or drop)
+- [ ] All tests pass; `regression_check.py` run with the COLR config
