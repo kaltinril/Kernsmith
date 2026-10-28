@@ -14,11 +14,11 @@
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <IsAotCompatible>true</IsAotCompatible>
     <PackageId>KernSmith.Rasterizers.Native</PackageId>
-    <Description>Native KernSmith rasterizer backend. Fully custom, pure C#, cross-platform, with zero external NuGet dependencies. EXPERIMENTAL — renders TrueType ('glyf') outlines only (CFF/OTF fonts are rejected) with no hinting, SDF, outline stroke or synthetic bold/italic, and this project is deliberately not published yet.</Description>
+    <Description>Native KernSmith rasterizer backend. Fully custom, pure C#, cross-platform, with zero external NuGet dependencies. EXPERIMENTAL — renders TrueType ('glyf') outlines only (CFF/OTF fonts are rejected) with no hinting, outline stroke or synthetic bold/italic, and this project is deliberately not published yet.</Description>
     <PackageProjectUrl>https://github.com/kaltinril/Kernsmith</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Authors>Kaltinril (Jeremy Swartwood)</Authors>
-    <PackageTags>kernsmith;native;rasterizer;bitmap-font;game-dev;cross-platform;wasm;pure-csharp</PackageTags>
+    <PackageTags>kernsmith;native;rasterizer;bitmap-font;game-dev;cross-platform;wasm;pure-csharp;sdf</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="/" />

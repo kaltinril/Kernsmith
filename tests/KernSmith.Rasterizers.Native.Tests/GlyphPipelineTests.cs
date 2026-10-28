@@ -163,12 +163,11 @@ public class GlyphPipelineTests
     }
 
     [Fact]
-    public void Dispatch_RejectsColorAndSdf_WithTheExistingMessages()
+    public void Dispatch_RejectsColor_WithTheExistingMessage_AndRendersSdf()
     {
         Should.Throw<NotSupportedException>(() => GlyphRenderers.Select(new RasterOptions { Size = 32, ColorFont = true }))
             .Message.ShouldBe("Native rasterizer does not support color font rendering.");
-        Should.Throw<NotSupportedException>(() => GlyphRenderers.Select(new RasterOptions { Size = 32, Sdf = true }))
-            .Message.ShouldBe("Native rasterizer does not support SDF rendering.");
+        GlyphRenderers.Select(new RasterOptions { Size = 32, Sdf = true }).ShouldBeOfType<SdfRenderer>();
 
         // Color is checked first, as before the pipeline existed.
         Should.Throw<NotSupportedException>(() => GlyphRenderers.Select(new RasterOptions { Size = 32, ColorFont = true, Sdf = true }))
@@ -176,12 +175,12 @@ public class GlyphPipelineTests
     }
 
     [Fact]
-    public void Rasterizer_StillRejectsSdfAndColor_EvenForUnmappedCodepoints()
+    public void Rasterizer_StillRejectsColor_EvenForUnmappedCodepoints()
     {
         using var rasterizer = new NativeRasterizer();
         rasterizer.LoadFont(TestFonts.RobotoRegularBytes());
 
-        Should.Throw<NotSupportedException>(() => rasterizer.RasterizeGlyph(0x1F600, new RasterOptions { Size = 32, Sdf = true }));
+        Should.Throw<NotSupportedException>(() => rasterizer.RasterizeGlyph(0x1F600, new RasterOptions { Size = 32, ColorFont = true }));
         Should.Throw<NotSupportedException>(() => rasterizer.GetGlyphMetrics(0x1F600, new RasterOptions { Size = 32, ColorFont = true }));
     }
 

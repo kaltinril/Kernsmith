@@ -18,9 +18,9 @@ internal static class GlyphRenderers
         if (options.ColorFont)
             throw new NotSupportedException("Native rasterizer does not support color font rendering.");
 
-        // Signed distance field (Phases 169/170).
+        // Signed distance field (Phase 169).
         if (options.Sdf)
-            throw new NotSupportedException("Native rasterizer does not support SDF rendering.");
+            return SdfRenderer.Instance;
 
         // LCD subpixel (Phase 173) branches on options.AntiAlias here; until then every
         // anti-alias mode is coverage.

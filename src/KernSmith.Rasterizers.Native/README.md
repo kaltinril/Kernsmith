@@ -19,7 +19,8 @@ is expected to work but not yet verified — see the
 In development. As of Phase 165 the backend renders TrueType (`glyf`) outlines end to end:
 SFNT table parsing, cmap lookup (formats 4 and 12), outline extraction, adaptive curve
 flattening, and a signed-area scanline fill, with font and glyph metrics that track FreeType
-to within a pixel.
+to within a pixel. Signed distance fields (`Sdf`, Phase 169) are computed from the outline and
+match FreeType's SDF output (encoding, padding, `SdfSpread`).
 
 Not yet supported — each raises a clear error or is ignored, as noted:
 
@@ -28,7 +29,6 @@ Not yet supported — each raises a clear error or is ignored, as noted:
 - **Hinting** — none, so small sizes are softer than FreeType or GDI output
 - **Synthetic bold/italic** (Phase 167) — `Bold`/`Italic` are ignored
 - **Outline stroking** (Phase 168) — the backend has none of its own; KernSmith core still draws outlines as a bitmap effect
-- **SDF** (Phase 169) — rejected with `NotSupportedException`
 - **Variable fonts** (Phase 171) — axes are ignored; the default instance renders
 - **Color fonts** (Phase 172) — `ColorFont` throws `NotSupportedException`
 - **System fonts by name** — load font bytes instead
@@ -74,7 +74,7 @@ disagree. Everything is internal; add a feature to its stage rather than to `Nat
 | 2 | Transforms, in order, in font units | `Internal/Pipeline/IGlyphTransform.cs`, `GlyphTransforms.cs` | implementing `IGlyphTransform` and adding it in `GlyphTransforms.For` — bold/italic (167), stroke/small caps/condensed (168). Build results with `WithOutline` / `WithAdvanceWidth`. |
 | 3 | Bounds → pixel grid | `Internal/Raster/GlyphBox.cs`, `Internal/Outlines/OutlineBounds.cs` | nothing: a replaced outline loses its declared bbox and is measured from its tight bounds. |
 | 4 | Scale, then pixel-space hint hook | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs` | filling in `GlyphHinter.Apply` — auto-hinting (174). |
-| 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs` | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` — SDF (169/170), color (172), LCD (173). `Measure` must match what `Render` produces. |
+| 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs`, `SdfRenderer.cs` (distance code in `Internal/Distance/`) | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` — MSDF (170), color (172), LCD (173). `Measure` must match what `Render` produces. |
 
 Invariants:
 

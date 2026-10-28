@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The experimental Native rasterizer renders signed distance fields (`Sdf`) computed directly from the glyph outline, matching FreeType's SDF output (encoding, padding, bearings) and honoring `SdfSpread` and `SdfScale`. Overlapping contours produce no interior seam. `SupportsSdf` is now true, so SDF configs run on Native instead of being skipped. The package tags advertise `sdf` again.
+- `tests/bmfont-compare/gum-bmfont/sdf-scale1.bmfc` covers SDF at `sdfScale=1`.
 - Benchmarks: `NativeComparison*` BenchmarkDotNet classes compare the Native, StbTrueType and FreeType backends (font load, per-glyph rasterization at 12/32/72px, `GetGlyphMetrics`, full `BmFont.Generate`) with memory diagnostics; the measured baseline is recorded in the phase 177 plan.
 
 ### Changed
