@@ -1,7 +1,8 @@
 # AngelCode Bitmap Font Generator configuration file
 # Exercises color-font rendering (COLR version 0 layers + CPAL palettes) with the committed
 # Bungee Color fixture. KernSmith-only keys: colorFont=1 turns color rendering on, colorPalette=6 selects a non-default palette.
-# Backends without color support render plain coverage.
+# Backends without color support render plain coverage. Every channel holds the glyph (the
+# default ChannelConfig); a non-default channel setup would overwrite the colors.
 fileVersion=1
 
 # font settings
@@ -43,9 +44,9 @@ fourChnlPacked=0
 textureFormat=png
 textureCompression=0
 alphaChnl=0
-redChnl=4
-greenChnl=4
-blueChnl=4
+redChnl=0
+greenChnl=0
+blueChnl=0
 invA=0
 invR=0
 invG=0
