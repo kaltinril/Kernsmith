@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
+using KernSmith.Font.Woff2;
 
 namespace KernSmith.Font;
 
@@ -34,7 +35,8 @@ internal static class WoffDecompressor
            && data[3] == (byte)'2';
 
     /// <summary>
-    /// Decompresses WOFF or WOFF2 data into standard TTF/OTF (sfnt) bytes.
+    /// Decompresses WOFF or WOFF2 data into standard TTF/OTF (sfnt) bytes; a WOFF2 collection
+    /// decodes to a TTC. Malformed input throws <see cref="FontParsingException"/>.
     /// </summary>
     public static byte[] Decompress(ReadOnlySpan<byte> woffData)
     {
@@ -46,8 +48,7 @@ internal static class WoffDecompressor
         return signature switch
         {
             WoffSignature => DecompressWoff1(woffData),
-            Woff2Signature => throw new NotSupportedException(
-                "WOFF2 decompression is not yet supported. Convert the font to TTF/OTF or WOFF1 first."),
+            Woff2Signature => Woff2Decoder.Decompress(woffData),
             _ => throw new FontParsingException(
                 $"Not a WOFF file. Expected signature 'wOFF' or 'wOF2', got 0x{signature:X8}.")
         };

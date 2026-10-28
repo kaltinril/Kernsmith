@@ -1,6 +1,6 @@
 # Phase 178 — WOFF2 Decompression (Core)
 
-> **Status**: Future — Wave 0 (independent of the Native refactor)
+> **Status**: In progress — core WOFF2 decoding done (managed Brotli, glyf/loca/hmtx transforms, collections); the Fonts.Web switch, a CFF-in-WOFF2 test and a BlazorWasm run remain
 > **Created**: 2026-04-01
 > **Depends on**: nothing
 
@@ -8,11 +8,11 @@
 
 Decode WOFF2 in core so every backend — Native included — accepts `.woff2` files, and `KernSmith.Fonts.Web` can use the WOFF2 files CSS font CDNs serve.
 
-## Starting point
+## Where it lives
 
-- WOFF 1.0 is done in core: `src/KernSmith/Font/WoffDecompressor.cs` (zlib per table). `BmFont` and `PreparedRasterization.Prepare` detect WOFF/WOFF2 by signature and decompress **before** any backend sees the bytes, so this is core-only work — **no change to `NativeRasterizer.LoadFont`**.
-- `WoffDecompressor.Decompress` throws `NotSupportedException` for the `wOF2` signature.
-- `KernSmith.Fonts.Web` deliberately extracts only `.woff` URLs (`CssParser`, `WebFontSource`) and errors when a CDN offers only `.woff2`.
+- `BmFont` and `PreparedRasterization.Prepare` detect WOFF/WOFF2 by signature and decompress **before** any backend sees the bytes, so this is core-only — **no change to `NativeRasterizer.LoadFont`**.
+- `WoffDecompressor.Decompress` routes `wOF2` to `Font/Woff2/Woff2Decoder` (container, collection directory, sfnt/TTC reassembly), `Woff2GlyfTransform`, `Woff2HmtxTransform`; Brotli is `Font/Brotli/ManagedBrotliDecoder` with the static dictionary as an embedded raw-deflate resource.
+- `KernSmith.Fonts.Web` still extracts only `.woff` URLs (`CssParser`, `WebFontSource`) and errors when a CDN offers only `.woff2`; its XML doc and that error message still say WOFF2 is unsupported.
 
 ## Constraint: our own managed Brotli decoder
 
@@ -49,14 +49,14 @@ WOFF2's Brotli stage is a pure managed decoder we write in core — not `System.
 ### Reference material
 
 - W3C WOFF2 Recommendation (frozen) and RFC 7932 are the source of truth.
-- LayoutFarm/Typography (MIT) `Woff2Reader.cs` is a readable C# reference for the transforms (its Brotli is injected, so it doesn't help there). Copy/adapt with attribution vs. write from the spec is still open; either way no package dependency.
+- The decoder and transforms are written from those two specs; no third-party source is copied and there is no package dependency.
 
 ## Testing
 
 - Brotli: RFC 7932 test vectors and round trips against .NET's `BrotliEncoder` output (test project only — the BCL encoder is fine on desktop test runs)
 - WOFF2 fixture(s) committed with their OFL `.ttf` source: decoded sfnt tables match the source byte-for-byte where the format allows (transformed `glyf` may differ in padding; compare parsed glyphs)
 - `.woff2` and `.ttf` of the same font produce identical BMFont output on every backend (extend `WoffAllBackendsTests`)
-- A `.woff2` wrapping CFF; a WOFF2 collection
+- A `.woff2` wrapping CFF (blocked: no committed `.otf` fixture yet); a WOFF2 collection
 - Malformed/truncated/oversized inputs fail with a clear exception
 - Run the decoder under `samples/KernSmith.Samples.BlazorWasm` if practical, to prove no native dependency
 
@@ -65,8 +65,8 @@ WOFF2's Brotli stage is a pure managed decoder we write in core — not `System.
 ## Success Criteria
 
 - [x] WOFF 1.0 decoded in core
-- [ ] Managed Brotli decoder, hardened, no BCL Brotli and no new packages
-- [ ] WOFF2 `glyf`/`loca`/`hmtx` transforms reversed; valid sfnt out
-- [ ] `.woff2` output identical to the source `.ttf` on every backend
+- [x] Managed Brotli decoder, hardened, no BCL Brotli and no new packages
+- [x] WOFF2 `glyf`/`loca`/`hmtx` transforms reversed; valid sfnt out
+- [x] `.woff2` output identical to the source `.ttf` on every backend
 - [ ] `KernSmith.Fonts.Web` uses WOFF2 when offered
-- [ ] All tests pass; `regression_check.py` run with `woff2-plain.bmfc`
+- [x] All tests pass; `regression_check.py` run with `woff2-plain.bmfc`

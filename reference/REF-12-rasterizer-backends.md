@@ -177,7 +177,7 @@ RasterizerBackend enum:
 
 **Limitations**:
 
-- TrueType (`glyf`) outlines only — CFF/CFF2 (`.otf`) faces are rejected at load (Phase 166). WOFF1 is decompressed by KernSmith core before rasterization, so it is accepted; WOFF2 is not supported by core.
+- TrueType (`glyf`) outlines only — CFF/CFF2 (`.otf`) faces are rejected at load (Phase 166). WOFF and WOFF2 are decompressed by KernSmith core before rasterization, so both are accepted.
 - No hinting, so small sizes are softer than FreeType or GDI output.
 - No color fonts (`ColorFont` throws `NotSupportedException`), variable fonts (axes ignored), SDF (rejected by core), or backend outline stroke (core's bitmap outline effect still applies).
 - Cannot load system-installed fonts by family name (`LoadSystemFont` throws `NotSupportedException`).

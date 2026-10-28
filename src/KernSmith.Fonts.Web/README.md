@@ -54,7 +54,7 @@ new WebFontSource(WebFontProvider.BunnyFonts, diskCachePath: "cache/fonts");
 
 ## Limitations
 
-- **WOFF only** — `.woff2` URLs are ignored because WOFF2 uses Brotli compression, which KernSmith does not yet decode.
+- **WOFF only** — `.woff2` URLs are ignored for now. KernSmith core decodes WOFF2, but this package has not been switched over to requesting it yet.
 - **No family listing** — CSS CDNs do not expose a discovery endpoint, so `ListFamiliesAsync` returns an empty list.
 
 ## Build

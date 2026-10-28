@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- WOFF2 input. Core decodes `.woff2` (including WOFF2 font collections, which become a TTC) before any backend sees the bytes, so every backend (FreeType, GDI, DirectWrite, StbTrueType and Native) renders a WOFF2 exactly like the TTF it was made from. Brotli is decoded by KernSmith's own pure managed RFC 7932 decoder rather than `System.IO.Compression.BrotliDecoder`, so WOFF2 also works on browser-wasm, where the BCL decoder has no native library. Malformed, truncated or corrupt WOFF2 input throws `FontParsingException`. `KernSmith.Fonts.Web` still requests `.woff` only.
+
 ### Fixed
 
 - The Native rasterizer docs (`docs/rasterizers/native.md`, the package README) now describe its real behavior: WOFF1 files work (core decompresses them first), a color-font request throws, `Light`/`LCD` anti-aliasing requests render as grayscale, and core still draws outlines and runs `BoldPostProcessor`/`ItalicPostProcessor` for it.

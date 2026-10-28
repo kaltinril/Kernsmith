@@ -31,7 +31,7 @@ How does KernSmith compare to other bitmap font generators?
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | **TTF/OTF** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **WOFF** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **WOFF2** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **WOFF2** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **Variable Fonts** | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | **Color Fonts (COLR/CPAL)** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **Emoji** | ⚠️ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
@@ -222,7 +222,7 @@ Native's platform rows follow from it being pure managed code with no native dep
 | **TTF** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **OTF (CFF)** | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **WOFF** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **WOFF2** | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **WOFF2** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **TTC (font collections)** | ✅ | ❌ | ✅ | ✅ | ✅ |
 | **Anti-aliasing** | Grayscale, Light, LCD, None | Grayscale, None | None, Grayscale | Grayscale, None | Grayscale, None |
 | **SDF Rendering** | ✅ | ❌ | ❌ | ✅ | ❌ |
@@ -236,7 +236,7 @@ Native's platform rows follow from it being pure managed code with no native dep
 | **System Font Loading** | ❌ | ✅ | ✅ | ❌ | ❌ |
 | **BMFont.exe Parity** | ❌ | ✅ | ❌ | ❌ | ❌ |
 
-WOFF1 is decompressed by KernSmith core before rasterization, so all backends accept it for fonts whose outlines they otherwise support (StbTrueType and Native still require TrueType `glyf` outlines inside the WOFF). WOFF2 is not yet supported.
+WOFF and WOFF2 are decompressed by KernSmith core before rasterization (WOFF2 with a pure managed Brotli decoder), so all backends accept them for fonts whose outlines they otherwise support (StbTrueType and Native still require TrueType `glyf` outlines inside the WOFF/WOFF2).
 
 ### When to Use
 
