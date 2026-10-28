@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `BmFontBuilder.FromConfig` now carries `SdfSpread` and `SdfScale` from the config; it dropped them, so builder-based generation (including the `tests/bmfont-compare` harness's `sdf.bmfc`) rendered SDF at the default spread 8 and scale 1.
 - The Native rasterizer docs (`docs/rasterizers/native.md`, the package README) now describe its real behavior: WOFF1 files work (core decompresses them first), a color-font request throws, `Light`/`LCD` anti-aliasing requests render as grayscale, and core still draws outlines and runs `BoldPostProcessor`/`ItalicPostProcessor` for it.
 
 ## [0.24.0] - 2026-10-18

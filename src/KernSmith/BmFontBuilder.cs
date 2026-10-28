@@ -462,6 +462,8 @@ public sealed class BmFontBuilder
         _options.OutlineB = source.OutlineB;
         _options.OutlineShape = source.OutlineShape;
         _options.Sdf = source.Sdf;
+        _options.SdfSpread = source.SdfSpread;
+        _options.SdfScale = source.SdfScale;
         _options.PowerOfTwo = source.PowerOfTwo;
         _options.Dpi = source.Dpi;
         _options.FaceIndex = source.FaceIndex;
