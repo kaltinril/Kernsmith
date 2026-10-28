@@ -1,6 +1,6 @@
 # Phase 166 — Native Rasterizer: Staged Pipeline & CFF/CFF2 Charstring Interpreter
 
-> **Status**: Next — Part 1 (staged pipeline) is Wave 0; Part 2 (CFF) is Wave 1, after Part 1
+> **Status**: Next — Part 1 (staged pipeline) complete; Part 2 (CFF) is Wave 1
 > **Created**: 2026-04-01
 > **Depends on**: Phase 165 (complete). Part 2 depends on Part 1.
 
@@ -11,33 +11,22 @@
 
 ## Part 1 — Staged pipeline refactor (Wave 0)
 
-Today `RasterizeGlyph` and `GetGlyphMetrics` each run one straight path: `NativeFontFace.GetGlyph` → `OutlineExtractor.Extract(ParsedGlyph)` → `GlyphBox.Compute(ParsedGlyph, outline, scale)` → `OutlineFlattener.Flatten` → `ScanlineRasterizer.Rasterize`. There is no decoder interface and no transform stage, and `GlyphBox` prefers the `glyf` header bbox.
+Complete. `RasterizeGlyph` and `GetGlyphMetrics` both run `GlyphPipeline.Prepare` (stages 1–4), then the renderer from `GlyphRenderers.Select` (stage 5); the contributor guide to the stages is the "Glyph pipeline" section of `src/KernSmith.Rasterizers.Native/README.md`. All types are internal.
 
-Target stages (all internal, no public API change):
+1. **Decode** — `IOutlineDecoder.Decode(glyphIndex, options) → DecodedGlyph` (cubic `GlyphOutline`, advance and optional declared bbox, all in font units). `TrueTypeOutlineDecoder` wraps the `glyf` parse + `OutlineExtractor`; `OutlineDecoders.ForFace` picks the decoder once in `LoadFont` and returns null for CFF, which `LoadFont` turns into its rejection. Variation deltas (Phase 171) belong inside the decoder.
+2. **Transform** — `GlyphTransforms.For(options)` returns the ordered `IGlyphTransform` list, empty today. Phase 167 (bold/italic) and 168 (stroke, small caps, condensed) add entries; a transform adjusts the advance through `DecodedGlyph.WithAdvanceWidth`.
+3. **Bounds** — `GlyphBox.Compute(outline, declaredBounds, scale)`. With no declared bbox (CFF, or any transform that replaced the outline) the grid comes from `OutlineBounds.Tight` (curve extrema). Untransformed `glyf` glyphs keep the header bbox and its control-hull fallback, which keeps their output identical.
+4. **Scale / hint** — font units → pixels via `PreparedGlyph.ToPixels`, then `GlyphHinter.Apply` (no-op until Phase 174).
+5. **Render-mode dispatch** — `GlyphRenderers.Select` returns `CoverageRenderer` or throws today's `NotSupportedException` for color/SDF; SDF (169/170), LCD (173) and color (172) add `IGlyphRenderer`s there.
 
-1. **Decode** — `IOutlineDecoder.Decode(glyphIndex) → GlyphOutline` (font units, cubic commands). `TrueTypeOutlineDecoder` wraps the existing `glyf` parse + `OutlineExtractor`. The decoder is chosen once in `LoadFont` from the face (`glyf` today; CFF in Part 2). Variation deltas (Phase 171) are applied inside the decoder.
-2. **Transform** — an ordered list of outline transforms in font units, empty by default. Phase 167 (bold/italic) and 168 (stroke, small caps, condensed) add entries; advance-width adjustments travel with the transform.
-3. **Bounds** — bbox computed from the (transformed) outline. The declared `glyf` bbox becomes optional input, so a bbox-less source (CFF) and a transformed outline both size correctly. Keep the `glyf`-header-preferred behavior for untransformed TrueType glyphs if that is what keeps output identical.
-4. **Scale / hint** — font units → pixels, then an optional pixel-space hint hook (no-op until Phase 174).
-5. **Render-mode dispatch** — coverage (today's scanline fill) is the only mode now; SDF (169/170), LCD (173) and color (172) add branches here. `RejectUnsupported` becomes the dispatch's "no handler" case.
-
-`GetGlyphMetrics` must run stages 1–4 so metrics and bitmaps can never disagree.
-
-Work items:
-
-- Introduce `IOutlineDecoder` + `TrueTypeOutlineDecoder`; select it in `LoadFont`.
-- Introduce the transform list type and an empty default.
-- Move bbox computation onto the outline; adjust `GlyphBox.Compute` and `GlyphBoxTests`.
-- Restructure `RasterizeGlyph` / `GetGlyphMetrics` into the stages above.
-
-Acceptance: **output-identical** for every existing `glyf` font — all Native tests green, `ScanlineRasterizerSsimTests` unchanged (its `'O'` @ 12px case sits at 0.9509 against a 0.95 floor), `NativeMetricsAgreementTests` unchanged, and `regression_check.py` reports identical Native output against `main`.
+Output is pinned by `NativeOutputCharacterizationTests` (SHA-256 of Roboto output across sizes, DPI and anti-alias modes, composite and empty glyphs included); seams are covered by `GlyphPipelineTests` and `GlyphBoxTests`.
 
 ## Part 2 — CFF/CFF2 (Wave 1)
 
 ### Starting point
 
 - CFF detection already exists: `TableProvider.IsCff` (sfnt `OTTO`), `FontValidator` requires `CFF `/`CFF2` on a CFF face, `NativeFontFace.Loca`/`.Glyf` are null for CFF faces, and `MaxpTable` handles the v0.5 short form. A CFF font parses all the way to `LoadFont`.
-- The only rejection is the `RasterizationException` thrown in `NativeRasterizer.LoadFont` when `face.HasGlyfOutlines` is false. There is no capability flag involved.
+- The only rejection is the `RasterizationException` thrown in `NativeRasterizer.LoadFont` when `OutlineDecoders.ForFace` returns null (no `glyf`). There is no capability flag involved.
 - Metrics stay as they are: `hmtx` supplies advance and `GetFontMetrics` reads OS/2 win metrics. CFF `defaultWidthX`/`nominalWidthX` widths are a charstring detail and must not displace `hmtx`.
 - `SyntheticFonts.cs` in the Native test project fabricates an `OTTO` wrapper around Roboto's tables purely to test rejection; its `CFF ` table is not a decodable charstring stream.
 
@@ -73,7 +62,7 @@ Stack machine, operand stack max 48 entries.
 ### Integration
 
 - `CffOutlineDecoder : IOutlineDecoder` produces cubic `GlyphOutline`s (no quadratic elevation needed); bbox comes from the outline (Part 1)
-- `LoadFont` selects the CFF decoder instead of throwing; update its XML doc comment
+- `OutlineDecoders.ForFace` returns the CFF decoder, so `LoadFont` no longer throws; update its XML doc comment
 - Refresh the "CFF is rejected" wording in `src/KernSmith.Rasterizers.Native/README.md`, the csproj `<Description>`, `COMPARISON.md`, `README.md`, `docs/rasterizers/native.md`, `reference/REF-12-rasterizer-backends.md`, and the comment above the Native entry in `tests/bmfont-compare/GenerateAll/Program.cs`
 
 ## Testing
@@ -89,7 +78,7 @@ Stack machine, operand stack max 48 entries.
 
 ## Success Criteria
 
-- [ ] Part 1: staged pipeline + `IOutlineDecoder` landed, output-identical for `glyf` fonts
+- [x] Part 1: staged pipeline + `IOutlineDecoder` landed, output-identical for `glyf` fonts
 - [ ] CFF (including CID-keyed) parsed; Type 2 interpreter handles all operators, including flex and hint masks
 - [ ] Output outlines match FreeType for the `.otf` fixture; metrics within ±1px
 - [ ] `.otf` fonts generate end to end; the `LoadFont` rejection is gone
