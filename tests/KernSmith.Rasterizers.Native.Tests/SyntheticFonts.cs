@@ -4,8 +4,9 @@ using KernSmith.Rasterizers.Native.Internal;
 namespace KernSmith.Rasterizers.Native.Tests;
 
 /// <summary>
-/// Builds font files that no fixture on disk provides — currently a CFF-flavoured face, used
-/// to prove the native backend rejects PostScript outlines instead of rendering nothing.
+/// Builds font files that no fixture on disk provides: a CFF-flavoured face, used to prove the
+/// native backend rejects PostScript outlines instead of rendering nothing, and Roboto with
+/// hand-built tables added.
 /// </summary>
 internal static class SyntheticFonts
 {
@@ -28,6 +29,27 @@ internal static class SyntheticFonts
         tables.Sort((a, b) => string.CompareOrdinal(a.Tag, b.Tag));
 
         return BuildSfnt(0x4F54544F, tables); // 'OTTO'
+    }
+
+    /// <summary>
+    /// Roboto with extra tables added (or replaced) — e.g. a hand-built <c>COLR</c>/<c>CPAL</c>
+    /// pair, so color layering can be tested on glyph shapes the other tests already know.
+    /// </summary>
+    public static byte[] RobotoWith(params (string Tag, byte[] Data)[] extraTables)
+    {
+        var source = TableProvider.Parse(TestFonts.RobotoRegularBytes());
+
+        var tables = new List<(string Tag, byte[] Data)>();
+        foreach (string tag in source.TableTags)
+        {
+            if (extraTables.All(t => t.Tag != tag))
+                tables.Add((tag, source.GetTable(tag).ToArray()));
+        }
+
+        tables.AddRange(extraTables);
+        tables.Sort((a, b) => string.CompareOrdinal(a.Tag, b.Tag));
+
+        return BuildSfnt(0x00010000, tables);
     }
 
     private static byte[] BuildSfnt(uint sfntVersion, List<(string Tag, byte[] Data)> tables)

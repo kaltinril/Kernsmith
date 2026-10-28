@@ -3,14 +3,19 @@ using KernSmith.Rasterizer;
 namespace KernSmith.Rasterizers.Native;
 
 /// <summary>
-/// Describes what the native rasterizer backend supports. As of Phase 165 it renders TrueType
-/// (<c>glyf</c>) outlines with grayscale or thresholded coverage; every optional feature is
-/// still <c>false</c> and expands as later phases land — synthetic bold/italic (167), outline
-/// stroking (168), SDF (169), variable fonts (171) and color fonts (172).
+/// Describes what the native rasterizer backend supports. It renders TrueType (<c>glyf</c>)
+/// outlines with grayscale or thresholded coverage, and color glyphs from <c>COLR</c> version 0
+/// layers (Phase 172). The other optional features are still <c>false</c> and expand as later
+/// phases land — synthetic bold/italic (167), outline stroking (168), SDF (169) and variable
+/// fonts (171).
 /// </summary>
 internal sealed class NativeCapabilities : IRasterizerCapabilities
 {
-    public bool SupportsColorFonts => false;
+    /// <summary>
+    /// True: <c>COLR</c> version 0 layers with <c>CPAL</c> palettes. Version 1 paint graphs fall
+    /// back to plain coverage and bitmap-only color fonts are rejected at load.
+    /// </summary>
+    public bool SupportsColorFonts => true;
     public bool SupportsVariableFonts => false;
     public bool SupportsSdf => false;
     public bool SupportsOutlineStroke => false;

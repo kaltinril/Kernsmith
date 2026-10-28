@@ -36,6 +36,7 @@ kernsmith generate --font Roboto-Regular.ttf --size 32 --rasterizer native --out
 - `cmap` formats 4 and 12 for character lookup
 - Anti-aliasing: `Grayscale` and `None` only
 - Super sampling (applied by the core pipeline)
+- Color fonts with `COLR` version 0 layers and `CPAL` palettes (`ColorFont`, `ColorPaletteIndex`); glyphs come out as straight-alpha RGBA
 - Font and glyph metrics that track FreeType to within a pixel
 
 ## Limitations
@@ -49,7 +50,7 @@ Each item below either raises a clear error or is ignored, as noted:
 - **Outline stroke** -- the backend has no stroke of its own; outlines (`Outline` / `outlineThickness`) still work because KernSmith core draws them as a bitmap effect for every backend
 - **Synthetic bold and italic** -- not supported. `Bold` and `Italic` are silently ignored rather than rejected, so requesting them produces regular-weight glyphs. For a bitmap-level approximation, add `BoldPostProcessor` / `ItalicPostProcessor` to `PostProcessors`; because Native reports no synthetic-style capability, the pipeline runs them whether or not `Bold` / `Italic` is set.
 - **Variable fonts** -- not supported; axis settings are ignored and the default instance renders
-- **Color fonts** -- requesting color rendering (`ColorFont`) throws `NotSupportedException`
+- **Color fonts beyond `COLR` version 0** -- `COLR` version 1 glyphs (gradients, transforms) render as plain grayscale coverage, the same as with `ColorFont` off. Bitmap-only color fonts (`CBDT`/`sbix`, such as Noto Color Emoji) are rejected at load time with a `RasterizationException`; use [FreeType](freetype.md) for those
 - **System font loading by name** -- not supported; load font bytes instead
 - **`Light` and `LCD` anti-aliasing** -- not supported; requesting them silently renders `Grayscale`
 

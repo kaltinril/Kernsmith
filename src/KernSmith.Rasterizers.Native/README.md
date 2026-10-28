@@ -30,7 +30,7 @@ Not yet supported — each raises a clear error or is ignored, as noted:
 - **Outline stroking** (Phase 168) — the backend has none of its own; KernSmith core still draws outlines as a bitmap effect
 - **SDF** (Phase 169) — rejected with `NotSupportedException`
 - **Variable fonts** (Phase 171) — axes are ignored; the default instance renders
-- **Color fonts** (Phase 172) — `ColorFont` throws `NotSupportedException`
+- **Color fonts** (Phase 172) — `COLR` version 0 layers with `CPAL` palettes render as RGBA (straight alpha) and `ColorPaletteIndex` selects the palette. `COLR` version 1 glyphs render as plain grayscale coverage, and bitmap-only color fonts (`CBDT`/`sbix`, e.g. Noto Color Emoji) are rejected at `LoadFont` with a `RasterizationException`
 - **System fonts by name** — load font bytes instead
 - **Anti-aliasing** — `None` and `Grayscale` only; a `Light` or `LCD` request renders as `Grayscale`
 
@@ -74,7 +74,7 @@ disagree. Everything is internal; add a feature to its stage rather than to `Nat
 | 2 | Transforms, in order, in font units | `Internal/Pipeline/IGlyphTransform.cs`, `GlyphTransforms.cs` | implementing `IGlyphTransform` and adding it in `GlyphTransforms.For` — bold/italic (167), stroke/small caps/condensed (168). Build results with `WithOutline` / `WithAdvanceWidth`. |
 | 3 | Bounds → pixel grid | `Internal/Raster/GlyphBox.cs`, `Internal/Outlines/OutlineBounds.cs` | nothing: a replaced outline loses its declared bbox and is measured from its tight bounds. |
 | 4 | Scale, then pixel-space hint hook | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs` | filling in `GlyphHinter.Apply` — auto-hinting (174). |
-| 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs` | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` — SDF (169/170), color (172), LCD (173). `Measure` must match what `Render` produces. |
+| 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs`, `ColorLayerRenderer.cs` | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` — SDF (169/170), LCD (173). Color layers (172) wrap that renderer in `GlyphRenderers.SelectForFace` and prepare each layer glyph through stages 1–4. `Measure` must match what `Render` produces. |
 
 Invariants:
 
@@ -83,7 +83,8 @@ Invariants:
 - Untransformed TrueType glyphs size from the `glyf` header bbox, falling back to the control
   hull when it scales to nothing. `NativeOutputCharacterizationTests` pins the resulting bytes;
   a deliberate pixel change updates its hashes.
-- Blank glyphs (no outline, or an empty box) never reach a renderer.
+- Blank glyphs (no outline, or an empty box) never reach a renderer — except a glyph with `COLR` layers, whose own outline is not what gets drawn and is often empty.
+- `PreparedGlyph.GlyphIndex` is the only way `Measure` can identify the glyph; a hint stage must carry it over (build with `with`).
 
 See the [KernSmith repository](https://github.com/kaltinril/Kernsmith) for full project
 documentation.

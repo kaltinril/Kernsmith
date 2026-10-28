@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The Native rasterizer renders color fonts: with `ColorFont` on, `COLR` version 0 layers are filled from the font's `CPAL` palettes and composited into straight-alpha RGBA glyphs, and `ColorPaletteIndex` selects the palette (`SupportsColorFonts` is now true). Glyphs without version 0 layers, including `COLR` version 1 paint graphs, render as plain grayscale; bitmap-only color fonts (`CBDT`/`sbix`, such as Noto Color Emoji) are rejected at load with a message pointing at FreeType.
 - Benchmarks: `NativeComparison*` BenchmarkDotNet classes compare the Native, StbTrueType and FreeType backends (font load, per-glyph rasterization at 12/32/72px, `GetGlyphMetrics`, full `BmFont.Generate`) with memory diagnostics; the measured baseline is recorded in the phase 177 plan.
 
 ### Changed
@@ -17,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- The Native rasterizer docs (`docs/rasterizers/native.md`, the package README) now describe its real behavior: WOFF1 files work (core decompresses them first), a color-font request throws, `Light`/`LCD` anti-aliasing requests render as grayscale, and core still draws outlines and runs `BoldPostProcessor`/`ItalicPostProcessor` for it.
+- The Native rasterizer docs (`docs/rasterizers/native.md`, the package README) now describe its real behavior: WOFF1 files work (core decompresses them first), `Light`/`LCD` anti-aliasing requests render as grayscale, and core still draws outlines and runs `BoldPostProcessor`/`ItalicPostProcessor` for it.
 
 ## [0.24.0] - 2026-10-18
 
