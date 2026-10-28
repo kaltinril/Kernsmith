@@ -36,6 +36,7 @@ kernsmith generate --font Roboto-Regular.ttf --size 32 --rasterizer native --out
 - `cmap` formats 4 and 12 for character lookup
 - Anti-aliasing: `Grayscale` and `None` only
 - Super sampling (applied by the core pipeline)
+- Synthetic bold and italic (`Bold` / `Italic`), applied to the outline before rasterizing and matched to the FreeType backend: the same emboldening strength (growing the advance to match) and the same 12° slant. Caller-supplied `BoldPostProcessor` / `ItalicPostProcessor` are skipped when the matching flag is set, as on every other backend
 - Font and glyph metrics that track FreeType to within a pixel
 
 ## Limitations
@@ -47,7 +48,6 @@ Each item below either raises a clear error or is ignored, as noted:
 - **Hinting** -- none, so small sizes are softer than FreeType or GDI output
 - **SDF rendering** -- rejected with `NotSupportedException`
 - **Outline stroke** -- the backend has no stroke of its own; outlines (`Outline` / `outlineThickness`) still work because KernSmith core draws them as a bitmap effect for every backend
-- **Synthetic bold and italic** -- not supported. `Bold` and `Italic` are silently ignored rather than rejected, so requesting them produces regular-weight glyphs. For a bitmap-level approximation, add `BoldPostProcessor` / `ItalicPostProcessor` to `PostProcessors`; because Native reports no synthetic-style capability, the pipeline runs them whether or not `Bold` / `Italic` is set.
 - **Variable fonts** -- not supported; axis settings are ignored and the default instance renders
 - **Color fonts** -- requesting color rendering (`ColorFont`) throws `NotSupportedException`
 - **System font loading by name** -- not supported; load font bytes instead
@@ -55,4 +55,4 @@ Each item below either raises a clear error or is ignored, as noted:
 
 ## When to Use
 
-Use Native when you are building KernSmith from source and want plain TrueType text rendered with no third-party dependencies whatsoever -- for example to audit the whole rasterization path, or to avoid pulling in a vendored C library. For shipping managed-only builds today, use [StbTrueType](stbtruetype.md): it is published, AOT-tested, and adds SDF plus synthetic bold/italic.
+Use Native when you are building KernSmith from source and want plain TrueType text rendered with no third-party dependencies whatsoever -- for example to audit the whole rasterization path, or to avoid pulling in a vendored C library. For shipping managed-only builds today, use [StbTrueType](stbtruetype.md): it is published, AOT-tested, and adds SDF.

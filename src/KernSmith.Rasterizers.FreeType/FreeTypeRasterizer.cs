@@ -565,17 +565,17 @@ public sealed class FreeTypeRasterizer : IRasterizer
     }
 
     /// <summary>
-    /// Applies synthetic bold with a fixed 1-pixel strength to match GDI behavior.
-    /// FreeType's built-in FT_GlyphSlot_Embolden uses ppem/24 which is too aggressive
-    /// at large sizes (e.g., 3 pixels at size 72). GDI uses approximately 1 pixel regardless
-    /// of size. This method calls FT_Outline_Embolden directly with a fixed strength and
-    /// adjusts the glyph slot metrics to match.
+    /// Applies synthetic bold at <c>max(0.5px, y_ppem / 24)</c> — FreeType's own
+    /// FT_GlyphSlot_Embolden strength (~1.3px at 32, 2px at 48, 3px at 72), floored at half a
+    /// pixel — via FT_Outline_Embolden, then grows the slot metrics and advance by the strength
+    /// as FT_GlyphSlot_Embolden does. Heavier than GDI's roughly fixed 1px at large sizes.
     /// </summary>
+    /// <remarks>
+    /// INVARIANT: the Native backend's <c>BoldTransform.StrengthInFontUnits</c> reproduces this
+    /// strength exactly; change both together.
+    /// </remarks>
     private static unsafe void EmboldenGlyph(FT_GlyphSlotRec_* slot, FT_FaceRec_* face)
     {
-        // Use FreeType's default emboldening strength (ppem/24) for visible synthetic bold.
-        // ~1.3px at 32, ~2px at 48, ~3px at 72. Heavier than GDI's ~1px but more
-        // clearly distinguishable from regular weight.
         var ppem = (int)face->size->metrics.y_ppem;
         var strength = Math.Max(32, ppem * 64 / 24); // 26.6 fixed-point, minimum 0.5px
 

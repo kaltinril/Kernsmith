@@ -6,13 +6,30 @@ namespace KernSmith.Rasterizers.Native.Internal.Pipeline;
 internal static class GlyphTransforms
 {
     /// <summary>
-    /// The transforms to apply, in order. Empty today: <see cref="RasterOptions.Bold"/> and
-    /// <see cref="RasterOptions.Italic"/> are ignored until Phase 167 adds entries here, and
-    /// Phase 168 (stroke, condensed) appends after them.
+    /// The transforms to apply, in order: synthetic bold, then synthetic italic — FreeType's
+    /// order, so the expansion is uniform and the result is slanted as a whole. Empty when no
+    /// style is requested, which keeps untransformed glyphs on their declared <c>glyf</c> box.
     /// </summary>
-    public static IReadOnlyList<IGlyphTransform> For(RasterOptions options)
+    /// <remarks>
+    /// The rasterizer applies whatever is requested: core has already cleared
+    /// <see cref="RasterOptions.Bold"/>/<see cref="RasterOptions.Italic"/> for a face that is
+    /// bold/italic already (unless forced), so this must not re-check the font's style.
+    /// </remarks>
+    /// <param name="options">The request.</param>
+    /// <param name="unitsPerEm">The face's <c>head.unitsPerEm</c>, for pixel-defined strengths.</param>
+    public static IReadOnlyList<IGlyphTransform> For(RasterOptions options, int unitsPerEm)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return [];
+
+        if (!options.Bold && !options.Italic)
+            return [];
+
+        var transforms = new List<IGlyphTransform>(2);
+        if (options.Bold)
+            transforms.Add(new BoldTransform(BoldTransform.StrengthInFontUnits(options, unitsPerEm)));
+        if (options.Italic)
+            transforms.Add(ItalicTransform.Instance);
+
+        return transforms;
     }
 }

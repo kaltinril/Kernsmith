@@ -52,6 +52,7 @@ component's upstream `LICENSE`/`COPYING` file. Nothing here is paraphrased.
 | FreeType (native, bundled by FreeTypeSharp) | 2.13.2 | `FTL` (FreeType License) | Native binary in FreeType backend / CLI / UI |
 | FreeTypeSharp | 3.1.0 | `MIT` | NuGet (FreeType backend) |
 | FreeType-derived embolden port (`OutlineTransforms.cs`) | n/a (source) | `FTL` (covered by FreeType) | Source in StbTrueType backend |
+| FreeType-derived embolden port (`OutlineEmboldener.cs`) | n/a (source) | `FTL` (covered by FreeType) | Source in Native backend |
 | StbImageSharp | 2.30.16 | Public Domain (`Unlicense`-equivalent) | NuGet (core) |
 | StbImageWriteSharp | 1.16.7 | Public Domain (`Unlicense`-equivalent) | NuGet (core) |
 | StbTrueTypeSharp | 1.26.13 | Public Domain (`Unlicense`-equivalent) | NuGet (StbTrueType backend) |
@@ -100,9 +101,10 @@ The full FTL text is reproduced in [Appendix A.1](#a1-the-freetype-project-licen
 
 ### 2.1 FreeType-derived source in KernSmith
 
-`src/KernSmith.Rasterizers.StbTrueType/OutlineTransforms.cs` contains a port of
-FreeType's `FT_Outline_EmboldenXY` (synthetic-bold algorithm). Even though the file
-lives inside an otherwise public-domain (stb) backend, this derived expression is
+`src/KernSmith.Rasterizers.StbTrueType/OutlineTransforms.cs` and
+`src/KernSmith.Rasterizers.Native/Internal/Outlines/OutlineEmboldener.cs` each contain a port of
+FreeType's `FT_Outline_EmboldenXY` (synthetic-bold algorithm). Even though the files
+live inside otherwise non-FreeType backends, this derived expression is
 covered by the **FreeType copyright and the FTL** shown above. This is a notice
 entry, not a separate license: the same FreeType credit line and FTL text apply.
 
