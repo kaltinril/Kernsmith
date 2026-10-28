@@ -12,7 +12,7 @@ Resolve all open design decisions and architectural questions before beginning i
 ## Implementation Status
 
 - **Phases 161–165 are complete** (`plan/done/`): SFNT/table parsing, `glyf`/`loca`, outline extraction and flattening, the signed-area scanline fill, and full `IRasterizer` integration. TrueType (`glyf`) fonts render end to end.
-- **Phases 166–179** are open; the wave order lives in the master plan. The pipeline below is still the target: today `RasterizeGlyph` is a single straight path with no `IOutlineDecoder` or transform stage — the Wave 0 refactor ([Phase 166 Part 1](phase-166-cff-charstring-interpreter.md#part-1--staged-pipeline-refactor-wave-0)) introduces them.
+- **Phases 166–179** are open; the wave order lives in the master plan. The staged pipeline below exists ([Phase 166 Part 1](phase-166-cff-charstring-interpreter.md#part-1--staged-pipeline-refactor-wave-0)); the later phases fill in its stages.
 
 ## Context
 
@@ -56,8 +56,8 @@ FontData (bytes)
 
 Internal interfaces (not public API — users interact via existing `IRasterizer`):
 - `IOutlineDecoder` — TrueType vs CFF outline extraction
-- `IOutlineTransformer` — chain of outline-level transforms
-- `ICoverageCalculator` — the actual scanline rasterizer
+- `IGlyphTransform` — chain of outline-level transforms
+- `IGlyphRenderer` — render-mode dispatch target; `CoverageRenderer` wraps the scanline rasterizer
 
 ## Rasterization Algorithm Decision
 

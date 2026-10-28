@@ -32,40 +32,7 @@ internal static class OutlineExtractor
         if (commands.Count == 0)
             return GlyphOutline.Empty;
 
-        var extracted = commands.ToArray();
-        var (xMin, yMin, xMax, yMax) = ComputeBounds(extracted);
-        return new GlyphOutline(extracted, xMin, yMin, xMax, yMax);
-    }
-
-    /// <summary>
-    /// Bounds every point a command touches, control points included. A cubic never leaves
-    /// its control hull, so this is conservative — it can only over-estimate, never clip.
-    /// </summary>
-    private static (float XMin, float YMin, float XMax, float YMax) ComputeBounds(OutlineCommand[] commands)
-    {
-        float xMin = float.MaxValue, yMin = float.MaxValue;
-        float xMax = float.MinValue, yMax = float.MinValue;
-
-        foreach (var command in commands)
-        {
-            Include(command.EndX, command.EndY);
-
-            if (command.Type != OutlineCommandType.CubicTo)
-                continue;
-
-            Include(command.Ctrl1X, command.Ctrl1Y);
-            Include(command.Ctrl2X, command.Ctrl2Y);
-        }
-
-        return (xMin, yMin, xMax, yMax);
-
-        void Include(float x, float y)
-        {
-            if (x < xMin) xMin = x;
-            if (y < yMin) yMin = y;
-            if (x > xMax) xMax = x;
-            if (y > yMax) yMax = y;
-        }
+        return GlyphOutline.FromCommands(commands.ToArray());
     }
 
     /// <summary>

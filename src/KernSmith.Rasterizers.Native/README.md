@@ -63,5 +63,27 @@ sufficient.
 dotnet build src/KernSmith.Rasterizers.Native/KernSmith.Rasterizers.Native.csproj
 ```
 
+## Glyph pipeline (contributors)
+
+`RasterizeGlyph` and `GetGlyphMetrics` run the same stages, so metrics and bitmaps cannot
+disagree. Everything is internal; add a feature to its stage rather than to `NativeRasterizer`.
+
+| # | Stage | Code | Add a feature by |
+|---|-------|------|------------------|
+| 1 | Decode → `DecodedGlyph` (cubic outline, advance, optional declared bbox; font units) | `Internal/Outlines/IOutlineDecoder.cs`, `TrueTypeOutlineDecoder.cs` | implementing `IOutlineDecoder` and returning it from `OutlineDecoders.ForFace` — CFF (166). Variation deltas (171) go inside the decoder; `Decode` receives the `RasterOptions`. |
+| 2 | Transforms, in order, in font units | `Internal/Pipeline/IGlyphTransform.cs`, `GlyphTransforms.cs` | implementing `IGlyphTransform` and adding it in `GlyphTransforms.For` — bold/italic (167), stroke/small caps/condensed (168). Build results with `WithOutline` / `WithAdvanceWidth`. |
+| 3 | Bounds → pixel grid | `Internal/Raster/GlyphBox.cs`, `Internal/Outlines/OutlineBounds.cs` | nothing: a replaced outline loses its declared bbox and is measured from its tight bounds. |
+| 4 | Scale, then pixel-space hint hook | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs` | filling in `GlyphHinter.Apply` — auto-hinting (174). |
+| 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs` | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` — SDF (169/170), color (172), LCD (173). `Measure` must match what `Render` produces. |
+
+Invariants:
+
+- Renderers map outline coordinates through `PreparedGlyph.ToPixels`, never a scale of their
+  own — a hinter may return an outline already in pixel space.
+- Untransformed TrueType glyphs size from the `glyf` header bbox, falling back to the control
+  hull when it scales to nothing. `NativeOutputCharacterizationTests` pins the resulting bytes;
+  a deliberate pixel change updates its hashes.
+- Blank glyphs (no outline, or an empty box) never reach a renderer.
+
 See the [KernSmith repository](https://github.com/kaltinril/Kernsmith) for full project
 documentation.
