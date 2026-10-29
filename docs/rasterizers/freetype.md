@@ -38,7 +38,7 @@ var options = new FontGeneratorOptions
 - TTF, OTF, WOFF input
 - Color fonts (COLR/CPAL)
 - Variable font axes (fvar)
-- Hinting and anti-aliasing (None, Grayscale, Light, Lcd modes)
+- Hinting and anti-aliasing (None, Grayscale, Light, Lcd modes). `Lcd` glyphs are RGBA: R, G and B carry the three subpixel coverages and A the largest of them, so LCD output needs a 32-bit atlas.
 - SDF (Signed Distance Field) rendering
 - Outline stroke
 - Synthetic bold and italic
