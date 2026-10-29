@@ -88,7 +88,7 @@ internal sealed class PreparedRasterization : IDisposable
     /// creation/load, synthetic-style gating, variation axes, color palette, effective-ppem
     /// resolution, render-scale sizing, and effect/post-processor list construction.
     /// </summary>
-    /// <param name="fontData">Raw TTF/OTF/WOFF file bytes.</param>
+    /// <param name="fontData">Raw TTF/OTF/WOFF/WOFF2 file bytes.</param>
     /// <param name="options">Generation options.</param>
     /// <param name="systemFontName">System font family to load via the rasterizer's own system
     /// font path (when supported), or null to load <paramref name="fontData"/> directly.</param>

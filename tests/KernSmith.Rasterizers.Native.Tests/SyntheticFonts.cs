@@ -6,7 +6,7 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// <summary>
 /// Builds font files that no fixture on disk provides — a CFF-flavoured face, used to prove the
 /// native backend rejects PostScript outlines instead of rendering nothing, and fixture fonts
-/// with individual tables swapped out.
+/// with individual tables added, swapped out or removed.
 /// </summary>
 internal static class SyntheticFonts
 {
@@ -32,6 +32,13 @@ internal static class SyntheticFonts
     }
 
     /// <summary>
+    /// Roboto with extra tables added (or replaced) — e.g. a hand-built <c>COLR</c>/<c>CPAL</c>
+    /// pair, so color layering can be tested on glyph shapes the other tests already know.
+    /// </summary>
+    public static byte[] RobotoWith(params (string Tag, byte[] Data)[] extraTables) =>
+        WithTables(TestFonts.RobotoRegularBytes(), extraTables.ToDictionary(t => t.Tag, t => (byte[]?)t.Data));
+
+    /// <summary>
     /// Rebuilds a TrueType font with some tables replaced or removed (a null value drops the
     /// table); every other table is copied verbatim.
     /// </summary>
@@ -54,6 +61,28 @@ internal static class SyntheticFonts
 
         tables.Sort((a, b) => string.CompareOrdinal(a.Tag, b.Tag));
         return BuildSfnt(0x00010000, tables);
+    }
+
+    /// <summary>
+    /// Rebuilds a TrueType font with one glyph's <c>hmtx</c> left side bearing moved by
+    /// <paramref name="delta"/> font units; the outline (and its <c>glyf</c> xMin) is untouched,
+    /// so the bearing and the outline disagree by exactly that much.
+    /// </summary>
+    public static byte[] WithLeftSideBearingShifted(byte[] font, int glyphIndex, int delta)
+    {
+        var face = NativeFontFace.Load(font);
+        var hmtx = face.Tables.GetTable("hmtx").ToArray();
+        int fullMetrics = face.Hhea.NumberOfHMetrics;
+
+        // (advance, lsb) pairs first, then bare bearings for the monospaced tail.
+        int offset = glyphIndex < fullMetrics
+            ? (glyphIndex * 4) + 2
+            : (fullMetrics * 4) + ((glyphIndex - fullMetrics) * 2);
+
+        short lsb = BinaryPrimitives.ReadInt16BigEndian(hmtx.AsSpan(offset));
+        BinaryPrimitives.WriteInt16BigEndian(hmtx.AsSpan(offset), checked((short)(lsb + delta)));
+
+        return WithTables(font, new Dictionary<string, byte[]?> { ["hmtx"] = hmtx });
     }
 
     private static byte[] BuildSfnt(uint sfntVersion, List<(string Tag, byte[] Data)> tables)

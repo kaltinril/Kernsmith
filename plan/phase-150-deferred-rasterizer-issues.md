@@ -103,7 +103,7 @@ if (processor is BoldPostProcessor && options.Bold
 
 FreeType, GDI, DirectWrite and StbTrueType all report `true`, so their branch is unchanged; `regression_check.py` reported every FNT file and pixel comparison identical across all backends. The harness cannot cover the fix itself, because `PostProcessors` is a programmatic-only option with no `.bmfc` equivalent — `SyntheticStyleFallbackTests` carries that coverage, including the inverse case that a capable backend must still skip the fallback rather than styling twice.
 
-Native still renders bold/italic configs differently from FreeType, but that is the backend genuinely lacking synthetic styling (Phase 167), not this defect.
+Native has since gained its own synthetic styling ([Phase 167](done/phase-167-synthetic-bold-italic.md)) and reports both capabilities, so `SyntheticStyleFallbackTests` covers the no-capability gate with a stub backend.
 
 ## Files Reference
 

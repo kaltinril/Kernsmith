@@ -24,7 +24,7 @@ public static class BmFont
     private static readonly ConcurrentDictionary<string, FontLoadResult> s_fontRegistry = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// Registers raw font data (TTF/OTF/WOFF) under a family name so that
+    /// Registers raw font data (TTF/OTF/WOFF/WOFF2) under a family name so that
     /// <see cref="GenerateFromSystem(string, FontGeneratorOptions?)"/> can resolve it without accessing system fonts.
     /// This is essential on platforms where system fonts are unavailable (e.g., Blazor WASM)
     /// and recommended for cross-platform consistency.
@@ -103,7 +103,7 @@ public static class BmFont
     }
 
     /// <summary>Generates a BMFont from raw font bytes.</summary>
-    /// <param name="fontData">Raw TTF/OTF/WOFF file bytes.</param>
+    /// <param name="fontData">Raw TTF/OTF/WOFF/WOFF2 file bytes.</param>
     /// <param name="options">Generation options, or null for defaults.</param>
     /// <returns>The generated bitmap font result containing the .fnt descriptor and atlas pages.</returns>
     public static BmFontResult Generate(byte[] fontData, FontGeneratorOptions? options = null)
@@ -126,7 +126,7 @@ public static class BmFont
     /// <see cref="FontGeneratorOptions.Packer"/> — silently uses MaxRects for
     /// additions (arbitrary packer state cannot be reconstructed incrementally).
     /// </remarks>
-    /// <param name="fontData">Raw TTF/OTF/WOFF file bytes.</param>
+    /// <param name="fontData">Raw TTF/OTF/WOFF/WOFF2 file bytes.</param>
     /// <param name="options">Generation options, or null for defaults.</param>
     /// <param name="overflowPolicy">What to do when a new glyph does not fit (default: grow the page).</param>
     public static BmFontIncrementalSession BeginIncremental(
@@ -154,7 +154,7 @@ public static class BmFont
     /// <see cref="FontGeneratorOptions.MatchCharHeight"/> cannot be verified from the model
     /// and must match the original generation, or added glyphs will not match the atlas.
     /// </remarks>
-    /// <param name="fontData">Raw TTF/OTF/WOFF file bytes of the same font the model was generated from.</param>
+    /// <param name="fontData">Raw TTF/OTF/WOFF/WOFF2 file bytes of the same font the model was generated from.</param>
     /// <param name="options">The generation options the existing model was generated with.</param>
     /// <param name="existing">The existing font model providing occupancy and metrics.</param>
     /// <param name="overflowPolicy">What to do when a new glyph does not fit (default: grow the page).</param>
@@ -639,14 +639,14 @@ public static class BmFont
     }
 
     /// <summary>Generates a BMFont from raw font bytes at the given size.</summary>
-    /// <param name="fontData">Raw TTF/OTF/WOFF file bytes.</param>
+    /// <param name="fontData">Raw TTF/OTF/WOFF/WOFF2 file bytes.</param>
     /// <param name="size">Font size in pixels.</param>
     /// <returns>The generated bitmap font result containing the .fnt descriptor and atlas pages.</returns>
     public static BmFontResult Generate(byte[] fontData, int size)
         => Generate(fontData, new FontGeneratorOptions { Size = size });
 
     /// <summary>Generates a BMFont from a font file on disk.</summary>
-    /// <param name="fontPath">Path to a TTF/OTF/WOFF file.</param>
+    /// <param name="fontPath">Path to a TTF/OTF/WOFF/WOFF2 file.</param>
     /// <param name="options">Generation options, or null for defaults.</param>
     /// <returns>The generated bitmap font result containing the .fnt descriptor and atlas pages.</returns>
     public static BmFontResult Generate(string fontPath, FontGeneratorOptions? options = null)
@@ -656,7 +656,7 @@ public static class BmFont
     }
 
     /// <summary>Generates a BMFont from a font file on disk at the given size.</summary>
-    /// <param name="fontPath">Path to a TTF/OTF/WOFF file.</param>
+    /// <param name="fontPath">Path to a TTF/OTF/WOFF/WOFF2 file.</param>
     /// <param name="size">Font size in pixels.</param>
     /// <returns>The generated bitmap font result containing the .fnt descriptor and atlas pages.</returns>
     public static BmFontResult Generate(string fontPath, int size)
@@ -774,7 +774,7 @@ public static class BmFont
     }
 
     /// <summary>Queries the estimated atlas size from raw font bytes without rasterizing.</summary>
-    /// <param name="fontData">Raw TTF/OTF/WOFF file bytes.</param>
+    /// <param name="fontData">Raw TTF/OTF/WOFF/WOFF2 file bytes.</param>
     /// <param name="options">Generation options, or null for defaults.</param>
     /// <returns>Estimated atlas dimensions and page count.</returns>
     public static AtlasSizeInfo QueryAtlasSize(byte[] fontData, FontGeneratorOptions? options = null)
@@ -784,7 +784,7 @@ public static class BmFont
     }
 
     /// <summary>Queries the estimated atlas size from a font file on disk without rasterizing.</summary>
-    /// <param name="fontPath">Path to a TTF/OTF/WOFF file.</param>
+    /// <param name="fontPath">Path to a TTF/OTF/WOFF/WOFF2 file.</param>
     /// <param name="options">Generation options, or null for defaults.</param>
     /// <returns>Estimated atlas dimensions and page count.</returns>
     public static AtlasSizeInfo QueryAtlasSize(string fontPath, FontGeneratorOptions? options = null)
@@ -808,7 +808,7 @@ public static class BmFont
     }
 
     /// <summary>Reads font metadata from raw font file bytes without generating a bitmap font.</summary>
-    /// <param name="fontData">Raw TTF/OTF/WOFF font file bytes.</param>
+    /// <param name="fontData">Raw TTF/OTF/WOFF/WOFF2 font file bytes.</param>
     /// <param name="faceIndex">Face index for .ttc font collections (default 0).</param>
     /// <returns>Font metadata including family name, metrics, available codepoints, and kerning pairs.</returns>
     public static Font.Models.FontInfo ReadFontInfo(byte[] fontData, int faceIndex = 0)
@@ -824,7 +824,7 @@ public static class BmFont
     }
 
     /// <summary>Reads font metadata from a font file on disk without generating a bitmap font.</summary>
-    /// <param name="fontPath">Path to a TTF/OTF/WOFF font file.</param>
+    /// <param name="fontPath">Path to a TTF/OTF/WOFF/WOFF2 font file.</param>
     /// <param name="faceIndex">Face index for .ttc font collections (default 0).</param>
     /// <returns>Font metadata including family name, metrics, available codepoints, and kerning pairs.</returns>
     public static Font.Models.FontInfo ReadFontInfo(string fontPath, int faceIndex = 0)

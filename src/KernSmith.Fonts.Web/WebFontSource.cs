@@ -4,7 +4,7 @@ using KernSmith.Fonts.Web.Internal;
 namespace KernSmith.Fonts.Web;
 
 /// <summary>
-/// An <see cref="IFontSource"/> that fetches WOFF fonts from CSS-based font CDNs
+/// An <see cref="IFontSource"/> that fetches WOFF2/WOFF fonts from CSS-based font CDNs
 /// (Bunny Fonts, Google Fonts, or any compatible custom endpoint).
 /// </summary>
 /// <remarks>
@@ -12,12 +12,13 @@ namespace KernSmith.Fonts.Web;
 /// <list type="number">
 ///   <item><description>Build the CSS request URL from the provider, family, weight, and style.</description></item>
 ///   <item><description>GET the CSS (<c>text/css</c>) response.</description></item>
-///   <item><description>Parse the <c>@font-face</c> rules and extract the <c>.woff</c> URL for the requested subset.</description></item>
-///   <item><description>GET the <c>.woff</c> file (binary).</description></item>
+///   <item><description>Parse the <c>@font-face</c> rules and extract the font URL for the requested subset, preferring <c>.woff2</c> and falling back to <c>.woff</c>.</description></item>
+///   <item><description>GET the font file (binary).</description></item>
 ///   <item><description>Cache the bytes (keyed by family + weight + style + subset) and return them.</description></item>
 /// </list>
-/// Only <c>.woff</c> (not <c>.woff2</c>) is requested, because WOFF2 uses Brotli
-/// compression which KernSmith does not yet decode (Phase 178).
+/// The returned bytes are the WOFF2 or WOFF file as served; KernSmith core decodes both
+/// (WOFF2 with its own managed Brotli decoder, so this works on browser-wasm too), so they
+/// can be passed straight to <c>BmFont.RegisterFont</c> or <c>BmFont.Generate</c>.
 /// </remarks>
 public sealed class WebFontSource : IFontSource, IDisposable
 {
@@ -44,15 +45,29 @@ public sealed class WebFontSource : IFontSource, IDisposable
         WebFontProvider? provider = null,
         HttpClient? httpClient = null,
         string? diskCachePath = null)
+        : this(provider, httpClient, diskCachePath, OperatingSystem.IsBrowser())
+    {
+    }
+
+    /// <summary>Test seam: <paramref name="runningInBrowser"/> stands in for <see cref="OperatingSystem.IsBrowser"/>.</summary>
+    internal WebFontSource(
+        WebFontProvider? provider,
+        HttpClient? httpClient,
+        string? diskCachePath,
+        bool runningInBrowser)
     {
         _provider = provider ?? WebFontProvider.BunnyFonts;
         _ownsHttpClient = httpClient is null;
         _httpClient = httpClient ?? new HttpClient();
         _cache = new WebFontCache(diskCachePath);
 
-        // CDNs serve a different CSS payload (and font format) per User-Agent. Without a
-        // browser-like UA, Google Fonts returns TTF instead of the WOFF we want.
-        if (!_httpClient.DefaultRequestHeaders.Contains("User-Agent"))
+        // CDNs serve a different CSS payload (and font format) per User-Agent. Google Fonts
+        // returns TTF to unknown agents and WOFF2 to modern browsers, so send a modern
+        // browser UA. Bunny Fonts offers WOFF2 and WOFF to any agent.
+        // Not in a browser: there the header would go into fetch(), where it is not
+        // CORS-safelisted, so Firefox sends a preflight that the CDNs reject. The browser's
+        // own UA already gets WOFF2.
+        if (!runningInBrowser && !_httpClient.DefaultRequestHeaders.Contains("User-Agent"))
         {
             _httpClient.DefaultRequestHeaders.TryAddWithoutValidation(
                 "User-Agent",
@@ -82,13 +97,12 @@ public sealed class WebFontSource : IFontSource, IDisposable
         var cssUrl = _provider.BuildCssUrl(family, weight, italic);
         var css = await _httpClient.GetStringAsync(cssUrl, cancellationToken).ConfigureAwait(false);
 
-        var woffUrl = CssParser.ExtractWoffUrl(css, subset)
+        var fontUrl = CssParser.ExtractFontUrl(css, subset)
             ?? throw new InvalidOperationException(
-                $"No .woff URL found for font '{family}' (weight {weight}, subset '{subset}') "
-                + $"from {_provider.Name}. The CDN may only offer .woff2 for this font, which is "
-                + "not yet supported.");
+                $"No .woff2 or .woff URL found for font '{family}' (weight {weight}, subset '{subset}') "
+                + $"from {_provider.Name}. The CSS response has no @font-face source in either format.");
 
-        var bytes = await _httpClient.GetByteArrayAsync(woffUrl, cancellationToken).ConfigureAwait(false);
+        var bytes = await _httpClient.GetByteArrayAsync(fontUrl, cancellationToken).ConfigureAwait(false);
         _cache.Set(key, bytes);
         return bytes;
     }

@@ -28,9 +28,10 @@ public enum RasterizerBackend
     /// </para>
     /// <para>
     /// Limitations: TrueType outlines only — CFF/PostScript fonts (typically <c>.otf</c>)
-    /// are rejected — plus no hinting, SDF, outline stroking, synthetic bold/italic,
-    /// color fonts, or system-font lookup, and no
-    /// <see cref="AntiAliasMode.Light"/> anti-aliasing (it renders as grayscale). Use <see cref="FreeType"/> or <see cref="StbTrueType"/> for those.
+    /// are rejected — plus no hinting, SDF, outline stroking or system-font lookup, color
+    /// fonts from <c>COLR</c> version 0 layers only, and no <see cref="AntiAliasMode.Light"/>
+    /// anti-aliasing (it renders as grayscale). Use <see cref="FreeType"/> or
+    /// <see cref="StbTrueType"/> for those.
     /// </para>
     /// </summary>
     Native

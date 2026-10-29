@@ -17,8 +17,10 @@ internal static class OutlineExtractor
     /// Extracts the pen commands for a glyph. Coordinates stay in font design units.
     /// </summary>
     /// <param name="glyph">The parsed glyph, with composites already resolved.</param>
+    /// <param name="offsetX">Added to every X coordinate before curves are elevated, so a
+    /// whole-unit offset keeps the elevation exact.</param>
     /// <returns>The normalized outline; <see cref="GlyphOutline.Empty"/> for glyphs with nothing to draw.</returns>
-    public static GlyphOutline Extract(ParsedGlyph glyph)
+    public static GlyphOutline Extract(ParsedGlyph glyph, float offsetX = 0f)
     {
         ArgumentNullException.ThrowIfNull(glyph);
 
@@ -27,12 +29,20 @@ internal static class OutlineExtractor
 
         var commands = new List<OutlineCommand>(glyph.PointCount + (glyph.Contours.Length * 2));
         foreach (var contour in glyph.Contours)
-            AppendContour(commands, contour.Points);
+            AppendContour(commands, offsetX.Equals(0f) ? contour.Points : Offset(contour.Points, offsetX));
 
         if (commands.Count == 0)
             return GlyphOutline.Empty;
 
         return GlyphOutline.FromCommands(commands.ToArray());
+    }
+
+    private static GlyphPoint[] Offset(GlyphPoint[] points, float offsetX)
+    {
+        var moved = new GlyphPoint[points.Length];
+        for (int i = 0; i < points.Length; i++)
+            moved[i] = points[i] with { X = points[i].X + offsetX };
+        return moved;
     }
 
     /// <summary>

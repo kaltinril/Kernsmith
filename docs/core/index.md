@@ -105,7 +105,7 @@ See the [Blazor WASM sample](https://github.com/kaltinril/Kernsmith/tree/main/sa
 
 ### Web font sourcing
 
-The optional `KernSmith.Fonts.Web` package fetches fonts over the network instead of from disk, which is handy in browser/WASM scenarios that have no filesystem. Its `WebFontSource` implements the `KernSmith.Font.IFontSource` abstraction: it requests a stylesheet from a CSS font CDN (Bunny Fonts, Google Fonts, or a custom endpoint), parses the `@font-face` rules, and downloads the matching `.woff` for the requested family, weight, style, and subset. It uses only `HttpClient` from the BCL, so it is WASM-friendly.
+The optional `KernSmith.Fonts.Web` package fetches fonts over the network instead of from disk, which is handy in browser/WASM scenarios that have no filesystem. Its `WebFontSource` implements the `KernSmith.Font.IFontSource` abstraction: it requests a stylesheet from a CSS font CDN (Bunny Fonts, Google Fonts, or a custom endpoint), parses the `@font-face` rules, and downloads the matching font file for the requested family, weight, style, and subset -- the `.woff2` when the CDN offers one, otherwise the `.woff`. Core decodes both (WOFF2 with a pure managed Brotli decoder, so it works in the browser too). It uses only `HttpClient` from the BCL, so it is WASM-friendly.
 
 ```csharp
 using KernSmith.Fonts.Web;
@@ -117,4 +117,4 @@ BmFont.RegisterFont("Roboto", bytes);
 var result = BmFont.GenerateFromSystem("Roboto", size: 32);
 ```
 
-> The package requests only `.woff` for now -- `.woff2` URLs are skipped. Core decodes WOFF2, but switching this package over to it is a pending follow-up. See the [package README](https://github.com/kaltinril/Kernsmith/tree/main/src/KernSmith.Fonts.Web) for providers, caching, and subset options.
+> See the [package README](https://github.com/kaltinril/Kernsmith/tree/main/src/KernSmith.Fonts.Web) for providers, caching, and subset options.

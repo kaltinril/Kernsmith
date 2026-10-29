@@ -14,7 +14,7 @@
 Complete. `RasterizeGlyph` and `GetGlyphMetrics` both run `GlyphPipeline.Prepare` (stages 1–4), then the renderer from `GlyphRenderers.Select` (stage 5); the contributor guide to the stages is the "Glyph pipeline" section of `src/KernSmith.Rasterizers.Native/README.md`. All types are internal.
 
 1. **Decode** — `IOutlineDecoder.Decode(glyphIndex, options) → DecodedGlyph` (cubic `GlyphOutline`, advance and optional declared bbox, all in font units). `TrueTypeOutlineDecoder` wraps the `glyf` parse + `OutlineExtractor`; `OutlineDecoders.ForFace` picks the decoder once in `LoadFont` and returns null for CFF, which `LoadFont` turns into its rejection. Variation deltas (Phase 171) belong inside the decoder.
-2. **Transform** — `GlyphTransforms.For(options)` returns the ordered `IGlyphTransform` list, empty today. Phase 167 (bold/italic) and 168 (stroke, small caps, condensed) add entries; a transform adjusts the advance through `DecodedGlyph.WithAdvanceWidth`.
+2. **Transform** — `GlyphTransforms.For(options, unitsPerEm)` returns the ordered `IGlyphTransform` list — bold then italic (Phase 167), empty for unstyled requests; 168 (stroke, small caps, condensed) adds entries; a transform adjusts the advance through `DecodedGlyph.WithAdvanceWidth`.
 3. **Bounds** — `GlyphBox.Compute(outline, declaredBounds, scale)`. With no declared bbox (CFF, or any transform that replaced the outline) the grid comes from `OutlineBounds.Tight` (curve extrema). Untransformed `glyf` glyphs keep the header bbox and its control-hull fallback, which keeps their output identical.
 4. **Scale / hint** — font units → pixels via `PreparedGlyph.ToPixels`, then `GlyphHinter.Apply` (no-op until Phase 174).
 5. **Render-mode dispatch** — `GlyphRenderers.Select` returns `CoverageRenderer` or throws today's `NotSupportedException` for color/SDF; SDF (169/170), LCD (173) and color (172) add `IGlyphRenderer`s there.
@@ -73,6 +73,7 @@ Stack machine, operand stack max 48 entries.
 - Fuzz-style cases: truncated charstrings, recursion bombs, stack overflow — graceful errors
 - `NativeMetricsAgreementTests` (FreeType reference, ±1px) extended to the `.otf` fixture
 - End-to-end: generate a BMFont from the `.otf` through the CLI with `--rasterizer native`
+- A `.woff2` wrapping the CFF fixture (moved from Phase 178) decodes to the `.otf`'s tables and renders identically on every backend
 
 **Regression coverage**: add `tests/bmfont-compare/gum-bmfont/otf-plain.bmfc` pointing `fontFile` at the committed `.otf` (force-add it — the folder is gitignored). Part 1 relies on the existing configs reporting Native output identical to `main`. Because the harness tolerates a failing (config, backend) pair, the end-to-end test above must assert Native actually produced glyphs for the `.otf`.
 

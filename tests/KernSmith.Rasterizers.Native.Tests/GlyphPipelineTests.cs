@@ -1,5 +1,6 @@
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.Native.Internal;
+using KernSmith.Rasterizers.Native.Internal.Color;
 using KernSmith.Rasterizers.Native.Internal.Outlines;
 using KernSmith.Rasterizers.Native.Internal.Pipeline;
 using KernSmith.Rasterizers.Native.Internal.Raster;
@@ -58,10 +59,12 @@ public class GlyphPipelineTests
     // ---- Transform list --------------------------------------------------------------------
 
     [Fact]
-    public void DefaultTransformList_IsEmpty()
+    public void DefaultTransformList_IsEmpty_WhenNoStyleIsRequested()
     {
-        GlyphTransforms.For(Size32).ShouldBeEmpty();
-        GlyphTransforms.For(new RasterOptions { Size = 32, Bold = true, Italic = true }).ShouldBeEmpty();
+        // Default options must keep the untransformed path, which keeps the glyf header bbox
+        // (NativeOutputCharacterizationTests pins its output).
+        GlyphTransforms.For(Size32, 2048).ShouldBeEmpty();
+        GlyphTransforms.For(new RasterOptions { Size = 32, Bold = true, Italic = true }, 2048).ShouldNotBeEmpty();
     }
 
     [Fact]
@@ -171,49 +174,60 @@ public class GlyphPipelineTests
     }
 
     [Fact]
-    public void Dispatch_ColorAndSdf_TakePriorityOverLcd()
+    public void Dispatch_SdfTakesPriorityOverLcd()
     {
-        foreach (var options in new[]
+        // Color layers wrap the selected renderer per face instead (see LcdInteractionTests).
+        IGlyphRenderer? renderer = null;
+        try
         {
-            new RasterOptions { Size = 32, AntiAlias = AntiAliasMode.Lcd, Sdf = true },
-            new RasterOptions { Size = 32, AntiAlias = AntiAliasMode.Lcd, ColorFont = true },
-        })
-        {
-            IGlyphRenderer? renderer = null;
-            try
-            {
-                renderer = GlyphRenderers.Select(options);
-            }
-            catch (NotSupportedException)
-            {
-                // Rejected outright today; a later phase returns its own renderer instead.
-            }
-
-            (renderer is LcdRenderer).ShouldBeFalse();
+            renderer = GlyphRenderers.Select(new RasterOptions { Size = 32, AntiAlias = AntiAliasMode.Lcd, Sdf = true });
         }
+        catch (NotSupportedException)
+        {
+            // Rejected outright today; Phase 169 returns its own renderer instead.
+        }
+
+        (renderer is LcdRenderer).ShouldBeFalse();
     }
 
     [Fact]
-    public void Dispatch_RejectsColorAndSdf_WithTheExistingMessages()
+    public void Dispatch_RejectsSdf_WithTheExistingMessage()
     {
-        Should.Throw<NotSupportedException>(() => GlyphRenderers.Select(new RasterOptions { Size = 32, ColorFont = true }))
-            .Message.ShouldBe("Native rasterizer does not support color font rendering.");
         Should.Throw<NotSupportedException>(() => GlyphRenderers.Select(new RasterOptions { Size = 32, Sdf = true }))
             .Message.ShouldBe("Native rasterizer does not support SDF rendering.");
-
-        // Color is checked first, as before the pipeline existed.
-        Should.Throw<NotSupportedException>(() => GlyphRenderers.Select(new RasterOptions { Size = 32, ColorFont = true, Sdf = true }))
-            .Message.ShouldContain("color", Case.Sensitive);
     }
 
     [Fact]
-    public void Rasterizer_StillRejectsSdfAndColor_EvenForUnmappedCodepoints()
+    public void Dispatch_ColorFont_UsesTheModeRenderer_WhenTheFaceHasNoColorGlyphs()
+    {
+        var color = new RasterOptions { Size = 32, ColorFont = true };
+        var face = Roboto();
+        var pipeline = new GlyphPipeline(OutlineDecoders.ForFace(face)!, face.Head.UnitsPerEm);
+
+        GlyphRenderers.Select(color).ShouldBeOfType<CoverageRenderer>();
+        GlyphRenderers.SelectForFace(color, colorGlyphs: null, pipeline).ShouldBeOfType<CoverageRenderer>();
+    }
+
+    [Fact]
+    public void Dispatch_ColorFont_UsesColorLayers_WhenTheFaceHasColorGlyphs()
+    {
+        var face = NativeFontFace.Load(TestFonts.BungeeColorBytes());
+        var colorGlyphs = ColorGlyphs.TryLoad(face.Tables, face.Maxp.NumGlyphs);
+        var pipeline = new GlyphPipeline(OutlineDecoders.ForFace(face)!, face.Head.UnitsPerEm);
+
+        colorGlyphs.ShouldNotBeNull();
+        GlyphRenderers.SelectForFace(new RasterOptions { Size = 32, ColorFont = true }, colorGlyphs, pipeline).ShouldBeOfType<ColorLayerRenderer>();
+        GlyphRenderers.SelectForFace(new RasterOptions { Size = 32 }, colorGlyphs, pipeline).ShouldBeOfType<CoverageRenderer>();
+    }
+
+    [Fact]
+    public void Rasterizer_StillRejectsSdf_EvenForUnmappedCodepoints()
     {
         using var rasterizer = new NativeRasterizer();
         rasterizer.LoadFont(TestFonts.RobotoRegularBytes());
 
         Should.Throw<NotSupportedException>(() => rasterizer.RasterizeGlyph(0x1F600, new RasterOptions { Size = 32, Sdf = true }));
-        Should.Throw<NotSupportedException>(() => rasterizer.GetGlyphMetrics(0x1F600, new RasterOptions { Size = 32, ColorFont = true }));
+        rasterizer.GetGlyphMetrics(0x1F600, new RasterOptions { Size = 32, ColorFont = true }).ShouldBeNull();
     }
 
     // ---- Test doubles ----------------------------------------------------------------------

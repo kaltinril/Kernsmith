@@ -24,20 +24,23 @@ decompresses them before the backend sees the bytes.
 TrueType variable fonts (Phase 171) render at the requested instance:
 `fvar`/`avar` normalization, `gvar` outline deltas (composites included), `HVAR` advances
 (phantom points when a font has no `HVAR`) and `MVAR` line metrics.
+Synthetic bold and italic (Phase 167) are outline transforms that match the FreeType backend's:
+its embolden strength (`max(0.5px, ppem/24)`, advance grown to match) and its 12° slant. They
+apply to variable instances and to every `COLR` layer as well.
 `AntiAliasMode.Lcd` (Phase 173) renders LCD subpixel glyphs: RGBA, one horizontal subpixel per
 colour channel in RGB order, alpha = the strongest subpixel, filtered with a one-pixel box
-(per-channel output matches the FreeType backend's LCD mode).
+(per-channel output matches the FreeType backend's LCD mode). Synthetic bold/italic apply; with
+`ColorFont`, glyphs that have `COLR` layers render as color and ignore LCD, as on FreeType.
 
 Not yet supported — each raises a clear error or is ignored, as noted:
 
 - **CFF/OTF (PostScript) outlines** — rejected at `LoadFont` with a `RasterizationException` (Phase 166)
 - **Hinting** — none, so small sizes are softer than FreeType or GDI output
-- **Synthetic bold/italic** (Phase 167) — `Bold`/`Italic` are ignored
 - **Outline stroking** (Phase 168) — the backend has none of its own; KernSmith core still draws outlines as a bitmap effect
 - **SDF** (Phase 169) — rejected with `NotSupportedException`
 - **CFF2 variable fonts** (Phase 171 Wave 2) — rejected with the rest of CFF; `avar` version 2
   axis mixing is not applied (its version 1 segment maps are)
-- **Color fonts** (Phase 172) — `ColorFont` throws `NotSupportedException`
+- **Color fonts** (Phase 172) — `COLR` version 0 layers with `CPAL` palettes render as RGBA (straight alpha) and `ColorPaletteIndex` selects the palette. `COLR` version 1 glyphs render as plain grayscale coverage, and bitmap-only color fonts (`CBDT`/`sbix`, e.g. Noto Color Emoji) are rejected at `LoadFont` with a `RasterizationException`
 - **System fonts by name** — load font bytes instead
 - **`Light` anti-aliasing** — renders as `Grayscale` until hinting lands (Phase 174); KernSmith core degrades the request before Native sees it
 - **LCD options** — RGB order and the one-pixel box filter only; no BGR, vertical or alternative filter selection yet
@@ -79,20 +82,25 @@ disagree. Everything is internal; add a feature to its stage rather than to `Nat
 | # | Stage | Code | Add a feature by |
 |---|-------|------|------------------|
 | 1 | Decode → `DecodedGlyph` (cubic outline, advance, optional declared bbox; font units) | `Internal/Outlines/IOutlineDecoder.cs`, `TrueTypeOutlineDecoder.cs`; variations in `Internal/Variations/` | implementing `IOutlineDecoder` and returning it from `OutlineDecoders.ForFace` — CFF (166). Variation deltas live inside the decoder: `TrueTypeOutlineDecoder` reads the face's `FontVariations` (set by `SetVariationAxes`); a CFF2 decoder would read the same coordinates. |
-| 2 | Transforms, in order, in font units | `Internal/Pipeline/IGlyphTransform.cs`, `GlyphTransforms.cs` | implementing `IGlyphTransform` and adding it in `GlyphTransforms.For` — bold/italic (167), stroke/small caps/condensed (168). Build results with `WithOutline` / `WithAdvanceWidth`. |
+| 2 | Transforms, in order, in font units | `Internal/Pipeline/IGlyphTransform.cs`, `GlyphTransforms.cs` | implementing `IGlyphTransform` and adding it in `GlyphTransforms.For` — `BoldTransform` then `ItalicTransform` today (167). `WidthScaleTransform`, `SmallCapsTransform` (before bold) and `StrokeTransform` (last, as a separate layer) exist but are not registered until core options reach them (168). Build results with `WithOutline` / `WithAdvanceWidth`. |
 | 3 | Bounds → pixel grid | `Internal/Raster/GlyphBox.cs`, `Internal/Outlines/OutlineBounds.cs` | nothing: a replaced outline loses its declared bbox and is measured from its tight bounds. |
 | 4 | Scale, then pixel-space hint hook | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs` | filling in `GlyphHinter.Apply` — auto-hinting (174). |
-| 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs`, `LcdRenderer.cs` (filters in `Internal/Raster/LcdFilter.cs`) | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` — SDF (169/170), color (172). `Measure` must match what `Render` produces. |
+| 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs`, `ColorLayerRenderer.cs`, `LcdRenderer.cs` (filters in `Internal/Raster/LcdFilter.cs`) | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` — SDF (169/170). Color layers (172) wrap that renderer in `GlyphRenderers.SelectForFace` and prepare each layer glyph through stages 1–4. `Measure` must match what `Render` produces. |
 
 Invariants:
 
 - Renderers map outline coordinates through `PreparedGlyph.ToPixels`, never a scale of their
   own — a hinter may return an outline already in pixel space.
+- A TrueType outline is placed by its left side bearing phantom point, pp1 = `xMin - lsb`
+  (a `USE_MY_METRICS` component's, for such a composite; plus its `gvar` delta), which the
+  decoder puts at x = 0 — so the outline sits at the `hmtx` bearing even when it disagrees with
+  the `glyf` xMin. The declared header box is moved with it.
 - Untransformed TrueType glyphs size from the `glyf` header bbox, falling back to the control
   hull when it scales to nothing. A glyph whose outline a variation moved drops the header box
   and is measured tightly. `NativeOutputCharacterizationTests` pins the resulting bytes;
   a deliberate pixel change updates its hashes.
-- Blank glyphs (no outline, or an empty box) never reach a renderer.
+- Blank glyphs (no outline, or an empty box) never reach a renderer — except a glyph with `COLR` layers, whose own outline is not what gets drawn and is often empty.
+- `PreparedGlyph.GlyphIndex` is the only way `Measure` can identify the glyph; a hint stage must carry it over (build with `with`).
 - The default instance (no axes, or every axis at its default) takes the exact static decode
   path, so non-variable output cannot drift.
 

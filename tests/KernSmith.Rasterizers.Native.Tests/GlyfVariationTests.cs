@@ -127,11 +127,60 @@ public class GlyfVariationTests
         phantom.ShouldBe(new PhantomDeltas(0f, 0f, OutlineVaried: false));
     }
 
+    [Fact]
+    public void Composite_WithoutUseMyMetrics_IsPlacedByItsOwnPhantomPoint()
+    {
+        // The square's pp1 moves by -3, the composite's own by +5: the composite's own wins.
+        var table = BuildTable(scaledOffset: false);
+        var provider = new FakeProvider
+        {
+            [0] = ([0, 0, 0, 0, -3, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]),
+            [1] = ([0, 5, 0, 0, 0], [0, 0, 0, 0, 0]),
+        };
+
+        var glyph = table.GetGlyph(1, provider, out var phantom);
+
+        glyph.Origin.ShouldBe(new HorizontalOrigin(1, 50, 5f));
+        glyph.Contours[0].Points[0].ShouldBe(new GlyphPoint(45, -25, true));
+        phantom.Left.ShouldBe(5f);
+    }
+
+    [Fact]
+    public void Composite_WithUseMyMetrics_IsPlacedByTheComponentsPhantomPoint()
+    {
+        // USE_MY_METRICS hands the composite the square's phantom points: its varied pp1 (-3)
+        // places the outline and the composite's own pp1 delta is not used for it. The
+        // composite's own deltas are still reported, since they carry its advance.
+        var table = BuildTable(scaledOffset: false, useMyMetrics: true);
+        var provider = new FakeProvider
+        {
+            [0] = ([0, 0, 0, 0, -3, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]),
+            [1] = ([0, 5, 0, 0, 0], [0, 0, 0, 0, 0]),
+        };
+
+        var glyph = table.GetGlyph(1, provider, out var phantom);
+
+        glyph.Origin.ShouldBe(new HorizontalOrigin(0, 0, -3f));
+        glyph.Contours[0].Points[0].ShouldBe(new GlyphPoint(53, -25, true));
+        phantom.Left.ShouldBe(5f);
+    }
+
+    [Fact]
+    public void Composite_WithUseMyMetrics_NamesTheComponent_WhenStatic()
+    {
+        var table = BuildTable(scaledOffset: false, useMyMetrics: true);
+
+        var glyph = table.GetGlyph(1);
+
+        glyph.Origin.ShouldBe(new HorizontalOrigin(0, 0, 0f));
+        glyph.Contours[0].Points[0].ShouldBe(new GlyphPoint(50, -25, true));
+    }
+
     /// <summary>
     /// Glyph 0: a 100x100 square. Glyph 1: a composite placing glyph 0 at half scale, offset
-    /// (+50, -25), optionally with SCALED_COMPONENT_OFFSET. Glyph 2: empty.
+    /// (+50, -25), optionally with SCALED_COMPONENT_OFFSET or USE_MY_METRICS. Glyph 2: empty.
     /// </summary>
-    private static GlyfTable BuildTable(bool scaledOffset)
+    private static GlyfTable BuildTable(bool scaledOffset, bool useMyMetrics = false)
     {
         byte[] simple = Be.Concat(
             Be.I16(1),
@@ -145,6 +194,8 @@ public class GlyfVariationTests
         ushort flags = 0x0001 | 0x0002 | 0x0008;    // words | xy values | scale
         if (scaledOffset)
             flags |= 0x0800;
+        if (useMyMetrics)
+            flags |= 0x0200;
 
         byte[] composite = Be.Concat(
             Be.I16(-1),

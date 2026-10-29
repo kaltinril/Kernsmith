@@ -13,17 +13,17 @@ public class NativeRasterizerTests
     }
 
     [Fact]
-    public void Capabilities_AreMinimal()
+    public void Capabilities_ReportWhatNativeImplements()
     {
         using var rasterizer = new NativeRasterizer();
         var caps = rasterizer.Capabilities;
 
-        caps.SupportsColorFonts.ShouldBeFalse();
+        caps.SupportsColorFonts.ShouldBeTrue("COLR version 0 layers render (Phase 172)");
         caps.SupportsVariableFonts.ShouldBeTrue();
         caps.SupportsSdf.ShouldBeFalse();
         caps.SupportsOutlineStroke.ShouldBeFalse();
-        caps.SupportsSyntheticBold.ShouldBeFalse();
-        caps.SupportsSyntheticItalic.ShouldBeFalse();
+        caps.SupportsSyntheticBold.ShouldBeTrue();
+        caps.SupportsSyntheticItalic.ShouldBeTrue();
         caps.SupportsSystemFonts.ShouldBeFalse();
         caps.HandlesOwnSizing.ShouldBeFalse();
         // Light is not advertised until Phase 174 adds light hinting; core negotiation degrades

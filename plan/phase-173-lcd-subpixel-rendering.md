@@ -20,6 +20,7 @@ LCD subpixel output from the Native rasterizer, and core anti-alias-mode negotia
 - Default filter `LcdFilter.PixelBox` ([1,1,1]/3): a one-pixel window per subpixel, which equals the "Harmony" three-renders-shifted-by-1/3-px method. The FreeType backend's LCD output measures as exactly this filter (per-channel SSIM 0.98–1.00 on Roboto, 12–32 px unhinted). `LcdFilter.Triangle` ([1,2,3,2,1]/9, ClearType-style) and `LcdSubpixelOrder.Bgr` exist internally and are tested.
 - The bitmap widens by the filter's spill: `Measure` and `Render` share one column computation from the outline's tight horizontal extent, so they match exactly and no blank column is added.
 - `Gamma` is not applied to LCD, matching the FreeType backend (it gamma-corrects grayscale coverage only). Native ignores `Gamma` in every mode.
+- With `ColorFont`, a glyph with `COLR` layers renders its color layers and ignores `Lcd` (as the FreeType backend does, byte-identical to the `Grayscale` color result); glyphs without layers still render LCD. Synthetic bold/italic transforms apply before the LCD renderer, and to every color layer.
 - `Light` renders as grayscale coverage; Native does not advertise it, so negotiation degrades it before Native sees it. It becomes real with Phase 174's light hinting.
 
 ## Remaining
@@ -33,6 +34,7 @@ LCD subpixel output from the Native rasterizer, and core anti-alias-mode negotia
 
 - `LcdFilterTests`: taps sum to the denominator and are symmetric; impulse response is the kernel; pixel box equals three 1/3-px-shifted pixel renders.
 - `LcdRendererTests`: analytic filtered coverage of rectangles at subpixel offsets (both filters, both orders); horizontal edges stay neutral; `'l'` at 12–16 px has three distinct channels; BGR = RGB with R/B swapped; `Measure == Render`; no ink lost; per-channel SSIM vs FreeType > 0.99; an LCD atlas is RGB-distinct with `smooth=1`.
+- `LcdInteractionTests`: `COLR` glyphs render identically under `Lcd` and `Grayscale` (Native and FreeType), unlayered glyphs stay LCD with `ColorFont` on, and bold/italic reach LCD glyphs and color layers.
 - `AntiAliasNegotiationTests`: the policy table, the effective mode reaching `RasterizeAll`/`GetFontMetrics`/`GetGlyphMetrics`, and StbTrueType `Light`/`Lcd` output byte-identical to `Grayscale`.
 - Harness: `tests/bmfont-compare/gum-bmfont/lcd.bmfc` (Georgia 24, `antiAlias=lcd`).
 
