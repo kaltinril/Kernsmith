@@ -127,6 +127,15 @@ internal sealed class GenerateCommand
             ConsoleOutput.WriteError($"Generation error ({BackendName(options)} rasterizer): {ex.Message}");
             return ExitCodes.GenerationError;
         }
+        // Whether a palette index exists depends on the font's CPAL table, so a bad
+        // --color-palette is the backend rejecting an option for this font, not a malformed
+        // argument: the rasterizers report it as an out-of-range paletteIndex.
+        catch (ArgumentOutOfRangeException ex) when (ex.ParamName == "paletteIndex")
+        {
+            var reason = ex.Message.Split(" (Parameter '", 2)[0];
+            ConsoleOutput.WriteError($"Generation error ({BackendName(options)} rasterizer): --color-palette {ex.ActualValue}: {reason}");
+            return ExitCodes.GenerationError;
+        }
         catch (InvalidOperationException ex)
         {
             ConsoleOutput.WriteError($"Generation error: {ex.Message}");
@@ -1060,7 +1069,7 @@ internal sealed class GenerateCommand
               --synthetic-bold            Force synthetic bold instead of native bold face
               --synthetic-italic          Force synthetic italic instead of native italic face
               --italic-angle <deg>        Synthetic italic slant in degrees, positive leans right (default: 12; other values native only)
-              --color-font                Enable color font rendering (COLR/CPAL)
+              --color-font                Enable color font rendering (COLR/CPAL layers, CBDT/sbix bitmaps; COLR v1 native only)
               --color-palette <n>         Color palette index (default: 0)
 
             Character Set:

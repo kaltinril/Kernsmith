@@ -75,12 +75,20 @@ public sealed class FreeTypeRasterizer : IRasterizer
     /// Must be called after <see cref="LoadFont"/> and before rasterization.
     /// </summary>
     /// <param name="paletteIndex">Zero-based palette index.</param>
+    /// <exception cref="ArgumentOutOfRangeException">If the font has no palette at <paramref name="paletteIndex"/>.</exception>
     public unsafe void SelectColorPalette(int paletteIndex)
     {
         if (_face == null)
             throw new InvalidOperationException("Font not loaded. Call LoadFont first.");
 
-        var error = FreeTypeNative.FT_Palette_Select(_face, (ushort)paletteIndex, IntPtr.Zero);
+        // FreeType answers Invalid_Argument for an index past the CPAL palettes (or no CPAL at
+        // all); report it as the out-of-range option it is, like the Native rasterizer does.
+        var error = paletteIndex is < 0 or > ushort.MaxValue
+            ? FT_Error.FT_Err_Invalid_Argument
+            : FreeTypeNative.FT_Palette_Select(_face, (ushort)paletteIndex, IntPtr.Zero);
+        if (error == FT_Error.FT_Err_Invalid_Argument)
+            throw new ArgumentOutOfRangeException(nameof(paletteIndex), paletteIndex,
+                "The font has no color palette at this index (palettes are indexed from 0).");
         if (error != FT_Error.FT_Err_Ok)
             throw new FreeTypeException(error);
     }

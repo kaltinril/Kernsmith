@@ -43,7 +43,7 @@ internal static class ListRasterizersCommand
                 if (caps.SupportsColorFonts) capList.Add("Color");
                 if (caps.SupportsVariableFonts) capList.Add("Variable");
                 if (caps.SupportsSdf) capList.Add("SDF");
-                if (caps.SupportsOutlineStroke) capList.Add("Outline");
+                if (caps.SupportsOutlineStroke) capList.Add("Vector Outline");
                 if (caps.SupportsSyntheticBold) capList.Add("Synthetic Bold");
                 if (caps.SupportsSyntheticItalic) capList.Add("Synthetic Italic");
                 if (caps.SupportsSystemFonts) capList.Add("System Fonts");

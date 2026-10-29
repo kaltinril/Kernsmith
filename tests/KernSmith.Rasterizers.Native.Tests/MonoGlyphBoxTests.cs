@@ -243,9 +243,8 @@ public class MonoGlyphBoxTests
         var (edges, box) = GlyphEdges('O', 96f);
         ScanlineRasterizer.RasterizeMono(edges, box.Width, box.Height, box.MinX, box.MinY, box.BearingX, box.BearingY); // warm the pools
 
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        var result = ScanlineRasterizer.RasterizeMono(edges, box.Width, box.Height, box.MinX, box.MinY, box.BearingX, box.BearingY);
-        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        RasterResult result = null!;
+        long allocated = AllocationMeter.BytesAllocatedBy(() => result = ScanlineRasterizer.RasterizeMono(edges, box.Width, box.Height, box.MinX, box.MinY, box.BearingX, box.BearingY));
 
         result.Bitmap.ShouldContain(v => v > 0);
         allocated.ShouldBeLessThanOrEqualTo((result.Width * result.Height) + 128, "scratch allocated per glyph");
