@@ -41,6 +41,8 @@
     <PackageReference Include="KernSmith.MonoGameGum" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.StbTrueType\KernSmith.Rasterizers.StbTrueType.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Fonts.Web\KernSmith.Fonts.Web.csproj" />
+    <!-- PNG decoder tests (Imaging/); StbImageSharp, which core already depends on, is their oracle. -->
+    <ProjectReference Include="..\..\src\KernSmith.Imaging\KernSmith.Imaging.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.Gdi\KernSmith.Rasterizers.Gdi.csproj"
                       Condition="$(TargetFramework.Contains('-windows'))" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.DirectWrite.TerraFX\KernSmith.Rasterizers.DirectWrite.TerraFX.csproj"
