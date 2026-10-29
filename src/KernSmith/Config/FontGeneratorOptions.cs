@@ -95,6 +95,14 @@ public class FontGeneratorOptions
     /// </summary>
     public OutlineShape OutlineShape { get; set; } = OutlineShape.Round;
 
+    /// <summary>
+    /// How the outline is drawn: <see cref="KernSmith.OutlineMode.Effect"/> (default), the pipeline's
+    /// bitmap outline, or <see cref="KernSmith.OutlineMode.Vector"/>, a stroke of the glyph's
+    /// vector outline drawn by a backend that reports
+    /// <see cref="Rasterizer.IRasterizerCapabilities.SupportsOutlineStroke"/> (others keep the effect).
+    /// </summary>
+    public OutlineMode OutlineMode { get; set; } = OutlineMode.Effect;
+
     /// <summary>Outline color red channel (default 0 = black).</summary>
     public byte OutlineR { get; set; }
 
@@ -221,6 +229,23 @@ public class FontGeneratorOptions
     /// Vertical height scaling. 100 = normal, 150 = 50% taller, 75 = 25% shorter.
     /// </summary>
     public int HeightPercent { get; set; } = 100;
+
+    /// <summary>
+    /// Synthetic condensed/expanded width as a percentage (default 100; 10 to 1000): 80 draws every
+    /// glyph, its advance and kerning 20% narrower. Applied to the outline before rasterizing, so it
+    /// needs a backend that reports <see cref="Rasterizer.IRasterizerCapabilities.SupportsWidthScale"/>;
+    /// any other value on another backend throws <see cref="NotSupportedException"/>.
+    /// </summary>
+    public int WidthPercent { get; set; } = 100;
+
+    /// <summary>
+    /// Slant of synthetic italic, in degrees from vertical; positive leans right (default 12, -60
+    /// to 60). Only used when synthetic italic is applied (<see cref="Italic"/> on a font that is
+    /// not already italic, or <see cref="ForceSyntheticItalic"/>). A value other than 12 needs a
+    /// backend that reports <see cref="Rasterizer.IRasterizerCapabilities.SupportsItalicAngle"/>;
+    /// other backends throw <see cref="NotSupportedException"/> rather than slant by their own angle.
+    /// </summary>
+    public float ItalicAngle { get; set; } = 12f;
 
     /// <summary>
     /// Custom glyph images keyed by character code. These replace or add glyphs.

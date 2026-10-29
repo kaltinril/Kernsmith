@@ -258,10 +258,7 @@ public static class BmFont
         IReadOnlyList<RasterizedGlyph>? channelShadowGlyphs = null;
         if (ShouldApplyChannelConfig(options) && options.Channels is { } cfg)
         {
-            var needsOutline = cfg.Alpha is ChannelContent.Outline or ChannelContent.GlyphAndOutline
-                || cfg.Red is ChannelContent.Outline or ChannelContent.GlyphAndOutline
-                || cfg.Green is ChannelContent.Outline or ChannelContent.GlyphAndOutline
-                || cfg.Blue is ChannelContent.Outline or ChannelContent.GlyphAndOutline;
+            var needsOutline = RoutesOutline(cfg);
             // Only synthesize an outline layer when a real outline width is configured.
             // With outlineThickness=0 a forced 1px outline would grow every glyph by ~1px;
             // instead the Outline-content channels fall back to glyph coverage in the compositor.
@@ -272,7 +269,11 @@ public static class BmFont
                     Smooth = options.AntiAlias != AntiAliasMode.None,
                     Shape = options.OutlineShape
                 };
-                channelOutlineGlyphs = glyphs.Select(g => outlineProcessor.Process(g)).ToList();
+                // OutlineMode.Vector: a glyph the backend drew a layer for takes it instead.
+                var masks = rasterResult.ChannelOutlineMasks;
+                channelOutlineGlyphs = glyphs.Select(g => masks is not null && masks.TryGetValue(g.Codepoint, out var mask)
+                    ? VectorOutlineEffect.ChannelGlyph(g, mask, options.Outline)
+                    : outlineProcessor.Process(g)).ToList();
             }
 
             var needsShadow = cfg.Alpha == ChannelContent.Shadow
@@ -1048,6 +1049,13 @@ public static class BmFont
     /// </summary>
     internal static bool ShouldApplyChannelConfig(FontGeneratorOptions options) =>
         options.Channels is { IsDefault: false };
+
+    /// <summary>True when any channel of <paramref name="channels"/> carries outline content.</summary>
+    internal static bool RoutesOutline(ChannelConfig channels) =>
+        channels.Alpha is ChannelContent.Outline or ChannelContent.GlyphAndOutline
+        || channels.Red is ChannelContent.Outline or ChannelContent.GlyphAndOutline
+        || channels.Green is ChannelContent.Outline or ChannelContent.GlyphAndOutline
+        || channels.Blue is ChannelContent.Outline or ChannelContent.GlyphAndOutline;
 
     /// <summary>Generates multiple BMFonts in batch, with optional parallelism and font caching.</summary>
     /// <param name="jobs">The batch jobs to run.</param>

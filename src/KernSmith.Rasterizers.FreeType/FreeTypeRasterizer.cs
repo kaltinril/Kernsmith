@@ -718,7 +718,10 @@ public sealed class FreeTypeRasterizer : IRasterizer
         public bool SupportsColorFonts => true;
         public bool SupportsVariableFonts => true;
         public bool SupportsSdf => true;
-        public bool SupportsOutlineStroke => true;
+
+        // False: this backend does not implement IRasterizer.RasterizeOutlineLayer, so the
+        // pipeline draws its outlines (OutlineMode.Vector included) with the bitmap effect.
+        public bool SupportsOutlineStroke => false;
         public bool HandlesOwnSizing => false;
         public bool SupportsSyntheticBold => true;
         public bool SupportsSyntheticItalic => true;

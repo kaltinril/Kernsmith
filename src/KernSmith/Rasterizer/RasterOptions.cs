@@ -104,6 +104,22 @@ public sealed record RasterOptions
     public int SuperSample { get; init; } = 1;
 
     /// <summary>
+    /// Horizontal scale of every outline and advance as a percentage (condensed below 100, expanded
+    /// above). Default 100. Only consumed by backends that report
+    /// <see cref="IRasterizerCapabilities.SupportsWidthScale"/>; the pipeline never sends another
+    /// value to any other backend.
+    /// </summary>
+    public int WidthPercent { get; init; } = 100;
+
+    /// <summary>
+    /// Slant of synthetic italic in degrees from vertical, positive leaning right. Default 12, which
+    /// every backend applies its own way. Only consumed by backends that report
+    /// <see cref="IRasterizerCapabilities.SupportsItalicAngle"/>; the pipeline never sends another
+    /// value with <see cref="Italic"/> to any other backend.
+    /// </summary>
+    public float ItalicAngle { get; init; } = 12f;
+
+    /// <summary>
     /// Creates a <see cref="RasterOptions"/> from a <see cref="FontGeneratorOptions"/>.
     /// </summary>
     public static RasterOptions FromGeneratorOptions(FontGeneratorOptions options)
@@ -128,7 +144,9 @@ public sealed record RasterOptions
             ColorPaletteIndex = options.ColorPaletteIndex,
             VariationAxes = options.VariationAxes,
             EnableHinting = options.EnableHinting,
-            SuperSample = options.SuperSampleLevel
+            SuperSample = options.SuperSampleLevel,
+            WidthPercent = options.WidthPercent,
+            ItalicAngle = options.ItalicAngle
         };
     }
 }

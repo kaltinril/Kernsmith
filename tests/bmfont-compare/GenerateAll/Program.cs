@@ -115,6 +115,23 @@ foreach (var bmfcPath in bmfcFiles)
                 continue;
             }
 
+            // Synthetic width and italic angle are declined (NotSupportedException) by backends
+            // that cannot apply them, so they are capability skips like SDF.
+            if (!rasterizer.Capabilities.SupportsWidthScale && ConfigValue(bmfcPath, "widthPercent") is { } wp && wp != "100")
+            {
+                (rasterizer as IDisposable)?.Dispose();
+                Console.WriteLine("SKIPPED (backend has no synthetic width support)");
+                continue;
+            }
+
+            if (!rasterizer.Capabilities.SupportsItalicAngle && ConfigValue(bmfcPath, "isItalic") == "1"
+                && ConfigValue(bmfcPath, "italicAngle") is { } angle && angle != "12")
+            {
+                (rasterizer as IDisposable)?.Dispose();
+                Console.WriteLine("SKIPPED (backend has no synthetic italic angle support)");
+                continue;
+            }
+
             var result = BmFont.Builder()
                 .FromConfig(bmfcPath)
                 .WithRasterizer(rasterizer)
@@ -491,6 +508,18 @@ static bool ConfigRequestsSdf(string bmfcPath)
             return line["useSdf=".Length..].Trim() == "1";
     }
     return false;
+}
+
+/// <summary>The value of the first <paramref name="key"/>= line in the .bmfc, or null.</summary>
+static string? ConfigValue(string bmfcPath, string key)
+{
+    foreach (var raw in File.ReadLines(bmfcPath))
+    {
+        var line = raw.Trim();
+        if (line.StartsWith(key + "=", StringComparison.OrdinalIgnoreCase))
+            return line[(key.Length + 1)..].Trim();
+    }
+    return null;
 }
 
 /// <summary>

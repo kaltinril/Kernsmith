@@ -7,8 +7,8 @@ namespace KernSmith.Rasterizers.Native;
 /// outlines with grayscale, thresholded or LCD subpixel (173) coverage, including
 /// variable-font instances of both (171), color glyphs from <c>COLR</c> version 0 layers and
 /// version 1 paint graphs (172), synthetic bold/italic as outline transforms (167),
-/// single-channel signed distance fields (169) and multi-channel MSDF/MTSDF (170).
-/// Outline stroking (168) is still <c>false</c>.
+/// single-channel signed distance fields (169), multi-channel MSDF/MTSDF (170), and vector
+/// outline layers, synthetic width and italic angle (168).
 /// </summary>
 internal sealed class NativeCapabilities : IRasterizerCapabilities
 {
@@ -19,11 +19,14 @@ internal sealed class NativeCapabilities : IRasterizerCapabilities
     public bool SupportsColorFonts => true;
     public bool SupportsVariableFonts => true;
     public bool SupportsSdf => true;
-    public bool SupportsOutlineStroke => false;
+    /// <summary>True: <see cref="NativeRasterizer.RasterizeOutlineLayer"/> strokes the vector outline.</summary>
+    public bool SupportsOutlineStroke => true;
     public bool SupportsSystemFonts => false;
     public bool SupportsSyntheticBold => true;
     public bool SupportsSyntheticItalic => true;
     public bool SupportsMsdf => true;
+    public bool SupportsWidthScale => true;
+    public bool SupportsItalicAngle => true;
 
     /// <summary>
     /// False: the pipeline converts the requested BMFont cell height into an em size before

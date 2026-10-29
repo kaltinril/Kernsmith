@@ -329,6 +329,17 @@ public static class BmfcConfigReader
                             _ => OutlineShape.Round
                         };
                         break;
+                    case "outlineMode":
+                        options.OutlineMode = value.Equals("vector", StringComparison.OrdinalIgnoreCase)
+                            ? OutlineMode.Vector
+                            : OutlineMode.Effect;
+                        break;
+                    case "widthPercent":
+                        options.WidthPercent = int.Parse(value, CultureInfo.InvariantCulture);
+                        break;
+                    case "italicAngle":
+                        options.ItalicAngle = float.Parse(value, CultureInfo.InvariantCulture);
+                        break;
                     case "useSdf":
                         options.Sdf = value == "1";
                         break;

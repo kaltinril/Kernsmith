@@ -35,8 +35,10 @@ namespace KernSmith.Rasterizers.Native;
 ///
 /// Distance fields are computed from the (transformed) outline: single-channel SDF (Phase 169)
 /// and multi-channel MSDF/MTSDF (Phase 170), selected by <see cref="RasterOptions.EffectiveSdfMode"/>.
-/// Outline stroking (Phase 168) is not implemented; its <see cref="IRasterizerCapabilities"/>
-/// flag is false. <see cref="RasterOptions.SuperSample"/> is ignored: with
+/// <see cref="RasterOptions.WidthPercent"/> (condensed/expanded) and
+/// <see cref="RasterOptions.ItalicAngle"/> are outline transforms too, and
+/// <see cref="RasterizeOutlineLayer"/> strokes the vector outline for <see cref="OutlineMode.Vector"/>
+/// (Phase 168). <see cref="RasterOptions.SuperSample"/> is ignored: with
 /// <see cref="IRasterizerCapabilities.HandlesOwnSizing"/> false the pipeline already renders
 /// at the supersampled size and box-filters the result back down, exactly as it does for the
 /// FreeType backend — except for <see cref="AntiAliasMode.Lcd"/>, which it renders at the final
@@ -162,6 +164,50 @@ public sealed class NativeRasterizer : IRasterizer
         try
         {
             return renderer.Render(codepoint, glyphIndex, glyph, options);
+        }
+        catch (RasterizationException ex) when (ex.Codepoint is null)
+        {
+            throw new RasterizationException(codepoint, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// The glyph dilated by <paramref name="width"/> pixels — every point within that distance of
+    /// its filled region, measured with a round, square (Chebyshev) or diamond (Manhattan, for
+    /// <see cref="OutlineShape.Plus"/>) pen — in the same frame and anti-alias mode as
+    /// <see cref="RasterizeGlyph"/> (LCD as grayscale coverage, since the layer is one color).
+    /// </summary>
+    /// <returns>Null for an unmapped or blank glyph, for distance fields, and when
+    /// <see cref="RasterOptions.ColorFont"/> is on for a face with color glyphs (<c>COLR</c> layers
+    /// or <c>CBDT</c>/<c>sbix</c> bitmaps): a color glyph's silhouette is its layers' or image's,
+    /// so the pipeline's bitmap outline draws every outline of such a font, keeping them
+    /// consistent. A bitmap-only face has no outlines, so it never gets a layer.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">If the size, DPI, width or height scale is out of range.</exception>
+    /// <exception cref="RasterizationException">As for <see cref="RasterizeGlyph"/>.</exception>
+    public RasterizedGlyph? RasterizeOutlineLayer(int codepoint, RasterOptions options, int width, OutlineShape shape, float heightScale = 1f)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        EnsureFontLoaded();
+        ArgumentNullException.ThrowIfNull(options);
+        options = ValidateSize(options);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        if (!(heightScale > 0) || !float.IsFinite(heightScale))
+            throw new ArgumentOutOfRangeException(nameof(heightScale), heightScale, "Height scale must be positive and finite.");
+
+        if (options.EffectiveSdfMode != SdfMode.None || (options.ColorFont && (_colorGlyphs is not null || _bitmapGlyphs is not null)))
+            return null;
+
+        int glyphIndex = _face!.GetGlyphIndex(codepoint);
+        if (glyphIndex == 0)
+            return null;
+
+        var glyph = Prepare(codepoint, glyphIndex, options);
+        if (glyph.IsBlank)
+            return null;
+
+        try
+        {
+            return OutlineLayer.Render(codepoint, glyphIndex, glyph, width, shape, heightScale, aliased: options.AntiAlias == AntiAliasMode.None);
         }
         catch (RasterizationException ex) when (ex.Codepoint is null)
         {

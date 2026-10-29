@@ -14,7 +14,7 @@ Comprehensive validation of the Native rasterizer against FreeType and StbTrueTy
 
 `NativeGoldenMasterTests` (with `NativeGoldenModeTests`, `NativeGoldenDistanceFieldTests`, `NativeGoldenFeatureTests`, which run in parallel) pins Native's exact output; any changed byte fails. The matrix is `Goldens/GoldenCatalog.cs`:
 
-- Every committed outline fixture (Roboto, Noto Sans and its CFF build, Source Serif 4, Source Code VF, Roboto Flex and its Latin subset, Dancing Script, Bungee Color and Reem Kufi Ink as plain outlines) × 8/12/16/24/48/96 px × `None`/`Grayscale`/`Light` (hinted)/`Lcd`; Noto Color Emoji is bitmap-only and rejected at `LoadFont`, so it has no golden.
+- Every committed outline fixture (Roboto, Noto Sans and its CFF build, Source Serif 4, Source Code VF, Roboto Flex and its Latin subset, Dancing Script, Bungee Color and Reem Kufi Ink as plain outlines) × 8/12/16/24/48/96 px × `None`/`Grayscale`/`Light` (hinted)/`Lcd`; Noto Color Emoji (bitmap-only) has its own color, coverage and distance-field goldens.
 - SDF/MSDF/MTSDF at 16 and 32 px for every font; bold, italic and bold-italic at 16 and 48 px; styles through mono, Light, LCD, SDF and MSDF; 12pt at 96 dpi.
 - Variation instances: Roboto Flex wght 100 and 900, Source Code VF wght 900 (CFF2), Dancing Script wght 700, through grayscale, mono, Light, LCD, SDF and MSDF.
 - Color: Bungee palettes 0 and 6 and Reem Kufi Ink (COLR v1) at 16/48/96 px, plus color under Light, mono, bold-italic and SDF.

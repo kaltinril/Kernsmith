@@ -224,6 +224,7 @@ internal sealed class GenerateCommand
             Kerning = options.Kerning ?? true,
             Outline = options.Outline,
             OutlineShape = options.OutlineShape ?? KernSmith.OutlineShape.Round,
+            OutlineMode = options.OutlineMode ?? KernSmith.OutlineMode.Effect,
             Sdf = options.Sdf,
             SdfMode = options.SdfMode,
             PowerOfTwo = options.PowerOfTwo ?? true,
@@ -239,6 +240,8 @@ internal sealed class GenerateCommand
             EqualizeCellHeights = options.EqualizeCellHeights,
             ForceOffsetsToZero = options.ForceOffsetsToZero,
             HeightPercent = options.HeightPercent,
+            WidthPercent = options.WidthPercent,
+            ItalicAngle = options.ItalicAngle ?? 12f,
             MatchCharHeight = options.MatchCharHeight,
             ColorFont = options.ColorFont,
             ColorPaletteIndex = options.ColorPaletteIndex,
@@ -598,6 +601,14 @@ internal sealed class GenerateCommand
                         var s => throw new ArgumentException($"Unknown outline shape: {s}. Use round, square, or plus.")
                     };
                     break;
+                case "--outline-mode":
+                    options.OutlineMode = NextArg(args, ref i, args[i]).ToLowerInvariant() switch
+                    {
+                        "effect" => OutlineMode.Effect,
+                        "vector" => OutlineMode.Vector,
+                        var m => throw new ArgumentException($"Unknown outline mode: {m}. Use effect or vector.")
+                    };
+                    break;
                 case "--gradient":
                     var gradientArg = NextArg(args, ref i, "--gradient");
                     if (gradientArg.Contains(','))
@@ -722,6 +733,12 @@ internal sealed class GenerateCommand
                 case "--height-percent":
                     options.HeightPercent = int.Parse(NextArg(args, ref i, args[i]));
                     break;
+                case "--width-percent":
+                    options.WidthPercent = int.Parse(NextArg(args, ref i, args[i]));
+                    break;
+                case "--italic-angle":
+                    options.ItalicAngle = float.Parse(NextArg(args, ref i, args[i]), CultureInfo.InvariantCulture);
+                    break;
                 case "--match-char-height":
                     options.MatchCharHeight = true;
                     break;
@@ -800,6 +817,7 @@ internal sealed class GenerateCommand
         if (cli.MaxTextureSize != 1024) config.MaxTextureSize = cli.MaxTextureSize;
         if (cli.Outline > 0) { config.Outline = cli.Outline; config.OutlineColor = cli.OutlineColor ?? config.OutlineColor; }
         if (cli.OutlineShape.HasValue) config.OutlineShape = cli.OutlineShape;
+        if (cli.OutlineMode.HasValue) config.OutlineMode = cli.OutlineMode;
         if (cli.Dpi != 72) config.Dpi = cli.Dpi;
         if (cli.FaceIndex != 0) config.FaceIndex = cli.FaceIndex;
         if (cli.PackingAlgorithm != PackingAlgorithm.MaxRects) config.PackingAlgorithm = cli.PackingAlgorithm;
@@ -832,6 +850,8 @@ internal sealed class GenerateCommand
         if (cli.FallbackCharacter.HasValue) config.FallbackCharacter = cli.FallbackCharacter;
         if (cli.TextureFormat != null) config.TextureFormat = cli.TextureFormat;
         if (cli.HeightPercent != 100) config.HeightPercent = cli.HeightPercent;
+        if (cli.WidthPercent != 100) config.WidthPercent = cli.WidthPercent;
+        if (cli.ItalicAngle.HasValue) config.ItalicAngle = cli.ItalicAngle;
         if (cli.MaxTextureWidth.HasValue) config.MaxTextureWidth = cli.MaxTextureWidth;
         if (cli.MaxTextureHeight.HasValue) config.MaxTextureHeight = cli.MaxTextureHeight;
         if (cli.InstanceName != null) config.InstanceName = cli.InstanceName;
@@ -923,9 +943,11 @@ internal sealed class GenerateCommand
         if (options.SdfMode is SdfMode.Msdf or SdfMode.Mtsdf) effects.Add(options.SdfMode.ToString().ToUpperInvariant());
         else if (options.Sdf || options.SdfMode == SdfMode.Sdf) effects.Add("SDF");
         if (options.Outline > 0)
-            effects.Add(options.OutlineShape is { } shape && shape != OutlineShape.Round
+            effects.Add((options.OutlineShape is { } shape && shape != OutlineShape.Round
                 ? $"outline {options.Outline}px ({shape.ToString().ToLowerInvariant()})"
-                : $"outline {options.Outline}px");
+                : $"outline {options.Outline}px")
+                + (options.OutlineMode == OutlineMode.Vector ? " vector" : ""));
+        if (options.WidthPercent != 100) effects.Add($"width {options.WidthPercent}%");
         if (options.GradientTop != null) effects.Add($"gradient {options.GradientTop}->{options.GradientBottom}");
         Console.WriteLine($"[dry-run] Effects:   {(effects.Count > 0 ? string.Join(", ", effects) : "none")}");
 
@@ -1027,6 +1049,7 @@ internal sealed class GenerateCommand
               --hinting / --no-hinting    Enable/disable hinting (default: on; native hints only with --aa light)
               --gamma <n>                 Gamma correction applied during rasterization (default: 1.8)
               --height-percent <n>        Vertical height scaling percentage (default: 100)
+              --width-percent <n>         Synthetic condensed/expanded width percentage, 10-1000 (default: 100; native only)
               --match-char-height         Match rendered height to requested pixel height
               --advance-x <n>             Global horizontal advance adjustment added to every glyph (default: 0)
               --fallback-char <char>      Fallback character for missing glyphs (char or codepoint)
@@ -1036,6 +1059,7 @@ internal sealed class GenerateCommand
               -i, --italic                Enable synthetic italic
               --synthetic-bold            Force synthetic bold instead of native bold face
               --synthetic-italic          Force synthetic italic instead of native italic face
+              --italic-angle <deg>        Synthetic italic slant in degrees, positive leans right (default: 12; other values native only)
               --color-font                Enable color font rendering (COLR/CPAL)
               --color-palette <n>         Color palette index (default: 0)
 
@@ -1065,6 +1089,7 @@ internal sealed class GenerateCommand
               --fill-color <color>        Base glyph fill color as hex #RRGGBB or #RRGGBBAA (default: FFFFFF, opaque white)
               --outline <n>[,color]        Outline width in pixels, optional hex color (e.g., --outline 2,FF0000)
               --outline-shape <shape>     Outline corner shape: round (default), square, or plus
+              --outline-mode <mode>       Outline drawing: effect (default, bitmap) or vector (backend strokes the outline; native)
               --gradient <top>,<bottom>   Vertical gradient, colors as hex
               --gradient <top> <bottom>   Vertical gradient (two-argument form)
               --gradient-angle <deg>      Gradient rotation in degrees (default: 90)

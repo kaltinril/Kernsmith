@@ -64,6 +64,7 @@ internal static class BmfcParser
             // Effects
             Outline = gen.Outline,
             OutlineShape = gen.OutlineShape,
+            OutlineMode = gen.OutlineMode,
             GradientAngle = gen.GradientAngle,
             GradientMidpoint = gen.GradientMidpoint,
             GradientOffset = gen.GradientOffset,
@@ -88,6 +89,8 @@ internal static class BmfcParser
             EqualizeCellHeights = gen.EqualizeCellHeights,
             ForceOffsetsToZero = gen.ForceOffsetsToZero,
             HeightPercent = gen.HeightPercent,
+            WidthPercent = gen.WidthPercent,
+            ItalicAngle = gen.ItalicAngle,
             MatchCharHeight = gen.MatchCharHeight,
             ColorFont = gen.ColorFont,
             ColorPaletteIndex = gen.ColorPaletteIndex,

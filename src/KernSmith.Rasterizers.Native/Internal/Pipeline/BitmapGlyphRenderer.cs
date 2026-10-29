@@ -34,7 +34,8 @@ internal interface IDrawsWithoutOutline
 /// The advance is the glyph's unstyled prepared advance (the <c>hmtx</c> advance at the requested
 /// size), as for outline glyphs, so swapping a bitmap glyph for an outline never respaces text.
 /// Synthetic bold and italic change neither the pixels nor the advance — the FreeType backend's
-/// behavior for bitmap glyphs. LCD and light hinting do not apply. Under
+/// behavior for bitmap glyphs — and neither do <see cref="RasterOptions.WidthPercent"/> and
+/// <see cref="RasterOptions.ItalicAngle"/>. LCD and light hinting do not apply. Under
 /// <see cref="AntiAliasMode.None"/> alpha (or coverage) is thresholded at 50% and the box is
 /// cropped to the ink, as plain mono coverage is.
 /// </para>
@@ -101,10 +102,10 @@ internal sealed class BitmapGlyphRenderer : IGlyphRenderer, IDrawsWithoutOutline
         };
     }
 
-    /// <summary>The advance without synthetic bold's widening (italic never changes it).</summary>
+    /// <summary>The advance without synthetic bold's widening or the width scale (italic never changes it).</summary>
     private int UnstyledAdvance(PreparedGlyph glyph, RasterOptions options)
     {
-        if (!options.Bold)
+        if (!options.Bold && options.WidthPercent == 100)
             return glyph.Advance;
 
         try
