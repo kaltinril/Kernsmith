@@ -109,7 +109,9 @@ internal static class BmFontModelBuilder
                     !glyphCodepoints.Contains(pair.RightCodepoint))
                     continue;
 
-                int amount = (int)Math.Round((double)pair.XAdvanceAdjustment * metricSize / fontInfo.UnitsPerEm, MidpointRounding.AwayFromZero);
+                // A synthetic width scale (WidthPercent) narrows every advance, so the pair
+                // adjustments scale with them; at 100 the factor is exactly 1.
+                int amount = (int)Math.Round((double)pair.XAdvanceAdjustment * metricSize / fontInfo.UnitsPerEm * (options.WidthPercent / 100.0), MidpointRounding.AwayFromZero);
                 if (amount == 0)
                     continue;
 

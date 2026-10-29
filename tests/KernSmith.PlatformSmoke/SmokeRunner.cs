@@ -106,17 +106,16 @@ public static class SmokeRunner
                 Backend = backend,
             }), expectKerning: true));
 
-            Check($"{backend} outline", () =>
+            // Every backend outlines through the pipeline's effect; one that strokes its own
+            // outline layer (SupportsOutlineStroke) is checked on that vector path instead.
+            Check($"{backend} outline", () => Verify(BmFont.Generate(roboto, new FontGeneratorOptions
             {
-                if (!caps.SupportsOutlineStroke) throw new SkipException("backend has no outline stroke");
-                return Verify(BmFont.Generate(roboto, new FontGeneratorOptions
-                {
-                    Size = 32,
-                    Characters = CharacterSet.Ascii,
-                    Backend = backend,
-                    Outline = 2,
-                }), expectKerning: true);
-            });
+                Size = 32,
+                Characters = CharacterSet.Ascii,
+                Backend = backend,
+                Outline = 2,
+                OutlineMode = caps.SupportsOutlineStroke ? OutlineMode.Vector : OutlineMode.Effect,
+            }), expectKerning: true));
 
             Check($"{backend} sdf", () =>
             {

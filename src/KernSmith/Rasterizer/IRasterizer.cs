@@ -43,6 +43,27 @@ public interface IRasterizer : IDisposable
     IReadOnlyList<RasterizedGlyph> RasterizeAll(IEnumerable<int> codepoints, RasterOptions options);
 
     /// <summary>
+    /// Renders the outline layer of a character for <see cref="OutlineMode.Vector"/>: the coverage
+    /// of the glyph dilated by <paramref name="width"/> pixels — everything
+    /// <see cref="RasterizeGlyph"/> would draw for the same <paramref name="options"/>, plus every
+    /// point within <paramref name="width"/> pixels of its contours. The pipeline colors it, backs
+    /// the body with it and composites it exactly where its bitmap outline would go — clipped to the
+    /// glyph's box grown by <paramref name="width"/> — so the metrics must place the bitmap in the
+    /// same pen-relative frame as <see cref="RasterizeGlyph"/>.
+    /// Returns null when the backend cannot draw this glyph's layer, and the pipeline then uses its
+    /// bitmap outline for it. The default returns null for every glyph.
+    /// </summary>
+    /// <param name="codepoint">The Unicode character code.</param>
+    /// <param name="options">The same options the glyph itself is rendered with.</param>
+    /// <param name="width">Outline width in pixels: how far the layer extends past the glyph.</param>
+    /// <param name="shape">The pen: round (Euclidean distance), square (Chebyshev) or plus (Manhattan).</param>
+    /// <param name="heightScale">The vertical stretch the pipeline applies to the glyph and this
+    /// layer afterwards (<see cref="FontGeneratorOptions.HeightPercent"/> / 100). Draw the ring
+    /// <paramref name="width"/> pixels wide and <paramref name="width"/> / <paramref name="heightScale"/>
+    /// pixels tall, so that once stretched it is <paramref name="width"/> pixels all round.</param>
+    RasterizedGlyph? RasterizeOutlineLayer(int codepoint, RasterOptions options, int width, OutlineShape shape, float heightScale = 1f) => null;
+
+    /// <summary>
     /// Gets glyph metrics without rasterizing. Returns null if the glyph is missing from the font.
     /// </summary>
     /// <param name="codepoint">The Unicode character code.</param>

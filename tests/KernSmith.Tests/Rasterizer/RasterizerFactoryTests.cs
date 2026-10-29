@@ -93,7 +93,7 @@ public class RasterizerFactoryTests
         caps.SupportsColorFonts.ShouldBeTrue();
         caps.SupportsVariableFonts.ShouldBeTrue();
         caps.SupportsSdf.ShouldBeTrue();
-        caps.SupportsOutlineStroke.ShouldBeTrue();
+        caps.SupportsOutlineStroke.ShouldBeFalse("FreeType does not implement RasterizeOutlineLayer; the pipeline draws its outlines");
         caps.SupportedAntiAliasModes.ShouldContain(AntiAliasMode.None);
         caps.SupportedAntiAliasModes.ShouldContain(AntiAliasMode.Grayscale);
         caps.SupportedAntiAliasModes.ShouldContain(AntiAliasMode.Light);

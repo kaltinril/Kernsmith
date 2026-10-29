@@ -7,7 +7,7 @@ A fully custom, pure C# rasterizer backend for KernSmith. Zero external NuGet de
 This package provides the `Native` rasterizer — a font rasterizer owned entirely by
 KernSmith, with no native libraries and no third-party font dependencies. It targets
 feature parity with the FreeType backend over time, doing outline-level work (synthetic
-bold/italic, stroking, SDF) in managed C#.
+bold/italic, outline layers, SDF) in managed C#.
 
 **Platform**: Cross-platform (`net8.0`, `net10.0`). No native libraries required.
 Trim- and AOT-friendly. Verified on Windows, Linux (x64 and arm64), macOS, Android, iOS, and Mac Catalyst; Blazor WASM
@@ -47,10 +47,13 @@ them before the backend sees the bytes.
   subpixel per colour channel in RGB order, alpha = the strongest subpixel, filtered with a
   one-pixel box, so per-channel output matches the FreeType backend's LCD mode). SDF and MSDF
   take precedence over LCD, and color glyphs ignore LCD, as on FreeType.
+- **Vector outlines, synthetic width and slant** — opt-in, see
+  [Vector outlines, width and slant](#vector-outlines-width-and-slant).
 
 Not supported — each raises a clear error or is ignored, as noted:
 
-- **Outline stroking** (Phase 168) — the backend has none of its own; KernSmith core still draws outlines as a bitmap effect
+- **Vector outlines for color glyphs and distance fields** — a color face with `ColorFont` keeps the bitmap outline effect for every glyph; `OutlineMode.Vector` with SDF/MSDF is rejected by core
+- **Small caps** — the geometry exists internally; no option selects it
 - **Bitmap-only color fonts** (`CBDT`/`sbix`, e.g. Noto Color Emoji) — rejected at `LoadFont` with a `RasterizationException`
 - **TrueType bytecode hinting** — never run; the auto-hinter is Native's own and fits y only
 - **System fonts by name** — `LoadSystemFont` throws `NotSupportedException`; load font bytes instead
@@ -60,6 +63,29 @@ Not supported — each raises a clear error or is ignored, as noted:
 The package is not published to NuGet yet, so `RasterizerBackend.Native` resolves only in
 builds that reference this project directly. The KernSmith CLI ships it — try
 `kernsmith generate -f font.ttf -s 32 --rasterizer native`.
+
+## Vector outlines, width and slant
+
+All three are opt-in; default output is unchanged.
+
+- **`OutlineMode.Vector`** (`.bmfc` `outlineMode=vector`, CLI `--outline-mode vector`,
+  `BmFontBuilder.WithOutlineMode`) — Native draws the outline layer itself
+  (`RasterizeOutlineLayer`, `SupportsOutlineStroke`) instead of core's bitmap effect: the glyph
+  grown by `Outline` pixels, measured from the true outline with the pen `OutlineShape` names
+  (round, square = Chebyshev, plus = Manhattan — the effect's own metrics). Core places, colors
+  and layers it exactly as it does the effect (shadow, gradient, fill color, channel routing,
+  supersampling, height stretch), so cells and offsets match; only the ring's shape differs: its
+  edge has the body's own exact-area anti-aliasing instead of the effect's 1.5-pixel fade, narrow
+  counters fill solidly instead of leaving specks, and aliased rings step evenly on curves. The
+  ring is computed from distances, not by filling stroke pieces (which over-darkened edge pixels).
+  Custom glyphs and color faces keep the effect; SDF/MSDF is rejected.
+- **`WidthPercent`** (`.bmfc` `widthPercent`, CLI `--width-percent`, 10–1000, `SupportsWidthScale`)
+  — condensed/expanded outlines, advances and kerning, applied before bold and italic.
+- **`ItalicAngle`** (`.bmfc` `italicAngle`, CLI `--italic-angle`, ±60°, positive leans right,
+  `SupportsItalicAngle`) — the synthetic italic's slant; 12 is the FreeType-matched default.
+
+Other backends report false for all three: `OutlineMode.Vector` falls back to the effect, and a
+non-default width or angle throws `NotSupportedException`.
 
 ## Hinting
 
@@ -135,7 +161,7 @@ Everything is internal; add a feature to its stage rather than to `NativeRasteri
 | # | Stage | Code | Add a feature by |
 |---|-------|------|------------------|
 | 1 | Decode → `DecodedGlyph` (cubic outline, advance, optional declared bbox; font units) | `Internal/Outlines/IOutlineDecoder.cs`, `TrueTypeOutlineDecoder.cs`, `CffOutlineDecoder.cs` (interpreter in `Internal/Cff/`); variations in `Internal/Variations/` | implementing `IOutlineDecoder` and returning it from `OutlineDecoders.ForFace`. Variation deltas live inside the decoder: both decoders receive the face's `FontVariations` (set by `SetVariationAxes`); `TrueTypeOutlineDecoder` applies `gvar`; `CffOutlineDecoder` feeds CFF2 `blend` per-`vsindex` region scalars through `CharstringContext.BlendScalars`. |
-| 2 | Transforms, in order, in font units | `Internal/Pipeline/IGlyphTransform.cs`, `GlyphTransforms.cs` | implementing `IGlyphTransform` and adding it in `GlyphTransforms.For` — `BoldTransform` then `ItalicTransform` today (167). `WidthScaleTransform`, `SmallCapsTransform` (before bold) and `StrokeTransform` (last, as a separate layer) exist but are not registered until core options reach them (168). Build results with `WithOutline` / `WithAdvanceWidth`. |
+| 2 | Transforms, in order, in font units | `Internal/Pipeline/IGlyphTransform.cs`, `GlyphTransforms.cs` | implementing `IGlyphTransform` and adding it in `GlyphTransforms.For` — `WidthScaleTransform`, `BoldTransform`, then `ItalicTransform` at `ItalicAngle` (167, 168). `SmallCapsTransform` (would go before bold) and `StrokeTransform` exist unregistered; the vector outline layer is `OutlineLayer`, drawn from the fully prepared glyph. Build results with `WithOutline` / `WithAdvanceWidth`. |
 | 3 | Bounds → pixel grid | `Internal/Raster/GlyphBox.cs`, `Internal/Outlines/OutlineBounds.cs` | nothing: a replaced outline loses its declared bbox and is measured from its tight bounds. |
 | 4 | Scale, then pixel-space hinting | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs`; `Internal/Hinting/` | `GlyphHinter.Apply` runs the auto-hinter (174) for hinted requests: `FontHintMetrics` (per face/size/style/instance, cached) and `GridFitter`. It returns a pixel-space outline with an identity `ToPixels`. |
 | 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs`, `SdfRenderer.cs`, `MsdfRenderer.cs` (distance code and edge coloring in `Internal/Distance/`), `LcdRenderer.cs` (filters in `Internal/Raster/LcdFilter.cs`), `ColorLayerRenderer.cs`, `PaintGraphRenderer.cs` | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` (distance fields first, then LCD, else coverage). Color glyphs (172) wrap that renderer in `GlyphRenderers.SelectForFace`: `ColorLayerRenderer` sends `COLR` version 1 paint graphs to `PaintGraphRenderer` and draws version 0 layers itself, preparing every clip or layer glyph through stages 1–4. `Measure` must match what `Render` produces. |

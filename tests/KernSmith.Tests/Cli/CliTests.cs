@@ -863,6 +863,66 @@ public class CliTests : IDisposable
         File.ReadAllText(roundConfig).ShouldNotContain("outlineShape");
     }
 
+    // -- --outline-mode, --width-percent, --italic-angle (Phase 168) --
+
+    [Fact]
+    public void Generate_InvalidOutlineMode_ReturnsError()
+    {
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "24", "--outline", "2", "--outline-mode", "hologram");
+
+        exitCode.ShouldBe(1);
+        stderr.ShouldContain("Unknown outline mode: hologram", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_OutlineModeVector_OnNative_ChangesPixelsAndIsSaved()
+    {
+        var effectOut = Path.Combine(_tempDir, "effect");
+        var vectorOut = Path.Combine(_tempDir, "vector");
+        var savedConfig = Path.Combine(_tempDir, "vector.bmfc");
+
+        RunCli("generate", "-f", FontPath, "-s", "24", "-c", "@", "--outline", "2", "--rasterizer", "native",
+            "-o", effectOut).ExitCode.ShouldBe(0);
+        var (exitCode, _, stderr) = RunCli("generate", "-f", FontPath, "-s", "24", "-c", "@", "--outline", "2",
+            "--rasterizer", "native", "--outline-mode", "vector", "-o", vectorOut, "--save-config", savedConfig);
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        File.ReadAllBytes(vectorOut + "_0.png").ShouldNotBe(File.ReadAllBytes(effectOut + "_0.png"));
+        File.ReadAllText(savedConfig).ShouldContain("outlineMode=vector", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_WidthPercentAndItalicAngle_OnNative_AreSavedAndKeptFromConfig()
+    {
+        var savedConfig = Path.Combine(_tempDir, "shaped.bmfc");
+        var (exitCode, _, stderr) = RunCli("generate", "-f", FontPath, "-s", "24", "-c", "Al", "--italic",
+            "--rasterizer", "native", "--width-percent", "80", "--italic-angle", "20",
+            "-o", Path.Combine(_tempDir, "shaped"), "--save-config", savedConfig);
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        var text = File.ReadAllText(savedConfig);
+        text.ShouldContain("widthPercent=80", Case.Sensitive);
+        text.ShouldContain("italicAngle=20", Case.Sensitive);
+
+        var resaved = Path.Combine(_tempDir, "resaved.bmfc");
+        var (keptExit, _, keptErr) = RunCli("generate", "--config", savedConfig, "-f", FontPath,
+            "-o", Path.Combine(_tempDir, "kept"), "--save-config", resaved);
+        keptExit.ShouldBe(0, $"stderr: {keptErr}");
+        File.ReadAllText(resaved).ShouldContain("widthPercent=80", Case.Sensitive);
+        File.ReadAllText(resaved).ShouldContain("italicAngle=20", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_WidthPercent_OnABackendWithoutIt_FailsWithTheReason()
+    {
+        var (exitCode, _, stderr) = RunCli("generate", "-f", FontPath, "-s", "24", "-c", "A",
+            "--rasterizer", "freetype", "--width-percent", "80", "-o", Path.Combine(_tempDir, "ft"));
+
+        exitCode.ShouldNotBe(0);
+        stderr.ShouldContain("WidthPercent = 80", Case.Sensitive);
+    }
+
     [Fact]
     public void Generate_ConfigHiero_AutoDetectsAndGenerates()
     {

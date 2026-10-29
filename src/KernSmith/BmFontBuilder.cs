@@ -192,6 +192,11 @@ public sealed class BmFontBuilder
     /// <returns>This builder.</returns>
     public BmFontBuilder WithOutlineShape(OutlineShape shape) { _options.OutlineShape = shape; return this; }
 
+    /// <summary>Selects how the outline is drawn; see <see cref="FontGeneratorOptions.OutlineMode"/>.</summary>
+    /// <param name="mode">Bitmap effect (default) or the backend's vector stroke.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithOutlineMode(OutlineMode mode) { _options.OutlineMode = mode; return this; }
+
     /// <summary>If true, generates signed distance field (SDF) output instead of bitmaps.</summary>
     /// <param name="sdf">Enable SDF.</param>
     /// <returns>This builder.</returns>
@@ -346,6 +351,16 @@ public sealed class BmFontBuilder
     /// <returns>This builder.</returns>
     public BmFontBuilder WithHeightPercent(int percent) { _options.HeightPercent = percent; return this; }
 
+    /// <summary>Scales glyph width as a percentage (condensed/expanded); see <see cref="FontGeneratorOptions.WidthPercent"/>.</summary>
+    /// <param name="percent">Width as a percentage. 100 = normal, 80 = 20% narrower.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithWidthPercent(int percent) { _options.WidthPercent = percent; return this; }
+
+    /// <summary>Sets the slant of synthetic italic; see <see cref="FontGeneratorOptions.ItalicAngle"/>.</summary>
+    /// <param name="degrees">Degrees from vertical, positive leaning right. Default 12.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithItalicAngle(float degrees) { _options.ItalicAngle = degrees; return this; }
+
     /// <summary>Adds a custom bitmap for a specific character code.</summary>
     /// <param name="codepoint">Unicode character code to replace.</param>
     /// <param name="glyph">The custom glyph data.</param>
@@ -466,6 +481,7 @@ public sealed class BmFontBuilder
         _options.OutlineG = source.OutlineG;
         _options.OutlineB = source.OutlineB;
         _options.OutlineShape = source.OutlineShape;
+        _options.OutlineMode = source.OutlineMode;
         _options.Sdf = source.Sdf;
         _options.SdfSpread = source.SdfSpread;
         _options.SdfScale = source.SdfScale;
@@ -487,6 +503,8 @@ public sealed class BmFontBuilder
         _options.ForceOffsetsToZero = source.ForceOffsetsToZero;
         _options.Channels = source.Channels;
         _options.HeightPercent = source.HeightPercent;
+        _options.WidthPercent = source.WidthPercent;
+        _options.ItalicAngle = source.ItalicAngle;
         _options.MatchCharHeight = source.MatchCharHeight;
         _options.PackingEfficiencyHint = source.PackingEfficiencyHint;
         _options.ShadowOffsetX = source.ShadowOffsetX;

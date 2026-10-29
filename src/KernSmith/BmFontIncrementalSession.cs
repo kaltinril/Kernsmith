@@ -567,7 +567,7 @@ public sealed class BmFontIncrementalSession : IDisposable
                 if (!_kerningPreScaled)
                 {
                     amount = (int)Math.Round(
-                        (double)amount * _prepared.EffectiveSize / _prepared.FontInfo.UnitsPerEm,
+                        (double)amount * _prepared.EffectiveSize / _prepared.FontInfo.UnitsPerEm * (_prepared.Options.WidthPercent / 100.0),
                         MidpointRounding.AwayFromZero);
                 }
                 if (amount == 0)

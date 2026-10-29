@@ -23,6 +23,16 @@ internal sealed class ItalicTransform : IGlyphTransform
     public float Shear { get; }
 
     /// <summary>
+    /// The slant for <see cref="KernSmith.Rasterizer.RasterOptions.ItalicAngle"/>: degrees from
+    /// vertical, positive leaning right. Exactly 12 — the option's default — is
+    /// <see cref="Instance"/>, FreeType's fixed-point slant, which the tangent of 12° differs from
+    /// in the fourth digit, so the default output matches the FreeType backend's.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">If the angle is not finite or not within ±60°.</exception>
+    public static ItalicTransform ForAngle(float degrees) =>
+        degrees.Equals(12f) ? Instance : FromItalicAngle(-degrees);
+
+    /// <summary>
     /// The slant for a <c>post.italicAngle</c>: degrees counter-clockwise from vertical, so the
     /// usual negative angle leans right.
     /// </summary>

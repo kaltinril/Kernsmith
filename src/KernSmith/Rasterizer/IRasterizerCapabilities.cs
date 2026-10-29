@@ -14,7 +14,11 @@ public interface IRasterizerCapabilities
     /// <summary>Whether the rasterizer can produce signed distance field output.</summary>
     bool SupportsSdf { get; }
 
-    /// <summary>Whether the rasterizer can stroke glyph outlines.</summary>
+    /// <summary>
+    /// Whether the rasterizer draws outline layers itself: true means it implements
+    /// <see cref="IRasterizer.RasterizeOutlineLayer"/>, which the pipeline then uses for
+    /// <see cref="OutlineMode.Vector"/> outlines. False keeps the pipeline's bitmap outline.
+    /// </summary>
     bool SupportsOutlineStroke { get; }
 
     /// <summary>
@@ -52,4 +56,16 @@ public interface IRasterizerCapabilities
     /// (<see cref="SdfMode.Msdf"/> and <see cref="SdfMode.Mtsdf"/>) as RGBA glyphs.
     /// </summary>
     bool SupportsMsdf => false;
+
+    /// <summary>
+    /// When true, the rasterizer honors <see cref="RasterOptions.WidthPercent"/> (synthetic
+    /// condensed/expanded outlines and advances).
+    /// </summary>
+    bool SupportsWidthScale => false;
+
+    /// <summary>
+    /// When true, the rasterizer slants synthetic italic by <see cref="RasterOptions.ItalicAngle"/>
+    /// rather than an angle of its own.
+    /// </summary>
+    bool SupportsItalicAngle => false;
 }

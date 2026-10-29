@@ -22,7 +22,7 @@ public class NativeRasterizerTests
         caps.SupportsVariableFonts.ShouldBeTrue();
         caps.SupportsSdf.ShouldBeTrue();
         caps.SupportsMsdf.ShouldBeTrue();
-        caps.SupportsOutlineStroke.ShouldBeFalse();
+        caps.SupportsOutlineStroke.ShouldBeTrue("RasterizeOutlineLayer draws vector outlines (Phase 168)");
         caps.SupportsSyntheticBold.ShouldBeTrue();
         caps.SupportsSyntheticItalic.ShouldBeTrue();
         caps.SupportsSystemFonts.ShouldBeFalse();

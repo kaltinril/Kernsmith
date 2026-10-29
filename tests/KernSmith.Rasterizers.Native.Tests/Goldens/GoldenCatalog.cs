@@ -275,7 +275,48 @@ internal static class GoldenCatalog
                 o.ColorFont = true;
                 return o;
             }),
+
+            // Phase 168 opt-ins: vector outlines (composited, aliased, routed to a channel; round,
+            // square and diamond pens; a CFF face) and synthetic width/italic angle.
+            new("generate/roboto/outline-vector-28-w2", Roboto, () => Vector(Options(28, GenerateText), 2), Reference: true),
+            new("generate/roboto/outline-vector-none-24-w2", Roboto, () =>
+            {
+                var o = Vector(Options(24, GenerateText), 2);
+                o.AntiAlias = AntiAliasMode.None;
+                return o;
+            }),
+            new("generate/roboto/outline-vector-routed-28-w3-square", Roboto, () =>
+            {
+                var o = Vector(Options(28, GenerateText), 3);
+                o.OutlineShape = OutlineShape.Square;
+                o.Channels = new ChannelConfig(Alpha: ChannelContent.Outline);
+                return o;
+            }),
+            new("generate/sourceserif/outline-vector-shadow-28-w2-plus", SourceSerif, () =>
+            {
+                var o = Vector(Options(28, GenerateText), 2);
+                o.OutlineShape = OutlineShape.Plus;
+                o.ShadowOffsetX = 2;
+                o.ShadowOffsetY = 2;
+                o.ShadowBlur = 1;
+                return o;
+            }),
+            new("generate/roboto/width75-italic20-28", Roboto, () =>
+            {
+                var o = Options(28, GenerateText);
+                o.WidthPercent = 75;
+                o.Italic = true;
+                o.ItalicAngle = 20f;
+                return o;
+            }, Reference: true),
         };
+
+        static FontGeneratorOptions Vector(FontGeneratorOptions o, int width)
+        {
+            o.Outline = width;
+            o.OutlineMode = OutlineMode.Vector;
+            return o;
+        }
 
         return cases.ToDictionary(c => c.Id, StringComparer.Ordinal);
     }

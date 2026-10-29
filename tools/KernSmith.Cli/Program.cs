@@ -80,6 +80,7 @@ static int ShowHelp()
           --sdf                        Enable SDF rendering
           --outline <n>                Outline width in pixels (default: 0)
           --outline-shape <shape>      Outline corner shape: round (default), square, plus
+          --outline-mode <mode>        Outline drawing: effect (default) or vector (native)
           --gradient <top>,<bottom>    Vertical gradient (comma or space separated)
           --shadow <x>,<y>,<color>,<blur>  Drop shadow
           --max-texture <n>            Max texture size (default: 1024)
@@ -93,6 +94,8 @@ static int ShowHelp()
           --rasterizer <backend>       Rasterizer backend: freetype (default), stbtruetype, gdi, directwrite, native
           --hinting / --no-hinting     Enable/disable hinting (default: on)
           --height-percent <n>         Height scaling percentage (default: 100)
+          --width-percent <n>          Synthetic width percentage (default: 100; native)
+          --italic-angle <deg>         Synthetic italic slant in degrees (default: 12; native)
           --match-char-height          Match rendered to pixel height
           --fallback-char <char>       Fallback character for missing glyphs
           --color-font                 Enable color font rendering
