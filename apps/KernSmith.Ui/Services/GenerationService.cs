@@ -55,6 +55,10 @@ public class GenerationService
             Bold = request.Bold,
             Italic = request.Italic,
             AntiAlias = request.AntiAlias,
+            LcdFilter = request.LcdFilter,
+            LcdSubpixelOrder = request.LcdSubpixelOrder,
+            WidthPercent = request.WidthPercent,
+            ItalicAngle = request.ItalicAngle,
             EnableHinting = request.Hinting,
             SuperSampleLevel = request.SuperSampleLevel,
             // Same split as ProjectService: SDF via Sdf, only MSDF/MTSDF via SdfMode, so the
@@ -62,6 +66,7 @@ public class GenerationService
             Sdf = request.SdfMode == SdfMode.Sdf,
             SdfMode = request.SdfMode is SdfMode.Msdf or SdfMode.Mtsdf ? request.SdfMode : SdfMode.None,
             SdfSpread = request.SdfSpread,
+            SdfScale = request.SdfScale,
             ColorFont = request.ColorFontEnabled,
             ColorPaletteIndex = request.ColorPaletteIndex,
             Backend = request.Backend,
@@ -79,6 +84,7 @@ public class GenerationService
         {
             options.Outline = request.OutlineWidth;
             options.OutlineShape = request.OutlineShape;
+            options.OutlineMode = request.OutlineMode;
             options.OutlineR = request.OutlineColorR;
             options.OutlineG = request.OutlineColorG;
             options.OutlineB = request.OutlineColorB;

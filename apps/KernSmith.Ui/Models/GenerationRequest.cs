@@ -76,6 +76,14 @@ public record GenerationRequest
     /// <see cref="AntiAliasMode.Lcd"/> render those as grayscale (core negotiation).
     /// </summary>
     public AntiAliasMode AntiAlias { get; init; } = AntiAliasMode.Grayscale;
+    /// <summary>Low-pass filter for <see cref="AntiAliasMode.Lcd"/> output (Native only; others ignore it).</summary>
+    public LcdFilter LcdFilter { get; init; }
+    /// <summary>Subpixel layout for <see cref="AntiAliasMode.Lcd"/> output (Native only; others ignore it).</summary>
+    public LcdSubpixelOrder LcdSubpixelOrder { get; init; }
+    /// <summary>Synthetic width in percent. Range: 10..1000. Default 100; other values need a backend that supports width scaling.</summary>
+    public int WidthPercent { get; init; } = 100;
+    /// <summary>Synthetic italic slant in degrees. Range: -60..60. Default 12; other values need a backend that supports italic angles.</summary>
+    public float ItalicAngle { get; init; } = 12f;
     /// <summary>Enable font hinting for sharper rendering at small sizes.</summary>
     public bool Hinting { get; init; } = true;
     /// <summary>Super-sampling multiplier. Valid values: 1 (off), 2, or 4.</summary>
@@ -86,6 +94,8 @@ public record GenerationRequest
     public int OutlineWidth { get; init; } = 1;
     /// <summary>Corner shape of the outline.</summary>
     public OutlineShape OutlineShape { get; init; } = OutlineShape.Round;
+    /// <summary>Bitmap outline effect or vector stroke (Vector needs a backend that strokes outlines).</summary>
+    public OutlineMode OutlineMode { get; init; } = OutlineMode.Effect;
     /// <summary>Outline color red component. Range: 0..255.</summary>
     public byte OutlineColorR { get; init; }
     /// <summary>Outline color green component. Range: 0..255.</summary>
@@ -150,6 +160,8 @@ public record GenerationRequest
     public SdfMode SdfMode { get; init; }
     /// <summary>SDF spread (search radius) in pixels. Range: 2..32. Default 8.</summary>
     public float SdfSpread { get; init; } = 8f;
+    /// <summary>Distance-field supersampling scale. Range: 1..4. Default 1.</summary>
+    public int SdfScale { get; init; } = 1;
     /// <summary>Render color glyphs from COLR/CPAL tables (e.g., emoji fonts).</summary>
     public bool ColorFontEnabled { get; init; }
     /// <summary>CPAL palette index used for color glyphs. 0 = the font's default palette.</summary>
