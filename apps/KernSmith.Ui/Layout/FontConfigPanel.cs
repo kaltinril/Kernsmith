@@ -300,7 +300,7 @@ public class FontConfigPanel : Panel
                     _rasterizerCombo.SelectedIndex = idx;
             };
             sizeGrid.AddRow("Rasterizer:", _rasterizerCombo);
-            TooltipService.SetTooltip(_rasterizerCombo, "Glyph rasterizer backend. FreeType: cross-platform default. GDI: Windows-only, matches BMFont.exe output. DirectWrite: Windows-only, ClearType-hinted grayscale. StbTrueType: fully managed, no native dependencies. Native (experimental, not on NuGet yet): KernSmith's own fully managed rasterizer with color (COLR) and variable fonts, SDF and MSDF/MTSDF, Light auto-hinting and LCD; no system-font lookup of its own and no bitmap-only color fonts.");
+            TooltipService.SetTooltip(_rasterizerCombo, "Glyph rasterizer backend. FreeType: cross-platform default. GDI: Windows-only, matches BMFont.exe output. DirectWrite: Windows-only, ClearType-hinted grayscale. StbTrueType: fully managed, no native dependencies. Native (experimental, not on NuGet yet): KernSmith's own fully managed rasterizer with color (COLR, CBDT/sbix) and variable fonts, SDF and MSDF/MTSDF, Light auto-hinting, LCD, vector outlines, synthetic width and italic angle; no system-font lookup of its own.");
 
             var advanceXBox = UiFactory.CreateSmallFloatBox(_mainViewModel.Effects.AdvanceAdjustX,
                 v => _mainViewModel.Effects.AdvanceAdjustX = v);

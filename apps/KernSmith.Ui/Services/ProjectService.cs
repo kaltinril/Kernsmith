@@ -91,12 +91,17 @@ public class ProjectService
         effects.ForceSyntheticBold = options.ForceSyntheticBold;
         effects.ForceSyntheticItalic = options.ForceSyntheticItalic;
         effects.AntiAlias = options.AntiAlias;
+        effects.LcdFilter = options.LcdFilter;
+        effects.LcdSubpixelOrder = options.LcdSubpixelOrder;
+        effects.WidthPercent = options.WidthPercent;
+        effects.ItalicAngle = options.ItalicAngle;
         effects.Hinting = options.EnableHinting;
         effects.SuperSampleLevel = options.SuperSampleLevel;
         effects.OutlineEnabled = options.Outline > 0;
         effects.OutlineWidth = options.Outline > 0 ? options.Outline : 1;
         effects.OutlineColor = EffectsViewModel.ToHex(options.OutlineR, options.OutlineG, options.OutlineB);
         effects.OutlineShape = options.OutlineShape;
+        effects.OutlineMode = options.OutlineMode;
         effects.ShadowEnabled = options.ShadowOffsetX != 0 || options.ShadowOffsetY != 0 || options.ShadowBlur != 0;
         effects.ShadowOffsetX = options.ShadowOffsetX;
         effects.ShadowOffsetY = options.ShadowOffsetY;
@@ -121,6 +126,7 @@ public class ProjectService
         effects.Channels = options.Channels;
         effects.SdfMode = options.EffectiveSdfMode;
         effects.SdfSpread = options.SdfSpread;
+        effects.SdfScale = options.SdfScale;
         effects.ColorFontEnabled = options.ColorFont;
         effects.ColorPaletteIndex = options.ColorPaletteIndex;
         effects.HasColorGlyphs = fontConfig.HasColorGlyphs;
@@ -179,10 +185,17 @@ public class ProjectService
             ForceSyntheticBold = effects.ForceSyntheticBold,
             ForceSyntheticItalic = effects.ForceSyntheticItalic,
             AntiAlias = effects.AntiAlias,
+            LcdFilter = effects.LcdFilter,
+            LcdSubpixelOrder = effects.LcdSubpixelOrder,
+            // Same gating as generation, so a saved project never holds a width, angle or
+            // vector outline its rasterizer would reject.
+            WidthPercent = MainViewModel.EffectiveWidthPercent(fontConfig, effects),
+            ItalicAngle = MainViewModel.EffectiveItalicAngle(fontConfig, effects),
             EnableHinting = effects.Hinting,
             SuperSampleLevel = effects.SuperSampleLevel,
             Outline = effects.OutlineEnabled ? effects.OutlineWidth : 0,
             OutlineShape = effects.OutlineShape,
+            OutlineMode = MainViewModel.EffectiveOutlineMode(fontConfig, effects),
             OutlineR = outlineRgb.R,
             OutlineG = outlineRgb.G,
             OutlineB = outlineRgb.B,
@@ -211,6 +224,7 @@ public class ProjectService
             Sdf = effects.SdfMode == SdfMode.Sdf,
             SdfMode = effects.SdfMode is SdfMode.Msdf or SdfMode.Mtsdf ? effects.SdfMode : SdfMode.None,
             SdfSpread = effects.SdfSpread,
+            SdfScale = effects.SdfScale,
             ColorFont = effects.ColorFontEnabled,
             ColorPaletteIndex = effects.ColorPaletteIndex,
             VariationAxes = effects.VariationAxisValues.Count > 0

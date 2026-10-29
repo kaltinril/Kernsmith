@@ -17,16 +17,25 @@ when Auto-Regenerate is on. Native's options:
 | Option | Where |
 |--------|-------|
 | Anti-alias None / Grayscale / Light / LCD | Effects > Font Style > **Anti-Alias** (lists only the backend's modes) |
+| LCD filter and subpixel order | Effects > Font Style > **LCD Filter** / **LCD Order** (enabled in LCD mode) |
 | Light auto-hinting | Anti-Alias **Light** with **Hinting** checked (Native hints nothing else) |
 | SDF / MSDF / MTSDF | Effects > Advanced > **Distance Field** (MSDF/MTSDF are listed only for Native) |
+| SDF scale | Effects > Advanced > **SDF Scale** (1-4, any backend with SDF) |
+| Vector outline | Effects > Outline > **Mode** = Vector (enabled only on Native with no distance field) |
 | Color glyphs and palette | Effects > Advanced > **Color Font** and **Palette** (enabled for fonts with color tables) |
 | Variation axes | Effects > **Variable Font** sliders (appear for fonts with `fvar`) |
 | Synthetic bold/italic | Effects > Font Style > **Bold** / **Italic** |
+| Synthetic width and italic angle | Effects > Font Style > **Width %** (10-1000) and **Italic Angle** (-60 to 60, enabled with Italic) |
+
+On other rasterizers the Vector mode, **Width %** and **Italic Angle** are disabled and show the
+value actually used (Effect, 100, 12); the value you chose comes back when you switch to Native.
 
 The **Preview** tab shows the raw atlas (an MSDF atlas is a red/green/blue field). The **Sample**
 tab decodes SDF, MSDF and MTSDF pages back to glyph shapes, so it should show crisp text.
 **File > Save Project** writes these settings to the `.bmfc` (`rasterizer=native`, `sdfMode=`,
-`antiAlias=`, `colorPalette=`, `variationAxes=`), and loading the project restores them.
+`sdfScale=`, `antiAlias=`, `lcdFilter=`, `lcdOrder=`, `outlineMode=`, `widthPercent=`,
+`italicAngle=`, `colorPalette=`, `variationAxes=`), and loading the project restores them. Saving
+as `.hiero` lists the ones Hiero cannot store before writing.
 
 To also render the app's own interface text with Native through the Gum integration
 (`KernSmithFontCreator`, see below), launch with `--ui-rasterizer`:
@@ -143,13 +152,18 @@ FreeType by switching the rasterizer.
 | Mono | Roboto at 8 px, AA None | Thin strokes (`l I \| . :`) never vanish |
 | Light hinting | Roboto at 10-14 px, Light + Hinting | Horizontal stems and x-height snap to whole pixels (crisper than Grayscale); Light without Hinting equals Grayscale |
 | LCD | Roboto at 24 px, LCD | RGBA atlas with colored subpixel fringes, normal width (FreeType's LCD is 3x-wide grayscale) |
+| LCD filter / order | Roboto at 24 px, LCD, each **LCD Filter** and **LCD Order** | None has the strongest fringes, Smooth the weakest; BGR swaps the red and blue fringes; V-RGB/V-BGR fringe vertically (top/bottom edges) |
 | SDF | Roboto, Distance Field SDF | Soft glow in Preview, crisp text in Sample; close to FreeType's SDF |
+| SDF scale | Roboto, Distance Field SDF, **SDF Scale** 1 then 4 | Same layout; smoother field and Sample edges at 4 |
 | MSDF / MTSDF | Roboto, Distance Field MSDF/MTSDF | Colored field in Preview, sharp corners in Sample; combining with outline, shadow, gradient, fill color, channel packing, super sampling or color font is refused with an error |
 | Variable TrueType | `RobotoFlex-Variable.ttf` (wght 100-1000, wdth, opsz, ...), `DancingScript-Variable.ttf` | Glyphs follow the sliders; CLI `--instance Black` equals `--axis wght=900` |
 | Variable CFF2 | `SourceCodeVF-Upright.otf` | Weight follows `wght` (the default instance is ExtraLight) |
 | COLR v0 | `Color/BungeeColor-Regular.ttf`, Color Font on | Two-tone letters; palettes 0-8 recolor them; palette 9 is an error |
 | COLR v1 | `Color/ReemKufiInk-Regular.ttf`, Color Font on, characters ٠١٢٣٤٥٦٧٨٩ (U+0660-0669) | Gradient-filled digits (Latin text stays gray) |
-| Bitmap-only color | `NotoColorEmoji.ttf`, Color Font on | Clear error naming CBDT/sbix (FreeType renders it) |
+| Bitmap color (CBDT/sbix) | `NotoColorEmoji.ttf`, Color Font on | Emoji in color, like FreeType |
 | Synthetic bold / italic | Roboto, Bold / Italic | Same stroke weight and 12° slant as FreeType, nothing clipped |
-| Project round trip | Any of the above, Save then Load Project | Rasterizer, anti-alias, distance field, palette and axes come back |
+| Italic angle | Roboto, Italic, **Italic Angle** 30 then -12 | Steeper slant at 30, leaning left at -12, nothing clipped; switching to FreeType disables the box and renders 12° |
+| Width % | Roboto, **Width %** 50 then 150 | Glyphs, advances and kerning half / one-and-a-half as wide; switching to FreeType disables the box and renders 100% |
+| Vector outline | Roboto at 32 px, Outline width 3, **Mode** Vector vs Effect | Vector has a crisp ring edge and solid narrow counters; Effect looks like FreeType's outline. Picking a distance field switches the combo back to Effect (disabled) |
+| Project round trip | Any of the above, Save then Load Project | Rasterizer, anti-alias, LCD filter/order, distance field, SDF scale, outline mode, width, italic angle, palette and axes come back |
 | Gum | UI with `--ui-rasterizer native` | UI text renders normally |
