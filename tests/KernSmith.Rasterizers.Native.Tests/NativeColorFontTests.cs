@@ -3,14 +3,19 @@ using System.Text;
 using KernSmith.Font.Models;
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.FreeType;
+using KernSmith.Rasterizers.Native.Internal;
+using KernSmith.Rasterizers.Native.Internal.Color;
+using KernSmith.Rasterizers.Native.Internal.Outlines;
+using KernSmith.Rasterizers.Native.Internal.Pipeline;
+using KernSmith.Rasterizers.Native.Internal.Tables;
 using Shouldly;
 
 namespace KernSmith.Rasterizers.Native.Tests;
 
 /// <summary>
 /// Phase 172 — color fonts end to end on the committed fixtures: COLR version 0 output measured
-/// against FreeType, COLR version 1 falling back to plain coverage, and bitmap-only color fonts
-/// rejected with a clear message.
+/// against FreeType, COLR version 1 paint graphs checked against the font's palettes and plain
+/// coverage, and bitmap-only color fonts rejected with a clear message.
 /// </summary>
 /// <remarks>
 /// FreeType is compared with hinting off (Native has no hinter) and returns premultiplied RGBA,
@@ -126,12 +131,132 @@ public class NativeColorFontTests
     }
 
     // ---- COLR version 1 (Reem Kufi Ink) ----------------------------------------------------
+    // FreeType's backend draws COLR version 1 glyphs as plain grayscale (no paint graphs), so these
+    // compare against the font's own data and against plain coverage of the same glyphs.
+
+    /// <summary>Arabic marks and digits the cmap maps straight to version 1 color glyphs.</summary>
+    private const string ReemColorSample = "١٤؟ءَّ۵";
 
     [Fact]
-    public void ReemKufiInk_Version1Glyphs_FallBackToPlainCoverage()
+    public void ReemKufiInk_Version1Glyphs_RenderFromThePalette()
     {
-        // Native draws COLR version 0 layers only; a version 1 paint graph renders as the base
-        // glyph's own outline, exactly as with ColorFont off.
+        // Palette 0 is black, #8E0B14 and #C7060A; palette 1 is black, #404040 and #808080.
+        var palettes = new[]
+        {
+            new HashSet<(byte, byte, byte)> { (0, 0, 0), (0x8E, 0x0B, 0x14), (0xC7, 0x06, 0x0A) },
+            new HashSet<(byte, byte, byte)> { (0, 0, 0), (0x40, 0x40, 0x40), (0x80, 0x80, 0x80) },
+        };
+
+        using var native = new NativeRasterizer();
+        native.LoadFont(TestFonts.ReemKufiInkBytes());
+        for (int palette = 0; palette < 2; palette++)
+        {
+            if (palette != 0)
+                native.SelectColorPalette(palette);
+
+            int colored = 0;
+            foreach (char c in ReemColorSample)
+            {
+                var glyph = native.RasterizeGlyph(c, new RasterOptions { Size = 48, ColorFont = true })!;
+                glyph.Format.ShouldBe(PixelFormat.Rgba32, $"U+{(int)c:X4} should render in color");
+
+                for (int i = 0; i < glyph.BitmapData.Length; i += 4)
+                {
+                    if (glyph.BitmapData[i + 3] != 255)
+                        continue;
+                    var rgb = (glyph.BitmapData[i], glyph.BitmapData[i + 1], glyph.BitmapData[i + 2]);
+                    palettes[palette].ShouldContain(rgb, $"U+{(int)c:X4}, palette {palette}");
+                    if (rgb != (0, 0, 0))
+                        colored++;
+                }
+            }
+
+            colored.ShouldBeGreaterThan(100, $"palette {palette} should show its non-black entries");
+        }
+    }
+
+    [Fact]
+    public void ReemKufiInk_ClipBox_SetsTheCanvas()
+    {
+        // one-ar has the clip box (200, 0)–(300, 600) on a 1000-unit em: at 50px, x 10..15, y 0..30.
+        var options = new RasterOptions { Size = 50, ColorFont = true };
+        using var native = new NativeRasterizer();
+        native.LoadFont(TestFonts.ReemKufiInkBytes());
+
+        var glyph = native.RasterizeGlyph('١', options)!;
+        glyph.Metrics.BearingX.ShouldBe(10);
+        glyph.Width.ShouldBe(5);
+        glyph.Metrics.BearingY.ShouldBe(30);
+        glyph.Height.ShouldBe(30);
+        native.GetGlyphMetrics('١', options).ShouldBe(glyph.Metrics);
+    }
+
+    [Theory]
+    [InlineData(32f)]
+    [InlineData(64f)]
+    public void ReemKufiInk_ColorSilhouette_MatchesFreeTypePlainCoverage(float size)
+    {
+        // The base glyph outlines trace their color layers, so the color glyph's alpha is the
+        // shape FreeType draws without color. Shadda (U+0651) is left out: its base outline is
+        // a one-contour simplification of its five-contour layer, too coarse to compare at 32px.
+        var bytes = TestFonts.ReemKufiInkBytes();
+        using var native = new NativeRasterizer();
+        native.LoadFont(bytes);
+        using var freeType = new FreeTypeRasterizer();
+        freeType.LoadFont(bytes);
+
+        foreach (char c in ReemColorSample.Replace("ّ", string.Empty, StringComparison.Ordinal))
+        {
+            var color = native.RasterizeGlyph(c, new RasterOptions { Size = size, ColorFont = true })!;
+            var plain = freeType.RasterizeGlyph(c, new RasterOptions { Size = size, EnableHinting = false })!;
+
+            AlphaSsim(color, plain).ShouldBeGreaterThan(0.85, $"U+{(int)c:X4} at {size}px");
+        }
+    }
+
+    [Fact]
+    public void ReemKufiInk_GradientGlyphs_RenderGradients()
+    {
+        // The gradients sit on glyphs GSUB reaches (not the cmap), so render by glyph index.
+        var bytes = TestFonts.ReemKufiInkBytes();
+        var face = NativeFontFace.Load(bytes);
+        var pipeline = new GlyphPipeline(OutlineDecoders.ForFace(face)!, face.Head.UnitsPerEm);
+        var colors = ColorGlyphs.TryLoad(face.Tables, face.Maxp.NumGlyphs)!;
+        var table = ColrV1Table.Parse(face.Tables.GetTable("COLR"))!;
+        var options = new RasterOptions { Size = 64, ColorFont = true };
+        var renderer = GlyphRenderers.SelectForFace(options, colors, pipeline);
+
+        var found = new HashSet<Type>();
+        for (int r = 0; r < table.BaseGlyphCount && found.Count < 2; r++)
+        {
+            int glyph = table.GetBaseGlyph(r);
+            colors.TryGetPaintGraph(glyph, out var graph).ShouldBeTrue();
+            var gradient = Gradients(graph.Root).FirstOrDefault(g => !found.Contains(g.GetType()));
+            if (gradient is null)
+                continue;
+            found.Add(gradient.GetType());
+
+            var prepared = pipeline.Prepare(glyph, options, GlyphTransforms.For(options, pipeline.UnitsPerEm));
+            var rendered = renderer.Render(0, glyph, prepared, options);
+            rendered.Format.ShouldBe(PixelFormat.Rgba32);
+            renderer.Measure(prepared, options).ShouldBe(rendered.Metrics);
+
+            var distinct = new HashSet<int>();
+            for (int i = 0; i < rendered.BitmapData.Length; i += 4)
+            {
+                if (rendered.BitmapData[i + 3] == 255)
+                    distinct.Add((rendered.BitmapData[i] << 16) | (rendered.BitmapData[i + 1] << 8) | rendered.BitmapData[i + 2]);
+            }
+
+            distinct.Count.ShouldBeGreaterThan(8, $"glyph {glyph} ({gradient.GetType().Name}) should show a gradient");
+        }
+
+        found.ShouldBe([typeof(LinearGradientPaint), typeof(RadialGradientPaint)], ignoreOrder: true);
+    }
+
+    [Fact]
+    public void ReemKufiInk_LatinGlyphsWithoutColorRecords_StayPlainCoverage()
+    {
         using var native = new NativeRasterizer();
         native.LoadFont(TestFonts.ReemKufiInkBytes());
 
@@ -210,6 +335,49 @@ public class NativeColorFontTests
         ColorFont = colorFont,
         ColorPaletteIndex = palette
     };
+
+    private static IEnumerable<GradientPaint> Gradients(ColrPaint? paint) => paint switch
+    {
+        GradientPaint g => [g],
+        LayersPaint l => l.Layers.SelectMany(Gradients),
+        GlyphClipPaint g => Gradients(g.Child),
+        RectClipPaint r => Gradients(r.Child),
+        TransformPaint t => Gradients(t.Child),
+        CompositePaint c => Gradients(c.Source).Concat(Gradients(c.Backdrop)),
+        _ => [],
+    };
+
+    /// <summary>SSIM of a color glyph's alpha against a grayscale glyph, over the union of their boxes (pen-aligned).</summary>
+    private static double AlphaSsim(RasterizedGlyph color, RasterizedGlyph gray)
+    {
+        int left = Math.Min(color.Metrics.BearingX, gray.Metrics.BearingX);
+        int top = Math.Max(color.Metrics.BearingY, gray.Metrics.BearingY);
+        int right = Math.Max(color.Metrics.BearingX + color.Width, gray.Metrics.BearingX + gray.Width);
+        int bottom = Math.Min(color.Metrics.BearingY - color.Height, gray.Metrics.BearingY - gray.Height);
+        int width = right - left, height = top - bottom;
+
+        var a = new byte[width * height];
+        var b = new byte[width * height];
+        for (int row = 0; row < height; row++)
+        {
+            for (int col = 0; col < width; col++)
+            {
+                int x = left + col, y = top - row;
+                a[(row * width) + col] = SampleAt(color, x, y, 4, 3);
+                b[(row * width) + col] = SampleAt(gray, x, y, 1, 0);
+            }
+        }
+
+        return ImageSimilarity.Ssim(a, b, width, height);
+    }
+
+    private static byte SampleAt(RasterizedGlyph glyph, int x, int y, int bytesPerPixel, int channel)
+    {
+        int col = x - glyph.Metrics.BearingX, row = glyph.Metrics.BearingY - y;
+        return col < 0 || row < 0 || col >= glyph.Width || row >= glyph.Height
+            ? (byte)0
+            : glyph.BitmapData[(row * glyph.Pitch) + (col * bytesPerPixel) + channel];
+    }
 
     private static int CountColoredPixels(byte[] rgba)
     {

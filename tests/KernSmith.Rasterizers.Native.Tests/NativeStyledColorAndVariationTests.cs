@@ -40,6 +40,33 @@ public class NativeStyledColorAndVariationTests
     }
 
     [Fact]
+    public void BoldColrV1Glyph_EmboldensItsGlyphClips()
+    {
+        // ReemKufiInk is COLR version 1: its PaintGlyph clips go through the same transforms as
+        // version 0 layers, so each color glyph widens, gains ink and keeps its palette colors.
+        // One-ar ('١') is left out: its clip box fixes the canvas whatever the outline does.
+        const string Sample = "٤؟ءَّ۵";
+        using var native = Load(TestFonts.ReemKufiInkBytes());
+
+        int colored = 0;
+        foreach (char c in Sample)
+        {
+            var regular = native.RasterizeGlyph(c, ColorOptions(bold: false, italic: false))!;
+            var bold = native.RasterizeGlyph(c, ColorOptions(bold: true, italic: false))!;
+            var plainBold = native.RasterizeGlyph(c, ColorOptions(bold: true, italic: false) with { ColorFont = false })!;
+
+            bold.Format.ShouldBe(PixelFormat.Rgba32, $"U+{(int)c:X4}");
+            bold.Width.ShouldBeGreaterThan(regular.Width, $"U+{(int)c:X4}: the version 1 glyph clips were not emboldened");
+            AlphaSum(bold).ShouldBeGreaterThan(AlphaSum(regular), $"U+{(int)c:X4}");
+            bold.Metrics.Advance.ShouldBe(plainBold.Metrics.Advance, $"U+{(int)c:X4}");
+            native.GetGlyphMetrics(c, ColorOptions(bold: true, italic: false)).ShouldBe(bold.Metrics, $"U+{(int)c:X4}");
+            colored += NonBlackOpaquePixels(bold);
+        }
+
+        colored.ShouldBeGreaterThan(100, "the emboldened version 1 glyphs lost their palette colors");
+    }
+
+    [Fact]
     public void ItalicColorGlyph_ShearsItsLayers()
     {
         // A 12° shear moves the top of a 48px cap well to the right of its bottom: the ink box
@@ -213,6 +240,18 @@ public class NativeStyledColorAndVariationTests
             sum += glyph.BitmapData[i];
 
         return sum;
+    }
+
+    private static int NonBlackOpaquePixels(RasterizedGlyph glyph)
+    {
+        int count = 0;
+        for (int i = 0; i < glyph.BitmapData.Length; i += 4)
+        {
+            if (glyph.BitmapData[i + 3] == 255 && (glyph.BitmapData[i] | glyph.BitmapData[i + 1] | glyph.BitmapData[i + 2]) != 0)
+                count++;
+        }
+
+        return count;
     }
 
     private static int DistinctColors(RasterizedGlyph glyph)

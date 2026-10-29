@@ -35,6 +35,35 @@ public class NativeColorDistanceFieldTests
     }
 
     [Fact]
+    public void ColorAndSdf_ColrV1GlyphsStayColor_ExactlyAsWithoutSdf()
+    {
+        // Version 1 paint graphs (ReemKufiInk) win over SDF just as version 0 layers do.
+        using var native = new NativeRasterizer();
+        native.LoadFont(TestFonts.ReemKufiInkBytes());
+        var color = new RasterOptions { Size = 48, ColorFont = true, EnableHinting = false };
+        var colorSdf = color with { Sdf = true, SdfSpread = 6 };
+
+        int colored = 0;
+        foreach (char c in "١٤؟ءَّ۵")
+        {
+            var expected = native.RasterizeGlyph(c, color)!;
+            var actual = native.RasterizeGlyph(c, colorSdf)!;
+
+            actual.Format.ShouldBe(PixelFormat.Rgba32, $"U+{(int)c:X4}");
+            actual.Metrics.ShouldBe(expected.Metrics, $"U+{(int)c:X4}");
+            actual.BitmapData.ShouldBe(expected.BitmapData, $"U+{(int)c:X4}");
+            native.GetGlyphMetrics(c, colorSdf).ShouldBe(actual.Metrics, $"U+{(int)c:X4} Measure != Render");
+            for (int i = 0; i < actual.BitmapData.Length; i += 4)
+            {
+                if (actual.BitmapData[i + 3] == 255 && (actual.BitmapData[i] | actual.BitmapData[i + 1] | actual.BitmapData[i + 2]) != 0)
+                    colored++;
+            }
+        }
+
+        colored.ShouldBeGreaterThan(100, "the version 1 glyphs should show the palette's non-black entries");
+    }
+
+    [Fact]
     public void ColorAndSdf_FreeTypeAlsoRendersColorGlyphsInColor()
     {
         // Pins the reference behaviour Native follows: FreeType draws COLR glyphs as color

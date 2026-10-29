@@ -48,6 +48,26 @@ public class LcdInteractionTests
     }
 
     [Fact]
+    public void ColrV1Glyphs_IgnoreLcd_AndRenderExactlyAsGrayscaleColor()
+    {
+        // Version 1 paint graphs (ReemKufiInk) follow the same rule as version 0 layers.
+        using var native = new NativeRasterizer();
+        native.LoadFont(TestFonts.ReemKufiInkBytes());
+
+        foreach (char c in "١٤؟ءَّ۵")
+        {
+            var gray = native.RasterizeGlyph(c, Options(AntiAliasMode.Grayscale, color: true))!;
+            var lcd = native.RasterizeGlyph(c, Options(AntiAliasMode.Lcd, color: true))!;
+
+            gray.Format.ShouldBe(PixelFormat.Rgba32, $"U+{(int)c:X4}");
+            lcd.Format.ShouldBe(gray.Format, $"U+{(int)c:X4}");
+            lcd.Metrics.ShouldBe(gray.Metrics, $"U+{(int)c:X4}");
+            lcd.BitmapData.ShouldBe(gray.BitmapData, $"U+{(int)c:X4}");
+            native.GetGlyphMetrics(c, Options(AntiAliasMode.Lcd, color: true)).ShouldBe(lcd.Metrics, $"U+{(int)c:X4}");
+        }
+    }
+
+    [Fact]
     public void FreeType_AlsoRendersColorGlyphsIdenticallyUnderLcdAndGrayscale()
     {
         // The reference behaviour the test above matches.

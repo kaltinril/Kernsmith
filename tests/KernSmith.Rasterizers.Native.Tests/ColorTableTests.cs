@@ -225,6 +225,82 @@ public class ColorTableTests
         Should.Throw<ArgumentOutOfRangeException>(() => colr.GetLayer(1));
     }
 
+    // ---- COLR version 1 --------------------------------------------------------------------
+
+    [Fact]
+    public void ColrV1_ReemKufiInkFixture_ListsItsPaintRecordsLayersAndClips()
+    {
+        var bytes = TestFonts.ReemKufiInkBytes();
+        var table = ColrV1Table.Parse(Table(bytes, "COLR"))!;
+        var face = NativeFontFace.Load(bytes);
+
+        table.BaseGlyphCount.ShouldBe(167);
+        table.LayerCount.ShouldBe(311);
+        table.ClipCount.ShouldBeGreaterThan(0);
+        table.VariationStore.ShouldBeNull();
+
+        int one = face.GetGlyphIndex(0x0661);
+        table.TryGetBasePaint(one, out long paint).ShouldBeTrue();
+        table.Data.Span[(int)paint].ShouldBe((byte)10, "one-ar is a PaintGlyph");
+        table.TryGetClipBox(one, out var box).ShouldBeTrue();
+        box.ShouldBe(new ColrClipBox(200, 0, 300, 600, ColrV1Table.NoVariation));
+        table.TryGetBasePaint(face.GetGlyphIndex('A'), out _).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void ColrV1_Version0Table_IsNotVersion1()
+    {
+        ColrV1Table.Parse(Colr((10, [new(3, 0)]))).ShouldBeNull();
+    }
+
+    [Fact]
+    public void ColrV1_ClipBoxes_AreFoundByGlyphRange()
+    {
+        var table = ColrV1Table.Parse(SyntheticColrV1.Colr(
+            [(5, new SyntheticColrV1.Solid(0))],
+            [new SyntheticColrV1.Clip(3, 6, 1, 2, 3, 4), new SyntheticColrV1.Clip(10, 10, 5, 6, 7, 8, Var: 9)]))!;
+
+        table.TryGetClipBox(2, out _).ShouldBeFalse();
+        table.TryGetClipBox(3, out var a).ShouldBeTrue();
+        table.TryGetClipBox(6, out var b).ShouldBeTrue();
+        a.ShouldBe(new ColrClipBox(1, 2, 3, 4, ColrV1Table.NoVariation));
+        b.ShouldBe(a);
+        table.TryGetClipBox(7, out _).ShouldBeFalse();
+        table.TryGetClipBox(10, out var c).ShouldBeTrue();
+        c.ShouldBe(new ColrClipBox(5, 6, 7, 8, 9));
+    }
+
+    [Theory]
+    [InlineData(14)]    // BaseGlyphList
+    [InlineData(18)]    // LayerList
+    [InlineData(22)]    // ClipList
+    public void ColrV1_ListPastTheEndOfTheTable_Throws(int headerField)
+    {
+        var table = SyntheticColrV1.Colr(
+            [(5, new SyntheticColrV1.Layers(new SyntheticColrV1.Solid(0)))],
+            [new SyntheticColrV1.Clip(5, 5, 0, 0, 10, 10)]);
+        BinaryPrimitives.WriteUInt32BigEndian(table.AsSpan(headerField), (uint)table.Length - 2);
+
+        Should.Throw<FontFormatException>(() => ColrV1Table.Parse(table));
+    }
+
+    [Fact]
+    public void ColrV1_TruncatedHeader_Throws()
+    {
+        var table = SyntheticColrV1.Colr(5, new SyntheticColrV1.Solid(0));
+        Should.Throw<FontFormatException>(() => ColrV1Table.Parse(table.AsMemory(0, 20)));
+    }
+
+    [Fact]
+    public void ColrV1_HugeRecordCount_ThrowsRatherThanOverflowing()
+    {
+        var table = SyntheticColrV1.Colr(5, new SyntheticColrV1.Solid(0));
+        int list = (int)BinaryPrimitives.ReadUInt32BigEndian(table.AsSpan(14));
+        BinaryPrimitives.WriteUInt32BigEndian(table.AsSpan(list), 0xFFFFFFFF);
+
+        Should.Throw<FontFormatException>(() => ColrV1Table.Parse(table));
+    }
+
     private static ColrLayerRecord[] Layers(ColrTable colr, int glyphIndex)
     {
         colr.TryGetLayerRange(glyphIndex, out int first, out int count).ShouldBeTrue();

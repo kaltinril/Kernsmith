@@ -36,6 +36,17 @@ internal sealed class GlyphPipeline
     public static float PixelScale(RasterOptions options, int unitsPerEm) =>
         options.Size * options.Dpi / 72f / unitsPerEm;
 
+    /// <summary>
+    /// The font-unit to pixel mapping <see cref="Prepare"/> gives an unhinted glyph — for
+    /// renderers that place font-unit geometry which is not a glyph outline (COLR paint
+    /// coordinates, clip boxes).
+    /// </summary>
+    public OutlineTransform FontUnitsToPixels(RasterOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        return new OutlineTransform(PixelScale(options, _unitsPerEm), 0f);
+    }
+
     /// <summary>Decodes, transforms, bounds and scales one glyph.</summary>
     /// <param name="glyphIndex">A glyph index inside the font.</param>
     /// <param name="options">The request.</param>

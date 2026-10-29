@@ -21,15 +21,15 @@ namespace KernSmith.Rasterizers.Native;
 ///
 /// TrueType variable fonts (Phase 171) render at the instance <see cref="SetVariationAxes"/>
 /// selects: <c>gvar</c> outlines, <c>HVAR</c> (or phantom-point) advances and <c>MVAR</c> font
-/// metrics. Color fonts render from <c>COLR</c> version 0 layers and <c>CPAL</c> palettes when
-/// <see cref="RasterOptions.ColorFont"/> is on (Phase 172); glyphs without such layers —
-/// including <c>COLR</c> version 1 paint graphs — render as plain coverage. Bitmap-only color
-/// fonts (<c>CBDT</c>/<c>sbix</c>, no outlines) are rejected at load time.
+/// metrics. Color fonts render from <c>COLR</c> version 1 paint graphs and version 0 layers with
+/// <c>CPAL</c> palettes when <see cref="RasterOptions.ColorFont"/> is on (Phase 172); glyphs
+/// without either render as plain coverage. Bitmap-only color fonts (<c>CBDT</c>/<c>sbix</c>,
+/// no outlines) are rejected at load time.
 ///
 /// <see cref="RasterOptions.Bold"/> and <see cref="RasterOptions.Italic"/> are applied as
 /// font-unit outline transforms matching the FreeType backend's synthetic styles (Phase 167):
 /// FreeType's embolden strength, <c>max(0.5px, ppem/24)</c>, with the advance grown to match,
-/// then a 12° shear — to every color layer as well as plain outlines.
+/// then a 12° shear — to every color layer and <c>COLR</c> version 1 glyph clip as well as plain outlines.
 ///
 /// Distance fields are computed from the (transformed) outline: single-channel SDF (Phase 169)
 /// and multi-channel MSDF/MTSDF (Phase 170), selected by <see cref="RasterOptions.EffectiveSdfMode"/>.
@@ -77,7 +77,7 @@ public sealed class NativeRasterizer : IRasterizer
         _face = face;
         _variations = variations;
         _pipeline = new GlyphPipeline(decoder, face.Head.UnitsPerEm);
-        _colorGlyphs = ColorGlyphs.TryLoad(face.Tables, face.Maxp.NumGlyphs);
+        _colorGlyphs = ColorGlyphs.TryLoad(face.Tables, face.Maxp.NumGlyphs, variations);
     }
 
     /// <inheritdoc />
