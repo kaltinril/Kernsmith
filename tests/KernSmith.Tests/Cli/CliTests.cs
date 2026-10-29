@@ -182,6 +182,27 @@ public class CliTests : IDisposable
         stderr.ShouldContain("'glyf'", Case.Sensitive);
     }
 
+    [Theory]
+    [InlineData("generate")]
+    [InlineData("benchmark")]
+    public void GlyphLargerThanTheAtlasPage_PrintsOneLineGenerationError(string command)
+    {
+        // At 1500px some glyphs are taller than the default 1024x1024 page, so the packer throws
+        // AtlasPackingException. That is an expected user error, not a crash.
+        var args = command == "generate"
+            ? new[] { "generate", "-f", FontPath, "-s", "1500", "-o", Path.Combine(_tempDir, "huge"), "--no-color" }
+            : new[] { "benchmark", "-f", FontPath, "-s", "1500", "--iterations", "1", "--no-color" };
+
+        // Act
+        var (exitCode, _, stderr) = RunCli(args);
+
+        // Assert
+        exitCode.ShouldBe(4, $"stderr: {stderr}");
+        stderr.ShouldNotContain("Unhandled exception", Case.Sensitive);
+        stderr.Trim().ShouldNotContain('\n');
+        stderr.ShouldContain("does not fit in a 1024x1024 page", Case.Sensitive);
+    }
+
     [Fact]
     public void Generate_BackendDeclinesOption_PrintsOneLineErrorWithBackendName()
     {

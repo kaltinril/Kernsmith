@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Behaviour change:** a glyph larger than an atlas page now throws `AtlasPackingException` (part of the `BmFontException` hierarchy) from `MaxRectsPacker`/`SkylinePacker` instead of `InvalidOperationException`, with `GlyphWidth`, `GlyphHeight` and `MaxTextureSize` (the page dimension the glyph exceeds) set. `AtlasPackingException` does not derive from `InvalidOperationException`, so code that caught `InvalidOperationException` for this case must catch `AtlasPackingException` (or `BmFontException`) instead. The desktop UI now shows its "glyphs too large for max texture size" message for it, and `kernsmith benchmark` reports it as a generation error (exit 4) instead of crashing.
+
 ### Fixed
 
 - `kernsmith generate` crashed with "Unhandled exception" and a stack trace when the chosen backend rejected the font or an option (a `BmFontException` such as `RasterizationException`/`FontFormatException`, or `NotSupportedException`, e.g. `--rasterizer stbtruetype --color-font`). It now prints a one-line `Error: Generation error (<backend> rasterizer): <message>` to stderr and exits with code 4.

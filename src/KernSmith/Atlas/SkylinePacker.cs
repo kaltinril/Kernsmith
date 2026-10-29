@@ -37,8 +37,7 @@ internal sealed class SkylinePacker : IAtlasPacker
                 var skyline = new List<Segment> { new Segment(0, 0, maxWidth) };
                 var position = TryPlace(skyline, glyph.Width, glyph.Height, maxWidth, maxHeight);
                 if (position == null)
-                    throw new InvalidOperationException(
-                        $"Glyph {glyph.Id} ({glyph.Width}x{glyph.Height}) does not fit in a {maxWidth}x{maxHeight} page.");
+                    throw new AtlasPackingException(glyph.Id, glyph.Width, glyph.Height, maxWidth, maxHeight);
 
                 pages.Add(skyline);
                 placements.Add(new GlyphPlacement(glyph.Id, pages.Count - 1, position.Value.X, position.Value.Y));

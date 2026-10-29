@@ -35,8 +35,7 @@ internal sealed class MaxRectsPacker : IAtlasPacker
                 var freeRects = new List<MaxRectsState.Rect> { new MaxRectsState.Rect(0, 0, maxWidth, maxHeight) };
                 var position = MaxRectsState.TryPlaceInPage(freeRects, glyph.Width, glyph.Height);
                 if (position == null)
-                    throw new InvalidOperationException(
-                        $"Glyph {glyph.Id} ({glyph.Width}x{glyph.Height}) does not fit in a {maxWidth}x{maxHeight} page.");
+                    throw new AtlasPackingException(glyph.Id, glyph.Width, glyph.Height, maxWidth, maxHeight);
 
                 pages.Add(freeRects);
                 placements.Add(new GlyphPlacement(glyph.Id, pages.Count - 1, position.Value.X, position.Value.Y));
@@ -69,8 +68,7 @@ internal sealed class MaxRectsPacker : IAtlasPacker
                 state.AddPage();
                 placement = state.TryPlace(glyph);
                 if (placement == null)
-                    throw new InvalidOperationException(
-                        $"Glyph {glyph.Id} ({glyph.Width}x{glyph.Height}) does not fit in a {maxWidth}x{maxHeight} page.");
+                    throw new AtlasPackingException(glyph.Id, glyph.Width, glyph.Height, maxWidth, maxHeight);
             }
 
             placements.Add(placement.Value);
