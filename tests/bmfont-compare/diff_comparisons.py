@@ -16,6 +16,16 @@ Compares three categories of files:
    (it contains the version + commit hash that always differs between
    branches). All other lines are compared for exact text match.
 
+Every file is matched across both sides by name. A file present on only one side
+is never silently skipped:
+
+  - only on the current side  -> ``NEW (no baseline)``: reported, not a failure
+    (a config added on the branch, or a backend that now supports a config).
+  - only on the baseline side -> ``MISSING``: counted as a difference, because the
+    base produced output that the branch no longer does (a (config, backend) pair
+    that now fails) -- unless its config was passed via ``--removed-config``, in
+    which case it is reported as ``REMOVED`` and not a failure.
+
 For PNG comparisons, diff images are produced where:
   - Identical pixels are shown dimmed (1/3 brightness)
   - Different pixels are shown in bright magenta (#FF00FF)
@@ -33,10 +43,14 @@ Usage:
     # With tolerance (per-channel, for antialiasing):
     python diff_comparisons.py --dir tests/bmfont-compare/output --tolerance 1
 
+    # Configs deleted on the branch (their baseline-only files are REMOVED, not MISSING):
+    python diff_comparisons.py --dir tests/bmfont-compare/output --removed-config old-config
+
 Exit code:
-    0 = all comparisons identical (PNGs within tolerance, FNTs exact match)
-    1 = differences found
-    2 = error (missing files, etc.)
+    0 = every file present on both sides is identical (PNGs within tolerance, FNTs
+        exact match); NEW and REMOVED files do not fail the run
+    1 = differences found, or a file MISSING on the current side
+    2 = error (nothing could be compared, etc.)
 """
 
 import argparse
@@ -49,12 +63,53 @@ except ImportError:
     print("Pillow is required: pip install Pillow", file=sys.stderr)
     sys.exit(2)
 
+# (file, label, source .bmfc config) -- the config decides whether a missing file is REMOVED.
 COMPARISON_FILES = [
-    ("comparison.png", "Fire config (outline + gradient + shadow)"),
-    ("comparison2.png", "Plain config"),
-    ("comparison3.png", "Bold comparison"),
-    ("comparison4.png", "Italic comparison"),
+    ("comparison.png", "Fire config (outline + gradient + shadow)", "fire"),
+    ("comparison2.png", "Plain config", "plain"),
+    ("comparison3.png", "Bold comparison", "plain"),
+    ("comparison4.png", "Italic comparison", "plain"),
 ]
+
+# Backend suffixes GenerateAll writes: {config}-{backend}.fnt / {config}-{backend}_0.png.
+KNOWN_BACKENDS = ("freetype", "gdi", "directwrite", "stbtruetype", "native", "bmfont")
+
+
+def config_of_fnt(stem: str) -> str:
+    """The .bmfc config an output stem belongs to ("plain-native" -> "plain")."""
+    for backend in KNOWN_BACKENDS:
+        if stem.endswith("-" + backend):
+            return stem[: -len(backend) - 1]
+    return stem
+
+
+class Presence:
+    """Tracks files that exist on only one side of the comparison."""
+
+    def __init__(self, removed_configs):
+        self.removed_configs = set(removed_configs or [])
+        self.new = []
+        self.missing = []
+        self.removed = []
+
+    def check(self, baseline_path: Path, current_path: Path, label: str, config: str) -> bool:
+        """Report a one-sided pair. Returns True when both files exist and should be compared."""
+        has_base = baseline_path.exists()
+        has_curr = current_path.exists()
+        if has_base and has_curr:
+            return True
+        if has_curr:
+            print(f"  {label}: NEW (no baseline)")
+            self.new.append(label)
+        elif has_base and config in self.removed_configs:
+            print(f"  {label}: REMOVED (config no longer exists)")
+            self.removed.append(label)
+        elif has_base:
+            print(f"  {label}: MISSING (baseline has output, current does not)")
+            self.missing.append(label)
+        else:
+            print(f"  SKIP {label}: not produced on either side")
+        return False
 
 
 def pixel_diff(a: tuple, b: tuple, tolerance: int) -> bool:
@@ -129,22 +184,14 @@ def generate_diff(
     return diff_count, total
 
 
-def discover_per_font_pngs(baseline_dir: Path, current_dir: Path, prefix: str) -> list[tuple[Path, Path, str]]:
-    """Discover per-font comparison PNGs and return (baseline, current, label) tuples."""
+def discover_per_font_pngs(baseline_dir: Path, current_dir: Path, prefix: str) -> list[tuple[Path, Path, str, str]]:
+    """Discover per-font comparison PNGs on EITHER side; returns (baseline, current, label, config)."""
+    names = {p.name[len(prefix):] for p in baseline_dir.glob(f"{prefix}comparison-*.png")}
+    names |= {p.name for p in current_dir.glob("comparison-*.png")}
     pairs = []
-    if prefix:
-        # --dir mode: main_comparison-*.png vs comparison-*.png in same dir
-        for baseline_path in sorted(baseline_dir.glob(f"{prefix}comparison-*.png")):
-            suffix = baseline_path.name[len(prefix):]  # e.g. "comparison-Roboto.png"
-            current_path = current_dir / suffix
-            label = suffix.replace(".png", "").replace("comparison-", "Per-font: ")
-            pairs.append((baseline_path, current_path, label))
-    else:
-        # --baseline/--current mode: comparison-*.png in both dirs
-        for current_path in sorted(current_dir.glob("comparison-*.png")):
-            baseline_path = baseline_dir / current_path.name
-            label = current_path.name.replace(".png", "").replace("comparison-", "Per-font: ")
-            pairs.append((baseline_path, current_path, label))
+    for name in sorted(names):  # e.g. "comparison-Roboto.png"
+        config = name[len("comparison-"):-len(".png")]
+        pairs.append((baseline_dir / f"{prefix}{name}", current_dir / name, f"Per-font: {config}", config))
     return pairs
 
 
@@ -172,23 +219,12 @@ def compare_fnt_files(baseline_path: Path, current_path: Path) -> tuple[bool, in
     return diff_count == 0, diff_count
 
 
-def discover_fnt_files(baseline_dir: Path, current_dir: Path, prefix: str) -> list[tuple[Path, Path, str]]:
-    """Discover .fnt files and return (baseline, current, label) tuples."""
-    pairs = []
-    if prefix:
-        # --dir mode: main_*.fnt vs *.fnt in same dir
-        for baseline_path in sorted(baseline_dir.glob(f"{prefix}*.fnt")):
-            suffix = baseline_path.name[len(prefix):]  # e.g. "Roboto.fnt"
-            current_path = current_dir / suffix
-            label = suffix
-            pairs.append((baseline_path, current_path, label))
-    else:
-        # --baseline/--current mode: *.fnt in both dirs
-        for current_path in sorted(current_dir.glob("*.fnt")):
-            baseline_path = baseline_dir / current_path.name
-            label = current_path.name
-            pairs.append((baseline_path, current_path, label))
-    return pairs
+def discover_fnt_files(baseline_dir: Path, current_dir: Path, prefix: str) -> list[tuple[Path, Path, str, str]]:
+    """Discover .fnt files on EITHER side; returns (baseline, current, label, config)."""
+    names = {p.name[len(prefix):] for p in baseline_dir.glob(f"{prefix}*.fnt")}
+    names |= {p.name for p in current_dir.glob("*.fnt") if not (prefix and p.name.startswith(prefix))}
+    return [(baseline_dir / f"{prefix}{name}", current_dir / name, name, config_of_fnt(name[:-len(".fnt")]))
+            for name in sorted(names)]
 
 
 def main():
@@ -204,6 +240,9 @@ def main():
                              "with non-deterministic GDI text antialiasing and is not a font-output "
                              "change (default: 41; use 0 for full image)")
     parser.add_argument("--prefix", type=str, default="main_", help="Baseline filename prefix (default: main_)")
+    parser.add_argument("--removed-config", action="append", default=[], metavar="NAME",
+                        help="A .bmfc config deleted on the current side: its baseline-only files are "
+                             "reported as REMOVED instead of MISSING (repeatable)")
     args = parser.parse_args()
 
     if args.dir:
@@ -230,19 +269,22 @@ def main():
     print()
 
     any_differences = False
+    presence = Presence(args.removed_config)
 
     # ── Section 1: Hardcoded comparison PNGs ──────────────────────────
     total_diffs = 0
     total_pixels = 0
     files_compared = 0
 
-    for filename, label in COMPARISON_FILES:
+    for filename, label, config in COMPARISON_FILES:
         baseline_name = f"{prefix}{filename}" if prefix else filename
         baseline_path = baseline_dir / baseline_name
         current_path = current_dir / filename
         diff_name = f"diff_{filename}"
         output_path = output_dir / diff_name
 
+        if not presence.check(baseline_path, current_path, label, config):
+            continue
         diffs, pixels = generate_diff(baseline_path, current_path, output_path, label, args.tolerance, args.ignore_top)
         if pixels > 0:
             total_diffs += diffs
@@ -251,7 +293,7 @@ def main():
 
     print()
     if files_compared == 0:
-        print("No hardcoded comparison files found.")
+        print("No hardcoded comparison files compared.")
     elif total_diffs == 0:
         print(f"PASS: All {files_compared} hardcoded comparisons are pixel-identical.")
     else:
@@ -261,6 +303,7 @@ def main():
 
     # ── Section 2: Per-font comparison PNGs ───────────────────────────
     per_font_pairs = discover_per_font_pngs(baseline_dir, current_dir, prefix)
+    pf_compared = 0
 
     if per_font_pairs:
         print()
@@ -268,9 +311,10 @@ def main():
         print("-" * 40)
         pf_diffs = 0
         pf_pixels = 0
-        pf_compared = 0
 
-        for baseline_path, current_path, label in per_font_pairs:
+        for baseline_path, current_path, label, config in per_font_pairs:
+            if not presence.check(baseline_path, current_path, label, config):
+                continue
             diff_name = f"diff_{current_path.name}"
             output_path = output_dir / diff_name
             diffs, pixels = generate_diff(baseline_path, current_path, output_path, label, args.tolerance, args.ignore_top)
@@ -291,6 +335,7 @@ def main():
 
     # ── Section 3: FNT metadata comparisons ───────────────────────────
     fnt_pairs = discover_fnt_files(baseline_dir, current_dir, prefix)
+    total_fnt = 0
 
     if fnt_pairs:
         print()
@@ -298,16 +343,9 @@ def main():
         print("-" * 40)
         fnt_identical = 0
         fnt_different = 0
-        fnt_skipped = 0
 
-        for baseline_path, current_path, label in fnt_pairs:
-            if not baseline_path.exists():
-                print(f"  SKIP {label}: baseline missing ({baseline_path.name})")
-                fnt_skipped += 1
-                continue
-            if not current_path.exists():
-                print(f"  SKIP {label}: current missing ({current_path.name})")
-                fnt_skipped += 1
+        for baseline_path, current_path, label, config in fnt_pairs:
+            if not presence.check(baseline_path, current_path, label, config):
                 continue
 
             is_identical, diff_lines = compare_fnt_files(baseline_path, current_path)
@@ -328,8 +366,22 @@ def main():
             print(f"FAIL: {fnt_different} of {total_fnt} FNT files differ.")
             any_differences = True
 
+    # ── Section 4: files present on only one side ─────────────────────
+    if presence.new or presence.removed or presence.missing:
+        print()
+        print("One-sided files")
+        print("-" * 40)
+        if presence.new:
+            print(f"NEW (no baseline, not a failure): {len(presence.new)} file(s)")
+        if presence.removed:
+            print(f"REMOVED (config deleted, not a failure): {len(presence.removed)} file(s)")
+        if presence.missing:
+            print(f"FAIL: {len(presence.missing)} file(s) MISSING on the current side "
+                  f"(the baseline produced them): {', '.join(presence.missing)}")
+            any_differences = True
+
     # ── Final result ──────────────────────────────────────────────────
-    total_compared = files_compared + len(per_font_pairs) + len(fnt_pairs)
+    total_compared = files_compared + pf_compared + total_fnt
     if total_compared == 0:
         print()
         print("No files compared.")
@@ -342,7 +394,6 @@ def main():
     else:
         print("RESULT: All comparisons passed.")
         sys.exit(0)
-
 
 if __name__ == "__main__":
     main()
