@@ -23,7 +23,7 @@ Render color glyphs in the Native rasterizer: COLR v0 layered glyphs with CPAL p
   - Bitmap-only color fonts (`CBDT`/`sbix`, no `glyf`) are rejected at `LoadFont` by `FontValidator` with a `RasterizationException` pointing at FreeType.
 - Known decode-stage difference (not color-specific): FreeType moves a glyph so its `hmtx` left side bearing is honored when it disagrees with `glyf` xMin; Native draws the outline where it is. Bungee Color's '4' inline layer is off by 350 units because of it; Roboto has 52 glyphs off by one unit.
 
-- COLR v1 behavior (written from the spec; FreeType's backend throws on v1 glyphs, so there is no reference renderer — tests check spec formulas at known pixels, palette colors, and the alpha silhouette against FreeType's plain coverage):
+- COLR v1 behavior (written from the spec; FreeType's backend draws v1 glyphs as plain grayscale coverage since it has no paint-graph renderer, so there is no reference renderer — tests check spec formulas at known pixels, palette colors, and the alpha silhouette against FreeType's plain coverage):
   - A v1 `BaseGlyphList` record wins over a v0 record for the same glyph. A malformed v1 header or list drops v1 only; v0 still works.
   - Every Paint format 1–32 is read; the transform formats reduce to one affine matrix. `PaintColrGlyph` is inlined, with the referenced glyph's clip box applied to it.
   - Canvas: the glyph's `ClipList` box (quantized outward), else the bounds of its `PaintGlyph` outlines as transformed, combined per the spec's composite-mode boundedness rules (an untransformed glyph clip uses the pipeline's box for it). An unbounded graph with no clip box renders nothing (0x0 RGBA, base advance).

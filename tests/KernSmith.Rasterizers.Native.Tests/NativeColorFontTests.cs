@@ -131,7 +131,7 @@ public class NativeColorFontTests
     }
 
     // ---- COLR version 1 (Reem Kufi Ink) ----------------------------------------------------
-    // FreeType's backend cannot render COLR version 1 (it throws with FT_LOAD_COLOR), so these
+    // FreeType's backend draws COLR version 1 glyphs as plain grayscale (no paint graphs), so these
     // compare against the font's own data and against plain coverage of the same glyphs.
 
     /// <summary>Arabic marks and digits the cmap maps straight to version 1 color glyphs.</summary>
