@@ -21,6 +21,10 @@ Decisions made, with the why — consult before re-litigating anything. One per 
 - Native SDF measures distance to the filled region's boundary under the non-zero rule — overlapping contours are clipped against each other first — not to the raw contours (as FreeType does): a hidden interior edge would otherwise put a ~128 seam through every glyph built from overlapping contours, which variable-font outlines routinely are.
 - Native SDF measures to a polyline flattened with Wang's bound at spread/512 px (a quarter code value), not to the exact curves: the error is bounded and documented, the distance kernel stays a branch-light point-to-segment test, and it already matches FreeType within 2 code values while running 5-8x faster.
 - Native SDF spread is `SdfSpread` rounded half away from zero with no upper clamp (FreeType clamps to 2..32), because the `.fnt` `sdfSpread` metadata uses that same rounding — the field decodes exactly from the metadata.
+- Multi-channel fields are a `SdfMode { None, Sdf, Msdf, Mtsdf }` option next to the shipped `bool Sdf` (not a replacement): `EffectiveSdfMode` = `SdfMode` when set, else `Sdf`. `RasterOptions.FromGeneratorOptions` sets `RasterOptions.Sdf` exactly when the effective mode is single-channel, so backends that only read `Sdf` never mistake an MSDF request for SDF. `SupportsMsdf` is a default-false interface member, so no existing backend changes.
+- MSDF/MTSDF reject effects, fill color, channel packing, custom channel layouts and atlas variants, because each treats RGB as color; `SdfScale` downsampling averages MSDF channels independently (not premultiplied), because MTSDF alpha is a distance, not opacity.
+- MSDF `.fnt` output writes `alphaChnl=4` (alpha set to one) and `sdfMode=msdf|mtsdf` in the `kernsmith` line; single-channel SDF writes no `sdfMode`, so existing SDF output stays byte-identical.
+- Native MSDF channel signs come from edge orientation and are then forced to agree with the non-zero rule (all channels negated when the median disagrees), not taken from winding per channel: per-channel winding would erase the pseudo-distance sign flips that make corners sharp.
 - WOFF2's Brotli stage is a pure managed decoder we write in core (not `System.IO.Compression.BrotliDecoder`, not a third-party package): `BrotliDecoder` wraps the runtime's native Brotli library, which browser-wasm does not ship — it throws `PlatformNotSupportedException` there (dotnet/runtime#91279, open). The API carries no `[UnsupportedOSPlatform("browser")]`, so the analyzer would not catch it. `KernSmith.Fonts.Web` exists to serve browser/WASM, and CSS font CDNs serve WOFF2, so a BCL-Brotli WOFF2 would fail on exactly the platform that needs it.
 
 ## Channels & Compositing
@@ -51,7 +55,7 @@ Decisions made, with the why — consult before re-litigating anything. One per 
 ## Regression Harness
 
 - `regression_check.py` builds `GenerateAll` as a separate **fatal** step, because `dotnet run` exits 1 for both a build failure and a partial generation; tolerating both let a non-compiling harness leave stale output in place, so the diff compared main against itself and reported a false pass.
-- A backend declining a capability the config requests (SDF on GDI/DirectWrite) is a **skip**, not a failure — otherwise adding an SDF config would permanently red the harness.
+- A backend declining a capability the config requests (SDF on GDI/DirectWrite, MSDF on everything but Native) is a **skip**, not a failure — otherwise adding an SDF config would permanently red the harness.
 - An `sdf.bmfc` config exists specifically because no other config exercised the SDF path, so the harness would report "identical" for SDF changes without ever running them.
 
 ## Ownership & Dependencies

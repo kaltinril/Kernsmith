@@ -22,6 +22,7 @@ For per-OS status (Windows, Linux, macOS, Android, iOS, Mac Catalyst, Blazor WAS
 | Color fonts (COLR/CPAL) | Yes | No | No | No | No |
 | Variable fonts | Yes | No | No | No | No |
 | SDF rendering | Yes | No | No | Yes | Yes |
+| MSDF / MTSDF | No | No | No | No | Yes |
 | Outline stroke | Yes | No | No | No | No |
 | System font loading | No | Yes | Yes | No | No |
 | BMFont.exe parity | No | Yes | No | No | No |

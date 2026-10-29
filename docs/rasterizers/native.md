@@ -37,6 +37,7 @@ kernsmith generate --font Roboto-Regular.ttf --size 32 --rasterizer native --out
 - Anti-aliasing: `Grayscale` and `None` only
 - Super sampling (applied by the core pipeline)
 - Signed distance fields (`Sdf`), computed from the outline itself. `SdfSpread` and `SdfScale` are honored, and the output uses FreeType's encoding and padding (inside bright, 128 on the edge, the glyph box padded by the spread)
+- Multi-channel distance fields (`SdfMode.Msdf` / `SdfMode.Mtsdf`) -- the only backend that reports `SupportsMsdf`. RGB hold three distances whose median keeps corners sharp; MTSDF adds the single-channel field in alpha
 - Font and glyph metrics that track FreeType to within a pixel
 
 ## Limitations

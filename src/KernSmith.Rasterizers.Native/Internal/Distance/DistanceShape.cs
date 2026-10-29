@@ -117,7 +117,9 @@ internal sealed class DistanceShape
     /// <param name="originX">Pixel-space X of the field's left edge.</param>
     /// <param name="originY">Pixel-space Y of the field's top edge.</param>
     /// <param name="tolerance">Maximum distance, in pixels, between a curve and its polyline.</param>
-    public static DistanceShape Build(GlyphOutline outline, OutlineTransform toPixels, float originX, float originY, float tolerance)
+    /// <param name="colorEdges">Assign MSDF channels with <see cref="EdgeColoring"/>; may split
+    /// edges, so it runs before the boundary is resolved.</param>
+    public static DistanceShape Build(GlyphOutline outline, OutlineTransform toPixels, float originX, float originY, float tolerance, bool colorEdges = false)
     {
         ArgumentNullException.ThrowIfNull(outline);
 
@@ -167,6 +169,9 @@ internal sealed class DistanceShape
 
         if (contour is { Count: > 0 })
             contours.Add(contour);
+
+        if (colorEdges)
+            EdgeColoring.Apply(contours, edges);
 
         var winding = WindingIndex.Create(edges);
         var boundary = ResolveBoundary(contours, edges, winding);

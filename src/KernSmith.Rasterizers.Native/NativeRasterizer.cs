@@ -15,8 +15,8 @@ namespace KernSmith.Rasterizers.Native;
 /// flattened to line segments and filled with a signed-area scanline rasterizer. CFF/OTF
 /// (PostScript) outlines are rejected at load time until Phase 166 adds a CFF interpreter.
 ///
-/// <see cref="RasterOptions.Sdf"/> renders a signed distance field computed from the outline
-/// (Phase 169). Synthetic bold/italic (Phase 167), outline stroking (Phase 168), variable fonts
+/// Distance fields are computed from the outline: single-channel SDF (Phase 169) and
+/// multi-channel MSDF/MTSDF (Phase 170), selected by <see cref="RasterOptions.EffectiveSdfMode"/>. Synthetic bold/italic (Phase 167), outline stroking (Phase 168), variable fonts
 /// (Phase 171) and color fonts (Phase 172) are not implemented; those
 /// <see cref="IRasterizerCapabilities"/> flags are false. <see cref="RasterOptions.Bold"/>
 /// and <see cref="RasterOptions.Italic"/> are ignored rather than rejected, so a font

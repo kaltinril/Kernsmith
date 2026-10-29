@@ -615,6 +615,7 @@ public static class BmFontReader
         {
             GeneratorVersion = GetString(kvp, "version"),
             SdfSpread = kvp.ContainsKey("sdfSpread") ? GetInt(kvp, "sdfSpread") : null,
+            SdfMode = ParseSdfMode(kvp.TryGetValue("sdfMode", out var sm) ? sm : null),
             OutlineThickness = kvp.TryGetValue("outlineThickness", out var ot) && float.TryParse(ot, CultureInfo.InvariantCulture, out var otv) ? otv : null,
             GradientTopColor = kvp.TryGetValue("gradientTopColor", out var gtc) ? gtc : null,
             GradientBottomColor = kvp.TryGetValue("gradientBottomColor", out var gbc) ? gbc : null,
@@ -650,6 +651,7 @@ public static class BmFontReader
         {
             GeneratorVersion = XmlAttrStr(el, "version"),
             SdfSpread = el.Attribute("sdfSpread") != null ? XmlAttrInt(el, "sdfSpread") : null,
+            SdfMode = ParseSdfMode(el.Attribute("sdfMode")?.Value),
             OutlineThickness = el.Attribute("outlineThickness") != null && float.TryParse(el.Attribute("outlineThickness")!.Value, CultureInfo.InvariantCulture, out var otv) ? otv : null,
             GradientTopColor = el.Attribute("gradientTopColor")?.Value,
             GradientBottomColor = el.Attribute("gradientBottomColor")?.Value,
@@ -692,6 +694,7 @@ public static class BmFontReader
         {
             GeneratorVersion = root.TryGetProperty("version", out var v) ? v.GetString() ?? "" : "",
             SdfSpread = root.TryGetProperty("sdfSpread", out var ss) ? ss.GetInt32() : null,
+            SdfMode = ParseSdfMode(root.TryGetProperty("sdfMode", out var smProp) ? smProp.GetString() : null),
             OutlineThickness = root.TryGetProperty("outlineThickness", out var otProp) ? otProp.GetSingle() : null,
             GradientTopColor = root.TryGetProperty("gradientTopColor", out var gtc) ? gtc.GetString() : null,
             GradientBottomColor = root.TryGetProperty("gradientBottomColor", out var gbc) ? gbc.GetString() : null,
@@ -708,6 +711,12 @@ public static class BmFontReader
                 : null
         };
     }
+
+    /// <summary>The extended <c>sdfMode</c> value, or null when absent or unrecognized.</summary>
+    private static SdfMode? ParseSdfMode(string? value) =>
+        value is not null && Enum.TryParse<SdfMode>(value, ignoreCase: true, out var mode) && Enum.IsDefined(mode)
+            ? mode
+            : null;
 
     #endregion
 }

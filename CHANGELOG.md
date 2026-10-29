@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The experimental Native rasterizer renders signed distance fields (`Sdf`) computed directly from the glyph outline, matching FreeType's SDF output (encoding, padding, bearings) and honoring `SdfSpread` and `SdfScale`. Overlapping contours produce no interior seam. `SupportsSdf` is now true, so SDF configs run on Native instead of being skipped. The package tags advertise `sdf` again.
 - `tests/bmfont-compare/gum-bmfont/sdf-scale1.bmfc` covers SDF at `sdfScale=1`.
+- Multi-channel signed distance fields: `SdfMode` (`None`, `Sdf`, `Msdf`, `Mtsdf`) on `FontGeneratorOptions` and `RasterOptions` (with `EffectiveSdfMode`), `BmFontBuilder.WithSdfMode`, the `.bmfc` key `sdfMode=msdf|mtsdf` and CLI `--sdf-mode <none|sdf|msdf|mtsdf>`. MSDF writes RGBA atlases with `alphaChnl=4` and `sdfMode=` in the `.fnt` `kernsmith` line (MTSDF keeps the distance in alpha). `IRasterizerCapabilities.SupportsMsdf` (default false) gates it; only the experimental Native backend supports it, with Chlumský-style edge coloring, per-channel pseudo-distances and clash correction. The existing `bool Sdf` keeps working unchanged.
+- `tests/bmfont-compare/gum-bmfont/msdf.bmfc`; `GenerateAll` skips it on backends without `SupportsMsdf`.
 - Benchmarks: `NativeComparison*` BenchmarkDotNet classes compare the Native, StbTrueType and FreeType backends (font load, per-glyph rasterization at 12/32/72px, `GetGlyphMetrics`, full `BmFont.Generate`) with memory diagnostics; the measured baseline is recorded in the phase 177 plan.
 
 ### Changed

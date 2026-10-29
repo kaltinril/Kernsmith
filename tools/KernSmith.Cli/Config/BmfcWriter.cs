@@ -61,6 +61,7 @@ internal static class BmfcWriter
             Outline = options.Outline,
             OutlineShape = options.OutlineShape ?? KernSmith.OutlineShape.Round,
             Sdf = options.Sdf,
+            SdfMode = options.SdfMode,
             PowerOfTwo = options.PowerOfTwo ?? true,
             Dpi = options.Dpi,
             FaceIndex = options.FaceIndex,

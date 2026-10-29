@@ -20,7 +20,8 @@ In development. As of Phase 165 the backend renders TrueType (`glyf`) outlines e
 SFNT table parsing, cmap lookup (formats 4 and 12), outline extraction, adaptive curve
 flattening, and a signed-area scanline fill, with font and glyph metrics that track FreeType
 to within a pixel. Signed distance fields (`Sdf`, Phase 169) are computed from the outline and
-match FreeType's SDF output (encoding, padding, `SdfSpread`).
+match FreeType's SDF output (encoding, padding, `SdfSpread`). Multi-channel fields (`SdfMode.Msdf`,
+`SdfMode.Mtsdf`, Phase 170) use the same encoding and padding as RGBA.
 
 Not yet supported — each raises a clear error or is ignored, as noted:
 
@@ -74,7 +75,7 @@ disagree. Everything is internal; add a feature to its stage rather than to `Nat
 | 2 | Transforms, in order, in font units | `Internal/Pipeline/IGlyphTransform.cs`, `GlyphTransforms.cs` | implementing `IGlyphTransform` and adding it in `GlyphTransforms.For` — bold/italic (167), stroke/small caps/condensed (168). Build results with `WithOutline` / `WithAdvanceWidth`. |
 | 3 | Bounds → pixel grid | `Internal/Raster/GlyphBox.cs`, `Internal/Outlines/OutlineBounds.cs` | nothing: a replaced outline loses its declared bbox and is measured from its tight bounds. |
 | 4 | Scale, then pixel-space hint hook | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs` | filling in `GlyphHinter.Apply` — auto-hinting (174). |
-| 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs`, `SdfRenderer.cs` (distance code in `Internal/Distance/`) | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` — MSDF (170), color (172), LCD (173). `Measure` must match what `Render` produces. |
+| 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs`, `SdfRenderer.cs`, `MsdfRenderer.cs` (distance code and edge coloring in `Internal/Distance/`) | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` — color (172), LCD (173). `Measure` must match what `Render` produces. |
 
 Invariants:
 

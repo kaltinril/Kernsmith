@@ -41,4 +41,10 @@ public interface IRasterizerCapabilities
     /// When true, the rasterizer can apply synthetic italic (oblique/shear) to glyph outlines.
     /// </summary>
     bool SupportsSyntheticItalic => false;
+
+    /// <summary>
+    /// When true, the rasterizer can render multi-channel distance fields
+    /// (<see cref="SdfMode.Msdf"/> and <see cref="SdfMode.Mtsdf"/>) as RGBA glyphs.
+    /// </summary>
+    bool SupportsMsdf => false;
 }

@@ -229,6 +229,13 @@ internal static class BmFontModelBuilder
         // compositing (see BmFont.ShouldApplyChannelConfig). A skipped font writes default
         // channel values consistent with its baked single-composite output.
         int alphaChnl = 0, redChnl = 0, greenChnl = 0, blueChnl = 0;
+
+        // MSDF: RGB hold glyph (distance) data and alpha is a constant one (BMFont code 4).
+        // MTSDF's alpha is distance data too, so it keeps the all-zero (glyph data) layout.
+        // Neither can carry a custom channel layout (rejected before rendering).
+        if (options.EffectiveSdfMode == SdfMode.Msdf)
+            alphaChnl = 4;
+
         if (BmFont.ShouldApplyChannelConfig(options) && options.Channels is { } channelConfig)
         {
             alphaChnl = (int)channelConfig.Alpha;
@@ -270,6 +277,7 @@ internal static class BmFontModelBuilder
         {
             GeneratorVersion = meta?.GeneratorVersion ?? KernSmithVersionInfo.Version,
             SdfSpread = meta?.SdfSpread,
+            SdfMode = meta?.SdfMode,
             OutlineThickness = meta?.OutlineThickness,
             GradientTopColor = meta?.GradientTopColor,
             GradientBottomColor = meta?.GradientBottomColor,
@@ -302,9 +310,13 @@ internal static class BmFontModelBuilder
 
         // Record the actually-configured SDF spread. The default (8) matches the prior
         // hardcoded value and FreeType's default, so default output is unchanged.
-        int? sdfSpread = options.Sdf
+        var mode = options.EffectiveSdfMode;
+        int? sdfSpread = mode != KernSmith.SdfMode.None
             ? (int)Math.Round(options.SdfSpread, MidpointRounding.AwayFromZero)
             : null;
+
+        // Single-channel SDF stays identified by sdfSpread alone, as it always was.
+        SdfMode? sdfMode = mode is KernSmith.SdfMode.Msdf or KernSmith.SdfMode.Mtsdf ? mode : null;
 
         float? outlineThickness = null;
         string? gradientTop = null;
@@ -343,6 +355,7 @@ internal static class BmFontModelBuilder
         {
             GeneratorVersion = version,
             SdfSpread = sdfSpread,
+            SdfMode = sdfMode,
             OutlineThickness = outlineThickness,
             GradientTopColor = gradientTop,
             GradientBottomColor = gradientBottom,

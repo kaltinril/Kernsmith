@@ -27,8 +27,26 @@ public sealed record RasterOptions
     /// <summary>If true, forces synthetic italic even on natively-italic fonts or system font paths.</summary>
     public bool ForceSyntheticItalic { get; init; }
 
-    /// <summary>If true, render as signed distance fields instead of regular bitmaps.</summary>
+    /// <summary>
+    /// If true, render single-channel signed distance fields instead of regular bitmaps.
+    /// <see cref="FromGeneratorOptions"/> sets it exactly when the effective mode is
+    /// <see cref="KernSmith.SdfMode.Sdf"/>, so a backend that predates <see cref="SdfMode"/> can keep
+    /// reading this flag alone.
+    /// </summary>
     public bool Sdf { get; init; }
+
+    /// <summary>
+    /// The distance field to render. When <see cref="KernSmith.SdfMode.None"/>, <see cref="Sdf"/>
+    /// decides; backends should switch on <see cref="EffectiveSdfMode"/>.
+    /// </summary>
+    public SdfMode SdfMode { get; init; }
+
+    /// <summary>
+    /// The distance field requested: <see cref="SdfMode"/> when set, otherwise
+    /// <see cref="KernSmith.SdfMode.Sdf"/> if <see cref="Sdf"/> is true, otherwise none.
+    /// </summary>
+    public SdfMode EffectiveSdfMode =>
+        SdfMode != SdfMode.None ? SdfMode : Sdf ? SdfMode.Sdf : SdfMode.None;
 
     /// <summary>
     /// SDF supersampling scale factor. Higher values render the distance field at a larger
@@ -84,7 +102,8 @@ public sealed record RasterOptions
             Italic = options.Italic,
             ForceSyntheticBold = options.ForceSyntheticBold,
             ForceSyntheticItalic = options.ForceSyntheticItalic,
-            Sdf = options.Sdf,
+            Sdf = options.EffectiveSdfMode == SdfMode.Sdf,
+            SdfMode = options.EffectiveSdfMode,
             SdfScale = options.SdfScale,
             SdfSpread = options.SdfSpread,
             Gamma = options.Gamma,

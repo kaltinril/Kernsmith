@@ -90,8 +90,26 @@ public class FontGeneratorOptions
     /// <summary>Outline color blue channel (default 0 = black).</summary>
     public byte OutlineB { get; set; }
 
-    /// <summary>If true, generates a signed distance field (SDF) font.</summary>
+    /// <summary>
+    /// If true, generates a single-channel signed distance field (SDF) font. Equivalent to
+    /// <see cref="SdfMode"/> = <see cref="KernSmith.SdfMode.Sdf"/>, which supersedes it when set.
+    /// </summary>
     public bool Sdf { get; set; }
+
+    /// <summary>
+    /// The distance field to generate (default <see cref="KernSmith.SdfMode.None"/>). When left at
+    /// <see cref="KernSmith.SdfMode.None"/>, <see cref="Sdf"/> decides; see <see cref="EffectiveSdfMode"/>.
+    /// <see cref="KernSmith.SdfMode.Msdf"/> and <see cref="KernSmith.SdfMode.Mtsdf"/> produce RGBA
+    /// atlases and need a backend that reports <see cref="Rasterizer.IRasterizerCapabilities.SupportsMsdf"/>.
+    /// </summary>
+    public SdfMode SdfMode { get; set; }
+
+    /// <summary>
+    /// The distance field actually generated: <see cref="SdfMode"/> when set, otherwise
+    /// <see cref="KernSmith.SdfMode.Sdf"/> if <see cref="Sdf"/> is true, otherwise none.
+    /// </summary>
+    public SdfMode EffectiveSdfMode =>
+        SdfMode != SdfMode.None ? SdfMode : Sdf ? SdfMode.Sdf : SdfMode.None;
 
     /// <summary>
     /// SDF supersampling scale factor (default 1). Higher values render the distance field

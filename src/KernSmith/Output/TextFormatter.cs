@@ -117,6 +117,8 @@ internal sealed class TextFormatter : IBmFontTextFormatter
 
         if (extended.SdfSpread.HasValue)
             sb.Append($" sdfSpread={extended.SdfSpread.Value}");
+        if (extended.SdfMode.HasValue)
+            sb.Append($" sdfMode={extended.SdfMode.Value.ToString().ToLowerInvariant()}");
         if (extended.OutlineThickness.HasValue)
             sb.Append($" outlineThickness={extended.OutlineThickness.Value}");
         if (extended.GradientTopColor != null)

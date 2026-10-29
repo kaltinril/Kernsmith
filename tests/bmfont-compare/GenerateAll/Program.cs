@@ -108,6 +108,13 @@ foreach (var bmfcPath in bmfcFiles)
                 continue;
             }
 
+            if (!rasterizer.Capabilities.SupportsMsdf && ConfigRequestsMsdf(bmfcPath))
+            {
+                (rasterizer as IDisposable)?.Dispose();
+                Console.WriteLine("SKIPPED (backend has no MSDF support)");
+                continue;
+            }
+
             var result = BmFont.Builder()
                 .FromConfig(bmfcPath)
                 .WithRasterizer(rasterizer)
@@ -482,6 +489,24 @@ static bool ConfigRequestsSdf(string bmfcPath)
         var line = raw.Trim();
         if (line.StartsWith("useSdf=", StringComparison.OrdinalIgnoreCase))
             return line["useSdf=".Length..].Trim() == "1";
+    }
+    return false;
+}
+
+/// <summary>
+/// True when the .bmfc selects a multi-channel distance field (sdfMode=msdf or mtsdf).
+/// </summary>
+static bool ConfigRequestsMsdf(string bmfcPath)
+{
+    foreach (var raw in File.ReadLines(bmfcPath))
+    {
+        var line = raw.Trim();
+        if (line.StartsWith("sdfMode=", StringComparison.OrdinalIgnoreCase))
+        {
+            var mode = line["sdfMode=".Length..].Trim();
+            return mode.Equals("msdf", StringComparison.OrdinalIgnoreCase)
+                || mode.Equals("mtsdf", StringComparison.OrdinalIgnoreCase);
+        }
     }
     return false;
 }

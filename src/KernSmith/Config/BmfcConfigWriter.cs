@@ -159,6 +159,8 @@ public static class BmfcConfigWriter
             extensions.AppendLine("useSdf=1");
         if (options.SdfScale != 1)
             extensions.AppendLine($"sdfScale={options.SdfScale}");
+        if (options.SdfMode != SdfMode.None)
+            extensions.AppendLine($"sdfMode={options.SdfMode.ToString().ToLowerInvariant()}");
         // None is already conveyed by useSmoothing=0 and Grayscale is the default, so only the
         // two modes the standard keys cannot express need an extension.
         if (options.AntiAlias is AntiAliasMode.Light or AntiAliasMode.Lcd)
