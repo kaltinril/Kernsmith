@@ -28,7 +28,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
     /// Stored variation axis coordinates (FT_Fixed 16.16 values) to re-apply after FT_Set_Char_Size,
     /// which can reset variation state in some FreeType builds.
     /// </summary>
-    private int[]? _variationCoords;
+    private nint[]? _variationCoords;
 
     private float _lastSetSize;
     private int _lastSetDpi;
@@ -103,9 +103,11 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
         // Build the coordinate array in fvar axis order.
         // Axes not specified by the user get their default value.
-        // FT_Fixed is a 16.16 fixed-point integer: value * 65536.
+        // FT_Fixed is a 16.16 fixed-point C long, pointer-sized in the bundled FreeType (as
+        // FreeTypeSharp's own FT_F26Dot6 parameters are): an int array is read in pairs and
+        // throws every axis to an extreme.
         var numAxes = fvarAxes.Count;
-        var coordsArray = new int[numAxes];
+        var coordsArray = new nint[numAxes];
 
         for (var i = 0; i < numAxes; i++)
         {
@@ -124,7 +126,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         // which resets variation state in some FreeType builds.
         _variationCoords = coordsArray;
 
-        fixed (int* coords = coordsArray)
+        fixed (nint* coords = coordsArray)
         {
             var error = FreeTypeNative.FT_Set_Var_Design_Coordinates(
                 _face, (uint)numAxes, coords);
@@ -149,40 +151,8 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (glyphIndex == 0)
             return null; // Missing glyph
 
-        // Determine load flags based on anti-alias mode and hinting.
-        var loadFlags = options.ColorFont
-            ? (FT_LOAD)FreeTypeNative.FT_LOAD_COLOR
-            : FT_LOAD.FT_LOAD_DEFAULT;
-
-        // When rendering mono, tell the hinter to optimize for 1-bit output.
-        // Without this, hinting targets grayscale which produces suboptimal
-        // stroke placement when the final render is monochrome.
-        if (options.AntiAlias == AntiAliasMode.None && !options.Sdf)
-            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_TARGET_MONO;
-
-        if (!options.EnableHinting)
-            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
-
-        // Load the glyph.
-        var error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
-        if (error != FT_Error.FT_Err_Ok)
-            throw new FreeTypeException(error);
-
-        var slot = _face->glyph;
-
-        // Apply synthetic bold only if the font isn't already bold.
-        // This matches GDI behavior: requesting bold on an already-bold face
-        // doesn't apply additional emboldening.
-        if (options.Bold && (_face->style_flags & 0x01) == 0)
-        {
-            EmboldenGlyph(slot, _face);
-        }
-
-        // Apply synthetic italic only if the font isn't already italic.
-        if (options.Italic && (_face->style_flags & 0x02) == 0)
-        {
-            FT.FT_GlyphSlot_Oblique(slot);
-        }
+        var slot = LoadStyledGlyph(glyphIndex, options);
+        FT_Error error;
 
         // Configure the SDF renderer's spread (search radius) before rendering.
         // The FreeType "sdf" module default is 8, so the default option value reproduces
@@ -190,20 +160,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (options.Sdf)
             EnsureSdfSpread(options.SdfSpread);
 
-        // Determine render mode.
-        // When SDF is enabled, FT_RENDER_MODE_SDF (value 6) produces an 8-bit bitmap where
-        // 128 = on the glyph edge, >128 = inside, <128 = outside. The bitmap dimensions
-        // may be larger than normal rendering to include the signed-distance field padding.
-        // SDF takes priority over the anti-alias setting since SDF output is inherently smooth.
-        var renderMode = options.Sdf
-            ? FT_Render_Mode_.FT_RENDER_MODE_SDF
-            : options.AntiAlias switch
-            {
-                AntiAliasMode.None => FT_Render_Mode_.FT_RENDER_MODE_MONO,
-                AntiAliasMode.Light => FT_Render_Mode_.FT_RENDER_MODE_LIGHT,
-                AntiAliasMode.Lcd => FT_Render_Mode_.FT_RENDER_MODE_LCD,
-                _ => FT_Render_Mode_.FT_RENDER_MODE_NORMAL
-            };
+        var renderMode = RenderModeFor(options);
 
         // Render the glyph to bitmap. Skip rendering for bitmap-only glyphs
         // (e.g., CBDT/CBLC color emoji) that are already rasterized after FT_Load_Glyph.
@@ -224,12 +181,6 @@ public sealed class FreeTypeRasterizer : IRasterizer
         // 26.6 fixed-point that don't reflect grid-fitting adjustments. This matters
         // most at small font sizes where hinting shifts glyphs by 1-2 pixels.
         ref var metrics = ref slot->metrics;
-        var glyphMetrics = new GlyphMetrics(
-            BearingX: slot->bitmap_left,
-            BearingY: slot->bitmap_top,
-            Advance: F26Dot6ToRounded(metrics.horiAdvance),
-            Width: bitmapWidth,
-            Height: bitmapHeight);
 
         // Copy bitmap data.
         byte[] bitmapData;
@@ -269,6 +220,23 @@ public sealed class FreeTypeRasterizer : IRasterizer
             pitch = bitmapWidth;
         }
 
+        // An LCD bitmap holds three subpixel bytes (R, G, B) per pixel, so bitmap.width counts
+        // subpixels. Repack it as Rgba32 at the real pixel width, alpha = the strongest subpixel.
+        var isLcd = bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_LCD;
+        if (isLcd)
+        {
+            bitmapWidth /= 3;
+            bitmapData = LcdSubpixelsToRgba(bitmapData, Math.Abs(pitch), bitmapWidth, bitmapHeight);
+            pitch = bitmapWidth * 4;
+        }
+
+        var glyphMetrics = new GlyphMetrics(
+            BearingX: slot->bitmap_left,
+            BearingY: slot->bitmap_top,
+            Advance: F26Dot6ToRounded(metrics.horiAdvance),
+            Width: bitmapWidth,
+            Height: bitmapHeight);
+
         // Apply gamma correction to grayscale coverage values.
         // Semantics: Gamma is normalized so the default (1.8, matching Hiero's font.gamma)
         // is the no-op baseline. The current/main behavior applies NO gamma, so we treat
@@ -286,15 +254,13 @@ public sealed class FreeTypeRasterizer : IRasterizer
             ApplyGamma(bitmapData, options.Gamma);
         }
 
-        // Swap BGRA to RGBA when FreeType returns a color bitmap.
+        // FreeType's color bitmaps are premultiplied BGRA; Rgba32 glyphs are straight-alpha RGBA
+        // everywhere downstream, so swap the channel order and un-premultiply.
         if (bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_BGRA)
-        {
-            for (var i = 0; i < bitmapData.Length; i += 4)
-                (bitmapData[i], bitmapData[i + 2]) = (bitmapData[i + 2], bitmapData[i]);
-        }
+            PremultipliedBgraToStraightRgba(bitmapData);
 
         // Determine pixel format based on the FreeType pixel mode.
-        var format = bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_BGRA
+        var format = bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_BGRA || isLcd
             ? PixelFormat.Rgba32
             : PixelFormat.Grayscale8;
 
@@ -309,6 +275,65 @@ public sealed class FreeTypeRasterizer : IRasterizer
             Metrics = glyphMetrics,
             Format = format
         };
+    }
+
+    /// <summary>
+    /// The FreeType render mode for <paramref name="options"/>. FT_RENDER_MODE_SDF produces an
+    /// 8-bit bitmap where 128 = on the glyph edge, >128 = inside, &lt;128 = outside, padded by the
+    /// spread; SDF takes priority over the anti-alias setting since its output is inherently smooth.
+    /// </summary>
+    private static FT_Render_Mode_ RenderModeFor(RasterOptions options) => options.Sdf
+        ? FT_Render_Mode_.FT_RENDER_MODE_SDF
+        : options.AntiAlias switch
+        {
+            AntiAliasMode.None => FT_Render_Mode_.FT_RENDER_MODE_MONO,
+            AntiAliasMode.Light => FT_Render_Mode_.FT_RENDER_MODE_LIGHT,
+            AntiAliasMode.Lcd => FT_Render_Mode_.FT_RENDER_MODE_LCD,
+            _ => FT_Render_Mode_.FT_RENDER_MODE_NORMAL
+        };
+
+    /// <summary>
+    /// Loads a glyph into the face's slot with the load flags <paramref name="options"/> call for
+    /// and applies synthetic bold and italic. <see cref="RasterizeGlyph"/> and
+    /// <see cref="GetGlyphMetrics"/> both load through here so they see the same outline.
+    /// </summary>
+    private unsafe FT_GlyphSlotRec_* LoadStyledGlyph(uint glyphIndex, RasterOptions options)
+    {
+        // Determine load flags based on anti-alias mode and hinting.
+        var loadFlags = options.ColorFont
+            ? (FT_LOAD)FreeTypeNative.FT_LOAD_COLOR
+            : FT_LOAD.FT_LOAD_DEFAULT;
+
+        // When rendering mono, tell the hinter to optimize for 1-bit output.
+        // Without this, hinting targets grayscale which produces suboptimal
+        // stroke placement when the final render is monochrome.
+        if (options.AntiAlias == AntiAliasMode.None && !options.Sdf)
+            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_TARGET_MONO;
+
+        if (!options.EnableHinting)
+            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
+
+        var error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
+        if (error != FT_Error.FT_Err_Ok)
+            throw new FreeTypeException(error);
+
+        var slot = _face->glyph;
+
+        // Apply synthetic bold only if the font isn't already bold.
+        // This matches GDI behavior: requesting bold on an already-bold face
+        // doesn't apply additional emboldening.
+        if (options.Bold && (_face->style_flags & 0x01) == 0)
+        {
+            EmboldenGlyph(slot, _face);
+        }
+
+        // Apply synthetic italic only if the font isn't already italic.
+        if (options.Italic && (_face->style_flags & 0x02) == 0)
+        {
+            FT.FT_GlyphSlot_Oblique(slot);
+        }
+
+        return slot;
     }
 
     /// <summary>
@@ -460,35 +485,59 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (glyphIndex == 0)
             return null; // Missing glyph
 
-        // Load the glyph without rendering.
-        var loadFlags = FT_LOAD.FT_LOAD_DEFAULT;
-        if (!options.EnableHinting)
-            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
+        var slot = LoadStyledGlyph(glyphIndex, options);
+        var advance = F26Dot6ToRounded(slot->metrics.horiAdvance);
+        var renderMode = RenderModeFor(options);
 
-        var error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
-        if (error != FT_Error.FT_Err_Ok)
-            throw new FreeTypeException(error);
-
-        var slot = _face->glyph;
-
-        if (options.Bold && (_face->style_flags & 0x01) == 0)
+        // These metrics must equal what RasterizeGlyph returns. slot->metrics cannot provide
+        // that: synthetic italic (FT_GlyphSlot_Oblique) shears the outline without updating it,
+        // and it is unsnapped when hinting is off.
+        //
+        // Grayscale and Light fill the outline's control box grown outward to whole pixels, so
+        // that is measured without rendering. Mono snaps the box differently, LCD and SDF pad
+        // it, and color layers (FT_LOAD_COLOR) span more than the base outline, so those let
+        // FreeType render and report the bitmap box; embedded bitmaps are final once loaded.
+        if (slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_OUTLINE
+            || options.ColorFont
+            || renderMode is not (FT_Render_Mode_.FT_RENDER_MODE_NORMAL or FT_Render_Mode_.FT_RENDER_MODE_LIGHT))
         {
-            EmboldenGlyph(slot, _face);
-        }
-        if (options.Italic && (_face->style_flags & 0x02) == 0)
-        {
-            FT.FT_GlyphSlot_Oblique(slot);
+            if (slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_BITMAP)
+            {
+                if (options.Sdf)
+                    EnsureSdfSpread(options.SdfSpread);
+
+                var error = FT.FT_Render_Glyph(slot, renderMode);
+                if (error != FT_Error.FT_Err_Ok)
+                    throw new FreeTypeException(error);
+            }
+
+            var subpixelsPerPixel = slot->bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_LCD ? 3 : 1;
+            return new Font.Models.GlyphMetrics(
+                BearingX: slot->bitmap_left,
+                BearingY: slot->bitmap_top,
+                Advance: advance,
+                Width: (int)slot->bitmap.width / subpixelsPerPixel,
+                Height: (int)slot->bitmap.rows);
         }
 
-        // Extract metrics from 26.6 fixed-point values (no rendering needed).
-        ref var metrics = ref slot->metrics;
+        FT_BBox_ cbox;
+        FT.FT_Outline_Get_CBox(&slot->outline, &cbox);
+        var xMin = FloorPixel((long)cbox.xMin);
+        var yMin = FloorPixel((long)cbox.yMin);
+        var xMax = CeilPixel((long)cbox.xMax);
+        var yMax = CeilPixel((long)cbox.yMax);
+
         return new Font.Models.GlyphMetrics(
-            BearingX: F26Dot6ToRounded(metrics.horiBearingX),
-            BearingY: F26Dot6ToRounded(metrics.horiBearingY),
-            Advance: F26Dot6ToRounded(metrics.horiAdvance),
-            Width: F26Dot6ToRounded(metrics.width),
-            Height: F26Dot6ToRounded(metrics.height));
+            BearingX: xMin,
+            BearingY: yMax,
+            Advance: advance,
+            Width: xMax - xMin,
+            Height: yMax - yMin);
     }
+
+    private static int FloorPixel(long f26Dot6) => (int)(f26Dot6 >> 6);
+
+    private static int CeilPixel(long f26Dot6) => (int)((f26Dot6 + 63) >> 6);
 
     /// <inheritdoc />
     public IReadOnlyList<RasterizedGlyph> RasterizeAll(IEnumerable<int> codepoints, RasterOptions options)
@@ -551,7 +600,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         // variation state in some FreeType builds.
         if (_variationCoords != null)
         {
-            fixed (int* coords = _variationCoords)
+            fixed (nint* coords = _variationCoords)
             {
                 error = FreeTypeNative.FT_Set_Var_Design_Coordinates(
                     _face, (uint)_variationCoords.Length, coords);
@@ -671,6 +720,61 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
         for (var i = 0; i < coverage.Length; i++)
             coverage[i] = lut[coverage[i]];
+    }
+
+    /// <summary>
+    /// Repacks an LCD bitmap (three subpixel coverage bytes per pixel, rows <paramref name="pitch"/>
+    /// bytes apart) as tightly packed Rgba32: R, G, B are the subpixels in order and A is the
+    /// largest of them, so a fully covered pixel is opaque white like a promoted grayscale glyph
+    /// and no channel ever exceeds alpha.
+    /// </summary>
+    private static byte[] LcdSubpixelsToRgba(byte[] subpixels, int pitch, int width, int height)
+    {
+        var rgba = new byte[width * height * 4];
+        for (var row = 0; row < height; row++)
+        {
+            var src = row * pitch;
+            var dst = row * width * 4;
+            for (var x = 0; x < width; x++, src += 3, dst += 4)
+            {
+                byte r = subpixels[src], g = subpixels[src + 1], b = subpixels[src + 2];
+                rgba[dst] = r;
+                rgba[dst + 1] = g;
+                rgba[dst + 2] = b;
+                rgba[dst + 3] = Math.Max(r, Math.Max(g, b));
+            }
+        }
+        return rgba;
+    }
+
+    /// <summary>
+    /// Converts premultiplied BGRA pixels to straight-alpha RGBA in place. Each color channel is
+    /// divided by alpha with round-to-nearest and clamped to 255 (a malformed channel above its
+    /// alpha would otherwise overflow); alpha 0 stays transparent black and alpha 255 is
+    /// unchanged apart from the swap.
+    /// </summary>
+    private static void PremultipliedBgraToStraightRgba(byte[] pixels)
+    {
+        for (var i = 0; i + 3 < pixels.Length; i += 4)
+        {
+            int b = pixels[i], g = pixels[i + 1], r = pixels[i + 2], a = pixels[i + 3];
+            if (a == 0)
+            {
+                pixels[i] = pixels[i + 1] = pixels[i + 2] = 0;
+            }
+            else if (a == 255)
+            {
+                pixels[i] = (byte)r;
+                pixels[i + 2] = (byte)b;
+            }
+            else
+            {
+                var half = a / 2;
+                pixels[i] = (byte)Math.Min(255, (r * 255 + half) / a);
+                pixels[i + 1] = (byte)Math.Min(255, (g * 255 + half) / a);
+                pixels[i + 2] = (byte)Math.Min(255, (b * 255 + half) / a);
+            }
+        }
     }
 
     /// <summary>
