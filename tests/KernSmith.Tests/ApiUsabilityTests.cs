@@ -393,6 +393,20 @@ public sealed class ApiUsabilityTests : IDisposable
             "Builder.FromConfig should produce at least one atlas page");
     }
 
+    [Fact]
+    public void Builder_FromConfig_CarriesTheSdfSpreadAndScale()
+    {
+        // The bmfont-compare harness generates through Builder.FromConfig; dropping these made
+        // its sdf.bmfc render at the default spread and scale on every backend.
+        var bmfcPath = CreateTempBmfc(BuildBmfcContent(fontSize: 24, extraLines: "useSdf=1\nsdfSpread=6\nsdfScale=2"));
+
+        var fromBuilder = BmFont.Builder().FromConfig(bmfcPath).Build();
+        var direct = BmFont.Generate(LoadTestFont(), BmfcConfigReader.Read(bmfcPath).Options);
+
+        fromBuilder.FntText.ShouldContain("sdfSpread=6", Case.Sensitive);
+        fromBuilder.GetPngData()[0].ShouldBe(direct.GetPngData()[0]);
+    }
+
     // ------------------------------------------------------------------
     // Builder.FromConfig — size override
     // ------------------------------------------------------------------
