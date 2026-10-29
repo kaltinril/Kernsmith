@@ -90,6 +90,24 @@ internal static class SyntheticFonts
         return WithTables(font, new Dictionary<string, byte[]?> { ["hmtx"] = hmtx });
     }
 
+    /// <summary>
+    /// Rebuilds a TrueType font with one glyph's <c>hmtx</c> advance width moved by
+    /// <paramref name="delta"/> font units; the glyph must have a full (advance, lsb) pair.
+    /// </summary>
+    public static byte[] WithAdvanceWidthShifted(byte[] font, int glyphIndex, int delta)
+    {
+        var face = NativeFontFace.Load(font);
+        var hmtx = face.Tables.GetTable("hmtx").ToArray();
+        if (glyphIndex >= face.Hhea.NumberOfHMetrics)
+            throw new ArgumentOutOfRangeException(nameof(glyphIndex), glyphIndex, "The glyph shares the last advance width.");
+
+        int offset = glyphIndex * 4;
+        ushort advance = BinaryPrimitives.ReadUInt16BigEndian(hmtx.AsSpan(offset));
+        BinaryPrimitives.WriteUInt16BigEndian(hmtx.AsSpan(offset), checked((ushort)(advance + delta)));
+
+        return WithTables(font, new Dictionary<string, byte[]?> { ["hmtx"] = hmtx });
+    }
+
     private static byte[] BuildSfnt(uint sfntVersion, List<(string Tag, byte[] Data)> tables)
     {
         int directoryEnd = 12 + (tables.Count * 16);

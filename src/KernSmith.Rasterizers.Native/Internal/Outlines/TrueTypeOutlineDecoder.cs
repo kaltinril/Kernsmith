@@ -13,11 +13,12 @@ namespace KernSmith.Rasterizers.Native.Internal.Outlines;
 /// <remarks>
 /// The outline is placed by its left side bearing phantom point, pp1 = <c>xMin - lsb</c>, which
 /// becomes x = 0 — so it lands with its xMin at the <c>hmtx</c> bearing even where a font's
-/// bearing and xMin disagree. <see cref="ParsedGlyph.Origin"/> names whose metrics apply (a
-/// <c>USE_MY_METRICS</c> component's, for such a composite); <see cref="GlyfTable"/> has already
-/// applied the varied part. <c>HVAR</c> side-bearing deltas are not read: they restate the
-/// phantom-point metrics for layout without outlines, while the outline is placed by the phantom
-/// points themselves.
+/// bearing and xMin disagree. <see cref="ParsedGlyph.Origin"/> names whose metrics apply — the
+/// bearing and the advance alike: a <c>USE_MY_METRICS</c> component's, for such a composite,
+/// with that component's <c>HVAR</c> or phantom-point advance delta at an instance;
+/// <see cref="GlyfTable"/> has already applied the varied origin. <c>HVAR</c> side-bearing deltas
+/// are not read: they restate the phantom-point metrics for layout without outlines, while the
+/// outline is placed by the phantom points themselves.
 /// </remarks>
 internal sealed class TrueTypeOutlineDecoder : IOutlineDecoder
 {
@@ -59,7 +60,7 @@ internal sealed class TrueTypeOutlineDecoder : IOutlineDecoder
             float shift = BearingShift(parsed);
             return new DecodedGlyph(
                 OutlineExtractor.Extract(parsed, shift),
-                _hmtx.GetAdvanceWidth(glyphIndex),
+                _hmtx.GetAdvanceWidth(parsed.Origin.MetricsGlyph),
                 new OutlineBounds(parsed.XMin + shift, parsed.YMin, parsed.XMax + shift, parsed.YMax));
         }
 
@@ -68,10 +69,11 @@ internal sealed class TrueTypeOutlineDecoder : IOutlineDecoder
         var outline = OutlineExtractor.Extract(varied, bearingShift);
 
         // HVAR, when present, is the font's own statement of the varied advance; otherwise the
-        // phantom points carry it.
-        int defaultAdvance = _hmtx.GetAdvanceWidth(glyphIndex);
+        // phantom points carry it. Both are the metrics glyph's, as the phantom deltas are.
+        int metricsGlyph = varied.Origin.MetricsGlyph;
+        int defaultAdvance = _hmtx.GetAdvanceWidth(metricsGlyph);
         float advance = variations.HasAdvanceVariations
-            ? defaultAdvance + variations.GetAdvanceDelta(glyphIndex)
+            ? defaultAdvance + variations.GetAdvanceDelta(metricsGlyph)
             : defaultAdvance + phantom.Right - phantom.Left;
 
         // The glyf header box describes the default outline only; a moved outline is measured.

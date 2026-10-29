@@ -148,7 +148,8 @@ Invariants:
 - A TrueType outline is placed by its left side bearing phantom point, pp1 = `xMin - lsb`
   (a `USE_MY_METRICS` component's, for such a composite; plus its `gvar` delta), which the
   decoder puts at x = 0 — so the outline sits at the `hmtx` bearing even when it disagrees with
-  the `glyf` xMin. The declared header box is moved with it.
+  the `glyf` xMin. The declared header box is moved with it. A `USE_MY_METRICS` composite takes
+  the component's advance too (with the component's `HVAR` or phantom-point delta at an instance).
 - Untransformed TrueType glyphs size from the `glyf` header bbox, falling back to the control
   hull when it scales to nothing. A glyph whose outline a variation moved drops the header box
   and is measured tightly. `NativeOutputCharacterizationTests` pins the resulting bytes;
