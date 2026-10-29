@@ -19,7 +19,7 @@ public class NativeRasterizerTests
         var caps = rasterizer.Capabilities;
 
         caps.SupportsColorFonts.ShouldBeFalse();
-        caps.SupportsVariableFonts.ShouldBeFalse();
+        caps.SupportsVariableFonts.ShouldBeTrue();
         caps.SupportsSdf.ShouldBeFalse();
         caps.SupportsOutlineStroke.ShouldBeFalse();
         caps.SupportsSyntheticBold.ShouldBeFalse();

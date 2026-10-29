@@ -48,7 +48,7 @@ Each item below either raises a clear error or is ignored, as noted:
 - **SDF rendering** -- rejected with `NotSupportedException`
 - **Outline stroke** -- the backend has no stroke of its own; outlines (`Outline` / `outlineThickness`) still work because KernSmith core draws them as a bitmap effect for every backend
 - **Synthetic bold and italic** -- not supported. `Bold` and `Italic` are silently ignored rather than rejected, so requesting them produces regular-weight glyphs. For a bitmap-level approximation, add `BoldPostProcessor` / `ItalicPostProcessor` to `PostProcessors`; because Native reports no synthetic-style capability, the pipeline runs them whether or not `Bold` / `Italic` is set.
-- **Variable fonts** -- not supported; axis settings are ignored and the default instance renders
+- **CFF2 variable fonts** -- rejected along with all CFF outlines. TrueType variable fonts work: `VariationAxes` (or `variationAxes` in a `.bmfc`) selects the instance, and outlines, advances and line metrics follow it. A font whose `avar` table is version 2 gets only its version 1 axis mappings
 - **Color fonts** -- requesting color rendering (`ColorFont`) throws `NotSupportedException`
 - **System font loading by name** -- not supported; load font bytes instead
 - **`Light` and `LCD` anti-aliasing** -- not supported; requesting them silently renders `Grayscale`

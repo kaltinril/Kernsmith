@@ -232,7 +232,7 @@ Native's platform rows follow from it being pure managed code with no native dep
 | **Outline Stroke** | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **Super Sampling** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Color Fonts (COLR/CPAL)** | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Variable Fonts** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Variable Fonts** | ✅ | ❌ | ❌ | ❌ | ✅ (TrueType) |
 | **System Font Loading** | ❌ | ✅ | ✅ | ❌ | ❌ |
 | **BMFont.exe Parity** | ❌ | ✅ | ❌ | ❌ | ❌ |
 

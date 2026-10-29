@@ -91,7 +91,8 @@ metadata / license file.
 
 ### DancingScript-Variable.ttf
 
-- **Path:** `tests/bmfont-compare/gum-bmfont/DancingScript-Variable.ttf`
+- **Path:** `tests/KernSmith.Tests/Fixtures/DancingScript-Variable.ttf` (the same file is also
+  used, untracked, from `tests/bmfont-compare/gum-bmfont/` by the comparison harness)
 - **Family:** Dancing Script (variable font)
 - **Foundry / Source:** Google / Pablo Impallari (Impallari Type)
 - **License (SPDX):** `OFL-1.1` (SIL Open Font License, Version 1.1)
