@@ -32,6 +32,12 @@
     <None Include="..\KernSmith.Tests\Fixtures\Roboto-Regular.ttf"
           Link="Fixtures\Roboto-Regular.ttf"
           CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\KernSmith.Tests\Fixtures\SourceSerif4-Regular.otf"
+          Link="Fixtures\SourceSerif4-Regular.otf"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\KernSmith.Tests\Fixtures\SourceCodeVF-Upright.otf"
+          Link="Fixtures\SourceCodeVF-Upright.otf"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

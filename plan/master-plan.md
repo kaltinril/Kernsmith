@@ -1,12 +1,12 @@
 # KernSmith -- Master Plan
 
-> **Status**: The Native rasterizer renders TrueType (`glyf`) fonts end to end (Phases 161-165). **Next up: [Native rasterizer completion](#native-rasterizer-completion)** -- Wave 0 (staged-pipeline refactor behind `IOutlineDecoder`, WOFF2 in core, the Native benchmark harness), then the feature phases 166-179 in waves.
+> **Status**: The Native rasterizer renders TrueType (`glyf`) and CFF/CFF2 (`.otf`) fonts end to end (Phases 161-166). **Next up: [Native rasterizer completion](#native-rasterizer-completion)** -- Wave 0 (staged-pipeline refactor behind `IOutlineDecoder`, WOFF2 in core, the Native benchmark harness), then the feature phases 166-179 in waves.
 >
-> **Complete** (all archived in `done/`): Phases 1-18 (there is no Phase 19), 20, 21 + 21R, 30-34 (including 32b, 32c, 32d and 33b), 37, 55, 60-86 (including 74b, 75L, 76b, 77b, the full 78 series, and 81-85), 90, 95, 96, 97, 100, 105, 161-165, 181, 182, 183, 185. Phase 34 is Complete (Superseded) by the 160-180 native rasterizer series; Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper); Phase 36 superseded by Phase 110; Phase 98 rejected (invalid bug report); Phase 181 superseded by Phase 182.
+> **Complete** (all archived in `done/`): Phases 1-18 (there is no Phase 19), 20, 21 + 21R, 30-34 (including 32b, 32c, 32d and 33b), 37, 55, 60-86 (including 74b, 75L, 76b, 77b, the full 78 series, and 81-85), 90, 95, 96, 97, 100, 105, 161-166, 181, 182, 183, 185. Phase 34 is Complete (Superseded) by the 160-180 native rasterizer series; Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper); Phase 36 superseded by Phase 110; Phase 98 rejected (invalid bug report); Phase 181 superseded by Phase 182.
 >
 > **In flight**: Phase 160 (design record for the Native rasterizer); Phase 186 (Mac Catalyst and iOS simulator verified in CI; real-iPhone run pending); Phase 250 (UI cleanup -- Phase 1 landed with changed scope, Phase 2's Generate-bar issue needs re-validation, Phases 3-5 largely done); Phase 100b (P2/P3 landed, P4/P5 deferred); Phases 99 and 150 (planning).
 >
-> **Future / deferred**: Phase 50 (in-memory layer retention); Phase 110 (partially done -- the core post-processor architecture is complete, the remainder is future); Phases 111 and 112 (deferred / not started); Phases 166-179 (Native rasterizer completion; 175 and 176 need a decision); Phase 180 (ongoing research); Phase 200 (FontCrafter -- not started); Phase 300 (Perf 6 B/C carried from Phase 95).
+> **Future / deferred**: Phase 50 (in-memory layer retention); Phase 110 (partially done -- the core post-processor architecture is complete, the remainder is future); Phases 111 and 112 (deferred / not started); Phases 167-179 (Native rasterizer completion; 175 and 176 need a decision); Phase 180 (ongoing research); Phase 200 (FontCrafter -- not started); Phase 300 (Perf 6 B/C carried from Phase 95).
 
 ---
 
@@ -97,17 +97,17 @@ Output Layer
 
 ### Native Rasterizer Series (Phases 160-180)
 
-KernSmith's own rasterizer (`src/KernSmith.Rasterizers.Native/`); Phase 160 is the design record. Phases 161-165 are complete (see `done/`): it renders TrueType (`glyf`) fonts end to end, is selectable as `RasterizerBackend.Native` / `--rasterizer native`, tracks FreeType metrics within ±1px, and runs in the `tests/bmfont-compare` harness. It stays **pure managed C#** -- no P/Invoke, no native libraries, no new third-party packages without Jeremy's sign-off -- because it must keep working on browser-wasm and iOS/NativeAOT.
+KernSmith's own rasterizer (`src/KernSmith.Rasterizers.Native/`); Phase 160 is the design record. Phases 161-166 are complete (see `done/`): it renders TrueType (`glyf`) and CFF/CFF2 (`.otf`) fonts end to end, is selectable as `RasterizerBackend.Native` / `--rasterizer native`, tracks FreeType metrics within ±1px, and runs in the `tests/bmfont-compare` harness. It stays **pure managed C#** -- no P/Invoke, no native libraries, no new third-party packages without Jeremy's sign-off -- because it must keep working on browser-wasm and iOS/NativeAOT.
 
 #### Native rasterizer completion
 
 Work order for finishing the backend. Tracks inside a wave are independent and can run in parallel; `->` marks order within a track.
 
 - **Wave 0** (foundations, all parallel)
-  - **Staged-pipeline refactor** ([166 Part 1](phase-166-cff-charstring-interpreter.md#part-1--staged-pipeline-refactor-wave-0)): `NativeRasterizer.RasterizeGlyph` becomes decode via a new `IOutlineDecoder` (TrueType `glyf` behind it) -> outline transform list (bold/italic/stroke hook) -> bbox computed from the outline (declared `glyf` bbox optional) -> scale/hint hook -> render-mode dispatch (coverage / SDF / LCD / color). Output-identical for existing `glyf` fonts.
+  - **Staged-pipeline refactor** ([166 Part 1](done/phase-166-cff-charstring-interpreter.md#part-1--staged-pipeline-refactor-wave-0)): `NativeRasterizer.RasterizeGlyph` becomes decode via a new `IOutlineDecoder` (TrueType `glyf` behind it) -> outline transform list (bold/italic/stroke hook) -> bbox computed from the outline (declared `glyf` bbox optional) -> scale/hint hook -> render-mode dispatch (coverage / SDF / LCD / color). Output-identical for existing `glyf` fonts.
   - **[178](phase-178-woff-decompression.md) WOFF2** -- core only (`WoffDecompressor`), with our own managed Brotli decoder.
   - **[177](phase-177-performance-optimization.md) benchmark harness** -- BenchmarkDotNet Native vs StbTrueType vs FreeType, so every later wave is measured against a baseline.
-- **Wave 1** (after the Wave 0 refactor, all parallel): [166](phase-166-cff-charstring-interpreter.md) CFF; [167](phase-167-synthetic-bold-italic.md) -> [168](phase-168-synthetic-outline-stroke.md) synthetic styles then stroke/small caps/condensed; [169](phase-169-sdf-generation.md) -> [170](phase-170-msdf-generation.md) SDF then MSDF; [171](phase-171-variable-font-support.md) TrueType variations (`gvar`/`avar`/`HVAR`/`MVAR`); [172](phase-172-color-font-support.md) COLRv0 + CPAL.
+- **Wave 1** (after the Wave 0 refactor, all parallel): [166](done/phase-166-cff-charstring-interpreter.md) CFF (complete); [167](phase-167-synthetic-bold-italic.md) -> [168](phase-168-synthetic-outline-stroke.md) synthetic styles then stroke/small caps/condensed; [169](phase-169-sdf-generation.md) -> [170](phase-170-msdf-generation.md) SDF then MSDF; [171](phase-171-variable-font-support.md) TrueType variations (`gvar`/`avar`/`HVAR`/`MVAR`); [172](phase-172-color-font-support.md) COLRv0 + CPAL.
 - **Wave 2**: [174](phase-174-auto-hinting.md) auto-hinting (after 167/168); 171 CFF2 `blend` (after 166); 172 COLRv1; [173](phase-173-lcd-subpixel-rendering.md) LCD, including core anti-alias-mode negotiation.
 - **Wave 3**: 177 optimisation; [179](phase-179-validation-golden-masters.md) validation, golden masters and release decision; docs/status sweep.
 - **Needs decision** (not scheduled): [175](phase-175-gsub-layout.md) GSUB and [176](phase-176-supersampling-height-stretch.md) supersample/height stretch -- see each doc's open question.
@@ -117,7 +117,6 @@ Every phase that changes Native pixel output runs `regression_check.py` with a `
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
 | 160 | [Rasterizer Design Decisions](phase-160-rasterizer-design-decisions.md) | Decision record for the Native rasterizer | Active |
-| 166 | [CFF/Type2 Charstring Interpreter](phase-166-cff-charstring-interpreter.md) | Part 1: staged pipeline + `IOutlineDecoder`; Part 2: CFF/CFF2 outlines (OTF) | **Next** -- Part 1 complete; Part 2 Wave 1 |
 | 167 | [Synthetic Bold & Italic](phase-167-synthetic-bold-italic.md) | Outline-level synthetic bold + italic | Future -- Wave 1 |
 | 168 | [Synthetic Outline/Stroke](phase-168-synthetic-outline-stroke.md) | Outline stroke, small caps, condensed/extended | Future -- Wave 1 (after 167) |
 | 169 | [SDF Generation](phase-169-sdf-generation.md) | Single-channel SDF from outlines | Future -- Wave 1 |
@@ -226,6 +225,7 @@ Every phase that changes Native pixel output runs `regression_check.py` with a `
 | 163 | [Outline Extraction](done/phase-163-outline-extraction.md) | `ParsedGlyph` -> normalized MoveTo/LineTo/CubicTo/Close commands, exact quadratic-to-cubic elevation, font-unit -> pixel transform, adaptive De Casteljau flattening to directed `EdgeSegment`s -- Complete |
 | 164 | [Scanline Rasterizer](done/phase-164-scanline-rasterizer.md) | Signed-area trapezoid coverage over an active-edge table, pooled `area`/`cover` buffers, Grayscale/None anti-aliasing, `RasterResult` output; SSIM > 0.95 vs StbTrueType (perf benchmark deferred) -- Complete |
 | 165 | [IRasterizer Integration](done/phase-165-irasterizer-integration.md) | Full `IRasterizer` on the Native backend (cmap -> glyf -> outline -> `GlyphBox` -> flatten -> scanline), OS/2-based font metrics, `GlyphBox` sizing, CFF rejection; metrics within ±1px of FreeType and `.fnt` base/lineHeight exact. Native surfaced in CLI/docs/comparison harness. Exposed Phase 150 Issue 5 -- Complete |
+| 166 | [Staged Pipeline & CFF/CFF2 Charstring Interpreter](done/phase-166-cff-charstring-interpreter.md) | Staged glyph pipeline behind `IOutlineDecoder`; CFF / CID-keyed CFF / CFF2 (default instance) outlines via a hardened Type 2 interpreter, so `.otf` fonts render on Native -- Complete |
 | 181 | [Atlas Variants: Padded Silhouette Regions](done/phase-181-shadow-outline-atlas-variants.md) | GitHub #175 -- Superseded by Phase 182 (dropshadow-only framing was too narrow) |
 | 182 | [Shared Atlas Groups](done/phase-182-shared-atlas-groups.md) | GitHub #175 -- pack N independent glyph sources (dropshadow variant, later multi-font) into one shared atlas PNG via `AtlasGroupBuilder` -- Complete |
 | 183 | [Runtime Glyph Addition with Stable Packing](done/phase-183-runtime-glyph-addition.md) | GitHub #208 -- add glyphs at runtime with a suggested in-place position that never moves existing glyphs; `BmFontIncrementalSession` API -- Complete |

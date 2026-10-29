@@ -59,6 +59,28 @@ metadata / license file.
 - **Copyright (verbatim):**
   `Copyright 2011 The Roboto Flex Project Authors (https://github.com/googlefonts/roboto-flex)`
 
+### SourceSerif4-Regular.otf
+
+- **Path:** `tests/KernSmith.Tests/Fixtures/SourceSerif4-Regular.otf`
+- **Family:** Source Serif 4 (static, CFF / PostScript outlines)
+- **Foundry / Source:** Adobe
+- **License (SPDX):** `OFL-1.1` (SIL Open Font License, Version 1.1) — full text in
+  `SourceSerif4-OFL.txt` next to the font
+- **Project / Source URL:** https://github.com/adobe-fonts/source-serif (`release` branch, `OTF/`)
+- **Copyright (verbatim):**
+  `Copyright 2014 - 2023 Adobe (http://www.adobe.com/), with Reserved Font Name ‘Source’. All Rights Reserved. Source is a trademark of Adobe in the United States and/or other countries.`
+
+### SourceCodeVF-Upright.otf
+
+- **Path:** `tests/KernSmith.Tests/Fixtures/SourceCodeVF-Upright.otf`
+- **Family:** Source Code Pro (variable font, CFF2 outlines)
+- **Foundry / Source:** Adobe
+- **License (SPDX):** `OFL-1.1` (SIL Open Font License, Version 1.1) — full text in
+  `SourceCodeVF-OFL.txt` next to the font
+- **Project / Source URL:** https://github.com/adobe-fonts/source-code-pro (`release` branch, `VF/`)
+- **Copyright (verbatim):**
+  `© 2023 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'. All Rights Reserved. Source is a trademark of Adobe in the United States and/or other countries.`
+
 ### DancingScript-Variable.ttf
 
 - **Path:** `tests/bmfont-compare/gum-bmfont/DancingScript-Variable.ttf`

@@ -74,8 +74,8 @@ var backends = new (string Name, Func<IRasterizer> Factory)[]
     ("gdi", () => new KernSmith.Rasterizers.Gdi.GdiRasterizer()),
     ("directwrite", () => new KernSmith.Rasterizers.DirectWrite.TerraFX.DirectWriteRasterizer()),
     ("stbtruetype", () => RasterizerFactory.Create(RasterizerBackend.StbTrueType)),
-    // Native handles TrueType (glyf) only — CFF/OTF configs fail per-config and are skipped
-    // by the per-backend try/catch below (CFF support is Phase 166).
+    // Native renders TrueType (glyf) and CFF/CFF2 (.otf) outlines; a config it cannot render
+    // (e.g. a color font) fails per-config and is skipped by the per-backend try/catch below.
     ("native", () => RasterizerFactory.Create(RasterizerBackend.Native)),
 };
 

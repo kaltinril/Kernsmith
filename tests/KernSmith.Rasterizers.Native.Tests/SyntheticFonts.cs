@@ -4,27 +4,32 @@ using KernSmith.Rasterizers.Native.Internal;
 namespace KernSmith.Rasterizers.Native.Tests;
 
 /// <summary>
-/// Builds font files that no fixture on disk provides — currently a CFF-flavoured face, used
-/// to prove the native backend rejects PostScript outlines instead of rendering nothing.
+/// Builds font files that no fixture on disk provides: CFF-flavoured faces around a hand-built
+/// (or deliberately broken) <c>CFF </c>/<c>CFF2</c> table.
 /// </summary>
 internal static class SyntheticFonts
 {
     /// <summary>
     /// Re-wraps Roboto's real metric tables in an <c>OTTO</c> (CFF) shell: the sfnt version
-    /// says CFF, <c>glyf</c>/<c>loca</c> are dropped, and a stub <c>CFF </c> table takes their
-    /// place. Every table <see cref="FontValidator"/> demands is still present, so the font
-    /// loads cleanly and the only thing that can reject it is the missing TrueType outlines.
+    /// says CFF, <c>glyf</c>/<c>loca</c> are dropped, and a stub <c>CFF </c> table — a bare
+    /// header, which no decoder can use — takes their place. Every table
+    /// <see cref="FontValidator"/> demands is still present, so the face itself loads cleanly.
     /// </summary>
-    public static byte[] CffFlavoured()
+    public static byte[] CffFlavoured() => CffFlavoured([0x01, 0x00, 0x04, 0x04]);
+
+    /// <summary>
+    /// As <see cref="CffFlavoured()"/>, around the supplied outline table. Roboto's <c>hmtx</c>
+    /// and <c>head</c> (unitsPerEm 2048) come along, so advances are Roboto's.
+    /// </summary>
+    public static byte[] CffFlavoured(byte[] outlineTable, string tag = "CFF ")
     {
         var source = TableProvider.Parse(TestFonts.RobotoRegularBytes());
 
         var tables = new List<(string Tag, byte[] Data)>();
-        foreach (string tag in new[] { "head", "cmap", "hhea", "hmtx", "maxp", "name", "OS/2", "post" })
-            tables.Add((tag, source.GetTable(tag).ToArray()));
+        foreach (string required in new[] { "head", "cmap", "hhea", "hmtx", "maxp", "name", "OS/2", "post" })
+            tables.Add((required, source.GetTable(required).ToArray()));
 
-        // A stub is enough: nothing in the load path parses CFF charstrings yet.
-        tables.Add(("CFF ", new byte[] { 0x01, 0x00, 0x04, 0x04 }));
+        tables.Add((tag, outlineTable));
         tables.Sort((a, b) => string.CompareOrdinal(a.Tag, b.Tag));
 
         return BuildSfnt(0x4F54544F, tables); // 'OTTO'

@@ -3,8 +3,8 @@ using KernSmith.Rasterizer;
 namespace KernSmith.Rasterizers.Native;
 
 /// <summary>
-/// Describes what the native rasterizer backend supports. As of Phase 165 it renders TrueType
-/// (<c>glyf</c>) outlines with grayscale or thresholded coverage; every optional feature is
+/// Describes what the native rasterizer backend supports. It renders TrueType (<c>glyf</c>) and
+/// CFF/CFF2 outlines with grayscale or thresholded coverage; every optional feature is
 /// still <c>false</c> and expands as later phases land — synthetic bold/italic (167), outline
 /// stroking (168), SDF (169), variable fonts (171) and color fonts (172).
 /// </summary>

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The Native rasterizer renders OpenType fonts with PostScript outlines (`.otf`): CFF, CID-keyed CFF and CFF2, the last at its default instance. A malformed CFF table fails `LoadFont` with a `FontFormatException` instead of the old blanket rejection of every CFF font.
 - Benchmarks: `NativeComparison*` BenchmarkDotNet classes compare the Native, StbTrueType and FreeType backends (font load, per-glyph rasterization at 12/32/72px, `GetGlyphMetrics`, full `BmFont.Generate`) with memory diagnostics; the measured baseline is recorded in the phase 177 plan.
 
 ### Changed

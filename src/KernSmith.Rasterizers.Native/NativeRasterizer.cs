@@ -11,9 +11,10 @@ namespace KernSmith.Rasterizers.Native;
 /// dependencies. Cross-platform and WASM/AOT-friendly.
 /// </summary>
 /// <remarks>
-/// Renders TrueType (<c>glyf</c>) outlines only: the font is parsed in-house, outlines are
-/// flattened to line segments and filled with a signed-area scanline rasterizer. CFF/OTF
-/// (PostScript) outlines are rejected at load time until Phase 166 adds a CFF interpreter.
+/// Renders TrueType (<c>glyf</c>) and PostScript (<c>CFF </c>/<c>CFF2</c>, typically
+/// <c>.otf</c>) outlines: the font is parsed in-house, outlines are flattened to line segments
+/// and filled with a signed-area scanline rasterizer. A CFF2 variable font renders its default
+/// instance.
 ///
 /// Synthetic bold/italic (Phase 167), outline stroking (Phase 168), SDF (Phase 169), variable
 /// fonts (Phase 171) and color fonts (Phase 172) are not implemented; the corresponding
@@ -45,7 +46,7 @@ public sealed class NativeRasterizer : IRasterizer
     public IRasterizerCapabilities Capabilities => CapabilitiesInstance;
 
     /// <inheritdoc />
-    /// <exception cref="RasterizationException">If the font uses CFF (PostScript) outlines.</exception>
+    /// <exception cref="FontFormatException">If the font, or its outline table, is malformed.</exception>
     public void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -54,14 +55,7 @@ public sealed class NativeRasterizer : IRasterizer
             throw new InvalidOperationException("Font already loaded. Create a new NativeRasterizer instance.");
 
         var face = NativeFontFace.Load(fontData, faceIndex);
-
-        // Fail here rather than on the first glyph: a CFF face parses fine and would otherwise
-        // render an entire atlas of nothing before anyone noticed.
-        var decoder = OutlineDecoders.ForFace(face)
-            ?? throw new RasterizationException(
-                "The native rasterizer renders TrueType ('glyf') outlines only, and this font uses "
-                + "CFF/CFF2 (PostScript) outlines — typically a .otf file. CFF outline support is "
-                + "Phase 166; until then use the FreeType or StbTrueType backend for this font.");
+        var decoder = OutlineDecoders.ForFace(face);
 
         _face = face;
         _pipeline = new GlyphPipeline(decoder, face.Head.UnitsPerEm);

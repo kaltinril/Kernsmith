@@ -33,7 +33,7 @@ RasterizerBackend enum:
   Native        — Cross-platform, pure C#, no external dependencies (experimental, unpublished)
 ```
 
-> **Native backend status**: The Native backend renders as of Phase 165 — SFNT/table parsing (161), `glyf`/`loca` parsing (162), outline extraction and flattening (163), and the signed-area scanline fill (164) have all landed, and it is registered via `[ModuleInitializer]` and wired into the pipeline (165). It renders **TrueType (`glyf`) outlines only**: a CFF/OTF face is rejected at `LoadFont` with a `RasterizationException` (CFF is Phase 166). Hinting, SDF, outline stroke, synthetic bold/italic, variable fonts and color fonts are all still unimplemented. The project remains `IsPackable=false` and unpublished, so `RasterizerBackend.Native` resolves only from a source build or the KernSmith CLI (which project-references it) — never from an app built on the released NuGet packages.
+> **Native backend status**: The Native backend renders as of Phase 165 — SFNT/table parsing (161), `glyf`/`loca` parsing (162), outline extraction and flattening (163), and the signed-area scanline fill (164) have all landed, and it is registered via `[ModuleInitializer]` and wired into the pipeline (165). It renders TrueType (`glyf`) and, through a Type 2 charstring interpreter (166), CFF/CFF2 (`.otf`) outlines — CID-keyed fonts included, CFF2 at its default instance. Hinting, SDF, outline stroke, synthetic bold/italic, variable fonts and color fonts are all still unimplemented. The project remains `IsPackable=false` and unpublished, so `RasterizerBackend.Native` resolves only from a source build or the KernSmith CLI (which project-references it) — never from an app built on the released NuGet packages.
 
 ---
 
@@ -164,7 +164,7 @@ RasterizerBackend enum:
 
 **Package**: none. The `KernSmith.Rasterizers.Native` project is `IsPackable=false` and is not published to NuGet; it builds in-repo only (cross-platform TFMs: `net8.0`, `net10.0`).
 
-**Status**: Experimental, but functional as of Phase 165. Font loading, table parsing, outline extraction, adaptive curve flattening and a signed-area scanline fill all work, and font/glyph metrics track FreeType to within a pixel. It renders TrueType (`glyf`) outlines only — a CFF/OTF face is rejected at `LoadFont` with a `RasterizationException` (Phase 166). Reachable from a source build or the KernSmith CLI (`--rasterizer native`); not from the released NuGet packages.
+**Status**: Experimental, but functional as of Phase 165. Font loading, table parsing, outline extraction, adaptive curve flattening and a signed-area scanline fill all work, and font/glyph metrics track FreeType to within a pixel. It renders TrueType (`glyf`) and CFF/CFF2 (`.otf`) outlines (Phase 166). Reachable from a source build or the KernSmith CLI (`--rasterizer native`); not from the released NuGet packages.
 
 **When to use**: A fully-owned, dependency-free fallback for the most constrained environments (Blazor WASM, Native AOT, trimmed/single-file apps) where no third-party or vendored rasterizer code is wanted — Native contains no `unsafe` code, interop or third-party code. For those scenarios today, use StbTrueType — it is published, and it adds SDF plus synthetic bold/italic.
 
@@ -177,7 +177,7 @@ RasterizerBackend enum:
 
 **Limitations**:
 
-- TrueType (`glyf`) outlines only — CFF/CFF2 (`.otf`) faces are rejected at load (Phase 166). WOFF1 is decompressed by KernSmith core before rasterization, so it is accepted; WOFF2 is not supported by core.
+- CFF2 variable fonts render their default instance only (`blend` deltas are dropped until Phase 171). WOFF1 is decompressed by KernSmith core before rasterization, so it is accepted; WOFF2 is not supported by core.
 - No hinting, so small sizes are softer than FreeType or GDI output.
 - No color fonts (`ColorFont` throws `NotSupportedException`), variable fonts (axes ignored), SDF (rejected by core), or backend outline stroke (core's bitmap outline effect still applies).
 - Cannot load system-installed fonts by family name (`LoadSystemFont` throws `NotSupportedException`).

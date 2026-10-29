@@ -220,7 +220,7 @@ Native's platform rows follow from it being pure managed code with no native dep
 | | FreeType | GDI | DirectWrite | StbTrueType | Native |
 |---|:---:|:---:|:---:|:---:|:---:|
 | **TTF** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **OTF (CFF)** | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **OTF (CFF)** | ✅ | ✅ | ✅ | ❌ | ✅ |
 | **WOFF** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **WOFF2** | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **TTC (font collections)** | ✅ | ❌ | ✅ | ✅ | ✅ |
@@ -236,7 +236,7 @@ Native's platform rows follow from it being pure managed code with no native dep
 | **System Font Loading** | ❌ | ✅ | ✅ | ❌ | ❌ |
 | **BMFont.exe Parity** | ❌ | ✅ | ❌ | ❌ | ❌ |
 
-WOFF1 is decompressed by KernSmith core before rasterization, so all backends accept it for fonts whose outlines they otherwise support (StbTrueType and Native still require TrueType `glyf` outlines inside the WOFF). WOFF2 is not yet supported.
+WOFF1 is decompressed by KernSmith core before rasterization, so all backends accept it for fonts whose outlines they otherwise support (StbTrueType still requires TrueType `glyf` outlines inside the WOFF). WOFF2 is not yet supported.
 
 ### When to Use
 
@@ -244,7 +244,7 @@ WOFF1 is decompressed by KernSmith core before rasterization, so all backends ac
 - **GDI** -- Pixel-perfect BMFont.exe compatibility on Windows. Use for validating against BMFont reference output.
 - **DirectWrite** -- Windows system-font loading with ClearType-hinted grayscale rendering. High-quality Windows text output. (For color fonts or variable fonts, use FreeType.)
 - **StbTrueType** -- Blazor WASM, NativeAOT, consoles, Mac Catalyst, iOS, or anywhere native libraries are unavailable. Pure C#, zero dependencies.
-- **Native** -- Experimental. Plain TrueType text with no third-party code at all, when you are building from source and can live without hinting, SDF, stroke, or synthetic styles. Not published to NuGet; use StbTrueType for shipping managed-only builds.
+- **Native** -- Experimental. Plain TrueType or OpenType (CFF) text with no third-party code at all, when you are building from source and can live without hinting, SDF, stroke, or synthetic styles. Not published to NuGet; use StbTrueType for shipping managed-only builds.
 
 ## Tool Descriptions
 

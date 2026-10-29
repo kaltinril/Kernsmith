@@ -399,6 +399,29 @@ public class CliTests : IDisposable
         File.Exists(pngPath).ShouldBeTrue();
     }
 
+    [Theory]
+    [InlineData("SourceSerif4-Regular.otf")]
+    [InlineData("SourceCodeVF-Upright.otf")]
+    public void Generate_NativeRasterizer_FromOtf_ProducesInkedGlyphs(string fixture)
+    {
+        // PostScript-outline (CFF / CFF2) fonts through the real CLI. The .fnt must describe real
+        // glyph cells — a backend that loaded the font but drew nothing would still exit 0.
+        var outputBase = Path.Combine(_tempDir, "native-otf");
+        var fontPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", fixture);
+
+        var (exitCode, stdout, stderr) = RunCli(
+            "generate", "-f", fontPath, "-s", "32", "-o", outputBase, "--rasterizer", "native");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain("Done.");
+
+        var model = KernSmith.Output.BmFontReader.ReadText(File.ReadAllText(outputBase + ".fnt"));
+        var upperA = model.Characters.First(c => c.Id == 'A');
+        upperA.Width.ShouldBeGreaterThan(10);
+        upperA.Height.ShouldBeGreaterThan(10);
+        File.Exists(Path.Combine(_tempDir, "native-otf_0.png")).ShouldBeTrue();
+    }
+
     [Fact]
     public void Generate_UnknownRasterizer_ListsNativeAmongValidValues()
     {

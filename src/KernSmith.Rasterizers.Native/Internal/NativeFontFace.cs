@@ -84,7 +84,7 @@ internal sealed class NativeFontFace
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">If the glyph index is outside the font.</exception>
     /// <exception cref="FontFormatException">
-    /// If the font has no <c>glyf</c> table (CFF outlines are parsed in a later phase),
+    /// If the font has no <c>glyf</c> table (CFF faces decode through <c>CffOutlineDecoder</c>),
     /// or the glyph's data is malformed.
     /// </exception>
     public ParsedGlyph GetGlyph(int glyphIndex) =>
@@ -110,7 +110,7 @@ internal sealed class NativeFontFace
         var os2 = Os2Table.Parse(tables.GetTable("OS/2").Span);
         var cmap = CmapTable.Parse(tables.GetTable("cmap").Span);
 
-        // CFF faces have no glyf/loca; their outlines are parsed in a later phase.
+        // CFF faces have no glyf/loca; CffOutlineDecoder reads their 'CFF '/'CFF2' table.
         LocaTable? loca = null;
         GlyfTable? glyf = null;
         if (!tables.IsCff)
