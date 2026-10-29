@@ -8,7 +8,7 @@ namespace KernSmith;
 /// <c>BmFontBuilder.WithCollectMetrics()</c>, then read <c>BmFontResult.Metrics</c>.
 /// <para>Stages are recorded in pipeline order:</para>
 /// <list type="number">
-/// <item><description><see cref="FontParsing"/> — Reading and parsing the TTF/OTF/WOFF font file (tables, metrics, kerning).</description></item>
+/// <item><description><see cref="FontParsing"/> — Reading and parsing the TTF/OTF/WOFF/WOFF2 font file (tables, metrics, kerning).</description></item>
 /// <item><description><see cref="CharsetResolution"/> — Resolving requested characters against the font's available codepoints.</description></item>
 /// <item><description><see cref="Rasterization"/> — Rendering each glyph to a bitmap via FreeType (or custom rasterizer).</description></item>
 /// <item><description><see cref="EffectsCompositing"/> — Applying layered effects: outline, gradient, and shadow.</description></item>

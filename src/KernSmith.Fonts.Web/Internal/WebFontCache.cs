@@ -41,12 +41,15 @@ internal sealed class WebFontCache
 
         if (_diskCachePath is not null)
         {
-            var path = DiskPathFor(key);
-            if (File.Exists(path))
+            foreach (var extension in DiskExtensions)
             {
-                bytes = File.ReadAllBytes(path);
-                _memory[key] = bytes;
-                return true;
+                var path = DiskPathFor(key, extension);
+                if (File.Exists(path))
+                {
+                    bytes = File.ReadAllBytes(path);
+                    _memory[key] = bytes;
+                    return true;
+                }
             }
         }
 
@@ -62,14 +65,31 @@ internal sealed class WebFontCache
         if (_diskCachePath is not null)
         {
             Directory.CreateDirectory(_diskCachePath);
-            File.WriteAllBytes(DiskPathFor(key), bytes);
+            File.WriteAllBytes(DiskPathFor(key, ExtensionFor(bytes)), bytes);
         }
     }
 
-    private string DiskPathFor(string key)
+    // Extensions a cached font may have been written with; see ExtensionFor.
+    private static readonly string[] DiskExtensions = [".woff2", ".woff", ".font"];
+
+    /// <summary>Picks the cache file extension from the font's signature.</summary>
+    private static string ExtensionFor(byte[] bytes)
+    {
+        if (bytes.Length >= 4 && bytes[0] == (byte)'w' && bytes[1] == (byte)'O' && bytes[2] == (byte)'F')
+        {
+            if (bytes[3] == (byte)'2')
+                return ".woff2";
+            if (bytes[3] == (byte)'F')
+                return ".woff";
+        }
+
+        return ".font";
+    }
+
+    private string DiskPathFor(string key, string extension)
     {
         // Hash the key so it is filesystem-safe regardless of family/subset content.
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)));
-        return Path.Combine(_diskCachePath!, hash + ".woff");
+        return Path.Combine(_diskCachePath!, hash + extension);
     }
 }

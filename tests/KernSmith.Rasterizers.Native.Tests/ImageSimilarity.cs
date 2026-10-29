@@ -1,6 +1,6 @@
 namespace KernSmith.Rasterizers.Native.Tests;
 
-/// <summary>Image comparison shared by the SSIM tests.</summary>
+/// <summary>Image comparison metrics shared by the rasterizer comparison tests.</summary>
 internal static class ImageSimilarity
 {
     /// <summary>

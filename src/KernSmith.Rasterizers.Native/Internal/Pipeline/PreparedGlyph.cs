@@ -16,6 +16,13 @@ namespace KernSmith.Rasterizers.Native.Internal.Pipeline;
 /// <param name="Advance">The horizontal advance, in whole pixels.</param>
 internal readonly record struct PreparedGlyph(GlyphOutline Outline, OutlineTransform ToPixels, GlyphBox Box, int Advance)
 {
+    /// <summary>
+    /// The glyph this was prepared from. Set by <see cref="GlyphPipeline.Prepare"/>; a hint
+    /// stage must carry it over (build its result with <c>with</c>), because
+    /// <see cref="IGlyphRenderer.Measure"/> has nothing else to identify the glyph by.
+    /// </summary>
+    public int GlyphIndex { get; init; }
+
     /// <summary>True when there is nothing to draw: a real advance, but no bitmap.</summary>
     public bool IsBlank => Outline.IsEmpty || Box.IsEmpty;
 }

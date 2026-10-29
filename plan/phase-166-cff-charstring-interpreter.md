@@ -73,6 +73,7 @@ Stack machine, operand stack max 48 entries.
 - Fuzz-style cases: truncated charstrings, recursion bombs, stack overflow — graceful errors
 - `NativeMetricsAgreementTests` (FreeType reference, ±1px) extended to the `.otf` fixture
 - End-to-end: generate a BMFont from the `.otf` through the CLI with `--rasterizer native`
+- A `.woff2` wrapping the CFF fixture (moved from Phase 178) decodes to the `.otf`'s tables and renders identically on every backend
 
 **Regression coverage**: add `tests/bmfont-compare/gum-bmfont/otf-plain.bmfc` pointing `fontFile` at the committed `.otf` (force-add it — the folder is gitignored). Part 1 relies on the existing configs reporting Native output identical to `main`. Because the harness tolerates a failing (config, backend) pair, the end-to-end test above must assert Native actually produced glyphs for the `.otf`.
 

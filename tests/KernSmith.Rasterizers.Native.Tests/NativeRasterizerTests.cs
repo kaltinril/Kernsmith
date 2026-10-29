@@ -18,8 +18,8 @@ public class NativeRasterizerTests
         using var rasterizer = new NativeRasterizer();
         var caps = rasterizer.Capabilities;
 
-        caps.SupportsColorFonts.ShouldBeFalse();
-        caps.SupportsVariableFonts.ShouldBeFalse();
+        caps.SupportsColorFonts.ShouldBeTrue("COLR version 0 layers render (Phase 172)");
+        caps.SupportsVariableFonts.ShouldBeTrue();
         caps.SupportsSdf.ShouldBeFalse();
         caps.SupportsOutlineStroke.ShouldBeFalse();
         caps.SupportsSyntheticBold.ShouldBeTrue();

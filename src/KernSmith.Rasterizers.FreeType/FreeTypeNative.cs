@@ -45,12 +45,14 @@ internal static unsafe class FreeTypeNative
     /// Sets the design coordinates for a variable font's variation axes.
     /// Each coordinate is an FT_Fixed value (16.16 fixed-point: multiply float by 65536).
     /// The coords array must contain one entry per axis, ordered as defined in the fvar table.
+    /// FT_Fixed is a C long, which the bundled FreeType makes pointer-sized — hence nint, the
+    /// same width FreeTypeSharp uses for FT_F26Dot6. A 32-bit element type is read in pairs.
     /// </summary>
     [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
     public static extern FT_Error FT_Set_Var_Design_Coordinates(
         FT_FaceRec_* face,
         uint num_coords,
-        int* coords);
+        nint* coords);
 
     /// <summary>
     /// Selects a color palette by index for CPAL-based color fonts.

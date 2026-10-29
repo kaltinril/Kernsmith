@@ -25,6 +25,9 @@ internal sealed class GlyphPipeline
         _unitsPerEm = unitsPerEm;
     }
 
+    /// <summary>The face's <c>head.unitsPerEm</c>, for building <see cref="GlyphTransforms.For"/>.</summary>
+    public int UnitsPerEm => _unitsPerEm;
+
     /// <summary>
     /// Pixels per font unit. <see cref="IRasterizerCapabilities.HandlesOwnSizing"/> is false,
     /// so <see cref="RasterOptions.Size"/> is already the em size the pipeline wants; only the
@@ -55,7 +58,7 @@ internal sealed class GlyphPipeline
         // its own Y origin placing the bitmap against it.
         var box = GlyphBox.Compute(glyph.Outline, glyph.DeclaredBounds, scale);
         int advance = (int)Math.Round(glyph.AdvanceWidth * (double)scale);
-        var prepared = new PreparedGlyph(glyph.Outline, new OutlineTransform(scale, 0f), box, advance);
+        var prepared = new PreparedGlyph(glyph.Outline, new OutlineTransform(scale, 0f), box, advance) { GlyphIndex = glyphIndex };
 
         // 4. Pixel-space hint hook.
         return GlyphHinter.Apply(prepared, options);

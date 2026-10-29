@@ -4,8 +4,9 @@ using KernSmith.Rasterizers.Native.Internal;
 namespace KernSmith.Rasterizers.Native.Tests;
 
 /// <summary>
-/// Builds font files that no fixture on disk provides — currently a CFF-flavoured face, used
-/// to prove the native backend rejects PostScript outlines instead of rendering nothing.
+/// Builds font files that no fixture on disk provides — a CFF-flavoured face, used to prove the
+/// native backend rejects PostScript outlines instead of rendering nothing, and fixture fonts
+/// with individual tables added, swapped out or removed.
 /// </summary>
 internal static class SyntheticFonts
 {
@@ -28,6 +29,38 @@ internal static class SyntheticFonts
         tables.Sort((a, b) => string.CompareOrdinal(a.Tag, b.Tag));
 
         return BuildSfnt(0x4F54544F, tables); // 'OTTO'
+    }
+
+    /// <summary>
+    /// Roboto with extra tables added (or replaced) — e.g. a hand-built <c>COLR</c>/<c>CPAL</c>
+    /// pair, so color layering can be tested on glyph shapes the other tests already know.
+    /// </summary>
+    public static byte[] RobotoWith(params (string Tag, byte[] Data)[] extraTables) =>
+        WithTables(TestFonts.RobotoRegularBytes(), extraTables.ToDictionary(t => t.Tag, t => (byte[]?)t.Data));
+
+    /// <summary>
+    /// Rebuilds a TrueType font with some tables replaced or removed (a null value drops the
+    /// table); every other table is copied verbatim.
+    /// </summary>
+    public static byte[] WithTables(byte[] font, IReadOnlyDictionary<string, byte[]?> replacements)
+    {
+        var source = TableProvider.Parse(font);
+
+        var tables = new List<(string Tag, byte[] Data)>();
+        foreach (string tag in source.TableTags)
+        {
+            if (!replacements.ContainsKey(tag))
+                tables.Add((tag, source.GetTable(tag).ToArray()));
+        }
+
+        foreach (var (tag, data) in replacements)
+        {
+            if (data is not null)
+                tables.Add((tag, data));
+        }
+
+        tables.Sort((a, b) => string.CompareOrdinal(a.Tag, b.Tag));
+        return BuildSfnt(0x00010000, tables);
     }
 
     private static byte[] BuildSfnt(uint sfntVersion, List<(string Tag, byte[] Data)> tables)

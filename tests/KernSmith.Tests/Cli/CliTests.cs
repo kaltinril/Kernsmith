@@ -190,6 +190,38 @@ public class CliTests : IDisposable
         fntContent.ShouldContain("char id=");
     }
 
+    // -- WOFF2 input --
+
+    private static readonly string Woff2FontPath = Path.Combine(
+        AppContext.BaseDirectory, "Fixtures", "Roboto-Regular.woff2");
+
+    [Fact]
+    public void Generate_Woff2Font_MatchesTtfOutput()
+    {
+        var ttfDir = Directory.CreateDirectory(Path.Combine(_tempDir, "ttf")).FullName;
+        var woff2Dir = Directory.CreateDirectory(Path.Combine(_tempDir, "woff2")).FullName;
+
+        var ttf = RunCli("generate", "-f", FontPath, "-s", "24", "-o", Path.Combine(ttfDir, "out"));
+        var woff2 = RunCli("generate", "-f", Woff2FontPath, "-s", "24", "-o", Path.Combine(woff2Dir, "out"));
+
+        ttf.ExitCode.ShouldBe(0, $"stderr: {ttf.StdErr}");
+        woff2.ExitCode.ShouldBe(0, $"stderr: {woff2.StdErr}");
+        File.ReadAllText(Path.Combine(woff2Dir, "out.fnt"))
+            .ShouldBe(File.ReadAllText(Path.Combine(ttfDir, "out.fnt")));
+        File.ReadAllBytes(Path.Combine(woff2Dir, "out_0.png"))
+            .ShouldBe(File.ReadAllBytes(Path.Combine(ttfDir, "out_0.png")));
+    }
+
+    [Fact]
+    public void Info_Woff2Font_ReportsWoff2Format()
+    {
+        var (exitCode, stdout, stderr) = RunCli("info", Woff2FontPath);
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain("WOFF2", Case.Sensitive);
+        stdout.ShouldContain("Roboto", Case.Sensitive);
+    }
+
     // -- Output formats --
 
     [Fact]

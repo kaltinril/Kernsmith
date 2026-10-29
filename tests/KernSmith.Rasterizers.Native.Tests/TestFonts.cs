@@ -11,4 +11,25 @@ internal static class TestFonts
 
     /// <summary>Reads the primary test font into memory.</summary>
     public static byte[] RobotoRegularBytes() => File.ReadAllBytes(RobotoRegularPath);
+
+    /// <summary>Bungee Color: <c>COLR</c> version 0 layers over a nine-palette <c>CPAL</c> version 0.</summary>
+    public static byte[] BungeeColorBytes() => File.ReadAllBytes(Path.Combine(FixturesDir, "Color", "BungeeColor-Regular.ttf"));
+
+    /// <summary>Reem Kufi Ink: <c>COLR</c> version 1 paint graphs only, no version 0 layer records.</summary>
+    public static byte[] ReemKufiInkBytes() => File.ReadAllBytes(Path.Combine(FixturesDir, "Color", "ReemKufiInk-Regular.ttf"));
+
+    /// <summary>Noto Color Emoji: <c>CBDT</c>/<c>CBLC</c> bitmap glyphs only, no outlines.</summary>
+    public static byte[] NotoColorEmojiBytes() => File.ReadAllBytes(Path.Combine(FixturesDir, "NotoColorEmoji.ttf"));
+
+    /// <summary>Path to the variable test font (RobotoFlex-Variable.ttf: fvar, avar, gvar, HVAR, MVAR).</summary>
+    public static string RobotoFlexPath => Path.Combine(FixturesDir, "RobotoFlex-Variable.ttf");
+
+    /// <summary>Reads the RobotoFlex variable font into memory.</summary>
+    public static byte[] RobotoFlexBytes() => File.ReadAllBytes(RobotoFlexPath);
+
+    /// <summary>Path to the single-axis variable test font (DancingScript-Variable.ttf, wght 400-700).</summary>
+    public static string DancingScriptPath => Path.Combine(FixturesDir, "DancingScript-Variable.ttf");
+
+    /// <summary>Reads the DancingScript variable font into memory.</summary>
+    public static byte[] DancingScriptBytes() => File.ReadAllBytes(DancingScriptPath);
 }

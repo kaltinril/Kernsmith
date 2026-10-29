@@ -33,10 +33,12 @@ kernsmith generate --font Roboto-Regular.ttf --size 32 --rasterizer native --out
 
 - TrueType (`glyf`) outlines
 - TrueType Collections (`.ttc`) via face index
+- WOFF and WOFF2 files wrapping TrueType outlines (KernSmith core decompresses them before the backend sees the bytes)
 - `cmap` formats 4 and 12 for character lookup
 - Anti-aliasing: `Grayscale` and `None` only
 - Super sampling (applied by the core pipeline)
-- Synthetic bold and italic (`Bold` / `Italic`), applied to the outline before rasterizing and matched to the FreeType backend: the same emboldening strength (growing the advance to match) and the same 12° slant. Caller-supplied `BoldPostProcessor` / `ItalicPostProcessor` are skipped when the matching flag is set, as on every other backend
+- Color fonts with `COLR` version 0 layers and `CPAL` palettes (`ColorFont`, `ColorPaletteIndex`); glyphs come out as straight-alpha RGBA
+- Synthetic bold and italic (`Bold` / `Italic`), applied to the outline before rasterizing and matched to the FreeType backend: the same emboldening strength (growing the advance to match) and the same 12° slant. They apply to every `COLR` layer and to variable-font instances too. Caller-supplied `BoldPostProcessor` / `ItalicPostProcessor` are skipped when the matching flag is set, as on every other backend
 - Font and glyph metrics that track FreeType to within a pixel
 
 ## Limitations
@@ -44,12 +46,11 @@ kernsmith generate --font Roboto-Regular.ttf --size 32 --rasterizer native --out
 Each item below either raises a clear error or is ignored, as noted:
 
 - **CFF/OTF (PostScript) outlines** -- rejected at load time with a `RasterizationException`. This is the one that bites: a `.otf` file will not render at all.
-- **WOFF2** -- not supported by KernSmith core for any backend. WOFF1 works: core decompresses it before the backend sees the bytes, so a WOFF1 file wrapping TrueType outlines renders normally
 - **Hinting** -- none, so small sizes are softer than FreeType or GDI output
 - **SDF rendering** -- rejected with `NotSupportedException`
 - **Outline stroke** -- the backend has no stroke of its own; outlines (`Outline` / `outlineThickness`) still work because KernSmith core draws them as a bitmap effect for every backend
-- **Variable fonts** -- not supported; axis settings are ignored and the default instance renders
-- **Color fonts** -- requesting color rendering (`ColorFont`) throws `NotSupportedException`
+- **CFF2 variable fonts** -- rejected along with all CFF outlines. TrueType variable fonts work: `VariationAxes` (or `variationAxes` in a `.bmfc`) selects the instance, and outlines, advances and line metrics follow it. A font whose `avar` table is version 2 gets only its version 1 axis mappings
+- **Color fonts beyond `COLR` version 0** -- `COLR` version 1 glyphs (gradients, transforms) render as plain grayscale coverage, the same as with `ColorFont` off. Bitmap-only color fonts (`CBDT`/`sbix`, such as Noto Color Emoji) are rejected at load time with a `RasterizationException`; use [FreeType](freetype.md) for those
 - **System font loading by name** -- not supported; load font bytes instead
 - **`Light` and `LCD` anti-aliasing** -- not supported; requesting them silently renders `Grayscale`
 

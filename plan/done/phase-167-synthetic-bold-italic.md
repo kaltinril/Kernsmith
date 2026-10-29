@@ -23,6 +23,7 @@ Synthetic bold and italic as outline transforms in font units (Phase 160 D6), so
 ## Implementation
 
 - `Internal/Pipeline/BoldTransform.cs`, `ItalicTransform.cs`; `GlyphTransforms.For(options, unitsPerEm)` returns `[]` for unstyled requests (keeping the `glyf` header bbox and the characterized output), otherwise bold then italic.
+- `ColorLayerRenderer` (172) builds the same `GlyphTransforms.For` list for its layers, so each `COLR` layer is styled before compositing; variation deltas (171) are applied by the decoder, before the transforms.
 - Bounds come from the transformed outline (`OutlineBounds.Tight` via `WithOutline`), so slanted and emboldened glyphs are never clipped; `GetGlyphMetrics` runs the same stages and reports the styled box and advance.
 - An outline with no signed area is left unstyled, advance included (FreeType's embolden rejects it and the backend then skips its metric adjustment). A blank glyph (space) still grows its advance, as in FreeType.
 
@@ -34,6 +35,7 @@ FreeType sizes its bitmap from the outline's control box; Native uses the tight 
 
 - `SyntheticStyleTransformTests` — exact geometry: a square grows by the full strength from its lower-left corner in either winding; a square ring's counter closes by the strength; a circle grows by the strength without distortion; an inward corner is mitered exactly; a 40° apex gets its full miter while a ~6° apex does not spike and a 10° notch is not filled from its tip; a short edge between inward corners never reverses; an outline with no area is left unstyled; coincident control points stay finite; a blank glyph's advance grows; the shear maps `(x, y) → (x + y·tan12°, y)` including cubic controls; strength equals FreeType's at 32/48/6/17.5px and 96 DPI; transform list order.
 - `NativeSyntheticStyleTests` — against FreeType (hinting off) for bold, italic and bold+italic at 12/16/24/32/48/96px: ink bounds and advance within ±1px over the metrics sample; SSIM ≥ 0.95 and above the unstyled glyph's score; `GetGlyphMetrics` equals the rendered metrics; bold `'o'`/`'e'`/`'B'` counters stay open at 12px.
+- `NativeStyledColorAndVariationTests` — bold/italic style every `COLR` layer of a Bungee Color glyph (wider, heavier, still multi-colored; same advance as the plain bold glyph), core skips the bitmap fallbacks for Native's RGBA output, and RobotoFlex at wght 700 with bold, italic or both matches FreeType (advance ±1px, SSIM ≥ 0.9 and above the unstyled glyph) while still differing from the default instance.
 - `SyntheticStyleFallbackTests` — the no-capability gate runs against a stub backend; Native skips the fallback for bold and italic; Native's bold `'A'` is wider than regular through `BmFont.Generate`.
 - `NativeOutputCharacterizationTests` stays green: default options never reach a transform.
 - **Regression**: `regression_check.py` — the `isBold`/`isItalic` configs and the synthesized `plain-bold`/`plain-italic` variants change for Native only.

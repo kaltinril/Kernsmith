@@ -28,7 +28,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
     /// Stored variation axis coordinates (FT_Fixed 16.16 values) to re-apply after FT_Set_Char_Size,
     /// which can reset variation state in some FreeType builds.
     /// </summary>
-    private int[]? _variationCoords;
+    private nint[]? _variationCoords;
 
     private float _lastSetSize;
     private int _lastSetDpi;
@@ -103,9 +103,11 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
         // Build the coordinate array in fvar axis order.
         // Axes not specified by the user get their default value.
-        // FT_Fixed is a 16.16 fixed-point integer: value * 65536.
+        // FT_Fixed is a 16.16 fixed-point C long, pointer-sized in the bundled FreeType (as
+        // FreeTypeSharp's own FT_F26Dot6 parameters are): an int array is read in pairs and
+        // throws every axis to an extreme.
         var numAxes = fvarAxes.Count;
-        var coordsArray = new int[numAxes];
+        var coordsArray = new nint[numAxes];
 
         for (var i = 0; i < numAxes; i++)
         {
@@ -124,7 +126,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         // which resets variation state in some FreeType builds.
         _variationCoords = coordsArray;
 
-        fixed (int* coords = coordsArray)
+        fixed (nint* coords = coordsArray)
         {
             var error = FreeTypeNative.FT_Set_Var_Design_Coordinates(
                 _face, (uint)numAxes, coords);
@@ -551,7 +553,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         // variation state in some FreeType builds.
         if (_variationCoords != null)
         {
-            fixed (int* coords = _variationCoords)
+            fixed (nint* coords = _variationCoords)
             {
                 error = FreeTypeNative.FT_Set_Var_Design_Coordinates(
                     _face, (uint)_variationCoords.Length, coords);

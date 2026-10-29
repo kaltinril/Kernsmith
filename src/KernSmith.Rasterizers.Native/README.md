@@ -19,19 +19,24 @@ is expected to work but not yet verified — see the
 In development. As of Phase 165 the backend renders TrueType (`glyf`) outlines end to end:
 SFNT table parsing, cmap lookup (formats 4 and 12), outline extraction, adaptive curve
 flattening, and a signed-area scanline fill, with font and glyph metrics that track FreeType
-to within a pixel. Synthetic bold and italic (Phase 167) are outline transforms that match the
-FreeType backend's: its embolden strength (`max(0.5px, ppem/24)`, advance grown to match) and
-its 12° slant.
+to within a pixel. WOFF and WOFF2 files wrapping TrueType outlines work too: KernSmith core
+decompresses them before the backend sees the bytes.
+TrueType variable fonts (Phase 171) render at the requested instance:
+`fvar`/`avar` normalization, `gvar` outline deltas (composites included), `HVAR` advances
+(phantom points when a font has no `HVAR`) and `MVAR` line metrics.
+Synthetic bold and italic (Phase 167) are outline transforms that match the FreeType backend's:
+its embolden strength (`max(0.5px, ppem/24)`, advance grown to match) and its 12° slant. They
+apply to variable instances and to every `COLR` layer as well.
 
 Not yet supported — each raises a clear error or is ignored, as noted:
 
 - **CFF/OTF (PostScript) outlines** — rejected at `LoadFont` with a `RasterizationException` (Phase 166)
-- **WOFF2** — not yet supported by KernSmith core (WOFF1 is decompressed by core before rasterization, so WOFF-packaged TrueType fonts work)
 - **Hinting** — none, so small sizes are softer than FreeType or GDI output
 - **Outline stroking** (Phase 168) — the backend has none of its own; KernSmith core still draws outlines as a bitmap effect
 - **SDF** (Phase 169) — rejected with `NotSupportedException`
-- **Variable fonts** (Phase 171) — axes are ignored; the default instance renders
-- **Color fonts** (Phase 172) — `ColorFont` throws `NotSupportedException`
+- **CFF2 variable fonts** (Phase 171 Wave 2) — rejected with the rest of CFF; `avar` version 2
+  axis mixing is not applied (its version 1 segment maps are)
+- **Color fonts** (Phase 172) — `COLR` version 0 layers with `CPAL` palettes render as RGBA (straight alpha) and `ColorPaletteIndex` selects the palette. `COLR` version 1 glyphs render as plain grayscale coverage, and bitmap-only color fonts (`CBDT`/`sbix`, e.g. Noto Color Emoji) are rejected at `LoadFont` with a `RasterizationException`
 - **System fonts by name** — load font bytes instead
 - **Anti-aliasing** — `None` and `Grayscale` only; a `Light` or `LCD` request renders as `Grayscale`
 
@@ -71,20 +76,24 @@ disagree. Everything is internal; add a feature to its stage rather than to `Nat
 
 | # | Stage | Code | Add a feature by |
 |---|-------|------|------------------|
-| 1 | Decode → `DecodedGlyph` (cubic outline, advance, optional declared bbox; font units) | `Internal/Outlines/IOutlineDecoder.cs`, `TrueTypeOutlineDecoder.cs` | implementing `IOutlineDecoder` and returning it from `OutlineDecoders.ForFace` — CFF (166). Variation deltas (171) go inside the decoder; `Decode` receives the `RasterOptions`. |
+| 1 | Decode → `DecodedGlyph` (cubic outline, advance, optional declared bbox; font units) | `Internal/Outlines/IOutlineDecoder.cs`, `TrueTypeOutlineDecoder.cs`; variations in `Internal/Variations/` | implementing `IOutlineDecoder` and returning it from `OutlineDecoders.ForFace` — CFF (166). Variation deltas live inside the decoder: `TrueTypeOutlineDecoder` reads the face's `FontVariations` (set by `SetVariationAxes`); a CFF2 decoder would read the same coordinates. |
 | 2 | Transforms, in order, in font units | `Internal/Pipeline/IGlyphTransform.cs`, `GlyphTransforms.cs` | implementing `IGlyphTransform` and adding it in `GlyphTransforms.For` — `BoldTransform` then `ItalicTransform` today (167). `WidthScaleTransform`, `SmallCapsTransform` (before bold) and `StrokeTransform` (last, as a separate layer) exist but are not registered until core options reach them (168). Build results with `WithOutline` / `WithAdvanceWidth`. |
 | 3 | Bounds → pixel grid | `Internal/Raster/GlyphBox.cs`, `Internal/Outlines/OutlineBounds.cs` | nothing: a replaced outline loses its declared bbox and is measured from its tight bounds. |
 | 4 | Scale, then pixel-space hint hook | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs` | filling in `GlyphHinter.Apply` — auto-hinting (174). |
-| 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs` | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` — SDF (169/170), color (172), LCD (173). `Measure` must match what `Render` produces. |
+| 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs`, `ColorLayerRenderer.cs` | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` — SDF (169/170), LCD (173). Color layers (172) wrap that renderer in `GlyphRenderers.SelectForFace` and prepare each layer glyph through stages 1–4. `Measure` must match what `Render` produces. |
 
 Invariants:
 
 - Renderers map outline coordinates through `PreparedGlyph.ToPixels`, never a scale of their
   own — a hinter may return an outline already in pixel space.
 - Untransformed TrueType glyphs size from the `glyf` header bbox, falling back to the control
-  hull when it scales to nothing. `NativeOutputCharacterizationTests` pins the resulting bytes;
+  hull when it scales to nothing. A glyph whose outline a variation moved drops the header box
+  and is measured tightly. `NativeOutputCharacterizationTests` pins the resulting bytes;
   a deliberate pixel change updates its hashes.
-- Blank glyphs (no outline, or an empty box) never reach a renderer.
+- Blank glyphs (no outline, or an empty box) never reach a renderer — except a glyph with `COLR` layers, whose own outline is not what gets drawn and is often empty.
+- `PreparedGlyph.GlyphIndex` is the only way `Measure` can identify the glyph; a hint stage must carry it over (build with `with`).
+- The default instance (no axes, or every axis at its default) takes the exact static decode
+  path, so non-variable output cannot drift.
 
 See the [KernSmith repository](https://github.com/kaltinril/Kernsmith) for full project
 documentation.

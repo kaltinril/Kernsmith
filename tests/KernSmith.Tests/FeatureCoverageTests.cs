@@ -504,61 +504,31 @@ public sealed class FeatureCoverageTests
     }
 
     // ------------------------------------------------------------------
-    // B3.5 — WOFF2 unsupported
+    // B3.5 — malformed WOFF2 is rejected cleanly
     // ------------------------------------------------------------------
 
     [Fact]
-    public void WoffDecompressor_Woff2Data_ThrowsNotSupportedException()
+    public void WoffDecompressor_Woff2HeaderShorterThan48Bytes_ThrowsFontParsingException()
     {
-        // Arrange — minimal data with WOFF2 signature "wOF2"
-        var woff2Data = new byte[]
-        {
-            (byte)'w', (byte)'O', (byte)'F', (byte)'2',
-            0x00, 0x01, 0x00, 0x00,  // flavor
-            0x00, 0x00, 0x00, 0x2C,  // length (44)
-            0x00, 0x00,              // numTables
-            0x00, 0x00, 0x00, 0x00,  // reserved
-            0x00, 0x00, 0x00, 0x00,  // totalSfntSize
-            0x00, 0x00, 0x00, 0x00,  // totalCompressedSize
-            0x00, 0x00,              // majorVersion
-            0x00, 0x00,              // minorVersion
-            0x00, 0x00, 0x00, 0x00,  // metaOffset
-            0x00, 0x00, 0x00, 0x00,  // metaLength
-            0x00, 0x00, 0x00, 0x00,  // metaOrigLength
-            0x00, 0x00, 0x00, 0x00,  // privOffset
-            0x00, 0x00, 0x00, 0x00,  // privLength
-        };
+        // Arrange — a 44-byte WOFF1-sized header carrying the WOFF2 signature "wOF2"
+        var woff2Data = new byte[44];
+        woff2Data[0] = (byte)'w';
+        woff2Data[1] = (byte)'O';
+        woff2Data[2] = (byte)'F';
+        woff2Data[3] = (byte)'2';
 
         // Act
         var act = () => WoffDecompressor.Decompress(woff2Data);
 
         // Assert
-        var ex1 = Should.Throw<NotSupportedException>(act);
-        ex1.Message.ShouldContain("WOFF2");
+        var ex = Should.Throw<FontParsingException>(act);
+        ex.Message.ShouldContain("WOFF2", Case.Sensitive);
     }
 
     [Fact]
-    public void WoffDecompressor_Woff2Data_ExceptionMessageIsDescriptive()
+    public void Generate_WithEmptyWoff2Header_ThrowsFontParsingException()
     {
-        // Arrange
-        var woff2Data = new byte[]
-        {
-            (byte)'w', (byte)'O', (byte)'F', (byte)'2',
-            0x00, 0x00, 0x00, 0x00
-        };
-
-        // Act
-        var act = () => WoffDecompressor.Decompress(woff2Data);
-
-        // Assert — message should guide the user toward a workaround
-        var ex = Should.Throw<NotSupportedException>(act);
-        ex.Message.ShouldContain("Convert");
-    }
-
-    [Fact]
-    public void Generate_WithWoff2Data_ThrowsNotSupportedException()
-    {
-        // Arrange — WOFF2 signature followed by enough data to pass initial checks
+        // Arrange — WOFF2 signature, then a zeroed header: no tables and a wrong length field
         var woff2Data = new byte[48];
         woff2Data[0] = (byte)'w';
         woff2Data[1] = (byte)'O';
@@ -568,9 +538,8 @@ public sealed class FeatureCoverageTests
         // Act
         var act = () => BmFont.Generate(woff2Data, new FontGeneratorOptions { Size = 32 });
 
-        // Assert — BmFont.Generate detects WOFF2 and calls WoffDecompressor.Decompress,
-        // which should throw NotSupportedException
-        var ex2 = Should.Throw<NotSupportedException>(act);
-        ex2.Message.ShouldContain("WOFF2");
+        // Assert — BmFont.Generate detects WOFF2 and decodes it in core, which rejects the header
+        var ex = Should.Throw<FontParsingException>(act);
+        ex.Message.ShouldContain("WOFF2", Case.Sensitive);
     }
 }

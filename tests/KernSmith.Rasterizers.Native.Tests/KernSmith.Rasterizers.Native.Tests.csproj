@@ -23,7 +23,7 @@
     <ProjectReference Include="..\..\src\KernSmith\KernSmith.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.Native\KernSmith.Rasterizers.Native.csproj" />
     <!-- Reference backends used only as comparison baselines: stb_truetype in
-         ScanlineRasterizerSsimTests, FreeType in NativeMetricsAgreementTests. -->
+         ScanlineRasterizerSsimTests, FreeType in NativeMetricsAgreementTests and the color tests. -->
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.StbTrueType\KernSmith.Rasterizers.StbTrueType.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.FreeType\KernSmith.Rasterizers.FreeType.csproj" />
   </ItemGroup>
@@ -31,6 +31,26 @@
   <ItemGroup>
     <None Include="..\KernSmith.Tests\Fixtures\Roboto-Regular.ttf"
           Link="Fixtures\Roboto-Regular.ttf"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\KernSmith.Tests\Fixtures\NotoColorEmoji.ttf"
+          Link="Fixtures\NotoColorEmoji.ttf"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\KernSmith.Tests\Fixtures\Color\BungeeColor-Regular.ttf"
+          Link="Fixtures\Color\BungeeColor-Regular.ttf"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\KernSmith.Tests\Fixtures\Color\ReemKufiInk-Regular.ttf"
+          Link="Fixtures\Color\ReemKufiInk-Regular.ttf"
+          CopyToOutputDirectory="PreserveNewest" />
+    <!-- WOFF2 fixtures and the TTFs they were made from: core decodes WOFF2, these prove
+         Native renders the decoded font exactly like the source TTF. -->
+    <None Include="..\KernSmith.Tests\Fixtures\Roboto-Regular.woff2;..\KernSmith.Tests\Fixtures\NotoSans-Regular-Latin.ttf;..\KernSmith.Tests\Fixtures\NotoSans-Regular-Latin.woff2;..\KernSmith.Tests\Fixtures\RobotoFlex-Latin.ttf;..\KernSmith.Tests\Fixtures\RobotoFlex-Latin.woff2"
+          Link="Fixtures\%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\KernSmith.Tests\Fixtures\RobotoFlex-Variable.ttf"
+          Link="Fixtures\RobotoFlex-Variable.ttf"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\KernSmith.Tests\Fixtures\DancingScript-Variable.ttf"
+          Link="Fixtures\DancingScript-Variable.ttf"
           CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

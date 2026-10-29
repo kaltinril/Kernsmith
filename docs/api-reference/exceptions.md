@@ -49,7 +49,7 @@ Thrown when a font cannot be read. This is the most common KernSmith exception. 
 
 - font data is too small, has an invalid sfnt magic, or is missing a required table
   (`head`, `cmap`) during TTF/OTF parsing;
-- a WOFF file is malformed, or the input is WOFF2 (which is not supported);
+- a WOFF or WOFF2 file is malformed, truncated, or its compressed data is corrupt;
 - a requested face index is out of range for a `.ttc`/`.otc` collection;
 - a backend fails to initialize the font (e.g. FreeType or StbTrueType load failure);
 - a requested system font family is not installed and is not registered.

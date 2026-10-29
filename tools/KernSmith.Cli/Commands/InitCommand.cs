@@ -77,7 +77,7 @@ internal sealed class InitCommand
             file and run 'kernsmith generate --config <path>'.
 
             Font Source:
-              -f, --font <path>           Font file path (TTF, OTF, WOFF)
+              -f, --font <path>           Font file path (TTF, OTF, WOFF, WOFF2)
               --system-font <name>        Use a system-installed font by family name
 
             Output:

@@ -31,7 +31,7 @@ How does KernSmith compare to other bitmap font generators?
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | **TTF/OTF** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **WOFF** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **WOFF2** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **WOFF2** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **Variable Fonts** | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | **Color Fonts (COLR/CPAL)** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **Emoji** | ⚠️ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
@@ -222,21 +222,21 @@ Native's platform rows follow from it being pure managed code with no native dep
 | **TTF** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **OTF (CFF)** | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **WOFF** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **WOFF2** | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **WOFF2** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **TTC (font collections)** | ✅ | ❌ | ✅ | ✅ | ✅ |
 | **Anti-aliasing** | Grayscale, Light, LCD, None | Grayscale, None | None, Grayscale | Grayscale, None | Grayscale, None |
 | **SDF Rendering** | ✅ | ❌ | ❌ | ✅ | ❌ |
 | **Hinting** | ✅ | ✅ | ✅ | ❌ | ❌ |
-| **Synthetic Bold** | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **Synthetic Italic** | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Synthetic Bold** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Synthetic Italic** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Outline Stroke** | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **Super Sampling** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Color Fonts (COLR/CPAL)** | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Variable Fonts** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Color Fonts (COLR/CPAL)** | ✅ | ❌ | ❌ | ❌ | ✅ (COLR v0) |
+| **Variable Fonts** | ✅ | ❌ | ❌ | ❌ | ✅ (TrueType) |
 | **System Font Loading** | ❌ | ✅ | ✅ | ❌ | ❌ |
 | **BMFont.exe Parity** | ❌ | ✅ | ❌ | ❌ | ❌ |
 
-WOFF1 is decompressed by KernSmith core before rasterization, so all backends accept it for fonts whose outlines they otherwise support (StbTrueType and Native still require TrueType `glyf` outlines inside the WOFF). WOFF2 is not yet supported.
+WOFF and WOFF2 are decompressed by KernSmith core before rasterization (WOFF2 with a pure managed Brotli decoder), so all backends accept them for fonts whose outlines they otherwise support (StbTrueType and Native still require TrueType `glyf` outlines inside the WOFF/WOFF2).
 
 ### When to Use
 
@@ -244,7 +244,7 @@ WOFF1 is decompressed by KernSmith core before rasterization, so all backends ac
 - **GDI** -- Pixel-perfect BMFont.exe compatibility on Windows. Use for validating against BMFont reference output.
 - **DirectWrite** -- Windows system-font loading with ClearType-hinted grayscale rendering. High-quality Windows text output. (For color fonts or variable fonts, use FreeType.)
 - **StbTrueType** -- Blazor WASM, NativeAOT, consoles, Mac Catalyst, iOS, or anywhere native libraries are unavailable. Pure C#, zero dependencies.
-- **Native** -- Experimental. Plain TrueType text with no third-party code at all, when you are building from source and can live without hinting, SDF, stroke, or synthetic styles. Not published to NuGet; use StbTrueType for shipping managed-only builds.
+- **Native** -- Experimental. Plain TrueType text with no third-party code at all, when you are building from source and can live without hinting, SDF or stroke. Not published to NuGet; use StbTrueType for shipping managed-only builds.
 
 ## Tool Descriptions
 

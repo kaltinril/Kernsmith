@@ -25,7 +25,7 @@ The interface uses a three-column layout with a menu bar at the top and a status
 
 There are several ways to load a font:
 
-- **Browse**: Click "Browse for Font..." in the left panel and select a TTF, OTF, WOFF, or TTC file
+- **Browse**: Click "Browse for Font..." in the left panel and select a TTF, OTF, TTC, WOFF, or WOFF2 file
 - **Drag and drop**: Drag a font file directly onto the application window
 - **System fonts**: Use the "System Font" dropdown to pick an installed font (availability depends on rasterizer backend)
 - **Recent fonts**: File > Recent Fonts shows the last 10 loaded fonts
@@ -202,7 +202,7 @@ The Font Config panel includes a rasterizer backend dropdown. Different backends
 | GDI | Windows | No | No | No |
 | StbTrueType | All | No | No | Yes |
 
-FreeType is the only backend that currently renders color (COLR/CPAL) and variable fonts; DirectWrite's color and variable-font support is stubbed and not yet implemented.
+Of the backends listed here, FreeType is the only one that currently renders color (COLR/CPAL) and variable fonts; DirectWrite's color and variable-font support is stubbed and not yet implemented.
 
 Install the corresponding NuGet package to enable a backend. They auto-register via module initializer -- no code changes needed.
 
