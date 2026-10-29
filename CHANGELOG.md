@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - FreeType: variable-font axis coordinates are passed to FreeType as pointer-sized `FT_Fixed` values. They were marshalled as 32-bit ints, so FreeType read them in pairs and every variable-font request rendered a scrambled instance regardless of the axes asked for.
 - FreeType: color glyphs (CBDT/sbix bitmaps, COLR layers) are un-premultiplied before they leave the backend. FreeType returns them premultiplied while KernSmith treats RGBA glyphs as straight alpha, so every anti-aliased color edge came out darkened by its own alpha a second time.
 - FreeType: `AntiAlias = Lcd` glyphs are RGBA at their real pixel width (R, G, B = the three subpixel coverages, A = the largest). The raw subpixel buffer was passed on as a grayscale bitmap three times as wide as the glyph, so LCD glyphs were stretched 3x in the atlas and their metrics did not match the bitmap.
+- FreeType: `GetGlyphMetrics` (used by `BmFont.EstimateAtlasSize`) now reports exactly the box `RasterizeGlyph` produces. It read FreeType's slot metrics, which synthetic italic never updates and which are unsnapped without hinting, and it ignored the mono/color load flags, so italic, bold, unhinted, mono, LCD and SDF requests were measured with the wrong bearings or size.
 
 ## [0.24.0] - 2026-10-18
 
