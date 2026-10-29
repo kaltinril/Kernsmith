@@ -158,7 +158,7 @@ public class FontGeneratorOptions
     /// <summary>If true, packs multiple glyphs into separate RGBA channels for smaller textures.</summary>
     public bool ChannelPacking { get; set; }
 
-    /// <summary>If true, renders color font glyphs (COLR/CPAL tables, like emoji fonts).</summary>
+    /// <summary>If true, renders color font glyphs (COLR/CPAL layers, CBDT/sbix bitmaps, like emoji fonts).</summary>
     public bool ColorFont { get; set; }
 
     /// <summary>Which CPAL color palette to use for color fonts. 0 = default palette.</summary>

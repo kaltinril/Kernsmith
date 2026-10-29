@@ -11,8 +11,8 @@ Resolve all open design decisions and architectural questions before beginning i
 
 ## Implementation Status
 
-- **Complete** (`plan/done/`): Phases 161–165 (tables, `glyf`/`loca`, outlines and flattening, the scanline fill, `IRasterizer` integration), 166 (staged pipeline, CFF/CFF2), 167 (synthetic bold/italic), 169–170 (SDF, MSDF), 171 (variations) and 178 (WOFF2).
-- **Open**: 168, 172–177 and 179 — mostly decisions; the master plan lists them. The staged pipeline below exists and every stage is filled in ([Phase 166 Part 1](done/phase-166-cff-charstring-interpreter.md#part-1--staged-pipeline-refactor-wave-0)).
+- **Complete** (`plan/done/`): Phases 161–165 (tables, `glyf`/`loca`, outlines and flattening, the scanline fill, `IRasterizer` integration), 166 (staged pipeline, CFF/CFF2), 167 (synthetic bold/italic), 168 (vector outlines, width, italic angle), 169–170 (SDF, MSDF), 171 (variations), 172 (COLR and bitmap color), 173 (LCD), 174 (auto-hinting) and 178 (WOFF2).
+- **Open**: 177 (optimisation) and 179 (validation and release); 175 and 176 await Jeremy's decision. The master plan lists them. The staged pipeline below exists and every stage is filled in ([Phase 166 Part 1](done/phase-166-cff-charstring-interpreter.md#part-1--staged-pipeline-refactor-wave-0)).
 
 ## Context
 
@@ -46,11 +46,11 @@ FontData (bytes)
   → BinaryFontReader (parse table directory + core tables)
     → TableProvider (lazy table access by tag)
       → OutlineDecoder (glyf/loca or CFF charstrings → GlyphOutline; variation deltas applied here)
-        → OutlineTransformer (synthetic bold/italic/stroke — font units)
+        → OutlineTransformer (synthetic width/bold/italic — font units)
           → Bounding box computed from the transformed outline
             → Scale to pixels
               → AutoHinter (optional — snap stems/zones to pixel grid)
-                → Render-mode dispatch: coverage (signed-area trapezoid) / SDF / MSDF / LCD / color
+                → Render-mode dispatch: coverage (signed-area trapezoid) / SDF / MSDF / LCD / color (COLR layers and paint graphs, CBDT/sbix bitmaps); vector outline layer
                   → RasterizedGlyph (output)
 ```
 
@@ -121,7 +121,7 @@ Alternative considered: Oversampled scanline fill — simpler but 4-16x slower a
 
 **Decision**: Outline level (perpendicular normal offset).
 
-Rationale: Higher quality, works with SDF, doesn't fill in counters at small sizes. Bitmap-level dilation is a fallback only for embedded bitmaps.
+Rationale: Higher quality, works with SDF, doesn't fill in counters at small sizes. Embedded color bitmaps (`CBDT`/`sbix`) are left unstyled, as on FreeType.
 
 ### Q4: SDF algorithm — brute force, EDT, or direct distance?
 
@@ -176,10 +176,10 @@ The signed-area trapezoid method with cumulative sum naturally implements non-ze
 
 ### Q10: What fonts do we test against?
 
-**Decision**: Three tiers:
-1. **Primary**: Roboto-Regular.ttf (already in test fixtures)
-2. **Extended**: Noto Sans (complex composites), DejaVu Sans (wide coverage)
-3. **Edge cases**: Fonts with deeply nested composites, overlapping contours, CFF outlines
+**Decision**: Committed OFL/Apache fixtures only, so every test runs everywhere:
+1. **Primary**: Roboto-Regular.ttf
+2. **Extended**: Noto Sans (and its CFF build), Source Serif 4 (CFF), Source Code VF (CFF2), Roboto Flex and Dancing Script (variable), Bungee Color and Reem Kufi Ink (COLR), Noto Color Emoji (CBDT)
+3. **Edge cases**: hand-built synthetic tables (composites, overlapping contours, CID-keyed CFF, variable COLRv1, CBDT/sbix) and the fuzz harness
 
 ## Decisions Log
 

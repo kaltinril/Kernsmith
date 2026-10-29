@@ -29,7 +29,8 @@ them before the backend sees the bytes.
   `HVAR` advances (phantom points when a TrueType font has no `HVAR`) and `MVAR` line metrics.
   `avar` version 2 axis mixing is not applied (its version 1 segment maps are), and blended
   CFF2 Private DICT hint values are read at their defaults (the auto-hinter measures its zones
-  from outlines instead). Named instances are not selectable; core passes axis values only.
+  from outlines instead). The backend receives axis values; the CLI's `--instance` resolves a
+  named instance to them.
 - **Synthetic bold and italic** are outline transforms that match the FreeType backend's: its
   embolden strength (`max(0.5px, ppem/24)`, advance grown to match) and its 12° slant. They
   apply to variable instances, to every color layer and before distance-field generation.

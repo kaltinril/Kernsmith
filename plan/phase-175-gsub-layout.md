@@ -1,6 +1,6 @@
 # Phase 175 — Native Rasterizer: Basic GSUB Layout Features
 
-> **Status**: Needs decision — scope and home unresolved (see Open question); not scheduled
+> **Status**: Deferred — awaiting Jeremy's later decision on scope and home (see Open question); not scheduled
 > **Created**: 2026-04-01
 > **Depends on**: Phase 166 Part 1 (decoder by glyph index)
 

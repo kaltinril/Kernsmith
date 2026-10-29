@@ -9,7 +9,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `Size` | `float` | `32f` | Font size in pixels. Fractional values honored by FreeType/StbTrueType/DirectWrite; GDI rounds. |
+| `Size` | `float` | `32f` | Font size in pixels. Fractional values are honored by every backend except GDI, which rounds. |
 | `Characters` | `CharacterSet` | `CharacterSet.Ascii` | Which characters to include. |
 | `FallbackCharacter` | `char?` | `null` | Character shown for missing glyphs (BMP only). |
 | `FallbackCodepoint` | `int?` | `null` | Fallback codepoint; supports supplementary plane. Takes precedence over `FallbackCharacter`. |
@@ -26,14 +26,18 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 | `ForceSyntheticItalic` | `bool` | `false` | Force synthetic italic even when a native italic face exists. |
 | `HeightPercent` | `int` | `100` | Vertical height scaling. `150` = 50% taller. |
 | `MatchCharHeight` | `bool` | `false` | Scale so the tallest character matches the requested pixel size. |
+| `WidthPercent` | `int` | `100` | Synthetic condensed/expanded width, `10`-`1000`: outlines, advances and kerning. Needs a backend with `SupportsWidthScale` (Native); other values elsewhere throw `NotSupportedException`. |
+| `ItalicAngle` | `float` | `12f` | Synthetic italic slant in degrees, `-60`-`60`, positive leans right. Used only when synthetic italic applies; values other than `12` need a backend with `SupportsItalicAngle` (Native). |
 
 ## Rendering quality
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `AntiAlias` | `AntiAliasMode` | `Grayscale` | Anti-aliasing mode: `None`, `Grayscale`, `Light` or `Lcd`. A backend that does not list `Light`/`Lcd` in its `SupportedAntiAliasModes` renders them as `Grayscale`; `None` always passes through. |
+| `LcdFilter` | `LcdFilter` | `Default` | Low-pass filter for `Lcd`: `Default` (the backend's choice), `Light` (one-pixel box), `Smooth` (five-tap), `None`. Honored by Native; others ignore it. |
+| `LcdSubpixelOrder` | `LcdSubpixelOrder` | `Rgb` | Display subpixel layout for `Lcd`: `Rgb`, `Bgr`, `VRgb`, `VBgr` (vertical panels). Honored by Native; others ignore it. |
 | `EnableHinting` | `bool` | `true` | Enable hinting for crisp small text. |
-| `SuperSampleLevel` | `int` | `1` | `1`-`4`; renders at Nx and downscales. Cannot combine with `Sdf`. |
+| `SuperSampleLevel` | `int` | `1` | `1`-`4`; renders at Nx and downscales. Cannot combine with `Sdf`. Skipped for `Lcd` output on a backend that renders LCD (it renders at the final size). |
 | `Sdf` | `bool` | `false` | Generate a single-channel signed distance field font. Same as `SdfMode = SdfMode.Sdf`; `SdfMode` wins when set. |
 | `SdfMode` | `SdfMode` | `None` | Distance field to generate: `None` (use `Sdf`), `Sdf`, `Msdf` (multi-channel: RGB distances, median = glyph, sharp corners; alpha 255) or `Mtsdf` (MSDF plus the single-channel distance in alpha). `Msdf`/`Mtsdf` produce RGBA atlases, need a backend with `SupportsMsdf` (Native, experimental), and cannot be combined with effects, a fill color, channel packing, a custom channel layout, atlas variants or `ColorFont`. `EffectiveSdfMode` reports the resolved mode. |
 | `SdfSpread` | `float` | `8f` | SDF spread (distance range) in pixels. Wired to the FreeType SDF renderer; applies to every distance-field mode. |
@@ -47,6 +51,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 | `Outline` | `int` | `0` | Outline thickness in pixels. `0` = none. |
 | `OutlineR` / `OutlineG` / `OutlineB` | `byte` | `0` | Outline color channels. |
 | `OutlineShape` | `OutlineShape` | `Round` | Outline corner shape: `Round`, `Square` (diagonals filled), or `Plus` (diamond-shaped corners). |
+| `OutlineMode` | `OutlineMode` | `Effect` | `Effect`: core's bitmap outline (every backend). `Vector`: drawn by a backend with `SupportsOutlineStroke` (Native) from the vector outline, same width, color, shape and cells; others keep the effect. Cannot combine with SDF. |
 
 ## Shadow
 
@@ -109,7 +114,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `ColorFont` | `bool` | `false` | Render color font glyphs (COLR/CPAL). |
+| `ColorFont` | `bool` | `false` | Render color font glyphs (`COLR`/`CPAL` layers, `CBDT`/`sbix` bitmaps). |
 | `ColorPaletteIndex` | `int` | `0` | CPAL palette to use. |
 | `VariationAxes` | `Dictionary<string, float>?` | `null` | Variable-font axis values, e.g. `{ ["wght"] = 700 }`. |
 

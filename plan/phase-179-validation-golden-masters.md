@@ -1,8 +1,8 @@
 # Phase 179 — Native Rasterizer: Validation, Golden Masters & Release
 
-> **Status**: In progress — Wave 3. Robustness, golden masters and the similarity matrix are done; the cross-cutting docs are current; remaining: performance validation (after Phase 177), a Blazor WASM run, a sample, and the release decision (publish Native to NuGet?).
+> **Status**: In progress — robustness, golden masters, the similarity matrix and the cross-cutting docs are done; remaining: performance validation (after Phase 177), a Blazor WASM run, a library usage sample, and the release decision (publish Native, with `KernSmith.Imaging`, to NuGet?)
 > **Created**: 2026-04-01
-> **Depends on**: Phases 166–174, 177 and 178 (175 and 176 only if they are kept)
+> **Depends on**: Phases 166–174, 177 and 178 (175 and 176 only if Jeremy keeps them)
 
 ## Goal
 
@@ -18,9 +18,9 @@ Comprehensive validation of the Native rasterizer against FreeType and StbTrueTy
 - SDF/MSDF/MTSDF at 16 and 32 px for every font; bold, italic and bold-italic at 16 and 48 px; styles through mono, Light, LCD, SDF and MSDF; 12pt at 96 dpi.
 - Variation instances: Roboto Flex wght 100 and 900, Source Code VF wght 900 (CFF2), Dancing Script wght 700, through grayscale, mono, Light, LCD, SDF and MSDF.
 - Color: Bungee palettes 0 and 6 and Reem Kufi Ink (COLR v1) at 16/48/96 px, plus color under Light, mono, bold-italic and SDF.
-- Pipeline: `BmFont.Generate` for twelve configurations (`.fnt` text with the version blanked and LF line endings, plus atlas pixels). The four fonts with a `.woff2` twin must reproduce the TTF/OTF golden exactly from the WOFF2 — asserted, not stored twice.
+- Pipeline: `BmFont.Generate` configurations (`.fnt` text with the version blanked and LF line endings, plus atlas pixels). The four fonts with a `.woff2` twin must reproduce the TTF/OTF golden exactly from the WOFF2 — asserted, not stored twice.
 
-Storage (about 0.6 MB): `Goldens/native-goldens.json` holds one SHA-256 per case (pass/fail) plus an 8-hex-digit fingerprint per glyph (or per `.fnt`/page) that names what changed; `Goldens/fnt/` holds every pipeline case's `.fnt`; `Goldens/png/` holds reference contact sheets for 14 key cases and two atlases, for review. Hashes cover pixels and metrics, never PNG bytes (deflate output differs between runtimes).
+Storage (about 0.6 MB): `Goldens/native-goldens.json` holds one SHA-256 per case (pass/fail) plus an 8-hex-digit fingerprint per glyph (or per `.fnt`/page) that names what changed; `Goldens/fnt/` holds every pipeline case's `.fnt`; `Goldens/png/` holds reference contact sheets for key cases and a few atlases, for review. Hashes cover pixels and metrics, never PNG bytes (deflate output differs between runtimes).
 
 On a mismatch the test lists the changed glyphs with their new box, bearings and advance, writes `actual.png` under `GoldenFailures/<case>/` in the test output folder and, where a reference PNG exists, `expected.png`, a magenta `diff.png` and the largest level difference; pipeline cases also write both `.fnt` files and name the first differing line. Hash-only cases have no expected image.
 
@@ -78,7 +78,7 @@ Known differences behind the low columns:
 ### Robustness (done)
 
 - **Hostile input** — `NativeFuzzTests` damages each fixture (Roboto, SourceSerif4 CFF, SourceCodeVF CFF2, RobotoFlex, BungeeColor COLR v0, ReemKufiInk COLR v1, and the `.woff2` fixtures through core) table by table — truncation, bit flips, offset corruption, count inflation, random byte runs — and runs `LoadFont`, font and glyph metrics and `RasterizeGlyph` under every render mode, a variation instance and a palette switch, plus `BmFont.Generate` for the core path. Deterministic per seed; `KERNSMITH_FUZZ_ITERATIONS` / `KERNSMITH_FUZZ_SEED` run longer sweeps. Allowed outcomes: success, `FontFormatException` / `FontParsingException` / `RasterizationException`, the palette `ArgumentOutOfRangeException`, and core's packer `InvalidOperationException` for a glyph larger than the page. Each bug found has a minimised regression test (`NativeHostileInputTests`, `TtfParserHostileInputTests`).
-- **Limits** — a glyph box over 64 ems, or a bitmap over 16384 px per side after distance-field padding, is a `RasterizationException` (`GlyphLimits`); non-positive or non-finite `Size` and non-positive `Dpi` are an `ArgumentOutOfRangeException`.
+- **Limits** — a glyph box over 64 ems, or a bitmap over 16384 px per side after distance-field padding, is a `RasterizationException` (`GlyphLimits`); non-positive or non-finite `Size` and negative `Dpi` are an `ArgumentOutOfRangeException` (`Dpi` 0 means 72, as on FreeType).
 - **Edge cases** — `NativeEdgeCaseTests` pins sizes 0.5-2000 px, DPI extremes, blank/unmapped/zero-contour/single-point/collinear/zero-area glyphs, int16-extreme coordinates, SDF spreads 0/1/huge/NaN, tiny MSDF, LCD at 1 px, hinting at 1-6 px, out-of-range and NaN axis values, and out-of-range palettes.
 - **Thread safety** — core never shares a rasterizer: each `Generate` (and each `GenerateBatch` job) creates its own and rasterizes on one thread; `NativeThreadSafetyTests` checks concurrent and parallel-batch output is byte-identical to serial.
 - **NativeAOT / trim** — `tests/KernSmith.PlatformSmoke` publishes with `PublishAot=true` (win-x64) with zero trim/AOT warnings and passes its WOFF2, CFF, CFF2, COLR v0/v1 and MSDF checks.
@@ -99,13 +99,13 @@ Known differences behind the low columns:
 ### Unsupported Feature Behavior
 
 Whatever is still unsupported at release must behave deliberately, and the docs must say which cases are silent fallbacks and which throw. Today's behavior, to be re-verified at release:
-- An anti-alias mode a backend does not advertise → core renders it as `Grayscale`, silently (Native advertises all four; the warning/strict-mode alternative is open in Phase 173)
-- Bitmap-only color fonts (`CBDT`/`sbix`) → `RasterizationException` at `LoadFont` (Phase 172 decision pending)
-- Outline stroke → core's bitmap `OutlineEffect`, as for every backend (Phase 168 decision pending)
+- An anti-alias mode a backend does not advertise → core renders it as `Grayscale`, silently (decided; Native advertises all four)
+- `OutlineMode.Vector` on a color face (`ColorFont`) or a custom glyph → core's bitmap `OutlineEffect`, silently; with a distance field → `InvalidOperationException`
+- `'jpg '`/`'tiff'` `sbix` graphics and non-PNG bitmap formats → skipped (the outline, or nothing, draws); a distance field without `ColorFont` on a bitmap-only face → `NotSupportedException`
 - System fonts by name → `NotSupportedException` from `LoadSystemFont`
 - MSDF/MTSDF with `ColorFont`, effects, fill color, channel packing/config or variants → core throws `InvalidOperationException`
-- Hinting outside `Light` → unhinted, silently (Phase 174 decision pending)
-- GSUB → no substitution (Phase 175 needs a decision)
+- Hinting outside `Light` → unhinted, silently (decided)
+- GSUB → no substitution (Phase 175 awaits Jeremy's decision)
 
 ### Performance Validation
 
@@ -116,12 +116,13 @@ Whatever is still unsupported at release must behave deliberately, and the docs 
 ### Documentation
 
 - Verify Blazor WASM (the README platform table still shows ⏳ for Native) and record the result
-- Add to `samples/` with usage examples
+- A library usage example in `samples/` (the MonoGame minimal sample already takes `--rasterizer native`)
 - Keep the backend tables, `docs/rasterizers/native.md`, the Native README and REF-12 current as the open decisions land (the known differences vs FreeType are in the similarity matrix above)
 
 ### Release Preparation
 
 - `NativeCapabilities` accurately reflects every supported feature and AA mode
+- Publish `KernSmith.Imaging` with Native (Native references it; both are `IsPackable=false` today)
 - Decide whether the Native csproj keeps `AllowUnsafeBlocks` (it contains no `unsafe` code)
 - Ensure all analyzer warnings resolved (trimming, AOT, nullable)
 - Code review pass for security (no buffer overflows, bounds checking)

@@ -20,7 +20,7 @@ dotnet add package KernSmith.Rasterizers.Gdi
 var options = new FontGeneratorOptions
 {
     Size = 32,
-    RasterizerBackend = RasterizerBackend.Gdi
+    Backend = RasterizerBackend.Gdi
 };
 ```
 

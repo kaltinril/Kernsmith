@@ -46,9 +46,9 @@ This is novel work -- no other StbTrueTypeSharp consumer (including FontStashSha
 ## Limitations
 
 - No TrueType hinting (lower quality at small sizes < 16px)
-- No color font support (COLR/CPAL)
+- No color font support (COLR/CPAL, CBDT/sbix)
 - No variable font axis support
-- No outline stroke support (use EDT outline effect instead)
+- No vector outlines (`OutlineMode.Vector` falls back to core's bitmap outline effect, which works as usual), and no `WidthPercent` or non-default `ItalicAngle` (`NotSupportedException`)
 - No system font loading -- provide font file bytes directly
 - TrueType and CFF (`.otf`) outlines, but not CFF2 (variable `.otf`); WOFF/WOFF2 work because core decompresses them first
 

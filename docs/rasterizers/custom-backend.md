@@ -38,6 +38,7 @@ Your backend implements two interfaces from `KernSmith.Rasterizer`:
 | `GetKerningPairs(RasterOptions)` | Returns `null` | Provide pre-scaled kerning pairs |
 | `SetVariationAxes(IReadOnlyList<VariationAxis>, Dictionary<string, float>)` | No-op | Apply variable font axis values |
 | `SelectColorPalette(int)` | No-op | Select a CPAL color palette |
+| `RasterizeOutlineLayer(int, RasterOptions, int, OutlineShape, float)` | Returns `null` | Draw the outline ring for `OutlineMode.Vector` from the vector outline; `null` keeps core's bitmap outline for that glyph. Used only when `SupportsOutlineStroke` is true |
 
 When optional methods return `null`, KernSmith falls back to its built-in TTF table parsers.
 
@@ -50,8 +51,8 @@ When optional methods return `null`, KernSmith falls back to its built-in TTF ta
 | `SupportsColorFonts` | `bool` | Can render COLR/CPAL/sbix/CBDT color glyphs |
 | `SupportsVariableFonts` | `bool` | Can apply fvar axis coordinates |
 | `SupportsSdf` | `bool` | Can produce signed distance field output |
-| `SupportsOutlineStroke` | `bool` | Can stroke glyph outlines |
-| `SupportedAntiAliasModes` | `IReadOnlyList<AntiAliasMode>` | Which AA modes are supported (`None`, `Grayscale`, `Light`, `Lcd`). KernSmith hands an unlisted `Light` or `Lcd` request to the backend as `Grayscale` (when listed); `None` is always passed through |
+| `SupportsOutlineStroke` | `bool` | Implements `RasterizeOutlineLayer`, so `OutlineMode.Vector` outlines are drawn by the backend; `false` keeps core's bitmap outline effect |
+| `SupportedAntiAliasModes` | `IReadOnlyList<AntiAliasMode>` | Which AA modes are supported (`None`, `Grayscale`, `Light`, `Lcd`). KernSmith hands an unlisted `Light` or `Lcd` request to the backend as `Grayscale` (when listed); `None` is always passed through. An `Lcd` request is never super sampled: the backend gets the final size and `SuperSample = 1` |
 
 **Optional members** (default to `false`):
 
@@ -61,6 +62,9 @@ When optional methods return `null`, KernSmith falls back to its built-in TTF ta
 | `SupportsSystemFonts` | Set to `true` if you implement `LoadSystemFont()` |
 | `SupportsSyntheticBold` | Set to `true` if your engine can apply synthetic bold (emboldening) to glyph outlines |
 | `SupportsSyntheticItalic` | Set to `true` if your engine can apply synthetic italic (oblique/shear) to glyph outlines |
+| `SupportsMsdf` | Set to `true` if you render `SdfMode.Msdf` / `Mtsdf` (RGBA multi-channel fields); core rejects those modes otherwise |
+| `SupportsWidthScale` | Set to `true` if you honor `RasterOptions.WidthPercent`; core throws `NotSupportedException` for a non-default width otherwise |
+| `SupportsItalicAngle` | Set to `true` if your synthetic italic slants by `RasterOptions.ItalicAngle`; core throws `NotSupportedException` for a non-default angle otherwise |
 
 ## RasterizedGlyph Output
 
