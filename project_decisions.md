@@ -18,6 +18,9 @@ Decisions made, with the why — consult before re-litigating anything. One per 
 ## Native Rasterizer
 
 - The Native rasterizer, and any core code it depends on, is pure managed C# we write — no P/Invoke, no native libraries, no new third-party packages (not "managed where convenient") — because its reason to exist is running on browser-wasm and iOS/NativeAOT with zero foreign code; a native or P/Invoke dependency reintroduces exactly the platform gaps FreeType has.
+- Native LCD output is `Rgba32` with alpha = max(R, G, B), not mean: no channel exceeds alpha, so every pixel is a valid premultiplied colour, and a fully covered pixel is the same (255, 255, 255, 255) a grayscale glyph becomes on an RGBA page. Copying the FreeType backend's layout (3-bytes-per-pixel `Grayscale8`) was rejected — it stretches glyphs 3x in the atlas.
+- Native's default LCD filter is the one-pixel box ([1,1,1]/3, equivalent to three renders shifted by 1/3 px), not the 5-tap [1,2,3,2,1]/9: it is what the FreeType backend's LCD output measures as, so the two backends agree per channel.
+- Unadvertised anti-alias modes degrade silently (`Light`/`Lcd` -> `Grayscale`), not with a warning or exception, because existing configs requesting `Light` on GDI/DirectWrite/StbTrueType must keep generating unchanged. A surfaced warning or opt-in strict mode is still open for Jeremy (phase 173).
 - WOFF2's Brotli stage is a pure managed decoder we write in core (not `System.IO.Compression.BrotliDecoder`, not a third-party package): `BrotliDecoder` wraps the runtime's native Brotli library, which browser-wasm does not ship — it throws `PlatformNotSupportedException` there (dotnet/runtime#91279, open). The API carries no `[UnsupportedOSPlatform("browser")]`, so the analyzer would not catch it. `KernSmith.Fonts.Web` exists to serve browser/WASM, and CSS font CDNs serve WOFF2, so a BCL-Brotli WOFF2 would fail on exactly the platform that needs it.
 
 ## Channels & Compositing

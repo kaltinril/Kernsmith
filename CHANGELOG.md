@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The Native rasterizer renders `AntiAliasMode.Lcd` as LCD subpixel output: glyphs come back as RGBA with one horizontal subpixel per colour channel (RGB order, one-pixel box filter -- per-channel output matches the FreeType backend's LCD rendering) and alpha set to the strongest subpixel, so an LCD atlas is an RGBA page. `Lcd` is now in Native's `SupportedAntiAliasModes`.
 - The Native rasterizer renders TrueType variable fonts at the requested instance (`VariationAxes`, `.bmfc` `variationAxes`, CLI `--axis`): `fvar`/`avar` normalization, `gvar` outline deltas including composites and inferred deltas, `HVAR` advances (phantom points without `HVAR`) and `MVAR` line metrics. `SupportsVariableFonts` is now true for Native; CFF2 variable fonts are still rejected with the rest of CFF.
 - Benchmarks: `NativeComparison*` BenchmarkDotNet classes compare the Native, StbTrueType and FreeType backends (font load, per-glyph rasterization at 12/32/72px, `GetGlyphMetrics`, full `BmFont.Generate`) with memory diagnostics; the measured baseline is recorded in the phase 177 plan.
 
@@ -16,12 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- KernSmith core now resolves the requested anti-alias mode against the backend's `SupportedAntiAliasModes` before rendering: an unadvertised `Light` or `Lcd` is handed to the backend as `Grayscale` (silently), `None` always passes, and the caller's options are untouched. No built-in backend's output changes -- GDI, DirectWrite and StbTrueType already rendered those modes as grayscale, and FreeType supports all four. A custom `IRasterizer` now only receives modes it advertises.
 - The Native rasterizer renders each glyph through an internal staged pipeline (outline decoder, outline transforms, bounds, scale/hint, render-mode dispatch) so CFF, synthetic styles, SDF, variations, color and LCD can each plug into one stage. Output is byte-identical to before.
 
 ### Fixed
 
 - **FreeType rendered a scrambled instance for every variable-font request.** `SetVariationAxes` passed the axis coordinates to FreeType as 32-bit integers, but the bundled FreeType's `FT_Fixed` is pointer-sized, so it read them in pairs and pushed every axis to an extreme -- even asking for the default values changed the glyphs. Coordinates are now marshalled at the correct width.
-- The Native rasterizer docs (`docs/rasterizers/native.md`, the package README) now describe its real behavior: WOFF1 files work (core decompresses them first), a color-font request throws, `Light`/`LCD` anti-aliasing requests render as grayscale, and core still draws outlines and runs `BoldPostProcessor`/`ItalicPostProcessor` for it.
+- The Native rasterizer docs (`docs/rasterizers/native.md`, the package README) now describe its real behavior: WOFF1 files work (core decompresses them first), a color-font request throws, `Light` anti-aliasing requests render as grayscale, and core still draws outlines and runs `BoldPostProcessor`/`ItalicPostProcessor` for it.
 
 ## [0.24.0] - 2026-10-18
 

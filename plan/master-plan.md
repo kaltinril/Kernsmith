@@ -124,7 +124,7 @@ Every phase that changes Native pixel output runs `regression_check.py` with a `
 | 170 | [MSDF Generation](phase-170-msdf-generation.md) | Multi-channel SDF | Future -- Wave 1 (after 169) |
 | 171 | [Variable Font Support](phase-171-variable-font-support.md) | TrueType variations; CFF2 `blend` | In progress -- Wave 1 (TrueType) complete; Wave 2 (CFF2) after 166 |
 | 172 | [Color Font Support](phase-172-color-font-support.md) | COLRv0/CPAL, then COLRv1; CBDT/sbix stretch | Future -- Wave 1 (v0), Wave 2 (v1) |
-| 173 | [LCD Subpixel Rendering](phase-173-lcd-subpixel-rendering.md) | LCD subpixel rendering + core AA-mode negotiation | Future -- Wave 2 |
+| 173 | [LCD Subpixel Rendering](phase-173-lcd-subpixel-rendering.md) | LCD subpixel rendering + core AA-mode negotiation | In progress -- negotiation and Native LCD done; LCD options and degradation policy need decision |
 | 174 | [Auto-Hinting](phase-174-auto-hinting.md) | Auto-hinting | Future -- Wave 2 |
 | 175 | [GSUB Layout](phase-175-gsub-layout.md) | GSUB substitutions | Needs decision |
 | 176 | [Supersampling + Height Stretch](phase-176-supersampling-height-stretch.md) | In-rasterizer supersample / height stretch | Needs decision |

@@ -51,7 +51,7 @@ When optional methods return `null`, KernSmith falls back to its built-in TTF ta
 | `SupportsVariableFonts` | `bool` | Can apply fvar axis coordinates |
 | `SupportsSdf` | `bool` | Can produce signed distance field output |
 | `SupportsOutlineStroke` | `bool` | Can stroke glyph outlines |
-| `SupportedAntiAliasModes` | `IReadOnlyList<AntiAliasMode>` | Which AA modes are supported (`None`, `Grayscale`, `Light`, `Lcd`) |
+| `SupportedAntiAliasModes` | `IReadOnlyList<AntiAliasMode>` | Which AA modes are supported (`None`, `Grayscale`, `Light`, `Lcd`). KernSmith hands an unlisted `Light` or `Lcd` request to the backend as `Grayscale` (when listed); `None` is always passed through |
 
 **Optional members** (default to `false`):
 
