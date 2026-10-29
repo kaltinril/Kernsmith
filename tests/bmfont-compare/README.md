@@ -112,7 +112,7 @@ Compares baseline vs current output across three categories:
 
 1. **Hardcoded comparison PNGs** (`comparison.png` through `comparison4.png`) — magenta-highlighted pixel diffs
 2. **Per-font comparison PNGs** (`comparison-*.png`) — auto-discovered, same magenta diff format
-3. **FNT metadata files** (`*.fnt`) — line-by-line text diff, skipping the `kernsmith` version line (contains commit hash that always differs between branches)
+3. **FNT metadata files** (`*.fnt`) — line-by-line text diff that ignores only the `version` (and any `commit`) token of the `kernsmith` line, which always differs between branches; the rest of that line is extended metadata (`sdfSpread`, `outlineThickness`, ...) and is compared
 
 Identical pixels are dimmed, different pixels are bright magenta (#FF00FF).
 

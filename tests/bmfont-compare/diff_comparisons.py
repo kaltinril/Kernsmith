@@ -12,9 +12,10 @@ Compares three categories of files:
    across both directories.
 
 3. **FNT metadata files** -- auto-discovered *.fnt files. Parsed as BMFont
-   key=value text format. The ``kernsmith`` metadata line is skipped
-   (it contains the version + commit hash that always differs between
-   branches). All other lines are compared for exact text match.
+   key=value text format. Only the ``version``/``commit`` tokens of the
+   ``kernsmith`` line are ignored (they always differ between branches);
+   the rest of that line (extended metadata such as ``sdfSpread``) and all
+   other lines are compared for exact text match.
 
 Every file is matched across both sides by name. A file present on only one side
 is never silently skipped:
@@ -54,6 +55,7 @@ Exit code:
 """
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -195,18 +197,29 @@ def discover_per_font_pngs(baseline_dir: Path, current_dir: Path, prefix: str) -
     return pairs
 
 
+# The generator version (and a commit, if present) always differs between branches; the
+# rest of the kernsmith line is extended metadata (sdfSpread, outlineThickness, ...) and
+# must be compared.
+_VOLATILE_KERNSMITH_TOKEN = re.compile(r'\s(?:version|commit)=(?:"[^"]*"|\S*)')
+
+
+def normalize_fnt_line(line: str) -> str:
+    """Drop the volatile version/commit tokens from the ``kernsmith`` line; other lines pass through."""
+    if line.startswith("kernsmith"):
+        return _VOLATILE_KERNSMITH_TOKEN.sub("", line)
+    return line
+
+
 def compare_fnt_files(baseline_path: Path, current_path: Path) -> tuple[bool, int]:
-    """Compare two .fnt files line-by-line, skipping the info line.
+    """Compare two .fnt files line-by-line, ignoring only the kernsmith version/commit tokens.
 
     Returns (is_identical, differing_line_count).
     """
     baseline_lines = baseline_path.read_text(encoding="utf-8").splitlines()
     current_lines = current_path.read_text(encoding="utf-8").splitlines()
 
-    # Filter out the "kernsmith " line which contains version + commit hash
-    # that always differs between branches
-    baseline_filtered = [l for l in baseline_lines if not l.startswith("kernsmith ")]
-    current_filtered = [l for l in current_lines if not l.startswith("kernsmith ")]
+    baseline_filtered = [normalize_fnt_line(l) for l in baseline_lines]
+    current_filtered = [normalize_fnt_line(l) for l in current_lines]
 
     diff_count = 0
     max_len = max(len(baseline_filtered), len(current_filtered))
@@ -361,7 +374,7 @@ def main():
         if total_fnt == 0:
             print("No FNT files compared.")
         elif fnt_different == 0:
-            print(f"PASS: All {fnt_identical} FNT files are identical (excluding kernsmith version line).")
+            print(f"PASS: All {fnt_identical} FNT files are identical (ignoring the kernsmith version token).")
         else:
             print(f"FAIL: {fnt_different} of {total_fnt} FNT files differ.")
             any_differences = True
