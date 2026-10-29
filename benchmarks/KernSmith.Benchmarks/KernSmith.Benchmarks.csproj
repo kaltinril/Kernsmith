@@ -4,6 +4,11 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
 
+  <!-- GDI and DirectWrite are Windows-only, so they join the comparison through a -windows TFM. -->
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <TargetFrameworks>net8.0;net10.0;net10.0-windows</TargetFrameworks>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\KernSmith\KernSmith.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.FreeType\KernSmith.Rasterizers.FreeType.csproj" />
@@ -11,8 +16,23 @@
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.Native\KernSmith.Rasterizers.Native.csproj" />
   </ItemGroup>
 
+  <!-- DirectWrite (TerraFX) is net10.0-windows only. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <ProjectReference Include="..\..\src\KernSmith.Rasterizers.Gdi\KernSmith.Rasterizers.Gdi.csproj" />
+    <ProjectReference Include="..\..\src\KernSmith.Rasterizers.DirectWrite.TerraFX\KernSmith.Rasterizers.DirectWrite.TerraFX.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" />
   </ItemGroup>
+
+  <!--
+    BenchmarkDotNet generates and builds its child project inside $(OutDir). Without this empty
+    Directory.Build.props there, that project inherits the repo's TargetFrameworks (net8.0;net10.0),
+    restores only those and fails to build for net10.0-windows (NETSDK1005).
+  -->
+  <Target Name="IsolateBenchmarkDotNetChildProjects" AfterTargets="Build" Condition="'$(TargetFramework)' != '' And '$(OutDir)' != ''">
+    <WriteLinesToFile File="$(OutDir)Directory.Build.props" Lines="&lt;Project /&gt;" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
 
 </Project>

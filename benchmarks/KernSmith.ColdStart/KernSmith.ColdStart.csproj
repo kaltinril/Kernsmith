@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Cold-start timing: one process, N BmFont.Generate calls, timings and JIT counters as JSON.
+    run_coldstart.py publishes it as JIT, ReadyToRun and NativeAOT and launches fresh processes;
+    see benchmarks/KernSmith.Benchmarks/README.md. A single TFM per OS so every publish mode
+    builds the same thing.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <TargetFrameworks>net10.0-windows</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(TargetFramework.Contains('-windows'))">
+    <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\KernSmith\KernSmith.csproj" />
+    <ProjectReference Include="..\..\src\KernSmith.Rasterizers.FreeType\KernSmith.Rasterizers.FreeType.csproj" />
+    <ProjectReference Include="..\..\src\KernSmith.Rasterizers.StbTrueType\KernSmith.Rasterizers.StbTrueType.csproj" />
+    <ProjectReference Include="..\..\src\KernSmith.Rasterizers.Native\KernSmith.Rasterizers.Native.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(TargetFramework.Contains('-windows'))">
+    <ProjectReference Include="..\..\src\KernSmith.Rasterizers.Gdi\KernSmith.Rasterizers.Gdi.csproj" />
+    <ProjectReference Include="..\..\src\KernSmith.Rasterizers.DirectWrite.TerraFX\KernSmith.Rasterizers.DirectWrite.TerraFX.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -3,10 +3,11 @@ using KernSmith;
 using KernSmith.Output;
 using KernSmith.Rasterizer;
 
-// Native vs StbTrueType vs FreeType on the same font and options (Phase 177 harness).
+// Native vs StbTrueType vs FreeType (plus GDI and DirectWrite in the net10.0-windows build) on the
+// same font and options (Phase 177 harness).
 // Rasterizer-only classes call the IRasterizer directly so pipeline cost does not mask
 // backend cost; NativeComparisonEndToEndBenchmarks shows the full BmFont.Generate cost.
-// Run: dotnet run -c Release -f net10.0 --project benchmarks/KernSmith.Benchmarks -- --filter *NativeComparison*
+// Run: dotnet run -c Release -f net10.0-windows --project benchmarks/KernSmith.Benchmarks -- --filter *NativeComparison*
 
 [MemoryDiagnoser]
 [BenchmarkCategory("NativeComparison")]
@@ -14,8 +15,10 @@ public class NativeComparisonLoadFontBenchmarks
 {
     private byte[] _fontData = null!;
 
-    [Params(RasterizerBackend.Native, RasterizerBackend.StbTrueType, RasterizerBackend.FreeType)]
+    [ParamsSource(nameof(Backends))]
     public RasterizerBackend Backend { get; set; }
+
+    public static IEnumerable<RasterizerBackend> Backends => BenchmarkBackends.Comparison;
 
     [GlobalSetup]
     public void Setup() => _fontData = BenchmarkFixtures.ReadFont("Roboto-Regular.ttf");
@@ -41,8 +44,10 @@ public class NativeComparisonRasterizeBenchmarks
     private int[] _codepoints = null!;
     private RasterOptions _options = null!;
 
-    [Params(RasterizerBackend.Native, RasterizerBackend.StbTrueType, RasterizerBackend.FreeType)]
+    [ParamsSource(nameof(Backends))]
     public RasterizerBackend Backend { get; set; }
+
+    public static IEnumerable<RasterizerBackend> Backends => BenchmarkBackends.Comparison;
 
     [Params(12, 32, 72)]
     public int Size { get; set; }
@@ -79,8 +84,10 @@ public class NativeComparisonMetricsBenchmarks
     private int[] _codepoints = null!;
     private RasterOptions _options = null!;
 
-    [Params(RasterizerBackend.Native, RasterizerBackend.StbTrueType, RasterizerBackend.FreeType)]
+    [ParamsSource(nameof(Backends))]
     public RasterizerBackend Backend { get; set; }
+
+    public static IEnumerable<RasterizerBackend> Backends => BenchmarkBackends.Comparison;
 
     [GlobalSetup]
     public void Setup()
@@ -115,11 +122,21 @@ public class NativeComparisonEndToEndBenchmarks
 {
     private byte[] _fontData = null!;
 
-    [Params(RasterizerBackend.Native, RasterizerBackend.StbTrueType, RasterizerBackend.FreeType)]
+    [ParamsSource(nameof(Backends))]
     public RasterizerBackend Backend { get; set; }
+
+    public static IEnumerable<RasterizerBackend> Backends => BenchmarkBackends.Comparison;
 
     [GlobalSetup]
     public void Setup() => _fontData = BenchmarkFixtures.ReadFont("Roboto-Regular.ttf");
+
+    [Benchmark(Description = "BmFont.Generate ASCII 32px")]
+    public BmFontResult GenerateAscii() => BmFont.Generate(_fontData, new FontGeneratorOptions
+    {
+        Size = 32,
+        Characters = CharacterSet.Ascii,
+        Backend = Backend
+    });
 
     [Benchmark(Description = "BmFont.Generate ASCII+Latin-1 32px")]
     public BmFontResult Generate() => BmFont.Generate(_fontData, new FontGeneratorOptions
