@@ -19,22 +19,24 @@ For per-OS status (Windows, Linux, macOS, Android, iOS, Mac Catalyst, Blazor WAS
 | Feature | FreeType | GDI | DirectWrite | StbTrueType | Native |
 |---------|----------|-----|-------------|-------------|--------|
 | Cross-platform | Yes | No | No | Yes | Yes |
-| Color fonts (COLR/CPAL) | Yes | No | No | No | Yes (COLR v0 and v1; not CBDT/sbix) |
+| Color fonts | Yes (COLR v0, CBDT/sbix) | No | No | No | Yes (COLR v0 and v1, CBDT/sbix) |
 | Variable fonts | Yes | No | No | No | Yes |
 | SDF rendering | Yes | No | No | Yes | Yes |
 | MSDF / MTSDF | No | No | No | No | Yes |
-| Outline stroke | Yes | No | No | No | No |
+| Vector outline (`OutlineMode.Vector`) | No | No | No | No | Yes |
+| Synthetic width / italic angle | No | No | No | No | Yes |
 | System font loading | No | Yes | Yes | No | No |
 | BMFont.exe parity | No | Yes | No | No | No |
 | ClearType-hinted grayscale | No | No | Yes | No | No |
 | Synthetic bold/italic | Yes | Yes | Yes | Yes | Yes |
 | Hinting | Yes | Yes | Yes | No | `Light` only (own vertical auto-hinter) |
 | Anti-aliasing modes | Grayscale, Light, LCD, None | Grayscale, None | Grayscale, None | Grayscale, None | Grayscale, Light, LCD, None |
+| LCD subpixel order / filter | No | No | No | No | Yes |
 | Font formats | TTF, OTF, WOFF, WOFF2 | TTF, OTF, WOFF, WOFF2 | TTF, OTF, WOFF, WOFF2 | TTF, OTF (not CFF2), WOFF, WOFF2 | TTF, OTF, WOFF, WOFF2 |
 | Native dependencies | Yes | Yes | Yes | None | None |
 | Published on NuGet | Yes | Yes | Yes | Yes | No |
 
-WOFF and WOFF2 are decompressed by KernSmith core before rasterization, so all backends accept them for fonts whose outlines they otherwise support.
+WOFF and WOFF2 are decompressed by KernSmith core before rasterization, so all backends accept them for fonts whose outlines they otherwise support. Outlines (`Outline`) work on every backend as core's bitmap effect; `OutlineMode.Vector` falls back to it on backends without a vector outline, while a non-default `WidthPercent` or `ItalicAngle` there throws `NotSupportedException`.
 
 ## Auto-Registration
 
@@ -88,11 +90,11 @@ Use this decision tree to pick the right backend:
 
 1. **Need cross-platform support?** Use [FreeType](freetype.md), [StbTrueType](stbtruetype.md), or [Native](native.md) -- all three run on Windows, Linux x64, macOS, and Android. FreeType has the richest feature set; StbTrueType also runs in Blazor WASM. See the [platform support table](../../README.md#platform-support).
 2. **Need pixel-perfect BMFont.exe compatibility?** Use [GDI](gdi.md) -- it matches BMFont's native rasterizer output.
-3. **Need color fonts or variable font axes?** Use [FreeType](freetype.md) -- it is the only published backend that implements COLR/CPAL color glyphs and fvar variable font axes (the experimental [Native](native.md) backend also renders `COLR` version 0 and 1 color glyphs and variable fonts). (DirectWrite's real niche is ClearType-hinted grayscale rendering and loading system fonts on Windows; its color and variable font paths are currently stubbed.)
+3. **Need color fonts or variable font axes?** Use [FreeType](freetype.md) -- it is the only published backend that implements COLR/CPAL color glyphs and fvar variable font axes (the experimental [Native](native.md) backend also renders `COLR` version 0 and 1 and `CBDT`/`sbix` color glyphs and variable fonts). (DirectWrite's real niche is ClearType-hinted grayscale rendering and loading system fonts on Windows; its color and variable font paths are currently stubbed.)
 4. **Need SDF (Signed Distance Field) output?** Use [FreeType](freetype.md) or [StbTrueType](stbtruetype.md) -- the published backends with SDF rendering. The experimental [Native](native.md) backend renders SDF too, and is the only one with multi-channel MSDF/MTSDF.
 5. **Need cross-platform SDF without native binaries?** Use [StbTrueType](stbtruetype.md) -- it supports SDF and runs fully managed.
 6. **Need WASM/Blazor or NativeAOT without native binaries?** Use [StbTrueType](stbtruetype.md) -- it is the only published fully managed backend with zero native dependencies. See the [Blazor WASM sample](https://github.com/kaltinril/Kernsmith/tree/main/samples/KernSmith.Samples.BlazorWasm) for a working example. Enable AOT compilation for production performance.
-7. **Want zero third-party code, and building from source?** Try [Native](native.md) -- KernSmith's own rasterizer. It renders TrueType and OpenType (CFF/CFF2) fonts, variable and `COLR` color fonts, SDF and MSDF with no external dependencies at all, but it is experimental and unpublished, hints only in `Light` mode, and has no stroke of its own.
+7. **Want zero third-party code, and building from source?** Try [Native](native.md) -- KernSmith's own rasterizer. It renders TrueType and OpenType (CFF/CFF2) fonts, variable and color fonts, SDF and MSDF, vector outlines and synthetic width/italic angle with no external dependencies at all, but it is experimental and unpublished and hints only in `Light` mode.
 8. **Not sure?** Start with FreeType. It covers the majority of use cases.
 
 ## Selecting a Backend in Code

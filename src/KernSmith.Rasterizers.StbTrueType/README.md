@@ -20,7 +20,7 @@ dotnet add package KernSmith.Rasterizers.StbTrueType
 var options = new FontGeneratorOptions
 {
     Size = 32,
-    RasterizerBackend = RasterizerBackend.StbTrueType
+    Backend = RasterizerBackend.StbTrueType
 };
 ```
 

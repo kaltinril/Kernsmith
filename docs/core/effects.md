@@ -49,6 +49,8 @@ var result = BmFont.Builder()
 
 `WithOutlineShape` sets the corner shape: `OutlineShape.Round` (default), `Square` (diagonals filled), or `Plus` (diamond-shaped corners). The difference is mostly visible with `AntiAlias.None`.
 
+`WithOutlineMode(OutlineMode.Vector)` asks the rasterizer to draw the outline layer from the glyph's vector outline instead of growing it from the rendered bitmap. Width, color, shape, layering and cell sizes are the same; the ring reaches exactly `width` pixels from the true outline with a crisp anti-aliased edge, and narrow counters fill solidly. Only backends reporting `SupportsOutlineStroke` (the experimental Native backend) do this; the others, custom glyphs and color glyphs keep the EDT outline. It cannot be combined with SDF.
+
 ### Shadow
 
 Generates a drop shadow layer behind the glyph. Supports offset, blur (two-pass box blur), configurable color, opacity, and a hard shadow mode that binarizes the alpha before blurring.
@@ -183,11 +185,11 @@ KernSmith supports two approaches to bold and italic:
 | Approach | How it works | When to use |
 |----------|-------------|-------------|
 | **Outline-level** (via `WithBold()` / `WithItalic()`) | The rasterizer applies the transform before rasterization, at the vector outline level | Preferred -- produces higher quality results |
-| **Bitmap-level** (via `BoldPostProcessor` / `ItalicPostProcessor`) | Transforms the rasterized bitmap using dilation or shear | Fallback for backends that lack native synthetic support (e.g., StbTrueType) |
+| **Bitmap-level** (via `BoldPostProcessor` / `ItalicPostProcessor`) | Transforms the rasterized bitmap using dilation or shear | Fallback for custom backends that report `SupportsSyntheticBold` / `SupportsSyntheticItalic` false (every built-in backend applies both itself) |
 
 ### Auto-Skip Behavior
 
-When `WithBold()` is active, any `BoldPostProcessor` in the post-processor list is automatically skipped to prevent double-bolding. The same applies to `WithItalic()` and `ItalicPostProcessor`. This means you can safely include bitmap-level post-processors as a fallback without worrying about duplication when outline-level bold/italic is also configured.
+When `WithBold()` is active and the backend reports `SupportsSyntheticBold`, any `BoldPostProcessor` in the post-processor list is automatically skipped to prevent double-bolding. The same applies to `WithItalic()` and `ItalicPostProcessor`. This means you can safely include bitmap-level post-processors as a fallback without worrying about duplication when outline-level bold/italic is also configured.
 
 ```csharp
 // Bold post-processor is auto-skipped because WithBold() handles it

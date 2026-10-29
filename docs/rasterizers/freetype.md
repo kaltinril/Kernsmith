@@ -40,18 +40,19 @@ var options = new FontGeneratorOptions
 - Variable font axes (fvar)
 - Hinting and anti-aliasing (None, Grayscale, Light, Lcd modes)
 - SDF (Signed Distance Field) rendering
-- Outline stroke
 - Synthetic bold and italic
 - Super sampling
 - Fractional font sizes (e.g. `Size = 32.5f`) honored natively
 
-FreeType is the only published backend that implements COLR/CPAL color glyphs and fvar variable font axes (the experimental [Native](native.md) backend renders `COLR` version 0 and 1 color glyphs and variable fonts too, but not bitmap color fonts).
+FreeType is the only published backend that implements COLR/CPAL color glyphs and fvar variable font axes (the experimental [Native](native.md) backend renders `COLR` version 0 and 1, `CBDT`/`sbix` color glyphs and variable fonts too).
 
 ## Limitations
 
 - Cannot load system-installed fonts by family name -- provide font file bytes directly
 - `Lcd` output is FreeType's raw LCD buffer, three bytes per pixel, so LCD glyphs land three times as wide in the atlas
 - Color glyphs come back premultiplied but are treated as straight alpha, so colored edges come out slightly darker
+- `CBDT`/`sbix` bitmap glyphs come back at the strike's own size, not scaled to the requested size
+- No vector outlines (`OutlineMode.Vector` falls back to core's bitmap outline effect, which works as usual), and no `WidthPercent` or non-default `ItalicAngle` (`NotSupportedException`)
 
 ## When to Use
 

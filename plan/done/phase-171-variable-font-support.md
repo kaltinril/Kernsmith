@@ -10,7 +10,7 @@ Render variable fonts at user-chosen axis values in the Native rasterizer: glyph
 
 ## Starting point
 
-- Core already parses `fvar`: `PreparedRasterization.Prepare` (and the metrics-only path in `BmFont.cs`) call `IRasterizer.SetVariationAxes(fontInfo.VariationAxes, options.VariationAxes)` when the capability is true. Native does **not** need its own `fvar` axis parser — it receives the axis list. It may still need `fvar` for named instances only if they become user-selectable.
+- Core already parses `fvar`: `PreparedRasterization.Prepare` (and the metrics-only path in `BmFont.cs`) call `IRasterizer.SetVariationAxes(fontInfo.VariationAxes, options.VariationAxes)` when the capability is true. Native does **not** need its own `fvar` axis parser — it receives the axis list. Named instances need no `fvar` parser here either: the CLI's `--instance` resolves one to axis values before generation.
 - FreeType (`FreeTypeRasterizer.SetVariationAxes`) is the quality baseline.
 - Fixtures: `tests/KernSmith.Tests/Fixtures/RobotoFlex-Variable.ttf` has `fvar`, `avar`, `gvar`, `HVAR` and `MVAR`; `SourceCodeVF-Upright.otf` (Phase 166) is the CFF2 one (`wght` 200..900, default 200).
 

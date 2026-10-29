@@ -20,7 +20,7 @@
 - **BMFont output** -- text, XML, and binary `.fnt` formats with `.png` atlas pages
 - **GPOS kerning** -- extracts kerning pairs directly from OpenType GPOS tables
 - **Atlas packing** -- MaxRects (default) and Skyline algorithms with autofit, power-of-two, and non-square texture support
-- **Outline rendering** -- configurable width, color, and shape (round, square, plus)
+- **Outline rendering** -- configurable width, color, and shape (round, square, plus); on the experimental Native backend, optionally drawn from the vector outline (`OutlineMode.Vector`)
 - **Fill color** -- tint the glyph body with a custom RGBA fill color
 - **Gradient fill** -- per-glyph vertical/angled gradients with midpoint, offset, scale, and cyclic control
 - **Drop shadow** -- offset, color, opacity, and two-parameter blur control (kernel size + passes)
@@ -28,11 +28,12 @@
 - **Incremental glyph addition** -- add glyphs to an existing atlas at runtime without moving anything already placed (see [Incremental Glyph Addition](docs/core/incremental-glyph-addition.md))
 - **Gamma correction** -- adjust grayscale coverage to darken or lighten rendered glyphs
 - **SDF rendering** -- signed distance field output with configurable spread for resolution-independent text; multi-channel MSDF/MTSDF (`SdfMode`) on the experimental Native backend
-- **Super sampling** -- 2x-4x rasterization with box-filter downscale for smoother edges
+- **Super sampling** -- 2x-4x rasterization with box-filter downscale for smoother edges (LCD output always renders at the final size)
 - **Advance adjustment** -- global per-glyph horizontal advance offset for custom letter spacing
 - **Design-unit glyph metrics** -- `FontInfo.DesignMetrics` exposes per-glyph advance width and left side bearing in unscaled font design units, keyed by codepoint, for text-width measurement (e.g. word-wrap) without rasterizing
 - **Variable fonts** -- set variation axes (weight, width, slant, etc.)
-- **Color fonts** -- COLR/CPAL emoji and color glyph rendering with palette selection
+- **Color fonts** -- COLR/CPAL color glyphs with palette selection, and CBDT/sbix bitmap emoji
+- **Synthetic styles** -- bold and italic on every backend; condensed/expanded width (`WidthPercent`) and a custom italic angle (`ItalicAngle`) on the experimental Native backend
 - **Channel packing** -- pack multiple glyphs into RGBA channels for compact atlases
 - **Per-channel compositing** -- independent control of what each RGBA channel contains (glyph, outline, both, zero, one, shadow)
 - **Font subsetting** -- only parses tables for requested codepoints
@@ -61,7 +62,7 @@ KernSmith supports pluggable rasterizer backends. Install at least one backend p
 | **GDI**<br>[![NuGet](https://img.shields.io/nuget/v/KernSmith.Rasterizers.Gdi.svg?label=&color=blue)](https://www.nuget.org/packages/KernSmith.Rasterizers.Gdi) | Windows only | Yes (native Windows hinting) | No | No | No | Matches BMFont reference output for pixel-perfect parity. |
 | **DirectWrite**<br>[![NuGet](https://img.shields.io/nuget/v/KernSmith.Rasterizers.DirectWrite.TerraFX.svg?label=&color=blue)](https://www.nuget.org/packages/KernSmith.Rasterizers.DirectWrite.TerraFX) | Windows only | Yes (natural/symmetric hinting) | No | No | No | Modern Windows rendering. Color and variable fonts are not yet implemented; use FreeType for those. |
 | **StbTrueType**<br>[![NuGet](https://img.shields.io/nuget/v/KernSmith.Rasterizers.StbTrueType.svg?label=&color=blue)](https://www.nuget.org/packages/KernSmith.Rasterizers.StbTrueType) | Cross-platform | No | No | No | Yes | Pure C#, no native dependencies. Ideal for WASM, AOT, serverless. No hinting engine, so small sizes with `AntiAlias.None` can look rough on thin stems -- prefer `AntiAlias.Grayscale` or raise `SuperSample` for crisper small-size text. |
-| **Native**<br>_experimental, not on NuGet yet_ | Cross-platform | `Light` only (own vertical auto-hinter) | Yes (COLR v0 and v1) | Yes | Yes | KernSmith's own rasterizer -- pure C#, zero third-party dependencies. Renders TrueType (`.ttf`) and CFF/CFF2 (`.otf`) outlines, including variable instances of both. Synthetic bold/italic match FreeType's. The only backend with multi-channel SDF (`SdfMode.Msdf`/`Mtsdf`). Anti-aliasing `None` (with dropout control), `Grayscale`, `Light` and `Lcd` (LCD subpixel, RGB order). No TrueType bytecode hinting, outline stroke of its own, or bitmap color fonts (`CBDT`/`sbix`). Available today from the repository and the CLI (`--rasterizer native`); the package is not published, so it cannot be resolved from a NuGet-only build. |
+| **Native**<br>_experimental, not on NuGet yet_ | Cross-platform | `Light` only (own vertical auto-hinter) | Yes (COLR v0 and v1, CBDT/sbix) | Yes | Yes | KernSmith's own rasterizer -- pure C#, zero third-party dependencies. Renders TrueType (`.ttf`) and CFF/CFF2 (`.otf`) outlines, including variable instances of both. Synthetic bold/italic match FreeType's. The only backend with multi-channel SDF (`SdfMode.Msdf`/`Mtsdf`), vector outlines (`OutlineMode.Vector`), `WidthPercent` and `ItalicAngle`. Anti-aliasing `None` (with dropout control), `Grayscale`, `Light` and `Lcd` (RGB/BGR or vertical panels, selectable filter). No TrueType bytecode hinting or system fonts. Available today from the repository and the CLI (`--rasterizer native`); the package is not published, so it cannot be resolved from a NuGet-only build. |
 
 Install a backend:
 
@@ -456,6 +457,8 @@ var result = BmFont.Generate("font.ttf", new FontGeneratorOptions
 });
 ```
 
+Outlines are a bitmap effect that works with every backend. `OutlineMode = OutlineMode.Vector` asks the backend to draw the ring from the glyph's vector outline instead (same width, color, shape and cell sizes, with a crisper edge and solid narrow counters); only the experimental Native backend does, the others keep the effect. It cannot be combined with SDF.
+
 ### Gradient
 
 ```csharp
@@ -685,6 +688,8 @@ var result = BmFont.Generate("color-emoji.ttf", new FontGeneratorOptions
 });
 ```
 
+`COLR` layers take their colors from the selected `CPAL` palette; `CBDT`/`sbix` bitmap emoji are drawn from the font's PNG strikes (FreeType returns them at the strike's own size, Native scales them to the requested size). See the [backend table](#rasterizer-backends) for which backend covers which format.
+
 ### Custom Glyphs
 
 Replace a font glyph, or add a brand-new one for a codepoint the font does not contain, by
@@ -764,6 +769,8 @@ var result = BmFont.Generate("font.ttf", new FontGeneratorOptions
     SuperSampleLevel = 2
 });
 ```
+
+`AntiAlias = Lcd` output is never super sampled: a backend that renders LCD gets the final size, because box-filtering the subpixel pattern would average it away.
 
 ### Texture Formats
 

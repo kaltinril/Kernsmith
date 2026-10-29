@@ -41,7 +41,7 @@ public sealed class ExtendedMetadata
     /// <summary>Variable font axis values used during generation.</summary>
     public IReadOnlyDictionary<string, float>? VariationAxes { get; init; }
 
-    /// <summary>True if color font rendering (COLR/CPAL) was enabled during generation.</summary>
+    /// <summary>True if color font rendering (<see cref="FontGeneratorOptions.ColorFont"/>) was enabled during generation.</summary>
     public bool? ColorFont { get; init; }
 
     /// <summary>Unicode codepoint of the fallback character for missing glyphs, if configured.</summary>
