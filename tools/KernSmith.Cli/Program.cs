@@ -63,7 +63,7 @@ static int ShowHelp()
           list-fonts        List system-installed fonts
           benchmark-fonts   Benchmark font resolution (LoadFont) cost across installed families
           list-rasterizers  List available rasterizer backends on this platform
-          info              Show font file metadata (TTF/OTF/WOFF)
+          info              Show font file metadata (TTF/OTF/WOFF/WOFF2)
 
         Generate options:
           -f, --font <path>            Font file path (required)

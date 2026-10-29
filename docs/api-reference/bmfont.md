@@ -9,7 +9,7 @@ loading bitmap fonts.
 
 | Method | Description |
 |--------|-------------|
-| `Generate(byte[] fontData, FontGeneratorOptions? options = null)` | Generate from raw TTF/OTF/WOFF bytes. |
+| `Generate(byte[] fontData, FontGeneratorOptions? options = null)` | Generate from raw TTF/OTF/WOFF/WOFF2 bytes. |
 | `Generate(byte[] fontData, int size)` | Convenience overload using default options at the given size. |
 | `Generate(string fontPath, FontGeneratorOptions? options = null)` | Generate from a font file on disk. |
 | `Generate(string fontPath, int size)` | Convenience overload using default options at the given size. |

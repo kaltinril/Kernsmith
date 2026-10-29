@@ -8,7 +8,7 @@ using KernSmith.Rasterizer;
 namespace KernSmith.Cli.Commands;
 
 /// <summary>
-/// Generates BMFont .fnt and texture atlas files from a TTF/OTF/WOFF font, driven by CLI flags
+/// Generates BMFont .fnt and texture atlas files from a TTF/OTF/WOFF/WOFF2 font, driven by CLI flags
 /// or a .bmfc/.hiero configuration file.
 /// </summary>
 internal sealed class GenerateCommand
@@ -922,7 +922,7 @@ internal sealed class GenerateCommand
             Usage: kernsmith generate -f <font> -s <size> [options]
 
             Font Source (one required):
-              -f, --font <path>           Font file path (TTF, OTF, WOFF)
+              -f, --font <path>           Font file path (TTF, OTF, WOFF, WOFF2)
               --system-font <name>        Use a system-installed font by family name
 
             Output:

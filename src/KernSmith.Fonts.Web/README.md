@@ -1,10 +1,10 @@
 # KernSmith.Fonts.Web
 
-A web font source for KernSmith. Fetches WOFF fonts from CSS-based font CDNs by parsing `@font-face` responses.
+A web font source for KernSmith. Fetches WOFF2 (or WOFF) fonts from CSS-based font CDNs by parsing `@font-face` responses.
 
 ## Overview
 
-`WebFontSource` implements the core `KernSmith.Font.IFontSource` abstraction. It fetches a stylesheet from a font CDN (Bunny Fonts, Google Fonts, or any compatible custom endpoint), parses the `@font-face` rules, and downloads the `.woff` file for the requested Unicode subset.
+`WebFontSource` implements the core `KernSmith.Font.IFontSource` abstraction. It fetches a stylesheet from a font CDN (Bunny Fonts, Google Fonts, or any compatible custom endpoint), parses the `@font-face` rules, and downloads the font file for the requested Unicode subset: the `.woff2` when offered (smaller), otherwise the `.woff`. KernSmith core decodes both, WOFF2 with its own managed Brotli decoder, so it works in the browser.
 
 This is primarily useful in browser/WASM scenarios (e.g. running KernSmith in Blazor WebAssembly) where there is no filesystem and fonts must be obtained over the network.
 
@@ -54,7 +54,8 @@ new WebFontSource(WebFontProvider.BunnyFonts, diskCachePath: "cache/fonts");
 
 ## Limitations
 
-- **WOFF only** — `.woff2` URLs are ignored for now. KernSmith core decodes WOFF2, but this package has not been switched over to requesting it yet.
+- **WOFF2 or WOFF only** — a source is picked by its `format()` hint, else its file extension; TTF/OTF/EOT/SVG sources are ignored, so a subset offering neither WOFF2 nor WOFF throws `InvalidOperationException`.
+- **User-Agent** — outside a browser the source sends a modern Chrome User-Agent (unless your `HttpClient` already has one), because Google Fonts serves TTF to unknown agents. In the browser it sends none and the browser's own UA is used: a custom `User-Agent` is not CORS-safelisted, and the CDNs reject the preflight it causes in Firefox.
 - **No family listing** — CSS CDNs do not expose a discovery endpoint, so `ListFamiliesAsync` returns an empty list.
 
 ## Build

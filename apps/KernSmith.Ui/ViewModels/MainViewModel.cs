@@ -148,7 +148,7 @@ public class MainViewModel : ViewModel
     {
         using var dialog = new NativeFileDialog();
         dialog.SelectFile()
-            .AddFilter("Font Files", "ttf,otf,woff,ttc")
+            .AddFilter("Font Files", FontFileTypes.DialogFilter)
             .AddFilter("All Files", "*");
         var result = dialog.Open(out string? path);
         if (result == DialogResult.Okay && path != null)

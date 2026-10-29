@@ -102,7 +102,7 @@ public class KernSmithGame : Game
                 var ext = Path.GetExtension(path).ToLowerInvariant();
                 if (ext is ".bmfc" or ".hiero")
                     _mainViewModel!.LoadProjectFromPath(path);
-                else if (ext is ".ttf" or ".otf" or ".woff" or ".ttc")
+                else if (FontFileTypes.IsFontFile(path))
                     _mainViewModel!.LoadFontFromPath(path);
             }
         };

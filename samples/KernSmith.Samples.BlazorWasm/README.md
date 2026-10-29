@@ -30,7 +30,7 @@ dotnet workload install wasm-tools
 ## What It Demonstrates
 
 - **Automated checks**: Verifies StbTrueType registers, FreeType is absent, capabilities report correctly, system font provider doesn't crash
-- **Font generation**: Upload a TTF file, generate a bitmap font with configurable size and SDF option, preview the atlas, download .fnt and .png
+- **Font generation**: Upload a TTF, OTF, WOFF, or WOFF2 file, generate a bitmap font with configurable size and SDF option, preview the atlas, download .fnt and .png
 - **Zero native dependencies**: Runs entirely on managed C# code — no FreeType, no P/Invoke
 
 ## Performance (Roboto-Regular, 32px, ASCII)
