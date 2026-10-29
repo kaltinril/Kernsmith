@@ -275,7 +275,7 @@ internal sealed class ColrPaintReader
     private Affine2D ReadAffine(long offset, bool variable)
     {
         var reader = new FontReader(_table.Data.Span);
-        reader.Seek(checked((int)offset));
+        reader.Seek(offset);
         var raw = new int[6];
         for (int i = 0; i < 6; i++)
             raw[i] = reader.ReadInt32();
@@ -289,7 +289,7 @@ internal sealed class ColrPaintReader
     private (ColorStop[] Stops, ColorLineExtend Extend) ReadColorLine(long offset, bool variable)
     {
         var reader = new FontReader(_table.Data.Span);
-        reader.Seek(checked((int)offset));
+        reader.Seek(offset);
         int extend = reader.ReadUInt8();
         int count = reader.ReadUInt16();
 

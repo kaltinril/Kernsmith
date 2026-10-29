@@ -142,6 +142,31 @@ internal ref struct FontReader
         return slice;
     }
 
+    /// <summary>
+    /// Moves the cursor to an offset read from the font as a 32-bit (or wider) value. Use this,
+    /// not <c>Seek(checked((int)offset))</c>: an offset above <see cref="int.MaxValue"/> is
+    /// malformed data, not an arithmetic overflow.
+    /// </summary>
+    /// <exception cref="FontFormatException">If the offset is outside the data.</exception>
+    public void Seek(long offset)
+    {
+        if ((ulong)offset > (ulong)_data.Length)
+            throw new FontFormatException($"Seek to offset {offset} is outside the font data (length {_data.Length}).");
+        _position = (int)offset;
+    }
+
+    /// <summary>
+    /// The bytes of <paramref name="data"/> from an offset read from the font to the end — a
+    /// subtable addressed from its parent's header.
+    /// </summary>
+    /// <exception cref="FontFormatException">If the offset is outside the data.</exception>
+    public static ReadOnlySpan<byte> From(ReadOnlySpan<byte> data, long offset)
+    {
+        if ((ulong)offset > (ulong)data.Length)
+            throw new FontFormatException($"Subtable offset {offset} is outside the data (length {data.Length}).");
+        return data[(int)offset..];
+    }
+
     private readonly void EnsureAvailable(int count)
     {
         // See Skip: comparing against Remaining avoids the int wrap-around that

@@ -132,11 +132,17 @@ public sealed class NativeRasterizer : IRasterizer
     }
 
     /// <inheritdoc />
+    /// <exception cref="ArgumentOutOfRangeException">If the size is not a positive finite number or the DPI is not positive.</exception>
+    /// <exception cref="RasterizationException">
+    /// If the glyph's data is malformed, or its bitmap would exceed the size limits (64 ems, or
+    /// 16384 px per side after distance-field padding).
+    /// </exception>
     public RasterizedGlyph? RasterizeGlyph(int codepoint, RasterOptions options)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
         ArgumentNullException.ThrowIfNull(options);
+        ValidateSize(options);
         var renderer = GlyphRenderers.SelectForFace(options, _colorGlyphs, _pipeline!);
 
         int glyphIndex = _face!.GetGlyphIndex(codepoint);
@@ -147,7 +153,14 @@ public sealed class NativeRasterizer : IRasterizer
         if (glyph.IsBlank && !DrawsLayers(renderer, glyphIndex))
             return BlankGlyph(codepoint, glyphIndex, glyph.Advance);
 
-        return renderer.Render(codepoint, glyphIndex, glyph, options);
+        try
+        {
+            return renderer.Render(codepoint, glyphIndex, glyph, options);
+        }
+        catch (RasterizationException ex) when (ex.Codepoint is null)
+        {
+            throw new RasterizationException(codepoint, ex.Message);
+        }
     }
 
     /// <inheritdoc />
@@ -169,11 +182,14 @@ public sealed class NativeRasterizer : IRasterizer
     }
 
     /// <inheritdoc />
+    /// <exception cref="ArgumentOutOfRangeException">If the size is not a positive finite number or the DPI is not positive.</exception>
+    /// <exception cref="RasterizationException">As for <see cref="RasterizeGlyph"/>.</exception>
     public GlyphMetrics? GetGlyphMetrics(int codepoint, RasterOptions options)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
         ArgumentNullException.ThrowIfNull(options);
+        ValidateSize(options);
         var renderer = GlyphRenderers.SelectForFace(options, _colorGlyphs, _pipeline!);
 
         int glyphIndex = _face!.GetGlyphIndex(codepoint);
@@ -184,15 +200,24 @@ public sealed class NativeRasterizer : IRasterizer
         if (glyph.IsBlank && !DrawsLayers(renderer, glyphIndex))
             return new GlyphMetrics(BearingX: 0, BearingY: 0, Advance: glyph.Advance, Width: 0, Height: 0);
 
-        return renderer.Measure(glyph, options);
+        try
+        {
+            return renderer.Measure(glyph, options);
+        }
+        catch (RasterizationException ex) when (ex.Codepoint is null)
+        {
+            throw new RasterizationException(codepoint, ex.Message);
+        }
     }
 
     /// <inheritdoc />
+    /// <exception cref="ArgumentOutOfRangeException">If the size is not a positive finite number or the DPI is not positive.</exception>
     public RasterizerFontMetrics? GetFontMetrics(RasterOptions options)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
         ArgumentNullException.ThrowIfNull(options);
+        ValidateSize(options);
 
         double scale = GlyphPipeline.PixelScale(options, _face!.Head.UnitsPerEm);
 
@@ -252,6 +277,18 @@ public sealed class NativeRasterizer : IRasterizer
         _variations = null;
     }
 
+    /// <summary>
+    /// Rejects a size or DPI no glyph can be scaled by: a zero, negative, NaN or infinite scale
+    /// would yield blank glyphs with negative or saturated advances and line metrics.
+    /// </summary>
+    private static void ValidateSize(RasterOptions options)
+    {
+        if (!(options.Size > 0f) || float.IsPositiveInfinity(options.Size))
+            throw new ArgumentOutOfRangeException(nameof(options), options.Size, "Size must be a positive, finite number of pixels.");
+        if (options.Dpi <= 0)
+            throw new ArgumentOutOfRangeException(nameof(options), options.Dpi, "Dpi must be positive.");
+    }
+
     private void EnsureFontLoaded()
     {
         if (_face is null)
@@ -298,6 +335,10 @@ public sealed class NativeRasterizer : IRasterizer
             throw new RasterizationException(codepoint, ex.Message);
         }
         catch (ArgumentOutOfRangeException ex)
+        {
+            throw new RasterizationException(codepoint, ex.Message);
+        }
+        catch (RasterizationException ex) when (ex.Codepoint is null)
         {
             throw new RasterizationException(codepoint, ex.Message);
         }

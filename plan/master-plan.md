@@ -128,7 +128,7 @@ Every phase that changes Native pixel output runs `regression_check.py` with a `
 | 175 | [GSUB Layout](phase-175-gsub-layout.md) | GSUB substitutions | Needs decision |
 | 176 | [Supersampling + Height Stretch](phase-176-supersampling-height-stretch.md) | In-rasterizer supersample / height stretch | Needs decision |
 | 177 | [Performance Optimization](phase-177-performance-optimization.md) | Benchmark harness, then optimisation | In progress -- harness and baseline done, optimisation Wave 3 |
-| 179 | [Validation / Golden Masters](phase-179-validation-golden-masters.md) | Validation, golden masters, release | Future -- Wave 3 |
+| 179 | [Validation / Golden Masters](phase-179-validation-golden-masters.md) | Validation, golden masters, release | In progress -- Wave 3 (robustness done; golden masters, SSIM matrix, release decision remain) |
 | 180 | [Innovation Research](phase-180-innovation-research.md) | Innovation research (ongoing experiments) | Future (Ongoing Research) |
 
 ---

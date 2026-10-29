@@ -112,6 +112,10 @@ internal sealed class PaintGraphRenderer
             if (!extent.Bounded || extent.Rect is not { } rect)
                 return default;
 
+            // Clip boxes and transforms are font data the pipeline's own box check never sees.
+            GlyphLimits.EnsureGlyphBox(
+                _baseGlyph, Math.Ceiling(rect.MaxX) - Math.Floor(rect.MinX), Math.Ceiling(rect.MaxY) - Math.Floor(rect.MinY), _options);
+
             int left = (int)Math.Floor(rect.MinX);
             int top = (int)Math.Floor(rect.MinY);
             int right = (int)Math.Ceiling(rect.MaxX);

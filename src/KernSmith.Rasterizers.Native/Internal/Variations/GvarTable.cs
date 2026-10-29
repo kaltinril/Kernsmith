@@ -60,7 +60,11 @@ internal sealed class GvarTable
             offsets[i] = dataArrayOffset + offset;
         }
 
-        reader.Seek(checked((int)sharedTuplesOffset));
+        reader.Seek(sharedTuplesOffset);
+        if ((long)sharedTupleCount * axisCount * 2 > reader.Remaining)
+            throw new FontFormatException("gvar", (int)sharedTuplesOffset,
+                $"{sharedTupleCount} shared tuples over {axisCount} axes run past the end of the table.");
+
         var shared = new float[sharedTupleCount * axisCount];
         for (int i = 0; i < shared.Length; i++)
             shared[i] = reader.ReadF2Dot14();

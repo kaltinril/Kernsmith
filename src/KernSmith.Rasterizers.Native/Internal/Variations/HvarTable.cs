@@ -28,8 +28,8 @@ internal sealed class HvarTable
         uint storeOffset = reader.ReadUInt32();
         uint advanceMapOffset = reader.ReadUInt32();
 
-        var store = ItemVariationStore.Parse(data[checked((int)storeOffset)..]);
-        var advanceMap = advanceMapOffset == 0 ? null : DeltaSetIndexMap.Parse(data[checked((int)advanceMapOffset)..]);
+        var store = ItemVariationStore.Parse(FontReader.From(data, storeOffset));
+        var advanceMap = advanceMapOffset == 0 ? null : DeltaSetIndexMap.Parse(FontReader.From(data, advanceMapOffset));
         return new HvarTable(store, advanceMap);
     }
 
