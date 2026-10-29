@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using KernSmith.Font.Models;
 using KernSmith.Rasterizer;
+using KernSmith.Rasterizers.FreeType;
 using KernSmith.Rasterizers.Native.Internal;
 using Shouldly;
 using static KernSmith.Rasterizers.Native.Tests.SyntheticColrV1;
@@ -9,7 +10,7 @@ using static KernSmith.Rasterizers.Native.Tests.SyntheticColrV1;
 namespace KernSmith.Rasterizers.Native.Tests;
 
 /// <summary>
-/// Phase 174 hinting and mono dropout against the other Native features: CFF outlines, distance
+/// Phase 174 hinting and mono dropout against the other Native features: CFF outlines, CFF2 instances, distance
 /// fields, LCD and COLR color glyphs. Hinting is a <see cref="AntiAliasMode.Light"/>-only step
 /// (with <see cref="RasterOptions.EnableHinting"/>) on the outline every renderer prepares, so it
 /// reaches every outline format and every color glyph's clips and layers, and nothing else.
@@ -66,6 +67,80 @@ public class NativeHintingInterplayTests
                 if (!lit)
                     failures.Append(CultureInfo.InvariantCulture, $"'{c}' row {y} of {glyph.Height} empty\n");
             }
+        }
+
+        failures.ToString().ShouldBeEmpty();
+    }
+
+    // ---- CFF2 variable instances -------------------------------------------------------------
+
+    [Fact]
+    public void Cff2Instance_LightHinting_MeasuresTheVariedInstance()
+    {
+        // The hinter measures blue zones and stems from the outlines the decoder returns, cached
+        // per instance. Source Code's x-height is 478 units at the ExtraLight default and 500 at
+        // wght 900, and its stems grow fivefold. At 15px the black x-height (7.5px) is off the grid
+        // and the default's zone does not reach it, so a rasterizer that hinted the default first
+        // must, after switching to wght 900, render exactly what a fresh wght 900 rasterizer does,
+        // with the x-height row snapped solid. (At 14px the black x-height is exactly 7px, so
+        // default-instance zones would go unnoticed there.)
+        var bytes = TestFonts.SourceCodeVariableOtfBytes();
+        var black = new Dictionary<string, float> { ["wght"] = 900 };
+        using var fresh = Load(bytes);
+        fresh.SetVariationAxes(NativeVariableFontTests.FvarAxes(bytes), black);
+        using var switched = Load(bytes);
+        var light = switched.RasterizeGlyph('x', Light(15f))!;
+        switched.SetVariationAxes(NativeVariableFontTests.FvarAxes(bytes), black);
+
+        var expected = fresh.RasterizeGlyph('x', Light(15f))!;
+        var actual = switched.RasterizeGlyph('x', Light(15f))!;
+        var unhinted = fresh.RasterizeGlyph('x', Light(15f, hint: false))!;
+
+        expected.BitmapData.ShouldNotBe(light.BitmapData, "wght 900 must not render the default instance");
+        expected.BitmapData.ShouldNotBe(unhinted.BitmapData, "hinting must move 'x' at 15px");
+        TopRowPeak(unhinted).ShouldBeLessThan(200, "the unhinted x-height row should be soft, or this test proves nothing");
+        TopRowPeak(expected).ShouldBeGreaterThan(220);
+        actual.Metrics.ShouldBe(expected.Metrics);
+        actual.BitmapData.ShouldBe(expected.BitmapData);
+        expected.Metrics.Advance.ShouldBe(unhinted.Metrics.Advance);
+    }
+
+    [Fact]
+    public void Cff2Instance_MonoDropout_RendersTheBlackInstance()
+    {
+        // None (thresholded, with dropout control) at wght 900: the ink of 'x', 'L' and 'T' sits
+        // where FreeType's mono ink does, with no gap between its first and last rows, and covers
+        // more pixels than the ExtraLight default.
+        var bytes = TestFonts.SourceCodeVariableOtfBytes();
+        var black = new Dictionary<string, float> { ["wght"] = 900 };
+        using var thin = Load(bytes);
+        using var native = Load(bytes);
+        native.SetVariationAxes(NativeVariableFontTests.FvarAxes(bytes), black);
+        using IRasterizer freeType = new FreeTypeRasterizer();
+        freeType.LoadFont(bytes);
+        freeType.SetVariationAxes(NativeVariableFontTests.FvarAxes(bytes), black);
+        var options = new RasterOptions { Size = 16f, AntiAlias = AntiAliasMode.None };
+        var failures = new StringBuilder();
+
+        foreach (char c in "xLT")
+        {
+            var glyph = native.RasterizeGlyph(c, options)!;
+            var ink = NativeVariableFontTests.InkBounds(glyph).ShouldNotBeNull($"'{c}'");
+            var expected = NativeVariableFontTests.InkBounds(freeType.RasterizeGlyph(c, options)!)!.Value;
+            if (Math.Abs(ink.Left - expected.Left) > 1 || Math.Abs(ink.Top - expected.Top) > 1
+                || Math.Abs(ink.Right - expected.Right) > 1 || Math.Abs(ink.Bottom - expected.Bottom) > 1)
+                failures.Append(CultureInfo.InvariantCulture, $"'{c}' ink {ink} vs FreeType {expected}\n");
+
+            for (int y = glyph.Metrics.BearingY - ink.Top; y < glyph.Metrics.BearingY - ink.Bottom; y++)
+            {
+                bool lit = false;
+                for (int x = 0; x < glyph.Width; x++)
+                    lit |= glyph.BitmapData[(y * glyph.Pitch) + x] != 0;
+                if (!lit)
+                    failures.Append(CultureInfo.InvariantCulture, $"'{c}' row {y} of {glyph.Height} empty\n");
+            }
+
+            Lit(glyph).ShouldBeGreaterThan(Lit(thin.RasterizeGlyph(c, options)!), $"'{c}' at wght 900 should cover more than at 200");
         }
 
         failures.ToString().ShouldBeEmpty();
@@ -185,6 +260,15 @@ public class NativeHintingInterplayTests
         for (int x = 0; x < glyph.Width; x++)
             peak = Math.Max(peak, glyph.BitmapData[x]);
         return peak;
+    }
+
+    private static int Lit(RasterizedGlyph glyph)
+    {
+        int lit = 0;
+        for (int y = 0; y < glyph.Height; y++)
+            for (int x = 0; x < glyph.Width; x++)
+                lit += glyph.BitmapData[(y * glyph.Pitch) + x] != 0 ? 1 : 0;
+        return lit;
     }
 
     private static NativeRasterizer Load(byte[] font)

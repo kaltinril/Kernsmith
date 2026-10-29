@@ -544,6 +544,60 @@ public class Type2CharstringTests
         Should.Throw<FontFormatException>(() => Run(Cs.Of(5, T2.VsIndex, 1, 1, 1, T2.Blend), Cff2TwoRegions));
     }
 
+    /// <summary>Per-vsindex scalars for <see cref="Cff2TwoRegions"/>: ItemVariationData 0 has two regions, 1 has one.</summary>
+    private static CharstringContext Cff2Instance(int privateVsIndex = 0) => new()
+    {
+        IsCff2 = true,
+        RegionCounts = [2, 1],
+        VsIndex = privateVsIndex,
+        BlendScalars = vsIndex => vsIndex == 0 ? [0.75, 0.5] : [0.75],
+    };
+
+    [Fact]
+    public void Blend_SpecExamples_OneAndTwoRegions()
+    {
+        // OpenType CFF2 chapter: "120 52 1 blend hlineto" at scalar 0.75 is "159 hlineto";
+        // with two regions, "120 52 36 1 blend hlineto" at scalars 0.75, 0.5 is "177 hlineto".
+        Path(Cs.Of(1, T2.VsIndex, 0, 0, T2.RMoveTo, 120, 52, 1, T2.Blend, T2.HLineTo), Cff2Instance())
+            .ShouldBe("M 0,0 L 159,0 Z");
+        Path(Cs.Of(0, 0, T2.RMoveTo, 120, 52, 36, 1, T2.Blend, T2.HLineTo), Cff2Instance())
+            .ShouldBe("M 0,0 L 177,0 Z");
+    }
+
+    [Fact]
+    public void Blend_UsesThePrivateDictVsIndex_UntilTheCharstringOverridesIt()
+    {
+        // Private DICT vsindex 1 → one region at 0.75; a charstring vsindex 0 → two regions.
+        Path(Cs.Of(0, 0, T2.RMoveTo, 120, 52, 1, T2.Blend, T2.HLineTo), Cff2Instance(privateVsIndex: 1))
+            .ShouldBe("M 0,0 L 159,0 Z");
+        Path(Cs.Of(0, T2.VsIndex, 0, 0, T2.RMoveTo, 120, 52, 36, 1, T2.Blend, T2.HLineTo), Cff2Instance(privateVsIndex: 1))
+            .ShouldBe("M 0,0 L 177,0 Z");
+    }
+
+    [Fact]
+    public void Blend_SeveralBlendsBeforeOneOperator_EachBlendsItsOwnValues()
+    {
+        // "Advanced uses of blend": two n = 1 blends feeding one rlineto.
+        // dx = 10 + 4*0.75 + 8*0.5 = 17; dy = 20 + 0*0.75 + (-12)*0.5 = 14.
+        Path(Cs.Of(0, 0, T2.RMoveTo, 10, 4, 8, 1, T2.Blend, 20, 0, -12, 1, T2.Blend, T2.RLineTo), Cff2Instance())
+            .ShouldBe("M 0,0 L 17,14 Z");
+    }
+
+    [Fact]
+    public void Blend_InASubroutine_SharesTheCallersStackAndRegions()
+    {
+        // The spec example's subroutine, at the instance where region 0 is fully on.
+        var context = new CharstringContext
+        {
+            IsCff2 = true,
+            RegionCounts = [2],
+            BlendScalars = _ => [1, 0],
+            LocalSubrs = Index([Cs.Of(50, 50, 100, 1, T2.Blend, 0, T2.RMoveTo, 500, -100, -200, 1, T2.Blend, T2.HLineTo, T2.Return)]),
+        };
+
+        Path(Cs.Of(-107, T2.CallSubr), context).ShouldBe("M 100,0 L 500,0 Z");
+    }
+
     [Fact]
     public void Blend_WithTooFewOperands_Throws()
     {

@@ -95,9 +95,9 @@ internal sealed class CffDict
     /// operands <c>blend</c> consumes. Null when the font has no variation store.
     /// </param>
     /// <remarks>
-    /// <c>blend</c> keeps the default-master values and drops the deltas, which renders the default
-    /// instance. CFF2 variation blending of DICT values is not needed for outlines: only hinting
-    /// values in the Private DICT are blendable.
+    /// <c>blend</c> keeps the default values and drops the deltas, at every instance. Only the Private
+    /// DICT's hinting values (BlueValues, OtherBlues, StdHW/StdVW, StemSnapH/V) are blendable, and
+    /// outlines are drawn without them; a hinter that reads them would need the instance's blend.
     /// </remarks>
     /// <exception cref="FontFormatException">If the DICT is malformed.</exception>
     public static CffDict Parse(ReadOnlySpan<byte> data, bool cff2, Func<int, int>? regionCount = null)

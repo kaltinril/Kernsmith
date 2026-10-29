@@ -28,9 +28,8 @@ public enum RasterizerBackend
     /// </para>
     /// <para>
     /// Limitations: no hinting, outline stroking or system-font lookup, color fonts from
-    /// <c>COLR</c> version 0 layers only, a CFF2 variable font renders its default instance,
-    /// and no <see cref="AntiAliasMode.Light"/> anti-aliasing (it renders as grayscale). Use
-    /// <see cref="FreeType"/> or <see cref="StbTrueType"/> for those.
+    /// <c>COLR</c> version 0 layers only, and no <see cref="AntiAliasMode.Light"/> anti-aliasing
+    /// (it renders as grayscale). Use <see cref="FreeType"/> or <see cref="StbTrueType"/> for those.
     /// </para>
     /// </summary>
     Native

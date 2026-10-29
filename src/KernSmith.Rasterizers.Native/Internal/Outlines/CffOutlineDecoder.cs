@@ -13,15 +13,20 @@ namespace KernSmith.Rasterizers.Native.Internal.Outlines;
 /// <remarks>
 /// The advance comes from <c>hmtx</c>, not the charstring width, exactly as FreeType does for
 /// an OpenType-wrapped CFF: the two normally agree, and <c>hmtx</c> is what every other backend
-/// and the shared metrics code use. CFF2 renders the default instance whatever axes are set — outline and
-/// advance alike; variation (Phase 171 Wave 2) plugs in by deriving
-/// <see cref="CharstringContext.BlendScalars"/> from <see cref="Variations"/>.
+/// and the shared metrics code use. At a non-default instance of a CFF2 variable font, every
+/// <c>blend</c> applies its deltas weighted by the scalars of the regions its <c>vsindex</c>
+/// selects, and the advance takes its <c>HVAR</c> delta (CFF2 has no phantom points). The
+/// default instance takes exactly the static path: <c>blend</c> keeps its default values.
 /// </remarks>
 internal sealed class CffOutlineDecoder : IOutlineDecoder
 {
     private readonly CffFont _font;
     private readonly HmtxTable _hmtx;
     private readonly Dictionary<CffPrivate, CharstringContext> _contexts = [];
+
+    private ItemVariationStore? _store;
+    private float[]? _blendCoordinates;   // the instance _blendScalars was computed for
+    private double[][]? _blendScalars;    // per vsindex at that instance; null at the default
 
     /// <summary>Parses the face's <c>CFF2</c> table, or its <c>CFF </c> table when it has no <c>CFF2</c>.</summary>
     /// <param name="face">The loaded face.</param>
@@ -51,9 +56,8 @@ internal sealed class CffOutlineDecoder : IOutlineDecoder
     }
 
     /// <summary>
-    /// The face's variation state (null for a font without <c>fvar</c>). Held for the CFF2
-    /// <c>blend</c> wave, which will turn its coordinates into
-    /// <see cref="CharstringContext.BlendScalars"/>; until then every instance decodes as the default.
+    /// The face's variation state (null for a font without <c>fvar</c>); the decoder reads
+    /// whatever instance it currently holds.
     /// </summary>
     internal FontVariations? Variations { get; }
 
@@ -66,6 +70,7 @@ internal sealed class CffOutlineDecoder : IOutlineDecoder
         if ((uint)glyphIndex >= (uint)_font.CharStrings.Count)
             throw new FontFormatException($"Glyph {glyphIndex} has no charstring (the font has {_font.CharStrings.Count}).");
 
+        var variations = SelectInstance();
         var privateData = _font.PrivateFor(glyphIndex);
         var outline = Type2Charstring.Interpret(_font.CharStrings[glyphIndex], ContextFor(privateData));
 
@@ -73,15 +78,55 @@ internal sealed class CffOutlineDecoder : IOutlineDecoder
         if (CffMatrix.ToFontUnits(privateData.Matrix) is { } matrix)
             commands = Transform(commands, matrix);
 
-        return new DecodedGlyph(GlyphOutline.FromCommands(commands), _hmtx.GetAdvanceWidth(glyphIndex));
+        int advance = _hmtx.GetAdvanceWidth(glyphIndex);
+        return variations is null
+            ? new DecodedGlyph(GlyphOutline.FromCommands(commands), advance)
+            : new DecodedGlyph(GlyphOutline.FromCommands(commands), advance + variations.GetAdvanceDelta(glyphIndex));
     }
 
     /// <summary>The charstring width, which <see cref="Decode"/> deliberately does not use. Internal for tests.</summary>
     internal double CharstringWidth(int glyphIndex)
     {
+        SelectInstance();
         var privateData = _font.PrivateFor(glyphIndex);
         return Type2Charstring.Interpret(_font.CharStrings[glyphIndex], ContextFor(privateData)).Width;
     }
+
+    /// <summary>
+    /// Brings the <c>blend</c> scalars up to date with the instance <see cref="Variations"/> holds:
+    /// recomputed when the coordinates change, dropped at the default instance.
+    /// </summary>
+    /// <returns>The variation state when a non-default instance is selected, otherwise null.</returns>
+    /// <exception cref="FontFormatException">If the CFF2 VariationStore is malformed.</exception>
+    private FontVariations? SelectInstance()
+    {
+        if (Variations is not { IsDefaultInstance: false } variations)
+        {
+            _blendScalars = null;
+            _blendCoordinates = null;
+            return null;
+        }
+
+        if (_blendCoordinates is not null && variations.Coordinates.SequenceEqual(_blendCoordinates))
+            return variations;
+
+        if (_font.HasVariationStore)
+        {
+            _store ??= _font.ReadVariationStore()!;
+            var regionScalars = _store.ComputeRegionScalars(variations.Coordinates);
+            var perVsIndex = new double[_store.SubtableCount][];
+            for (int vsIndex = 0; vsIndex < perVsIndex.Length; vsIndex++)
+                perVsIndex[vsIndex] = Array.ConvertAll(_store.SubtableRegionScalars(vsIndex, regionScalars), s => (double)s);
+
+            _blendScalars = perVsIndex;
+        }
+
+        _blendCoordinates = variations.Coordinates.ToArray();
+        return variations;
+    }
+
+    /// <summary><see cref="CharstringContext.BlendScalars"/>: null (keep the defaults) at the default instance.</summary>
+    private double[]? BlendScalars(int vsIndex) => _blendScalars?[vsIndex];
 
     private CharstringContext ContextFor(CffPrivate privateData)
     {
@@ -97,6 +142,7 @@ internal sealed class CffOutlineDecoder : IOutlineDecoder
             IsCff2 = _font.IsCff2,
             VsIndex = privateData.VsIndex,
             RegionCounts = _font.RegionCounts,
+            BlendScalars = _font.HasVariationStore ? BlendScalars : null,
             SeacComponent = _font.IsCff2 || _font.IsCidKeyed ? null : SeacComponent,
         };
 
