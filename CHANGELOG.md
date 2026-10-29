@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `BmFontBuilder.FromConfig` now carries `SdfSpread` and `SdfScale` from the config; it dropped them, so builder-based generation (including the `tests/bmfont-compare` harness's `sdf.bmfc`) rendered SDF at the default spread 8 and scale 1.
+- **Damaged fonts could crash, hang or exhaust memory in the core font parser instead of failing with a KernSmith exception.** A truncated table directory or TTC offset, `GPOS` subtable offsets past their table, `fvar` axis arrays overflowing `int`, and a `cmap` subtable at the table's last byte threw `ArgumentOutOfRangeException` (now `FontParsingException`, or the damaged optional subtable is skipped); coverage/class ranges ending at glyph 65535 looped forever; overlapping coverage ranges grew without bound; overlapping `cmap` format 4 segments and format 12 groups starting past Unicode or spanning it repeatedly ran for billions of iterations.
 
 ## [0.24.0] - 2026-10-18
 
