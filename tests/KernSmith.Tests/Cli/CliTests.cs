@@ -691,6 +691,54 @@ public class CliTests : IDisposable
         File.ReadAllText(expected).ShouldContain("fileVersion=1");
     }
 
+    private static string CharsLine(string bmfcPath) =>
+        File.ReadAllLines(bmfcPath).Single(l => l.StartsWith("chars=", StringComparison.Ordinal));
+
+    [Fact]
+    public void Init_CharsetPreset_WrittenToBmfc()
+    {
+        var configPath = Path.Combine(_tempDir, "extended.bmfc");
+
+        var (exitCode, _, stderr) = RunCli(
+            "init", "-f", FontPath, "-s", "32", "--charset", "extended", "-o", configPath);
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        CharsLine(configPath).ShouldBe("chars=32-255");
+    }
+
+    [Fact]
+    public void Init_ExplicitChars_WrittenToBmfc()
+    {
+        // --chars is unioned with the default ascii preset, exactly as `generate` builds it.
+        var configPath = Path.Combine(_tempDir, "chars.bmfc");
+
+        var (exitCode, _, stderr) = RunCli(
+            "init", "-f", FontPath, "-s", "32", "--chars", "é€", "-o", configPath);
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        CharsLine(configPath).ShouldBe("chars=32-126,233,8364");
+    }
+
+    [Fact]
+    public void Init_CharsetAndChars_RoundTripThroughGenerate()
+    {
+        // The config init writes must make `generate --config` select the same glyphs as
+        // passing the flags to `generate` directly.
+        var configPath = Path.Combine(_tempDir, "roundtrip.bmfc");
+        RunCli("init", "-f", FontPath, "-s", "24", "--charset", "latin", "--chars", "€",
+            "-o", configPath).ExitCode.ShouldBe(0);
+
+        var (directExit, directOut, directErr) = RunCli(
+            "generate", "-f", FontPath, "-s", "24", "--charset", "latin", "--chars", "€", "--dry-run");
+        var (configExit, configOut, configErr) = RunCli("generate", "--config", configPath, "--dry-run");
+
+        directExit.ShouldBe(0, $"stderr: {directErr}");
+        configExit.ShouldBe(0, $"stderr: {configErr}");
+        // latin = 95 + 128 + 208 codepoints, plus the euro sign.
+        directOut.ShouldContain("(432 codepoints)", Case.Sensitive);
+        configOut.ShouldContain("(432 codepoints)", Case.Sensitive);
+    }
+
     [Fact]
     public void Generate_SaveConfigHiero_WritesHieroFile()
     {

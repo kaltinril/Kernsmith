@@ -149,11 +149,9 @@ internal static class BmfcWriter
             genOptions.FillColorA = fill.A;
         }
 
-        // Build character set from CLI options
-        if (options.UnicodeRanges.Count > 0)
-        {
-            genOptions.Characters = CharacterSet.FromRanges(options.UnicodeRanges.ToArray());
-        }
+        // Same preset/--chars/--chars-file/--range union that `generate` renders, so a written
+        // config selects exactly the glyphs the flags would have produced.
+        genOptions.Characters = Commands.GenerateCommand.BuildCharacterSet(options);
 
         if (options.VariationAxes.Count > 0)
             genOptions.VariationAxes = new Dictionary<string, float>(options.VariationAxes);
