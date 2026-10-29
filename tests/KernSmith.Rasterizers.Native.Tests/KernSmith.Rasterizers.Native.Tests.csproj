@@ -58,6 +58,9 @@
     <None Include="..\KernSmith.Tests\Fixtures\DancingScript-Variable.ttf"
           Link="Fixtures\DancingScript-Variable.ttf"
           CopyToOutputDirectory="PreserveNewest" />
+    <!-- Golden masters (NativeGoldenMasterTests): the manifest, reference PNGs and .fnt files. -->
+    <None Update="Goldens\**\*.json;Goldens\**\*.png;Goldens\**\*.fnt"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
