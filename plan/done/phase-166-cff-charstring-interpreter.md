@@ -53,6 +53,7 @@ Complete. `OutlineDecoders.ForFace` returns `CffOutlineDecoder` for any face wit
 - `NativeCffAgreementTests`: metrics within ±1px of unhinted FreeType at 12–96px for both fixtures; grayscale bitmaps vs FreeType (SSIM ≥ 0.90 per glyph, ≥ 0.98 mean) and vs stb_truetype for CFF in grayscale and monochrome; monochrome vs FreeType by mean SSIM.
 - End to end: `NativeCffEndToEndTests` and `CliTests.Generate_NativeRasterizer_FromOtf_ProducesInkedGlyphs` assert inked glyphs from both `.otf` fixtures.
 - CFF in WOFF2: `NotoSans-Regular-Latin-CFF.woff2` (fontTools, from the committed `.otf`; Source fonts are not used because their Reserved Font Name forbids a reformatted copy) decodes to the `.otf`'s tables byte for byte and renders identically on FreeType, StbTrueType, GDI, DirectWrite (`Woff2CffTests`) and Native (`NativeWoff2Tests`).
+- `COLR` v0 layers drawn with CFF glyphs render through the CFF decoder (`NativeCffEndToEndTests`, a synthetic COLR/CPAL pair on Source Serif 4).
 - Variation axes on a CFF2 font (`NativeCff2VariationTests`): no failure, default-instance output, and the face's `FontVariations` reaches `CffOutlineDecoder` for the CFF2 `blend` wave.
 - Regression harness: `tests/bmfont-compare/gum-bmfont/otf-plain.bmfc` (CFF) and `otf-cff2-plain.bmfc` (CFF2).
 

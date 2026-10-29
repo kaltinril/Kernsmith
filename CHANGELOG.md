@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - The Native rasterizer renders OpenType fonts with PostScript outlines (`.otf`): CFF, CID-keyed CFF and CFF2, the last at its default instance. A malformed CFF table fails `LoadFont` with a `FontFormatException` instead of the old blanket rejection of every CFF font.
+- The Native rasterizer renders color fonts: with `ColorFont` on, `COLR` version 0 layers are filled from the font's `CPAL` palettes and composited into straight-alpha RGBA glyphs, and `ColorPaletteIndex` selects the palette (`SupportsColorFonts` is now true). Glyphs without version 0 layers, including `COLR` version 1 paint graphs, render as plain grayscale; bitmap-only color fonts (`CBDT`/`sbix`, such as Noto Color Emoji) are rejected at load with a message pointing at FreeType.
 - The Native rasterizer renders TrueType variable fonts at the requested instance (`VariationAxes`, `.bmfc` `variationAxes`, CLI `--axis`): `fvar`/`avar` normalization, `gvar` outline deltas including composites and inferred deltas, `HVAR` advances (phantom points without `HVAR`) and `MVAR` line metrics. `SupportsVariableFonts` is now true for Native; a CFF2 variable font still renders its default instance whatever axes are set.
 - Benchmarks: `NativeComparison*` BenchmarkDotNet classes compare the Native, StbTrueType and FreeType backends (font load, per-glyph rasterization at 12/32/72px, `GetGlyphMetrics`, full `BmFont.Generate`) with memory diagnostics; the measured baseline is recorded in the phase 177 plan.
 
@@ -27,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **FreeType rendered a scrambled instance for every variable-font request.** `SetVariationAxes` passed the axis coordinates to FreeType as 32-bit integers, but the bundled FreeType's `FT_Fixed` is pointer-sized, so it read them in pairs and pushed every axis to an extreme -- even asking for the default values changed the glyphs. Coordinates are now marshalled at the correct width.
 - `KernSmith.Fonts.Web` with `WebFontProvider.GoogleFonts` threw `InvalidOperationException` for every font: Google serves only `.woff2` to the browser User-Agent the package sends, and the package only accepted `.woff`.
 - `KernSmith.Fonts.Web` in the browser (Blazor WebAssembly) failed with a `NetworkError` in Firefox: the `User-Agent` it set became a non-CORS-safelisted `fetch()` header, and Bunny and Google Fonts reject the resulting preflight. In the browser it now leaves the User-Agent to the browser.
-- The Native rasterizer docs (`docs/rasterizers/native.md`, the package README) now describe its real behavior: WOFF1 files work (core decompresses them first), a color-font request throws, `Light`/`LCD` anti-aliasing requests render as grayscale, and core still draws outlines and runs `BoldPostProcessor`/`ItalicPostProcessor` for it.
+- The Native rasterizer docs (`docs/rasterizers/native.md`, the package README) now describe its real behavior: WOFF1 files work (core decompresses them first), `Light`/`LCD` anti-aliasing requests render as grayscale, and core still draws outlines and runs `BoldPostProcessor`/`ItalicPostProcessor` for it.
 
 ## [0.24.0] - 2026-10-18
 

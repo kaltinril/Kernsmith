@@ -6,7 +6,7 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// <summary>
 /// Builds font files that no fixture on disk provides: CFF-flavoured faces around a hand-built
 /// (or deliberately broken) <c>CFF </c>/<c>CFF2</c> table, and fixture fonts with individual
-/// tables swapped out.
+/// tables added, swapped out or removed.
 /// </summary>
 internal static class SyntheticFonts
 {
@@ -37,8 +37,15 @@ internal static class SyntheticFonts
     }
 
     /// <summary>
-    /// Rebuilds a TrueType font with some tables replaced or removed (a null value drops the
-    /// table); every other table is copied verbatim.
+    /// Roboto with extra tables added (or replaced) — e.g. a hand-built <c>COLR</c>/<c>CPAL</c>
+    /// pair, so color layering can be tested on glyph shapes the other tests already know.
+    /// </summary>
+    public static byte[] RobotoWith(params (string Tag, byte[] Data)[] extraTables) =>
+        WithTables(TestFonts.RobotoRegularBytes(), extraTables.ToDictionary(t => t.Tag, t => (byte[]?)t.Data));
+
+    /// <summary>
+    /// Rebuilds a font with some tables replaced or removed (a null value drops the table); every
+    /// other table, and the sfnt flavour (TrueType or CFF), is kept.
     /// </summary>
     public static byte[] WithTables(byte[] font, IReadOnlyDictionary<string, byte[]?> replacements)
     {
@@ -58,7 +65,7 @@ internal static class SyntheticFonts
         }
 
         tables.Sort((a, b) => string.CompareOrdinal(a.Tag, b.Tag));
-        return BuildSfnt(0x00010000, tables);
+        return BuildSfnt(source.IsCff ? 0x4F54544Fu : 0x00010000u, tables); // keep 'OTTO' for a CFF font
     }
 
     private static byte[] BuildSfnt(uint sfntVersion, List<(string Tag, byte[] Data)> tables)

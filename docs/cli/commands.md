@@ -340,7 +340,7 @@ kernsmith generate -f font.ttf -s 32 --rasterizer native
 kernsmith generate -f font.ttf -s 32
 ```
 
-The `native` backend is experimental and ships with the CLI only (there is no NuGet package yet). It renders TrueType (`.ttf`) and CFF/CFF2 (`.otf`) outlines, and does not support hinting, SDF, outline stroke, synthetic bold/italic, color fonts, variable fonts, system fonts, or `--aa light` / `--aa lcd`.
+The `native` backend is experimental and ships with the CLI only (there is no NuGet package yet). It renders TrueType (`.ttf`) and CFF/CFF2 (`.otf`) outlines, and does not support hinting, SDF, outline stroke, synthetic bold/italic, system fonts, or `--aa light` / `--aa lcd`. It renders TrueType variable fonts (`--axis`; a CFF2 variable font renders its default instance) and `COLR` version 0 color glyphs, but not `COLR` version 1 or bitmap color fonts.
 
 ---
 
