@@ -77,9 +77,8 @@ public class IncrementalSessionBenchmarks
             @"C:\Windows\Fonts\arial.ttf",
             "/Library/Fonts/Arial.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-            "tests/KernSmith.Tests/Fixtures/Roboto-Regular.ttf"
         };
         return paths.FirstOrDefault(File.Exists)
-            ?? throw new FileNotFoundException("No test font found");
+            ?? BenchmarkFixtures.FindFont("Roboto-Regular.ttf");
     }
 }

@@ -11,7 +11,7 @@ public class MemoryBenchmarks
     [GlobalSetup]
     public void Setup()
     {
-        _fontData = File.ReadAllBytes(FindFont("Roboto-Regular.ttf"));
+        _fontData = BenchmarkFixtures.ReadFont("Roboto-Regular.ttf");
     }
 
     // Scaling glyph count to see per-glyph allocation cost
@@ -89,15 +89,4 @@ public class MemoryBenchmarks
         GradientEndG = 0,
         GradientEndB = 255
     });
-
-    private static string FindFont(string name)
-    {
-        var paths = new[]
-        {
-            Path.Combine("tests", "KernSmith.Tests", "Fixtures", name),
-            Path.Combine("..", "..", "..", "..", "tests", "KernSmith.Tests", "Fixtures", name),
-        };
-        return paths.Select(Path.GetFullPath).FirstOrDefault(File.Exists)
-            ?? throw new FileNotFoundException($"Test font not found: {name}");
-    }
 }

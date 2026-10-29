@@ -12,8 +12,8 @@ public class RasterizationBenchmarks
     [GlobalSetup]
     public void Setup()
     {
-        _fontData = File.ReadAllBytes(FindFont("Roboto-Regular.ttf"));
-        _variableFontData = File.ReadAllBytes(FindFont("RobotoFlex-Variable.ttf"));
+        _fontData = BenchmarkFixtures.ReadFont("Roboto-Regular.ttf");
+        _variableFontData = BenchmarkFixtures.ReadFont("RobotoFlex-Variable.ttf");
     }
 
     // Size scaling
@@ -136,15 +136,4 @@ public class RasterizationBenchmarks
         Characters = CharacterSet.Ascii,
         VariationAxes = new Dictionary<string, float> { ["wght"] = 700, ["wdth"] = 125 }
     });
-
-    private static string FindFont(string name)
-    {
-        var paths = new[]
-        {
-            Path.Combine("tests", "KernSmith.Tests", "Fixtures", name),
-            Path.Combine("..", "..", "..", "..", "tests", "KernSmith.Tests", "Fixtures", name),
-        };
-        return paths.Select(Path.GetFullPath).FirstOrDefault(File.Exists)
-            ?? throw new FileNotFoundException($"Test font not found: {name}");
-    }
 }
