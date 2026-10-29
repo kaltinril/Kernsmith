@@ -27,6 +27,30 @@ internal static class BrotliContext
         _ => (Lut2[p1] << 3) | Lut2[p2],
     };
 
+    /// <summary>
+    /// <see cref="LiteralContextId"/> split into two lookups per mode, for the decode loop:
+    /// <c>LiteralContextId(mode, p1, p2) == SplitLookup[mode * 512 + p1] | SplitLookup[mode * 512 + 256 + p2]</c>.
+    /// Every mode's formula ORs a <c>p1</c> part with a disjoint <c>p2</c> part (zero for the
+    /// LSB6 and MSB6 modes), so no branch on the mode is needed per literal.
+    /// </summary>
+    public static readonly byte[] SplitLookup = BuildSplitLookup();
+
+    private static byte[] BuildSplitLookup()
+    {
+        var table = new byte[4 * 512];
+        for (var b = 0; b < 256; b++)
+        {
+            table[(ModeLsb6 << 9) + b] = (byte)(b & 0x3f);
+            table[(ModeMsb6 << 9) + b] = (byte)(b >> 2);
+            table[(ModeUtf8 << 9) + b] = Lut0[b];
+            table[(ModeUtf8 << 9) + 256 + b] = Lut1[b];
+            table[(ModeSigned << 9) + b] = (byte)(Lut2[b] << 3);
+            table[(ModeSigned << 9) + 256 + b] = Lut2[b];
+        }
+
+        return table;
+    }
+
     public static ReadOnlySpan<byte> Lut0 =>
     [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 0, 0, 4, 0, 0,

@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace KernSmith.Font.Brotli;
 
 /// <summary>
@@ -13,9 +15,12 @@ namespace KernSmith.Font.Brotli;
 /// </remarks>
 internal sealed class BrotliPrefixCode
 {
-    private const int RootBits = 8;
+    /// <summary>Bits indexing the root table.</summary>
+    public const int RootBits = 8;
     private const int RootSize = 1 << RootBits;
-    private const int MaxCodeLength = 15;
+
+    /// <summary>The longest code, in bits: one peek of this many covers any symbol.</summary>
+    public const int MaxCodeLength = 15;
 
     /// <summary>Order in which code-length code lengths are stored (RFC 7932 section 3.5).</summary>
     private static ReadOnlySpan<byte> CodeLengthOrder => [1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15];
@@ -38,21 +43,36 @@ internal sealed class BrotliPrefixCode
         _table = table;
     }
 
+    /// <summary>
+    /// The lookup table, for decoders that walk it themselves
+    /// (<see cref="BrotliBitReader.DecodeLiterals"/>): see the class remarks for its layout.
+    /// </summary>
+    public int[] Table => _table;
+
     /// <summary>Decodes one symbol.</summary>
-    public int Decode(ref BrotliBitReader reader)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int Decode(ref BrotliBitReader reader) => Decode(ref reader, _table);
+
+    /// <summary>Decodes one symbol through <paramref name="table"/>, a <see cref="Table"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int Decode(ref BrotliBitReader reader, int[] table)
     {
+        // One peek covers the longest code, so both levels consume without refilling.
         var bits = reader.Peek(MaxCodeLength);
-        var entry = _table[bits & (RootSize - 1)];
+        var entry = table[bits & (RootSize - 1)];
         var length = entry >> 16;
         if (length > RootBits)
-        {
-            reader.Skip(RootBits);
-            var subIndex = (int)(bits >> RootBits) & ((1 << (length - RootBits)) - 1);
-            entry = _table[(entry & 0xFFFF) + subIndex];
-            length = entry >> 16;
-        }
+            return DecodeSecondLevel(ref reader, table, bits, entry);
 
-        reader.Skip(length);
+        reader.SkipPeeked(length);
+        return entry & 0xFFFF;
+    }
+
+    private static int DecodeSecondLevel(ref BrotliBitReader reader, int[] table, uint bits, int pointer)
+    {
+        var subIndex = (int)(bits >> RootBits) & ((1 << ((pointer >> 16) - RootBits)) - 1);
+        var entry = table[(pointer & 0xFFFF) + subIndex];
+        reader.SkipPeeked(RootBits + (entry >> 16));
         return entry & 0xFFFF;
     }
 
@@ -300,15 +320,24 @@ internal sealed class BrotliPrefixCode
         return new BrotliPrefixCode(table);
     }
 
-    private static int Reverse(int code, int length)
+    /// <summary>The low <paramref name="length"/> bits of <paramref name="code"/> (at most 15), reversed.</summary>
+    private static int Reverse(int code, int length) =>
+        ((ReversedBytes[code & 0xFF] << 8) | ReversedBytes[(code >> 8) & 0xFF]) >> (16 - length);
+
+    /// <summary>Each byte with its bit order reversed.</summary>
+    private static readonly byte[] ReversedBytes = BuildReversedBytes();
+
+    private static byte[] BuildReversedBytes()
     {
-        var result = 0;
-        for (var i = 0; i < length; i++)
+        var table = new byte[256];
+        for (var value = 0; value < 256; value++)
         {
-            result = (result << 1) | (code & 1);
-            code >>= 1;
+            var reversed = 0;
+            for (var bit = 0; bit < 8; bit++)
+                reversed |= ((value >> bit) & 1) << (7 - bit);
+            table[value] = (byte)reversed;
         }
 
-        return result;
+        return table;
     }
 }

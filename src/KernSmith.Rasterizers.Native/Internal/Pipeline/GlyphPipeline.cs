@@ -72,10 +72,56 @@ internal sealed class GlyphPipeline
         var prepared = new PreparedGlyph(glyph.Outline, new OutlineTransform(scale, 0f), box, advance) { GlyphIndex = glyphIndex };
 
         // 4. Pixel-space hinting, measuring reference glyphs through the same stages 1-2.
-        return _hinter is null
+        return _hinter is null || !GlyphHinter.Applies(options)
             ? prepared
-            : _hinter.Apply(prepared, options, _unitsPerEm, reference => ReferenceShape(reference, options, transforms));
+            : Hint(prepared, options, transforms);
     }
+
+    /// <summary>
+    /// Stages 1–4 reduced to the box and advance, for measuring: the decoder's declared bounds
+    /// placed on the grid exactly as <see cref="Prepare"/> places them, without decoding the
+    /// outline. An empty box means a blank glyph.
+    /// </summary>
+    /// <returns>False when the box depends on the outline itself — a transform or the hint
+    /// stage would run, the decoder cannot declare the bounds, or the declared box covers no
+    /// pixel (<see cref="GlyphBox.Compute"/> then measures the outline) — and the caller must
+    /// <see cref="Prepare"/> instead.</returns>
+    public bool TryPrepareBox(int glyphIndex, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms, out GlyphBox box, out int advance)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(transforms);
+
+        box = default;
+        advance = 0;
+        if (transforms.Count != 0 || (_hinter is not null && GlyphHinter.Applies(options))
+            || !_decoder.TryDecodeBounds(glyphIndex, options, out var bounds))
+            return false;
+
+        float scale = PixelScale(options, _unitsPerEm);
+        advance = (int)Math.Round(bounds.AdvanceWidth * (double)scale);
+        if (bounds.IsEmpty)
+            return true;
+
+        // The probe stands in for the undecoded outline: GlyphBox takes a non-empty outline's
+        // grid from its declared box, and falls back to the outline only when that box covers
+        // nothing — which the probe's zero hull turns into an empty box, sending the caller
+        // down the full path.
+        box = GlyphBox.Compute(DeclaredBoxProbe, bounds.DeclaredBounds, scale);
+        if (box.IsEmpty)
+            return false;
+
+        // The same limit Prepare enforces on the same box.
+        GlyphLimits.EnsureGlyphBox(glyphIndex, box.Width, box.Height, options);
+        return true;
+    }
+
+    /// <summary>A non-empty outline with an all-zero hull; see <see cref="TryPrepareBox"/>.</summary>
+    private static readonly GlyphOutline DeclaredBoxProbe = new([OutlineCommand.Move(0f, 0f)], 0f, 0f, 0f, 0f);
+
+    /// <summary>The hint stage, kept out of <see cref="Prepare"/> so the reference-glyph
+    /// callback's closure is only allocated for a request that is actually hinted.</summary>
+    private PreparedGlyph Hint(PreparedGlyph prepared, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms) =>
+        _hinter!.Apply(prepared, options, _unitsPerEm, reference => ReferenceShape(reference, options, transforms));
 
     private DecodedGlyph Shape(int glyphIndex, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms)
     {

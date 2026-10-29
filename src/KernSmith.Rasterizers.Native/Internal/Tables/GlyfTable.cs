@@ -10,7 +10,7 @@ namespace KernSmith.Rasterizers.Native.Internal.Tables;
 /// interpreter. Implicit on-curve midpoints are materialised once the glyph is fully
 /// assembled, so <see cref="GetGlyph(int)"/> never returns two adjacent off-curve points.
 /// </remarks>
-internal sealed class GlyfTable
+internal sealed partial class GlyfTable
 {
     /// <summary>numberOfContours(2) + xMin/yMin/xMax/yMax(2 each).</summary>
     private const int GlyphHeaderLength = 10;
@@ -183,9 +183,12 @@ internal sealed class GlyfTable
         ushort instructionLength = reader.ReadUInt16();
         reader.Skip(instructionLength);
 
-        byte[] flags = ReadFlags(ref reader, glyphIndex, pointCount);
-        int[] xs = ReadCoordinates(ref reader, flags, XShortVector, XSameOrPositive);
-        int[] ys = ReadCoordinates(ref reader, flags, YShortVector, YSameOrPositive);
+        var flags = new byte[pointCount];
+        ReadFlags(ref reader, glyphIndex, flags);
+        var xs = new int[pointCount];
+        ReadCoordinates(ref reader, flags, xs, XShortVector, XSameOrPositive);
+        var ys = new int[pointCount];
+        ReadCoordinates(ref reader, flags, ys, YShortVector, YSameOrPositive);
 
         float[]? dx = null, dy = null;
         phantom = default;
@@ -217,11 +220,10 @@ internal sealed class GlyfTable
         return contours;
     }
 
-    /// <summary>Reads the run-length-encoded point flags.</summary>
-    private static byte[] ReadFlags(ref FontReader reader, int glyphIndex, int pointCount)
+    /// <summary>Reads the run-length-encoded point flags, one per element of <paramref name="flags"/>.</summary>
+    private static void ReadFlags(ref FontReader reader, int glyphIndex, Span<byte> flags)
     {
-        var flags = new byte[pointCount];
-
+        int pointCount = flags.Length;
         for (int i = 0; i < pointCount;)
         {
             byte flag = reader.ReadUInt8();
@@ -238,8 +240,6 @@ internal sealed class GlyfTable
             for (int r = 0; r < repeat; r++)
                 flags[i++] = flag;
         }
-
-        return flags;
     }
 
     /// <summary>
@@ -247,9 +247,8 @@ internal sealed class GlyfTable
     /// unsigned byte whose sign comes from the "same or positive" flag; without the short
     /// flag, "same or positive" means a zero delta and anything else is a signed 16-bit delta.
     /// </summary>
-    private static int[] ReadCoordinates(ref FontReader reader, byte[] flags, byte shortFlag, byte sameOrPositiveFlag)
+    private static void ReadCoordinates(ref FontReader reader, ReadOnlySpan<byte> flags, Span<int> coordinates, byte shortFlag, byte sameOrPositiveFlag)
     {
-        var coordinates = new int[flags.Length];
         int value = 0;
 
         for (int i = 0; i < flags.Length; i++)
@@ -268,8 +267,6 @@ internal sealed class GlyfTable
 
             coordinates[i] = value;
         }
-
-        return coordinates;
     }
 
     private GlyphContour[] ParseCompositeContours(

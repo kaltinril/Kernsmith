@@ -1,6 +1,6 @@
 # Phase 177 — Native Rasterizer: Benchmarks & Performance Optimization
 
-> **Status**: In progress — harness, baseline, scanline-fill rewrite and dropout control done; remaining optimisation Wave 3
+> **Status**: In progress — harness, baseline, scanline fill, dropout control, metrics shortcut, per-glyph pooling and Brotli done; remaining: feature paths, parallelism
 > **Created**: 2026-04-01
 > **Depends on**: nothing for the harness; the feature phases (166–174) for the optimisation pass
 
@@ -63,9 +63,9 @@ Per-stage split of a Native ASCII glyph (Stopwatch + `GC.GetAllocatedBytesForCur
 | cmap + glyph box | <2% | <2% | <1% | 0 B |
 
 1. **Scanline fill** dominated time at every size — done, see Scanline fill below.
-2. **Per-glyph allocation** is 13–30× StbTrueType's and spread evenly across parse (flag/coordinate/point arrays), extract and flatten (`List<T>` + `ToArray`), and scanline edge arrays; it doubles end-to-end `Generate` allocation and promotes to Gen1 — the Pooling item below.
+2. **Per-glyph allocation** was 13–30× StbTrueType's, spread across parse (flag/coordinate/point arrays), extract and flatten (`List<T>` + `ToArray`) — done, see Metrics, pooling and Brotli below.
 3. **Mono dropout control** (`DropoutControl`) dominated `None` — done, see Dropout control below.
-4. **`GetGlyphMetrics`** is ~6× StbTrueType because it runs the full `glyf` parse + outline extract to get a bounding box (2.8 KB/glyph); it drives `BmFont.QueryAtlasSize`. A cached parse or a bbox-only path fixes it.
+4. **`GetGlyphMetrics`** was ~9× StbTrueType because it ran the full `glyf` parse + outline extract to get a bounding box (2.9 KB/glyph); it drives `BmFont.QueryAtlasSize` — done, see Metrics, pooling and Brotli below.
 
 ## Scanline fill (done)
 
@@ -102,12 +102,34 @@ Output is byte-identical to the previous implementation over Roboto, Source Seri
 
 `None` costs about 2.7-2.9× `Grayscale` (it fills the same coverage, then walks every row and column scanline) and allocates the same as `Grayscale` plus its horizontal edges.
 
+## Metrics, pooling and Brotli (done)
+
+- **Metrics shortcut**: an untransformed, unhinted, default-instance simple `glyf` glyph is measured from its header box and contour end points without decoding (`IOutlineDecoder.TryDecodeBounds` → `GlyphPipeline.TryPrepareBox`, same `GlyphBox.Compute` and `GlyphLimits`), only for renderers whose metrics depend on the box alone (`IBoxMeasuringRenderer.MeasuresFromBox`: coverage except `None`, which crops to ink; SDF; MSDF). Composites, CFF, styles, hinting, LCD, color and varied instances take the full path. `NativeMetricsEquivalenceTests` compares metrics with rendered metrics for every mapped codepoint of Roboto, Source Serif, Roboto Flex (default and wght 1000) and Bungee Color in 11 modes. Caching prepared glyphs was rejected: core calls metrics (`QueryAtlasSize`) and rasterization (`Generate`) on separate rasterizer instances, so a glyph is never decoded twice by one instance.
+- **Pooling**: simple `glyf` glyphs decode straight into commands through a per-decoder `GlyfScratch` (instances are single-threaded; core creates one per generation and `NativeThreadSafetyTests` covers concurrent generations); the extractor and flattener rent from `ArrayPool<T>.Shared` because renderers are shared singletons; the hint stage's closure is only built for hinted requests. A glyph now allocates its bitmap, outline commands, the exact edge array the fill takes and small result objects (`NativeAllocationTests`). Composite glyphs still go through `ParsedGlyph`.
+- **cmap**: not optimised — the memoised `Dictionary` lookup is a small part of a 90 ns metrics call.
+- **Brotli** (`Font/Brotli/`): whole-word bit refills, literal runs decoded with the bit buffer in locals and tables resolved per (block type, context) once per meta-block, a split context lookup instead of a per-literal mode switch, a precomputed command-length table, doubling copies for overlapping matches and a byte-reverse table for prefix-code building. Measured and dropped: a locals-based command reader and unchecked table reads (both within noise). Output is identical (round-trip corpus, truncation and bit-flip tests).
+
+Before (custom_kern) / after, same session, ShortRun; Stb from the after run. Other agents' builds shared the machine, so compare within a row:
+
+| Benchmark | Native before | Native after | Stb | Native alloc before → after |
+|---|---|---|---|---|
+| `GetGlyphMetrics` ASCII 32px, per glyph | 938 ns | 90 ns | 102 ns | 2,980 → 72 B |
+| `RasterizeAll` 12px Grayscale, per glyph | 2.45 µs | 1.94 µs | 3.12 µs | 4,637 → 1,145 B |
+| `RasterizeAll` 32px Grayscale, per glyph | 3.38 µs | 3.35 µs | 6.66 µs | 4,981 → 1,489 B |
+| `RasterizeAll` 72px Grayscale, per glyph | 6.76 µs | 7.14 µs | 18.12 µs | 6,314 → 2,822 B |
+| `RasterizeAll` 32px None, per glyph | 11.34 µs | 12.10 µs | 7.51 µs | 4,997 → 1,505 B |
+| `BmFont.Generate` ASCII + Latin-1 32px | 5.86 ms | 5.45 ms | 6.66 ms | 1,751 → 1,081 KB (Gen1 31 → 16) |
+| Managed Brotli, Roboto WOFF2 stream (126 KB → 257 KB) | 3.07 ms (2.34× BCL) | 2.55 ms (1.54× BCL) | BCL 1.31 / 1.65 ms | 517 → 537 KB |
+
+Rasterization time is dominated by the fill and moved within the error bars; the remaining metrics allocation is ASCII's composite glyphs. Brotli is about 1.5× faster (3.74 → 2.35 ms in an earlier quieter run); the steady-state baseline was 2.3× the BCL decoder, not the ~6× first measured, so a 2× speedup would have meant matching native code.
+
+Run the WOFF2 benchmark with `--filter *Woff2Decode*` (`Woff2DecodeBenchmarks`: managed vs BCL Brotli on the same stream, plus `ReadFontInfo` WOFF2 vs TTF).
+
 ## Work items — optimisation (Wave 3)
 
 Profile first (`dotnet-trace`/PerfView); do only what the profile justifies.
 
-- **Pooling**: every internal per-glyph scratch buffer (edges, active edges, outline commands, parse temporaries) rented from `ArrayPool<T>.Shared` or reused on the instance (instances are single-threaded, D9); output bitmap stays unpooled.
-- **Parsing**: span-based table access; cache cmap lookups; lazy table parsing; optional parsed-outline cache for repeated glyphs.
+- **Parsing**: composite `glyf` glyphs through the scratch path; lazy table parsing.
 - **Feature paths**: SDF segment bucketing (Phase 169), `gvar` decode caching (Phase 171), COLR layer canvas reuse (Phase 172), as the harness shows them hot.
 - **Parallelism**: optional and only outside the browser (`OperatingSystem.IsBrowser()` guard); one buffer set per worker. Core already parallelizes post-processing, so measure whether backend-level parallelism adds anything.
 
@@ -123,8 +145,8 @@ Profile first (`dotnet-trace`/PerfView); do only what the profile justifies.
 ## Success Criteria
 
 - [x] Harness compares Native, StbTrueType and FreeType with memory diagnostics; baseline recorded
-- [ ] Within 2× of StbTrueType for ASCII at 32px
-- [ ] No per-glyph scratch allocations in the hot path
+- [x] Within 2× of StbTrueType for ASCII at 32px
+- [x] No per-glyph scratch allocations in the hot path
 - [ ] SIMD paths only where measured faster
 - [ ] No output change; WASM-safe
 - [ ] All tests pass

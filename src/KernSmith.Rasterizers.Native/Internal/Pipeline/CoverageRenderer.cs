@@ -13,9 +13,10 @@ namespace KernSmith.Rasterizers.Native.Internal.Pipeline;
 /// </summary>
 /// <remarks>
 /// A <see cref="AntiAliasMode.None"/> box depends on which pixels pass the threshold, so
-/// <see cref="Measure"/> renders it too (into pooled scratch) to stay equal to <see cref="Render"/>.
+/// <see cref="Measure"/> renders it too (into pooled scratch) to stay equal to <see cref="Render"/>,
+/// and only the other modes measure from the box alone.
 /// </remarks>
-internal sealed class CoverageRenderer : IGlyphRenderer
+internal sealed class CoverageRenderer : IBoxMeasuringRenderer
 {
     /// <summary>The shared, stateless instance.</summary>
     public static readonly CoverageRenderer Instance = new();
@@ -29,11 +30,23 @@ internal sealed class CoverageRenderer : IGlyphRenderer
     {
         var box = glyph.Box;
         if (options.AntiAlias != AntiAliasMode.None)
-            return new(BearingX: box.BearingX, BearingY: box.BearingY, Advance: glyph.Advance, Width: box.Width, Height: box.Height);
+            return MeasureBox(glyph.GlyphIndex, box, glyph.Advance, options);
 
         var ink = ScanlineRasterizer.MeasureMono(Edges(glyph, options), box.Width, box.Height, box.MinX, box.MinY, box.BearingX, box.BearingY);
         return new(BearingX: ink.BearingX, BearingY: ink.BearingY, Advance: glyph.Advance, Width: ink.Width, Height: ink.Height);
     }
+
+    /// <inheritdoc />
+    public bool MeasuresFromBox(RasterOptions options) => options.AntiAlias != AntiAliasMode.None;
+
+    /// <inheritdoc />
+    public GlyphMetrics MeasureBox(int glyphIndex, GlyphBox box, int advance, RasterOptions options) =>
+        new(
+            BearingX: box.BearingX,
+            BearingY: box.BearingY,
+            Advance: advance,
+            Width: box.Width,
+            Height: box.Height);
 
     /// <inheritdoc />
     public RasterizedGlyph Render(int codepoint, int glyphIndex, PreparedGlyph glyph, RasterOptions options)

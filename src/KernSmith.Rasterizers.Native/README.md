@@ -117,7 +117,9 @@ dotnet build src/KernSmith.Rasterizers.Native/KernSmith.Rasterizers.Native.cspro
 ## Glyph pipeline (contributors)
 
 `RasterizeGlyph` and `GetGlyphMetrics` run the same stages, so metrics and bitmaps cannot
-disagree. Everything is internal; add a feature to its stage rather than to `NativeRasterizer`.
+disagree — except where the box alone decides the metrics (below), and there
+`NativeMetricsEquivalenceTests` holds them equal for every mapped codepoint, fixture and mode.
+Everything is internal; add a feature to its stage rather than to `NativeRasterizer`.
 
 | # | Stage | Code | Add a feature by |
 |---|-------|------|------------------|
@@ -146,6 +148,15 @@ Invariants:
 - `PreparedGlyph.GlyphIndex` is the only way `Measure` can identify the glyph; a hint stage must carry it over (build with `with`).
 - The default instance (no axes, or every axis at its default) takes the exact static decode
   path, so non-variable output cannot drift.
+- Metrics shortcut: `GetGlyphMetrics` skips decoding an untransformed, unhinted, default-instance
+  simple `glyf` glyph and measures its header box (`IOutlineDecoder.TryDecodeBounds` →
+  `GlyphPipeline.TryPrepareBox`, which applies the same `GlyphLimits`), but only for a renderer
+  implementing `IBoxMeasuringRenderer` whose `MeasuresFromBox` is true for the request (coverage
+  except `None`, SDF, MSDF). A mode whose extent reads the outline or pixels must answer false.
+- Per-glyph allocation is what the glyph keeps (bitmap, outline commands, the exact edge array,
+  small result objects); `NativeAllocationTests` pins it. Simple `glyf` glyphs decode through
+  the decoder's `GlyfScratch` (per instance — instances are single-threaded); the extractor and
+  flattener rent from `ArrayPool<T>.Shared`, because renderers are shared singletons.
 
 See the [KernSmith repository](https://github.com/kaltinril/Kernsmith) for full project
 documentation.

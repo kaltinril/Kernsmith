@@ -1,6 +1,7 @@
 using KernSmith.Font.Models;
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.Native.Internal.Distance;
+using KernSmith.Rasterizers.Native.Internal.Raster;
 
 namespace KernSmith.Rasterizers.Native.Internal.Pipeline;
 
@@ -17,7 +18,7 @@ namespace KernSmith.Rasterizers.Native.Internal.Pipeline;
 /// rounding the <c>.fnt</c> <c>sdfSpread</c> metadata uses, so a shader reading the metadata
 /// decodes the field exactly. Unlike FreeType it is not clamped to 2..32.
 /// </remarks>
-internal sealed class SdfRenderer : IGlyphRenderer
+internal sealed class SdfRenderer : IBoxMeasuringRenderer
 {
     /// <summary>The shared, stateless instance.</summary>
     public static readonly SdfRenderer Instance = new();
@@ -37,16 +38,24 @@ internal sealed class SdfRenderer : IGlyphRenderer
     }
 
     /// <inheritdoc />
-    public GlyphMetrics Measure(PreparedGlyph glyph, RasterOptions options)
+    public GlyphMetrics Measure(PreparedGlyph glyph, RasterOptions options) =>
+        MeasureBox(glyph.GlyphIndex, glyph.Box, glyph.Advance, options);
+
+    /// <inheritdoc />
+    /// <remarks>Always: the field fills the padded box whatever the anti-alias mode.</remarks>
+    public bool MeasuresFromBox(RasterOptions options) => true;
+
+    /// <inheritdoc />
+    public GlyphMetrics MeasureBox(int glyphIndex, GlyphBox box, int advance, RasterOptions options)
     {
         int pad = SpreadPixels(options);
-        GlyphLimits.EnsureBitmap(glyph.GlyphIndex, glyph.Box.Width + (2L * pad), glyph.Box.Height + (2L * pad));
+        GlyphLimits.EnsureBitmap(glyphIndex, box.Width + (2L * pad), box.Height + (2L * pad));
         return new GlyphMetrics(
-            BearingX: glyph.Box.BearingX - pad,
-            BearingY: glyph.Box.BearingY + pad,
-            Advance: glyph.Advance,
-            Width: glyph.Box.Width + (2 * pad),
-            Height: glyph.Box.Height + (2 * pad));
+            BearingX: box.BearingX - pad,
+            BearingY: box.BearingY + pad,
+            Advance: advance,
+            Width: box.Width + (2 * pad),
+            Height: box.Height + (2 * pad));
     }
 
     /// <inheritdoc />
