@@ -347,6 +347,10 @@ def main():
     )
     args = parser.parse_args()
 
+    # Child processes write straight to the console; without line buffering our own
+    # prints land out of order whenever stdout is redirected to a file.
+    sys.stdout.reconfigure(line_buffering=True)
+
     # Detect repo root and cd into it.
     repo_root = detect_repo_root()
     os.chdir(repo_root)
