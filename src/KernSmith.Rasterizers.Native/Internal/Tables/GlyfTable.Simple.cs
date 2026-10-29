@@ -103,13 +103,54 @@ internal sealed partial class GlyfTable
 
     /// <summary>
     /// The bounds of a simple glyph's stored points — on- and off-curve, so they contain the
-    /// outline — read without building the outline. For a glyph with at least one contour.
+    /// outline — read without building the outline or keeping the coordinates. For a glyph with
+    /// at least one contour whose end points <see cref="TryReadSimpleHeader"/> has validated.
     /// </summary>
     /// <exception cref="FontFormatException">If the glyph's data is malformed or truncated.</exception>
     public OutlineBounds ReadSimpleControlBox(int glyphIndex, GlyfScratch scratch)
     {
-        ReadSimplePoints(glyphIndex, scratch, out int pointCount);
-        return ControlBox(scratch.Xs(pointCount), scratch.Ys(pointCount));
+        ArgumentNullException.ThrowIfNull(scratch);
+
+        var reader = new FontReader(SimpleGlyphData(glyphIndex));
+        int numberOfContours = reader.ReadInt16();
+        if (numberOfContours <= 0)
+            throw new InvalidOperationException($"Glyph {glyphIndex} is not a simple glyph with contours.");
+
+        // The header box, then every end point but the last, which counts the points.
+        reader.Skip(8 + (2 * (numberOfContours - 1)));
+        int pointCount = reader.ReadUInt16() + 1;
+
+        // Hinting bytecode: present, but never executed.
+        reader.Skip(reader.ReadUInt16());
+
+        var flags = scratch.Flags(pointCount);
+        ReadFlags(ref reader, glyphIndex, flags);
+        var (xMin, xMax) = CoordinateRange(ref reader, flags, XShortVector, XSameOrPositive);
+        var (yMin, yMax) = CoordinateRange(ref reader, flags, YShortVector, YSameOrPositive);
+        return new OutlineBounds(xMin, yMin, xMax, yMax);
+    }
+
+    /// <summary><see cref="ReadCoordinates"/> reduced to the axis's smallest and largest value.</summary>
+    private static (int Min, int Max) CoordinateRange(ref FontReader reader, ReadOnlySpan<byte> flags, byte shortFlag, byte sameOrPositiveFlag)
+    {
+        int value = 0, min = int.MaxValue, max = int.MinValue;
+        foreach (byte flag in flags)
+        {
+            if ((flag & shortFlag) != 0)
+            {
+                byte delta = reader.ReadUInt8();
+                value += (flag & sameOrPositiveFlag) != 0 ? delta : -delta;
+            }
+            else if ((flag & sameOrPositiveFlag) == 0)
+            {
+                value += reader.ReadInt16();
+            }
+
+            min = Math.Min(min, value);
+            max = Math.Max(max, value);
+        }
+
+        return (min, max);
     }
 
     /// <summary>

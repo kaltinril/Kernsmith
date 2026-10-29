@@ -315,6 +315,23 @@ public class NativeEdgeCaseTests
         rendered.Height.ShouldBe(16);
     }
 
+    [Fact]
+    public void TruncatedPointData_FailsMetricsAsItFailsRendering()
+    {
+        // The header and end points are intact; the coordinates stop after one X delta. The
+        // metrics shortcut reads the coordinates to vet the header box, so it fails too.
+        byte[] glyph = Concat(
+            I16(1), I16(0), I16(0), I16(500), I16(500),
+            U16(2), U16(0),
+            [0x01, 0x01, 0x01],
+            I16(0));
+        using var native = Load(RobotoWithGlyphA(glyph));
+        var options = new RasterOptions { Size = 32 };
+
+        Should.Throw<RasterizationException>(() => native.RasterizeGlyph('A', options));
+        Should.Throw<RasterizationException>(() => native.GetGlyphMetrics('A', options));
+    }
+
     // ------------------------------------------------------------ distance-field spreads
 
     [Theory]
