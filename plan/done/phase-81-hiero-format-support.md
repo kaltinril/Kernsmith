@@ -17,7 +17,7 @@ Adding `.hiero` support means KernSmith users can:
 
 ## Format Reference
 
-> See [REF-10: Hiero Configuration File Format Reference](../reference/REF-10-hiero-format-reference.md) for the complete format specification, property tables, effects system, value serialization, example files, and property mapping to KernSmith types.
+> See [REF-10: Hiero Configuration File Format Reference](../../reference/REF-10-hiero-format-reference.md) for the complete format specification, property tables, effects system, value serialization, example files, and property mapping to KernSmith types.
 
 ## Format Summary
 

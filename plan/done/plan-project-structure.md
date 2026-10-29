@@ -1,6 +1,6 @@
 # KernSmith -- Project Structure
 
-> Part of the [Master Plan](master-plan.md).
+> Part of the [Master Plan](../master-plan.md).
 > Related: [API Design](plan-api-design.md)
 >
 > All data types referenced in this document are defined in [plan-data-types.md](plan-data-types.md). Interface definitions are in [plan-api-design.md](plan-api-design.md).

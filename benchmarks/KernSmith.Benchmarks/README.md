@@ -22,4 +22,12 @@ The `NativeComparison*` classes compare the Native, StbTrueType and FreeType bac
 dotnet run -c Release -f net10.0 --project benchmarks/KernSmith.Benchmarks -- --filter *NativeComparison* --job short
 ```
 
+### WOFF2 decoding
+
+`Woff2DecodeBenchmarks` times KernSmith's managed Brotli decoder against the BCL's native one on the same stream (Roboto-Regular.woff2), and `BmFont.ReadFontInfo` on the WOFF2 against the plain TTF. Results are in [phase 177](../../plan/phase-177-performance-optimization.md).
+
+```
+dotnet run -c Release -f net10.0 --project benchmarks/KernSmith.Benchmarks -- --filter *Woff2Decode*
+```
+
 See the [root README](../../README.md) for full project documentation.

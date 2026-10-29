@@ -24,7 +24,9 @@ python tests/bmfont-compare/regression_check.py --tolerance 1
 
 This automates the full workflow: stash changes, checkout main, generate baselines, checkout branch, restore stash, generate current, run diff. On failure or Ctrl+C it restores your original branch and stash.
 
-Exit codes: `0` = everything produced on both sides is identical, `1` = differences found or a (config, backend) pair that produced output on the base failed on the branch, `2` = error (build/git failure, nothing compared). A pair that fails on **both** sides (a capability skip, CFF on a TrueType-only backend) is tolerated.
+In a git worktree, commit first and pass `--base <sha>`: the stash stack is shared by every worktree (a parallel `git stash pop` can take yours), and a branch checked out in another worktree cannot be checked out here.
+
+Exit codes: `0` = everything produced on both sides is identical, `1` = differences found or a (config, backend) pair that produced output on the base failed on the branch, `2` = error (build/git failure, nothing compared). A pair that fails on **both** sides (a capability skip, CFF2 on StbTrueType) is tolerated.
 
 ### Generate comparison images only
 
@@ -78,8 +80,10 @@ dotnet run --project tests/bmfont-compare/GenerateAll/ --framework net10.0-windo
 
 - Runs FreeType, GDI, DirectWrite, StbTrueType, and Native via KernSmith
 - Runs BMFont64.exe if found at `c:\tools\bmfont64.exe` or on PATH
-- Native renders TrueType (`glyf`) fonts only; CFF/OTF configs fail per-config (logged, run continues)
-  and show as red cells in the comparison images
+- A backend that declines a capability the config requests is skipped for that config (SDF on
+  GDI/DirectWrite, `sdfMode=msdf|mtsdf` on every backend but Native); any other per-config failure
+  (e.g. a bitmap-only color font on Native, CFF2 on StbTrueType) is logged, the run continues, and
+  the cell shows red in the comparison images
 - Output naming: `{configname}-{backend}.fnt` / `{configname}-{backend}_0.png`
 - Also generates `comparison*.png` side-by-side images
 
@@ -170,7 +174,8 @@ python -m unittest discover -s tests/bmfont-compare -p "test_*.py" -v
 `.bmfc` configs are in `gum-bmfont/`:
 - `fire.bmfc` — Georgia 56pt with outline, gradient, shadow (fire effect)
 - `plain.bmfc` — Georgia 56pt plain
-- 15 Gum UI font configs (various fonts, sizes, styles with negative fontSize)
+- Feature configs tracked with `git add -f` (generic or committed-fixture fonts), each exercising one path: SDF/MSDF, `.otf` CFF/CFF2, variable instances, COLR color, LCD, hinting pairs, WOFF2, outlines without smoothing, shadow variants and more
+- Gum UI font configs (various fonts, sizes, styles with negative fontSize) — machine-specific fonts, untracked
 
 ## Requirements
 

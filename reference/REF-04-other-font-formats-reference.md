@@ -18,7 +18,7 @@ A comprehensive reference for font formats beyond TrueType (.ttf), covering form
 10. [Font Format Detection](#10-font-format-detection)
 11. [Format Conversion Considerations](#11-format-conversion-considerations)
 12. [Licensing Considerations](#12-licensing-considerations)
-13. [Format Priority for KernSmith](#13-format-priority-for-KernSmith)
+13. [Format Priority for KernSmith](#13-format-priority-for-kernsmith)
 14. [References](#14-references)
 
 ---

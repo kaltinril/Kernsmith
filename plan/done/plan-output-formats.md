@@ -1,6 +1,6 @@
 # KernSmith -- Output Formats
 
-> Part of the [Master Plan](master-plan.md).
+> Part of the [Master Plan](../master-plan.md).
 > Related: [API Design](plan-api-design.md), [Texture Packing](plan-texture-packing.md)
 
 > Types used in this document: `OutputFormat`, `BmFontResult`, `AtlasPage` are defined in [plan-data-types.md](plan-data-types.md). The model types (`BmFontModel`, `InfoBlock`, `CommonBlock`, `PageEntry`, `CharEntry`, `KerningEntry`) are defined below in this document.
@@ -84,7 +84,7 @@ public class BmFontResult
 }
 ```
 
-> The full `BmFontResult` type definition (including `Model` and `Pages` properties) is in [plan-data-types.md](plan-data-types.md#result-types).
+> The full `BmFontResult` type definition (including `Model` and `Pages` properties) is in [plan-data-types.md](plan-data-types.md#output-layer-types).
 
 > `OutputFormat` enum is defined in [plan-data-types.md](plan-data-types.md). `ToFile(path, OutputFormat.Binary)` selects the formatter for the `.fnt` file. The atlas images are always PNG regardless of output format.
 
@@ -170,7 +170,7 @@ Standard XML with `<?xml version="1.0"?>` declaration, `<font>` root element, sa
 The binary format uses a block-based structure: magic bytes `BMF` + version `3`, then 5 typed blocks.
 
 For the complete byte-level field layouts needed during implementation:
-- **Block 1 (Info) byte offsets and types**: See [REF-05-bmfont-format-reference.md](../reference/REF-05-bmfont-format-reference.md), "Block 1: Info" section
+- **Block 1 (Info) byte offsets and types**: See [REF-05-bmfont-format-reference.md](../../reference/REF-05-bmfont-format-reference.md), "Block 1: Info" section
 - **Block 2 (Common) byte offsets**: See REF-05-bmfont-format-reference.md, "Block 2: Common" section
 - **Block 3 (Pages)**: See REF-05-bmfont-format-reference.md, "Block 3: Pages" section
 - **Block 4 (Chars)**: See REF-05-bmfont-format-reference.md, "Block 4: Characters" section

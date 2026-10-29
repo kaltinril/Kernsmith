@@ -1,6 +1,6 @@
 # KernSmith -- Font Parsing
 
-> Part of the [Master Plan](master-plan.md).
+> Part of the [Master Plan](../master-plan.md).
 > Related: [API Design](plan-api-design.md), [Rasterization](plan-rasterization.md)
 
 ---
@@ -165,7 +165,7 @@ All table parsers are **lazy**: they parse on first access, not at construction 
 
 For byte-level table structures needed during implementation:
 
-- **Table directory / sfnt header**: See [REF-03-ttf-font-reference.md](../reference/REF-03-ttf-font-reference.md), "File Structure" section
+- **Table directory / sfnt header**: See [REF-03-ttf-font-reference.md](../../reference/REF-03-ttf-font-reference.md), "File Structure" section
 - **head table layout**: See REF-03-ttf-font-reference.md, "head — Font Header" section
 - **hhea table layout**: See REF-03-ttf-font-reference.md, "hhea — Horizontal Header" section
 - **hmtx table layout**: See REF-03-ttf-font-reference.md, "hmtx — Horizontal Metrics" section
@@ -175,4 +175,4 @@ For byte-level table structures needed during implementation:
 - **cmap table (format 4, 12)**: See REF-03-ttf-font-reference.md, "cmap — Character to Glyph Mapping" section
 - **kern table layout**: See REF-03-ttf-font-reference.md, "kern — Kerning" section
 - **GPOS table navigation chain**: See REF-03-ttf-font-reference.md, "GPOS — Glyph Positioning" section
-- **FreeTypeSharp API surface**: See [REF-02-freetypesharp-evaluation.md](../reference/REF-02-freetypesharp-evaluation.md)
+- **FreeTypeSharp API surface**: See [REF-02-freetypesharp-evaluation.md](../../reference/REF-02-freetypesharp-evaluation.md)

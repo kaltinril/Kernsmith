@@ -1,6 +1,6 @@
 # Phase 160 — Pure C# Rasterizer: Design Decisions & Open Questions
 
-> **Status**: Active — design record for the Native rasterizer; Phases 161–165 are complete and the remaining work is sequenced in [master-plan.md § Native rasterizer completion](master-plan.md#native-rasterizer-completion)
+> **Status**: Active — design record for the Native rasterizer; the remaining work and open decisions are in [master-plan.md § Native rasterizer completion](master-plan.md#native-rasterizer-completion)
 > **Created**: 2026-04-01
 > **Supersedes**: Phase 34 (Custom Pure C# Rasterizer research)
 > **Related**: Phases 161–180 (implementation phases)
@@ -11,8 +11,8 @@ Resolve all open design decisions and architectural questions before beginning i
 
 ## Implementation Status
 
-- **Phases 161–165 are complete** (`plan/done/`): SFNT/table parsing, `glyf`/`loca`, outline extraction and flattening, the signed-area scanline fill, and full `IRasterizer` integration. TrueType (`glyf`) fonts render end to end.
-- **Phases 166–179** are open; the wave order lives in the master plan. The staged pipeline below exists ([Phase 166 Part 1](done/phase-166-cff-charstring-interpreter.md#part-1--staged-pipeline-refactor-wave-0)); the later phases fill in its stages.
+- **Complete** (`plan/done/`): Phases 161–165 (tables, `glyf`/`loca`, outlines and flattening, the scanline fill, `IRasterizer` integration), 166 (staged pipeline, CFF/CFF2), 167 (synthetic bold/italic), 169–170 (SDF, MSDF), 171 (variations) and 178 (WOFF2).
+- **Open**: 168, 172–177 and 179 — mostly decisions; the master plan lists them. The staged pipeline below exists and every stage is filled in ([Phase 166 Part 1](done/phase-166-cff-charstring-interpreter.md#part-1--staged-pipeline-refactor-wave-0)).
 
 ## Context
 
@@ -61,14 +61,13 @@ Internal interfaces (not public API — users interact via existing `IRasterizer
 
 ## Rasterization Algorithm Decision
 
-**Decision**: Signed-area trapezoid coverage (stb_truetype v2 / font-rs style).
+**Decision**: Exact signed-area coverage accumulation, derived independently (see the `ScanlineRasterizer` class doc comment): each edge adds its signed height to a per-row delta buffer, split between the column it crosses and the next, and one prefix sum per row yields the coverage. Rows are filled in bands with the edges walked in input order — no sorting or active-edge list.
 
 Rationale:
 - Exact pixel coverage without supersampling
-- Single-pass, memory-efficient
-- Battle-tested algorithm (used by stb_truetype, font-rs, ab-glyph)
-- Naturally produces anti-aliased output
-- Well-documented with reference implementations
+- Single-pass, memory-efficient (one pooled band buffer)
+- Non-zero winding falls out of the signed sum
+- Naturally produces anti-aliased output; `None` thresholds it and adds dropout control
 
 Alternative considered: Oversampled scanline fill — simpler but 4-16x slower and higher memory.
 
@@ -88,9 +87,8 @@ Alternative considered: Oversampled scanline fill — simpler but 4-16x slower a
 
 **Decision**: Adaptive De Casteljau subdivision with analytic step count.
 
-- Use Raph Levien's analytic method to estimate subdivision count
-- Fall back to recursive De Casteljau if needed
-- Flatness tolerance: 0.25 pixels (configurable)
+- Recursive De Casteljau subdivision until the control points sit within the flatness tolerance of the chord (`OutlineFlattener`, depth capped at 16)
+- Flatness tolerance: 0.25 pixels (configurable; LCD and stroking flatten finer)
 
 ## Coordinate System Decision
 
@@ -117,7 +115,7 @@ Alternative considered: Oversampled scanline fill — simpler but 4-16x slower a
 - B) Implement auto-hinting (detect stems/blue zones, snap to grid)
 - C) Full TrueType bytecode interpreter (massive effort)
 
-**Recommendation**: A for MVP. B as Phase 174. C is out of scope (estimated 5,000-10,000 lines, 3-6 months).
+**Decision**: A for the MVP, then B: Phase 174's y-only auto-hinter runs for `Light` requests. C is out of scope (estimated 5,000-10,000 lines, 3-6 months).
 
 ### Q3: Should synthetic bold work at outline level or bitmap level?
 
@@ -150,9 +148,8 @@ Alternatives considered:
 **Decision**: Pool internal per-glyph scratch buffers; never pool the output bitmap.
 
 - Critical for WASM (heap never shrinks)
-- Scratch buffers (coverage `area`/`cover`, edge and active-edge arrays, outline command lists, parse temporaries) come from `ArrayPool<T>.Shared` or are reused across glyphs; nothing internal escapes to the caller
-- The output `RasterizedGlyph.BitmapData` is freshly allocated (D11) because the caller owns it for the glyph's lifetime
-- Today only the `area`/`cover` coverage buffers are pooled; pooling the rest is Phase 177 work
+- Scratch buffers (the coverage delta buffer, dropout-control buckets and crossings, simple-`glyf` decode scratch, extractor and flattener temporaries) come from `ArrayPool<T>.Shared` or a per-decoder scratch; nothing internal escapes to the caller
+- A glyph allocates what it keeps — the output `RasterizedGlyph.BitmapData` (freshly allocated, D11, because the caller owns it), its outline commands, the exact edge array the fill takes and small result objects; composite `glyf` glyphs still go through `ParsedGlyph`
 
 ### Q7: Thread safety model?
 
@@ -175,7 +172,7 @@ The signed-area trapezoid method with cumulative sum naturally implements non-ze
 - StbTrueType is already slower than FreeType
 - 3x overhead is acceptable for the first implementation
 - Phase 177 tightens this to 2x for production release
-- Not yet measured: the Phase 164 benchmark was deferred, and Phase 177's Wave 0 harness is what first measures it
+- Met: Phase 177's harness measures Native within 2x of StbTrueType for ASCII at 32px (faster at larger sizes)
 
 ### Q10: What fonts do we test against?
 
@@ -189,17 +186,17 @@ The signed-area trapezoid method with cumulative sum naturally implements non-ze
 | # | Decision | Rationale |
 |---|----------|-----------|
 | D1 | Project: `KernSmith.Rasterizers.Native` | Consistent with existing rasterizer project naming |
-| D2 | Algorithm: Signed-area trapezoid coverage | Exact coverage, battle-tested, efficient |
+| D2 | Algorithm: exact signed-area coverage accumulation, derived independently | Exact coverage, efficient, ours |
 | D3 | Internal representation: Cubic Beziers | Universal format, TrueType elevated trivially |
 | D4 | Coordinate system: Font units until rasterization | Avoid precision loss |
-| D5 | Hinting: Skip for MVP, auto-hint later | Matches stb_truetype, massive effort for full hinting |
+| D5 | Hinting: none for the MVP, then a y-only auto-hinter for `Light` (Phase 174); no bytecode interpreter | Full bytecode hinting is a massive effort |
 | D6 | Synthetic bold: Outline-level normal offset | Higher quality than bitmap dilation |
 | D7 | SDF: Direct distance computation | Best quality, MSDF for sharp corners |
-| D8 | Buffers: internal scratch pooled (`ArrayPool<T>.Shared`) or reused; output bitmap not pooled | WASM compatibility, reduce GC pressure. Only `area`/`cover` are pooled today — Phase 177 pools the rest |
+| D8 | Buffers: internal scratch pooled (`ArrayPool<T>.Shared`) or reused; output bitmap not pooled | WASM compatibility, reduce GC pressure |
 | D9 | Thread safety: Single-threaded per instance | Simple, matches FreeType model |
 | D10 | CFF: Defer to Phase 166 | TTF-only MVP ships faster |
 | D11 | ArrayPool for internal buffers only | Output BitmapData freshly allocated — no IDisposable on RasterizedGlyph |
-| D12 | Edge direction: keep original winding | Signed-area algorithm uses direction for sign; matches stb_truetype/font-rs |
+| D12 | Edge direction: keep original winding | The signed-area fill uses direction for sign |
 | D13 | SDF convention: inside = positive/bright | Matches stb_truetype and common shader expectations (inside > 128) |
 | D14 | Hinting pipeline position: after pixel scaling | Auto-hinting needs pixel grid; runs between scale and rasterize |
 | D15 | Core table parsing in Phase 161 | head, hhea, hmtx, maxp, OS/2, cmap parsed in scaffold phase, not deferred |

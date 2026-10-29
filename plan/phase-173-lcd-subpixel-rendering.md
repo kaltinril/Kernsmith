@@ -21,7 +21,7 @@ LCD subpixel output from the Native rasterizer, and core anti-alias-mode negotia
 - The bitmap widens by the filter's spill: `Measure` and `Render` share one column computation from the outline's tight horizontal extent, so they match exactly and no blank column is added.
 - `Gamma` is not applied to LCD, matching the FreeType backend (it gamma-corrects grayscale coverage only). Native ignores `Gamma` in every mode.
 - With `ColorFont`, a glyph with `COLR` layers renders its color layers and ignores `Lcd` (as the FreeType backend does, byte-identical to the `Grayscale` color result); glyphs without layers still render LCD. Synthetic bold/italic transforms apply before the LCD renderer, and to every color layer.
-- `Light` renders as grayscale coverage; Native does not advertise it, so negotiation degrades it before Native sees it. It becomes real with Phase 174's light hinting.
+- `Light` is advertised and renders as grayscale coverage plus Phase 174's y-only auto-hinting (when `EnableHinting` is on).
 
 ## Remaining
 

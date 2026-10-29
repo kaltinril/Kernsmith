@@ -1,6 +1,6 @@
 # Phase 179 — Native Rasterizer: Validation, Golden Masters & Release
 
-> **Status**: In progress — Wave 3. Robustness, golden masters and the similarity matrix are done; remaining: performance validation (after Phase 177), the release decision (publish Native to NuGet?) and the final docs sweep.
+> **Status**: In progress — Wave 3. Robustness, golden masters and the similarity matrix are done; the cross-cutting docs are current; remaining: performance validation (after Phase 177), a Blazor WASM run, a sample, and the release decision (publish Native to NuGet?).
 > **Created**: 2026-04-01
 > **Depends on**: Phases 166–174, 177 and 178 (175 and 176 only if they are kept)
 
@@ -99,11 +99,12 @@ Known differences behind the low columns:
 ### Unsupported Feature Behavior
 
 Whatever is still unsupported at release must behave deliberately, and the docs must say which cases are silent fallbacks and which throw. Today's behavior, to be re-verified at release:
-- `AntiAliasMode.Light` / `Lcd` → rendered as grayscale with no signal, because core does not negotiate AA modes; Phase 173 adds negotiation so the degradation happens in core and the `.fnt` metadata matches
-- Variable font axes without Phase 171 → ignored by core's capability gate (default instance rendered)
-- `ColorFont` without Phase 172 → **throws** `NotSupportedException` from the rasterizer (no monochrome fallback)
-- `Sdf` without Phase 169 → core throws `NotSupportedException` before rasterizing
-- CFF/OTF without Phase 166 → `RasterizationException` at `LoadFont`
+- An anti-alias mode a backend does not advertise → core renders it as `Grayscale`, silently (Native advertises all four; the warning/strict-mode alternative is open in Phase 173)
+- Bitmap-only color fonts (`CBDT`/`sbix`) → `RasterizationException` at `LoadFont` (Phase 172 decision pending)
+- Outline stroke → core's bitmap `OutlineEffect`, as for every backend (Phase 168 decision pending)
+- System fonts by name → `NotSupportedException` from `LoadSystemFont`
+- MSDF/MTSDF with `ColorFont`, effects, fill color, channel packing/config or variants → core throws `InvalidOperationException`
+- Hinting outside `Light` → unhinted, silently (Phase 174 decision pending)
 - GSUB → no substitution (Phase 175 needs a decision)
 
 ### Performance Validation
@@ -114,11 +115,9 @@ Whatever is still unsupported at release must behave deliberately, and the docs 
 
 ### Documentation
 
-- Update the README backend and platform tables, `COMPARISON.md`, `docs/rasterizers/native.md`, the Native package README, and `reference/REF-12-rasterizer-backends.md`
 - Verify Blazor WASM (the README platform table still shows ⏳ for Native) and record the result
 - Add to `samples/` with usage examples
-- Document known differences vs FreeType (auto-hinting vs bytecode, algorithm differences)
-- Update `plan/done/plan-data-types.md` with new types
+- Keep the backend tables, `docs/rasterizers/native.md`, the Native README and REF-12 current as the open decisions land (the known differences vs FreeType are in the similarity matrix above)
 
 ### Release Preparation
 

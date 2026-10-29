@@ -21,15 +21,20 @@ public enum RasterizerBackend
     /// Native KernSmith rasterizer. Pure C#, cross-platform, no external dependencies.
     /// <para>
     /// <b>Experimental, and not published to NuGet yet.</b> The backend renders TrueType
-    /// (<c>glyf</c>) and CFF/CFF2 (<c>.otf</c>) outlines and is supplied by the <c>KernSmith.Rasterizers.Native</c>
-    /// project, which currently ships only in the KernSmith repository and CLI. Until that
-    /// package is released, <see cref="KernSmith.Rasterizer.RasterizerFactory.Create"/>
-    /// throws for this value in apps built against the NuGet packages.
+    /// (<c>glyf</c>) and CFF/CFF2 (<c>.otf</c>) outlines, variable-font instances, <c>COLR</c>
+    /// version 0 and 1 color glyphs, synthetic bold/italic, SDF and multi-channel MSDF/MTSDF,
+    /// with <see cref="AntiAliasMode.None"/>, <see cref="AntiAliasMode.Grayscale"/>,
+    /// <see cref="AntiAliasMode.Light"/> (its own vertical-only auto-hinting) and
+    /// <see cref="AntiAliasMode.Lcd"/> anti-aliasing. It is supplied by the
+    /// <c>KernSmith.Rasterizers.Native</c> project, which currently ships only in the KernSmith
+    /// repository and CLI. Until that package is released,
+    /// <see cref="KernSmith.Rasterizer.RasterizerFactory.Create"/> throws for this value in apps
+    /// built against the NuGet packages.
     /// </para>
     /// <para>
-    /// Limitations: no hinting, outline stroking or system-font lookup, color fonts from
-    /// <c>COLR</c> version 0 layers only, and no <see cref="AntiAliasMode.Light"/> anti-aliasing
-    /// (it renders as grayscale). Use <see cref="FreeType"/> or <see cref="StbTrueType"/> for those.
+    /// Limitations: no TrueType bytecode hinting (and no hinting outside <c>Light</c>), no
+    /// outline stroking of its own, no system-font lookup, and no bitmap-only color fonts
+    /// (<c>CBDT</c>/<c>sbix</c>). Use <see cref="FreeType"/> for those.
     /// </para>
     /// </summary>
     Native
