@@ -237,13 +237,15 @@ public class LcdRendererTests
     [Fact]
     public void Rasterizer_LightAndGrayscale_StayGrayscaleCoverage()
     {
-        // Native has no light hinting yet (Phase 174), so a direct Light request is the
-        // grayscale coverage render, byte for byte; core negotiation degrades it the same way.
+        // Light is grayscale coverage of the light-hinted outline (Phase 174), never subpixel
+        // output; with hinting off it is the grayscale render, byte for byte.
         using var rasterizer = LoadedRoboto();
         foreach (char character in GlyphSample)
         {
-            var light = rasterizer.RasterizeGlyph(character, new RasterOptions { Size = 20, AntiAlias = AntiAliasMode.Light })!;
+            var hinted = rasterizer.RasterizeGlyph(character, new RasterOptions { Size = 20, AntiAlias = AntiAliasMode.Light })!;
+            var light = rasterizer.RasterizeGlyph(character, new RasterOptions { Size = 20, AntiAlias = AntiAliasMode.Light, EnableHinting = false })!;
             var gray = rasterizer.RasterizeGlyph(character, new RasterOptions { Size = 20, AntiAlias = AntiAliasMode.Grayscale })!;
+            hinted.Format.ShouldBe(PixelFormat.Grayscale8);
             light.Format.ShouldBe(PixelFormat.Grayscale8);
             light.BitmapData.ShouldBe(gray.BitmapData);
             light.Metrics.ShouldBe(gray.Metrics);

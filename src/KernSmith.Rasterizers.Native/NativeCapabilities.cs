@@ -32,9 +32,9 @@ internal sealed class NativeCapabilities : IRasterizerCapabilities
     public bool HandlesOwnSizing => false;
 
     /// <summary>
-    /// <see cref="AntiAliasMode.Light"/> is left out until Phase 174 adds light hinting, so core
-    /// negotiation degrades it to <see cref="AntiAliasMode.Grayscale"/>.
+    /// <see cref="AntiAliasMode.Light"/> is grayscale with Native's light (vertical-only)
+    /// auto-hinting when <see cref="RasterOptions.EnableHinting"/> is on (Phase 174).
     /// </summary>
     public IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; } =
-        [AntiAliasMode.None, AntiAliasMode.Grayscale, AntiAliasMode.Lcd];
+        [AntiAliasMode.None, AntiAliasMode.Grayscale, AntiAliasMode.Light, AntiAliasMode.Lcd];
 }

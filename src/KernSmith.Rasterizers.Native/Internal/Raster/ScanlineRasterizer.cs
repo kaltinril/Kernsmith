@@ -26,8 +26,9 @@ internal static class ScanlineRasterizer
     /// <param name="originX">Pixel-space X that maps to bitmap column 0.</param>
     /// <param name="originY">Pixel-space Y that maps to bitmap row 0.</param>
     /// <param name="antiAlias">
-    /// <see cref="AntiAliasMode.None"/> thresholds coverage at 128; every other mode writes the
-    /// grayscale coverage through unchanged.
+    /// <see cref="AntiAliasMode.None"/> thresholds coverage at 128, then restores dropped-out
+    /// thin strokes (<see cref="DropoutControl"/>); every other mode writes the grayscale
+    /// coverage through unchanged.
     /// </param>
     /// <param name="bearingX">Carried through to <see cref="RasterResult.BearingX"/>.</param>
     /// <param name="bearingY">Carried through to <see cref="RasterResult.BearingY"/>.</param>
@@ -55,7 +56,11 @@ internal static class ScanlineRasterizer
 
         var prepared = Prepare(edges, originX, originY, height, out int count);
         if (count > 0)
+        {
             Fill(bitmap, prepared, count, width, height, antiAlias);
+            if (antiAlias == AntiAliasMode.None)
+                DropoutControl.Apply(bitmap, edges, width, height, originX, originY);
+        }
 
         return new RasterResult(bitmap, width, height, bearingX, bearingY);
     }

@@ -300,13 +300,14 @@ internal sealed class PaintGraphRenderer
             return surface;
         }
 
-        /// <summary>Anti-aliased coverage of an outline over the canvas; null when it covers nothing.</summary>
+        /// <summary>Coverage of an outline over the canvas (thresholded, with dropout control, under
+        /// <see cref="AntiAliasMode.None"/>); null when it covers nothing.</summary>
         private byte[]? Coverage(GlyphOutline outline, OutlineTransform toPixels)
         {
             if (outline.IsEmpty)
                 return null;
 
-            var edges = OutlineFlattener.Flatten(outline, toPixels);
+            var edges = OutlineFlattener.Flatten(outline, toPixels, includeHorizontal: _options.AntiAlias == AntiAliasMode.None);
             var coverage = ScanlineRasterizer.Rasterize(edges, _box.Width, _box.Height, _box.MinX, _box.MinY, _options.AntiAlias).Bitmap;
             return Array.Exists(coverage, c => c != 0) ? coverage : null;
         }

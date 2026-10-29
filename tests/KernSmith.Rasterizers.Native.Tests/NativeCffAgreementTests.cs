@@ -104,12 +104,12 @@ public class NativeCffAgreementTests
     [InlineData("code", 64f)]
     public void MonochromeBitmaps_TrackFreeType(string font, float size)
     {
-        // Mean only, no per-glyph floor: FreeType's monochrome rasterizer samples pixel centres
-        // with dropout control, Native thresholds coverage at 50%, so individual edge pixels flip
-        // between them for any outline format (Roboto's worst glyph scores ~0.72 the same way).
-        // Source Code at 16px is left out: its variable default instance is ExtraLight, and its
-        // half-pixel hairlines fall under Native's threshold where FreeType's dropout control
-        // keeps them — a Native monochrome limitation, not a CFF one (grayscale agrees).
+        // Mean only, no per-glyph floor: FreeType's monochrome rasterizer samples pixel centres,
+        // Native thresholds coverage at 50%, so individual edge pixels flip between them for any
+        // outline format (Roboto's worst glyph scores ~0.72 the same way). Source Code at 16px is
+        // left out: its variable default instance is ExtraLight, whose half-pixel hairlines both
+        // keep through dropout control (NativeHintingInterplayTests), but often in neighbouring
+        // pixel columns or rows, and SSIM on one-pixel strokes scores such a shift as a mismatch.
         using IRasterizer freeType = new FreeTypeRasterizer();
         AssertBitmapsAgree(freeType, Font(font), AntiAliasMode.None, size, "FreeType", floor: 0, meanFloor: 0.90);
     }
@@ -123,11 +123,12 @@ public class NativeCffAgreementTests
     [InlineData(AntiAliasMode.None, 64f)]
     public void Bitmaps_MatchStbTrueType(AntiAliasMode mode, float size)
     {
-        // stb_truetype reads CFF (not CFF2) and, like Native, thresholds for monochrome, so both
-        // modes are held to a per-glyph floor.
+        // stb_truetype reads CFF (not CFF2). Its monochrome is a plain threshold with no dropout
+        // control, so where a thin serif or stroke falls under it Native (like FreeType) keeps
+        // pixels stb drops ('b', 'k', '9', '$' at 16px): monochrome is held to the mean only.
         using IRasterizer stb = new StbTrueTypeRasterizer();
         AssertBitmapsAgree(stb, TestFonts.SourceSerifOtfBytes(), mode, size, "stb_truetype",
-            floor: mode == AntiAliasMode.None ? 0.80 : 0.90, meanFloor: 0.98);
+            floor: mode == AntiAliasMode.None ? 0 : 0.90, meanFloor: mode == AntiAliasMode.None ? 0.90 : 0.98);
     }
 
     [Fact]
