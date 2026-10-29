@@ -26,7 +26,7 @@ For per-OS status (Windows, Linux, macOS, Android, iOS, Mac Catalyst, Blazor WAS
 | System font loading | No | Yes | Yes | No | No |
 | BMFont.exe parity | No | Yes | No | No | No |
 | ClearType-hinted grayscale | No | No | Yes | No | No |
-| Synthetic bold/italic | Yes | Yes | Yes | Yes | No |
+| Synthetic bold/italic | Yes | Yes | Yes | Yes | Yes |
 | Anti-aliasing modes | Grayscale, Light, LCD, None | Grayscale, None | Grayscale, None | Grayscale, None | Grayscale, None |
 | Font formats | TTF, OTF, WOFF, WOFF2 | TTF, OTF, WOFF, WOFF2 | TTF, OTF, WOFF, WOFF2 | TTF, WOFF, WOFF2 (TrueType outlines only) | TTF, WOFF, WOFF2 (TrueType outlines only) |
 | Native dependencies | Yes | Yes | Yes | None | None |
@@ -90,7 +90,7 @@ Use this decision tree to pick the right backend:
 4. **Need SDF (Signed Distance Field) output?** Use [FreeType](freetype.md) or [StbTrueType](stbtruetype.md) -- they are the only backends with SDF rendering.
 5. **Need cross-platform SDF without native binaries?** Use [StbTrueType](stbtruetype.md) -- it supports SDF and runs fully managed.
 6. **Need WASM/Blazor or NativeAOT without native binaries?** Use [StbTrueType](stbtruetype.md) -- it is the only published fully managed backend with zero native dependencies. See the [Blazor WASM sample](https://github.com/kaltinril/Kernsmith/tree/main/samples/KernSmith.Samples.BlazorWasm) for a working example. Enable AOT compilation for production performance.
-7. **Want zero third-party code, and building from source?** Try [Native](native.md) -- KernSmith's own rasterizer. It handles plain TrueType text with no external dependencies at all, but it is experimental: TrueType outlines only (no CFF/OTF), and no hinting, SDF, stroke, or synthetic bold/italic.
+7. **Want zero third-party code, and building from source?** Try [Native](native.md) -- KernSmith's own rasterizer. It handles plain TrueType text with no external dependencies at all, but it is experimental: TrueType outlines only (no CFF/OTF), and no hinting, SDF or stroke.
 8. **Not sure?** Start with FreeType. It covers the majority of use cases.
 
 ## Selecting a Backend in Code

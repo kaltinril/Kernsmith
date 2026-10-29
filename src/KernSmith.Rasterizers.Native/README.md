@@ -24,12 +24,14 @@ decompresses them before the backend sees the bytes.
 TrueType variable fonts (Phase 171) render at the requested instance:
 `fvar`/`avar` normalization, `gvar` outline deltas (composites included), `HVAR` advances
 (phantom points when a font has no `HVAR`) and `MVAR` line metrics.
+Synthetic bold and italic (Phase 167) are outline transforms that match the FreeType backend's:
+its embolden strength (`max(0.5px, ppem/24)`, advance grown to match) and its 12° slant. They
+apply to variable instances and to every `COLR` layer as well.
 
 Not yet supported — each raises a clear error or is ignored, as noted:
 
 - **CFF/OTF (PostScript) outlines** — rejected at `LoadFont` with a `RasterizationException` (Phase 166)
 - **Hinting** — none, so small sizes are softer than FreeType or GDI output
-- **Synthetic bold/italic** (Phase 167) — `Bold`/`Italic` are ignored
 - **Outline stroking** (Phase 168) — the backend has none of its own; KernSmith core still draws outlines as a bitmap effect
 - **SDF** (Phase 169) — rejected with `NotSupportedException`
 - **CFF2 variable fonts** (Phase 171 Wave 2) — rejected with the rest of CFF; `avar` version 2
@@ -75,7 +77,7 @@ disagree. Everything is internal; add a feature to its stage rather than to `Nat
 | # | Stage | Code | Add a feature by |
 |---|-------|------|------------------|
 | 1 | Decode → `DecodedGlyph` (cubic outline, advance, optional declared bbox; font units) | `Internal/Outlines/IOutlineDecoder.cs`, `TrueTypeOutlineDecoder.cs`; variations in `Internal/Variations/` | implementing `IOutlineDecoder` and returning it from `OutlineDecoders.ForFace` — CFF (166). Variation deltas live inside the decoder: `TrueTypeOutlineDecoder` reads the face's `FontVariations` (set by `SetVariationAxes`); a CFF2 decoder would read the same coordinates. |
-| 2 | Transforms, in order, in font units | `Internal/Pipeline/IGlyphTransform.cs`, `GlyphTransforms.cs` | implementing `IGlyphTransform` and adding it in `GlyphTransforms.For` — bold/italic (167), stroke/small caps/condensed (168). Build results with `WithOutline` / `WithAdvanceWidth`. |
+| 2 | Transforms, in order, in font units | `Internal/Pipeline/IGlyphTransform.cs`, `GlyphTransforms.cs` | implementing `IGlyphTransform` and adding it in `GlyphTransforms.For` — `BoldTransform` then `ItalicTransform` today (167). `WidthScaleTransform`, `SmallCapsTransform` (before bold) and `StrokeTransform` (last, as a separate layer) exist but are not registered until core options reach them (168). Build results with `WithOutline` / `WithAdvanceWidth`. |
 | 3 | Bounds → pixel grid | `Internal/Raster/GlyphBox.cs`, `Internal/Outlines/OutlineBounds.cs` | nothing: a replaced outline loses its declared bbox and is measured from its tight bounds. |
 | 4 | Scale, then pixel-space hint hook | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs` | filling in `GlyphHinter.Apply` — auto-hinting (174). |
 | 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs`, `ColorLayerRenderer.cs` | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` — SDF (169/170), LCD (173). Color layers (172) wrap that renderer in `GlyphRenderers.SelectForFace` and prepare each layer glyph through stages 1–4. `Measure` must match what `Render` produces. |

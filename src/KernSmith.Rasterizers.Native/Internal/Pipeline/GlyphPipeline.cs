@@ -25,6 +25,9 @@ internal sealed class GlyphPipeline
         _unitsPerEm = unitsPerEm;
     }
 
+    /// <summary>The face's <c>head.unitsPerEm</c>, for building <see cref="GlyphTransforms.For"/>.</summary>
+    public int UnitsPerEm => _unitsPerEm;
+
     /// <summary>
     /// Pixels per font unit. <see cref="IRasterizerCapabilities.HandlesOwnSizing"/> is false,
     /// so <see cref="RasterOptions.Size"/> is already the em size the pipeline wants; only the

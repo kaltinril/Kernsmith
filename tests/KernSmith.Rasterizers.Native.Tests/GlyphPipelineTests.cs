@@ -59,10 +59,12 @@ public class GlyphPipelineTests
     // ---- Transform list --------------------------------------------------------------------
 
     [Fact]
-    public void DefaultTransformList_IsEmpty()
+    public void DefaultTransformList_IsEmpty_WhenNoStyleIsRequested()
     {
-        GlyphTransforms.For(Size32).ShouldBeEmpty();
-        GlyphTransforms.For(new RasterOptions { Size = 32, Bold = true, Italic = true }).ShouldBeEmpty();
+        // Default options must keep the untransformed path, which keeps the glyf header bbox
+        // (NativeOutputCharacterizationTests pins its output).
+        GlyphTransforms.For(Size32, 2048).ShouldBeEmpty();
+        GlyphTransforms.For(new RasterOptions { Size = 32, Bold = true, Italic = true }, 2048).ShouldNotBeEmpty();
     }
 
     [Fact]

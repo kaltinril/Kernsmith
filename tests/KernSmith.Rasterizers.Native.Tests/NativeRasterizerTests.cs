@@ -13,7 +13,7 @@ public class NativeRasterizerTests
     }
 
     [Fact]
-    public void Capabilities_AreMinimal()
+    public void Capabilities_ReportWhatNativeImplements()
     {
         using var rasterizer = new NativeRasterizer();
         var caps = rasterizer.Capabilities;
@@ -22,8 +22,8 @@ public class NativeRasterizerTests
         caps.SupportsVariableFonts.ShouldBeTrue();
         caps.SupportsSdf.ShouldBeFalse();
         caps.SupportsOutlineStroke.ShouldBeFalse();
-        caps.SupportsSyntheticBold.ShouldBeFalse();
-        caps.SupportsSyntheticItalic.ShouldBeFalse();
+        caps.SupportsSyntheticBold.ShouldBeTrue();
+        caps.SupportsSyntheticItalic.ShouldBeTrue();
         caps.SupportsSystemFonts.ShouldBeFalse();
         caps.HandlesOwnSizing.ShouldBeFalse();
         caps.SupportedAntiAliasModes.ShouldBe([AntiAliasMode.None, AntiAliasMode.Grayscale]);

@@ -25,12 +25,13 @@ namespace KernSmith.Rasterizers.Native;
 /// including <c>COLR</c> version 1 paint graphs — render as plain coverage. Bitmap-only color
 /// fonts (<c>CBDT</c>/<c>sbix</c>, no outlines) are rejected at load time.
 ///
-/// Synthetic bold/italic (Phase 167), outline stroking (Phase 168) and SDF (Phase 169) are not
-/// implemented; the corresponding
-/// <see cref="IRasterizerCapabilities"/> flags are false. <see cref="RasterOptions.Bold"/>
-/// and <see cref="RasterOptions.Italic"/> are ignored rather than rejected, so a font
-/// configuration that works on other backends still generates here — just without the styling.
-/// <see cref="RasterOptions.SuperSample"/> is likewise ignored: with
+/// <see cref="RasterOptions.Bold"/> and <see cref="RasterOptions.Italic"/> are applied as
+/// font-unit outline transforms matching the FreeType backend's synthetic styles (Phase 167):
+/// FreeType's embolden strength, <c>max(0.5px, ppem/24)</c>, with the advance grown to match,
+/// then a 12° shear — to every color layer as well as plain outlines. Outline stroking
+/// (Phase 168) and SDF (Phase 169) are not implemented; their
+/// <see cref="IRasterizerCapabilities"/> flags are false. <see cref="RasterOptions.SuperSample"/>
+/// is likewise ignored: with
 /// <see cref="IRasterizerCapabilities.HandlesOwnSizing"/> false the pipeline already renders
 /// at the supersampled size and box-filters the result back down, exactly as it does for the
 /// FreeType backend.
@@ -283,7 +284,7 @@ public sealed class NativeRasterizer : IRasterizer
     {
         try
         {
-            return _pipeline!.Prepare(glyphIndex, options, GlyphTransforms.For(options));
+            return _pipeline!.Prepare(glyphIndex, options, GlyphTransforms.For(options, _face!.Head.UnitsPerEm));
         }
         catch (FontFormatException ex)
         {

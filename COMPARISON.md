@@ -227,11 +227,11 @@ Native's platform rows follow from it being pure managed code with no native dep
 | **Anti-aliasing** | Grayscale, Light, LCD, None | Grayscale, None | None, Grayscale | Grayscale, None | Grayscale, None |
 | **SDF Rendering** | ✅ | ❌ | ❌ | ✅ | ❌ |
 | **Hinting** | ✅ | ✅ | ✅ | ❌ | ❌ |
-| **Synthetic Bold** | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **Synthetic Italic** | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Synthetic Bold** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Synthetic Italic** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Outline Stroke** | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **Super Sampling** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Color Fonts (COLR/CPAL)** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Color Fonts (COLR/CPAL)** | ✅ | ❌ | ❌ | ❌ | ✅ (COLR v0) |
 | **Variable Fonts** | ✅ | ❌ | ❌ | ❌ | ✅ (TrueType) |
 | **System Font Loading** | ❌ | ✅ | ✅ | ❌ | ❌ |
 | **BMFont.exe Parity** | ❌ | ✅ | ❌ | ❌ | ❌ |
@@ -244,7 +244,7 @@ WOFF and WOFF2 are decompressed by KernSmith core before rasterization (WOFF2 wi
 - **GDI** -- Pixel-perfect BMFont.exe compatibility on Windows. Use for validating against BMFont reference output.
 - **DirectWrite** -- Windows system-font loading with ClearType-hinted grayscale rendering. High-quality Windows text output. (For color fonts or variable fonts, use FreeType.)
 - **StbTrueType** -- Blazor WASM, NativeAOT, consoles, Mac Catalyst, iOS, or anywhere native libraries are unavailable. Pure C#, zero dependencies.
-- **Native** -- Experimental. Plain TrueType text with no third-party code at all, when you are building from source and can live without hinting, SDF, stroke, or synthetic styles. Not published to NuGet; use StbTrueType for shipping managed-only builds.
+- **Native** -- Experimental. Plain TrueType text with no third-party code at all, when you are building from source and can live without hinting, SDF or stroke. Not published to NuGet; use StbTrueType for shipping managed-only builds.
 
 ## Tool Descriptions
 

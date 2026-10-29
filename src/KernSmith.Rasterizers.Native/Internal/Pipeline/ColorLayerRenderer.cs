@@ -87,7 +87,8 @@ internal sealed class ColorLayerRenderer : IGlyphRenderer
         var colorLayers = new List<ColorLayer>();
         _colorGlyphs.GetLayers(glyphIndex, colorLayers);
 
-        var transforms = GlyphTransforms.For(options);
+        // The same synthetic styles as a plain glyph, applied to every layer before compositing.
+        var transforms = GlyphTransforms.For(options, _pipeline.UnitsPerEm);
         var layers = new List<(PreparedGlyph, PaletteColor)>(colorLayers.Count);
         int left = int.MaxValue, top = int.MaxValue, right = int.MinValue, bottom = int.MinValue;
 
