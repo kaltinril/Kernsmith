@@ -40,7 +40,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 | `SuperSampleLevel` | `int` | `1` | `1`-`4`; renders at Nx and downscales. Cannot combine with `Sdf`. Skipped for `Lcd` output on a backend that renders LCD (it renders at the final size). |
 | `Sdf` | `bool` | `false` | Generate a single-channel signed distance field font. Same as `SdfMode = SdfMode.Sdf`; `SdfMode` wins when set. |
 | `SdfMode` | `SdfMode` | `None` | Distance field to generate: `None` (use `Sdf`), `Sdf`, `Msdf` (multi-channel: RGB distances, median = glyph, sharp corners; alpha 255) or `Mtsdf` (MSDF plus the single-channel distance in alpha). `Msdf`/`Mtsdf` produce RGBA atlases, need a backend with `SupportsMsdf` (Native, experimental), and cannot be combined with effects, a fill color, channel packing, a custom channel layout, atlas variants or `ColorFont`. `EffectiveSdfMode` reports the resolved mode. |
-| `SdfSpread` | `float` | `8f` | SDF spread (distance range) in pixels. Wired to the FreeType SDF renderer; applies to every distance-field mode. |
+| `SdfSpread` | `float` | `8f` | SDF spread (distance range) in pixels. Used by the FreeType, StbTrueType and Native backends; applies to every distance-field mode. |
 | `SdfScale` | `int` | `1` | SDF supersampling scale factor. Higher values render the distance field at a larger size for finer precision. Applies to every distance-field mode. |
 | `Gamma` | `float` | `1.8f` | Gamma correction applied to FreeType grayscale coverage. `1.8` is the no-op baseline; `>1.8` darkens, `<1.8` lightens. Not applied to MONO/color/SDF output. |
 
