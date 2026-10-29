@@ -45,7 +45,7 @@ var options = new FontGeneratorOptions
 - Super sampling
 - Fractional font sizes (e.g. `Size = 32.5f`) honored natively
 
-FreeType is the only backend that implements COLR/CPAL color glyphs and fvar variable font axes.
+FreeType is the only published backend that implements COLR/CPAL color glyphs and fvar variable font axes (the experimental [Native](native.md) backend renders `COLR` version 0 color glyphs and TrueType variable fonts).
 
 ## Limitations
 

@@ -101,11 +101,33 @@ metadata / license file.
 - **Copyright (verbatim):**
   `Copyright 2016 The Dancing Script Project Authors (https://github.com/googlefonts/DancingScript), with Reserved Font Name 'Dancing Script'.`
 
+### Color/BungeeColor-Regular.ttf
+
+- **Path:** `tests/KernSmith.Tests/Fixtures/Color/BungeeColor-Regular.ttf` (license text: `Color/BungeeColor-OFL.txt`)
+- **Family:** Bungee Color (`COLR` version 0 + `CPAL` color font)
+- **Foundry / Source:** David Jonathan Ross, via Google Fonts (`ofl/bungeecolor`)
+- **License (SPDX):** `OFL-1.1` (SIL Open Font License, Version 1.1)
+- **Project / Source URL:** https://github.com/djrrb/Bungee
+- **Copyright (verbatim):** `Copyright 2008 The Bungee Project Authors (david@djr.com)`
+
+### Color/ReemKufiInk-Regular.ttf
+
+- **Path:** `tests/KernSmith.Tests/Fixtures/Color/ReemKufiInk-Regular.ttf` (license text: `Color/ReemKufiInk-OFL.txt`)
+- **Family:** Reem Kufi Ink (`COLR` version 1 color font)
+- **Foundry / Source:** Khaled Hosny, Santiago Orozco, via Google Fonts (`ofl/reemkufiink`)
+- **License (SPDX):** `OFL-1.1` (SIL Open Font License, Version 1.1)
+- **Project / Source URL:** https://github.com/aliftype/reem-kufi
+- **Copyright (verbatim):**
+  `Copyright 2015-2022 The Reem Kufi Project Authors (https://github.com/aliftype/reem-kufi), with Reserved Font Name "Josefin Sans".`
+
+> The color fixtures live in the `Color/` subfolder on purpose: `ColorFontTests` uses the
+> first color font found directly in `Fixtures/` and its tests expect Noto Color Emoji.
+
 ---
 
 ## SIL Open Font License 1.1 — reservation note
 
-The OFL-1.1 fonts above carry **Reserved Font Names** (e.g. *"Dancing Script"*). Per
+The OFL-1.1 fonts above carry **Reserved Font Names** (e.g. *"Dancing Script"*, *"Josefin Sans"*). Per
 the OFL, a derivative or modified version of an OFL font **must not** use any
 Reserved Font Name of the original. The font files in this repository are used
 **unmodified**, for testing only, and are not redistributed under a different name — except the
