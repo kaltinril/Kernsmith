@@ -19,7 +19,7 @@ The rules below stay in this file **because they must fire before anyone thinks 
 
 ## Project Purpose
 
-Cross-platform .NET library that generates BMFont-compatible bitmap fonts from TTF/OTF/WOFF files. Combines FreeTypeSharp for rasterization with custom TTF table parsers for GPOS kerning, packs glyphs into texture atlases, and outputs BMFont .fnt + .png/.tga/.dds pairs. Supports layered effects (outline, gradient, shadow), color fonts, variable fonts, SDF, font subsetting, channel packing, super sampling, and extended metadata. In-memory by default.
+Cross-platform .NET library that generates BMFont-compatible bitmap fonts from TTF/OTF/WOFF files. Rasterization is pluggable (FreeType, StbTrueType, GDI, DirectWrite, and the experimental pure-C# Native backend); custom TTF table parsers handle GPOS kerning; packs glyphs into texture atlases, and outputs BMFont .fnt + .png/.tga/.dds pairs. Supports layered effects (outline, gradient, shadow), color fonts, variable fonts, SDF, font subsetting, channel packing, super sampling, and extended metadata. In-memory by default.
 
 ## Project Organization
 
@@ -53,7 +53,7 @@ The red→green cycle is mandatory, not ceremonial:
 2. **Green** — make the minimal change to pass, then re-run the same test.
 3. **Refactor** — clean up with the test as a safety net.
 
-**For bug fixes specifically:** the regression test must reproduce the actual bug. If you wrote the fix before the test, you MUST still prove the test catches the bug — stash/revert the fix (`git stash push -- <file>`), run the test, confirm it goes red, then restore the fix and confirm green. Do not claim a fix is verified until you have observed that red→green transition. Picking repro parameters that don't actually trigger the bug produces a false-positive test that guards nothing.
+**For bug fixes specifically:** the regression test must reproduce the actual bug. If you wrote the fix before the test, you MUST still prove the test catches the bug — revert the fix with a patch (`git diff -- <file> > fix.patch`, `git checkout HEAD -- <file>`), run the test, confirm it goes red, then `git apply fix.patch` and confirm green. **Never use `git stash` for this** — the stash stack is shared by every git worktree, so parallel agents pop each other's stashes. Do not claim a fix is verified until you have observed that red→green transition. Picking repro parameters that don't actually trigger the bug produces a false-positive test that guards nothing.
 
 ## Regression & Output Comparison (IMPORTANT)
 
@@ -67,8 +67,10 @@ python tests/bmfont-compare/regression_check.py
 ```
 
 - It runs **`GenerateAll`** across every backend (FreeType, GDI, DirectWrite, StbTrueType, Native, + BMFont64.exe if present) over the `.bmfc` configs in `tests/bmfont-compare/gum-bmfont/`, then runs **`diff_comparisons.py`**.
-- Outputs land in `tests/bmfont-compare/output/`: the `comparison*.png` side-by-side images, the per-font `comparison-*.png`, and the **`diff_comparison*.png`** magenta-highlighted pixel diffs (bright magenta = differing pixels). FNT metadata is diffed line-by-line (skipping the version line).
+- Outputs land in `tests/bmfont-compare/output/`: the `comparison*.png` side-by-side images, the per-font `comparison-*.png`, and the **`diff_comparison*.png`** magenta-highlighted pixel diffs (bright magenta = differing pixels). FNT metadata is diffed line-by-line; on the `kernsmith` extended-metadata line only the `version=`/`commit=` tokens are ignored, so metadata such as `sdfSpread` is compared.
 - Exit codes: `0` = identical, `1` = differences found, `2` = error. Use `--tolerance 1` for GDI/DirectWrite antialiasing jitter; `--skip-generate` to re-diff existing baselines.
+- A config that exists only on the branch is reported `NEW (no baseline)` and one only on the base `REMOVED` — neither fails the run, so check NEW configs' output by eye. A (config, backend) pair that produced output on the base but fails on the branch is a regression (exit 1); a pair failing on both sides is tolerated.
+- The script stashes a dirty tree, so **commit first**. In a git worktree pass `--base <commit SHA>` — a branch checked out in another worktree can't be checked out again. Harness self-tests: `python -m unittest discover -s tests/bmfont-compare -p "test_*.py"`.
 - **Requirements**: Windows (GDI/DirectWrite are Windows-only), .NET 10, Python 3 + Pillow (`pip install Pillow`). BMFont64.exe optional (`c:\tools\bmfont64.exe` or PATH).
 - **Shared `.bmfc` configs need `git add -f`** — the folder is gitignored, so a plain `git add` drops them silently. Use a font available everywhere (Georgia, Arial), never a machine-specific Gum font.
 - See `tests/bmfont-compare/README.md` for the per-tool breakdown.
