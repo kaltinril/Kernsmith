@@ -151,7 +151,9 @@ Invariants:
   the `glyf` xMin. The declared header box is moved with it. A `USE_MY_METRICS` composite takes
   the component's advance too (with the component's `HVAR` or phantom-point delta at an instance).
 - Untransformed TrueType glyphs size from the `glyf` header bbox, falling back to the control
-  hull when it scales to nothing. A glyph whose outline a variation moved drops the header box
+  hull when it scales to nothing. A stale header — one that misses a stored point by more than a
+  unit and the drawn outline too — is replaced by the points' control box (FreeType's box), so a
+  damaged header can neither clip nor shift the ink; correct headers are used unchanged. A glyph whose outline a variation moved drops the header box
   and is measured tightly. `NativeOutputCharacterizationTests` pins the resulting bytes;
   a deliberate pixel change updates its hashes.
 - `AntiAliasMode.None` output is cropped to its ink after rendering (`ScanlineRasterizer.RasterizeMono`;
@@ -162,7 +164,8 @@ Invariants:
 - The default instance (no axes, or every axis at its default) takes the exact static decode
   path, so non-variable output cannot drift.
 - Metrics shortcut: `GetGlyphMetrics` skips decoding an untransformed, unhinted, default-instance
-  simple `glyf` glyph and measures its header box (`IOutlineDecoder.TryDecodeBounds` →
+  simple `glyf` glyph and measures its header box once its stored coordinates (read, not
+  decoded into an outline) show the header holds them (`IOutlineDecoder.TryDecodeBounds` →
   `GlyphPipeline.TryPrepareBox`, which applies the same `GlyphLimits`), but only for a renderer
   implementing `IBoxMeasuringRenderer` whose `MeasuresFromBox` is true for the request (coverage
   except `None`, SDF, MSDF). A mode whose extent reads the outline or pixels must answer false.

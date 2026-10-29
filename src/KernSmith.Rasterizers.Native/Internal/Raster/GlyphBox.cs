@@ -26,8 +26,9 @@ internal readonly record struct GlyphBox(int MinX, int MinY, int Width, int Heig
     /// </summary>
     /// <param name="outline">The outline to bound, in font units.</param>
     /// <param name="declaredBounds">
-    /// The font's own box for this exact outline (the <c>glyf</c> header), or null when the
-    /// source has none (CFF) or a transform has replaced the outline.
+    /// The font's own box for this exact outline (the <c>glyf</c> header, or the points' control
+    /// box where that header is stale), or null when the source has none (CFF) or a transform
+    /// has replaced the outline.
     /// </param>
     /// <param name="scale">Pixels per font unit.</param>
     /// <remarks>
@@ -37,9 +38,10 @@ internal readonly record struct GlyphBox(int MinX, int MinY, int Width, int Heig
     ///
     /// A declared box is used as given. The OpenType spec defines the <c>glyf</c> header box as
     /// the tight bounds of the outline, and it is the box stb_truetype derives its bitmaps from.
-    /// INVARIANT: untransformed TrueType glyphs keep taking their grid from the header box, and a
-    /// header box that scales to an empty grid (a zeroed composite header, say) keeps falling
-    /// back to the outline's control hull — not its tight bounds. Native's characterized pixel
+    /// INVARIANT: untransformed TrueType glyphs keep taking their grid from the declared box —
+    /// the header box whenever it holds the outline (the decoder substitutes the control box
+    /// only for a stale header) — and a declared box that scales to an empty grid keeps falling
+    /// back to the outline's control hull, not its tight bounds. Native's characterized pixel
     /// output depends on both; changing either changes bitmaps for existing fonts.
     /// </remarks>
     public static GlyphBox Compute(GlyphOutline outline, OutlineBounds? declaredBounds, float scale)
