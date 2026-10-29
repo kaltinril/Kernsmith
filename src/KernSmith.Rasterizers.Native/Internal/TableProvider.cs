@@ -7,9 +7,8 @@ namespace KernSmith.Rasterizers.Native.Internal;
 /// <remarks>
 /// Supports TrueType (<c>0x00010000</c>), the legacy Apple <c>true</c> tag, and
 /// CFF-flavoured OpenType (<c>OTTO</c>). For TrueType Collections (<c>ttcf</c>) the
-/// requested face's offset table is resolved first. CFF outline parsing itself is
-/// deferred to a later phase; this provider only validates that the required tables
-/// are present.
+/// requested face's offset table is resolved first. This provider only locates tables;
+/// CFF outlines are parsed by <c>CffOutlineDecoder</c>.
 /// </remarks>
 internal sealed class TableProvider
 {

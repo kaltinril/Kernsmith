@@ -14,9 +14,10 @@ namespace KernSmith.Rasterizers.Native;
 /// dependencies. Cross-platform and WASM/AOT-friendly.
 /// </summary>
 /// <remarks>
-/// Renders TrueType (<c>glyf</c>) outlines only: the font is parsed in-house, outlines are
-/// flattened to line segments and filled with a signed-area scanline rasterizer. CFF/OTF
-/// (PostScript) outlines are rejected at load time until Phase 166 adds a CFF interpreter.
+/// Renders TrueType (<c>glyf</c>) and PostScript (<c>CFF </c>/<c>CFF2</c>, typically
+/// <c>.otf</c>) outlines: the font is parsed in-house, outlines are flattened to line segments
+/// and filled with a signed-area scanline rasterizer. A CFF2 variable font renders its default
+/// instance.
 ///
 /// TrueType variable fonts (Phase 171) render at the instance <see cref="SetVariationAxes"/>
 /// selects: <c>gvar</c> outlines, <c>HVAR</c> (or phantom-point) advances and <c>MVAR</c> font
@@ -60,9 +61,8 @@ public sealed class NativeRasterizer : IRasterizer
     public IRasterizerCapabilities Capabilities => CapabilitiesInstance;
 
     /// <inheritdoc />
-    /// <exception cref="RasterizationException">
-    /// If the font uses CFF (PostScript) outlines, or has only bitmap color glyphs.
-    /// </exception>
+    /// <exception cref="FontFormatException">If the font, or its outline table, is malformed.</exception>
+    /// <exception cref="RasterizationException">If the font has only bitmap color glyphs.</exception>
     public void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -71,15 +71,8 @@ public sealed class NativeRasterizer : IRasterizer
             throw new InvalidOperationException("Font already loaded. Create a new NativeRasterizer instance.");
 
         var face = NativeFontFace.Load(fontData, faceIndex);
-
-        // Fail here rather than on the first glyph: a CFF face parses fine and would otherwise
-        // render an entire atlas of nothing before anyone noticed.
         var variations = FontVariations.Load(face);
-        var decoder = OutlineDecoders.ForFace(face, variations)
-            ?? throw new RasterizationException(
-                "The native rasterizer renders TrueType ('glyf') outlines only, and this font uses "
-                + "CFF/CFF2 (PostScript) outlines — typically a .otf file. CFF outline support is "
-                + "Phase 166; until then use the FreeType or StbTrueType backend for this font.");
+        var decoder = OutlineDecoders.ForFace(face, variations);
 
         _face = face;
         _variations = variations;

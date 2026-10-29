@@ -220,7 +220,7 @@ Native's platform rows follow from it being pure managed code with no native dep
 | | FreeType | GDI | DirectWrite | StbTrueType | Native |
 |---|:---:|:---:|:---:|:---:|:---:|
 | **TTF** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **OTF (CFF)** | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **OTF (CFF)** | ✅ | ✅ | ✅ | ✅ (not CFF2) | ✅ |
 | **WOFF** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **WOFF2** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **TTC (font collections)** | ✅ | ❌ | ✅ | ✅ | ✅ |
@@ -237,7 +237,7 @@ Native's platform rows follow from it being pure managed code with no native dep
 | **System Font Loading** | ❌ | ✅ | ✅ | ❌ | ❌ |
 | **BMFont.exe Parity** | ❌ | ✅ | ❌ | ❌ | ❌ |
 
-WOFF and WOFF2 are decompressed by KernSmith core before rasterization (WOFF2 with a pure managed Brotli decoder), so all backends accept them for fonts whose outlines they otherwise support (StbTrueType and Native still require TrueType `glyf` outlines inside the WOFF/WOFF2).
+WOFF and WOFF2 are decompressed by KernSmith core before rasterization (WOFF2 with a pure managed Brotli decoder), so all backends accept them for fonts whose outlines they otherwise support (StbTrueType reads TrueType and CFF outlines inside them, but not CFF2).
 
 ### When to Use
 
@@ -245,7 +245,7 @@ WOFF and WOFF2 are decompressed by KernSmith core before rasterization (WOFF2 wi
 - **GDI** -- Pixel-perfect BMFont.exe compatibility on Windows. Use for validating against BMFont reference output.
 - **DirectWrite** -- Windows system-font loading with ClearType-hinted grayscale rendering. High-quality Windows text output. (For color fonts or variable fonts, use FreeType.)
 - **StbTrueType** -- Blazor WASM, NativeAOT, consoles, Mac Catalyst, iOS, or anywhere native libraries are unavailable. Pure C#, zero dependencies.
-- **Native** -- Experimental. Plain TrueType text with no third-party code at all, when you are building from source and can live without hinting or stroke. Not published to NuGet; use StbTrueType for shipping managed-only builds.
+- **Native** -- Experimental. Plain TrueType or OpenType (CFF) text with no third-party code at all, when you are building from source and can live without hinting or stroke. Not published to NuGet; use StbTrueType for shipping managed-only builds.
 
 ## Tool Descriptions
 

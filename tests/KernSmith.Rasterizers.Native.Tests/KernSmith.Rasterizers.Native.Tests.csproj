@@ -32,6 +32,12 @@
     <None Include="..\KernSmith.Tests\Fixtures\Roboto-Regular.ttf"
           Link="Fixtures\Roboto-Regular.ttf"
           CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\KernSmith.Tests\Fixtures\SourceSerif4-Regular.otf"
+          Link="Fixtures\SourceSerif4-Regular.otf"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\KernSmith.Tests\Fixtures\SourceCodeVF-Upright.otf"
+          Link="Fixtures\SourceCodeVF-Upright.otf"
+          CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\KernSmith.Tests\Fixtures\NotoColorEmoji.ttf"
           Link="Fixtures\NotoColorEmoji.ttf"
           CopyToOutputDirectory="PreserveNewest" />
@@ -41,9 +47,9 @@
     <None Include="..\KernSmith.Tests\Fixtures\Color\ReemKufiInk-Regular.ttf"
           Link="Fixtures\Color\ReemKufiInk-Regular.ttf"
           CopyToOutputDirectory="PreserveNewest" />
-    <!-- WOFF2 fixtures and the TTFs they were made from: core decodes WOFF2, these prove
-         Native renders the decoded font exactly like the source TTF. -->
-    <None Include="..\KernSmith.Tests\Fixtures\Roboto-Regular.woff2;..\KernSmith.Tests\Fixtures\NotoSans-Regular-Latin.ttf;..\KernSmith.Tests\Fixtures\NotoSans-Regular-Latin.woff2;..\KernSmith.Tests\Fixtures\RobotoFlex-Latin.ttf;..\KernSmith.Tests\Fixtures\RobotoFlex-Latin.woff2"
+    <!-- WOFF2 fixtures and the TTF/OTF fonts they were made from: core decodes WOFF2, these
+         prove Native renders the decoded font exactly like the source. -->
+    <None Include="..\KernSmith.Tests\Fixtures\Roboto-Regular.woff2;..\KernSmith.Tests\Fixtures\NotoSans-Regular-Latin.ttf;..\KernSmith.Tests\Fixtures\NotoSans-Regular-Latin.woff2;..\KernSmith.Tests\Fixtures\RobotoFlex-Latin.ttf;..\KernSmith.Tests\Fixtures\RobotoFlex-Latin.woff2;..\KernSmith.Tests\Fixtures\NotoSans-Regular-Latin-CFF.otf;..\KernSmith.Tests\Fixtures\NotoSans-Regular-Latin-CFF.woff2"
           Link="Fixtures\%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\KernSmith.Tests\Fixtures\RobotoFlex-Variable.ttf"

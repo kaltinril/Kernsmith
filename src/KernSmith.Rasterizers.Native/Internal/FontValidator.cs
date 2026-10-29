@@ -32,8 +32,8 @@ internal static class FontValidator
         }
         else
         {
-            // A valid font this backend cannot draw, so a RasterizationException (like the CFF
-            // rejection) rather than a format error. NotoColorEmoji is the committed example.
+            // A valid font this backend cannot draw, so a RasterizationException rather than a
+            // format error. NotoColorEmoji is the committed example.
             if (!provider.HasTable("glyf") && (provider.HasTable("CBDT") || provider.HasTable("sbix")))
                 throw new RasterizationException(
                     "This font draws its glyphs as color bitmaps (CBDT/CBLC or sbix) and has no outlines. "

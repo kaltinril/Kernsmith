@@ -31,7 +31,7 @@ The rasterizer auto-registers via `[ModuleInitializer]`, so referencing the pack
 - No TrueType hinting (lower quality at small sizes < 16px)
 - No color font support (COLR/CPAL)
 - No variable font support
-- TTF only (no OTF/CFF outlines)
+- TrueType and CFF (`.otf`) outlines; no CFF2 (variable `.otf`)
 - No system font loading
 
 For these features, use the FreeType backend.

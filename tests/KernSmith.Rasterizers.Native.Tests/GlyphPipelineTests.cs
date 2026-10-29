@@ -49,11 +49,27 @@ public class GlyphPipelineTests
     }
 
     [Fact]
-    public void OutlineDecoders_HasNoDecoder_ForACffFace()
+    public void OutlineDecoders_SelectsTheCffDecoder_ForACffFace()
     {
-        // The rasterizer turns this into its LoadFont rejection until Phase 166 Part 2.
+        var face = NativeFontFace.Load(TestFonts.SourceSerifOtfBytes());
+        OutlineDecoders.ForFace(face).ShouldBeOfType<CffOutlineDecoder>();
+    }
+
+    [Fact]
+    public void OutlineDecoders_SelectsTheCffDecoder_ForACff2Face()
+    {
+        var face = NativeFontFace.Load(TestFonts.SourceCodeVariableOtfBytes());
+        var decoder = OutlineDecoders.ForFace(face).ShouldBeOfType<CffOutlineDecoder>();
+        decoder.Font.IsCff2.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void OutlineDecoders_MalformedCffTable_FailsTheLoad()
+    {
+        // The stub CFF table is a bare header: the decoder parses the table up front, so the
+        // face fails here rather than rendering an atlas of nothing glyph by glyph.
         var face = NativeFontFace.Load(SyntheticFonts.CffFlavoured());
-        OutlineDecoders.ForFace(face).ShouldBeNull();
+        Should.Throw<FontFormatException>(() => OutlineDecoders.ForFace(face));
     }
 
     // ---- Transform list --------------------------------------------------------------------
@@ -215,9 +231,12 @@ public class GlyphPipelineTests
             var commands = glyph.Outline.Commands
                 .Select(c => c with
                 {
-                    EndX = c.EndX + Dx, EndY = c.EndY + Dy,
-                    Ctrl1X = c.Ctrl1X + Dx, Ctrl1Y = c.Ctrl1Y + Dy,
-                    Ctrl2X = c.Ctrl2X + Dx, Ctrl2Y = c.Ctrl2Y + Dy,
+                    EndX = c.EndX + Dx,
+                    EndY = c.EndY + Dy,
+                    Ctrl1X = c.Ctrl1X + Dx,
+                    Ctrl1Y = c.Ctrl1Y + Dy,
+                    Ctrl2X = c.Ctrl2X + Dx,
+                    Ctrl2Y = c.Ctrl2Y + Dy,
                 })
                 .ToArray();
 

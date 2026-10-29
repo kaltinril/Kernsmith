@@ -65,4 +65,35 @@ internal static class ImageSimilarity
 
         return windows == 0 ? 1.0 : total / windows;
     }
+
+    /// <summary>
+    /// Pastes a glyph bitmap into a canvas whose origin is the pen position, using its bearings,
+    /// so bitmaps from two backends with slightly different boxes line up pixel for pixel.
+    /// </summary>
+    /// <param name="bitmap">8-bit coverage, rows top to bottom.</param>
+    /// <param name="width">Bitmap width.</param>
+    /// <param name="height">Bitmap height.</param>
+    /// <param name="bearingX">Pen to bitmap left edge.</param>
+    /// <param name="bearingY">Baseline up to bitmap top edge.</param>
+    /// <param name="left">Canvas left edge, relative to the pen.</param>
+    /// <param name="top">Canvas top edge, as a distance above the baseline.</param>
+    /// <param name="canvasWidth">Canvas width.</param>
+    /// <param name="canvasHeight">Canvas height.</param>
+    public static byte[] Place(
+        byte[] bitmap, int width, int height, int bearingX, int bearingY,
+        int left, int top, int canvasWidth, int canvasHeight)
+    {
+        var canvas = new byte[canvasWidth * canvasHeight];
+        for (int y = 0; y < height; y++)
+        {
+            int cy = (top - bearingY) + y;
+            for (int x = 0; x < width; x++)
+            {
+                int cx = (bearingX - left) + x;
+                canvas[(cy * canvasWidth) + cx] = bitmap[(y * width) + x];
+            }
+        }
+
+        return canvas;
+    }
 }

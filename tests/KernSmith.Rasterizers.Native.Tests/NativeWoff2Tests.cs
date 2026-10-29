@@ -6,7 +6,7 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// Phase 178 — core decodes WOFF2 (managed Brotli + glyf/hmtx transforms) before any backend
 /// sees the bytes, so Native must render a WOFF2 exactly like the TTF it was made from.
 /// The fixtures cover composite glyphs, hinted outlines, OVERLAP_SIMPLE flags, both loca
-/// formats and the hmtx transform.
+/// formats, the hmtx transform, and a CFF font (whose outline table WOFF2 stores untransformed).
 /// </summary>
 public class NativeWoff2Tests
 {
@@ -38,5 +38,22 @@ public class NativeWoff2Tests
         fromWoff2.Pages.Count.ShouldBe(fromTtf.Pages.Count);
         for (var i = 0; i < fromTtf.Pages.Count; i++)
             fromWoff2.Pages[i].PixelData.ShouldBe(fromTtf.Pages[i].PixelData, $"{fixture}: page {i} pixels");
+    }
+
+    [Fact]
+    public void Generate_FromCffWoff2_MatchesTheSourceOtf()
+    {
+        // WOFF2 carries a CFF table untransformed, so the decoded font is the .otf byte for byte
+        // and Native's CFF decoder must render it identically.
+        var fromOtf = BmFont.Generate(Fixture("NotoSans-Regular-Latin-CFF.otf"), Options());
+        var fromWoff2 = BmFont.Generate(Fixture("NotoSans-Regular-Latin-CFF.woff2"), Options());
+
+        fromOtf.Model.Characters.Count.ShouldBeGreaterThan(Text.Length - 2, "Native should render the test text");
+        fromOtf.Pages[0].PixelData.ShouldContain(b => b != 0);
+
+        fromWoff2.FntText.ShouldBe(fromOtf.FntText, "Native .fnt from the CFF WOFF2 should match the OTF");
+        fromWoff2.Pages.Count.ShouldBe(fromOtf.Pages.Count);
+        for (var i = 0; i < fromOtf.Pages.Count; i++)
+            fromWoff2.Pages[i].PixelData.ShouldBe(fromOtf.Pages[i].PixelData, $"page {i} pixels");
     }
 }
