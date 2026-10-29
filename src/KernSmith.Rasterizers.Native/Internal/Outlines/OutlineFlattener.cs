@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace KernSmith.Rasterizers.Native.Internal.Outlines;
 
 /// <summary>
@@ -42,8 +44,20 @@ internal static class OutlineFlattener
         if (!(tolerance > 0f))
             tolerance = DefaultTolerance;
 
-        var edges = new List<EdgeSegment>(outline.Commands.Length * 4);
+        var edges = new EdgeBuffer(outline.Commands.Length * 4, includeHorizontal);
+        try
+        {
+            AddOutline(ref edges, outline, transform, tolerance);
+            return edges.ToArray();
+        }
+        finally
+        {
+            edges.Dispose();
+        }
+    }
 
+    private static void AddOutline(ref EdgeBuffer edges, GlyphOutline outline, OutlineTransform transform, float tolerance)
+    {
         float currentX = 0f, currentY = 0f;
 
         foreach (var command in outline.Commands)
@@ -58,12 +72,12 @@ internal static class OutlineFlattener
                     break;
 
                 case OutlineCommandType.LineTo:
-                    AddEdge(edges, currentX, currentY, endX, endY);
+                    edges.Add(currentX, currentY, endX, endY);
                     break;
 
                 case OutlineCommandType.CubicTo:
                     FlattenCubic(
-                        edges,
+                        ref edges,
                         currentX, currentY,
                         transform.ToPixelX(command.Ctrl1X), transform.ToPixelY(command.Ctrl1Y),
                         transform.ToPixelX(command.Ctrl2X), transform.ToPixelY(command.Ctrl2Y),
@@ -76,18 +90,13 @@ internal static class OutlineFlattener
                 default:
                     // Close carries the contour's start point, so the closing segment needs
                     // no extra bookkeeping here.
-                    AddEdge(edges, currentX, currentY, endX, endY);
+                    edges.Add(currentX, currentY, endX, endY);
                     break;
             }
 
             currentX = endX;
             currentY = endY;
         }
-
-        if (!includeHorizontal)
-            edges.RemoveAll(IsHorizontal);
-
-        return edges.ToArray();
     }
 
     /// <summary>
@@ -95,7 +104,7 @@ internal static class OutlineFlattener
     /// straight segment, or until the depth cap stops it.
     /// </summary>
     private static void FlattenCubic(
-        List<EdgeSegment> edges,
+        ref EdgeBuffer edges,
         float x0, float y0,
         float x1, float y1,
         float x2, float y2,
@@ -107,7 +116,7 @@ internal static class OutlineFlattener
         // never satisfy, the flatness test alone would subdivide essentially forever.
         if (depth >= MaxSubdivisionDepth || IsFlatEnough(x0, y0, x1, y1, x2, y2, x3, y3, tolerance))
         {
-            AddEdge(edges, x0, y0, x3, y3);
+            edges.Add(x0, y0, x3, y3);
             return;
         }
 
@@ -119,8 +128,8 @@ internal static class OutlineFlattener
         float m123X = (m12X + m23X) * 0.5f, m123Y = (m12Y + m23Y) * 0.5f;
         float midX = (m012X + m123X) * 0.5f, midY = (m012Y + m123Y) * 0.5f;
 
-        FlattenCubic(edges, x0, y0, m01X, m01Y, m012X, m012Y, midX, midY, tolerance, depth + 1);
-        FlattenCubic(edges, midX, midY, m123X, m123Y, m23X, m23Y, x3, y3, tolerance, depth + 1);
+        FlattenCubic(ref edges, x0, y0, m01X, m01Y, m012X, m012Y, midX, midY, tolerance, depth + 1);
+        FlattenCubic(ref edges, midX, midY, m123X, m123Y, m23X, m23Y, x3, y3, tolerance, depth + 1);
     }
 
     /// <summary>
@@ -163,14 +172,54 @@ internal static class OutlineFlattener
         return (dx * dx) + (dy * dy);
     }
 
-    /// <summary>Appends an edge unless it is horizontal, which no scanline can see.</summary>
-    private static void AddEdge(List<EdgeSegment> edges, float x0, float y0, float x1, float y1) =>
-        edges.Add(new EdgeSegment(x0, y0, x1, y1));
-
     /// <summary>
-    /// Exactly-horizontal only — an epsilon would drop near-horizontal edges and break the
-    /// rasterizer's closed-contour invariant (signed dY must sum to zero). Equals, not ==,
-    /// because the comparison is intentionally exact.
+    /// The edges collected so far, in a pooled array; the caller gets an exact-size copy, which
+    /// is the only per-glyph allocation flattening makes.
     /// </summary>
-    private static bool IsHorizontal(EdgeSegment edge) => edge.Y0.Equals(edge.Y1);
+    private struct EdgeBuffer : IDisposable
+    {
+        private readonly bool _includeHorizontal;
+        private EdgeSegment[] _items;
+        private int _count;
+
+        public EdgeBuffer(int capacity, bool includeHorizontal)
+        {
+            _includeHorizontal = includeHorizontal;
+            _items = ArrayPool<EdgeSegment>.Shared.Rent(Math.Max(capacity, 16));
+            _count = 0;
+        }
+
+        /// <summary>
+        /// Appends an edge, dropping it when it is exactly horizontal and horizontals are not
+        /// wanted. Exactly horizontal only — an epsilon would drop near-horizontal edges and
+        /// break the rasterizer's closed-contour invariant (signed dY must sum to zero). Equals,
+        /// not ==, because the comparison is intentionally exact.
+        /// </summary>
+        public void Add(float x0, float y0, float x1, float y1)
+        {
+            if (!_includeHorizontal && y0.Equals(y1))
+                return;
+
+            if (_count == _items.Length)
+                Grow();
+
+            _items[_count++] = new EdgeSegment(x0, y0, x1, y1);
+        }
+
+        public readonly EdgeSegment[] ToArray() => _count == 0 ? [] : _items.AsSpan(0, _count).ToArray();
+
+        public void Dispose()
+        {
+            ArrayPool<EdgeSegment>.Shared.Return(_items);
+            _items = [];
+        }
+
+        private void Grow()
+        {
+            var grown = ArrayPool<EdgeSegment>.Shared.Rent(_items.Length * 2);
+            _items.AsSpan(0, _count).CopyTo(grown);
+            ArrayPool<EdgeSegment>.Shared.Return(_items);
+            _items = grown;
+        }
+    }
 }

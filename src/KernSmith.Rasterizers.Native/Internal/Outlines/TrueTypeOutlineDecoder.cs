@@ -24,6 +24,7 @@ internal sealed class TrueTypeOutlineDecoder : IOutlineDecoder
     private readonly GlyfTable _glyf;
     private readonly HmtxTable _hmtx;
     private readonly FontVariations? _variations;
+    private readonly GlyfScratch _scratch = new();
 
     /// <summary>Creates a decoder over a face's <c>glyf</c> and <c>hmtx</c> tables.</summary>
     /// <param name="face">The face.</param>
@@ -44,6 +45,16 @@ internal sealed class TrueTypeOutlineDecoder : IOutlineDecoder
         // The default instance takes exactly the static path, so its output cannot drift.
         if (_variations is not { IsDefaultInstance: false } variations)
         {
+            // Simple glyphs skip the ParsedGlyph detour; composites need it to resolve components.
+            if (_glyf.TryReadSimpleHeader(glyphIndex, out var simple))
+            {
+                float simpleShift = SimpleBearingShift(glyphIndex, simple);
+                return new DecodedGlyph(
+                    simple.NumberOfContours == 0 ? GlyphOutline.Empty : _glyf.DecodeSimpleOutline(glyphIndex, simpleShift, _scratch),
+                    _hmtx.GetAdvanceWidth(glyphIndex),
+                    new OutlineBounds(simple.XMin + simpleShift, simple.YMin, simple.XMax + simpleShift, simple.YMax));
+            }
+
             var parsed = _glyf.GetGlyph(glyphIndex);
             float shift = BearingShift(parsed);
             return new DecodedGlyph(
@@ -70,6 +81,38 @@ internal sealed class TrueTypeOutlineDecoder : IOutlineDecoder
                 new OutlineBounds(varied.XMin + bearingShift, varied.YMin, varied.XMax + bearingShift, varied.YMax))
             : new DecodedGlyph(outline, advance);
     }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Answers for a simple glyph at the default instance — the header box and contour end
+    /// points say everything <see cref="Decode"/> would — unless its only contours are single
+    /// points, whose flags decide whether anything draws.
+    /// </remarks>
+    public bool TryDecodeBounds(int glyphIndex, RasterOptions options, out DecodedBounds bounds)
+    {
+        bounds = default;
+        if (_variations is { IsDefaultInstance: false } || !_glyf.TryReadSimpleHeader(glyphIndex, out var simple))
+            return false;
+
+        float advance = _hmtx.GetAdvanceWidth(glyphIndex);
+        if (simple.NumberOfContours == 0)
+        {
+            bounds = new DecodedBounds(advance, IsEmpty: true, default);
+            return true;
+        }
+
+        if (simple.LargestContour < 2)
+            return false;
+
+        float shift = SimpleBearingShift(glyphIndex, simple);
+        bounds = new DecodedBounds(advance, IsEmpty: false,
+            new OutlineBounds(simple.XMin + shift, simple.YMin, simple.XMax + shift, simple.YMax));
+        return true;
+    }
+
+    /// <summary><see cref="BearingShift"/> for a simple glyph, whose own metrics place it.</summary>
+    private float SimpleBearingShift(int glyphIndex, SimpleGlyphHeader glyph) =>
+        glyph.NumberOfContours == 0 ? 0f : _hmtx.GetLeftSideBearing(glyphIndex) - glyph.XMin;
 
     /// <summary>
     /// How far right the outline moves so its default-instance pp1 (<c>xMin - lsb</c> of the

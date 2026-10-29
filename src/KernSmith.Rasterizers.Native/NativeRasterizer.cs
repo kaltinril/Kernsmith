@@ -180,7 +180,16 @@ public sealed class NativeRasterizer : IRasterizer
         if (glyphIndex == 0)
             return null;
 
-        var glyph = Prepare(codepoint, glyphIndex, options);
+        // Where the box alone decides the metrics, skip decoding the outline (Phase 177).
+        var transforms = GlyphTransforms.For(options, _face.Head.UnitsPerEm);
+        if (renderer is IBoxMeasuringRenderer boxRenderer && TryPrepareBox(codepoint, glyphIndex, options, transforms, out var box, out int advance))
+        {
+            return box.IsEmpty
+                ? new GlyphMetrics(BearingX: 0, BearingY: 0, Advance: advance, Width: 0, Height: 0)
+                : boxRenderer.MeasureBox(box, advance, options);
+        }
+
+        var glyph = Prepare(codepoint, glyphIndex, options, transforms);
         if (glyph.IsBlank && !DrawsLayers(renderer, glyphIndex))
             return new GlyphMetrics(BearingX: 0, BearingY: 0, Advance: glyph.Advance, Width: 0, Height: 0);
 
@@ -287,11 +296,35 @@ public sealed class NativeRasterizer : IRasterizer
     /// Runs pipeline stages 1–4 for a glyph, reporting malformed glyph data against the
     /// codepoint that asked for it.
     /// </summary>
-    private PreparedGlyph Prepare(int codepoint, int glyphIndex, RasterOptions options)
+    private PreparedGlyph Prepare(int codepoint, int glyphIndex, RasterOptions options) =>
+        Prepare(codepoint, glyphIndex, options, GlyphTransforms.For(options, _face!.Head.UnitsPerEm));
+
+    /// <inheritdoc cref="Prepare(int, int, RasterOptions)"/>
+    private PreparedGlyph Prepare(int codepoint, int glyphIndex, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms)
     {
         try
         {
-            return _pipeline!.Prepare(glyphIndex, options, GlyphTransforms.For(options, _face!.Head.UnitsPerEm));
+            return _pipeline!.Prepare(glyphIndex, options, transforms);
+        }
+        catch (FontFormatException ex)
+        {
+            throw new RasterizationException(codepoint, ex.Message);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            throw new RasterizationException(codepoint, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// <see cref="GlyphPipeline.TryPrepareBox"/>, reporting malformed glyph data against the
+    /// codepoint as <see cref="Prepare(int, int, RasterOptions)"/> does.
+    /// </summary>
+    private bool TryPrepareBox(int codepoint, int glyphIndex, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms, out Internal.Raster.GlyphBox box, out int advance)
+    {
+        try
+        {
+            return _pipeline!.TryPrepareBox(glyphIndex, options, transforms, out box, out advance);
         }
         catch (FontFormatException ex)
         {

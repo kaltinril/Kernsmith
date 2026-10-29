@@ -1,6 +1,7 @@
 using KernSmith.Font.Models;
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.Native.Internal.Distance;
+using KernSmith.Rasterizers.Native.Internal.Raster;
 
 namespace KernSmith.Rasterizers.Native.Internal.Pipeline;
 
@@ -13,7 +14,7 @@ namespace KernSmith.Rasterizers.Native.Internal.Pipeline;
 /// Every channel uses <see cref="SdfRenderer"/>'s encoding, spread and padding, so the glyph
 /// metrics are identical to the single-channel SDF and MTSDF's alpha is byte-identical to it.
 /// </remarks>
-internal sealed class MsdfRenderer : IGlyphRenderer
+internal sealed class MsdfRenderer : IBoxMeasuringRenderer
 {
     /// <summary>RGB distances, opaque alpha.</summary>
     public static readonly MsdfRenderer Msdf = new(trueDistanceInAlpha: false);
@@ -31,6 +32,10 @@ internal sealed class MsdfRenderer : IGlyphRenderer
     /// <inheritdoc />
     public GlyphMetrics Measure(PreparedGlyph glyph, RasterOptions options) =>
         SdfRenderer.Instance.Measure(glyph, options);
+
+    /// <inheritdoc />
+    public GlyphMetrics MeasureBox(GlyphBox box, int advance, RasterOptions options) =>
+        SdfRenderer.Instance.MeasureBox(box, advance, options);
 
     /// <inheritdoc />
     public RasterizedGlyph Render(int codepoint, int glyphIndex, PreparedGlyph glyph, RasterOptions options)

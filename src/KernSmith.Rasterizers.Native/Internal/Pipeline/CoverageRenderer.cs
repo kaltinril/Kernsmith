@@ -10,7 +10,7 @@ namespace KernSmith.Rasterizers.Native.Internal.Pipeline;
 /// rasterizer into 8-bit coverage. <see cref="AntiAliasMode.None"/> thresholds it; Grayscale and
 /// Light render as grayscale. <see cref="AntiAliasMode.Lcd"/> goes to <see cref="LcdRenderer"/>.
 /// </summary>
-internal sealed class CoverageRenderer : IGlyphRenderer
+internal sealed class CoverageRenderer : IBoxMeasuringRenderer
 {
     /// <summary>The shared, stateless instance.</summary>
     public static readonly CoverageRenderer Instance = new();
@@ -21,12 +21,16 @@ internal sealed class CoverageRenderer : IGlyphRenderer
 
     /// <inheritdoc />
     public GlyphMetrics Measure(PreparedGlyph glyph, RasterOptions options) =>
+        MeasureBox(glyph.Box, glyph.Advance, options);
+
+    /// <inheritdoc />
+    public GlyphMetrics MeasureBox(GlyphBox box, int advance, RasterOptions options) =>
         new(
-            BearingX: glyph.Box.BearingX,
-            BearingY: glyph.Box.BearingY,
-            Advance: glyph.Advance,
-            Width: glyph.Box.Width,
-            Height: glyph.Box.Height);
+            BearingX: box.BearingX,
+            BearingY: box.BearingY,
+            Advance: advance,
+            Width: box.Width,
+            Height: box.Height);
 
     /// <inheritdoc />
     public RasterizedGlyph Render(int codepoint, int glyphIndex, PreparedGlyph glyph, RasterOptions options)
