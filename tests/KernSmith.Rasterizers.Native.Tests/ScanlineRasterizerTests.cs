@@ -421,11 +421,12 @@ public class ScanlineRasterizerTests
     [Theory]
     [InlineData(AntiAliasMode.Grayscale)]
     [InlineData(AntiAliasMode.Light)]
+    [InlineData(AntiAliasMode.None)]
     public void Rasterize_AllocatesNothingButTheOutputBitmap(AntiAliasMode antiAlias)
     {
         // The fill runs once per glyph, so any scratch it allocates is per-glyph garbage. Only
         // the returned bitmap and its RasterResult wrapper may come off the heap; the delta
-        // buffer is pooled. (None is excluded: dropout control is a separate pass.)
+        // buffer and None's dropout-control scratch are pooled.
         var (edges, originX, originY) = GlyphEdges('O', 96f);
         const int width = 80, height = 90;
         ScanlineRasterizer.Rasterize(edges, width, height, originX, originY, antiAlias); // warm the pool

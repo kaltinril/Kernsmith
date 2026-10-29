@@ -54,6 +54,20 @@ public class MonoDropoutTests
     }
 
     [Fact]
+    public void AbuttingContours_DropOutAsOneStroke()
+    {
+        // Two 0.4px contours meeting exactly at x = 2: one 0.8px stroke under 50% in both
+        // columns. It must restore one pixel per row, as the same stroke drawn as one contour
+        // does, not one per contour.
+        var bitmap = Mono(5, 4, [.. Rect(1.6f, 0f, 2f, 4f), .. Rect(2f, 0f, 2.4f, 4f)]);
+        var single = Mono(5, 4, Rect(1.6f, 0f, 2.4f, 4f));
+
+        bitmap.ShouldBe(single);
+        for (int y = 0; y < 4; y++)
+            Enumerable.Range(0, 5).Count(x => bitmap[(y * 5) + x] == 255).ShouldBe(1, $"row {y}");
+    }
+
+    [Fact]
     public void ShapesThatLitEverySpan_AreUnchanged()
     {
         // A solid off-grid rectangle: plain 50% thresholding of its coverage, nothing added.
