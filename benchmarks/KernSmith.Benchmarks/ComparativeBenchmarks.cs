@@ -11,7 +11,7 @@ public class ComparativeBenchmarks
     [GlobalSetup]
     public void Setup()
     {
-        _fontData = File.ReadAllBytes(FindFont("Roboto-Regular.ttf"));
+        _fontData = BenchmarkFixtures.ReadFont("Roboto-Regular.ttf");
     }
 
     [Params(PackingAlgorithm.MaxRects, PackingAlgorithm.Skyline)]
@@ -40,17 +40,6 @@ public class ComparativeBenchmarks
         Characters = CharacterSet.Latin,
         PackingAlgorithm = Packer
     });
-
-    private static string FindFont(string name)
-    {
-        var paths = new[]
-        {
-            Path.Combine("tests", "KernSmith.Tests", "Fixtures", name),
-            Path.Combine("..", "..", "..", "..", "tests", "KernSmith.Tests", "Fixtures", name),
-        };
-        return paths.Select(Path.GetFullPath).FirstOrDefault(File.Exists)
-            ?? throw new FileNotFoundException($"Test font not found: {name}");
-    }
 }
 
 [MemoryDiagnoser]
@@ -62,7 +51,7 @@ public class EncoderComparativeBenchmarks
     [GlobalSetup]
     public void Setup()
     {
-        _fontData = File.ReadAllBytes(FindFont("Roboto-Regular.ttf"));
+        _fontData = BenchmarkFixtures.ReadFont("Roboto-Regular.ttf");
     }
 
     [Params(TextureFormat.Png, TextureFormat.Tga, TextureFormat.Dds)]
@@ -83,17 +72,6 @@ public class EncoderComparativeBenchmarks
         Characters = CharacterSet.Latin,
         TextureFormat = Format
     });
-
-    private static string FindFont(string name)
-    {
-        var paths = new[]
-        {
-            Path.Combine("tests", "KernSmith.Tests", "Fixtures", name),
-            Path.Combine("..", "..", "..", "..", "tests", "KernSmith.Tests", "Fixtures", name),
-        };
-        return paths.Select(Path.GetFullPath).FirstOrDefault(File.Exists)
-            ?? throw new FileNotFoundException($"Test font not found: {name}");
-    }
 }
 
 [MemoryDiagnoser]
@@ -105,7 +83,7 @@ public class SuperSampleComparativeBenchmarks
     [GlobalSetup]
     public void Setup()
     {
-        _fontData = File.ReadAllBytes(FindFont("Roboto-Regular.ttf"));
+        _fontData = BenchmarkFixtures.ReadFont("Roboto-Regular.ttf");
     }
 
     [Params(1, 2, 3, 4)]
@@ -118,15 +96,4 @@ public class SuperSampleComparativeBenchmarks
         Characters = CharacterSet.Ascii,
         SuperSampleLevel = SuperSample
     });
-
-    private static string FindFont(string name)
-    {
-        var paths = new[]
-        {
-            Path.Combine("tests", "KernSmith.Tests", "Fixtures", name),
-            Path.Combine("..", "..", "..", "..", "tests", "KernSmith.Tests", "Fixtures", name),
-        };
-        return paths.Select(Path.GetFullPath).FirstOrDefault(File.Exists)
-            ?? throw new FileNotFoundException($"Test font not found: {name}");
-    }
 }

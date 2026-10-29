@@ -162,6 +162,44 @@ public class CliTests : IDisposable
         stderr.ShouldContain("Unknown option: --bogus-flag");
     }
 
+    [Fact]
+    public void Generate_BackendRejectsFont_PrintsOneLineErrorWithBackendName()
+    {
+        // Native has no outline glyphs to draw in a CBDT-only color font, so LoadFont throws
+        // RasterizationException. That is an expected user error, not a crash.
+        var emojiPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "NotoColorEmoji.ttf");
+
+        // Act
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", emojiPath, "-s", "32", "--rasterizer", "native",
+            "-o", Path.Combine(_tempDir, "emoji"), "--no-color");
+
+        // Assert
+        exitCode.ShouldBe(4, $"stderr: {stderr}");
+        stderr.ShouldNotContain("Unhandled exception", Case.Sensitive);
+        stderr.Trim().ShouldNotContain('\n');
+        stderr.ShouldContain("native", Case.Sensitive);
+        stderr.ShouldContain("color bitmaps", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_BackendDeclinesOption_PrintsOneLineErrorWithBackendName()
+    {
+        // StbTrueType throws NotSupportedException for a color-font request.
+
+        // Act
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "32", "--rasterizer", "stbtruetype", "--color-font",
+            "-o", Path.Combine(_tempDir, "stbcolor"), "--no-color");
+
+        // Assert
+        exitCode.ShouldBe(4, $"stderr: {stderr}");
+        stderr.ShouldNotContain("Unhandled exception", Case.Sensitive);
+        stderr.Trim().ShouldNotContain('\n');
+        stderr.ShouldContain("stbtruetype", Case.Sensitive);
+        stderr.ShouldContain("does not support color font rendering", Case.Sensitive);
+    }
+
     // -- Basic generation (text format, default) --
 
     [Fact]

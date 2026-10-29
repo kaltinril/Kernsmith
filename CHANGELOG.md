@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `kernsmith generate` crashed with "Unhandled exception" and a stack trace when the chosen backend rejected the font or an option (a `RasterizationException` or other `BmFontException`, or `NotSupportedException`, e.g. `--rasterizer stbtruetype --color-font`). It now prints a one-line `Error: Generation error (<backend> rasterizer): <message>` to stderr and exits with code 4.
 - **Native placed TrueType glyphs by their `glyf` xMin instead of their `hmtx` left side bearing.** Where the two disagree, a glyph is now positioned by its left side bearing phantom point (pp1 = xMin - lsb), as the TrueType spec and FreeType do; a composite with a `USE_MY_METRICS` component takes that component's phantom point, and a variable font adds the varied `gvar` pp1 delta. Roboto has 52 such glyphs, each off by one font unit (e.g. `&` and `8`); fonts with larger mismatches were off by many pixels.
 - `BmFontBuilder.FromConfig` now carries `SdfSpread` and `SdfScale` from the config; it dropped them, so builder-based generation (including the `tests/bmfont-compare` harness's `sdf.bmfc`) rendered SDF at the default spread 8 and scale 1.
 - StbTrueType docs (`docs/rasterizers/stbtruetype.md`, its README, `COMPARISON.md`) no longer say it rejects CFF: it renders CFF `.otf` fonts (and WOFF/WOFF2 wrapping them); only CFF2 is unsupported.

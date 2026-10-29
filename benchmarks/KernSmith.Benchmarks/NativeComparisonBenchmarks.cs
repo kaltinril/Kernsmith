@@ -18,7 +18,7 @@ public class NativeComparisonLoadFontBenchmarks
     public RasterizerBackend Backend { get; set; }
 
     [GlobalSetup]
-    public void Setup() => _fontData = NativeComparisonFixtures.LoadRoboto();
+    public void Setup() => _fontData = BenchmarkFixtures.ReadFont("Roboto-Regular.ttf");
 
     // Create + LoadFont + Dispose: what a fresh BmFont.Generate pays before the first glyph.
     [Benchmark(Description = "LoadFont")]
@@ -59,7 +59,7 @@ public class NativeComparisonRasterizeBenchmarks
 
         _options = new RasterOptions { Size = Size, AntiAlias = AntiAlias };
         _rasterizer = RasterizerFactory.Create(Backend);
-        _rasterizer.LoadFont(NativeComparisonFixtures.LoadRoboto());
+        _rasterizer.LoadFont(BenchmarkFixtures.ReadFont("Roboto-Regular.ttf"));
     }
 
     [GlobalCleanup]
@@ -88,7 +88,7 @@ public class NativeComparisonMetricsBenchmarks
         _codepoints = CharacterSet.Ascii.GetCodepoints().ToArray();
         _options = new RasterOptions { Size = 32 };
         _rasterizer = RasterizerFactory.Create(Backend);
-        _rasterizer.LoadFont(NativeComparisonFixtures.LoadRoboto());
+        _rasterizer.LoadFont(BenchmarkFixtures.ReadFont("Roboto-Regular.ttf"));
     }
 
     [GlobalCleanup]
@@ -119,7 +119,7 @@ public class NativeComparisonEndToEndBenchmarks
     public RasterizerBackend Backend { get; set; }
 
     [GlobalSetup]
-    public void Setup() => _fontData = NativeComparisonFixtures.LoadRoboto();
+    public void Setup() => _fontData = BenchmarkFixtures.ReadFont("Roboto-Regular.ttf");
 
     [Benchmark(Description = "BmFont.Generate ASCII+Latin-1 32px")]
     public BmFontResult Generate() => BmFont.Generate(_fontData, new FontGeneratorOptions
@@ -128,26 +128,4 @@ public class NativeComparisonEndToEndBenchmarks
         Characters = CharacterSet.ExtendedAscii,
         Backend = Backend
     });
-}
-
-internal static class NativeComparisonFixtures
-{
-    public static byte[] LoadRoboto() => File.ReadAllBytes(FindFont("Roboto-Regular.ttf"));
-
-    // BenchmarkDotNet runs each case in a child process several directories below the repo
-    // (bin/Release/<tfm>/<job>/bin/Release/<tfm>), so walk up rather than use fixed relative paths.
-    private static string FindFont(string name)
-    {
-        foreach (var start in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() })
-        {
-            for (var dir = new DirectoryInfo(start); dir is not null; dir = dir.Parent)
-            {
-                var candidate = Path.Combine(dir.FullName, "tests", "KernSmith.Tests", "Fixtures", name);
-                if (File.Exists(candidate))
-                    return candidate;
-            }
-        }
-
-        throw new FileNotFoundException($"Test font not found: {name}");
-    }
 }

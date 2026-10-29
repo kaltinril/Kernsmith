@@ -26,9 +26,12 @@ internal sealed class GenerateCommand
             return ExitCodes.Success;
         }
 
+        // Hoisted so the catch blocks below can name the backend that rejected the job.
+        CliOptions? options = null;
+
         try
         {
-            var options = ParseArgs(args);
+            options = ParseArgs(args);
 
             // Load config file first, then overlay CLI flags
             if (options.ConfigPath != null)
@@ -117,6 +120,13 @@ internal sealed class GenerateCommand
             ConsoleOutput.WriteError($"Font error: {ex.Message}");
             return ExitCodes.FontParseError;
         }
+        // A backend refusing a font or an option (e.g. Native on a bitmap-only color font,
+        // StbTrueType asked for color) is an expected user error, not a crash.
+        catch (Exception ex) when (ex is BmFontException or NotSupportedException)
+        {
+            ConsoleOutput.WriteError($"Generation error ({BackendName(options)} rasterizer): {ex.Message}");
+            return ExitCodes.GenerationError;
+        }
         catch (InvalidOperationException ex)
         {
             ConsoleOutput.WriteError($"Generation error: {ex.Message}");
@@ -138,6 +148,12 @@ internal sealed class GenerateCommand
             return ExitCodes.InvalidArguments;
         }
     }
+
+    /// <summary>
+    /// The backend name as the user types it for <c>--rasterizer</c> (e.g. <c>stbtruetype</c>).
+    /// </summary>
+    private static string BackendName(CliOptions? options)
+        => (options?.Backend ?? RasterizerBackend.FreeType).ToString().ToLowerInvariant();
 
     /// <summary>
     /// Result of a single font generation job.
