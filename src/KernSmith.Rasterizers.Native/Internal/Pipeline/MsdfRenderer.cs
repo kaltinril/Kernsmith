@@ -47,8 +47,9 @@ internal sealed class MsdfRenderer : IGlyphRenderer
             colorEdges: true);
 
         var channels = MultiChannelDistanceField.Compute(shape, width, height, pad);
-        MultiChannelDistanceField.CorrectClashes(channels, width, height);
-        var alpha = _trueDistanceInAlpha ? SignedDistanceField.Compute(shape, width, height, pad) : null;
+        var trueDistance = SignedDistanceField.Compute(shape, width, height, pad);
+        MultiChannelDistanceField.CorrectArtifacts(channels, trueDistance, width, height);
+        var alpha = _trueDistanceInAlpha ? trueDistance : null;
 
         var bitmap = new byte[width * height * 4];
         for (int i = 0; i < width * height; i++)

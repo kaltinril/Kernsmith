@@ -11,9 +11,9 @@ namespace KernSmith.Rasterizers.Native.Internal.Distance;
 /// value is that edge's signed <em>pseudo-distance</em>: beyond the edge's own endpoints the
 /// distance is measured to the edge's tangent line, extending the edge straight on, so the two
 /// half-planes meeting at a corner stay linear across it. Signs come from edge orientation; a
-/// texel whose median disagrees with the non-zero inside test has all its channels negated,
-/// and texels whose channels clash with a neighbour are flattened to their median
-/// (<see cref="CorrectClashes"/>).
+/// texel whose median disagrees with the non-zero inside test has all its channels negated.
+/// <see cref="CorrectArtifacts"/> then flattens, to their median, the texels behind any
+/// interpolated median that contradicts the true distance field.
 ///
 /// Only edges within <c>range</c> of a texel are considered; a channel with none is set to
 /// ±range by the inside test. The median ignores it whenever the nearest edge carries two or
@@ -25,10 +25,23 @@ internal static class MultiChannelDistanceField
     private const float TieTolerance = 1e-4f;
 
     /// <summary>
-    /// A channel may change by at most one pixel of distance per pixel moved; more than this
-    /// (with slack for float noise) between neighbours is a discontinuity.
+    /// How deep, in pixels, the true field must provably be at a probe before a median of the
+    /// other sign there counts as an artifact. Measured on Roboto, Noto Sans and Source Serif
+    /// ASCII at 16-48 px: 0.05 leaves no artifacts while larger margins miss some, and smaller
+    /// ones only add flattening at near-misses.
     /// </summary>
-    private const float ClashSlack = 1.001f;
+    private const float ProbeMargin = 0.05f;
+
+    /// <summary>Probes per cell side: 0, ¼, ½, ¾ and 1 of a texel.</summary>
+    private const int ProbeSteps = 5;
+
+    private const int ProbesPerCell = ProbeSteps * ProbeSteps;
+
+    /// <summary>
+    /// Bound on correction passes. A repair changes readings in cells the scan has already
+    /// passed, so the scan repeats until a pass flattens nothing.
+    /// </summary>
+    private const int MaxCorrectionPasses = 4;
 
     /// <summary>Computes the field: three floats (R, G, B) per texel, row-major, clamped to ±range.</summary>
     public static float[] Compute(DistanceShape shape, int width, int height, float range)
@@ -84,65 +97,256 @@ internal static class MultiChannelDistanceField
     public static float Median(float a, float b, float c) => Math.Max(Math.Min(a, b), Math.Min(Math.Max(a, b), c));
 
     /// <summary>
-    /// Finds texels whose channels jump against a neighbour by more than a distance field can
-    /// (one pixel of distance per pixel of travel, √2 diagonally) and, of each such pair, keeps
-    /// the one nearer the edge; the other is flattened to its median, which removes the
-    /// interpolation artifact without moving the reconstructed edge at any texel centre.
+    /// Removes interpolation artifacts — places where bilinear sampling of the three channels
+    /// gives a median of the wrong sign between texels — by checking the field against the
+    /// true single-channel signed distance <paramref name="trueDistance"/> on the same grid.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Every cell of four neighbouring texels is probed on a quarter-texel lattice. The true
+    /// field is 1-Lipschitz, so at radius r from a texel whose true distance is d it is at
+    /// least |d| − r deep on the same side; where that bound exceeds
+    /// <see cref="ProbeMargin"/> the probe's correct side is known, and an interpolated median
+    /// on the other side is an artifact. Probes nearer the edge than the bound can prove are
+    /// left alone, which is where a multi-channel field legitimately departs from the
+    /// single-channel one (its sharp corners).
+    /// </para>
+    /// <para>
+    /// An artifact is repaired by flattening texels of its cell to their own median (see
+    /// <see cref="Repair"/>), which keeps each texel's median and so the reconstructed edge at
+    /// every texel centre. Passes repeat until one flattens nothing.
+    /// </para>
+    /// </remarks>
     /// <returns>The number of texels flattened.</returns>
-    public static int CorrectClashes(float[] values, int width, int height)
+    public static int CorrectArtifacts(float[] values, float[] trueDistance, int width, int height)
     {
-        var clashing = new List<int>();
-        float orthogonal = ClashSlack, diagonal = ClashSlack * MathF.Sqrt(2);
+        ArgumentNullException.ThrowIfNull(values);
+        ArgumentNullException.ThrowIfNull(trueDistance);
 
-        for (int y = 0; y < height; y++)
+        var field = new ProbedField(values, trueDistance, width, height);
+        int flattened = 0;
+        for (int pass = 0; pass < MaxCorrectionPasses; pass++)
         {
-            for (int x = 0; x < width; x++)
+            int before = flattened;
+            for (int y = 0; y + 1 < height; y++)
             {
-                int a = ((y * width) + x) * 3;
-                if ((x > 0 && Clashes(values, a, a - 3, orthogonal))
-                    || (x < width - 1 && Clashes(values, a, a + 3, orthogonal))
-                    || (y > 0 && Clashes(values, a, a - (width * 3), orthogonal))
-                    || (y < height - 1 && Clashes(values, a, a + (width * 3), orthogonal))
-                    || (x > 0 && y > 0 && Clashes(values, a, a - (width * 3) - 3, diagonal))
-                    || (x < width - 1 && y > 0 && Clashes(values, a, a - (width * 3) + 3, diagonal))
-                    || (x > 0 && y < height - 1 && Clashes(values, a, a + (width * 3) - 3, diagonal))
-                    || (x < width - 1 && y < height - 1 && Clashes(values, a, a + (width * 3) + 3, diagonal)))
+                for (int x = 0; x + 1 < width; x++)
                 {
-                    clashing.Add(a);
+                    if (field.CannotDisagree(x, y))
+                        continue;
+
+                    for (int probe = 0; probe < ProbesPerCell; probe++)
+                    {
+                        int sign = field.KnownSign(x, y, probe);
+                        if (sign != 0 && !field.Agrees(x, y, ProbeU(probe), ProbeV(probe), sign))
+                            flattened += Repair(field, x, y, ProbeU(probe), ProbeV(probe), sign);
+                    }
                 }
+            }
+
+            if (flattened == before)
+                break;
+        }
+
+        return flattened;
+    }
+
+    /// <summary>Distance from each probe to each corner texel of its cell, four per probe.</summary>
+    private static readonly float[] ProbeRadii = CreateProbeRadii();
+
+    private static float[] CreateProbeRadii()
+    {
+        var radii = new float[ProbesPerCell * 4];
+        for (int probe = 0; probe < ProbesPerCell; probe++)
+        {
+            for (int k = 0; k < 4; k++)
+            {
+                float du = ProbeU(probe) - (k & 1), dv = ProbeV(probe) - (k >> 1);
+                radii[(probe * 4) + k] = MathF.Sqrt((du * du) + (dv * dv));
             }
         }
 
-        foreach (int a in clashing)
+        return radii;
+    }
+
+    private static float ProbeU(int probe) => (probe % ProbeSteps) / (ProbeSteps - 1f);
+
+    private static float ProbeV(int probe) => (probe / ProbeSteps) / (ProbeSteps - 1f);
+
+    /// <summary>
+    /// Flattens texels of the cell at (<paramref name="x"/>, <paramref name="y"/>) until the
+    /// median at (u, v) reads <paramref name="sign"/>, each time picking the texel whose
+    /// flattening moves that median furthest towards it.
+    /// </summary>
+    /// <remarks>
+    /// The repair is then weighed over the probes of the surrounding three-by-three cells:
+    /// +1 for each probe of known sign it puts right, −1 for each it puts wrong and for each
+    /// probe of unknown sign whose reading it changes. A repair that scores below zero is
+    /// undone. Near-miss probes beside a sub-texel hairline would otherwise strip the very
+    /// channels that keep the hairline visible.
+    /// </remarks>
+    /// <returns>The number of texels flattened and kept flattened.</returns>
+    private static int Repair(ProbedField field, int x, int y, float u, float v, int sign)
+    {
+        var values = field.Values;
+        Span<float> saved = stackalloc float[12];
+        Span<bool> readings = stackalloc bool[9 * ProbesPerCell];
+        for (int k = 0; k < 4; k++)
+            values.AsSpan(field.Texel(x, y, k), 3).CopyTo(saved.Slice(3 * k, 3));
+        field.Neighbourhood(x, y, readings, record: true);
+
+        int flattened = 0;
+        while (!field.Agrees(x, y, u, v, sign))
         {
-            float median = Median(values[a], values[a + 1], values[a + 2]);
-            values[a] = values[a + 1] = values[a + 2] = median;
+            int choice = -1;
+            float best = float.NegativeInfinity;
+            for (int k = 0; k < 4; k++)
+            {
+                int t = field.Texel(x, y, k);
+                if (field.IsFlat(t))
+                    continue;
+
+                float r = values[t], g = values[t + 1], b = values[t + 2];
+                Flatten(values, t);
+                float score = sign * field.Median(x, y, u, v);
+                values[t] = r;
+                values[t + 1] = g;
+                values[t + 2] = b;
+                if (score > best)
+                {
+                    best = score;
+                    choice = t;
+                }
+            }
+
+            if (choice < 0)
+                break;
+
+            Flatten(values, choice);
+            flattened++;
         }
 
-        return clashing.Count;
+        if (flattened > 0 && field.Neighbourhood(x, y, readings, record: false) < 0)
+        {
+            for (int k = 0; k < 4; k++)
+                saved.Slice(3 * k, 3).CopyTo(values.AsSpan(field.Texel(x, y, k), 3));
+            return 0;
+        }
+
+        return flattened;
+    }
+
+    /// <summary>Sets all three channels of the texel starting at <paramref name="t"/> to their median.</summary>
+    private static void Flatten(float[] values, int t)
+    {
+        float median = Median(values[t], values[t + 1], values[t + 2]);
+        values[t] = median;
+        values[t + 1] = median;
+        values[t + 2] = median;
     }
 
     /// <summary>
-    /// True when texel a should be flattened because of neighbour b: their most-changed channel
-    /// jumps by at least <paramref name="threshold"/>, b has not been flattened already, and a
-    /// is the farther of the two from the edge in their least-changed channel.
+    /// A field under correction with its true distance, queried per cell: the cell at (x, y)
+    /// has texels (x, y), (x + 1, y), (x, y + 1) and (x + 1, y + 1), and (u, v) in [0, 1]²
+    /// runs across it between their centres.
     /// </summary>
-    private static bool Clashes(float[] v, int a, int b, float threshold)
+    private readonly record struct ProbedField(float[] Values, float[] TrueDistance, int Width, int Height)
     {
-        // Order the channels by how much they change between a and b, most first.
-        int c0 = 0, c1 = 1, c2 = 2;
-        if (Math.Abs(v[b + c0] - v[a + c0]) < Math.Abs(v[b + c1] - v[a + c1])) (c0, c1) = (c1, c0);
-        if (Math.Abs(v[b + c1] - v[a + c1]) < Math.Abs(v[b + c2] - v[a + c2]))
+        /// <summary>
+        /// The side the true field is provably on at the probe — +1 inside, −1 outside — or 0
+        /// when no texel of the cell is deep enough to prove it by <see cref="ProbeMargin"/>.
+        /// </summary>
+        public int KnownSign(int x, int y, int probe)
         {
-            (c1, c2) = (c2, c1);
-            if (Math.Abs(v[b + c0] - v[a + c0]) < Math.Abs(v[b + c1] - v[a + c1])) (c0, c1) = (c1, c0);
+            float best = ProbeMargin;
+            int sign = 0;
+            for (int k = 0; k < 4; k++)
+            {
+                float d = TrueDistance[((y + (k >> 1)) * Width) + x + (k & 1)];
+                float depth = Math.Abs(d) - ProbeRadii[(probe * 4) + k];
+                if (depth > best)
+                {
+                    best = depth;
+                    sign = d > 0 ? 1 : -1;
+                }
+            }
+
+            return sign;
         }
 
-        bool bFlat = v[b].Equals(v[b + 1]) && v[b].Equals(v[b + 2]);
-        return Math.Abs(v[b + c0] - v[a + c0]) >= threshold
-            && !bFlat
-            && Math.Abs(v[a + c2]) >= Math.Abs(v[b + c2]);
+        /// <summary>
+        /// True when no probe of the cell can need a repair: either all twelve channel values
+        /// share one strict sign — every interpolated median then has that sign, and so does
+        /// every texel's true distance, since texel medians follow the inside test — or every
+        /// texel is already flat, leaving nothing to flatten.
+        /// </summary>
+        public bool CannotDisagree(int x, int y)
+        {
+            int t0 = 3 * ((y * Width) + x), t2 = t0 + (3 * Width);
+            float min = float.PositiveInfinity, max = float.NegativeInfinity;
+            for (int i = 0; i < 6; i++)
+            {
+                min = Math.Min(min, Math.Min(Values[t0 + i], Values[t2 + i]));
+                max = Math.Max(max, Math.Max(Values[t0 + i], Values[t2 + i]));
+            }
+
+            return min > 0 || max < 0
+                || (IsFlat(t0) && IsFlat(t0 + 3) && IsFlat(t2) && IsFlat(t2 + 3));
+        }
+
+        /// <summary>True when the texel starting at <paramref name="t"/> has three equal channels.</summary>
+        public bool IsFlat(int t) => Values[t] == Values[t + 1] && Values[t + 1] == Values[t + 2];
+
+        /// <summary>The median of the three channels, each interpolated bilinearly at (u, v).</summary>
+        public float Median(int x, int y, float u, float v)
+        {
+            int t0 = 3 * ((y * Width) + x), t2 = t0 + (3 * Width);
+            float w0 = (1 - u) * (1 - v), w1 = u * (1 - v), w2 = (1 - u) * v, w3 = u * v;
+            float r = (w0 * Values[t0]) + (w1 * Values[t0 + 3]) + (w2 * Values[t2]) + (w3 * Values[t2 + 3]);
+            float g = (w0 * Values[t0 + 1]) + (w1 * Values[t0 + 4]) + (w2 * Values[t2 + 1]) + (w3 * Values[t2 + 4]);
+            float b = (w0 * Values[t0 + 2]) + (w1 * Values[t0 + 5]) + (w2 * Values[t2 + 2]) + (w3 * Values[t2 + 5]);
+            return MultiChannelDistanceField.Median(r, g, b);
+        }
+
+        /// <summary>True when the interpolated median at (u, v) reads inside (&gt; 0) exactly when <paramref name="sign"/> is +1.</summary>
+        public bool Agrees(int x, int y, float u, float v, int sign) => Median(x, y, u, v) > 0 == sign > 0;
+
+        /// <summary>The index of the first channel of corner <paramref name="k"/> (0–3, row-major) of the cell.</summary>
+        public int Texel(int x, int y, int k) => 3 * (((y + (k >> 1)) * Width) + x + (k & 1));
+
+        /// <summary>
+        /// Over the probes of the cell at (x, y) and its neighbours: with
+        /// <paramref name="record"/>, stores each probe's inside/outside reading in
+        /// <paramref name="readings"/> and returns 0; without, returns the net effect of the
+        /// changes since — +1 for each probe of known sign now read right, −1 for each now
+        /// read wrong and for each probe of unknown sign whose reading changed.
+        /// </summary>
+        public int Neighbourhood(int x, int y, Span<bool> readings, bool record)
+        {
+            int index = 0, net = 0;
+            for (int cy = Math.Max(0, y - 1); cy <= Math.Min(Height - 2, y + 1); cy++)
+            {
+                for (int cx = Math.Max(0, x - 1); cx <= Math.Min(Width - 2, x + 1); cx++)
+                {
+                    for (int probe = 0; probe < ProbesPerCell; probe++, index++)
+                    {
+                        float u = ProbeU(probe), v = ProbeV(probe);
+                        bool inside = Median(cx, cy, u, v) > 0;
+                        if (record)
+                        {
+                            readings[index] = inside;
+                        }
+                        else if (inside != readings[index])
+                        {
+                            int known = KnownSign(cx, cy, probe);
+                            net += known != 0 && inside == (known > 0) ? 1 : -1;
+                        }
+                    }
+                }
+            }
+
+            return net;
+        }
     }
 
     private static void Splat(

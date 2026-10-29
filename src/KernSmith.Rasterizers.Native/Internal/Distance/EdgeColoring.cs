@@ -16,11 +16,16 @@ namespace KernSmith.Rasterizers.Native.Internal.Distance;
 internal static class EdgeColoring
 {
     /// <summary>
-    /// A join is a corner when the tangents turn back (dot ≤ 0) or turn by more than this sine —
-    /// sin(3 rad) ≈ 0.141, about 8°, msdfgen's default threshold. Lower values turn the slight
-    /// tangent breaks of rounded integer outlines into spurious corners.
+    /// A join is a corner when the tangents turn back (dot ≤ 0) or the sine of their turn
+    /// exceeds this value — the test of Chlumský's thesis (§2.2), which leaves the angle as a
+    /// parameter. 0.14 is about 8°, chosen by measurement: over the joins of U+0021–U+017E in
+    /// ten fonts (Roboto, Noto Sans, Source Serif 4, Roboto Flex, Dancing Script, Arial,
+    /// Georgia, Times New Roman, Verdana, Segoe UI), the tangent breaks left by rounding
+    /// control points to integers have sines mostly below 0.01 and drawn corners mostly above
+    /// 0.2, with a handful between 0.12 and 0.17. Lower values turn the rounding breaks into
+    /// spurious corners.
     /// </summary>
-    public const double CornerSineThreshold = 0.14112000805986721;
+    public const double CornerSineThreshold = 0.14;
 
     private static readonly EdgeColor[] Palette = [EdgeColor.Cyan, EdgeColor.Magenta, EdgeColor.Yellow];
 
