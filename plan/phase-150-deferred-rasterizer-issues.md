@@ -28,6 +28,7 @@ Each issue is ranked 1 (low) to 5 (high) on three dimensions:
 | 4 | GDI MatchCharHeight Bug | 2 | 3 | 2 | Open |
 | 5 | Synthetic Bold/Italic Ignores Capabilities (core) | 4 | 2 | 4 | Fixed |
 | 6 | StbTrueType embolden is FreeType-derived (FTL) | 3 | 2 | 1 | Note only |
+| 7 | Super-sampled composited outline/shadow measured at the wrong scale (core) | 4 | 4 | 3 | Open |
 
 **Legend**: Ease = ease to implement (5=easy). Break Risk = chance of breaking other things (5=high risk). Importance = importance to implement (5=critical).
 
@@ -112,6 +113,22 @@ Native still renders bold/italic configs differently from FreeType, but that is 
 
 `src/KernSmith.Rasterizers.StbTrueType/OutlineTransforms.cs` (`ApplyEmbolden` / `EmboldenContour`) is a port of FreeType's `FT_Outline_EmboldenXY`, carried under the FreeType License with attribution in `THIRD-PARTY-NOTICES.md` (section 2.1). It is the only third-party-derived source in a backend whose point is a dependency-free managed path, and it keeps an FTL credit obligation on every StbTrueType consumer. An original implementation (for example sharing whatever Native's Phase 167 embolden ends up as) would remove that. Recorded so the provenance is visible; no change is planned, and any replacement must keep StbTrueType's bold output identical or be called out as a harness diff.
 
+### 7. Super-Sampled Composited Outline/Shadow Measured at the Wrong Scale — Open
+
+> Ease: 4 | Break Risk: 4 | Importance: 3
+> A *core* defect shared by every backend, not a backend limitation.
+
+With `SuperSampleLevel > 1` (`.bmfc` `aa=2..4`) the same `Outline` value produces two different widths depending on which path draws it:
+
+- **Composited path** (default channels): `PreparedRasterization.cs:222-235` rasterizes at `Size * renderScale`; `BuildEffects` (`:518-521`) builds `OutlineEffect(options.Outline, …)` with no scale factor; `ProcessGlyph` composites it onto the *super-sampled* glyph (`:355`) and only then box-downscales (`:362`). The outline is `Outline` super-sampled pixels wide, so after downscale it is about `Outline / SuperSampleLevel` output pixels — at `aa=2`, `outlineThickness=4` looks like a 2px outline.
+- **Routed path** (custom `Channels` honored by `BmFont.ShouldApplyChannelConfig`): `BmFont.cs:268-275` runs `OutlinePostProcessor(options.Outline)` over `rasterResult.Glyphs`, which `RasterizeAndProcess` has already downscaled, so the outline is the full `Outline` output pixels.
+- Everything else that reasons about the outline already assumes output pixels: the Phase 78F empty-glyph cell (`PreparedRasterization.cs:410-412`, `1 + 2*Outline`) and the `.fnt` `outline=` field. On the composited path those disagree with the ink actually drawn.
+- Shadow has the same split: `ShadowEffect` offsets/blur (`PreparedRasterization.cs:493-498`) are applied before the downscale, while the routed `ShadowCoveragePostProcessor` (`BmFont.cs:282-287`) works at output size.
+
+**Fix sketch**: give `BuildEffects` the `renderScale` and multiply the composited `OutlineEffect` width (and `ShadowEffect` offset/blur) by it, so the effect is drawn at super-sampled resolution — keeping the AA benefit — but lands at `Outline` output pixels after downscale, matching the routed path. Applying the effects after the downscale instead would also make the two agree but throws away the super-sampled outline edge.
+
+**Risk**: this changes pixels for every `aa>1` config with an outline or shadow on every backend, and outline looks are finely tuned against BMFont, so first add a harness config combining `aa=2` with `outlineThickness>0` (none exists today — `supersample.bmfc` and `lcd-supersample.bmfc` both use `outlineThickness=0`, so the harness currently reports "identical" for any change here) and compare against BMFont64 to confirm which width BMFont itself produces before choosing the direction. Existing users of `aa>1` + outline would see their outline roughly `SuperSampleLevel`× thicker, which needs a CHANGELOG callout.
+
 ## Files Reference
 
 | File | Relevance |
@@ -121,8 +138,9 @@ Native still renders bold/italic configs differently from FreeType, but that is 
 | `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs` | Issue 4 — `HandlesOwnSizing` (`:733`), `LfHeight` (`:345`), `GetFontMetrics` (`:260-268`) |
 | `src/KernSmith/Config/BmfcConfigReader.cs` | Issue 4 — `:102-113`, where the negative-size sign is discarded |
 | `src/KernSmith/Rasterizer/RasterOptions.cs` | Issue 4 — `:76-97`, `MatchCharHeight` is never copied to the backend options |
-| `src/KernSmith/BmFont.cs` | Issue 4 — `:227-240`, the sizing decision point; also gates issues 1-2 at `:194-205`. Issue 5 — the capability-gated bold/italic post-processor skip |
+| `src/KernSmith/BmFont.cs` | Issue 4 — `:227-240`, the sizing decision point; also gates issues 1-2 at `:194-205`. Issue 5 — the capability-gated bold/italic post-processor skip. Issue 7 — routed outline/shadow at output size (`:268-287`) |
 | `src/KernSmith/Rasterizer/IRasterizerCapabilities.cs` | Issue 5 — `SupportsSyntheticBold` / `SupportsSyntheticItalic`, the flags the gate consults |
 | `src/KernSmith.Rasterizers.Native/NativeCapabilities.cs` | Issue 5 — the first backend to report `false`, which is what exposed the bug |
 | `tests/KernSmith.Rasterizers.Native.Tests/SyntheticStyleFallbackTests.cs` | Issue 5 — regression coverage, both directions of the gate |
 | `src/KernSmith.Rasterizers.StbTrueType/OutlineTransforms.cs` | Issue 6 — the FTL-derived embolden port |
+| `src/KernSmith/PreparedRasterization.cs` | Issue 7 — render scale (`:222-235`), composite-then-downscale (`:355-362`), unscaled `OutlineEffect`/`ShadowEffect` in `BuildEffects` (`:493-521`) |
