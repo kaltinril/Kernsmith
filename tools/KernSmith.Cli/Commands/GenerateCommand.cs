@@ -170,8 +170,10 @@ internal sealed class GenerateCommand
     /// Returns the normalized base path (without extension) where .fnt and texture files will be written.
     /// </summary>
     /// <param name="options">The CLI options containing font path, system font name, and output path.</param>
+    /// <param name="createDirectory">Create the output directory when the path names one; <c>false</c>
+    /// only computes the path (dry run).</param>
     /// <returns>The resolved base output path without file extension.</returns>
-    internal static string ResolveOutputPath(CliOptions options)
+    internal static string ResolveOutputPath(CliOptions options, bool createDirectory = true)
     {
         string baseName;
         if (options.FontPath != null)
@@ -189,7 +191,8 @@ internal sealed class GenerateCommand
         }
         else if (Directory.Exists(outputPath) || outputPath.EndsWith(Path.DirectorySeparatorChar) || outputPath.EndsWith(Path.AltDirectorySeparatorChar))
         {
-            Directory.CreateDirectory(outputPath);
+            if (createDirectory)
+                Directory.CreateDirectory(outputPath);
             outputPath = Path.Combine(outputPath, baseName);
         }
 
@@ -863,8 +866,9 @@ internal sealed class GenerateCommand
         if (options.GradientTop != null) effects.Add($"gradient {options.GradientTop}->{options.GradientBottom}");
         Console.WriteLine($"[dry-run] Effects:   {(effects.Count > 0 ? string.Join(", ", effects) : "none")}");
 
-        var outPath = options.OutputPath ?? Path.GetFileNameWithoutExtension(options.FontPath ?? options.SystemFontName ?? "font");
-        Console.WriteLine($"[dry-run] Output:    ./{outPath}.fnt ({options.OutputFormat.ToString().ToLowerInvariant()} format)");
+        // The exact .fnt RunJob would write (FileWriter appends ".fnt" to the base path).
+        var outPath = Path.GetFullPath(ResolveOutputPath(options, createDirectory: false));
+        Console.WriteLine($"[dry-run] Output:    {outPath}.fnt ({options.OutputFormat.ToString().ToLowerInvariant()} format)");
         Console.WriteLine("[dry-run] No files written.");
     }
 

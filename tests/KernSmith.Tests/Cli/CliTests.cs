@@ -691,6 +691,55 @@ public class CliTests : IDisposable
         File.ReadAllText(expected).ShouldContain("fileVersion=1");
     }
 
+    [Fact]
+    public void Init_ConfigOutputPath_IsConfigPathWithoutExtension()
+    {
+        // init's -o names the config file, not the font output; writing it verbatim as
+        // outputPath made `generate --config my.bmfc` write my.bmfc.fnt / my.bmfc_0.png.
+        var configPath = Path.Combine(_tempDir, "my.bmfc");
+        RunCli("init", "-f", FontPath, "-s", "24", "-o", configPath).ExitCode.ShouldBe(0);
+
+        var (exitCode, stdout, stderr) = RunCli("generate", "--config", configPath, "--dry-run");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain($"[dry-run] Output:    {Path.Combine(_tempDir, "my")}.fnt (text format)", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_DryRun_ConfigWithAbsoluteOutputPath_PrintsThatPath()
+    {
+        // The reader resolves a config's outputPath to an absolute path; the dry-run used to
+        // print it as "./C:\...".
+        var configPath = Path.Combine(_tempDir, "abs.bmfc");
+        RunCli("init", "-f", FontPath, "-s", "24", "-o", configPath).ExitCode.ShouldBe(0);
+        var outBase = Path.Combine(_tempDir, "out", "myfont");
+        var lines = File.ReadAllLines(configPath).Where(l => !l.StartsWith("outputPath=", StringComparison.Ordinal));
+        File.WriteAllLines(configPath, lines.Append($"outputPath={outBase}"));
+
+        var (exitCode, stdout, stderr) = RunCli("generate", "--config", configPath, "--dry-run");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain($"[dry-run] Output:    {outBase}.fnt (text format)", Case.Sensitive);
+        stdout.ShouldNotContain("./", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_DryRun_OutputDirectory_PrintsRealFntPathWithoutCreatingIt()
+    {
+        // A trailing separator means "write <fontname>.fnt into this directory"; the dry-run
+        // must show that file (it printed "./dir/.fnt") and must not create the directory.
+        var outDir = Path.Combine(_tempDir, "newdir") + Path.DirectorySeparatorChar;
+
+        var (exitCode, stdout, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "24", "-o", outDir, "--dry-run");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain(
+            $"[dry-run] Output:    {Path.Combine(_tempDir, "newdir", "Roboto-Regular")}.fnt (text format)",
+            Case.Sensitive);
+        Directory.Exists(outDir).ShouldBeFalse("a dry run writes nothing, not even the output directory");
+    }
+
     private static string CharsLine(string bmfcPath) =>
         File.ReadAllLines(bmfcPath).Single(l => l.StartsWith("chars=", StringComparison.Ordinal));
 

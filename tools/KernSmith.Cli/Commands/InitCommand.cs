@@ -41,6 +41,11 @@ internal sealed class InitCommand
             if (!Path.HasExtension(outputPath))
                 outputPath = outputPath.TrimEnd('.') + ".bmfc";
 
+            // -o names the config file here, not the font output. The config's outputPath is the
+            // config path minus its extension, so `generate --config my.bmfc` writes my.fnt next
+            // to it (the raw -o value made that my.bmfc.fnt).
+            options.OutputPath = Path.ChangeExtension(outputPath, null);
+
             // Write the config file
             BmfcWriter.Write(options, outputPath);
 
