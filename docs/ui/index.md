@@ -61,7 +61,7 @@ The right panel contains collapsible sections for each effect type.
 ### Font Style
 
 - **Bold / Italic**: If a matching variant font file exists, it loads that file. Otherwise applies synthetic bold or italic.
-- **Anti-Alias**: Smooth glyph edges (enabled by default)
+- **Anti-Alias**: None (aliased), Grayscale (default), Light, or LCD. The list shows only the modes the selected rasterizer supports; the experimental Native backend supports all four, and hints only in Light.
 - **Hinting**: Sharper rendering at small sizes (enabled by default)
 - **Super Sample**: Render at 2x or 4x resolution then downsample for smoother results. Higher values are slower.
 
@@ -94,9 +94,13 @@ Applies a vertical color gradient across each glyph.
 
 Maps glyph data into individual RGBA channels for compressed output. Useful for game engines that support channel-packed fonts.
 
-### SDF (Signed Distance Field)
+### Distance Field
 
-Generates signed distance field output for resolution-independent rendering. Availability depends on the selected rasterizer backend.
+Generates distance-field output for resolution-independent rendering: **SDF** (single channel), or **MSDF**/**MTSDF** (multi-channel RGBA with sharp corners; Native backend only). The list shows only the modes the selected rasterizer supports. The Preview tab shows the raw field; the Sample tab decodes it back to glyph shapes.
+
+### Color Font
+
+Renders color glyphs when the font has color tables and the rasterizer supports them. **Palette** picks the font's color palette (0 = default).
 
 ### Variable Font Axes
 

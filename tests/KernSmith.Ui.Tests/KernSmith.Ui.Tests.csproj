@@ -25,6 +25,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Committed fixtures (licences next to the originals in KernSmith.Tests/Fixtures). -->
+    <None Include="..\KernSmith.Tests\Fixtures\Roboto-Regular.ttf" Link="Fixtures\Roboto-Regular.ttf" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\KernSmith.Tests\Fixtures\Color\BungeeColor-Regular.ttf" Link="Fixtures\BungeeColor-Regular.ttf" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\KernSmith\KernSmith.csproj" />
     <ProjectReference Include="..\..\apps\KernSmith.Ui\KernSmith.Ui.csproj" />
   </ItemGroup>

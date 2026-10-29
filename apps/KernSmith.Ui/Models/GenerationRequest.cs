@@ -71,8 +71,11 @@ public record GenerationRequest
     public bool ForceSyntheticBold { get; init; }
     /// <summary>Force synthetic italic, skipping native italic face lookup.</summary>
     public bool ForceSyntheticItalic { get; init; }
-    /// <summary>Enable grayscale anti-aliasing for glyph rasterization.</summary>
-    public bool AntiAlias { get; init; } = true;
+    /// <summary>
+    /// Anti-aliasing mode. Backends that do not advertise <see cref="AntiAliasMode.Light"/> or
+    /// <see cref="AntiAliasMode.Lcd"/> render those as grayscale (core negotiation).
+    /// </summary>
+    public AntiAliasMode AntiAlias { get; init; } = AntiAliasMode.Grayscale;
     /// <summary>Enable font hinting for sharper rendering at small sizes.</summary>
     public bool Hinting { get; init; } = true;
     /// <summary>Super-sampling multiplier. Valid values: 1 (off), 2, or 4.</summary>
@@ -140,12 +143,17 @@ public record GenerationRequest
     /// Distinct from <see cref="ChannelPackingEnabled"/>. Null means "not configured".
     /// </summary>
     public ChannelConfig? Channels { get; init; }
-    /// <summary>Generate Signed Distance Field glyphs for scalable rendering.</summary>
-    public bool SdfEnabled { get; init; }
+    /// <summary>
+    /// Distance field to generate: none, single-channel SDF, or multi-channel MSDF/MTSDF
+    /// (MSDF/MTSDF need a backend reporting <see cref="IRasterizerCapabilities.SupportsMsdf"/>).
+    /// </summary>
+    public SdfMode SdfMode { get; init; }
     /// <summary>SDF spread (search radius) in pixels. Range: 2..32. Default 8.</summary>
     public float SdfSpread { get; init; } = 8f;
     /// <summary>Render color glyphs from COLR/CPAL tables (e.g., emoji fonts).</summary>
     public bool ColorFontEnabled { get; init; }
+    /// <summary>CPAL palette index used for color glyphs. 0 = the font's default palette.</summary>
+    public int ColorPaletteIndex { get; init; }
     /// <summary>Index into the packing algorithm list: 0 = MaxRects, 1 = Skyline.</summary>
     public int PackingAlgorithmIndex { get; init; }
 

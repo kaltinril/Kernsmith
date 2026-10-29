@@ -78,6 +78,7 @@ static int ShowHelp()
           --padding <n>                Padding in pixels (default: 0)
           --spacing <n>                Spacing in pixels (default: 1)
           --sdf                        Enable SDF rendering
+          --sdf-mode <mode>            Distance field: none, sdf, msdf, mtsdf (msdf/mtsdf: native only)
           --outline <n>                Outline width in pixels (default: 0)
           --outline-shape <shape>      Outline corner shape: round (default), square, plus
           --gradient <top>,<bottom>    Vertical gradient (comma or space separated)

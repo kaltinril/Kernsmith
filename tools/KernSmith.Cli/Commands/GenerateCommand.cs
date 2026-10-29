@@ -343,6 +343,33 @@ internal sealed class GenerateCommand
     }
 
     /// <summary>
+    /// Resolves <c>--instance</c> to that named instance's <c>fvar</c> coordinates; explicit
+    /// <c>--axis</c> values override them. Core only takes axis values, so the CLI does the lookup.
+    /// </summary>
+    private static void ApplyNamedInstance(FontGeneratorOptions genOptions, CliOptions options, byte[]? fontData)
+    {
+        if (fontData == null && options.FontPath == null)
+            throw new ArgumentException("--instance needs --font: named instances are read from the font file.");
+
+        var info = BmFont.ReadFontInfo(fontData ?? File.ReadAllBytes(options.FontPath!), options.FaceIndex);
+        var instances = info.NamedInstances ?? [];
+        var match = instances.FirstOrDefault(n =>
+            string.Equals(n.Name, options.InstanceName, StringComparison.OrdinalIgnoreCase));
+        if (match == null)
+        {
+            var names = instances.Select(n => n.Name).Where(n => !string.IsNullOrEmpty(n)).ToList();
+            throw new ArgumentException(names.Count == 0
+                ? $"--instance '{options.InstanceName}': the font has no named instances."
+                : $"Unknown --instance '{options.InstanceName}'. Named instances: {string.Join(", ", names)}.");
+        }
+
+        var axes = new Dictionary<string, float>(match.Coordinates);
+        foreach (var (tag, value) in options.VariationAxes)
+            axes[tag] = value;
+        genOptions.VariationAxes = axes;
+    }
+
+    /// <summary>
     /// Runs a single font generation job from fully-resolved options and character set.
     /// </summary>
     /// <param name="options">The resolved CLI options for this job.</param>
@@ -362,6 +389,8 @@ internal sealed class GenerateCommand
         characters ??= BuildCharacterSet(options);
 
         var genOptions = BuildGenOptions(options, characters);
+        if (options.InstanceName != null)
+            ApplyNamedInstance(genOptions, options, fontData);
 
         // Determine output path
         var outputPath = ResolveOutputPath(options);
@@ -969,7 +998,7 @@ internal sealed class GenerateCommand
               --mono                      Disable anti-aliasing (alias for --aa none)
               --super-sample <n>          Super sampling level 1-4 (default: 1)
               --rasterizer <backend>      Rasterizer backend: freetype (default), stbtruetype, gdi, directwrite, native
-              --hinting / --no-hinting    Enable/disable FreeType hinting (default: on)
+              --hinting / --no-hinting    Enable/disable hinting (default: on; native hints only with --aa light)
               --gamma <n>                 Gamma correction applied during rasterization (default: 1.8)
               --height-percent <n>        Vertical height scaling percentage (default: 100)
               --match-char-height         Match rendered height to requested pixel height

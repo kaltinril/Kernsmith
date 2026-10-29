@@ -24,7 +24,8 @@ public class EffectsViewModel : ViewModel
     public bool Italic { get => Get<bool>(); set => Set(value); }
     public bool ForceSyntheticBold { get => Get<bool>(); set => Set(value); }
     public bool ForceSyntheticItalic { get => Get<bool>(); set => Set(value); }
-    public bool AntiAlias { get => Get<bool>(); set => Set(value); }
+    /// <summary>Anti-aliasing mode. The panel only offers the selected backend's supported modes.</summary>
+    public AntiAliasMode AntiAlias { get => Get<AntiAliasMode>(); set => Set(value); }
     public bool Hinting { get => Get<bool>(); set => Set(value); }
     public int SuperSampleLevel { get => Get<int>(); set => Set(value); }
 
@@ -63,12 +64,16 @@ public class EffectsViewModel : ViewModel
     // being silently dropped. Null means "not configured".
     public ChannelConfig? Channels { get => Get<ChannelConfig?>(); set => Set(value); }
 
-    // SDF
-    public bool SdfEnabled { get => Get<bool>(); set => Set(value); }
+    // Distance field (None, single-channel SDF, or multi-channel MSDF/MTSDF)
+    public SdfMode SdfMode { get => Get<SdfMode>(); set => Set(value); }
+    /// <summary>True when any distance field (SDF, MSDF or MTSDF) is selected.</summary>
+    public bool SdfEnabled => SdfMode != SdfMode.None;
     public float SdfSpread { get => Get<float>(); set => Set(value); }
 
     // Color Font
     public bool ColorFontEnabled { get => Get<bool>(); set => Set(value); }
+    /// <summary>CPAL palette index used for color glyphs (0 = the font's default palette).</summary>
+    public int ColorPaletteIndex { get => Get<int>(); set => Set(value); }
     /// <summary>Whether the currently loaded font has color glyph tables (COLR/CPAL/CBDT).</summary>
     public bool HasColorGlyphs { get => Get<bool>(); set => Set(value); }
 
@@ -82,6 +87,10 @@ public class EffectsViewModel : ViewModel
     public bool BackendSupportsVariableFonts { get => Get<bool>(); set => Set(value); }
     /// <summary>Whether the selected rasterizer backend supports SDF rendering.</summary>
     public bool BackendSupportsSdf { get => Get<bool>(); set => Set(value); }
+    /// <summary>Whether the selected rasterizer backend supports multi-channel MSDF/MTSDF.</summary>
+    public bool BackendSupportsMsdf { get => Get<bool>(); set => Set(value); }
+    /// <summary>Anti-aliasing modes the selected rasterizer backend advertises.</summary>
+    public IReadOnlyList<AntiAliasMode> BackendAntiAliasModes { get => Get<IReadOnlyList<AntiAliasMode>>(); set => Set(value); }
     /// <summary>Whether the selected backend is GDI (which cannot do true synthetic bold when a real bold face exists).</summary>
     public bool BackendIsGdi { get => Get<bool>(); set => Set(value); }
     /// <summary>Whether the current font family has a native bold variant.</summary>
@@ -99,7 +108,7 @@ public class EffectsViewModel : ViewModel
         FillColor = "#FFFFFF";
         AdvanceAdjustX = 0f;
         Gamma = 1.8f;
-        AntiAlias = true;
+        AntiAlias = AntiAliasMode.Grayscale;
         Hinting = true;
         SuperSampleLevel = 1;
         OutlineWidth = 1;
@@ -121,6 +130,31 @@ public class EffectsViewModel : ViewModel
         BackendSupportsColorFonts = true;
         BackendSupportsVariableFonts = true;
         BackendSupportsSdf = true;
+        BackendAntiAliasModes = [AntiAliasMode.None, AntiAliasMode.Grayscale];
+    }
+
+    /// <summary>
+    /// Replaces the variation axes with <paramref name="axes"/>, each at its default value, then
+    /// applies any <paramref name="values"/> on top (e.g. from a loaded project). Values are set
+    /// before <see cref="VariationAxesList"/>/<see cref="HasVariationAxes"/> change, because the
+    /// panel rebuilds its sliders from them on that notification.
+    /// </summary>
+    public void LoadVariationAxes(IReadOnlyList<VariationAxis>? axes, IReadOnlyDictionary<string, float>? values = null)
+    {
+        VariationAxisValues.Clear();
+        if (axes is { Count: > 0 })
+        {
+            foreach (var axis in axes)
+                VariationAxisValues[axis.Tag] = axis.DefaultValue;
+        }
+        if (values != null)
+        {
+            foreach (var (tag, value) in values)
+                VariationAxisValues[tag] = value;
+        }
+
+        VariationAxesList = axes;
+        HasVariationAxes = axes is { Count: > 0 };
     }
 
     /// <summary>Parses a hex color string (#RRGGBB) into R, G, B bytes. Returns black on invalid input.</summary>

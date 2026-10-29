@@ -52,6 +52,8 @@ public class FontConfigViewModel : ViewModel
     public bool BackendSupportsColorFonts { get => Get<bool>(); set => Set(value); }
     public bool BackendSupportsVariableFonts { get => Get<bool>(); set => Set(value); }
     public bool BackendSupportsSdf { get => Get<bool>(); set => Set(value); }
+    public bool BackendSupportsMsdf { get => Get<bool>(); set => Set(value); }
+    public IReadOnlyList<AntiAliasMode> BackendAntiAliasModes { get => Get<IReadOnlyList<AntiAliasMode>>(); set => Set(value); }
     public bool BackendSupportsSystemFonts { get => Get<bool>(); set => Set(value); }
 
     // --- System font list ---
@@ -86,6 +88,8 @@ public class FontConfigViewModel : ViewModel
             BackendSupportsColorFonts = caps.SupportsColorFonts;
             BackendSupportsVariableFonts = caps.SupportsVariableFonts;
             BackendSupportsSdf = caps.SupportsSdf;
+            BackendSupportsMsdf = caps.SupportsMsdf;
+            BackendAntiAliasModes = caps.SupportedAntiAliasModes;
             BackendSupportsSystemFonts = caps.SupportsSystemFonts;
         }
         catch (Exception ex)
@@ -94,6 +98,8 @@ public class FontConfigViewModel : ViewModel
             BackendSupportsColorFonts = false;
             BackendSupportsVariableFonts = false;
             BackendSupportsSdf = false;
+            BackendSupportsMsdf = false;
+            BackendAntiAliasModes = [AntiAliasMode.None, AntiAliasMode.Grayscale];
             BackendSupportsSystemFonts = false;
         }
     }

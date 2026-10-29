@@ -38,7 +38,8 @@ dotnet run --project apps/KernSmith.Ui
 - Advanced effect and rendering options — fill color, two-parameter shadow blur (kernel size + passes), extended gradient (offset, scale, cyclic), gamma correction, SDF spread, and per-glyph horizontal advance adjustment
 - Atlas packing and texture settings
 - Character set selection with Unicode block browser
-- Rasterizer backend selection — choose between FreeType, GDI, DirectWrite, or StbTrueType from a dropdown. Available backends depend on the current platform and installed NuGet packages.
+- Rasterizer backend selection — choose between FreeType, GDI, DirectWrite, StbTrueType, or the experimental Native backend (referenced from source; not on NuGet yet) from a dropdown. Available backends depend on the current platform. The anti-alias mode and distance-field mode (SDF, plus MSDF/MTSDF on Native) combos list only what the selected backend supports. See [TESTING-NATIVE.md](../../TESTING-NATIVE.md).
+- `--ui-rasterizer <backend>` renders the app's own interface text with that backend, through the Gum integration's `KernSmithFontCreator` (e.g. `dotnet run --project apps/KernSmith.Ui -f net10.0-windows -- --ui-rasterizer native`).
 - Project save/load and session persistence — load and save `.bmfc` (BMFont) and `.hiero` (libGDX) project files, including drag-and-drop (`.hiero` saving warns when settings can't be represented)
 
 ## Dependencies
