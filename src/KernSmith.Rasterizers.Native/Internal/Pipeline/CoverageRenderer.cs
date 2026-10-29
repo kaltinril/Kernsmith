@@ -32,7 +32,7 @@ internal sealed class CoverageRenderer : IGlyphRenderer
     public RasterizedGlyph Render(int codepoint, int glyphIndex, PreparedGlyph glyph, RasterOptions options)
     {
         var box = glyph.Box;
-        var edges = OutlineFlattener.Flatten(glyph.Outline, glyph.ToPixels);
+        var edges = OutlineFlattener.Flatten(glyph.Outline, glyph.ToPixels, includeHorizontal: options.AntiAlias == AntiAliasMode.None);
         var raster = ScanlineRasterizer.Rasterize(
             edges,
             box.Width,

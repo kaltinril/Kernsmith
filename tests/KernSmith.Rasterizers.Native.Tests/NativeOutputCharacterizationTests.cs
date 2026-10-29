@@ -8,8 +8,8 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// Pins Native's exact output — bitmaps, bearings, advances and <c>GetGlyphMetrics</c> — for
 /// a representative Roboto glyph set, so restructuring the glyph pipeline cannot change a
 /// single byte unnoticed. A legitimate pixel change must update them deliberately; the last one
-/// placed outlines by their <c>hmtx</c> left side bearing, which moved only '&amp;' and '8' —
-/// the two glyphs in the set whose bearing is one unit left of their <c>glyf</c> xMin.
+/// added mono dropout control, which changed only the <see cref="AntiAliasMode.None"/> hashes
+/// and only by adding pixels where a scanline through pixel centres crossed ink yet lit nothing.
 /// </summary>
 public class NativeOutputCharacterizationTests
 {
@@ -25,10 +25,10 @@ public class NativeOutputCharacterizationTests
     [Theory]
     [InlineData(8f, 72, AntiAliasMode.Grayscale, "816AE03FF4BC9ED70C41DC699453CCF402ED6E852C22C7DD686105546E15ED46")]
     [InlineData(12f, 72, AntiAliasMode.Grayscale, "85C329840396C0397B655BFEC2A8DFB60D24BA8C09779E529287B8E48181077A")]
-    [InlineData(12f, 72, AntiAliasMode.None, "672883F2C2FEBB03F9684929CAFE172A55F9A5D5532C7CE69470D80F1B7D5497")]
+    [InlineData(12f, 72, AntiAliasMode.None, "DB938F3774AC59B43714559A376088DA0672AE927517B94F56F85C6CE3973AE4")]
     [InlineData(17.5f, 72, AntiAliasMode.Grayscale, "1F83647C6FA383B08FE64A4D4109AF4D530047FE8DB26B5782D0CD282AF3CAA4")]
     [InlineData(32f, 72, AntiAliasMode.Grayscale, "C66FC4D8E539E493ADC22E29BEC7B9236A243A26B13691C8AC40A12FA3F65CFF")]
-    [InlineData(32f, 96, AntiAliasMode.None, "66BE4878C523B73CE2C0A4E03A03A93D1291CBBA20FA6C5CBBA7382AA2FB0C66")]
+    [InlineData(32f, 96, AntiAliasMode.None, "A7CD8AFC71351BCE144EF3619EDFEB5723DCD8F3BE57E45F56EB8171696ED250")]
     [InlineData(72f, 72, AntiAliasMode.Grayscale, "525E9D0DC1A0D7747D6D020FFF779D357DDAF57C973F1D337CEAC8040AA51CF4")]
     public void Output_IsByteIdenticalToTheCharacterizedBaseline(
         float size, int dpi, AntiAliasMode antiAlias, string expectedHash)

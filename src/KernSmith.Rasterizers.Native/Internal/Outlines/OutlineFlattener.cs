@@ -25,11 +25,14 @@ internal static class OutlineFlattener
     /// <param name="outline">The extracted outline, in font units.</param>
     /// <param name="transform">The font-unit to pixel mapping.</param>
     /// <param name="tolerance">Maximum flattening error in pixels.</param>
+    /// <param name="includeHorizontal">Keep exactly horizontal edges. They cross no horizontal
+    /// scanline and contribute no coverage, so coverage rendering omits them; mono dropout
+    /// control needs them to see thin horizontal strokes from vertical scanlines.</param>
     /// <returns>
     /// The contours' edges in outline order, keeping their original winding. Horizontal
-    /// edges are omitted: they cross no scanline and contribute no coverage.
+    /// edges are omitted unless <paramref name="includeHorizontal"/> is set.
     /// </returns>
-    public static EdgeSegment[] Flatten(GlyphOutline outline, OutlineTransform transform, float tolerance = DefaultTolerance)
+    public static EdgeSegment[] Flatten(GlyphOutline outline, OutlineTransform transform, float tolerance = DefaultTolerance, bool includeHorizontal = false)
     {
         ArgumentNullException.ThrowIfNull(outline);
 
@@ -80,6 +83,9 @@ internal static class OutlineFlattener
             currentX = endX;
             currentY = endY;
         }
+
+        if (!includeHorizontal)
+            edges.RemoveAll(IsHorizontal);
 
         return edges.ToArray();
     }
@@ -158,14 +164,13 @@ internal static class OutlineFlattener
     }
 
     /// <summary>Appends an edge unless it is horizontal, which no scanline can see.</summary>
-    private static void AddEdge(List<EdgeSegment> edges, float x0, float y0, float x1, float y1)
-    {
-        // Exactly-horizontal only — an epsilon would drop near-horizontal edges and break the
-        // rasterizer's closed-contour invariant (signed dY must sum to zero). Equals, not ==,
-        // because the comparison is intentionally exact.
-        if (y0.Equals(y1))
-            return;
-
+    private static void AddEdge(List<EdgeSegment> edges, float x0, float y0, float x1, float y1) =>
         edges.Add(new EdgeSegment(x0, y0, x1, y1));
-    }
+
+    /// <summary>
+    /// Exactly-horizontal only — an epsilon would drop near-horizontal edges and break the
+    /// rasterizer's closed-contour invariant (signed dY must sum to zero). Equals, not ==,
+    /// because the comparison is intentionally exact.
+    /// </summary>
+    private static bool IsHorizontal(EdgeSegment edge) => edge.Y0.Equals(edge.Y1);
 }
