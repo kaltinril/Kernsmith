@@ -197,6 +197,36 @@ public class CliTests : IDisposable
         File.Exists(output + "_0.png").ShouldBeTrue();
     }
 
+    [Theory]
+    [InlineData("native", "99")]
+    [InlineData("native", "-1")]
+    [InlineData("freetype", "99")]
+    public void Generate_ColorPaletteTheFontLacks_IsAGenerationError(string rasterizer, string palette)
+    {
+        // Whether a palette index exists depends on the font's CPAL table, so a bad one is the
+        // backend rejecting an option for this font -- exit 4 like every other such rejection.
+        var colorFont = Path.Combine(AppContext.BaseDirectory, "Fixtures", "Color", "BungeeColor-Regular.ttf");
+
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", colorFont, "-s", "32", "--rasterizer", rasterizer, "--color-font",
+            "--color-palette", palette, "-o", Path.Combine(_tempDir, "palette"), "--no-color");
+
+        exitCode.ShouldBe(4, $"stderr: {stderr}");
+        stderr.ShouldNotContain("Unhandled exception", Case.Sensitive);
+        stderr.ShouldContain($"Generation error ({rasterizer} rasterizer)", Case.Sensitive);
+        stderr.ShouldContain("palette", Case.Sensitive);
+    }
+
+    [Fact]
+    public void GenerateHelp_ColorFont_NamesEveryColorFormat()
+    {
+        var (exitCode, stdout, _) = RunCli("generate", "--help");
+
+        exitCode.ShouldBe(0);
+        stdout.ShouldContain("COLR/CPAL layers, CBDT/sbix bitmaps", Case.Sensitive);
+        stdout.ShouldNotContain("(COLR/CPAL)", Case.Sensitive);
+    }
+
     [Fact]
     public void Generate_BackendDeclinesOption_PrintsOneLineErrorWithBackendName()
     {
@@ -501,6 +531,20 @@ public class CliTests : IDisposable
         exitCode.ShouldBe(0, $"stderr: {stderr}");
         stdout.ShouldContain("native");
         stdout.ShouldNotContain("native          (not available)");
+    }
+
+    [Fact]
+    public void ListRasterizers_NamesTheVectorOutlineCapability()
+    {
+        // SupportsOutlineStroke means the backend draws OutlineMode.Vector outlines itself; every
+        // backend gets bitmap outlines from core, so a bare "Outline" label would mislead.
+        var (exitCode, stdout, stderr) = RunCli("list-rasterizers");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        var lines = stdout.Split('\n').Select(line => line.TrimEnd()).ToArray();
+        lines.Single(line => line.TrimStart().StartsWith("native ", StringComparison.Ordinal))
+            .ShouldContain("Vector Outline", Case.Sensitive);
+        lines.ShouldAllBe(line => !line.Contains(", Outline,") && !line.EndsWith(", Outline"));
     }
 
     [Fact]

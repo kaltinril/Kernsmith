@@ -431,9 +431,8 @@ public class ScanlineRasterizerTests
         const int width = 80, height = 90;
         ScanlineRasterizer.Rasterize(edges, width, height, originX, originY, antiAlias); // warm the pool
 
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        var result = ScanlineRasterizer.Rasterize(edges, width, height, originX, originY, antiAlias);
-        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        RasterResult result = null!;
+        long allocated = AllocationMeter.BytesAllocatedBy(() => result = ScanlineRasterizer.Rasterize(edges, width, height, originX, originY, antiAlias));
 
         result.Bitmap.ShouldContain(v => v > 0);
         allocated.ShouldBeLessThanOrEqualTo(width * height + 128, "scratch allocated per glyph");

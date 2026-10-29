@@ -29,10 +29,11 @@ public class NativeAllocationTests
         foreach (int codepoint in simple)
             native.GetGlyphMetrics(codepoint, options); // warm caches and JIT
 
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        foreach (int codepoint in simple)
-            native.GetGlyphMetrics(codepoint, options);
-        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        long allocated = AllocationMeter.BytesAllocatedBy(() =>
+        {
+            foreach (int codepoint in simple)
+                native.GetGlyphMetrics(codepoint, options);
+        });
 
         allocated.ShouldBe(0, $"GetGlyphMetrics allocated {allocated} B over {simple.Length} glyphs");
     }
@@ -62,10 +63,11 @@ public class NativeAllocationTests
                 + ArrayBytes<EdgeSegment>(OutlineFlattener.Flatten(outline, toPixels).Length);
         }
 
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        foreach (int codepoint in simple)
-            native.RasterizeGlyph(codepoint, options);
-        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        long allocated = AllocationMeter.BytesAllocatedBy(() =>
+        {
+            foreach (int codepoint in simple)
+                native.RasterizeGlyph(codepoint, options);
+        });
 
         long scratchPerGlyph = (allocated - kept) / simple.Length;
         scratchPerGlyph.ShouldBeLessThanOrEqualTo(SmallObjectsPerGlyph,
