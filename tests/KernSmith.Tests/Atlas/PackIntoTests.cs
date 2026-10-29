@@ -155,9 +155,14 @@ public sealed class PackIntoTests
         // Arrange
         var glyphs = new List<GlyphRect> { new(Id: 1, Width: 300, Height: 300) };
 
-        // Act & Assert
-        Should.Throw<InvalidOperationException>(() =>
+        // Act
+        var ex = Should.Throw<AtlasPackingException>(() =>
             _packer.PackInto(glyphs, [], pageCount: 1, maxWidth: 256, maxHeight: 256));
+
+        // Assert
+        ex.GlyphWidth.ShouldBe(300);
+        ex.GlyphHeight.ShouldBe(300);
+        ex.MaxTextureSize.ShouldBe(256);
     }
 
     [Fact]

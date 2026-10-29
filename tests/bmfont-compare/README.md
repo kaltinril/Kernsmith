@@ -24,7 +24,7 @@ python tests/bmfont-compare/regression_check.py --tolerance 1
 
 This automates the full workflow: stash changes, checkout main, generate baselines, checkout branch, restore stash, generate current, run diff. On failure or Ctrl+C it restores your original branch and stash.
 
-Exit codes: `0` = all identical, `1` = differences found, `2` = error.
+Exit codes: `0` = everything produced on both sides is identical, `1` = differences found or a (config, backend) pair that produced output on the base failed on the branch, `2` = error (build/git failure, nothing compared). A pair that fails on **both** sides (a capability skip, CFF on a TrueType-only backend) is tolerated.
 
 ### Generate comparison images only
 
@@ -55,10 +55,18 @@ python tests/bmfont-compare/regression_check.py [options]
 
 Steps performed:
 1. Stash uncommitted changes (if any)
-2. Checkout base branch, generate fonts, copy output as `main_`-prefixed baselines
+2. Checkout base branch, **delete every `*.fnt`/`*.png` in the output dir** (current, `main_` and `diff_` files), generate fonts, then **move** the output to `main_`-prefixed baselines
 3. Checkout feature branch, restore stash, generate fonts
 4. Run `diff_comparisons.py` to compare baselines vs current
-5. Restore original branch on failure
+5. Print a summary, then restore the original branch on failure
+
+Because the output dir starts empty and the baseline is moved rather than copied, a stale file from an earlier run can never stand in for output a side did not produce. The summary reports, per config:
+
+- **`NEW config 'x' (no baseline): freetype, gdi, ...`** — the `.bmfc` exists on the branch but not the base, with the backends that produced output. Not a failure, but nothing was compared: look at its `comparison-x.png` yourself. A config only counts as new if it is committed on the branch (`git add -f`); an uncommitted config in the gitignored folder is present on both sides.
+- **`REMOVED config 'x'`** — on the base but not the branch. Not a failure.
+- **`FAIL: ... produced output on the base but failed on the branch`** — each such `config / backend` with the branch's error message. Exit code 1.
+
+The config lists and branch failures are saved to `regression_state.json` in the output dir so `--skip-generate` can report the same summary.
 
 ### GenerateAll
 
@@ -104,9 +112,14 @@ Compares baseline vs current output across three categories:
 
 1. **Hardcoded comparison PNGs** (`comparison.png` through `comparison4.png`) — magenta-highlighted pixel diffs
 2. **Per-font comparison PNGs** (`comparison-*.png`) — auto-discovered, same magenta diff format
-3. **FNT metadata files** (`*.fnt`) — line-by-line text diff, skipping the `kernsmith` version line (contains commit hash that always differs between branches)
+3. **FNT metadata files** (`*.fnt`) — line-by-line text diff that ignores only the `version` (and any `commit`) token of the `kernsmith` line, which always differs between branches; the rest of that line is extended metadata (`sdfSpread`, `outlineThickness`, ...) and is compared
 
 Identical pixels are dimmed, different pixels are bright magenta (#FF00FF).
+
+Files are matched by name across both sides. A file on only the current side is
+`NEW (no baseline)` (not a failure); on only the baseline side it is `MISSING` and
+counts as a difference, unless its config is passed with `--removed-config <name>`
+(repeatable), which reports it as `REMOVED`.
 
 The top **41 rows** of each comparison image (the `--ignore-top` default) are the
 column/config **header label band**. That text is drawn with GDI/DirectWrite
@@ -131,7 +144,7 @@ python tests/bmfont-compare/diff_comparisons.py --dir tests/bmfont-compare/outpu
 > run-to-run subpixel antialiasing jitter (a handful of pixels per font). Use
 > `--tolerance 1` to treat that as identical; `.fnt` metadata is always compared exactly.
 
-Exit codes: `0` = all identical, `1` = differences found, `2` = error.
+Exit codes: `0` = every file present on both sides is identical (NEW/REMOVED do not fail), `1` = differences found or a file MISSING on the current side, `2` = error (nothing compared).
 
 #### diff_images.py / diff_fnt.py / diff_all_fonts.py — Atlas and metrics diffs
 
@@ -144,6 +157,12 @@ python tests/bmfont-compare/diff_all_fonts.py
 
 # Deep comparison of a single .fnt pair
 python tests/bmfont-compare/diff_fnt.py <file_a.fnt> <file_b.fnt>
+```
+
+#### test_harness.py — Unit tests for the scripts above
+
+```bash
+python -m unittest discover -s tests/bmfont-compare -p "test_*.py" -v
 ```
 
 ## Input Files

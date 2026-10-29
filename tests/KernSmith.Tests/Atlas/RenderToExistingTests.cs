@@ -122,11 +122,8 @@ public class RenderToExistingTests
         // Act
         var act = () => BmFont.Generate(FontData, options);
 
-        // Assert — the packer throws InvalidOperationException when a single glyph exceeds page dimensions
-        var exception = Record.Exception(() => act());
-        exception.ShouldNotBeNull("glyphs should not fit in a 10x10 region");
-        (exception is AtlasPackingException || exception is InvalidOperationException)
-            .ShouldBeTrue($"expected AtlasPackingException or InvalidOperationException, got {exception!.GetType().Name}");
+        // Assert — a glyph larger than the 10x10 region cannot be placed
+        Should.Throw<AtlasPackingException>(act);
     }
 
     // ---------------------------------------------------------------

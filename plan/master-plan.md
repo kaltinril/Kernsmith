@@ -91,14 +91,15 @@ Output Layer
 | 110 | [Post-Processing Enhancements](phase-110-post-processing-enhancements.md) | Post-processing pipeline enhancements; the core post-processor architecture landed in Phase 32d | Partially done (core architecture complete; remainder future) |
 | 111 | [Texture Fill for Glyphs](phase-111-texture-fill.md) | Design for texture/pattern fill effects on glyphs; no `TextureFillEffect` exists yet | Deferred / not started |
 | 112 | [Shader Fill for Glyphs](phase-112-shader-fill.md) | Design for shader-computed (per-pixel) fill effects on glyphs; no `ShaderFillEffect` exists yet | Deferred / not started |
-| 150 | [Deferred Rasterizer Issues](phase-150-deferred-rasterizer-issues.md) | Color fonts, variable fonts, native DW kerning, GDI MatchCharHeight bug (deferred from Phase 78G) | Planning |
+| 150 | [Deferred Rasterizer Issues](phase-150-deferred-rasterizer-issues.md) | Color fonts, variable fonts, native DW kerning, GDI MatchCharHeight bug (deferred from Phase 78G); StbTrueType's FTL-derived embolden (note only) | Planning |
 | 181 | [Atlas Variants: Padded Silhouette Regions](phase-181-shadow-outline-atlas-variants.md) | GitHub #175 — superseded by Phase 182 (dropshadow-only framing was too narrow) | Superseded |
 | 182 | [Shared Atlas Groups](phase-182-shared-atlas-groups.md) | GitHub #175 — generic mechanism to pack N independent glyph sources (dropshadow variant, later multi-font) into one shared atlas PNG; shipped in 0.18.0-0.18.2 | Complete |
 | 183 | [Runtime Glyph Addition with Stable Packing](phase-183-runtime-glyph-addition.md) | GitHub #208 — add letters/styles at runtime, get back glyph bytes + a suggested in-place position that never moves existing glyphs; `BmFontIncrementalSession` API | Implemented (branch, pending merge) |
 | 186 | [Apple Platform Verification](phase-186-apple-platform-verification.md) | Run the platform smoke test on macOS, iOS simulator (Mono + NativeAOT), Mac Catalyst and a real iPhone to resolve the ⏳ iOS/Mac Catalyst cells in the README platform table | Not started — needs a Mac (Vic) |
+| 187 | [BmFontBuilder.FromConfig Field Coverage](phase-187-builder-fromconfig-field-coverage.md) | `Builder().FromConfig` drops Gamma, FillColor, AdvanceAdjust, gradient offset/scale/cyclic, shadow blur kernel/passes, Variants, SizeConstraints, TargetRegion | Not started |
 | 200 | [FontCrafter & Platform Rasterizers](phase-200-fontcrafter-and-platform-rasterizers.md) | FontCrafter product concept and platform-specific rasterizer distribution | Not started / Future |
 | 250 | [UI Cleanup & Polish](phase-250-ui-cleanup.md) | Collapsible sections, consistent grids, shared UI helpers, spacing polish. Day-to-day snapshot: [ui-cleanup-progress.md](ui-cleanup-progress.md) | In progress (Phase 1 landed with changed scope, Phases 3-5 largely done; Phase 2's Generate-bar issue needs re-validation) |
-| 300 | [Deferred Performance Work](phase-300-deferred-performance.md) | Perf 6 Phases B/C carried from Phase 95 -- pool atlas page & per-glyph buffers; needs IDisposable/ownership redesign (Perf 10 excluded -- proven impossible) | Deferred / Future |
+| 300 | [Deferred Performance Work](phase-300-deferred-performance.md) | Perf 6 Phases B/C carried from Phase 95 -- pool atlas page & per-glyph buffers; needs IDisposable/ownership redesign (Perf 10 excluded -- proven impossible); GPOS PairPos format 1 coverage rescans | Deferred / Future |
 
 ### Native Rasterizer Series (Phases 160-180)
 

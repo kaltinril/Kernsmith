@@ -7,12 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **StbTrueType SDF now honours `SdfSpread` and uses the FreeType backend's distance encoding** (128 on the edge, inside bright, `SdfSpread` pixels of padding, 128/spread per pixel; spread rounded and clamped to 2..32 like FreeType). It previously ignored the spread and always used 5 px of padding with ±2 px of distance range, so the `.fnt`'s `sdfSpread` did not describe the atlas. This changes Stb SDF output at the default spread 8 too: glyphs gain 3 px of padding per side and a gentler gradient, matching FreeType (mean absolute difference from FreeType's SDF on Roboto 48 px drops from about 40 to 3 byte levels).
+- **Behaviour change:** a glyph larger than an atlas page now throws `AtlasPackingException` (part of the `BmFontException` hierarchy) from `MaxRectsPacker`/`SkylinePacker` instead of `InvalidOperationException`, with `GlyphWidth`, `GlyphHeight` and `MaxTextureSize` (the page dimension the glyph exceeds) set. `AtlasPackingException` does not derive from `InvalidOperationException`, so code that caught `InvalidOperationException` for this case must catch `AtlasPackingException` (or `BmFontException`) instead. The desktop UI now shows its "glyphs too large for max texture size" message for it, and `kernsmith benchmark` reports it as a generation error (exit 4) instead of crashing.
+
 ### Fixed
 
 - FreeType: variable-font axis coordinates are passed to FreeType as pointer-sized `FT_Fixed` values. They were marshalled as 32-bit ints, so FreeType read them in pairs and every variable-font request rendered a scrambled instance regardless of the axes asked for.
 - FreeType: color glyphs (CBDT/sbix bitmaps, COLR layers) are un-premultiplied before they leave the backend. FreeType returns them premultiplied while KernSmith treats RGBA glyphs as straight alpha, so every anti-aliased color edge came out darkened by its own alpha a second time.
 - FreeType: `AntiAlias = Lcd` glyphs are RGBA at their real pixel width (R, G, B = the three subpixel coverages, A = the largest). The raw subpixel buffer was passed on as a grayscale bitmap three times as wide as the glyph, so LCD glyphs were stretched 3x in the atlas and their metrics did not match the bitmap.
 - FreeType: `GetGlyphMetrics` (used by `BmFont.EstimateAtlasSize`) now reports exactly the box `RasterizeGlyph` produces. It read FreeType's slot metrics, which synthetic italic never updates and which are unsnapped without hinting, and it ignored the mono/color load flags, so italic, bold, unhinted, mono, LCD and SDF requests were measured with the wrong bearings or size.
+- `kernsmith generate` crashed with "Unhandled exception" and a stack trace when the chosen backend rejected the font or an option (a `BmFontException` such as `RasterizationException`/`FontFormatException`, or `NotSupportedException`, e.g. `--rasterizer stbtruetype --color-font`). It now prints a one-line `Error: Generation error (<backend> rasterizer): <message>` to stderr and exits with code 4.
+- `BmFontBuilder.FromConfig` now carries `SdfSpread` and `SdfScale` from the config; it dropped them, so builder-based generation (including the `tests/bmfont-compare` harness's `sdf.bmfc`) rendered SDF at the default spread 8 and scale 1.
+- **Damaged fonts could crash, hang or exhaust memory in the core font parser instead of failing with a KernSmith exception.** A truncated table directory or TTC offset, `GPOS` subtable offsets past their table, `fvar` axis arrays overflowing `int`, and a `cmap` subtable at the table's last byte threw `ArgumentOutOfRangeException` (now `FontParsingException`, or the damaged optional subtable is skipped); coverage/class ranges ending at glyph 65535 looped forever; overlapping coverage ranges grew without bound; overlapping `cmap` format 4 segments and format 12 groups starting past Unicode or spanning it repeatedly ran for billions of iterations.
+- `KernSmith.Fonts.Web`: an italic request at a non-400 weight returned the 400 italic. `WebFontSource` asked for `family=Roboto:ital,700`, which Google Fonts and Bunny Fonts both read as two variants (italic 400 + regular 700); it now asks for `family=Roboto:700italic`. A `WebFontProvider.Custom` endpoint must accept that `{weight}italic` form.
 
 ## [0.24.0] - 2026-10-18
 

@@ -60,17 +60,27 @@ public class RasterizerFactoryTests
     [Fact]
     public void Register_ThenCreate_ReturnsRegisteredInstance()
     {
-        var called = false;
-        RasterizerFactory.Register(RasterizerBackend.DirectWrite, () =>
+        // Overrides the global DirectWrite registration, so restore factory-default state
+        // afterwards; otherwise later tests in the collection get a FreeTypeRasterizer
+        // back from Create(DirectWrite).
+        try
         {
-            called = true;
-            return RasterizerFactory.Create(RasterizerBackend.FreeType);
-        });
+            var called = false;
+            RasterizerFactory.Register(RasterizerBackend.DirectWrite, () =>
+            {
+                called = true;
+                return RasterizerFactory.Create(RasterizerBackend.FreeType);
+            });
 
-        using var rasterizer = RasterizerFactory.Create(RasterizerBackend.DirectWrite);
+            using var rasterizer = RasterizerFactory.Create(RasterizerBackend.DirectWrite);
 
-        called.ShouldBeTrue();
-        rasterizer.ShouldNotBeNull();
+            called.ShouldBeTrue();
+            rasterizer.ShouldNotBeNull();
+        }
+        finally
+        {
+            RasterizerFactory.ResetForTesting();
+        }
     }
 
     [Fact]

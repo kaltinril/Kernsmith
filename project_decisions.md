@@ -43,6 +43,7 @@ Decisions made, with the why — consult before re-litigating anything. One per 
 
 - `regression_check.py` builds `GenerateAll` as a separate **fatal** step, because `dotnet run` exits 1 for both a build failure and a partial generation; tolerating both let a non-compiling harness leave stale output in place, so the diff compared main against itself and reported a false pass.
 - A backend declining a capability the config requests (SDF on GDI/DirectWrite/Native) is a **skip**, not a failure — otherwise adding an SDF config would permanently red the harness.
+- `regression_check.py` clears every generated `.fnt`/`.png` before the base run and *moves* the base output to `main_` names, because a leftover file from an earlier run could otherwise stand in for output one side did not produce and be reported identical. It fails on a (config, backend) pair that produced output on the base but fails on the branch, and tolerates a pair failing on both sides: a both-sides failure is a capability gap, while a branch-only failure is exactly the regression that tolerating every failure used to hide. A config on only one side is reported `NEW`/`REMOVED` without failing, since there is nothing to compare.
 - An `sdf.bmfc` config exists specifically because no other config exercised the SDF path, so the harness would report "identical" for SDF changes without ever running them.
 
 ## Ownership & Dependencies

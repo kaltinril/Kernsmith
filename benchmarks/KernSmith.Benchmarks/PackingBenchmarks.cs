@@ -11,7 +11,7 @@ public class PackingBenchmarks
     [GlobalSetup]
     public void Setup()
     {
-        _fontData = File.ReadAllBytes(FindFont("Roboto-Regular.ttf"));
+        _fontData = BenchmarkFixtures.ReadFont("Roboto-Regular.ttf");
     }
 
     // ASCII (95 glyphs)
@@ -92,15 +92,4 @@ public class PackingBenchmarks
         PackingAlgorithm = PackingAlgorithm.MaxRects,
         MaxTextureSize = 1024
     });
-
-    private static string FindFont(string name)
-    {
-        var paths = new[]
-        {
-            Path.Combine("tests", "KernSmith.Tests", "Fixtures", name),
-            Path.Combine("..", "..", "..", "..", "tests", "KernSmith.Tests", "Fixtures", name),
-        };
-        return paths.Select(Path.GetFullPath).FirstOrDefault(File.Exists)
-            ?? throw new FileNotFoundException($"Test font not found: {name}");
-    }
 }

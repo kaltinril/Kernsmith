@@ -148,7 +148,9 @@ internal sealed class BenchmarkCommand
             ConsoleOutput.WriteError($"Font error: {ex.Message}");
             return ExitCodes.FontParseError;
         }
-        catch (InvalidOperationException ex)
+        // BmFontException covers AtlasPackingException (a glyph larger than the atlas page)
+        // and a backend rejecting the font: expected user errors, not crashes.
+        catch (Exception ex) when (ex is InvalidOperationException or BmFontException)
         {
             ConsoleOutput.WriteError($"Generation error: {ex.Message}");
             return ExitCodes.GenerationError;
