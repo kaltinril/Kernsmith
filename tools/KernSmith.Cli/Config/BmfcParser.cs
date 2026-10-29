@@ -44,6 +44,8 @@ internal static class BmfcParser
             Size = gen.Size,
             Dpi = gen.Dpi,
             AntiAlias = gen.AntiAlias,
+            LcdFilter = gen.LcdFilter,
+            LcdSubpixelOrder = gen.LcdSubpixelOrder,
             Sdf = gen.Sdf,
             SdfMode = gen.SdfMode,
             Bold = gen.Bold,

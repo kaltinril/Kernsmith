@@ -15,6 +15,20 @@ public sealed record RasterOptions
     /// <summary>Anti-aliasing mode. Default is grayscale.</summary>
     public AntiAliasMode AntiAlias { get; init; } = AntiAliasMode.Grayscale;
 
+    /// <summary>
+    /// The low-pass filter for <see cref="AntiAliasMode.Lcd"/>. Default is
+    /// <see cref="KernSmith.LcdFilter.Default"/> (the backend's choice). Only consumed by
+    /// backends that render subpixel output (Native); others ignore it.
+    /// </summary>
+    public LcdFilter LcdFilter { get; init; }
+
+    /// <summary>
+    /// The display's subpixel layout for <see cref="AntiAliasMode.Lcd"/>. Default is
+    /// <see cref="KernSmith.LcdSubpixelOrder.Rgb"/>. Only consumed by backends that render
+    /// subpixel output (Native); others ignore it.
+    /// </summary>
+    public LcdSubpixelOrder LcdSubpixelOrder { get; init; }
+
     /// <summary>If true, applies bold (native face or synthetic).</summary>
     public bool Bold { get; init; }
 
@@ -84,7 +98,8 @@ public sealed record RasterOptions
     /// <summary>
     /// Supersampling factor for higher quality rendering. The rasterizer renders at
     /// Size * SuperSample internally and downscales. Default is 1 (no supersampling).
-    /// BMFont's "aa" setting maps to this value.
+    /// BMFont's "aa" setting maps to this value. KernSmith core hands a backend 1 whenever the
+    /// effective mode is <see cref="AntiAliasMode.Lcd"/>: LCD renders at the final size.
     /// </summary>
     public int SuperSample { get; init; } = 1;
 
@@ -98,6 +113,8 @@ public sealed record RasterOptions
             Size = options.Size,
             Dpi = options.Dpi,
             AntiAlias = options.AntiAlias,
+            LcdFilter = options.LcdFilter,
+            LcdSubpixelOrder = options.LcdSubpixelOrder,
             Bold = options.Bold,
             Italic = options.Italic,
             ForceSyntheticBold = options.ForceSyntheticBold,

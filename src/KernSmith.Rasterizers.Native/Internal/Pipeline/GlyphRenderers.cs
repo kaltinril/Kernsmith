@@ -16,6 +16,8 @@ internal static class GlyphRenderers
     /// without color glyphs renders exactly as if it were off.
     /// </remarks>
     /// <exception cref="NotSupportedException">If no renderer handles the requested mode.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">If an LCD request names an undefined
+    /// <see cref="RasterOptions.LcdFilter"/> or <see cref="RasterOptions.LcdSubpixelOrder"/>.</exception>
     public static IGlyphRenderer Select(RasterOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -34,7 +36,7 @@ internal static class GlyphRenderers
         // LCD subpixel (Phase 173). Light renders as coverage: its hinting already ran in
         // the pipeline's hint stage (GlyphHinter, Phase 174).
         if (options.AntiAlias == AntiAliasMode.Lcd)
-            return LcdRenderer.Instance;
+            return LcdRenderer.For(options.LcdFilter, options.LcdSubpixelOrder);
 
         return CoverageRenderer.Instance;
     }

@@ -9,12 +9,13 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// </summary>
 public class LcdFilterTests
 {
-    public static TheoryData<string> Filters => ["PixelBox", "Triangle"];
+    public static TheoryData<string> Filters => ["PixelBox", "Triangle", "Identity"];
 
-    private static LcdFilter ByName(string name) => name switch
+    private static LcdFilterKernel ByName(string name) => name switch
     {
-        "PixelBox" => LcdFilter.PixelBox,
-        "Triangle" => LcdFilter.Triangle,
+        "PixelBox" => LcdFilterKernel.PixelBox,
+        "Triangle" => LcdFilterKernel.Triangle,
+        "Identity" => LcdFilterKernel.Identity,
         _ => throw new ArgumentOutOfRangeException(nameof(name)),
     };
 
@@ -39,10 +40,31 @@ public class LcdFilterTests
     [Fact]
     public void Kernels_AreTheDocumentedOnes()
     {
-        LcdFilter.PixelBox.Weights.ShouldBe([1, 1, 1]);
-        LcdFilter.PixelBox.Denominator.ShouldBe(3);
-        LcdFilter.Triangle.Weights.ShouldBe([1, 2, 3, 2, 1]);
-        LcdFilter.Triangle.Denominator.ShouldBe(9);
+        LcdFilterKernel.PixelBox.Weights.ShouldBe([1, 1, 1]);
+        LcdFilterKernel.PixelBox.Denominator.ShouldBe(3);
+        LcdFilterKernel.Triangle.Weights.ShouldBe([1, 2, 3, 2, 1]);
+        LcdFilterKernel.Triangle.Denominator.ShouldBe(9);
+        LcdFilterKernel.Identity.Weights.ShouldBe([1]);
+        LcdFilterKernel.Identity.Denominator.ShouldBe(1);
+        LcdFilterKernel.Identity.Radius.ShouldBe(0);
+    }
+
+    [Theory]
+    [InlineData(LcdFilter.Default, "PixelBox")]
+    [InlineData(LcdFilter.Light, "PixelBox")]
+    [InlineData(LcdFilter.Smooth, "Triangle")]
+    [InlineData(LcdFilter.None, "Identity")]
+    public void PublicPresets_MapToTheirKernels(LcdFilter filter, string kernel)
+    {
+        // Default is Native's own choice: the pixel box, which keeps LCD output unchanged from
+        // before the option existed and matches the FreeType backend per channel.
+        LcdFilterKernel.For(filter).ShouldBeSameAs(ByName(kernel));
+    }
+
+    [Fact]
+    public void For_RejectsAnUndefinedPreset()
+    {
+        Should.Throw<ArgumentOutOfRangeException>(() => LcdFilterKernel.For((LcdFilter)99));
     }
 
     [Theory]
@@ -79,17 +101,17 @@ public class LcdFilterTests
         byte[] row = [255, 255, 255];
 
         // Index -1 and 3 sit just outside; only one real neighbour contributes to each.
-        LcdFilter.PixelBox.Sample(row, -1).ShouldBe((byte)85);
-        LcdFilter.PixelBox.Sample(row, 3).ShouldBe((byte)85);
-        LcdFilter.PixelBox.Sample(row, 0).ShouldBe((byte)170);
-        LcdFilter.PixelBox.Sample(row, -2).ShouldBe((byte)0);
+        LcdFilterKernel.PixelBox.Sample(row, -1).ShouldBe((byte)85);
+        LcdFilterKernel.PixelBox.Sample(row, 3).ShouldBe((byte)85);
+        LcdFilterKernel.PixelBox.Sample(row, 0).ShouldBe((byte)170);
+        LcdFilterKernel.PixelBox.Sample(row, -2).ShouldBe((byte)0);
     }
 
     [Fact]
     public void Constructor_RejectsAnEvenKernelOrANonPositiveDenominator()
     {
-        Should.Throw<ArgumentException>(() => new LcdFilter([1, 1], 2));
-        Should.Throw<ArgumentOutOfRangeException>(() => new LcdFilter([1, 1, 1], 0));
+        Should.Throw<ArgumentException>(() => new LcdFilterKernel([1, 1], 2));
+        Should.Throw<ArgumentOutOfRangeException>(() => new LcdFilterKernel([1, 1, 1], 0));
     }
 
     [Theory]
@@ -130,7 +152,7 @@ public class LcdFilterTests
                 var row = subpixels.AsSpan(y * width * 3, width * 3);
                 for (int p = 0; p < width; p++)
                 {
-                    int filtered = LcdFilter.PixelBox.Sample(row, (3 * p) + c);
+                    int filtered = LcdFilterKernel.PixelBox.Sample(row, (3 * p) + c);
                     int direct = channel[(y * width) + p];
                     Math.Abs(filtered - direct).ShouldBeLessThanOrEqualTo(1, $"pixel ({p},{y}) channel {c}");
                 }

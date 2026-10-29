@@ -122,6 +122,16 @@ public sealed class BmFontBuilder
     /// <returns>This builder.</returns>
     public BmFontBuilder WithAntiAlias(AntiAliasMode mode) { _options.AntiAlias = mode; return this; }
 
+    /// <summary>Sets the low-pass filter for <see cref="AntiAliasMode.Lcd"/> output; see <see cref="FontGeneratorOptions.LcdFilter"/>.</summary>
+    /// <param name="filter">The LCD filter.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithLcdFilter(LcdFilter filter) { _options.LcdFilter = filter; return this; }
+
+    /// <summary>Sets the display's subpixel layout for <see cref="AntiAliasMode.Lcd"/> output; see <see cref="FontGeneratorOptions.LcdSubpixelOrder"/>.</summary>
+    /// <param name="order">The subpixel layout.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithLcdSubpixelOrder(LcdSubpixelOrder order) { _options.LcdSubpixelOrder = order; return this; }
+
     /// <summary>Sets the max texture size (both width and height) in pixels.</summary>
     /// <param name="size">Max width and height in pixels.</param>
     /// <returns>This builder.</returns>
@@ -455,6 +465,8 @@ public sealed class BmFontBuilder
         _options.ForceSyntheticBold = source.ForceSyntheticBold;
         _options.ForceSyntheticItalic = source.ForceSyntheticItalic;
         _options.AntiAlias = source.AntiAlias;
+        _options.LcdFilter = source.LcdFilter;
+        _options.LcdSubpixelOrder = source.LcdSubpixelOrder;
         _options.MaxTextureWidth = source.MaxTextureWidth;
         _options.MaxTextureHeight = source.MaxTextureHeight;
         _options.Padding = source.Padding;

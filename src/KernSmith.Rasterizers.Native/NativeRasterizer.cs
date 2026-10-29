@@ -37,7 +37,9 @@ namespace KernSmith.Rasterizers.Native;
 /// flag is false. <see cref="RasterOptions.SuperSample"/> is ignored: with
 /// <see cref="IRasterizerCapabilities.HandlesOwnSizing"/> false the pipeline already renders
 /// at the supersampled size and box-filters the result back down, exactly as it does for the
-/// FreeType backend.
+/// FreeType backend — except for <see cref="AntiAliasMode.Lcd"/>, which it renders at the final
+/// size. <see cref="RasterOptions.LcdFilter"/> and <see cref="RasterOptions.LcdSubpixelOrder"/>
+/// select the LCD filter and panel layout (Phase 173).
 ///
 /// Each glyph runs a staged pipeline (see the package README): decode via an
 /// <see cref="IOutlineDecoder"/>, outline transforms, bounds, scale/hint, then render-mode

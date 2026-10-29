@@ -354,6 +354,18 @@ public static class BmfcConfigReader
                             _ => options.AntiAlias
                         };
                         break;
+                    case "lcdFilter":
+                        options.LcdFilter = Enum.TryParse<LcdFilter>(value, ignoreCase: true, out var lcdFilter)
+                            && Enum.IsDefined(lcdFilter)
+                            ? lcdFilter
+                            : LcdFilter.Default;
+                        break;
+                    case "lcdOrder":
+                        options.LcdSubpixelOrder = Enum.TryParse<LcdSubpixelOrder>(value, ignoreCase: true, out var lcdOrder)
+                            && Enum.IsDefined(lcdOrder)
+                            ? lcdOrder
+                            : LcdSubpixelOrder.Rgb;
+                        break;
                     case "shadowOpacity":
                         options.ShadowOpacity = float.Parse(value, CultureInfo.InvariantCulture);
                         break;

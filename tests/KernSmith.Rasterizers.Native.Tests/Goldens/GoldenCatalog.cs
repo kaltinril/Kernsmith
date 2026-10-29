@@ -99,6 +99,8 @@ internal static class GoldenCatalog
         "roboto/grayscale/16px",
         "roboto/light/16px",
         "roboto/lcd/16px",
+        "roboto/lcd-smooth/16px",
+        "roboto/lcd-vrgb/16px",
         "roboto/grayscale/48px",
         "sourceserif/grayscale/24px",
         "sourcecode/grayscale/24px/wght=900",
@@ -174,6 +176,26 @@ internal static class GoldenCatalog
         Add("roboto/sdf/24px/bold", Roboto, new RasterOptions { Size = 24, Sdf = true, Bold = true });
         Add("roboto/msdf/24px/italic", Roboto, new RasterOptions { Size = 24, SdfMode = SdfMode.Msdf, Italic = true });
 
+        // LCD filter presets and subpixel orders (Default/Rgb is the plain lcd matrix above).
+        foreach (var filter in new[] { LcdFilter.Smooth, LcdFilter.None })
+        {
+            foreach (float size in new[] { 12f, 16f, 32f })
+                Add($"roboto/lcd-{Name(filter)}/{Px(size)}", Roboto, new RasterOptions { Size = size, AntiAlias = AntiAliasMode.Lcd, LcdFilter = filter });
+        }
+
+        foreach (var order in new[] { LcdSubpixelOrder.Bgr, LcdSubpixelOrder.VRgb, LcdSubpixelOrder.VBgr })
+        {
+            foreach (float size in new[] { 12f, 16f, 32f })
+                Add($"roboto/lcd-{Name(order)}/{Px(size)}", Roboto, new RasterOptions { Size = size, AntiAlias = AntiAliasMode.Lcd, LcdSubpixelOrder = order });
+        }
+
+        Add("roboto/lcd-vbgr-smooth/24px/bold-italic", Roboto, new RasterOptions
+        {
+            Size = 24, AntiAlias = AntiAliasMode.Lcd, LcdFilter = LcdFilter.Smooth, LcdSubpixelOrder = LcdSubpixelOrder.VBgr, Bold = true, Italic = true,
+        });
+        Add("sourceserif/lcd-vrgb/24px", SourceSerif, new RasterOptions { Size = 24, AntiAlias = AntiAliasMode.Lcd, LcdSubpixelOrder = LcdSubpixelOrder.VRgb });
+        Add("notosans-cff/lcd-smooth/24px", NotoSansCff, new RasterOptions { Size = 24, AntiAlias = AntiAliasMode.Lcd, LcdFilter = LcdFilter.Smooth });
+
         // Variation instances (gvar/HVAR/MVAR for TrueType, CFF2 blend for Source Code).
         var instances = new (GoldenFont Font, string Axes)[]
         {
@@ -240,6 +262,14 @@ internal static class GoldenCatalog
 
             new("generate/roboto/none-24", Roboto, () => { var o = Options(24, GenerateText); o.AntiAlias = AntiAliasMode.None; return o; }),
             new("generate/notosans/lcd-24", NotoSans, () => { var o = Options(24, GenerateText); o.AntiAlias = AntiAliasMode.Lcd; return o; }),
+            new("generate/notosans/lcd-24-vrgb-smooth", NotoSans, () =>
+            {
+                var o = Options(24, GenerateText);
+                o.AntiAlias = AntiAliasMode.Lcd;
+                o.LcdSubpixelOrder = LcdSubpixelOrder.VRgb;
+                o.LcdFilter = LcdFilter.Smooth;
+                return o;
+            }),
             new("generate/sourceserif/light-bold-italic-24", SourceSerif, () =>
             {
                 var o = Options(24, GenerateText);
@@ -291,4 +321,8 @@ internal static class GoldenCatalog
     private static string Px(float size) => size.ToString(CultureInfo.InvariantCulture) + "px";
 
     private static string Name(AntiAliasMode mode) => mode.ToString().ToLowerInvariant();
+
+    private static string Name(LcdFilter filter) => filter.ToString().ToLowerInvariant();
+
+    private static string Name(LcdSubpixelOrder order) => order.ToString().ToLowerInvariant();
 }

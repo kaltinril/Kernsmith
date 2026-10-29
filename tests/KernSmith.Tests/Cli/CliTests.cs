@@ -863,6 +863,62 @@ public class CliTests : IDisposable
         File.ReadAllText(roundConfig).ShouldNotContain("outlineShape");
     }
 
+    // -- LCD options --
+
+    [Fact]
+    public void Generate_LcdFlags_ReachTheSavedConfig()
+    {
+        var savedConfig = Path.Combine(_tempDir, "lcd.bmfc");
+
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "24", "-c", "AB", "--rasterizer", "native", "--aa", "lcd",
+            "--lcd-filter", "smooth", "--lcd-order", "vbgr", "-o", Path.Combine(_tempDir, "lcd"), "--save-config", savedConfig);
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        var saved = File.ReadAllText(savedConfig);
+        saved.ShouldContain("lcdFilter=smooth", Case.Sensitive);
+        saved.ShouldContain("lcdOrder=vbgr", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_ConfigLcdKeys_KeptWhenFlagsAbsent_OverriddenWhenFlagsGiven()
+    {
+        var configPath = Path.Combine(_tempDir, "lcd-base.bmfc");
+        RunCli("init", "-f", FontPath, "-s", "24", "-c", "A", "--aa", "lcd", "--lcd-filter", "none", "--lcd-order", "bgr",
+            "-o", configPath).ExitCode.ShouldBe(0);
+        var initial = File.ReadAllText(configPath);
+        initial.ShouldContain("lcdFilter=none", Case.Sensitive);
+        initial.ShouldContain("lcdOrder=bgr", Case.Sensitive);
+
+        var keptConfig = Path.Combine(_tempDir, "lcd-kept.bmfc");
+        var (keptExit, _, keptErr) = RunCli(
+            "generate", "--config", configPath, "-f", FontPath, "-o", Path.Combine(_tempDir, "lcd-kept"), "--save-config", keptConfig);
+        keptExit.ShouldBe(0, $"stderr: {keptErr}");
+        var kept = File.ReadAllText(keptConfig);
+        kept.ShouldContain("lcdFilter=none", Case.Sensitive);
+        kept.ShouldContain("lcdOrder=bgr", Case.Sensitive);
+
+        var defaultConfig = Path.Combine(_tempDir, "lcd-default.bmfc");
+        var (defaultExit, _, defaultErr) = RunCli(
+            "generate", "--config", configPath, "-f", FontPath, "--lcd-filter", "default", "--lcd-order", "rgb",
+            "-o", Path.Combine(_tempDir, "lcd-default"), "--save-config", defaultConfig);
+        defaultExit.ShouldBe(0, $"stderr: {defaultErr}");
+        var overridden = File.ReadAllText(defaultConfig);
+        overridden.ShouldNotContain("lcdFilter", Case.Sensitive);
+        overridden.ShouldNotContain("lcdOrder", Case.Sensitive);
+    }
+
+    [Theory]
+    [InlineData("--lcd-filter")]
+    [InlineData("--lcd-order")]
+    public void Generate_UnknownLcdOptionValue_IsRejected(string flag)
+    {
+        var (exitCode, _, stderr) = RunCli("generate", "-f", FontPath, "-s", "32", flag, "bogus");
+
+        exitCode.ShouldNotBe(0);
+        stderr.ShouldContain($"Unknown {flag}: bogus", Case.Sensitive);
+    }
+
     [Fact]
     public void Generate_ConfigHiero_AutoDetectsAndGenerates()
     {

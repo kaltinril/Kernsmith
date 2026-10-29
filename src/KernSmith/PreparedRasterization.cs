@@ -237,6 +237,17 @@ internal sealed class PreparedRasterization : IDisposable
 
             var ssLevel = Math.Clamp(options.SuperSampleLevel, 1, 4);
 
+            // LCD output is never super sampled: box-filtering an N x render down averages each
+            // channel across N subpixel strips, smearing the pattern the mode exists for. A
+            // backend rendering LCD renders it at the final size (and is told SuperSample = 1, in
+            // case it supersamples on its own); one that degraded LCD to grayscale supersamples
+            // as usual. Distance fields win over LCD, and reject super sampling above.
+            if (rasterOptions.AntiAlias == AntiAliasMode.Lcd && sdfMode == SdfMode.None)
+            {
+                ssLevel = 1;
+                rasterOptions = rasterOptions with { SuperSample = 1 };
+            }
+
             // SDF supersampling: render the distance field at a larger ppem, then box-average
             // back down. Unlike alpha-coverage super sampling (forbidden with SDF above
             // because averaging coverage corrupts distances), a FreeType SDF byte is locally
