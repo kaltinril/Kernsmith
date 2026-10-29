@@ -16,35 +16,46 @@ is expected to work but not yet verified — see the
 
 ## Status
 
-In development. The backend renders TrueType (`glyf`) and PostScript (`CFF ` / `CFF2`,
-typically `.otf`) outlines end to end: SFNT table parsing, cmap lookup (formats 4 and 12),
-outline decoding (including a Type 2 charstring interpreter with CID-keyed font support),
-adaptive curve flattening, and a signed-area scanline fill, with font and glyph metrics that
+Experimental: everything below works and is tested, but the package is not published yet
+(see the end of this section). The backend renders TrueType (`glyf`) and PostScript (`CFF ` /
+`CFF2`, typically `.otf`) outlines end to end: SFNT table parsing, cmap lookup (formats 4 and
+12), outline decoding (including a Type 2 charstring interpreter with CID-keyed font support),
+adaptive curve flattening, and an exact-area scanline fill, with font and glyph metrics that
 track FreeType to within a pixel. WOFF and WOFF2 files work too: KernSmith core decompresses
 them before the backend sees the bytes.
-Variable fonts (Phase 171) render at the requested instance:
-`fvar`/`avar` normalization, `gvar` outline deltas (composites included) for TrueType and
-charstring `blend`/`vsindex` for CFF2, `HVAR` advances (phantom points when a TrueType font has
-no `HVAR`) and `MVAR` line metrics. `avar` version 2 axis mixing is not applied (its version 1
-segment maps are), and blended CFF2 Private DICT hint values are read at their defaults (the
-auto-hinter measures its zones from outlines instead).
-Synthetic bold and italic (Phase 167) are outline transforms that match the FreeType backend's:
-its embolden strength (`max(0.5px, ppem/24)`, advance grown to match) and its 12° slant. They
-apply to variable instances and to every `COLR` layer as well.
-Signed distance fields (`Sdf`, Phase 169) are computed from the outline and
-match FreeType's SDF output (encoding, padding, `SdfSpread`). Multi-channel fields (`SdfMode.Msdf`,
-`SdfMode.Mtsdf`, Phase 170) use the same encoding and padding as RGBA.
-`AntiAliasMode.Lcd` (Phase 173) renders LCD subpixel glyphs: RGBA, one horizontal subpixel per
-colour channel in RGB order, alpha = the strongest subpixel, filtered with a one-pixel box
-(per-channel output matches the FreeType backend's LCD mode). Synthetic bold/italic apply; SDF and MSDF take precedence over LCD; with
-`ColorFont`, glyphs that have `COLR` layers render as color and ignore LCD, as on FreeType.
 
-Not yet supported — each raises a clear error or is ignored, as noted:
+- **Variable fonts** render at the requested instance: `fvar`/`avar` normalization, `gvar`
+  outline deltas (composites included) for TrueType and charstring `blend`/`vsindex` for CFF2,
+  `HVAR` advances (phantom points when a TrueType font has no `HVAR`) and `MVAR` line metrics.
+  `avar` version 2 axis mixing is not applied (its version 1 segment maps are), and blended
+  CFF2 Private DICT hint values are read at their defaults (the auto-hinter measures its zones
+  from outlines instead). Named instances are not selectable; core passes axis values only.
+- **Synthetic bold and italic** are outline transforms that match the FreeType backend's: its
+  embolden strength (`max(0.5px, ppem/24)`, advance grown to match) and its 12° slant. They
+  apply to variable instances, to every color layer and before distance-field generation.
+- **Distance fields** — `Sdf` is computed from the outline and matches FreeType's SDF output
+  (encoding, padding, `SdfSpread`); multi-channel `SdfMode.Msdf` / `SdfMode.Mtsdf` use the
+  same encoding and padding as RGBA. Native is the only backend with MSDF/MTSDF.
+- **Color fonts** — with `ColorFont`, `COLR` version 1 paint graphs (every Paint format:
+  gradients, transforms, composite modes, variable paints) and version 0 layers with `CPAL`
+  palettes render as straight-alpha RGBA, and `ColorPaletteIndex` selects the palette. Version 1
+  gradients and composites are computed in linear light, as the `COLR` spec requires. Glyphs with
+  no color definition render as grayscale. Color glyphs stay color under single-channel SDF;
+  MSDF/MTSDF with `ColorFont` is rejected.
+- **Anti-aliasing** — `None` (50% threshold with dropout control, boxes cropped to the ink),
+  `Grayscale`, `Light` (grayscale plus the auto-hinter below) and `Lcd` (RGBA, one horizontal
+  subpixel per colour channel in RGB order, alpha = the strongest subpixel, filtered with a
+  one-pixel box, so per-channel output matches the FreeType backend's LCD mode). SDF and MSDF
+  take precedence over LCD, and color glyphs ignore LCD, as on FreeType.
+
+Not supported — each raises a clear error or is ignored, as noted:
 
 - **Outline stroking** (Phase 168) — the backend has none of its own; KernSmith core still draws outlines as a bitmap effect
-- **Color fonts** (Phase 172) — `COLR` version 1 paint graphs (every Paint format: gradients, transforms, composite modes, variable paints) and version 0 layers with `CPAL` palettes render as RGBA (straight alpha), and `ColorPaletteIndex` selects the palette. Version 1 gradients and composites are computed in linear light, as the `COLR` spec requires. Bitmap-only color fonts (`CBDT`/`sbix`, e.g. Noto Color Emoji) are rejected at `LoadFont` with a `RasterizationException`
-- **System fonts by name** — load font bytes instead
+- **Bitmap-only color fonts** (`CBDT`/`sbix`, e.g. Noto Color Emoji) — rejected at `LoadFont` with a `RasterizationException`
+- **TrueType bytecode hinting** — never run; the auto-hinter is Native's own and fits y only
+- **System fonts by name** — `LoadSystemFont` throws `NotSupportedException`; load font bytes instead
 - **LCD options** — RGB order and the one-pixel box filter only; no BGR, vertical or alternative filter selection yet
+- **`Gamma`** — not applied in any mode
 
 The package is not published to NuGet yet, so `RasterizerBackend.Native` resolves only in
 builds that reference this project directly. The KernSmith CLI ships it — try

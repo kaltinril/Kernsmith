@@ -31,8 +31,8 @@ internal static class GlyphRenderers
                 return MsdfRenderer.Mtsdf;
         }
 
-        // LCD subpixel (Phase 173). Light has no hinting to be light about yet (Phase 174), so
-        // it renders as coverage; core negotiation already degrades it to Grayscale.
+        // LCD subpixel (Phase 173). Light renders as coverage: its hinting already ran in
+        // the pipeline's hint stage (GlyphHinter, Phase 174).
         if (options.AntiAlias == AntiAliasMode.Lcd)
             return LcdRenderer.Instance;
 

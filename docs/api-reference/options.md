@@ -31,7 +31,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `AntiAlias` | `AntiAliasMode` | `Grayscale` | Anti-aliasing mode. |
+| `AntiAlias` | `AntiAliasMode` | `Grayscale` | Anti-aliasing mode: `None`, `Grayscale`, `Light` or `Lcd`. A backend that does not list `Light`/`Lcd` in its `SupportedAntiAliasModes` renders them as `Grayscale`; `None` always passes through. |
 | `EnableHinting` | `bool` | `true` | Enable hinting for crisp small text. |
 | `SuperSampleLevel` | `int` | `1` | `1`-`4`; renders at Nx and downscales. Cannot combine with `Sdf`. |
 | `Sdf` | `bool` | `false` | Generate a single-channel signed distance field font. Same as `SdfMode = SdfMode.Sdf`; `SdfMode` wins when set. |

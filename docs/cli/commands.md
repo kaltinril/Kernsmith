@@ -29,8 +29,8 @@ kernsmith generate -f <font> -s <size> [options]
 | `--sdf-mode <mode>` | Distance field: `none`, `sdf`, `msdf` or `mtsdf`. `msdf`/`mtsdf` write RGBA multi-channel fields and need `--rasterizer native` |
 | `--super-sample <n>` | Super sampling level 1-4 (default: 1) |
 | `--gamma <n>` | Gamma correction applied during rasterization (FreeType, default: 1.8) |
-| `--hinting / --no-hinting` | Enable/disable FreeType hinting (default: on) |
-| `--rasterizer <name>` | Rasterizer backend: `freetype` (default), `gdi`, `directwrite`, `stbtruetype`, `native` (experimental, TrueType only) |
+| `--hinting / --no-hinting` | Enable/disable hinting (default: on). Native hints only with `--aa light` |
+| `--rasterizer <name>` | Rasterizer backend: `freetype` (default), `gdi`, `directwrite`, `stbtruetype`, `native` (experimental, not on NuGet) |
 | `--height-percent <n>` | Vertical height scaling percentage (default: 100) |
 | `--match-char-height` | Match rendered height to requested pixel height |
 | `--advance-x <n>` | Global horizontal advance adjustment added to every glyph (alias `--advance-adjust-x`, default: 0) |
@@ -165,6 +165,20 @@ kernsmith generate -f RobotoFlex.ttf -s 32 --instance "Bold"
 | `--profile` | Print stage-level timing breakdown |
 | `-v, --verbose` | Show detailed progress |
 | `-q, --quiet` | Suppress all output except errors |
+
+### Exit Codes
+
+Commands report their outcome with these process exit codes:
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success |
+| `1` | Invalid arguments (and `batch` when any job failed) |
+| `2` | File not found |
+| `3` | Font could not be parsed |
+| `4` | Generation error -- including a backend rejecting the font or an option (e.g. `--rasterizer stbtruetype --color-font`), printed to stderr as `Error: Generation error (<backend> rasterizer): <message>` |
+| `5` | Output could not be written |
+| `10` | Config file could not be parsed |
 
 ---
 
@@ -341,7 +355,7 @@ kernsmith generate -f font.ttf -s 32 --rasterizer native
 kernsmith generate -f font.ttf -s 32
 ```
 
-The `native` backend is experimental and ships with the CLI only (there is no NuGet package yet). It renders TrueType (`.ttf`) and CFF/CFF2 (`.otf`) outlines, and does not support hinting, outline stroke, system fonts, or `--aa light` (it renders as grayscale). It renders `--aa lcd` as LCD subpixel RGBA glyphs, synthetic bold/italic, TrueType variable fonts (`--axis`; a CFF2 variable font renders its default instance) and `COLR` version 0 color glyphs, but not `COLR` version 1 or bitmap color fonts, and it is the only backend for `--sdf-mode msdf|mtsdf`.
+The `native` backend is experimental and ships with the CLI only (there is no NuGet package yet). It renders TrueType (`.ttf`) and CFF/CFF2 (`.otf`) outlines, variable fonts of both kinds (`--axis`), `COLR` version 0 and 1 color glyphs (`--color-font`) and synthetic bold/italic, and it is the only backend for `--sdf-mode msdf|mtsdf`. `--aa light` with hinting on applies its own vertical-only auto-hinting, `--aa lcd` renders LCD subpixel RGBA glyphs, and `--aa none` keeps thin strokes with dropout control. It has no TrueType bytecode hinting (other modes render unhinted), no outline stroke of its own (`--outline` still works), no system fonts, and rejects bitmap-only color fonts (`CBDT`/`sbix`) with a generation error (exit code 4).
 
 ---
 
