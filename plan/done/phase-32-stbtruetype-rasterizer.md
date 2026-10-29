@@ -282,4 +282,4 @@ These constraints apply to the rasterizer implementation itself. Blazor UI code 
 - [stb_truetype.h](https://github.com/nothings/stb/blob/master/stb_truetype.h) — Original C implementation (~5,000 lines)
 - [StbTrueTypeSharp SDF support](https://github.com/StbSharp/StbTrueTypeSharp/issues/1) — SDF API discussion
 - [GitHub Issue #39](https://github.com/kaltinril/Kernsmith/issues/39) — Feature request
-- [Phase 78E — Plugin Template](done/phase-78e-plugin-template.md) — Plugin pattern to follow
+- [Phase 78E — Plugin Template](phase-78e-plugin-template.md) — Plugin pattern to follow

@@ -31,6 +31,7 @@ Git workflow, TDD, the regression harness, context management and security live 
 - A test that cannot fail is worse than no test: a soft-skip or a check that reports PASS without actually running is indistinguishable from real coverage.
 - Verify a gate FAILS, not just that it passes — reintroduce the condition, confirm the non-zero exit, then revert.
 - Run the full `dotnet test`, not a filtered subset, when touching TTF parsing, atlas packing, or a rasterizer backend; a whole class of input can break while the tests you happened to run stay green.
+- Never use `git stash` while git worktrees are in use: the stash stack is shared by every worktree, and parallel agents have popped each other's stashes. Prove red→green with a patch instead (`git diff -- <file> > x.patch`, `git checkout HEAD -- <file>`, run the test, `git apply x.patch`); commit before running `regression_check.py` (it stashes a dirty tree) and pass it `--base <sha>` from a worktree.
 - Assertions use Shouldly; never write `.Should()`. Two gotchas: string `ShouldContain`/`ShouldNotContain` default to **case-insensitive**, so pass `Case.Sensitive` explicitly on string receivers; and `ShouldBe(…, ignoreOrder: true)` compares with `Equals`, so reference types without value equality need `ShouldBeEquivalentTo`.
 
 ## Documentation

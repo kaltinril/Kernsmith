@@ -36,16 +36,16 @@ Third-party packages can implement `IRasterizer` + `IRasterizerCapabilities` and
 
 | Phase | Name | Size | Description |
 |-------|------|------|-------------|
-| [78A](done/phase-78a-rasterizer-foundation.md) | Foundation | Small | `IRasterizerCapabilities`, `RasterizerBackend` enum, `RasterizerFactory`, wire into `BmFont.cs`. **Complete.** |
-| [78B](done/phase-78b-gdi-backend.md) | GDI Backend | Medium | `GdiRasterizer` via Win32 P/Invoke -- highest-value backend, matches BMFont output. **Complete.** |
-| [78BB](done/phase-78bb-gdi-parity.md) | GDI Parity Fixes | Medium | GDI parity fixes -- metrics from GDI TEXTMETRIC, kerning from GetKerningPairs, sizing bypass. **Complete.** |
-| [78C](done/phase-78c-directwrite-backend.md) | DirectWrite Backend | Medium-Large | `DirectWriteRasterizer` via TerraFX.Interop.Windows -- core rasterization working, color/variable fonts deferred. **Complete.** |
-| [78CC](done/phase-78cc-sizing-dpi-gaps.md) | Font Sizing & DPI Gaps | Small | Verified sizing/DPI parity, confirmed autoFitNumPages root cause, ±1 rounding accepted. **Complete.** |
-| [78D](done/phase-78d-cli-ui-integration.md) | CLI and UI Integration | Small | `--rasterizer` flag, UI dropdown, capability-aware option graying. **Complete.** |
-| [78E](done/phase-78e-plugin-template.md) | Plugin Template | Small | Rasterizer plugin example in `samples/`, docs for custom backends. **Complete.** |
-| [78F](done/phase-78f-space-outline-glyph.md) | Space Outline Rendering | Small | Space gets transparent atlas entry when outline > 0, matching BMFont behavior. **Complete.** |
-| [78G](done/phase-78g-remaining-issues.md) | Remaining Issues | Small-Medium | Color fonts, variable fonts, synthetic bold/italic, GDI MatchCharHeight bug, rounding differences, channel-based outlines, tool consolidation. **Complete — 4 open issues deferred to [Phase 150](phase-150-deferred-rasterizer-issues.md).** |
-| [78S](done/phase-78s-documentation.md) | Documentation & Code Quality | Small-Medium | XML doc comments, UI tooltips, CLI help text, READMEs, DocFX, CHANGELOG. **Complete.** |
+| [78A](phase-78a-rasterizer-foundation.md) | Foundation | Small | `IRasterizerCapabilities`, `RasterizerBackend` enum, `RasterizerFactory`, wire into `BmFont.cs`. **Complete.** |
+| [78B](phase-78b-gdi-backend.md) | GDI Backend | Medium | `GdiRasterizer` via Win32 P/Invoke -- highest-value backend, matches BMFont output. **Complete.** |
+| [78BB](phase-78bb-gdi-parity.md) | GDI Parity Fixes | Medium | GDI parity fixes -- metrics from GDI TEXTMETRIC, kerning from GetKerningPairs, sizing bypass. **Complete.** |
+| [78C](phase-78c-directwrite-backend.md) | DirectWrite Backend | Medium-Large | `DirectWriteRasterizer` via TerraFX.Interop.Windows -- core rasterization working, color/variable fonts deferred. **Complete.** |
+| [78CC](phase-78cc-sizing-dpi-gaps.md) | Font Sizing & DPI Gaps | Small | Verified sizing/DPI parity, confirmed autoFitNumPages root cause, ±1 rounding accepted. **Complete.** |
+| [78D](phase-78d-cli-ui-integration.md) | CLI and UI Integration | Small | `--rasterizer` flag, UI dropdown, capability-aware option graying. **Complete.** |
+| [78E](phase-78e-plugin-template.md) | Plugin Template | Small | Rasterizer plugin example in `samples/`, docs for custom backends. **Complete.** |
+| [78F](phase-78f-space-outline-glyph.md) | Space Outline Rendering | Small | Space gets transparent atlas entry when outline > 0, matching BMFont behavior. **Complete.** |
+| [78G](phase-78g-remaining-issues.md) | Remaining Issues | Small-Medium | Color fonts, variable fonts, synthetic bold/italic, GDI MatchCharHeight bug, rounding differences, channel-based outlines, tool consolidation. **Complete — 4 open issues deferred to [Phase 150](../phase-150-deferred-rasterizer-issues.md).** |
+| [78S](phase-78s-documentation.md) | Documentation & Code Quality | Small-Medium | XML doc comments, UI tooltips, CLI help text, READMEs, DocFX, CHANGELOG. **Complete.** |
 
 ## Key Design Decisions
 

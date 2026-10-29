@@ -63,7 +63,7 @@ When anti-alias is OFF, FreeType renders with `FT_RENDER_MODE_MONO` → `FT_PIXE
 
 **Fix**: In `FreeTypeRasterizer.cs` after rendering, detect `FT_PIXEL_MODE_MONO` and unpack 1bpp → 8bpp (255 for set bits, 0 for unset). The unpacked buffer is then genuinely `Grayscale8`. No downstream changes needed.
 
-**File**: [FreeTypeRasterizer.cs](src/KernSmith/Rasterizer/FreeTypeRasterizer.cs) lines 242-281
+**File**: [FreeTypeRasterizer.cs](../../src/KernSmith.Rasterizers.FreeType/FreeTypeRasterizer.cs) lines 242-281
 
 ### Issue #19 — MaxRects packer fills top-to-bottom
 
@@ -73,7 +73,7 @@ After placing the first glyph at (0,0) in a 256x256 atlas, the split produces a 
 
 **Fix**: Add `bestLongSide` tracking and compare `(shortSide < bestShortSide || (shortSide == bestShortSide && longSide < bestLongSide))`. This matches the standard MaxRects BSSF algorithm from the Jukka Jylänki paper.
 
-**File**: [MaxRectsPacker.cs](src/KernSmith/Atlas/MaxRectsPacker.cs) lines 63-80
+**File**: [MaxRectsPacker.cs](../../src/KernSmith/Atlas/MaxRectsPacker.cs) lines 63-80
 
 ---
 

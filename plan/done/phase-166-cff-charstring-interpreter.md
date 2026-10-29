@@ -40,7 +40,7 @@ Complete. `OutlineDecoders.ForFace` returns `CffOutlineDecoder` for any face wit
 - `callsubr`/`callgsubr` with the 107 / 1131 / 32768 bias; `return`; `endchar` (also the `seac` form, resolved through StandardEncoding and the charset — name-keyed CFF only).
 - Width: the odd leading operand of the first stack-clearing operator is `nominalWidthX + w`, else `defaultWidthX` (CFF only). The decoder takes the advance from `hmtx`, as FreeType does; the charstring width equals `hmtx` for every Source Serif 4 glyph.
 - Arithmetic/storage operators (`and` … `roll`, `put`/`get`, `ifelse`) are supported; `random` and reserved operators throw. `dotsection` is ignored.
-- CFF2: no width or `endchar`, a 513-entry stack, `vsindex`, and `blend` keeping the default values. `CharstringContext.BlendScalars` applies per-region scalars when set — the hook Phase 171 Wave 2 fills in from the `FontVariations` that `OutlineDecoders.ForFace` already hands `CffOutlineDecoder`. Until then a CFF2 font renders its default instance whatever axes are set.
+- CFF2: no width or `endchar`, a 513-entry stack, `vsindex`, and `blend` keeping the default values. `CharstringContext.BlendScalars` applies per-region scalars when set — the hook [Phase 171](phase-171-variable-font-support.md) Wave 2 fills from the `FontVariations` that `OutlineDecoders.ForFace` hands `CffOutlineDecoder`, so CFF2 renders at the requested instance.
 - Lazy `moveto`: a contour opens at the first drawing operator, so a moveto that draws nothing adds no point to the bounds.
 - Limits, each a `FontFormatException`: operand stack 48 (CFF) / 513 (CFF2), subroutine nesting 10, 2^20 operations per glyph (stops shallow but exponential subroutine fan-out), 2^16 path commands, coordinates within ±65536.
 
@@ -63,6 +63,6 @@ Complete. `OutlineDecoders.ForFace` returns `CffOutlineDecoder` for any face wit
 - [x] CFF (including CID-keyed) parsed; Type 2 interpreter handles all operators, including flex and hint masks
 - [x] Output outlines match a reference interpreter for the `.otf` fixtures; metrics within ±1px of FreeType
 - [x] `.otf` fonts generate end to end; the `LoadFont` rejection is gone
-- [x] CFF2 structure parsed; `blend`/`vsindex` render the default instance, with the scalar hook for Phase 171
+- [x] CFF2 structure parsed; `blend`/`vsindex` keep the default values here, with the scalar hook Phase 171 fills
 - [x] Malformed CFF data fails gracefully
 - [x] All tests pass; `regression_check.py` run with the `.otf` configs

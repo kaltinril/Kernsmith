@@ -163,7 +163,7 @@ This is a **breaking change** for existing consumers:
 
 ## Sources
 
-- [Phase 78 — Pluggable Rasterizer Backends](done/phase-78-pluggable-rasterizers.md) — architecture established here
-- [Phase 78A — Rasterizer Foundation](done/phase-78a-rasterizer-foundation.md) — IRasterizer interface design
-- [Phase 78E — Plugin Template](done/phase-78e-plugin-template.md) — third-party plugin pattern
+- [Phase 78 — Pluggable Rasterizer Backends](phase-78-pluggable-rasterizers.md) — architecture established here
+- [Phase 78A — Rasterizer Foundation](phase-78a-rasterizer-foundation.md) — IRasterizer interface design
+- [Phase 78E — Plugin Template](phase-78e-plugin-template.md) — third-party plugin pattern
 - [GitHub Issue #39](https://github.com/kaltinril/Kernsmith/issues/39) — WASM support request
