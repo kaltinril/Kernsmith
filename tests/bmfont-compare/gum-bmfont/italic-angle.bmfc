@@ -55,4 +55,5 @@ outlineThickness=0
 chars=32-126
 
 # kernsmith extensions
+forceSyntheticItalic=1
 italicAngle=20
