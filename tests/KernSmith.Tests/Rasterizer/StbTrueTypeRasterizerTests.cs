@@ -1,5 +1,6 @@
 using KernSmith.Font.Tables;
 using KernSmith.Rasterizer;
+using KernSmith.Rasterizers.FreeType;
 using KernSmith.Rasterizers.StbTrueType;
 using Shouldly;
 
@@ -237,6 +238,57 @@ public class StbTrueTypeRasterizerTests : IDisposable
         // SDF bitmaps should contain intermediate values (not just binary 0/255).
         var hasIntermediateValues = glyph.BitmapData.Any(b => b > 0 && b < 255);
         hasIntermediateValues.ShouldBeTrue("SDF bitmap should contain values between 0 and 255");
+    }
+
+    // -- 15b. SDF honours SdfSpread with FreeType's encoding --------------
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)] // bold goes through the vendored styled-SDF path
+    public void RasterizeGlyph_Sdf_PaddingFollowsSdfSpread(bool bold)
+    {
+        _rasterizer = CreateAndLoadRasterizer();
+        RasterizedGlyph Render(float spread) => _rasterizer.RasterizeGlyph('I',
+            new RasterOptions { Size = 48, Sdf = true, SdfSpread = spread, Bold = bold })!;
+
+        var narrow = Render(4);
+        var wide = Render(8);
+
+        // Padding is the spread on every side, as in FreeType's SDF renderer.
+        (wide.Width - narrow.Width).ShouldBe(8);
+        (wide.Height - narrow.Height).ShouldBe(8);
+        (narrow.Metrics.BearingX - wide.Metrics.BearingX).ShouldBe(4);
+        (wide.Metrics.BearingY - narrow.Metrics.BearingY).ShouldBe(4);
+    }
+
+    [Theory]
+    [InlineData(4f)]
+    [InlineData(8f)]
+    [InlineData(12f)]
+    public void RasterizeGlyph_Sdf_MatchesFreeTypeDistanceEncoding(float spread)
+    {
+        _rasterizer = CreateAndLoadRasterizer();
+        using var freeType = new FreeTypeRasterizer();
+        freeType.LoadFont(LoadTestFont());
+        var options = new RasterOptions { Size = 48, Sdf = true, SdfSpread = spread };
+
+        var stb = _rasterizer.RasterizeGlyph('I', options)!;
+        var ft = freeType.RasterizeGlyph('I', options)!;
+
+        // Same box: glyph bounds plus `spread` pixels of padding (±1 for bbox rounding).
+        stb.Width.ShouldBeInRange(ft.Width - 1, ft.Width + 1);
+        stb.Height.ShouldBeInRange(ft.Height - 1, ft.Height + 1);
+
+        // Same gradient: 128 at the edge, 128/spread per pixel, inside bright. The left padding
+        // of the stem's middle row is all outside, so consecutive bytes climb by 128/spread.
+        float step = 128f / spread;
+        foreach (var glyph in new[] { stb, ft })
+        {
+            var row = glyph.BitmapData.AsSpan(glyph.Height / 2 * glyph.Pitch, glyph.Width);
+            for (int x = 1; x < (int)spread - 1; x++)
+                ((float)(row[x + 1] - row[x])).ShouldBeInRange(step - 1.5f, step + 1.5f, $"x={x}");
+            row[0].ShouldBeLessThan((byte)(128 - (spread - 1.5f) * step + 1));
+        }
     }
 
     // -- 16. LoadSystemFont throws NotSupportedException ------------------
@@ -647,9 +699,9 @@ public class StbTrueTypeRasterizerTests : IDisposable
 
         // Advance should match exactly.
         metrics.Value.Advance.ShouldBe(glyph.Metrics.Advance);
-        // SDF adds 5px padding on each side (10px total), plus bold expansion and rounding.
-        // Use a tolerance of 12 to account for all these combined effects.
-        const int sdfTolerance = 12;
+        // GetGlyphMetrics does not include the SDF padding: the rendered glyph adds SdfSpread
+        // (default 8) pixels on each side, plus bold expansion and rounding.
+        int sdfTolerance = (2 * (int)options.SdfSpread) + 2;
         Math.Abs(metrics.Value.Width - glyph.Metrics.Width).ShouldBeLessThanOrEqualTo(sdfTolerance);
         Math.Abs(metrics.Value.Height - glyph.Metrics.Height).ShouldBeLessThanOrEqualTo(sdfTolerance);
         // BearingX and BearingY also affected by SDF padding.

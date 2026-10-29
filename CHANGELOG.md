@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **StbTrueType SDF now honours `SdfSpread` and uses the FreeType backend's distance encoding** (128 on the edge, inside bright, `SdfSpread` pixels of padding, 128/spread per pixel; spread rounded and clamped to 2..32 like FreeType). It previously ignored the spread and always used 5 px of padding with ±2 px of distance range, so the `.fnt`'s `sdfSpread` did not describe the atlas. This changes Stb SDF output at the default spread 8 too: glyphs gain 3 px of padding per side and a gentler gradient, matching FreeType (mean absolute difference from FreeType's SDF on Roboto 48 px drops from about 40 to 3 byte levels).
 - **Behaviour change:** a glyph larger than an atlas page now throws `AtlasPackingException` (part of the `BmFontException` hierarchy) from `MaxRectsPacker`/`SkylinePacker` instead of `InvalidOperationException`, with `GlyphWidth`, `GlyphHeight` and `MaxTextureSize` (the page dimension the glyph exceeds) set. `AtlasPackingException` does not derive from `InvalidOperationException`, so code that caught `InvalidOperationException` for this case must catch `AtlasPackingException` (or `BmFontException`) instead. The desktop UI now shows its "glyphs too large for max texture size" message for it, and `kernsmith benchmark` reports it as a generation error (exit 4) instead of crashing.
 
 ### Fixed
