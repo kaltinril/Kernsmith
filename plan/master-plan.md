@@ -127,7 +127,7 @@ Every phase that changes Native pixel output runs `regression_check.py` with a `
 | 174 | [Auto-Hinting](phase-174-auto-hinting.md) | Auto-hinting | In progress -- y-only light hinting landed for `Light`; default mapping and x fitting open |
 | 175 | [GSUB Layout](phase-175-gsub-layout.md) | GSUB substitutions | Needs decision |
 | 176 | [Supersampling + Height Stretch](phase-176-supersampling-height-stretch.md) | In-rasterizer supersample / height stretch | Needs decision |
-| 177 | [Performance Optimization](phase-177-performance-optimization.md) | Benchmark harness, then optimisation | In progress -- harness, baseline and scanline-fill rewrite done; remaining optimisation Wave 3 |
+| 177 | [Performance Optimization](phase-177-performance-optimization.md) | Benchmark harness, then optimisation | In progress -- harness, baseline, scanline-fill rewrite and dropout control done; remaining optimisation Wave 3 |
 | 179 | [Validation / Golden Masters](phase-179-validation-golden-masters.md) | Validation, golden masters, release | Future -- Wave 3 |
 | 180 | [Innovation Research](phase-180-innovation-research.md) | Innovation research (ongoing experiments) | Future (Ongoing Research) |
 

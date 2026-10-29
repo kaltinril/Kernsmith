@@ -1,6 +1,6 @@
 # Phase 177 — Native Rasterizer: Benchmarks & Performance Optimization
 
-> **Status**: In progress — harness, baseline and the scanline-fill rewrite done; remaining optimisation Wave 3
+> **Status**: In progress — harness, baseline, scanline-fill rewrite and dropout control done; remaining optimisation Wave 3
 > **Created**: 2026-04-01
 > **Depends on**: nothing for the harness; the feature phases (166–174) for the optimisation pass
 
@@ -64,7 +64,7 @@ Per-stage split of a Native ASCII glyph (Stopwatch + `GC.GetAllocatedBytesForCur
 
 1. **Scanline fill** dominated time at every size — done, see Scanline fill below.
 2. **Per-glyph allocation** is 13–30× StbTrueType's and spread evenly across parse (flag/coordinate/point arrays), extract and flatten (`List<T>` + `ToArray`), and scanline edge arrays; it doubles end-to-end `Generate` allocation and promotes to Gen1 — the Pooling item below.
-3. **Mono dropout control** (`DropoutControl`, Phase 174) now dominates `None`: every row and column scanline walks all edges and allocates `List`s plus a lambda sort, so `None` costs 3-6× `Grayscale` and 10-41 KB per glyph (table below).
+3. **Mono dropout control** (`DropoutControl`) dominated `None` — done, see Dropout control below.
 4. **`GetGlyphMetrics`** is ~6× StbTrueType because it runs the full `glyf` parse + outline extract to get a bounding box (2.8 KB/glyph); it drives `BmFont.QueryAtlasSize`. A cached parse or a bbox-only path fixes it.
 
 ## Scanline fill (done)
@@ -86,13 +86,28 @@ Before/after, `RasterizeAll` ASCII per glyph, both runs on the reference machine
 
 `None` is dominated by dropout control (hotspot 3); its time moved within the run's error bars. `BmFont.Generate` ASCII + Latin-1 32px: 6.14 ms / 1,987 KB before, 5.42 ms / 1,758 KB after.
 
+## Dropout control (done)
+
+`DropoutControl` buckets each edge once under the row and column scanlines its extent reaches (a counting sort into pooled offset/index arrays), so a scanline visits only the edges that can cross it; crossings go into pooled buffers and are sorted with `MemoryExtensions.Sort` (keys plus a struct payload, no comparer delegate). Both half-open crossing tests ride on one crossing as two winding steps, so each scanline is sorted and swept once instead of twice plus a merge. Crossings at equal positions are applied together, so exactly abutting contours form one span rather than two. It allocates nothing (`ScanlineRasterizerTests` pins `None` too).
+
+Output is byte-identical to the previous implementation over Roboto, Source Serif and Source Code (ExtraLight default and CFF2 wght 900), printable ASCII at every size 6-96px, unhinted, hinted and synthetic bold+italic (102,648 glyphs).
+
+`RasterizeAll` ASCII `None` per glyph on the reference machine, ShortRun; Stb from the after run. Other builds shared the machine, so compare within a row:
+
+| Size | Native before | Native after | Stb | Native / Stb | Native alloc before → after |
+|---|---|---|---|---|---|
+| 12 | 8.12 µs | 4.22 µs | 2.03 µs | 2.08× | 10,772 → 4,687 B |
+| 32 | 14.38 µs | 7.46 µs | 4.58 µs | 1.63× | 20,653 → 5,031 B |
+| 72 | 42.92 µs | 14.64 µs | 12.81 µs | 1.14× | 41,234 → 6,364 B |
+
+`None` costs about 2.7-2.9× `Grayscale` (it fills the same coverage, then walks every row and column scanline) and allocates the same as `Grayscale` plus its horizontal edges.
+
 ## Work items — optimisation (Wave 3)
 
 Profile first (`dotnet-trace`/PerfView); do only what the profile justifies.
 
 - **Pooling**: every internal per-glyph scratch buffer (edges, active edges, outline commands, parse temporaries) rented from `ArrayPool<T>.Shared` or reused on the instance (instances are single-threaded, D9); output bitmap stays unpooled.
 - **Parsing**: span-based table access; cache cmap lookups; lazy table parsing; optional parsed-outline cache for repeated glyphs.
-- **Dropout control**: pooled span buffers and bucketed edges per scanline instead of per-scanline `List`s and a full edge walk.
 - **Feature paths**: SDF segment bucketing (Phase 169), `gvar` decode caching (Phase 171), COLR layer canvas reuse (Phase 172), as the harness shows them hot.
 - **Parallelism**: optional and only outside the browser (`OperatingSystem.IsBrowser()` guard); one buffer set per worker. Core already parallelizes post-processing, so measure whether backend-level parallelism adds anything.
 
