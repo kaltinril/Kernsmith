@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - FreeType: variable-font axis coordinates are passed to FreeType as pointer-sized `FT_Fixed` values. They were marshalled as 32-bit ints, so FreeType read them in pairs and every variable-font request rendered a scrambled instance regardless of the axes asked for.
+- FreeType: color glyphs (CBDT/sbix bitmaps, COLR layers) are un-premultiplied before they leave the backend. FreeType returns them premultiplied while KernSmith treats RGBA glyphs as straight alpha, so every anti-aliased color edge came out darkened by its own alpha a second time.
 
 ## [0.24.0] - 2026-10-18
 

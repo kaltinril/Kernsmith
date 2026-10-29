@@ -288,12 +288,10 @@ public sealed class FreeTypeRasterizer : IRasterizer
             ApplyGamma(bitmapData, options.Gamma);
         }
 
-        // Swap BGRA to RGBA when FreeType returns a color bitmap.
+        // FreeType's color bitmaps are premultiplied BGRA; Rgba32 glyphs are straight-alpha RGBA
+        // everywhere downstream, so swap the channel order and un-premultiply.
         if (bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_BGRA)
-        {
-            for (var i = 0; i < bitmapData.Length; i += 4)
-                (bitmapData[i], bitmapData[i + 2]) = (bitmapData[i + 2], bitmapData[i]);
-        }
+            PremultipliedBgraToStraightRgba(bitmapData);
 
         // Determine pixel format based on the FreeType pixel mode.
         var format = bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_BGRA
@@ -673,6 +671,36 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
         for (var i = 0; i < coverage.Length; i++)
             coverage[i] = lut[coverage[i]];
+    }
+
+    /// <summary>
+    /// Converts premultiplied BGRA pixels to straight-alpha RGBA in place. Each color channel is
+    /// divided by alpha with round-to-nearest and clamped to 255 (a malformed channel above its
+    /// alpha would otherwise overflow); alpha 0 stays transparent black and alpha 255 is
+    /// unchanged apart from the swap.
+    /// </summary>
+    private static void PremultipliedBgraToStraightRgba(byte[] pixels)
+    {
+        for (var i = 0; i + 3 < pixels.Length; i += 4)
+        {
+            int b = pixels[i], g = pixels[i + 1], r = pixels[i + 2], a = pixels[i + 3];
+            if (a == 0)
+            {
+                pixels[i] = pixels[i + 1] = pixels[i + 2] = 0;
+            }
+            else if (a == 255)
+            {
+                pixels[i] = (byte)r;
+                pixels[i + 2] = (byte)b;
+            }
+            else
+            {
+                var half = a / 2;
+                pixels[i] = (byte)Math.Min(255, (r * 255 + half) / a);
+                pixels[i + 1] = (byte)Math.Min(255, (g * 255 + half) / a);
+                pixels[i + 2] = (byte)Math.Min(255, (b * 255 + half) / a);
+            }
+        }
     }
 
     /// <summary>
