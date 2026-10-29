@@ -16,6 +16,10 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
 {
     private static readonly IRasterizerCapabilities StbCapabilitiesInstance = new StbTrueTypeCapabilities();
 
+    /// <summary>The smallest and largest SDF spread, as the FreeType backend clamps it.</summary>
+    private const int MinSdfSpread = 2;
+    private const int MaxSdfSpread = 32;
+
     /// <inheritdoc />
     public IRasterizerCapabilities Capabilities => StbCapabilitiesInstance;
 
@@ -91,7 +95,7 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         {
             if (options.Bold || options.Italic)
                 return RasterizeStyledSdfGlyph(codepoint, glyphIndex, scale, advance, lsb, aa, options);
-            return RasterizeSdfGlyph(codepoint, glyphIndex, scale, advance, lsb, aa);
+            return RasterizeSdfGlyph(codepoint, glyphIndex, scale, advance, lsb, aa, options.SdfSpread);
         }
 
         if (options.Bold || options.Italic)
@@ -347,12 +351,26 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
             throw new InvalidOperationException("Font not loaded. Call LoadFont first.");
     }
 
-    private unsafe RasterizedGlyph? RasterizeSdfGlyph(
-        int codepoint, int glyphIndex, float scale, int advance, int lsb, int aa)
+    /// <summary>
+    /// The distance field's padding and per-pixel step for a spread: 128 on the glyph edge,
+    /// falling to 0 at the spread, with padding wide enough to hold all of it. The spread is
+    /// rounded and clamped as the FreeType backend does, so both backends read
+    /// <see cref="RasterOptions.SdfSpread"/> alike.
+    /// </summary>
+    private static (int Padding, float PixelDistScale) SdfField(float spread)
     {
+        int rounded = Math.Clamp((int)Math.Round(spread, MidpointRounding.AwayFromZero), MinSdfSpread, MaxSdfSpread);
+        return (rounded, 128.0f / rounded);
+    }
+
+    private unsafe RasterizedGlyph? RasterizeSdfGlyph(
+        int codepoint, int glyphIndex, float scale, int advance, int lsb, int aa, float sdfSpread)
+    {
+        var (padding, pixelDistScale) = SdfField(sdfSpread);
+
         int width, height, xoff, yoff;
         byte* bitmap = Stb.stbtt_GetCodepointSDF(
-            _fontInfo!, scale, codepoint, 5, 128, 64.0f,
+            _fontInfo!, scale, codepoint, padding, 128, pixelDistScale,
             &width, &height, &xoff, &yoff);
 
         if (bitmap == null || width == 0 || height == 0)
@@ -457,9 +475,8 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
             if (options.Italic)
                 OutlineTransforms.ApplyItalicShear(vertices, numVerts);
 
-            const int padding = 5;
+            var (padding, pixelDistScale) = SdfField(options.SdfSpread);
             const byte onEdgeValue = 128;
-            const float pixelDistScale = 64.0f;
 
             byte[]? bitmapData = StbTrueTypeSdfVendored.GetGlyphSdfFromVertices(
                 vertices, numVerts, scale, padding, onEdgeValue, pixelDistScale,

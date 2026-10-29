@@ -163,9 +163,10 @@ internal static unsafe class StbTrueTypeSdfVendored
 
                 float dist = MathF.Sqrt(minDist);
 
-                // Sign: inside if odd crossing count (ray-casting parity test;
-                // matches stb_truetype's original approach, equivalent to even-odd fill for well-formed contours).
-                if ((crossings & 1) != 0)
+                // Sign: inside if odd crossing count (ray-casting parity test, equivalent to even-odd
+                // fill for well-formed contours). Outside is negative, as in stbtt_GetGlyphSDF, so the
+                // field is above onEdgeValue inside the glyph and below it outside.
+                if ((crossings & 1) == 0)
                     dist = -dist;
 
                 // Map signed distance to byte value.

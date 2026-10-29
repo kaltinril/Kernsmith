@@ -239,6 +239,90 @@ public class StbTrueTypeRasterizerTests : IDisposable
         hasIntermediateValues.ShouldBeTrue("SDF bitmap should contain values between 0 and 255");
     }
 
+    // -- 15b. SDF field reaches the requested spread -----------------------
+
+    [Theory]
+    [InlineData(4)]
+    [InlineData(16)]
+    public void RasterizeGlyph_Sdf_FieldFallsBy128OverSpreadPerPixel(int spread)
+    {
+        _rasterizer = CreateAndLoadRasterizer();
+        var options = new RasterOptions
+        {
+            Size = 32,
+            AntiAlias = AntiAliasMode.Grayscale,
+            Sdf = true,
+            SdfSpread = spread
+        };
+
+        var glyph = _rasterizer.RasterizeGlyph('l', options);
+
+        glyph.ShouldNotBeNull();
+        // Across the middle row of the stem, outside its left edge, the field falls by
+        // 128 / spread per pixel, as the FreeType backend's does.
+        int row = glyph.Height / 2;
+        int ValueAt(int x) => glyph.BitmapData[row * glyph.Pitch + x];
+        int edge = Enumerable.Range(0, glyph.Width).First(x => ValueAt(x) >= 128);
+        edge.ShouldBeGreaterThanOrEqualTo(2);
+        int step = ValueAt(edge - 1) - ValueAt(edge - 2);
+        Math.Abs(step - 128 / spread).ShouldBeLessThanOrEqualTo(2);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)] // Bold takes the styled SDF path.
+    public void RasterizeGlyph_Sdf_PaddingGrowsWithSpread(bool bold)
+    {
+        _rasterizer = CreateAndLoadRasterizer();
+        RasterOptions OptionsFor(int spread) => new()
+        {
+            Size = 32,
+            AntiAlias = AntiAliasMode.Grayscale,
+            Sdf = true,
+            Bold = bold,
+            SdfSpread = spread
+        };
+
+        var narrow = _rasterizer.RasterizeGlyph('l', OptionsFor(4));
+        var wide = _rasterizer.RasterizeGlyph('l', OptionsFor(16));
+
+        narrow.ShouldNotBeNull();
+        wide.ShouldNotBeNull();
+        // The padding on each side is the spread, so the field has room to reach it.
+        (wide.Width - narrow.Width).ShouldBe(2 * (16 - 4));
+        (wide.Height - narrow.Height).ShouldBe(2 * (16 - 4));
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)] // Bold and Italic take the styled SDF path.
+    [InlineData(false, true)]
+    public void RasterizeGlyph_Sdf_FieldIsHighInsideAndLowOutside(bool bold, bool italic)
+    {
+        _rasterizer = CreateAndLoadRasterizer();
+        var options = new RasterOptions
+        {
+            Size = 32,
+            AntiAlias = AntiAliasMode.Grayscale,
+            Sdf = true,
+            Bold = bold,
+            Italic = italic
+        };
+
+        var glyph = _rasterizer.RasterizeGlyph('l', options);
+
+        glyph.ShouldNotBeNull();
+        // The stem crosses the middle row, so the row's highest value is inside the glyph and
+        // its ends, in the padding, are outside it.
+        int row = glyph.Height / 2;
+        var values = Enumerable.Range(0, glyph.Width)
+            .Select(x => (int)glyph.BitmapData[row * glyph.Pitch + x])
+            .ToList();
+        values.Max().ShouldBeGreaterThan(128);
+        values[0].ShouldBeLessThan(128);
+        values[^1].ShouldBeLessThan(128);
+    }
+
     // -- 16. LoadSystemFont throws NotSupportedException ------------------
 
     [Fact]
@@ -647,9 +731,9 @@ public class StbTrueTypeRasterizerTests : IDisposable
 
         // Advance should match exactly.
         metrics.Value.Advance.ShouldBe(glyph.Metrics.Advance);
-        // SDF adds 5px padding on each side (10px total), plus bold expansion and rounding.
-        // Use a tolerance of 12 to account for all these combined effects.
-        const int sdfTolerance = 12;
+        // SDF pads each side by the spread (8 by default, 16 total), plus bold expansion and
+        // rounding. Use a tolerance of 18 to account for all these combined effects.
+        const int sdfTolerance = 18;
         Math.Abs(metrics.Value.Width - glyph.Metrics.Width).ShouldBeLessThanOrEqualTo(sdfTolerance);
         Math.Abs(metrics.Value.Height - glyph.Metrics.Height).ShouldBeLessThanOrEqualTo(sdfTolerance);
         // BearingX and BearingY also affected by SDF padding.
