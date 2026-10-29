@@ -46,7 +46,7 @@ Render variable fonts at user-chosen axis values in the Native rasterizer: glyph
 
 - Code lives in `Internal/Variations/`; `FontVariations` holds the instance and is read by `TrueTypeOutlineDecoder` and `GetFontMetrics`. A CFF2 decoder should read the same `FontVariations` coordinates and reuse `ItemVariationStore`.
 - `avar` v2 axis mixing is not implemented; a v2 table gets its v1 segment maps only.
-- `USE_MY_METRICS` is not followed for phantom-point advances: unhinted, the composite's own `hmtx` and phantom deltas apply (they match `HVAR`; RobotoFlex's `ç` shows the component's would not).
+- `USE_MY_METRICS` is not followed for phantom-point advances: unhinted, the composite's own `hmtx` and phantom deltas apply (they match `HVAR`; RobotoFlex's `ç` shows the component's would not). The origin (pp1) does follow it, as FreeType does.
 - Packed deltas follow OpenType 1.9.1: `0x80` is a zero run whatever `0x40` says (no 32-bit delta runs).
 - `MVAR` feeds `GetFontMetrics` through `hcla`/`hcld` only (the values it reads); the `hhea` fallback is not varied.
 

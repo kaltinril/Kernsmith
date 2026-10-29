@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Native placed TrueType glyphs by their `glyf` xMin instead of their `hmtx` left side bearing.** Where the two disagree, a glyph is now positioned by its left side bearing phantom point (pp1 = xMin - lsb), as the TrueType spec and FreeType do; a composite with a `USE_MY_METRICS` component takes that component's phantom point, and a variable font adds the varied `gvar` pp1 delta. Roboto has 52 such glyphs, each off by one font unit (e.g. `&` and `8`); fonts with larger mismatches were off by many pixels.
 - **FreeType rendered a scrambled instance for every variable-font request.** `SetVariationAxes` passed the axis coordinates to FreeType as 32-bit integers, but the bundled FreeType's `FT_Fixed` is pointer-sized, so it read them in pairs and pushed every axis to an extreme -- even asking for the default values changed the glyphs. Coordinates are now marshalled at the correct width.
 - `KernSmith.Fonts.Web` with `WebFontProvider.GoogleFonts` threw `InvalidOperationException` for every font: Google serves only `.woff2` to the browser User-Agent the package sends, and the package only accepted `.woff`.
 - `KernSmith.Fonts.Web` in the browser (Blazor WebAssembly) failed with a `NetworkError` in Firefox: the `User-Agent` it set became a non-CORS-safelisted `fetch()` header, and Bunny and Google Fonts reject the resulting preflight. In the browser it now leaves the User-Agent to the browser.

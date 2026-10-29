@@ -63,6 +63,28 @@ internal static class SyntheticFonts
         return BuildSfnt(0x00010000, tables);
     }
 
+    /// <summary>
+    /// Rebuilds a TrueType font with one glyph's <c>hmtx</c> left side bearing moved by
+    /// <paramref name="delta"/> font units; the outline (and its <c>glyf</c> xMin) is untouched,
+    /// so the bearing and the outline disagree by exactly that much.
+    /// </summary>
+    public static byte[] WithLeftSideBearingShifted(byte[] font, int glyphIndex, int delta)
+    {
+        var face = NativeFontFace.Load(font);
+        var hmtx = face.Tables.GetTable("hmtx").ToArray();
+        int fullMetrics = face.Hhea.NumberOfHMetrics;
+
+        // (advance, lsb) pairs first, then bare bearings for the monospaced tail.
+        int offset = glyphIndex < fullMetrics
+            ? (glyphIndex * 4) + 2
+            : (fullMetrics * 4) + ((glyphIndex - fullMetrics) * 2);
+
+        short lsb = BinaryPrimitives.ReadInt16BigEndian(hmtx.AsSpan(offset));
+        BinaryPrimitives.WriteInt16BigEndian(hmtx.AsSpan(offset), checked((short)(lsb + delta)));
+
+        return WithTables(font, new Dictionary<string, byte[]?> { ["hmtx"] = hmtx });
+    }
+
     private static byte[] BuildSfnt(uint sfntVersion, List<(string Tag, byte[] Data)> tables)
     {
         int directoryEnd = 12 + (tables.Count * 16);
