@@ -126,15 +126,24 @@ internal class TtfParser
             var numFonts = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(8));
             if (faceIndex < 0 || (uint)faceIndex >= numFonts)
                 throw new FontParsingException($"Face index {faceIndex} is out of range (font contains {numFonts} faces).");
-            directoryOffset = (int)BinaryPrimitives.ReadUInt32BigEndian(data.Slice(12 + faceIndex * 4));
+            if (12L + (faceIndex + 1L) * 4 > data.Length)
+                throw new FontParsingException($"TTC offset table for face {faceIndex} runs past the end of the data.");
+            var faceOffset = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(12 + faceIndex * 4));
+            if (faceOffset > (uint)data.Length - 4)
+                throw new FontParsingException($"TTC face {faceIndex} starts at {faceOffset}, past the end of the {data.Length}-byte data.");
+            directoryOffset = (int)faceOffset;
             magic = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(directoryOffset));
         }
 
         if (magic != TrueTypeMagic && magic != OttoMagic)
             throw new FontParsingException($"Invalid sfnt magic: 0x{magic:X8}. Expected TrueType (0x00010000) or OTF ('OTTO').");
 
+        if ((long)directoryOffset + 12 > data.Length)
+            throw new FontParsingException("The font's offset table is truncated.");
         var numTables = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(directoryOffset + 4));
         var recordStart = directoryOffset + 12;
+        if ((long)recordStart + numTables * 16L > data.Length)
+            throw new FontParsingException($"The table directory declares {numTables} tables but the data ends inside it.");
 
         for (var i = 0; i < numTables; i++)
         {
@@ -442,11 +451,12 @@ internal class TtfParser
 
         for (var i = 0; i < axisCount; i++)
         {
-            var axisOffset = axesArrayOffset + i * axisSize;
+            // long: axisCount x axisSize can exceed int.MaxValue in a damaged table.
+            var axisOffset = axesArrayOffset + (long)i * axisSize;
             if (axisOffset + 20 > table.Length)
                 break;
 
-            var axisRecord = table.Slice(axisOffset);
+            var axisRecord = table.Slice((int)axisOffset);
             var tagBytes = axisRecord.Slice(0, 4);
             var tag = Encoding.ASCII.GetString(tagBytes);
             var minValue = BinaryPrimitives.ReadInt32BigEndian(axisRecord.Slice(4)) / 65536.0f;
@@ -470,17 +480,25 @@ internal class TtfParser
         }
 
         var instances = new List<NamedInstance>(instanceCount);
-        var instancesStart = axesArrayOffset + axisCount * axisSize;
+        var instancesStart = axesArrayOffset + (long)axisCount * axisSize;
+
+        // An instance's coordinates are named by the axes; if any axis record was unreadable,
+        // the instances cannot be mapped.
+        if (axisTags.Count < axisCount)
+        {
+            NamedInstances = Array.Empty<NamedInstance>();
+            return;
+        }
 
         for (var i = 0; i < instanceCount; i++)
         {
-            var instOffset = instancesStart + i * instanceSize;
+            var instOffset = instancesStart + (long)i * instanceSize;
             // Each instance: subfamilyNameID(2) + flags(2) + axisCount * coordinate(4)
             var minRequired = 4 + axisCount * 4;
             if (instOffset + minRequired > table.Length)
                 break;
 
-            var instRecord = table.Slice(instOffset);
+            var instRecord = table.Slice((int)instOffset);
             var subfamilyNameId = BinaryPrimitives.ReadUInt16BigEndian(instRecord);
             // flags at offset 2 (uint16) — currently unused
             var name = ResolveNameId(subfamilyNameId);
@@ -560,7 +578,7 @@ internal class TtfParser
             }
         }
 
-        if (bestOffset < 0 || bestOffset >= table.Length)
+        if (bestOffset < 0 || bestOffset > table.Length - 2)
         {
             IsValid = false;
             return;
@@ -588,6 +606,9 @@ internal class TtfParser
             _relevantGlyphIndices = new HashSet<int>(cmap.Values);
     }
 
+    /// <summary>The last Unicode code point.</summary>
+    private const uint MaxCodepoint = 0x10FFFF;
+
     private void ParseCmapFormat12(ReadOnlySpan<byte> subtable, Dictionary<int, int> cmap)
     {
         if (subtable.Length < 16)
@@ -604,9 +625,28 @@ internal class TtfParser
             if (groupOffset + 12 > subtable.Length)
                 break;
 
-            var startCharCode = (int)BinaryPrimitives.ReadUInt32BigEndian(subtable.Slice(groupOffset));
-            var endCharCode = Math.Min((int)BinaryPrimitives.ReadUInt32BigEndian(subtable.Slice(groupOffset + 4)), 0x10FFFF);
+            // Read unsigned: a code above 0x7FFFFFFF cast straight to int is negative and turned
+            // the range loop into billions of iterations. Codes past Unicode are clamped/skipped.
+            var rawStart = BinaryPrimitives.ReadUInt32BigEndian(subtable.Slice(groupOffset));
+            var rawEnd = BinaryPrimitives.ReadUInt32BigEndian(subtable.Slice(groupOffset + 4));
+            if (rawStart > MaxCodepoint || rawEnd < rawStart)
+                continue;
+            var startCharCode = (int)rawStart;
+            var endCharCode = (int)Math.Min(rawEnd, MaxCodepoint);
             var startGlyphID = (int)BinaryPrimitives.ReadUInt32BigEndian(subtable.Slice(groupOffset + 8));
+
+            // With a requested subset, visit only the requested codepoints a long range contains:
+            // overlapping full-Unicode groups would otherwise cost a million lookups each.
+            if (_requestedCodepoints != null && endCharCode - startCharCode >= _requestedCodepoints.Count)
+            {
+                foreach (var c in _requestedCodepoints)
+                {
+                    if (c >= startCharCode && c <= endCharCode)
+                        cmap[c] = startGlyphID + (c - startCharCode);
+                }
+
+                continue;
+            }
 
             for (var c = startCharCode; c <= endCharCode; c++)
             {
@@ -638,6 +678,8 @@ internal class TtfParser
         if (idRangeOffsetOffset + segCountX2 > subtable.Length)
             return;
 
+        // Segments may not overlap, so a valid subtable visits at most 65536 codes in total.
+        var visited = 0;
         for (var i = 0; i < segCount; i++)
         {
             var endCode = BinaryPrimitives.ReadUInt16BigEndian(subtable.Slice(endCodeOffset + i * 2));
@@ -647,6 +689,13 @@ internal class TtfParser
 
             if (startCode == 0xFFFF)
                 break;
+
+            if (endCode >= startCode)
+            {
+                visited += endCode - startCode + 1;
+                if (visited > 0x10000)
+                    throw new FontParsingException("cmap", 0, "format 4 segments overlap (they cover more than 65536 codes).");
+            }
 
             for (int c = startCode; c <= endCode; c++)
             {
@@ -775,7 +824,7 @@ internal class TtfParser
             return;
 
         // Parse LookupList
-        var lookupList = table.Slice(lookupListOffset);
+        var lookupList = From(table, lookupListOffset);
         if (lookupList.Length < 2)
             return;
 
@@ -784,7 +833,7 @@ internal class TtfParser
 
         foreach (var lookupIndex in kernLookupIndices)
         {
-            if (lookupIndex >= lookupCount)
+            if (lookupIndex >= lookupCount || 2 + (lookupIndex + 1) * 2 > lookupList.Length)
                 continue;
 
             var lookupOffset = BinaryPrimitives.ReadUInt16BigEndian(lookupList.Slice(2 + lookupIndex * 2));
@@ -804,7 +853,7 @@ internal class TtfParser
                     break;
 
                 var subTableOffset = BinaryPrimitives.ReadUInt16BigEndian(lookup.Slice(6 + s * 2));
-                var subtable = lookup.Slice(subTableOffset);
+                var subtable = From(lookup, subTableOffset);
                 var effectiveType = lookupType;
 
                 // Handle Extension Lookup (Type 9)
@@ -832,7 +881,7 @@ internal class TtfParser
     private static List<int> FindKernFeatureLookups(ReadOnlySpan<byte> table, int featureListOffset)
     {
         var result = new List<int>();
-        var featureList = table.Slice(featureListOffset);
+        var featureList = From(table, featureListOffset);
         if (featureList.Length < 2)
             return result;
 
@@ -850,7 +899,7 @@ internal class TtfParser
                 continue;
 
             var offset = BinaryPrimitives.ReadUInt16BigEndian(featureList.Slice(recOffset + 4));
-            var featureTable = featureList.Slice(offset);
+            var featureTable = From(featureList, offset);
             if (featureTable.Length < 4)
                 continue;
 
@@ -895,7 +944,7 @@ internal class TtfParser
             return;
 
         var pairSetCount = BinaryPrimitives.ReadUInt16BigEndian(subtable.Slice(8));
-        var coverage = ParseCoverage(subtable.Slice(coverageOffset));
+        var coverage = ParseCoverage(From(subtable, coverageOffset));
 
         for (var i = 0; i < pairSetCount; i++)
         {
@@ -903,7 +952,7 @@ internal class TtfParser
                 break;
 
             var pairSetOffset = BinaryPrimitives.ReadUInt16BigEndian(subtable.Slice(10 + i * 2));
-            var pairSet = subtable.Slice(pairSetOffset);
+            var pairSet = From(subtable, pairSetOffset);
             if (pairSet.Length < 2)
                 continue;
 
@@ -960,9 +1009,9 @@ internal class TtfParser
         var class1Count = BinaryPrimitives.ReadUInt16BigEndian(subtable.Slice(12));
         var class2Count = BinaryPrimitives.ReadUInt16BigEndian(subtable.Slice(14));
 
-        var coverage = ParseCoverage(subtable.Slice(coverageOffset));
-        var classDef1 = ParseClassDef(subtable.Slice(classDef1Offset));
-        var classDef2 = ParseClassDef(subtable.Slice(classDef2Offset));
+        var coverage = ParseCoverage(From(subtable, coverageOffset));
+        var classDef1 = ParseClassDef(From(subtable, classDef1Offset));
+        var classDef2 = ParseClassDef(From(subtable, classDef2Offset));
 
         // Build reverse map: class1 -> list of glyph indices
         var class1ToGlyphs = new Dictionary<int, List<int>>();
@@ -1046,6 +1095,16 @@ internal class TtfParser
         }
     }
 
+    /// <summary>The number of glyph ids a font can have; a Coverage or ClassDef lists each at most once.</summary>
+    private const int MaxGlyphIds = 65536;
+
+    /// <summary>
+    /// The bytes of <paramref name="span"/> from a subtable offset on, or empty when the offset
+    /// points past the end: a damaged optional subtable is skipped, not fatal.
+    /// </summary>
+    private static ReadOnlySpan<byte> From(ReadOnlySpan<byte> span, int offset) =>
+        (uint)offset <= (uint)span.Length ? span.Slice(offset) : ReadOnlySpan<byte>.Empty;
+
     private static List<(int glyph, int index)> ParseCoverage(ReadOnlySpan<byte> data)
     {
         var result = new List<(int glyph, int index)>();
@@ -1074,11 +1133,13 @@ internal class TtfParser
                 if (recOffset + 6 > data.Length)
                     break;
 
-                var startGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset));
-                var endGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset + 2));
-                var startIndex = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset + 4));
+                int startGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset));
+                int endGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset + 2));
+                int startIndex = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset + 4));
 
-                for (var g = startGlyph; g <= endGlyph; g++)
+                // An int counter, so a range ending at glyph 65535 terminates; and ranges may not
+                // overlap, so more entries than there are glyph ids means the table is malformed.
+                for (var g = startGlyph; g <= endGlyph && result.Count < MaxGlyphIds; g++)
                     result.Add((g, startIndex + (g - startGlyph)));
             }
         }
@@ -1096,6 +1157,8 @@ internal class TtfParser
 
         if (format == 1)
         {
+            if (data.Length < 6)
+                return result;
             var startGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2));
             var glyphCount = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(4));
             for (var i = 0; i < glyphCount; i++)
@@ -1108,6 +1171,7 @@ internal class TtfParser
         }
         else if (format == 2)
         {
+            var visited = 0;
             var classRangeCount = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2));
             for (var i = 0; i < classRangeCount; i++)
             {
@@ -1115,11 +1179,13 @@ internal class TtfParser
                 if (recOffset + 6 > data.Length)
                     break;
 
-                var startGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset));
-                var endGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset + 2));
+                int startGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset));
+                int endGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset + 2));
                 var classValue = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset + 4));
 
-                for (var g = startGlyph; g <= endGlyph; g++)
+                // An int counter, so a range ending at glyph 65535 terminates; overlapping ranges
+                // are bounded by the visit budget rather than re-walking every glyph id each time.
+                for (var g = startGlyph; g <= endGlyph && visited < MaxGlyphIds; g++, visited++)
                     result[g] = classValue;
             }
         }

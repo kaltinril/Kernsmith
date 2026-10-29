@@ -170,8 +170,12 @@ internal sealed class ColorLayerRenderer : IGlyphRenderer
             layers.Add((prepared, layer.Color));
         }
 
-        var box = layers.Count == 0 ? default : new GlyphBox(left, top, right - left, bottom - top);
-        return (layers, box);
+        if (layers.Count == 0)
+            return (layers, default);
+
+        // Each layer passed the pipeline's box check, but layers far apart can still span too much.
+        GlyphLimits.EnsureGlyphBox(glyphIndex, (long)right - left, (long)bottom - top, options);
+        return (layers, new GlyphBox(left, top, right - left, bottom - top));
     }
 
     private PreparedGlyph PrepareLayer(int layerGlyph, int baseGlyph, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms)
