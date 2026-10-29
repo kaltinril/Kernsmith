@@ -1,6 +1,6 @@
 # Phase 177 — Native Rasterizer: Benchmarks & Performance Optimization
 
-> **Status**: In progress — benchmark harness and baseline done; optimisation Wave 3
+> **Status**: In progress — harness, baseline and the scanline-fill rewrite done; remaining optimisation Wave 3
 > **Created**: 2026-04-01
 > **Depends on**: nothing for the harness; the feature phases (166–174) for the optimisation pass
 
@@ -11,7 +11,7 @@
 
 ## Starting point
 
-- Native allocates per glyph: outline command and edge lists, the prepared/active edge arrays, `glyf` flag arrays. Only the scanline `area`/`cover` buffers come from `ArrayPool`. The output bitmap is intentionally fresh (Phase 160 D11).
+- Native allocates per glyph: outline command and edge lists, `glyf` flag arrays. The scanline fill allocates only the output bitmap, which is intentionally fresh (Phase 160 D11); its delta buffer comes from `ArrayPool`.
 - WASM rule (Phase 160): no `Parallel.ForEach`, `.Result`/`.Wait()` or `Reflection.Emit` in Native.
 
 ## Harness (Wave 0)
@@ -62,9 +62,29 @@ Per-stage split of a Native ASCII glyph (Stopwatch + `GC.GetAllocatedBytesForCur
 | Scanline fill (incl. output bitmap) | 60% | 70% | 84% | 1,479 B |
 | cmap + glyph box | <2% | <2% | <1% | 0 B |
 
-1. **Scanline fill** dominates time at every size: per-glyph `new RasterEdge[]` for both the prepared and the active edge arrays, `Array.Sort` through an `IComparer<RasterEdge>`, and the per-row accumulate/sweep — the Scanline items below.
+1. **Scanline fill** dominated time at every size — done, see Scanline fill below.
 2. **Per-glyph allocation** is 13–30× StbTrueType's and spread evenly across parse (flag/coordinate/point arrays), extract and flatten (`List<T>` + `ToArray`), and scanline edge arrays; it doubles end-to-end `Generate` allocation and promotes to Gen1 — the Pooling item below.
-3. **`GetGlyphMetrics`** is ~6× StbTrueType because it runs the full `glyf` parse + outline extract to get a bounding box (2.8 KB/glyph); it drives `BmFont.QueryAtlasSize`. A cached parse or a bbox-only path fixes it.
+3. **Mono dropout control** (`DropoutControl`, Phase 174) now dominates `None`: every row and column scanline walks all edges and allocates `List`s plus a lambda sort, so `None` costs 3-6× `Grayscale` and 10-41 KB per glyph (table below).
+4. **`GetGlyphMetrics`** is ~6× StbTrueType because it runs the full `glyf` parse + outline extract to get a bounding box (2.8 KB/glyph); it drives `BmFont.QueryAtlasSize`. A cached parse or a bbox-only path fixes it.
+
+## Scanline fill (done)
+
+`ScanlineRasterizer` is an independently derived exact-area accumulator (derivation in its class doc comment): one pooled per-row delta buffer whose prefix sum is the coverage, filled in bands of at most 64K cells by walking the edges in input order — no edge copies, sort or active-edge list — and resolved four rows at a time so the serial running sums overlap. The fill allocates only the output bitmap (`ScanlineRasterizerTests` pins this). A `Vector<float>` level-conversion pass measured within noise and is not used.
+
+Output vs the previous fill (Roboto and Source Serif ASCII, 18 sizes 8-96px): grayscale and LCD differ by at most 1 level on 0.01-0.23% of pixels (float rounding of the same exact-area coverage); `None` is identical except one pixel whose coverage is exactly on the 50% threshold. Coverage truncates after a 1/1024-level bias; without it about 3% of solid pixels truncate to 254.
+
+Before/after, `RasterizeAll` ASCII per glyph, both runs on the reference machine in the same session (other builds were running, so absolute numbers sit above the baseline table; compare within a row):
+
+| Size | AA | Native before | Native after | Stb (after run) | Native / Stb | Native alloc before → after |
+|---|---|---|---|---|---|---|
+| 12 | Grayscale | 2.81 µs | 2.19 µs | 2.39 µs | 0.92× | 5,486 → 4,637 B |
+| 32 | Grayscale | 4.10 µs | 3.49 µs | 5.34 µs | 0.65× | 6,081 → 4,981 B |
+| 72 | Grayscale | 9.42 µs | 6.84 µs | 15.20 µs | 0.45× | 7,841 → 6,314 B |
+| 12 | None | 8.12 µs | 8.33 µs | 2.10 µs | 3.96× | 11,696 → 10,772 B |
+| 32 | None | 17.33 µs | 18.95 µs | 6.18 µs | 3.07× | 21,827 → 20,653 B |
+| 72 | None | 37.19 µs | 43.66 µs | 16.77 µs | 2.60× | 42,835 → 41,234 B |
+
+`None` is dominated by dropout control (hotspot 3); its time moved within the run's error bars. `BmFont.Generate` ASCII + Latin-1 32px: 6.14 ms / 1,987 KB before, 5.42 ms / 1,758 KB after.
 
 ## Work items — optimisation (Wave 3)
 
@@ -72,7 +92,7 @@ Profile first (`dotnet-trace`/PerfView); do only what the profile justifies.
 
 - **Pooling**: every internal per-glyph scratch buffer (edges, active edges, outline commands, parse temporaries) rented from `ArrayPool<T>.Shared` or reused on the instance (instances are single-threaded, D9); output bitmap stays unpooled.
 - **Parsing**: span-based table access; cache cmap lookups; lazy table parsing; optional parsed-outline cache for repeated glyphs.
-- **Scanline**: edge sort without LINQ; active-edge insertion sort; skip empty rows; vectorize the accumulate/clamp/convert pass and buffer clears with `Vector128/256` behind `IsHardwareAccelerated` (managed intrinsics only — no native code).
+- **Dropout control**: pooled span buffers and bucketed edges per scanline instead of per-scanline `List`s and a full edge walk.
 - **Feature paths**: SDF segment bucketing (Phase 169), `gvar` decode caching (Phase 171), COLR layer canvas reuse (Phase 172), as the harness shows them hot.
 - **Parallelism**: optional and only outside the browser (`OperatingSystem.IsBrowser()` guard); one buffer set per worker. Core already parallelizes post-processing, so measure whether backend-level parallelism adds anything.
 
@@ -83,7 +103,7 @@ Profile first (`dotnet-trace`/PerfView); do only what the profile justifies.
 - No quality change: SSIM and golden masters unchanged; `regression_check.py` identical
 - Browser path executes no parallel code
 
-**Regression coverage**: optimisation must be output-neutral, so the existing configs must report Native identical to `main`; no new config needed.
+**Regression coverage**: optimisation must be output-neutral, so the existing configs must report Native identical to `main`; no new config needed. The one exception is the scanline-fill rewrite, whose rounding-level grayscale deltas are measured above.
 
 ## Success Criteria
 

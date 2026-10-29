@@ -4,19 +4,54 @@ using KernSmith.Rasterizers.Native.Internal.Outlines;
 namespace KernSmith.Rasterizers.Native.Internal.Raster;
 
 /// <summary>
-/// Turns directed <see cref="EdgeSegment"/>s into an 8-bit coverage bitmap using signed-area
-/// trapezoid accumulation — the method stb_truetype v2 and font-rs use.
+/// Turns directed <see cref="EdgeSegment"/>s into an 8-bit coverage bitmap by exact signed-area
+/// accumulation (the general technique of Raph Levien's public write-up on accumulation-buffer
+/// font rendering).
 /// </summary>
 /// <remarks>
-/// Each scanline is a 1-pixel-tall band. Every edge crossing the band is clipped to it and its
-/// signed height is distributed across the columns it sweeps: the fraction that falls inside a
-/// column lands in <c>area</c>, and the whole height lands in <c>cover</c> at the first column
-/// completely to its right. Sweeping the row left to right and running <c>cover</c> as a prefix
-/// sum then yields each pixel's exact fractional coverage. The sign carries the winding, so
-/// opposed contours cancel (holes) and the absolute value is the non-zero winding fill.
+/// <para>
+/// Derivation. A pixel's coverage is the integral of the winding number <c>w(x, y)</c> over its
+/// unit cell. Along a horizontal line at height <c>y</c>, <c>w</c> steps by the edge's direction
+/// (±1) at each edge crossing <c>x_e(y)</c> and holds to the right of it, so over the cell
+/// <c>[i, i+1]</c> a crossing contributes ± the fraction of the cell right of it,
+/// <c>clamp(i + 1 - x_e(y), 0, 1)</c>. Coverage is that, integrated over the part of each edge
+/// inside pixel row <c>j</c>.
+/// </para>
+/// <para>
+/// Split the edge's piece in the row at every integer x, so each sub-piece lies in one column
+/// <c>c</c>. Inside a column the integrand <c>c + 1 - x_e(y)</c> is linear in <c>y</c>, so its
+/// integral is the sub-piece's signed height <c>h</c> times <c>c + 1 - m</c>, where <c>m</c> is
+/// its mean x — the midpoint, since x is linear along the segment. Every column right of
+/// <c>c</c> gets the full <c>h</c>. The heights of the sub-pieces are proportional to their
+/// x-extents. With <c>f = m - c</c>, adding <c>h(1 - f)</c> to a per-row delta cell <c>D[c]</c>
+/// and <c>h·f</c> to <c>D[c + 1]</c> makes every pixel's coverage the running sum
+/// <c>D[0] + ... + D[i]</c>: both "inside this column" and "carried right" live in one buffer,
+/// read by one prefix sum.
+/// </para>
+/// <para>
+/// Pieces left of column 0 cover every visible column fully, so their height folds into
+/// <c>D[0]</c>; pieces right of the bitmap affect nothing visible and are dropped. Rows never
+/// interact, so the buffer holds a band of rows and the edges are walked once per band in input
+/// order — no edge copies, sorting or active-edge list. The fill is non-zero: <c>|sum|</c>
+/// clamped to 1, so opposed contours cancel (holes) and overlapping same-direction contours
+/// saturate.
+/// </para>
 /// </remarks>
 internal static class ScanlineRasterizer
 {
+    /// <summary>Delta cells per band (256 KB of floats): every glyph up to roughly 250 px
+    /// square fills in one band, and larger ones never need an unbounded buffer.</summary>
+    private const int BandCells = 1 << 16;
+
+    /// <summary>
+    /// Added before truncating coverage to a level. The deltas and the running sum carry float
+    /// rounding, so a fully covered pixel can come out as 0.99999994; without the bias that
+    /// truncates to 254 (a few percent of solid pixels, measured). Smaller biases leave such
+    /// 254s on 600 px glyphs, whose shallow edges spread one row's height over hundreds of
+    /// cells. A thousandth of a level cannot lift an exact half (127.5) to 128.
+    /// </summary>
+    private const float LevelBias = 1f / 1024f;
+
     /// <summary>
     /// Rasterizes flattened edges into a fresh grayscale bitmap.
     /// </summary>
@@ -33,7 +68,7 @@ internal static class ScanlineRasterizer
     /// <param name="bearingX">Carried through to <see cref="RasterResult.BearingX"/>.</param>
     /// <param name="bearingY">Carried through to <see cref="RasterResult.BearingY"/>.</param>
     /// <remarks>Anything falling outside the bitmap is clipped, so oversized or misplaced
-    /// outlines cannot overrun the buffers.</remarks>
+    /// outlines cannot overrun the buffers. The only allocation is the returned bitmap.</remarks>
     public static RasterResult Rasterize(
         EdgeSegment[] edges,
         int width,
@@ -54,280 +89,231 @@ internal static class ScanlineRasterizer
         if (width == 0 || height == 0 || edges.Length == 0)
             return new RasterResult(bitmap, width, height, bearingX, bearingY);
 
-        var prepared = Prepare(edges, originX, originY, height, out int count);
-        if (count > 0)
-        {
-            Fill(bitmap, prepared, count, width, height, antiAlias);
-            if (antiAlias == AntiAliasMode.None)
-                DropoutControl.Apply(bitmap, edges, width, height, originX, originY);
-        }
+        if (Fill(bitmap, edges, width, height, originX, originY, antiAlias) && antiAlias == AntiAliasMode.None)
+            DropoutControl.Apply(bitmap, edges, width, height, originX, originY);
 
         return new RasterResult(bitmap, width, height, bearingX, bearingY);
     }
 
     /// <summary>
-    /// Translates edges into bitmap space, drops the ones no scanline can see, and sorts what
-    /// remains by top Y (then by X) so the active set can be filled by a single forward walk.
+    /// Accumulates every edge into a pooled delta buffer one band of rows at a time and resolves
+    /// each band into <paramref name="bitmap"/>.
     /// </summary>
-    private static RasterEdge[] Prepare(EdgeSegment[] edges, float originX, float originY, int height, out int count)
+    /// <returns>Whether any edge reached a row of the bitmap.</returns>
+    private static bool Fill(byte[] bitmap, EdgeSegment[] edges, int width, int height, float originX, float originY, AntiAliasMode antiAlias)
     {
-        var prepared = new RasterEdge[edges.Length];
-        count = 0;
-
-        foreach (var edge in edges)
-        {
-            float x0 = edge.X0 - originX, y0 = edge.Y0 - originY;
-            float x1 = edge.X1 - originX, y1 = edge.Y1 - originY;
-
-            // Horizontal edges cross no scanline and carry no signed height. Non-finite ones
-            // would poison the accumulator (inf/inf is NaN, and NaN spreads across the row).
-            // Exact comparison is required: the fill relies on signed dY summing to zero over a
-            // closed contour, so an epsilon here would break closure and cause fill artifacts.
-            // Equals is bitwise `==` (plus NaN==NaN, unreachable past the finite check).
-            if (y0.Equals(y1) || !float.IsFinite(x0) || !float.IsFinite(y0) || !float.IsFinite(x1) || !float.IsFinite(y1))
-                continue;
-
-            float direction = 1f;
-            if (y0 > y1)
-            {
-                direction = -1f;
-                (x0, y0, x1, y1) = (x1, y1, x0, y0);
-            }
-
-            if (y1 <= 0f || y0 >= height)
-                continue;
-
-            prepared[count++] = new RasterEdge(x0, y0, x1, y1, direction);
-        }
-
-        Array.Sort(prepared, 0, count, RasterEdge.ByTopY);
-        return prepared;
-    }
-
-    private static void Fill(byte[] bitmap, RasterEdge[] edges, int count, int width, int height, AntiAliasMode antiAlias)
-    {
-        var pool = ArrayPool<float>.Shared;
-        // Two spare cells: an edge ending in the last column parks its carry one past it.
-        int bufferLength = width + 2;
-        float[] area = pool.Rent(bufferLength);
-        float[] cover = pool.Rent(bufferLength);
-        var active = new RasterEdge[count];
-
+        // One spare cell per row: a piece in the last column parks its carry share past it.
+        int stride = width + 1;
+        int bandRows = Math.Clamp(BandCells / stride, 1, height);
+        float[] cells = ArrayPool<float>.Shared.Rent(stride * bandRows);
+        bool anyEdge = false;
         try
         {
-            // Rented arrays arrive with whatever the previous tenant left behind.
-            Array.Clear(area, 0, bufferLength);
-            Array.Clear(cover, 0, bufferLength);
-
-            int nextEdge = 0;
-            int activeCount = 0;
-
-            for (int y = 0; y < height; y++)
+            for (int bandTop = 0; bandTop < height; bandTop += bandRows)
             {
-                float bandTop = y;
-                float bandBottom = y + 1f;
+                int rows = Math.Min(bandRows, height - bandTop);
+                var band = cells.AsSpan(0, rows * stride);
 
-                while (nextEdge < count && edges[nextEdge].YTop < bandBottom)
-                    active[activeCount++] = edges[nextEdge++];
+                // Rented arrays arrive with whatever the previous tenant left behind.
+                band.Clear();
 
-                for (int i = 0; i < activeCount;)
-                {
-                    if (active[i].YBottom <= bandTop)
-                        active[i] = active[--activeCount];
-                    else
-                        i++;
-                }
+                bool touched = false;
+                foreach (var edge in edges)
+                    touched |= AccumulateEdge(band, stride, width, bandTop, rows, edge, originX, originY);
 
-                if (activeCount == 0)
-                {
-                    // Nothing left below either: the rest of the bitmap stays blank.
-                    if (nextEdge >= count)
-                        break;
+                // An untouched band resolves to zero, which the fresh bitmap already holds.
+                if (touched)
+                    Resolve(bitmap, band, stride, width, bandTop, rows, antiAlias == AntiAliasMode.None);
 
-                    continue;
-                }
-
-                for (int i = 0; i < activeCount; i++)
-                {
-                    ref readonly var edge = ref active[i];
-                    float yEnter = MathF.Max(edge.YTop, bandTop);
-                    float yExit = MathF.Min(edge.YBottom, bandBottom);
-                    if (yExit <= yEnter)
-                        continue;
-
-                    Accumulate(
-                        area,
-                        cover,
-                        width,
-                        edge.XAt(yEnter),
-                        edge.XAt(yExit),
-                        (yExit - yEnter) * edge.Direction);
-                }
-
-                Sweep(bitmap, area, cover, y * width, width, antiAlias);
-                // Sweep leaves the visible columns at zero; the carry cells still need clearing.
-                area[width] = 0f;
-                area[width + 1] = 0f;
-                cover[width] = 0f;
-                cover[width + 1] = 0f;
+                anyEdge |= touched;
             }
         }
         finally
         {
-            pool.Return(area);
-            pool.Return(cover);
+            ArrayPool<float>.Shared.Return(cells);
+        }
+
+        return anyEdge;
+    }
+
+    /// <summary>
+    /// Clips one edge to the band's rows and accumulates its piece in each row.
+    /// </summary>
+    /// <returns>Whether the edge reached any row of the band.</returns>
+    private static bool AccumulateEdge(Span<float> band, int stride, int width, int bandTop, int rows, EdgeSegment edge, float originX, float originY)
+    {
+        float xTop = edge.X0 - originX, yTop = edge.Y0 - originY;
+        float xBottom = edge.X1 - originX, yBottom = edge.Y1 - originY;
+
+        // Non-finite coordinates would poison the running sum (inf - inf is NaN, and NaN spreads
+        // across the row). Horizontal edges cross no row and carry no signed height. Exact
+        // comparison is required: the fill relies on signed dY summing to zero over a closed
+        // contour, so an epsilon here would break closure and cause fill artifacts. Equals is
+        // bitwise `==` (plus NaN==NaN, unreachable past the finite check).
+        if (!float.IsFinite(xTop) || !float.IsFinite(yTop) || !float.IsFinite(xBottom) || !float.IsFinite(yBottom)
+            || yTop.Equals(yBottom))
+        {
+            return false;
+        }
+
+        float direction = 1f;
+        if (yTop > yBottom)
+        {
+            (xTop, xBottom) = (xBottom, xTop);
+            (yTop, yBottom) = (yBottom, yTop);
+            direction = -1f;
+        }
+
+        int bandBottom = bandTop + rows;
+        if (yBottom <= bandTop || yTop >= bandBottom)
+            return false;
+
+        float dxdy = (xBottom - xTop) / (yBottom - yTop);
+        float xMin = MathF.Min(xTop, xBottom), xMax = MathF.Max(xTop, xBottom);
+
+        // Clamped before the int conversion, so far-off coordinates cannot overflow it.
+        float yEnter = MathF.Max(yTop, bandTop);
+        int firstRow = (int)yEnter;
+        int endRow = (int)MathF.Ceiling(MathF.Min(yBottom, bandBottom));
+
+        // Exact endpoints where the edge starts or ends inside the band; interpolated (and kept
+        // inside the edge's own X extent against rounding) where a row boundary cuts it.
+        float xEnter = yEnter > yTop ? Math.Clamp(xTop + ((yEnter - yTop) * dxdy), xMin, xMax) : xTop;
+        for (int row = firstRow; row < endRow; row++)
+        {
+            float yExit = MathF.Min(yBottom, row + 1);
+            float xExit = yExit < yBottom ? Math.Clamp(xTop + ((yExit - yTop) * dxdy), xMin, xMax) : xBottom;
+
+            AccumulatePiece(band.Slice((row - bandTop) * stride, stride), width, xEnter, xExit, direction * (yExit - yEnter));
+
+            yEnter = yExit;
+            xEnter = xExit;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Adds the deltas of one straight piece lying inside a single pixel row, running from
+    /// <paramref name="xA"/> to <paramref name="xB"/> with signed height <paramref name="h"/>.
+    /// </summary>
+    private static void AccumulatePiece(Span<float> row, int width, float xA, float xB, float h)
+    {
+        // Only the x-extent matters: heights split in proportion to it whichever way it runs.
+        float xLeft = MathF.Min(xA, xB), xRight = MathF.Max(xA, xB);
+
+        if (xRight <= 0f)
+        {
+            row[0] += h;
+            return;
+        }
+
+        if (xLeft >= width)
+            return;
+
+        if (xLeft < 0f)
+        {
+            float leftShare = h * (-xLeft / (xRight - xLeft));
+            row[0] += leftShare;
+            h -= leftShare;
+            xLeft = 0f;
+        }
+
+        int column = (int)xLeft;
+        if (xRight <= column + 1)
+        {
+            float f = (0.5f * (xLeft + xRight)) - column;
+            row[column] += h * (1f - f);
+            row[column + 1] += h * f;
+            return;
+        }
+
+        float heightPerX = h / (xRight - xLeft);
+
+        // First, partial column: from xLeft to its right boundary.
+        float lead = column + 1 - xLeft;
+        float leadHeight = heightPerX * lead;
+        float leadF = 1f - (0.5f * lead);
+        row[column] += leadHeight * (1f - leadF);
+        row[column + 1] += leadHeight * leadF;
+
+        // Fully crossed columns have f = 1/2: half of heightPerX lands in the column and half in
+        // the next, so consecutive columns merge into one whole heightPerX each.
+        float xEnd = MathF.Min(xRight, width);
+        int fullEnd = (int)xEnd;
+        int next = column + 1;
+        if (next < fullEnd)
+        {
+            float half = 0.5f * heightPerX;
+            row[next] += half;
+            for (int k = next + 1; k < fullEnd; k++)
+                row[k] += heightPerX;
+            row[fullEnd] += half;
+        }
+
+        // Last, partial column: from its left boundary to xRight (nothing when past the bitmap).
+        float tail = xEnd - fullEnd;
+        if (tail > 0f)
+        {
+            float tailHeight = heightPerX * tail;
+            float tailF = 0.5f * tail;
+            row[fullEnd] += tailHeight * (1f - tailF);
+            row[fullEnd + 1] += tailHeight * tailF;
         }
     }
 
     /// <summary>
-    /// Distributes one band-clipped edge's signed height <paramref name="d"/> across the columns
-    /// it sweeps between <paramref name="xEnter"/> and <paramref name="xExit"/>.
+    /// Runs each band row's prefix sum and writes the clamped non-zero coverage as bytes.
     /// </summary>
-    private static void Accumulate(float[] area, float[] cover, int width, float xEnter, float xExit, float d)
+    private static void Resolve(byte[] bitmap, Span<float> band, int stride, int width, int bandTop, int rows, bool threshold)
     {
-        float x0 = MathF.Min(xEnter, xExit);
-        float x1 = MathF.Max(xEnter, xExit);
-
-        // Everything to the left of the bitmap covers every visible column completely.
-        if (x1 <= 0f)
+        // Four rows at a time: a row's running sum is one serial chain of float adds, so
+        // interleaving independent rows keeps the adder busy (measured about 2x on the resolve
+        // pass). A Vector<float> conversion pass on top measured within noise, so it is not used.
+        int r = 0;
+        for (; r + 4 <= rows; r += 4)
         {
-            cover[0] += d;
-            return;
-        }
-
-        // Everything to the right only affects columns that are not rendered.
-        if (x0 >= width)
-            return;
-
-        float span = x1 - x0;
-        if (span > 0f)
-        {
-            float low = MathF.Max(x0, 0f);
-            float high = MathF.Min(x1, width);
-
-            // Split rather than clamp: the piece left of the bitmap keeps its full weight,
-            // the piece past the right edge is discarded, and only the middle is distributed.
-            if (x0 < 0f)
-                cover[0] += d * ((low - x0) / span);
-
-            d *= (high - low) / span;
-            x0 = low;
-            x1 = high;
-            span = x1 - x0;
-        }
-
-        float x0Floor = MathF.Floor(x0);
-        int x0i = (int)x0Floor;
-        float x1Ceiling = MathF.Ceiling(x1);
-        int x1i = (int)x1Ceiling;
-
-        if (x1i <= x0i + 1)
-        {
-            // Confined to one column: coverage is the mean distance from its right-hand edge.
-            float midpoint = (0.5f * (x0 + x1)) - x0Floor;
-            area[x0i] += d * (1f - midpoint);
-            cover[x0i + 1] += d;
-            return;
-        }
-
-        // Cumulative coverage fractions across the swept columns. `a0` is the triangle in the
-        // first column, `am` the triangle in the last, and the columns between accumulate a
-        // constant slice of the span each.
-        float s = 1f / span;
-        float x0Fraction = x0 - x0Floor;
-        float a0 = 0.5f * s * (1f - x0Fraction) * (1f - x0Fraction);
-        float x1Fraction = x1 - x1Ceiling + 1f;
-        float am = 0.5f * s * x1Fraction * x1Fraction;
-
-        area[x0i] += d * a0;
-
-        if (x1i == x0i + 2)
-        {
-            area[x0i + 1] += d * (1f - am);
-        }
-        else
-        {
-            float a1 = s * (1.5f - x0Fraction);
-            area[x0i + 1] += d * a1;
-
-            for (int x = x0i + 2; x < x1i - 1; x++)
-                area[x] += d * (a1 + ((x - x0i - 1) * s));
-
-            area[x1i - 1] += d * (1f - am);
-        }
-
-        cover[x1i] += d;
-    }
-
-    /// <summary>
-    /// Walks one row left to right, turning the accumulated area and running cover into bytes
-    /// and resetting the buffers for the next scanline.
-    /// </summary>
-    private static void Sweep(byte[] bitmap, float[] area, float[] cover, int rowStart, int width, AntiAliasMode antiAlias)
-    {
-        float runningCover = 0f;
-        bool threshold = antiAlias == AntiAliasMode.None;
-
-        for (int x = 0; x < width; x++)
-        {
-            runningCover += cover[x];
-            float coverage = MathF.Abs(area[x] + runningCover);
-
-            // Overlapping contours push the winding number above 1, so clamp rather than wrap.
-            int value = (int)MathF.Min(coverage * 255f, 255f);
-            bitmap[rowStart + x] = threshold
-                ? (value >= 128 ? (byte)255 : (byte)0)
-                : (byte)value;
-
-            area[x] = 0f;
-            cover[x] = 0f;
-        }
-    }
-
-    /// <summary>An edge normalized to run downward, with its winding kept in the sign.</summary>
-    private readonly struct RasterEdge
-    {
-        /// <summary>Orders edges by the scanline they become active on, then left to right.</summary>
-        public static readonly IComparer<RasterEdge> ByTopY = new TopYComparer();
-
-        public RasterEdge(float xTop, float yTop, float xBottom, float yBottom, float direction)
-        {
-            XTop = xTop;
-            YTop = yTop;
-            XBottom = xBottom;
-            YBottom = yBottom;
-            Direction = direction;
-            DxDy = (xBottom - xTop) / (yBottom - yTop);
-        }
-
-        public float XTop { get; }
-
-        public float YTop { get; }
-
-        public float XBottom { get; }
-
-        public float YBottom { get; }
-
-        /// <summary>+1 when the edge originally ran downward, -1 when it ran upward.</summary>
-        public float Direction { get; }
-
-        private float DxDy { get; }
-
-        /// <summary>X where the edge crosses <paramref name="y"/>, kept inside its own X extent
-        /// so a near-horizontal edge cannot drift outside the segment through rounding.</summary>
-        public float XAt(float y) =>
-            Math.Clamp(
-                XTop + ((y - YTop) * DxDy),
-                MathF.Min(XTop, XBottom),
-                MathF.Max(XTop, XBottom));
-
-        private sealed class TopYComparer : IComparer<RasterEdge>
-        {
-            public int Compare(RasterEdge x, RasterEdge y)
+            var d0 = band.Slice(r * stride, width);
+            var d1 = band.Slice((r + 1) * stride, width);
+            var d2 = band.Slice((r + 2) * stride, width);
+            var d3 = band.Slice((r + 3) * stride, width);
+            var o0 = bitmap.AsSpan((bandTop + r) * width, width);
+            var o1 = bitmap.AsSpan((bandTop + r + 1) * width, width);
+            var o2 = bitmap.AsSpan((bandTop + r + 2) * width, width);
+            var o3 = bitmap.AsSpan((bandTop + r + 3) * width, width);
+            float s0 = 0f, s1 = 0f, s2 = 0f, s3 = 0f;
+            for (int x = 0; x < width; x++)
             {
-                int byTop = x.YTop.CompareTo(y.YTop);
-                return byTop != 0 ? byTop : x.XTop.CompareTo(y.XTop);
+                s0 += d0[x];
+                s1 += d1[x];
+                s2 += d2[x];
+                s3 += d3[x];
+                o0[x] = Level(s0);
+                o1[x] = Level(s1);
+                o2[x] = Level(s2);
+                o3[x] = Level(s3);
             }
         }
+
+        for (; r < rows; r++)
+        {
+            var deltas = band.Slice(r * stride, width);
+            var output = bitmap.AsSpan((bandTop + r) * width, width);
+            float sum = 0f;
+            for (int x = 0; x < width; x++)
+            {
+                sum += deltas[x];
+                output[x] = Level(sum);
+            }
+        }
+
+        if (threshold)
+        {
+            foreach (ref byte value in bitmap.AsSpan(bandTop * width, rows * width))
+                value = value >= 128 ? (byte)255 : (byte)0;
+        }
     }
+
+    /// <summary>Non-zero coverage of a running sum, truncated to an 8-bit level.</summary>
+    private static byte Level(float sum) => (byte)((MathF.Min(MathF.Abs(sum), 1f) * 255f) + LevelBias);
 }
