@@ -1,43 +1,57 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Embolden is a port of FreeType's FT_Outline_EmboldenXY algorithm.
-//
-// Portions of this software are copyright © 2023 The FreeType Project
-// (www.freetype.org). All rights reserved.
-//
-// Used under the FreeType License (FTL). See THIRD-PARTY-NOTICES.md at the repo
-// root for the full license text.
-// ─────────────────────────────────────────────────────────────────────────────
-
 namespace KernSmith.Rasterizers.Native.Internal.Outlines;
 
 /// <summary>
-/// Synthetic-bold outline expansion, ported from FreeType's <c>FT_Outline_EmboldenXY</c> so
-/// Native's bold matches the FreeType backend's in weight and placement.
+/// Synthetic-bold outline expansion: thickens the ink of an outline by a fixed amount, so
+/// stems widen and counters close by the same amount.
 /// </summary>
 /// <remarks>
-/// Works on the control polygon — on-curve points and cubic control points alike — exactly as
-/// FreeType works on its quadratic one, which offsets each Bézier by moving its controls
-/// (Tiller–Hanson). Every vertex moves by half the strength along the miter bisector of its two
-/// edges, pointing out of the ink; because outer contours and counters wind in opposite
-/// directions, one global orientation grows strokes and shrinks counters at the same time. The
-/// whole outline then shifts up and right by half the strength, so the left and bottom edges stay
-/// put and the ink grows by the full strength to the right and upwards.
-///
-/// INVARIANT (from FreeType): a turn sharper than ~160° gets no lateral shift, and an inward
-/// (concave) corner's shift is capped at <c>shortestEdge / sin(turn)</c>. The first stops spikes
-/// at acute apexes; the second stops short edges collapsing into each other at small sizes.
+/// <para>
+/// The outline is offset by half the strength as a polygon of its control points — on-curve
+/// points and cubic control points alike. Offsetting a Bézier's control polygon edge by edge
+/// approximates the offset of the curve itself (the Tiller–Hanson construction): each vertex
+/// moves along the bisector of its two edges' outward normals, far enough that both edges move
+/// out by exactly the offset (<c>d / cos(φ)</c>, φ being half the angle between the normals).
+/// Smooth on-curve points sit between collinear control legs, so they simply move along their
+/// normal.
+/// </para>
+/// <para>
+/// "Outward" is decided once for the whole glyph from the sign of its total signed area, not
+/// per contour: outer contours and counters wind in opposite directions, so a single choice
+/// grows the strokes and shrinks the counters together, whichever direction the font winds.
+/// The result is then moved up and right by half the strength, so the left and bottom edges of
+/// the ink stay where they were and the glyph grows by the full strength to the right and up —
+/// the placement the FreeType backend's bold has.
+/// </para>
+/// <para>
+/// Two limits keep the offset well-behaved where the plain construction is not:
+/// <list type="bullet">
+/// <item>A corner sharper than <see cref="MiterLimit"/> allows (an angle under about 29°) gets
+/// the midpoint of the bevel instead of the far-off miter tip, so hairline points do not grow
+/// spikes and narrow notches (the crotch of an 'M') are not filled in from the tip.</item>
+/// <item>Where an inward corner's offset slides it along an edge, the slides of an edge's two
+/// ends may together not exceed its length; both are pulled back in proportion when they
+/// would. A short edge between two inward corners therefore shrinks to nothing at worst and
+/// never turns round into a reversed loop that would punch a hole in the ink.</item>
+/// </list>
+/// </para>
 /// </remarks>
 internal static class OutlineEmboldener
 {
-    /// <summary>FreeType's "shift only if turn is less than ~160°": cos(turn) &gt; -0xF000/0x10000.</summary>
-    private const double MinTurnCosine = -0.9375;
+    /// <summary>
+    /// The longest a corner's offset may be, in multiples of the offset distance, before the
+    /// corner is beveled — the common stroke miter limit of 4 (an angle of about 29°).
+    /// </summary>
+    private const double MiterLimit = 4.0;
+
+    /// <summary>Edges shorter than this (squared, in font units) have no usable direction.</summary>
+    private const double MinEdgeLengthSquared = 1e-6;
 
     /// <summary>
     /// Expands an outline by <paramref name="strength"/> font units in total width and height.
     /// </summary>
     /// <returns>
     /// The emboldened outline; the input itself when it is empty; null when its contours enclose
-    /// no signed area, so it has no orientation to expand against (FreeType rejects those too).
+    /// no signed area, so there is no inside to grow away from.
     /// </returns>
     public static GlyphOutline? Embolden(GlyphOutline outline, float strength)
     {
@@ -47,198 +61,260 @@ internal static class OutlineEmboldener
             return outline;
 
         var commands = outline.Commands;
-        int pointCount = 0;
-        foreach (var command in commands)
-        {
-            pointCount += command.Type switch
-            {
-                OutlineCommandType.CubicTo => 3,
-                OutlineCommandType.Close => 0,
-                _ => 1,
-            };
-        }
-
-        // The control polygon, contour by contour. Close repeats the start point, so it adds no
-        // vertex; the closing edge is the polygon's wrap-around.
-        var xs = new double[pointCount];
-        var ys = new double[pointCount];
-        var contours = new List<(int First, int Last)>();
-        int n = 0, contourFirst = 0;
-        foreach (var command in commands)
-        {
-            switch (command.Type)
-            {
-                case OutlineCommandType.MoveTo:
-                    contourFirst = n;
-                    Add(command.EndX, command.EndY);
-                    break;
-                case OutlineCommandType.LineTo:
-                    Add(command.EndX, command.EndY);
-                    break;
-                case OutlineCommandType.CubicTo:
-                    Add(command.Ctrl1X, command.Ctrl1Y);
-                    Add(command.Ctrl2X, command.Ctrl2Y);
-                    Add(command.EndX, command.EndY);
-                    break;
-                case OutlineCommandType.Close:
-                    contours.Add((contourFirst, n - 1));
-                    break;
-            }
-        }
-
-        // FT_Outline_Get_Orientation: the sign of the total signed area. Clockwise (Y up), the
-        // TrueType convention for outer contours, sums negative.
-        double area = 0;
-        foreach (var (first, last) in contours)
-        {
-            double prevX = xs[last], prevY = ys[last];
-            for (int i = first; i <= last; i++)
-            {
-                area += (ys[i] - prevY) * (xs[i] + prevX);
-                prevX = xs[i];
-                prevY = ys[i];
-            }
-        }
-
-        if (area.Equals(0d))
+        double area = SignedArea(commands);
+        if (area == 0 || !double.IsFinite(area))
             return null;
 
-        bool clockwise = area < 0;
-        double half = strength / 2.0;
-        var movedX = (double[])xs.Clone();
-        var movedY = (double[])ys.Clone();
-        foreach (var (first, last) in contours)
-            EmboldenContour(xs, ys, movedX, movedY, first, last, half, clockwise);
+        // Y up: a negative (clockwise) total area puts the ink on the right of travel, so the
+        // outward normal of a direction (dx, dy) is its left-hand one, (-dy, dx).
+        double side = area < 0 ? 1 : -1;
+        double distance = strength / 2.0;
+        float shift = strength / 2f;
 
         var result = new OutlineCommand[commands.Length];
-        int p = 0, start = 0;
-        for (int c = 0; c < commands.Length; c++)
+        var points = new List<Point>();
+        int start = 0;
+        while (start < commands.Length)
         {
-            var command = commands[c];
-            switch (command.Type)
-            {
-                case OutlineCommandType.MoveTo:
-                    start = p;
-                    result[c] = OutlineCommand.Move(X(p), Y(p));
-                    p++;
-                    break;
-                case OutlineCommandType.LineTo:
-                    result[c] = OutlineCommand.Line(X(p), Y(p));
-                    p++;
-                    break;
-                case OutlineCommandType.CubicTo:
-                    result[c] = OutlineCommand.Cubic(X(p), Y(p), X(p + 1), Y(p + 1), X(p + 2), Y(p + 2));
-                    p += 3;
-                    break;
-                default:
-                    result[c] = OutlineCommand.CloseAt(X(start), Y(start));
-                    break;
-            }
+            int end = ContourEnd(commands, start);
+
+            points.Clear();
+            for (int i = start; i < end; i++)
+                AppendPoints(commands[i], points);
+
+            var offsets = OffsetContour(points, side, distance);
+            WriteContour(commands, start, end, points, offsets, shift, result);
+            start = end;
         }
 
         return GlyphOutline.FromCommands(result);
+    }
 
-        void Add(float x, float y)
+    private readonly record struct Point(double X, double Y);
+
+    /// <summary>
+    /// The index just past the contour that starts at <paramref name="start"/>: past its
+    /// <see cref="OutlineCommandType.Close"/>, or at the next <see cref="OutlineCommandType.MoveTo"/>.
+    /// </summary>
+    private static int ContourEnd(OutlineCommand[] commands, int start)
+    {
+        for (int i = start; i < commands.Length; i++)
         {
-            xs[n] = x;
-            ys[n] = y;
-            n++;
+            if (commands[i].Type == OutlineCommandType.Close)
+                return i + 1;
+
+            if (i > start && commands[i].Type == OutlineCommandType.MoveTo)
+                return i;
         }
 
-        float X(int i) => (float)movedX[i];
-        float Y(int i) => (float)movedY[i];
+        return commands.Length;
+    }
+
+    /// <summary>Appends the control-polygon vertices a command contributes, in path order.</summary>
+    private static void AppendPoints(OutlineCommand command, List<Point> points)
+    {
+        switch (command.Type)
+        {
+            case OutlineCommandType.MoveTo:
+            case OutlineCommandType.LineTo:
+                points.Add(new Point(command.EndX, command.EndY));
+                break;
+
+            case OutlineCommandType.CubicTo:
+                points.Add(new Point(command.Ctrl1X, command.Ctrl1Y));
+                points.Add(new Point(command.Ctrl2X, command.Ctrl2Y));
+                points.Add(new Point(command.EndX, command.EndY));
+                break;
+
+            // Close repeats the start point, which is already the first vertex.
+        }
+    }
+
+    /// <summary>Twice the signed area of the control polygons of every contour (shoelace sum).</summary>
+    private static double SignedArea(OutlineCommand[] commands)
+    {
+        double total = 0;
+        var points = new List<Point>();
+        int start = 0;
+        while (start < commands.Length)
+        {
+            int end = ContourEnd(commands, start);
+
+            points.Clear();
+            for (int i = start; i < end; i++)
+                AppendPoints(commands[i], points);
+
+            for (int i = 0; i < points.Count; i++)
+            {
+                var a = points[i];
+                var b = points[(i + 1) % points.Count];
+                total += (a.X * b.Y) - (b.X * a.Y);
+            }
+
+            start = end;
+        }
+
+        return total;
     }
 
     /// <summary>
-    /// One contour of <c>FT_Outline_EmboldenXY</c>. Reads the original points and writes the
-    /// moved ones. Coincident points share their neighbour's shift, so a zero-length edge
-    /// never produces a direction.
+    /// How far each vertex of one closed control polygon moves. A vertex that coincides with a
+    /// neighbour takes its direction from the nearest edges that have a length, so coincident
+    /// points move together and a zero-length edge never contributes a direction.
     /// </summary>
-    private static void EmboldenContour(
-        double[] xs, double[] ys, double[] movedX, double[] movedY,
-        int first, int last, double half, bool clockwise)
+    private static Point[] OffsetContour(List<Point> points, double side, double distance)
     {
-        double inX = 0, inY = 0, lIn = 0;
-        double anchorX = 0, anchorY = 0, lAnchor = 0;
+        int n = points.Count;
+        var offsets = new Point[n];
+        if (n < 2)
+            return offsets;
 
-        // j walks the points; i advances only when points are moved; k marks the first moved
-        // point, where the walk stops after wrapping around.
-        int i = last, j = first, k = -1;
-        while (j != i && i != k)
+        // Edge i runs from vertex i to vertex i + 1 (wrapping).
+        var dirX = new double[n];
+        var dirY = new double[n];
+        var length = new double[n];
+        bool anyEdge = false;
+        for (int i = 0; i < n; i++)
         {
-            double outX, outY, lOut;
-            if (j != k)
-            {
-                outX = xs[j] - xs[i];
-                outY = ys[j] - ys[i];
-                lOut = Math.Sqrt((outX * outX) + (outY * outY));
-                if (lOut.Equals(0d))
-                {
-                    j = j < last ? j + 1 : first;
-                    continue;
-                }
+            var a = points[i];
+            var b = points[(i + 1) % n];
+            double dx = b.X - a.X, dy = b.Y - a.Y;
+            double squared = (dx * dx) + (dy * dy);
+            if (!(squared > MinEdgeLengthSquared))
+                continue;
 
-                outX /= lOut;
-                outY /= lOut;
-            }
-            else
-            {
-                outX = anchorX;
-                outY = anchorY;
-                lOut = lAnchor;
-            }
-
-            if (!lIn.Equals(0d))
-            {
-                if (k < 0)
-                {
-                    k = i;
-                    anchorX = inX;
-                    anchorY = inY;
-                    lAnchor = lIn;
-                }
-
-                double d = (inX * outX) + (inY * outY);
-                double shiftX = 0, shiftY = 0;
-                if (d > MinTurnCosine)
-                {
-                    d += 1;
-
-                    // The lateral bisector, pointing out of the ink for this orientation.
-                    shiftX = inY + outY;
-                    shiftY = inX + outX;
-                    if (clockwise)
-                        shiftX = -shiftX;
-                    else
-                        shiftY = -shiftY;
-
-                    // Positive for an inward (concave) turn; caps the shift so short edges
-                    // either side of it cannot cross.
-                    double q = (outX * inY) - (outY * inX);
-                    if (clockwise)
-                        q = -q;
-
-                    double l = Math.Min(lIn, lOut);
-                    double scale = half * q <= l * d ? half / d : l / q;
-                    shiftX *= scale;
-                    shiftY *= scale;
-                }
-
-                for (; i != j; i = i < last ? i + 1 : first)
-                {
-                    movedX[i] = xs[i] + half + shiftX;
-                    movedY[i] = ys[i] + half + shiftY;
-                }
-            }
-            else
-            {
-                i = j;
-            }
-
-            inX = outX;
-            inY = outY;
-            lIn = lOut;
-            j = j < last ? j + 1 : first;
+            double len = Math.Sqrt(squared);
+            dirX[i] = dx / len;
+            dirY[i] = dy / len;
+            length[i] = len;
+            anyEdge = true;
         }
+
+        if (!anyEdge)
+            return offsets;
+
+        // Each vertex's edges, and how far its offset slides it back along the incoming edge
+        // and forward along the outgoing one. Only an inward corner slides into its edges; an
+        // outward corner extends them, which costs nothing.
+        var incomingEdge = new int[n];
+        var outgoingEdge = new int[n];
+        var slideIn = new double[n];
+        var slideOut = new double[n];
+        for (int i = 0; i < n; i++)
+        {
+            int incoming = (i - 1 + n) % n;
+            while (length[incoming] == 0)
+                incoming = (incoming - 1 + n) % n;
+
+            int outgoing = i;
+            while (length[outgoing] == 0)
+                outgoing = (outgoing + 1) % n;
+
+            var offset = CornerOffset(dirX[incoming], dirY[incoming], dirX[outgoing], dirY[outgoing], side, distance);
+            offsets[i] = offset;
+            incomingEdge[i] = incoming;
+            outgoingEdge[i] = outgoing;
+            slideIn[i] = Math.Max(0, -((offset.X * dirX[incoming]) + (offset.Y * dirY[incoming])));
+            slideOut[i] = Math.Max(0, (offset.X * dirX[outgoing]) + (offset.Y * dirY[outgoing]));
+        }
+
+        // An edge's two ends may together slide no further than its length, or it would turn
+        // round. Where they would, both ends are pulled back in proportion; a vertex then takes
+        // the tighter of its two edges' limits.
+        var edgeScale = new double[n];
+        for (int e = 0; e < n; e++)
+        {
+            edgeScale[e] = 1;
+            if (length[e] == 0)
+                continue;
+
+            // A valid edge e starts at vertex e and ends at vertex e + 1.
+            double consumed = slideOut[e] + slideIn[(e + 1) % n];
+            if (consumed > length[e])
+                edgeScale[e] = length[e] / consumed;
+        }
+
+        for (int i = 0; i < n; i++)
+        {
+            double scale = Math.Min(edgeScale[incomingEdge[i]], edgeScale[outgoingEdge[i]]);
+            if (scale < 1)
+                offsets[i] = new Point(offsets[i].X * scale, offsets[i].Y * scale);
+        }
+
+        return offsets;
+    }
+
+    /// <summary>
+    /// The offset of a vertex between an incoming edge of direction <c>a</c> and an outgoing edge
+    /// of direction <c>b</c> (both unit vectors): the miter that moves both edges outward by
+    /// <paramref name="distance"/>, or the bevel midpoint past the miter limit.
+    /// </summary>
+    private static Point CornerOffset(double ax, double ay, double bx, double by, double side, double distance)
+    {
+        // Outward unit normals of the two edges.
+        double nax = -ay * side, nay = ax * side;
+        double nbx = -by * side, nby = bx * side;
+
+        // cos(2φ), with φ half the angle between the normals; 1 + cos(2φ) = 2cos²(φ).
+        double cos2Phi = (nax * nbx) + (nay * nby);
+        double onePlusCos = 1 + cos2Phi;
+        double sumX = nax + nbx, sumY = nay + nby;
+
+        // The path doubles straight back: the two offsets point in opposite directions and there
+        // is no corner to move towards.
+        if (onePlusCos < 1e-12)
+            return default;
+
+        // The miter, (na + nb) / (1 + cos 2φ), is 1 / cos(φ) long along the bisector.
+        if (2 / onePlusCos <= MiterLimit * MiterLimit)
+            return new Point(sumX / onePlusCos * distance, sumY / onePlusCos * distance);
+
+        // Past the limit: the midpoint of the chord between the two edges' offset ends. For an
+        // outward point that is the bevel; for an inward notch it keeps the notch where it was
+        // rather than filling it in from the tip.
+        return new Point(sumX / 2 * distance, sumY / 2 * distance);
+    }
+
+    /// <summary>Writes one contour's commands with every vertex offset and shifted.</summary>
+    private static void WriteContour(
+        OutlineCommand[] source, int start, int end,
+        List<Point> points, Point[] offsets, float shift, OutlineCommand[] result)
+    {
+        int vertex = 0;
+        for (int i = start; i < end; i++)
+        {
+            var command = source[i];
+            switch (command.Type)
+            {
+                case OutlineCommandType.MoveTo:
+                case OutlineCommandType.LineTo:
+                    {
+                        var (x, y) = Moved(vertex++);
+                        result[i] = command with { EndX = x, EndY = y };
+                        break;
+                    }
+
+                case OutlineCommandType.CubicTo:
+                    {
+                        var (c1x, c1y) = Moved(vertex++);
+                        var (c2x, c2y) = Moved(vertex++);
+                        var (x, y) = Moved(vertex++);
+                        result[i] = command with { Ctrl1X = c1x, Ctrl1Y = c1y, Ctrl2X = c2x, Ctrl2Y = c2y, EndX = x, EndY = y };
+                        break;
+                    }
+
+                case OutlineCommandType.Close:
+                    {
+                        // The closing point is the contour's start, moved with it.
+                        var (x, y) = points.Count > 0 ? Moved(0) : (command.EndX + shift, command.EndY + shift);
+                        result[i] = command with { EndX = x, EndY = y };
+                        break;
+                    }
+            }
+        }
+
+        (float X, float Y) Moved(int index) =>
+            ((float)(points[index].X + offsets[index].X) + shift,
+             (float)(points[index].Y + offsets[index].Y) + shift);
     }
 }

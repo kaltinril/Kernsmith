@@ -65,10 +65,10 @@ public class SyntheticStyleTransformTests
     [InlineData(false)]
     public void Bold_GrowsASquare_ByTheFullStrength_KeepingTheLowerLeftCorner(bool clockwise)
     {
-        // FreeType's FT_Outline_EmboldenXY: every edge moves out by strength/2, then the whole
-        // outline shifts up and right by strength/2 — so the left and bottom edges stay put
-        // and the ink grows by the full strength to the right and upwards. Winding direction
-        // must not matter.
+        // Every edge moves out by strength/2, then the whole outline shifts up and right by
+        // strength/2 — so the left and bottom edges stay put and the ink grows by the full
+        // strength to the right and upwards, as the FreeType backend's bold does. Winding
+        // direction must not matter.
         var glyph = new DecodedGlyph(Square(0, 0, 1000, 1000, clockwise), 1200f, new OutlineBounds(0, 0, 1000, 1000));
 
         var bold = new BoldTransform(100f).Apply(glyph);
@@ -112,7 +112,7 @@ public class SyntheticStyleTransformTests
         (bounds.XMax - bounds.XMin).ShouldBe(900f, 0.5f);
         (bounds.YMax - bounds.YMin).ShouldBe(900f, 0.5f);
 
-        // Centre moves by strength/2 up and right, like every FreeType-emboldened outline.
+        // Centre moves by strength/2 up and right, like every emboldened outline.
         ((bounds.XMin + bounds.XMax) / 2).ShouldBe(550f, 0.5f);
         ((bounds.YMin + bounds.YMax) / 2).ShouldBe(550f, 0.5f);
 
@@ -124,8 +124,8 @@ public class SyntheticStyleTransformTests
     public void Bold_DoesNotSpike_AtAnAcuteApex()
     {
         // A sliver with a ~6° apex. A plain miter join would push the apex out by
-        // strength / sin(3°) ≈ 19× the strength; FreeType's rule leaves turns sharper than
-        // ~160° unmitered, so the apex only takes the uniform shift.
+        // strength / sin(3°) ≈ 19× the strength; past the miter limit the apex is beveled, so
+        // it barely moves beyond the uniform shift.
         var sliver = GlyphOutline.FromCommands(
         [
             OutlineCommand.Move(0, 0),
@@ -171,6 +171,131 @@ public class SyntheticStyleTransformTests
         var bounds = OutlineBounds.Tight(bold.Outline);
         bounds.XMin.ShouldBe(0f, 0.01f);
         bounds.XMax.ShouldBe(1100f, 0.01f);
+    }
+
+    [Fact]
+    public void Bold_MitersAnInwardCorner_SoEveryEdgeMovesOutByHalfTheStrength()
+    {
+        // An 'L', clockwise. Every edge moves out by 50, then the outline shifts by (50, 50);
+        // the inward corner at (300, 300) lands exactly where its two offset edges meet.
+        var l = GlyphOutline.FromCommands(
+        [
+            OutlineCommand.Move(0, 0),
+            OutlineCommand.Line(0, 1000),
+            OutlineCommand.Line(300, 1000),
+            OutlineCommand.Line(300, 300),
+            OutlineCommand.Line(1000, 300),
+            OutlineCommand.Line(1000, 0),
+            OutlineCommand.CloseAt(0, 0),
+        ]);
+
+        var bold = new BoldTransform(100f).Apply(new DecodedGlyph(l, 1000f));
+
+        AssertCommands(bold.Outline.Commands,
+        [
+            OutlineCommand.Move(0, 0),
+            OutlineCommand.Line(0, 1100),
+            OutlineCommand.Line(400, 1100),
+            OutlineCommand.Line(400, 400),
+            OutlineCommand.Line(1100, 400),
+            OutlineCommand.Line(1100, 0),
+            OutlineCommand.CloseAt(0, 0),
+        ], tolerance: 0.01f);
+    }
+
+    [Fact]
+    public void Bold_MitersAModeratelyAcuteApex_ToItsTrueOffset()
+    {
+        // A 40° apex (half-angle 20°), the shape of an 'A' or 'V' point. Its sides move out by
+        // 50, so the apex moves up by 50 / sin(20°) before the uniform 50 shift — clipping it
+        // would blunt every pointed glyph.
+        float halfWidth = 1000f * MathF.Tan(20f * MathF.PI / 180f);
+        var triangle = GlyphOutline.FromCommands(
+        [
+            OutlineCommand.Move(0, 0),
+            OutlineCommand.Line(halfWidth, 1000),
+            OutlineCommand.Line(2 * halfWidth, 0),
+            OutlineCommand.CloseAt(0, 0),
+        ]);
+
+        var bold = new BoldTransform(100f).Apply(new DecodedGlyph(triangle, 1000f));
+
+        OutlineBounds.Tight(bold.Outline).YMax.ShouldBe(1000f + (50f / MathF.Sin(20f * MathF.PI / 180f)) + 50f, 0.05f);
+    }
+
+    [Fact]
+    public void Bold_DoesNotFlip_AShortEdgeBetweenTwoInwardCorners()
+    {
+        // A square with a 20-unit slot cut down from the top. Both corners at the slot's floor
+        // are inward, and a full miter would slide each 50 along the 20-unit floor past the
+        // other, turning the floor round into a reversed bow-tie. The floor must keep its
+        // direction (it may shrink to nothing).
+        var slotted = GlyphOutline.FromCommands(
+        [
+            OutlineCommand.Move(0, 0),
+            OutlineCommand.Line(0, 1000),
+            OutlineCommand.Line(400, 1000),
+            OutlineCommand.Line(400, 500),
+            OutlineCommand.Line(420, 500),
+            OutlineCommand.Line(420, 1000),
+            OutlineCommand.Line(1000, 1000),
+            OutlineCommand.Line(1000, 0),
+            OutlineCommand.CloseAt(0, 0),
+        ]);
+
+        var bold = new BoldTransform(100f).Apply(new DecodedGlyph(slotted, 1000f));
+
+        var floorStart = bold.Outline.Commands[3];
+        var floorEnd = bold.Outline.Commands[4];
+        floorEnd.EndX.ShouldBeGreaterThanOrEqualTo(floorStart.EndX - 0.001f);
+        foreach (var command in bold.Outline.Commands)
+        {
+            float.IsFinite(command.EndX).ShouldBeTrue();
+            float.IsFinite(command.EndY).ShouldBeTrue();
+        }
+    }
+
+    [Fact]
+    public void Bold_DoesNotFillANarrowNotch_FromItsTip()
+    {
+        // A square with a 10° V-notch cut down from the top to y = 400. The exact offset would
+        // move the notch's tip up by 50 / sin(5°) ≈ 574, filling most of it; like a sharp
+        // outward point, the notch is beveled past the miter limit, so its tip only takes the
+        // uniform shift and the notch stays open, as in the FreeType backend's bold.
+        float halfOpening = 600f * MathF.Tan(5f * MathF.PI / 180f);
+        var notched = GlyphOutline.FromCommands(
+        [
+            OutlineCommand.Move(0, 0),
+            OutlineCommand.Line(0, 1000),
+            OutlineCommand.Line(500 - halfOpening, 1000),
+            OutlineCommand.Line(500, 400),
+            OutlineCommand.Line(500 + halfOpening, 1000),
+            OutlineCommand.Line(1000, 1000),
+            OutlineCommand.Line(1000, 0),
+            OutlineCommand.CloseAt(0, 0),
+        ]);
+
+        var bold = new BoldTransform(100f).Apply(new DecodedGlyph(notched, 1000f));
+
+        bold.Outline.Commands[3].EndY.ShouldBeLessThan(400f + 50f + 10f);
+    }
+
+    [Fact]
+    public void Bold_LeavesAnOutlineWithNoArea_Unstyled()
+    {
+        // A contour that encloses nothing has no inside or outside to grow; the glyph is left
+        // as it was, advance included.
+        var line = GlyphOutline.FromCommands(
+        [
+            OutlineCommand.Move(0, 0),
+            OutlineCommand.Line(500, 0),
+            OutlineCommand.CloseAt(0, 0),
+        ]);
+        var glyph = new DecodedGlyph(line, 600f);
+
+        var bold = new BoldTransform(100f).Apply(glyph);
+
+        bold.ShouldBeSameAs(glyph);
     }
 
     [Fact]
