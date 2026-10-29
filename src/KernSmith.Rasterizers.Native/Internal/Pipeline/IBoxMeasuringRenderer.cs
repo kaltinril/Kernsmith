@@ -24,5 +24,9 @@ internal interface IBoxMeasuringRenderer : IGlyphRenderer
 
     /// <summary>The metrics <see cref="IGlyphRenderer.Render"/> produces for a non-blank glyph
     /// with this box and advance.</summary>
-    GlyphMetrics MeasureBox(GlyphBox box, int advance, RasterOptions options);
+    /// <param name="glyphIndex">The glyph, for limit errors (<see cref="GlyphLimits"/>).</param>
+    /// <param name="box">The prepared glyph's box.</param>
+    /// <param name="advance">The prepared glyph's advance, in whole pixels.</param>
+    /// <param name="options">The request.</param>
+    GlyphMetrics MeasureBox(int glyphIndex, GlyphBox box, int advance, RasterOptions options);
 }

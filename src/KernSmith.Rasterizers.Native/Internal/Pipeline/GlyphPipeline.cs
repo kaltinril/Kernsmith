@@ -68,6 +68,7 @@ internal sealed class GlyphPipeline
         // its own Y origin placing the bitmap against it.
         var box = GlyphBox.Compute(glyph.Outline, glyph.DeclaredBounds, scale);
         int advance = (int)Math.Round(glyph.AdvanceWidth * (double)scale);
+        GlyphLimits.EnsureGlyphBox(glyphIndex, box.Width, box.Height, options);
         var prepared = new PreparedGlyph(glyph.Outline, new OutlineTransform(scale, 0f), box, advance) { GlyphIndex = glyphIndex };
 
         // 4. Pixel-space hinting, measuring reference glyphs through the same stages 1-2.
@@ -106,7 +107,12 @@ internal sealed class GlyphPipeline
         // nothing — which the probe's zero hull turns into an empty box, sending the caller
         // down the full path.
         box = GlyphBox.Compute(DeclaredBoxProbe, bounds.DeclaredBounds, scale);
-        return !box.IsEmpty;
+        if (box.IsEmpty)
+            return false;
+
+        // The same limit Prepare enforces on the same box.
+        GlyphLimits.EnsureGlyphBox(glyphIndex, box.Width, box.Height, options);
+        return true;
     }
 
     /// <summary>A non-empty outline with an all-zero hull; see <see cref="TryPrepareBox"/>.</summary>

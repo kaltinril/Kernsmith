@@ -30,7 +30,7 @@ internal sealed class CoverageRenderer : IBoxMeasuringRenderer
     {
         var box = glyph.Box;
         if (options.AntiAlias != AntiAliasMode.None)
-            return MeasureBox(box, glyph.Advance, options);
+            return MeasureBox(glyph.GlyphIndex, box, glyph.Advance, options);
 
         var ink = ScanlineRasterizer.MeasureMono(Edges(glyph, options), box.Width, box.Height, box.MinX, box.MinY, box.BearingX, box.BearingY);
         return new(BearingX: ink.BearingX, BearingY: ink.BearingY, Advance: glyph.Advance, Width: ink.Width, Height: ink.Height);
@@ -40,7 +40,7 @@ internal sealed class CoverageRenderer : IBoxMeasuringRenderer
     public bool MeasuresFromBox(RasterOptions options) => options.AntiAlias != AntiAliasMode.None;
 
     /// <inheritdoc />
-    public GlyphMetrics MeasureBox(GlyphBox box, int advance, RasterOptions options) =>
+    public GlyphMetrics MeasureBox(int glyphIndex, GlyphBox box, int advance, RasterOptions options) =>
         new(
             BearingX: box.BearingX,
             BearingY: box.BearingY,

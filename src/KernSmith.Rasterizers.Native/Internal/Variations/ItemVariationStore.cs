@@ -42,10 +42,18 @@ internal sealed class ItemVariationStore
         for (int i = 0; i < subtableCount; i++)
             subtableOffsets[i] = reader.ReadUInt32();
 
-        reader.Seek(checked((int)regionListOffset));
+        reader.Seek(regionListOffset);
         int axisCount = reader.ReadUInt16();
         int regionCount = reader.ReadUInt16() & 0x7FFF;
-        var regions = new float[regionCount * axisCount * 3];
+
+        // Checked against the bytes present before allocating: hostile counts can ask for
+        // gigabytes, or overflow the array length.
+        long coordinates = (long)regionCount * axisCount * 3;
+        if (coordinates * 2 > reader.Remaining)
+            throw new FontFormatException(
+                $"ItemVariationStore region list declares {regionCount} regions over {axisCount} axes, more than its {reader.Remaining} bytes hold.");
+
+        var regions = new float[coordinates];
         for (int i = 0; i < regions.Length; i++)
             regions[i] = reader.ReadF2Dot14();
 
@@ -53,7 +61,7 @@ internal sealed class ItemVariationStore
         for (int i = 0; i < subtableCount; i++)
         {
             if (subtableOffsets[i] != 0)
-                subtables[i] = ItemVariationData.Parse(data, checked((int)subtableOffsets[i]), regionCount);
+                subtables[i] = ItemVariationData.Parse(data, subtableOffsets[i], regionCount);
         }
 
         return new ItemVariationStore(axisCount, regions, regionCount, subtables);
@@ -127,7 +135,7 @@ internal sealed class ItemVariationStore
             _deltas = deltas;
         }
 
-        public static ItemVariationData Parse(ReadOnlySpan<byte> store, int offset, int regionCount)
+        public static ItemVariationData Parse(ReadOnlySpan<byte> store, long offset, int regionCount)
         {
             var reader = new FontReader(store);
             reader.Seek(offset);
@@ -138,7 +146,7 @@ internal sealed class ItemVariationStore
             bool longWords = (wordDeltaCount & LongWords) != 0;
             int wordColumns = wordDeltaCount & WordDeltaCountMask;
             if (wordColumns > columns)
-                throw new FontFormatException("ItemVariationStore", offset,
+                throw new FontFormatException("ItemVariationStore", (int)offset,
                     $"{wordColumns} word columns exceed the {columns} regions referenced.");
 
             var regionIndexes = new ushort[columns];
@@ -152,6 +160,11 @@ internal sealed class ItemVariationStore
 
             // Each row: the "word" columns first, then the short ones; with LONG_WORDS the pair
             // is int32/int16, otherwise int16/int8.
+            int rowBytes = longWords ? (wordColumns * 4) + ((columns - wordColumns) * 2) : (wordColumns * 2) + (columns - wordColumns);
+            if ((long)itemCount * rowBytes > reader.Remaining)
+                throw new FontFormatException("ItemVariationStore", (int)offset,
+                    $"{itemCount} delta rows of {rowBytes} bytes run past the end of the store.");
+
             var deltas = new int[itemCount * columns];
             for (int item = 0; item < itemCount; item++)
             {

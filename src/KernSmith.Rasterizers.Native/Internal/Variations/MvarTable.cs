@@ -40,7 +40,7 @@ internal sealed class MvarTable
             records[tag] = (reader.ReadUInt16(), reader.ReadUInt16());
         }
 
-        var store = recordCount > 0 && storeOffset != 0 ? ItemVariationStore.Parse(data[storeOffset..]) : null;
+        var store = recordCount > 0 && storeOffset != 0 ? ItemVariationStore.Parse(FontReader.From(data, storeOffset)) : null;
         return new MvarTable(records, store);
     }
 

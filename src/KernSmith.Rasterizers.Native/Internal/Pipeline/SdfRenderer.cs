@@ -28,21 +28,28 @@ internal sealed class SdfRenderer : IBoxMeasuringRenderer
     }
 
     /// <summary>The spread in whole pixels — also the padding on each side of the glyph box.</summary>
-    public static int SpreadPixels(RasterOptions options) =>
-        Math.Max(1, (int)Math.Round(options.SdfSpread, MidpointRounding.AwayFromZero));
+    public static int SpreadPixels(RasterOptions options)
+    {
+        // Computed in double and capped, so a huge spread cannot wrap an int; one past
+        // GlyphLimits.MaxDimension is already too big for any padded bitmap. NaN and anything
+        // under one pixel pad by one pixel.
+        double spread = Math.Round((double)options.SdfSpread, MidpointRounding.AwayFromZero);
+        return spread >= 1 ? (int)Math.Min(spread, GlyphLimits.MaxDimension + 1) : 1;
+    }
 
     /// <inheritdoc />
     public GlyphMetrics Measure(PreparedGlyph glyph, RasterOptions options) =>
-        MeasureBox(glyph.Box, glyph.Advance, options);
+        MeasureBox(glyph.GlyphIndex, glyph.Box, glyph.Advance, options);
 
     /// <inheritdoc />
     /// <remarks>Always: the field fills the padded box whatever the anti-alias mode.</remarks>
     public bool MeasuresFromBox(RasterOptions options) => true;
 
     /// <inheritdoc />
-    public GlyphMetrics MeasureBox(GlyphBox box, int advance, RasterOptions options)
+    public GlyphMetrics MeasureBox(int glyphIndex, GlyphBox box, int advance, RasterOptions options)
     {
         int pad = SpreadPixels(options);
+        GlyphLimits.EnsureBitmap(glyphIndex, box.Width + (2L * pad), box.Height + (2L * pad));
         return new GlyphMetrics(
             BearingX: box.BearingX - pad,
             BearingY: box.BearingY + pad,

@@ -1,6 +1,6 @@
 # Phase 179 — Native Rasterizer: Validation, Golden Masters & Release
 
-> **Status**: Future — Wave 3
+> **Status**: In progress — Wave 3. Robustness is done (hostile-input fuzzing, edge cases, thread safety, NativeAOT/trim); remaining: golden masters, the SSIM/metrics comparison matrix, performance validation, the docs sweep and the release decision.
 > **Created**: 2026-04-01
 > **Depends on**: Phases 166–174, 177 and 178 (175 and 176 only if they are kept)
 
@@ -51,6 +51,14 @@ For every glyph in ASCII set:
 - BearingY: within ±1 pixel of FreeType
 - Width/Height: within ±1 pixel of FreeType
 - Font-level: ascent, descent, lineHeight within ±1 pixel
+
+### Robustness (done)
+
+- **Hostile input** — `NativeFuzzTests` damages each fixture (Roboto, SourceSerif4 CFF, SourceCodeVF CFF2, RobotoFlex, BungeeColor COLR v0, ReemKufiInk COLR v1, and the `.woff2` fixtures through core) table by table — truncation, bit flips, offset corruption, count inflation, random byte runs — and runs `LoadFont`, font and glyph metrics and `RasterizeGlyph` under every render mode, a variation instance and a palette switch, plus `BmFont.Generate` for the core path. Deterministic per seed; `KERNSMITH_FUZZ_ITERATIONS` / `KERNSMITH_FUZZ_SEED` run longer sweeps. Allowed outcomes: success, `FontFormatException` / `FontParsingException` / `RasterizationException`, the palette `ArgumentOutOfRangeException`, and core's packer `InvalidOperationException` for a glyph larger than the page. Each bug found has a minimised regression test (`NativeHostileInputTests`, `TtfParserHostileInputTests`).
+- **Limits** — a glyph box over 64 ems, or a bitmap over 16384 px per side after distance-field padding, is a `RasterizationException` (`GlyphLimits`); non-positive or non-finite `Size` and non-positive `Dpi` are an `ArgumentOutOfRangeException`.
+- **Edge cases** — `NativeEdgeCaseTests` pins sizes 0.5-2000 px, DPI extremes, blank/unmapped/zero-contour/single-point/collinear/zero-area glyphs, int16-extreme coordinates, SDF spreads 0/1/huge/NaN, tiny MSDF, LCD at 1 px, hinting at 1-6 px, out-of-range and NaN axis values, and out-of-range palettes.
+- **Thread safety** — core never shares a rasterizer: each `Generate` (and each `GenerateBatch` job) creates its own and rasterizes on one thread; `NativeThreadSafetyTests` checks concurrent and parallel-batch output is byte-identical to serial.
+- **NativeAOT / trim** — `tests/KernSmith.PlatformSmoke` publishes with `PublishAot=true` (win-x64) with zero trim/AOT warnings and passes its WOFF2, CFF, CFF2, COLR v0/v1 and MSDF checks.
 
 ### Edge Case Testing
 
@@ -108,8 +116,8 @@ Whatever is still unsupported at release must behave deliberately, and the docs 
 - [ ] SSIM > 0.95 for standard rendering across all reference fonts/sizes
 - [ ] All glyph metrics within ±1 pixel of FreeType
 - [ ] Golden master tests established and passing
-- [ ] All edge cases handled without crashes
+- [x] All edge cases handled without crashes
 - [ ] Performance meets Phase 177 targets
-- [ ] No trimming/AOT/nullable warnings
+- [x] No trimming/AOT/nullable warnings
 - [ ] Documentation complete
 - [ ] Ready for production use as `RasterizerBackend.Native`

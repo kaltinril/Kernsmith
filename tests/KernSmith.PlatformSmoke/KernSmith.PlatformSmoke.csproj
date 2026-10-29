@@ -81,6 +81,13 @@
   <ItemGroup>
     <EmbeddedResource Include="..\KernSmith.Tests\Fixtures\Roboto-Regular.ttf" LogicalName="Roboto-Regular.ttf" />
     <EmbeddedResource Include="..\KernSmith.Tests\Fixtures\RobotoFlex-Variable.ttf" LogicalName="RobotoFlex-Variable.ttf" />
+    <!-- Native's other input paths: WOFF2 (core's managed Brotli and its embedded dictionary),
+         CFF and CFF2 outlines, and COLR v0/v1 color glyphs. -->
+    <EmbeddedResource Include="..\KernSmith.Tests\Fixtures\Roboto-Regular.woff2" LogicalName="Roboto-Regular.woff2" />
+    <EmbeddedResource Include="..\KernSmith.Tests\Fixtures\SourceSerif4-Regular.otf" LogicalName="SourceSerif4-Regular.otf" />
+    <EmbeddedResource Include="..\KernSmith.Tests\Fixtures\SourceCodeVF-Upright.otf" LogicalName="SourceCodeVF-Upright.otf" />
+    <EmbeddedResource Include="..\KernSmith.Tests\Fixtures\Color\BungeeColor-Regular.ttf" LogicalName="BungeeColor-Regular.ttf" />
+    <EmbeddedResource Include="..\KernSmith.Tests\Fixtures\Color\ReemKufiInk-Regular.ttf" LogicalName="ReemKufiInk-Regular.ttf" />
   </ItemGroup>
 
   <ItemGroup>

@@ -75,6 +75,11 @@ public static class SmokeRunner
 
         var roboto = LoadFont("Roboto-Regular.ttf");
         var robotoFlex = LoadFont("RobotoFlex-Variable.ttf");
+        var robotoWoff2 = LoadFont("Roboto-Regular.woff2");
+        var sourceSerif = LoadFont("SourceSerif4-Regular.otf");
+        var sourceCodeVariable = LoadFont("SourceCodeVF-Upright.otf");
+        var bungeeColor = LoadFont("BungeeColor-Regular.ttf");
+        var reemKufiInk = LoadFont("ReemKufiInk-Regular.ttf");
 
         Check("SystemFontProvider does not throw", () =>
         {
@@ -125,6 +130,22 @@ public static class SmokeRunner
                 }), expectKerning: true);
             });
 
+            // WOFF2 is decoded by core (managed Brotli + its embedded dictionary resource), so
+            // every backend exercises it; the .otf is a CFF (PostScript-outline) font.
+            Check($"{backend} woff2", () => Verify(BmFont.Generate(robotoWoff2, new FontGeneratorOptions
+            {
+                Size = 32,
+                Characters = CharacterSet.Ascii,
+                Backend = backend,
+            }), expectKerning: true));
+
+            Check($"{backend} otf (CFF)", () => Verify(BmFont.Generate(sourceSerif, new FontGeneratorOptions
+            {
+                Size = 32,
+                Characters = CharacterSet.Ascii,
+                Backend = backend,
+            }), expectKerning: true));
+
             Check($"{backend} variable font", () =>
             {
                 if (!caps.SupportsVariableFonts) throw new SkipException("backend has no variable font support");
@@ -137,6 +158,40 @@ public static class SmokeRunner
                 }), expectKerning: false);
             });
         }
+
+        // Native-only paths: CFF2 variations, COLR v0 and v1 color glyphs, multi-channel SDF.
+        Check("Native cff2 variable", () => Verify(BmFont.Generate(sourceCodeVariable, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.Ascii,
+            Backend = RasterizerBackend.Native,
+            VariationAxes = new Dictionary<string, float> { ["wght"] = 900 },
+        }), expectKerning: false));
+
+        Check("Native color COLRv0", () => VerifyColor(BmFont.Generate(bungeeColor, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars("ABCOX&0123"),
+            Backend = RasterizerBackend.Native,
+            ColorFont = true,
+            ColorPaletteIndex = 1,
+        })));
+
+        Check("Native color COLRv1", () => VerifyColor(BmFont.Generate(reemKufiInk, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars("AO\u0628\u0639\u0661"),
+            Backend = RasterizerBackend.Native,
+            ColorFont = true,
+        })));
+
+        Check("Native msdf", () => Verify(BmFont.Generate(roboto, new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.Ascii,
+            Backend = RasterizerBackend.Native,
+            SdfMode = SdfMode.Mtsdf,
+        }), expectKerning: true));
 
         log($"{Prefix} RESULT {(failures == 0 ? "PASS" : "FAIL")} ({failures} failed)");
         return failures == 0;
@@ -166,6 +221,22 @@ public static class SmokeRunner
             throw new InvalidOperationException(".fnt text has no chars line");
 
         return $"chars={chars} kerning={result.Model.KerningPairs.Count} pages={result.Pages.Count} inkedPixels={inked}";
+    }
+
+    /// <summary>A color glyph run: some inked pixel must carry color (not gray).</summary>
+    private static string VerifyColor(BmFontResult result)
+    {
+        if (result.Model.Characters.Count < 3)
+            throw new InvalidOperationException($"expected at least 3 chars but got {result.Model.Characters.Count}");
+
+        var rgba = result.Pages[0].GetRgbaPixelData();
+        int colored = 0;
+        for (int i = 0; i < rgba.Length; i += 4)
+            if (rgba[i + 3] != 0 && (rgba[i] != rgba[i + 1] || rgba[i + 1] != rgba[i + 2])) colored++;
+        if (colored == 0)
+            throw new InvalidOperationException("no colored pixels on atlas page 0");
+
+        return $"chars={result.Model.Characters.Count} coloredPixels={colored}";
     }
 
     private static byte[] LoadFont(string name)

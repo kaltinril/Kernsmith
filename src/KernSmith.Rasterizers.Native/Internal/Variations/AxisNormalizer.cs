@@ -15,8 +15,9 @@ internal static class AxisNormalizer
     /// Normalizes one coordinate per axis, in <paramref name="axes"/> (<c>fvar</c>) order.
     /// </summary>
     /// <param name="axes">The font's axes, in <c>fvar</c> order.</param>
-    /// <param name="userValues">Requested user-scale values by axis tag. Missing axes stay at
-    /// their default; tags the font does not define are ignored.</param>
+    /// <param name="userValues">Requested user-scale values by axis tag. Missing axes, and NaN
+    /// values, stay at their default; tags the font does not define are ignored; values past an
+    /// axis's range (infinities included) clamp to its nearest end.</param>
     /// <param name="avar">The font's <c>avar</c> table, if it has one.</param>
     /// <returns>Normalized coordinates, each an exact F2DOT14 value.</returns>
     public static float[] Normalize(
@@ -29,13 +30,20 @@ internal static class AxisNormalizer
         for (int i = 0; i < axes.Count; i++)
         {
             var axis = axes[i];
-            if (!userValues.TryGetValue(axis.Tag, out float user))
+            if (!userValues.TryGetValue(axis.Tag, out float user) || float.IsNaN(user))
                 continue;
 
             int min = ToFixed(axis.MinValue);
             int def = ToFixed(axis.DefaultValue);
             int max = ToFixed(axis.MaxValue);
-            int value = Math.Clamp(ToFixed(user), Math.Min(min, def), Math.Max(max, def));
+
+            // Clamped in user space before the 16.16 conversion: a value past +/-32768 overflows
+            // ToFixed, which saturates on .NET 9+ but wraps to int.MinValue on .NET 8.
+            double clampedUser = Math.Clamp(
+                (double)user,
+                Math.Min(axis.MinValue, axis.DefaultValue),
+                Math.Max(axis.MaxValue, axis.DefaultValue));
+            int value = Math.Clamp(ToFixed(clampedUser), Math.Min(min, def), Math.Max(max, def));
 
             int normalized = 0;
             if (value < def)

@@ -38,8 +38,8 @@ internal sealed class MsdfRenderer : IBoxMeasuringRenderer
     public bool MeasuresFromBox(RasterOptions options) => true;
 
     /// <inheritdoc />
-    public GlyphMetrics MeasureBox(GlyphBox box, int advance, RasterOptions options) =>
-        SdfRenderer.Instance.MeasureBox(box, advance, options);
+    public GlyphMetrics MeasureBox(int glyphIndex, GlyphBox box, int advance, RasterOptions options) =>
+        SdfRenderer.Instance.MeasureBox(glyphIndex, box, advance, options);
 
     /// <inheritdoc />
     public RasterizedGlyph Render(int codepoint, int glyphIndex, PreparedGlyph glyph, RasterOptions options)
