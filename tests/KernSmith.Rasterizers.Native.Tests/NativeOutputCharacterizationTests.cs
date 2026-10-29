@@ -8,8 +8,9 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// Pins Native's exact output — bitmaps, bearings, advances and <c>GetGlyphMetrics</c> — for
 /// a representative Roboto glyph set, so restructuring the glyph pipeline cannot change a
 /// single byte unnoticed. A legitimate pixel change must update them deliberately; the last one
-/// added mono dropout control, which changed only the <see cref="AntiAliasMode.None"/> hashes
-/// and only by adding pixels where a scanline through pixel centres crossed ink yet lit nothing.
+/// replaced the coverage accumulator, which changed only the grayscale hashes, by one level on
+/// under 0.3% of pixels (float rounding of the same exact-area coverage), and left the
+/// <see cref="AntiAliasMode.None"/> hashes untouched.
 /// </summary>
 public class NativeOutputCharacterizationTests
 {
@@ -23,13 +24,13 @@ public class NativeOutputCharacterizationTests
     ];
 
     [Theory]
-    [InlineData(8f, 72, AntiAliasMode.Grayscale, "816AE03FF4BC9ED70C41DC699453CCF402ED6E852C22C7DD686105546E15ED46")]
-    [InlineData(12f, 72, AntiAliasMode.Grayscale, "85C329840396C0397B655BFEC2A8DFB60D24BA8C09779E529287B8E48181077A")]
+    [InlineData(8f, 72, AntiAliasMode.Grayscale, "4D45F8102FEF1A7D13E9D33640CB067E6FA2DAE9FB6F4F12EA366C6EA7A64087")]
+    [InlineData(12f, 72, AntiAliasMode.Grayscale, "407F35FD83545B5E2A5B7C395075E1284723205FA386BD5A7D0C242979238914")]
     [InlineData(12f, 72, AntiAliasMode.None, "DB938F3774AC59B43714559A376088DA0672AE927517B94F56F85C6CE3973AE4")]
-    [InlineData(17.5f, 72, AntiAliasMode.Grayscale, "1F83647C6FA383B08FE64A4D4109AF4D530047FE8DB26B5782D0CD282AF3CAA4")]
-    [InlineData(32f, 72, AntiAliasMode.Grayscale, "C66FC4D8E539E493ADC22E29BEC7B9236A243A26B13691C8AC40A12FA3F65CFF")]
+    [InlineData(17.5f, 72, AntiAliasMode.Grayscale, "4F0B04FD8DE616F6321E85941F42ADD2A09F3731D1DBFDE246F1C2C3B842301A")]
+    [InlineData(32f, 72, AntiAliasMode.Grayscale, "598F0AEFEFE0E3B6B7EC62DE40E88D6DBE1547F24E30913DD6CE6464D2FA36DD")]
     [InlineData(32f, 96, AntiAliasMode.None, "A7CD8AFC71351BCE144EF3619EDFEB5723DCD8F3BE57E45F56EB8171696ED250")]
-    [InlineData(72f, 72, AntiAliasMode.Grayscale, "525E9D0DC1A0D7747D6D020FFF779D357DDAF57C973F1D337CEAC8040AA51CF4")]
+    [InlineData(72f, 72, AntiAliasMode.Grayscale, "696D393750D9D21C2A74891E6E7B909448D22026080891ED9FFCD166A9F88C00")]
     public void Output_IsByteIdenticalToTheCharacterizedBaseline(
         float size, int dpi, AntiAliasMode antiAlias, string expectedHash)
     {
