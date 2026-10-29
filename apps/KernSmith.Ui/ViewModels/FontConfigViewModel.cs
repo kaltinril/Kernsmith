@@ -55,6 +55,9 @@ public class FontConfigViewModel : ViewModel
     public bool BackendSupportsMsdf { get => Get<bool>(); set => Set(value); }
     public IReadOnlyList<AntiAliasMode> BackendAntiAliasModes { get => Get<IReadOnlyList<AntiAliasMode>>(); set => Set(value); }
     public bool BackendSupportsSystemFonts { get => Get<bool>(); set => Set(value); }
+    public bool BackendSupportsOutlineStroke { get => Get<bool>(); set => Set(value); }
+    public bool BackendSupportsWidthScale { get => Get<bool>(); set => Set(value); }
+    public bool BackendSupportsItalicAngle { get => Get<bool>(); set => Set(value); }
 
     // --- System font list ---
     public IReadOnlyList<SystemFontGroup>? SystemFonts { get => Get<IReadOnlyList<SystemFontGroup>?>(); set => Set(value); }
@@ -91,6 +94,9 @@ public class FontConfigViewModel : ViewModel
             BackendSupportsMsdf = caps.SupportsMsdf;
             BackendAntiAliasModes = caps.SupportedAntiAliasModes;
             BackendSupportsSystemFonts = caps.SupportsSystemFonts;
+            BackendSupportsOutlineStroke = caps.SupportsOutlineStroke;
+            BackendSupportsWidthScale = caps.SupportsWidthScale;
+            BackendSupportsItalicAngle = caps.SupportsItalicAngle;
         }
         catch (Exception ex)
         {
@@ -101,6 +107,9 @@ public class FontConfigViewModel : ViewModel
             BackendSupportsMsdf = false;
             BackendAntiAliasModes = [AntiAliasMode.None, AntiAliasMode.Grayscale];
             BackendSupportsSystemFonts = false;
+            BackendSupportsOutlineStroke = false;
+            BackendSupportsWidthScale = false;
+            BackendSupportsItalicAngle = false;
         }
     }
 

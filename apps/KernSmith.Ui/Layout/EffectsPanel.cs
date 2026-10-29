@@ -350,6 +350,139 @@ public class EffectsPanel : Panel
                 RefreshAaCombo();
         };
         RefreshAaCombo();
+
+        // LCD filter and subpixel order: only used in LCD mode. Native honors them; the other
+        // backends ignore them (there is no capability flag), which the tooltips say.
+        var lcdFilterCombo = CreateEnumCombo(
+            [LcdFilter.Default, LcdFilter.Light, LcdFilter.Smooth, LcdFilter.None],
+            v => v.ToString(), () => _effects.LcdFilter, v => _effects.LcdFilter = v,
+            nameof(EffectsViewModel.LcdFilter));
+        ssGrid.AddRow("LCD Filter:", lcdFilterCombo);
+        TooltipService.SetTooltip(lcdFilterCombo, "LCD mode only. Low-pass filter across the subpixels: Default (Native: Light), Light, Smooth (fewer color fringes, softer), None (sharpest, strongest fringes). Honored by Native; other backends ignore it.");
+
+        var lcdOrderCombo = CreateEnumCombo(
+            [LcdSubpixelOrder.Rgb, LcdSubpixelOrder.Bgr, LcdSubpixelOrder.VRgb, LcdSubpixelOrder.VBgr],
+            v => v switch
+            {
+                LcdSubpixelOrder.VRgb => "V-RGB",
+                LcdSubpixelOrder.VBgr => "V-BGR",
+                _ => v.ToString().ToUpperInvariant(),
+            },
+            () => _effects.LcdSubpixelOrder, v => _effects.LcdSubpixelOrder = v,
+            nameof(EffectsViewModel.LcdSubpixelOrder));
+        ssGrid.AddRow("LCD Order:", lcdOrderCombo);
+        TooltipService.SetTooltip(lcdOrderCombo, "LCD mode only. The display's subpixel layout: RGB/BGR run left to right, V-RGB/V-BGR top to bottom. Honored by Native; other backends ignore it.");
+
+        void RefreshLcdEnabled()
+        {
+            var lcd = _effects.AntiAlias == AntiAliasMode.Lcd;
+            lcdFilterCombo.IsEnabled = lcd;
+            lcdOrderCombo.IsEnabled = lcd;
+        }
+
+        // Synthetic width and italic angle: only a backend that supports them gets a non-default
+        // value (MainViewModel.EffectiveWidthPercent/EffectiveItalicAngle), so on other backends
+        // the box is disabled and shows the value actually used.
+        var widthBox = CreateNumberBox(48,
+            () => _effects.BackendSupportsWidthScale ? _effects.WidthPercent : 100,
+            text => int.TryParse(text, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var v)
+                && v is >= 10 and <= 1000 ? v : null,
+            v => _effects.WidthPercent = (int)v);
+        ssGrid.AddRow("Width %:", widthBox.Box);
+        TooltipService.SetTooltip(widthBox.Box, "Synthetic condensed/expanded width, 10-1000 (100 = normal). Scales glyphs, advances and kerning. Native only; other backends use 100.");
+
+        var angleBox = CreateNumberBox(48,
+            () => _effects.BackendSupportsItalicAngle ? _effects.ItalicAngle : 12f,
+            text => float.TryParse(text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v)
+                && float.IsFinite(v) && Math.Abs(v) <= 60f ? v : null,
+            v => _effects.ItalicAngle = (float)v);
+        ssGrid.AddRow("Italic Angle:", angleBox.Box);
+        TooltipService.SetTooltip(angleBox.Box, "Slant of synthetic italic in degrees, -60 to 60 (12 = default; positive leans right). Used only when synthetic italic is applied (Italic on a non-italic face, or Synthetic). Native only; other backends use 12.");
+
+        void RefreshShapeBoxes()
+        {
+            widthBox.Refresh();
+            widthBox.Box.IsEnabled = _effects.BackendSupportsWidthScale;
+            angleBox.Refresh();
+            angleBox.Box.IsEnabled = _effects.BackendSupportsItalicAngle && _effects.Italic;
+        }
+
+        _effects.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(EffectsViewModel.AntiAlias))
+                RefreshLcdEnabled();
+            if (e.PropertyName is nameof(EffectsViewModel.WidthPercent)
+                or nameof(EffectsViewModel.ItalicAngle)
+                or nameof(EffectsViewModel.Italic)
+                or nameof(EffectsViewModel.BackendSupportsWidthScale)
+                or nameof(EffectsViewModel.BackendSupportsItalicAngle))
+                RefreshShapeBoxes();
+        };
+        RefreshLcdEnabled();
+        RefreshShapeBoxes();
+    }
+
+    /// <summary>
+    /// Creates a full-width combo listing <paramref name="values"/>, writing the selection through
+    /// <paramref name="set"/> and following the ViewModel when <paramref name="propertyName"/> changes.
+    /// </summary>
+    private ComboBox CreateEnumCombo<T>(T[] values, Func<T, string> label, Func<T> get, Action<T> set, string propertyName)
+    {
+        var combo = new ComboBox();
+        combo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
+        combo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        combo.Visual.Width = 0;
+        foreach (var value in values) combo.Items!.Add(label(value));
+        combo.SelectedIndex = Array.IndexOf(values, get());
+        var updating = false;
+        combo.SelectionChanged += (_, _) =>
+        {
+            if (!updating && combo.SelectedIndex >= 0)
+                set(values[combo.SelectedIndex]);
+        };
+        _effects.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != propertyName) return;
+            updating = true;
+            try { combo.SelectedIndex = Array.IndexOf(values, get()); }
+            finally { updating = false; }
+        };
+        return combo;
+    }
+
+    /// <summary>
+    /// A small numeric text box: typing a value <paramref name="parse"/> accepts calls
+    /// <paramref name="set"/> (only while the box is enabled); <see cref="NumberBox.Refresh"/>
+    /// shows <paramref name="shown"/> unless the text already parses to it, so typing is not
+    /// interrupted.
+    /// </summary>
+    private static NumberBox CreateNumberBox(float width, Func<double> shown, Func<string, double?> parse, Action<double> set)
+    {
+        var box = new TextBox();
+        box.Width = width;
+        var numberBox = new NumberBox(box, shown, parse);
+        box.TextChanged += (_, _) =>
+        {
+            if (numberBox.Updating || !box.IsEnabled) return;
+            if (parse(box.Text ?? "") is { } value)
+                set(value);
+        };
+        return numberBox;
+    }
+
+    private sealed class NumberBox(TextBox box, Func<double> shown, Func<string, double?> parse)
+    {
+        public TextBox Box { get; } = box;
+        public bool Updating { get; private set; }
+
+        public void Refresh()
+        {
+            var value = shown();
+            if (parse(Box.Text ?? "") == value) return;
+            Updating = true;
+            try { Box.Text = value.ToString(System.Globalization.CultureInfo.InvariantCulture); }
+            finally { Updating = false; }
+        }
     }
 
     private void BuildEffectsSection(global::Gum.Wireframe.GraphicalUiElement stack)
@@ -434,6 +567,57 @@ public class EffectsPanel : Panel
             try { shapeCombo.SelectedIndex = Array.IndexOf(outlineShapes, _effects.OutlineShape); }
             finally { updatingShapeFromVm = false; }
         };
+
+        // Outline mode: Vector strokes the glyph outline before rasterizing. Only a backend that
+        // strokes outlines (Native) gets it, and never with a distance field (core rejects that;
+        // see MainViewModel.EffectiveOutlineMode), so otherwise the combo is disabled on Effect.
+        var modeGrid = new Grid();
+        modeGrid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        modeGrid.Visual.Width = 0;
+        modeGrid.Visual.HeightUnits = DimensionUnitType.RelativeToChildren;
+        modeGrid.Visual.Height = 0;
+        modeGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        modeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Theme.LabelWidth) });
+        modeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        outlineContent.Children.Add(modeGrid.Visual);
+
+        var modeLabel = new Label();
+        modeLabel.Text = "Mode:";
+        modeGrid.AddChild(modeLabel, row: 0, column: 0);
+
+        var outlineModes = new[] { OutlineMode.Effect, OutlineMode.Vector };
+        var modeCombo = new ComboBox();
+        modeCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
+        modeCombo.Width = 100;
+        foreach (var mode in outlineModes) modeCombo.Items!.Add(mode.ToString());
+        var updatingModeFromVm = false;
+        void RefreshModeCombo()
+        {
+            var vectorAllowed = _effects.BackendSupportsOutlineStroke && !_effects.SdfEnabled;
+            updatingModeFromVm = true;
+            try
+            {
+                modeCombo.SelectedIndex = Array.IndexOf(outlineModes, vectorAllowed ? _effects.OutlineMode : OutlineMode.Effect);
+                modeCombo.IsEnabled = vectorAllowed;
+            }
+            finally { updatingModeFromVm = false; }
+        }
+        modeCombo.SelectionChanged += (_, _) =>
+        {
+            if (!updatingModeFromVm && modeCombo.SelectedIndex >= 0)
+                _effects.OutlineMode = outlineModes[modeCombo.SelectedIndex];
+        };
+        modeGrid.AddChild(modeCombo, row: 0, column: 1);
+        TooltipService.SetTooltip(modeCombo, "Effect: the bitmap outline (every backend). Vector: strokes the glyph's vector outline before rasterizing, for a crisp edge at any width (Native only; not with a distance field; color glyphs keep the effect).");
+
+        _effects.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(EffectsViewModel.OutlineMode)
+                or nameof(EffectsViewModel.BackendSupportsOutlineStroke)
+                or nameof(EffectsViewModel.SdfMode))
+                RefreshModeCombo();
+        };
+        RefreshModeCombo();
 
         // --- Shadow ---
         var shadowGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
@@ -630,13 +814,22 @@ public class EffectsPanel : Panel
             val => _effects.SdfSpread = val);
         TooltipService.SetTooltip(sdfSpreadSlider, "How far the distance field reaches from each edge (pixels). 8 = default; larger = thicker SDF range.");
 
+        var sdfScaleSlider = UiFactory.AddSliderRow(sdfSpreadContent, "SDF Scale:", 1, 4, _effects.SdfScale,
+            val => _effects.SdfScale = val);
+        TooltipService.SetTooltip(sdfScaleSlider, "Distance-field supersampling: renders the field at 1-4x size for finer precision, then scales it down. 1 = default. Any backend with SDF; also saved to .hiero.");
+        _effects.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(EffectsViewModel.SdfScale) && (int)sdfScaleSlider.Value != _effects.SdfScale)
+                sdfScaleSlider.Value = _effects.SdfScale;
+        };
+
         var colorCheck = new CheckBox();
         colorCheck.Text = "";
         colorCheck.IsEnabled = _effects.HasColorGlyphs && _effects.BackendSupportsColorFonts;
         colorCheck.Checked += (_, _) => _effects.ColorFontEnabled = true;
         colorCheck.Unchecked += (_, _) => _effects.ColorFontEnabled = false;
         advancedGrid.AddRow("Color Font:", colorCheck);
-        TooltipService.SetTooltip(colorCheck, "Render color glyphs. Needs a backend with color support and a font with color tables: FreeType renders COLR/CPAL and CBDT/CBLC (emoji); Native renders COLR v0/v1 and rejects bitmap-only (CBDT/sbix) fonts.");
+        TooltipService.SetTooltip(colorCheck, "Render color glyphs. Needs a backend with color support and a font with color tables: FreeType renders COLR/CPAL and CBDT/CBLC (emoji); Native renders COLR v0/v1, CBDT/CBLC and sbix.");
 
         var paletteBox = new TextBox();
         paletteBox.Width = 36;

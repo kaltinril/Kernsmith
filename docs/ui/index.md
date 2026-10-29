@@ -62,6 +62,11 @@ The right panel contains collapsible sections for each effect type.
 
 - **Bold / Italic**: If a matching variant font file exists, it loads that file. Otherwise applies synthetic bold or italic.
 - **Anti-Alias**: None (aliased), Grayscale (default), Light, or LCD. The list shows only the modes the selected rasterizer supports; the experimental Native backend supports all four, and hints only in Light.
+- **LCD Filter / LCD Order**: In LCD mode, the subpixel filter (Default, Light, Smooth, None) and the display's subpixel layout (RGB, BGR, V-RGB, V-BGR). Native honors them; other backends ignore them.
+- **Width %**: Synthetic condensed/expanded width, 10-1000 (100 = normal). Native only.
+- **Italic Angle**: Slant of synthetic italic, -60 to 60 degrees (default 12). Native only; enabled with Italic.
+
+Native-only settings are disabled on other backends and show the value used there; your choice comes back when you switch to Native.
 - **Hinting**: Sharper rendering at small sizes (enabled by default)
 - **Super Sample**: Render at 2x or 4x resolution then downsample for smoother results. Higher values are slower.
 
@@ -72,6 +77,7 @@ Adds a colored border around each glyph.
 - **Width**: 1-10 pixels
 - **Color**: Hex color picker (#RRGGBB)
 - **Shape**: Round (default), Square, or Plus corners
+- **Mode**: Effect (bitmap outline, default) or Vector (strokes the glyph outline before rasterizing; Native only, not with a distance field)
 
 ### Shadow
 
@@ -96,7 +102,7 @@ Maps glyph data into individual RGBA channels for compressed output. Useful for 
 
 ### Distance Field
 
-Generates distance-field output for resolution-independent rendering: **SDF** (single channel), or **MSDF**/**MTSDF** (multi-channel RGBA with sharp corners; Native backend only). The list shows only the modes the selected rasterizer supports. The Preview tab shows the raw field; the Sample tab decodes it back to glyph shapes.
+Generates distance-field output for resolution-independent rendering: **SDF** (single channel), or **MSDF**/**MTSDF** (multi-channel RGBA with sharp corners; Native backend only). The list shows only the modes the selected rasterizer supports. The Preview tab shows the raw field; the Sample tab decodes it back to glyph shapes. **SDF Spread** sets how far the field reaches; **SDF Scale** (1-4) renders it larger for finer precision.
 
 ### Color Font
 
@@ -205,8 +211,9 @@ The Font Config panel includes a rasterizer backend dropdown. Different backends
 | DirectWrite | Windows | No (stubbed) | No (stubbed) | No |
 | GDI | Windows | No | No | No |
 | StbTrueType | All | No | No | Yes |
+| Native (experimental) | All | Yes (COLR, CBDT/sbix) | Yes | Yes, plus MSDF/MTSDF |
 
-Of the backends listed here, FreeType is the only one that currently renders color (COLR/CPAL) and variable fonts; DirectWrite's color and variable-font support is stubbed and not yet implemented.
+FreeType and the experimental Native backend render color and variable fonts; DirectWrite's color and variable-font support is stubbed and not yet implemented. Native also adds Light/LCD anti-aliasing with LCD filter and order, vector outlines, synthetic width and italic angle. It is built from source and not yet on NuGet.
 
 Install the corresponding NuGet package to enable a backend. They auto-register via module initializer -- no code changes needed.
 

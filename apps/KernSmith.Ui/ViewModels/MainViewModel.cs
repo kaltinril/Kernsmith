@@ -84,7 +84,10 @@ public class MainViewModel : ViewModel
                 or nameof(FontConfigViewModel.BackendSupportsVariableFonts)
                 or nameof(FontConfigViewModel.BackendSupportsSdf)
                 or nameof(FontConfigViewModel.BackendSupportsMsdf)
-                or nameof(FontConfigViewModel.BackendAntiAliasModes))
+                or nameof(FontConfigViewModel.BackendAntiAliasModes)
+                or nameof(FontConfigViewModel.BackendSupportsOutlineStroke)
+                or nameof(FontConfigViewModel.BackendSupportsWidthScale)
+                or nameof(FontConfigViewModel.BackendSupportsItalicAngle))
             {
                 SyncBackendCapabilitiesToEffects();
             }
@@ -189,6 +192,9 @@ public class MainViewModel : ViewModel
         Effects.BackendSupportsSdf = FontConfig.BackendSupportsSdf;
         Effects.BackendSupportsMsdf = FontConfig.BackendSupportsMsdf;
         Effects.BackendAntiAliasModes = FontConfig.BackendAntiAliasModes;
+        Effects.BackendSupportsOutlineStroke = FontConfig.BackendSupportsOutlineStroke;
+        Effects.BackendSupportsWidthScale = FontConfig.BackendSupportsWidthScale;
+        Effects.BackendSupportsItalicAngle = FontConfig.BackendSupportsItalicAngle;
         Effects.BackendIsGdi = FontConfig.SelectedBackend == RasterizerBackend.Gdi;
     }
 
@@ -332,11 +338,18 @@ public class MainViewModel : ViewModel
             ForceSyntheticBold = effects.ForceSyntheticBold,
             ForceSyntheticItalic = effects.ForceSyntheticItalic,
             AntiAlias = effects.AntiAlias,
+            LcdFilter = effects.LcdFilter,
+            LcdSubpixelOrder = effects.LcdSubpixelOrder,
+            // Non-default width/angle/vector outline go only to a backend that supports them;
+            // the others throw NotSupportedException (and core rejects a vector outline with SDF).
+            WidthPercent = EffectiveWidthPercent(fontConfig, effects),
+            ItalicAngle = EffectiveItalicAngle(fontConfig, effects),
             Hinting = effects.Hinting,
             SuperSampleLevel = effects.SuperSampleLevel,
             OutlineEnabled = effects.OutlineEnabled,
             OutlineWidth = effects.OutlineWidth,
             OutlineShape = effects.OutlineShape,
+            OutlineMode = EffectiveOutlineMode(fontConfig, effects),
             OutlineColorR = outlineRgb.R,
             OutlineColorG = outlineRgb.G,
             OutlineColorB = outlineRgb.B,
@@ -366,6 +379,7 @@ public class MainViewModel : ViewModel
             Channels = effects.Channels,
             SdfMode = effects.SdfMode,
             SdfSpread = effects.SdfSpread,
+            SdfScale = effects.SdfScale,
             ColorFontEnabled = effects.ColorFontEnabled,
             ColorPaletteIndex = effects.ColorPaletteIndex,
             PackingAlgorithmIndex = atlasConfig.PackingAlgorithmIndex,
@@ -377,6 +391,31 @@ public class MainViewModel : ViewModel
             Backend = fontConfig.SelectedBackend
         };
     }
+
+    /// <summary>
+    /// The synthetic width to generate and save with: the ViewModel value when the selected
+    /// backend supports width scaling, otherwise the default 100 (other backends throw for any
+    /// other value). The ViewModel keeps its value, so switching back restores it.
+    /// </summary>
+    public static int EffectiveWidthPercent(FontConfigViewModel fontConfig, EffectsViewModel effects)
+        => fontConfig.BackendSupportsWidthScale ? effects.WidthPercent : 100;
+
+    /// <summary>
+    /// The synthetic italic angle to generate and save with: the ViewModel value when the
+    /// selected backend supports italic angles, otherwise the default 12 degrees.
+    /// </summary>
+    public static float EffectiveItalicAngle(FontConfigViewModel fontConfig, EffectsViewModel effects)
+        => fontConfig.BackendSupportsItalicAngle ? effects.ItalicAngle : 12f;
+
+    /// <summary>
+    /// The outline mode to generate and save with: <see cref="OutlineMode.Vector"/> only when the
+    /// selected backend strokes outlines and no distance field is selected (core rejects vector
+    /// outlines with SDF/MSDF); otherwise the bitmap effect.
+    /// </summary>
+    public static OutlineMode EffectiveOutlineMode(FontConfigViewModel fontConfig, EffectsViewModel effects)
+        => effects.OutlineMode == OutlineMode.Vector && fontConfig.BackendSupportsOutlineStroke && !effects.SdfEnabled
+            ? OutlineMode.Vector
+            : OutlineMode.Effect;
 
     /// <summary>
     /// Opens a save dialog and exports the last generated result to the chosen path.
@@ -510,7 +549,7 @@ public class MainViewModel : ViewModel
     /// Returns the KernSmith-specific settings that would be lost when saving to the Hiero
     /// format, given the current UI state.
     /// </summary>
-    private List<string> GetLossyHieroSettings()
+    public List<string> GetLossyHieroSettings()
     {
         var lost = new List<string>();
         if (Effects.ChannelPackingEnabled)
@@ -529,6 +568,16 @@ public class MainViewModel : ViewModel
             lost.Add("Multi-channel distance field (MSDF/MTSDF)");
         if (Effects.AntiAlias is AntiAliasMode.Light or AntiAliasMode.Lcd)
             lost.Add("Anti-alias mode (Light/LCD)");
+        if (Effects.AntiAlias == AntiAliasMode.Lcd
+            && (Effects.LcdFilter != LcdFilter.Default || Effects.LcdSubpixelOrder != LcdSubpixelOrder.Rgb))
+            lost.Add("LCD filter/subpixel order");
+        // Hiero has no keys for the Native-only shape options; only what would be saved counts.
+        if (Effects.OutlineEnabled && EffectiveOutlineMode(FontConfig, Effects) == OutlineMode.Vector)
+            lost.Add("Vector outline mode");
+        if (EffectiveWidthPercent(FontConfig, Effects) != 100)
+            lost.Add("Synthetic width");
+        if (!EffectiveItalicAngle(FontConfig, Effects).Equals(12f))
+            lost.Add("Italic angle");
         // The Hiero reader ignores the rasterizer; it reloads as the default (FreeType).
         if (FontConfig.SelectedBackend != RasterizerBackend.FreeType)
             lost.Add("Rasterizer backend");

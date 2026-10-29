@@ -26,6 +26,14 @@ public class EffectsViewModel : ViewModel
     public bool ForceSyntheticItalic { get => Get<bool>(); set => Set(value); }
     /// <summary>Anti-aliasing mode. The panel only offers the selected backend's supported modes.</summary>
     public AntiAliasMode AntiAlias { get => Get<AntiAliasMode>(); set => Set(value); }
+    /// <summary>Low-pass filter for LCD anti-aliasing (Native honors it; other backends ignore it).</summary>
+    public LcdFilter LcdFilter { get => Get<LcdFilter>(); set => Set(value); }
+    /// <summary>Display subpixel layout for LCD anti-aliasing (Native honors it; other backends ignore it).</summary>
+    public LcdSubpixelOrder LcdSubpixelOrder { get => Get<LcdSubpixelOrder>(); set => Set(value); }
+    /// <summary>Synthetic condensed/expanded width in percent (10..1000). Sent only to a backend with <see cref="BackendSupportsWidthScale"/>.</summary>
+    public int WidthPercent { get => Get<int>(); set => Set(value); }
+    /// <summary>Synthetic italic slant in degrees (-60..60). Sent only to a backend with <see cref="BackendSupportsItalicAngle"/>.</summary>
+    public float ItalicAngle { get => Get<float>(); set => Set(value); }
     public bool Hinting { get => Get<bool>(); set => Set(value); }
     public int SuperSampleLevel { get => Get<int>(); set => Set(value); }
 
@@ -34,6 +42,8 @@ public class EffectsViewModel : ViewModel
     public int OutlineWidth { get => Get<int>(); set => Set(value); }
     public string OutlineColor { get => Get<string>(); set => Set(value); }
     public OutlineShape OutlineShape { get => Get<OutlineShape>(); set => Set(value); }
+    /// <summary>Bitmap outline effect, or a vector stroke (sent only to a backend with <see cref="BackendSupportsOutlineStroke"/> and no distance field).</summary>
+    public OutlineMode OutlineMode { get => Get<OutlineMode>(); set => Set(value); }
 
     // Shadow
     public bool ShadowEnabled { get => Get<bool>(); set => Set(value); }
@@ -69,6 +79,8 @@ public class EffectsViewModel : ViewModel
     /// <summary>True when any distance field (SDF, MSDF or MTSDF) is selected.</summary>
     public bool SdfEnabled => SdfMode != SdfMode.None;
     public float SdfSpread { get => Get<float>(); set => Set(value); }
+    /// <summary>Distance-field supersampling scale (1..4).</summary>
+    public int SdfScale { get => Get<int>(); set => Set(value); }
 
     // Color Font
     public bool ColorFontEnabled { get => Get<bool>(); set => Set(value); }
@@ -91,6 +103,12 @@ public class EffectsViewModel : ViewModel
     public bool BackendSupportsMsdf { get => Get<bool>(); set => Set(value); }
     /// <summary>Anti-aliasing modes the selected rasterizer backend advertises.</summary>
     public IReadOnlyList<AntiAliasMode> BackendAntiAliasModes { get => Get<IReadOnlyList<AntiAliasMode>>(); set => Set(value); }
+    /// <summary>Whether the selected rasterizer backend can stroke vector outlines (<see cref="OutlineMode.Vector"/>).</summary>
+    public bool BackendSupportsOutlineStroke { get => Get<bool>(); set => Set(value); }
+    /// <summary>Whether the selected rasterizer backend honors <see cref="WidthPercent"/>.</summary>
+    public bool BackendSupportsWidthScale { get => Get<bool>(); set => Set(value); }
+    /// <summary>Whether the selected rasterizer backend honors <see cref="ItalicAngle"/>.</summary>
+    public bool BackendSupportsItalicAngle { get => Get<bool>(); set => Set(value); }
     /// <summary>Whether the selected backend is GDI (which cannot do true synthetic bold when a real bold face exists).</summary>
     public bool BackendIsGdi { get => Get<bool>(); set => Set(value); }
     /// <summary>Whether the current font family has a native bold variant.</summary>
@@ -109,6 +127,8 @@ public class EffectsViewModel : ViewModel
         AdvanceAdjustX = 0f;
         Gamma = 1.8f;
         AntiAlias = AntiAliasMode.Grayscale;
+        WidthPercent = 100;
+        ItalicAngle = 12f;
         Hinting = true;
         SuperSampleLevel = 1;
         OutlineWidth = 1;
@@ -126,6 +146,7 @@ public class EffectsViewModel : ViewModel
         GradientScale = 1f;
         GradientCyclic = false;
         SdfSpread = 8f;
+        SdfScale = 1;
         FallbackCharacter = "?";
         BackendSupportsColorFonts = true;
         BackendSupportsVariableFonts = true;
