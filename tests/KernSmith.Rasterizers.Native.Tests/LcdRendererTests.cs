@@ -23,11 +23,23 @@ public class LcdRendererTests
         { "PixelBox", "Bgr" },
         { "Triangle", "Rgb" },
         { "Triangle", "Bgr" },
+        { "Identity", "Rgb" },
+        { "PixelBox", "VRgb" },
+        { "PixelBox", "VBgr" },
+        { "Triangle", "VRgb" },
+        { "Identity", "VBgr" },
     };
 
-    private static LcdRenderer Renderer(string filter, string order) => new(
-        filter == "PixelBox" ? LcdFilter.PixelBox : LcdFilter.Triangle,
-        order == "Rgb" ? LcdSubpixelOrder.Rgb : LcdSubpixelOrder.Bgr);
+    private static LcdFilterKernel Kernel(string filter) => filter switch
+    {
+        "PixelBox" => LcdFilterKernel.PixelBox,
+        "Triangle" => LcdFilterKernel.Triangle,
+        "Identity" => LcdFilterKernel.Identity,
+        _ => throw new ArgumentOutOfRangeException(nameof(filter)),
+    };
+
+    private static LcdRenderer Renderer(string filter, string order) =>
+        new(Kernel(filter), Enum.Parse<LcdSubpixelOrder>(order));
 
     // ---- Synthetic rectangles ----------------------------------------------------------------
 
@@ -41,11 +53,13 @@ public class LcdRendererTests
     [InlineData("Triangle", "Rgb", 2.25f, 4.6f)]
     [InlineData("Triangle", "Rgb", 2.4f, 2.9f)]
     [InlineData("Triangle", "Bgr", 1.5f, 3.1f)]
+    [InlineData("Identity", "Rgb", 2.25f, 4.6f)]
+    [InlineData("Identity", "Bgr", 1.5f, 3.1f)]
     public void Rectangle_AtSubpixelOffsets_MatchesTheAnalyticFilteredCoverage(
         string filterName, string orderName, float left, float right)
     {
         var renderer = Renderer(filterName, orderName);
-        var filter = filterName == "PixelBox" ? LcdFilter.PixelBox : LcdFilter.Triangle;
+        var filter = Kernel(filterName);
         var glyph = Rectangle(left, right, bottom: 0f, top: 4f);
 
         var bitmap = renderer.Render('x', 1, glyph, Options);
@@ -107,6 +121,143 @@ public class LcdRendererTests
         sawPartialRow.ShouldBeTrue("the bar must have partially covered rows for this test to mean anything");
     }
 
+    [Theory]
+    [InlineData("PixelBox", "VRgb", 0.0f, 3.0f)]
+    [InlineData("PixelBox", "VRgb", 0.25f, 3.6f)]
+    [InlineData("PixelBox", "VRgb", 1.5f, 2.1f)]
+    [InlineData("PixelBox", "VBgr", 0.25f, 3.6f)]
+    [InlineData("Triangle", "VRgb", 0.0f, 3.0f)]
+    [InlineData("Triangle", "VRgb", 0.4f, 2.9f)]
+    [InlineData("Triangle", "VBgr", 1.5f, 3.1f)]
+    [InlineData("Identity", "VRgb", 0.25f, 3.6f)]
+    [InlineData("Identity", "VBgr", 1.5f, 3.1f)]
+    public void Rectangle_AtVerticalSubpixelOffsets_MatchesTheAnalyticFilteredCoverage_DownEachColumn(
+        string filterName, string orderName, float bottom, float top)
+    {
+        // Vertical panels put the three subpixels one above the other: coverage is resolved in
+        // thirds of a row and filtered down each column, with red on top for VRgb.
+        var renderer = Renderer(filterName, orderName);
+        var filter = Kernel(filterName);
+        var glyph = Rectangle(1f, 5f, bottom, top);
+
+        var bitmap = renderer.Render('x', 1, glyph, Options);
+
+        bitmap.Format.ShouldBe(PixelFormat.Rgba32);
+        bitmap.Pitch.ShouldBe(bitmap.Width * 4);
+        bitmap.Metrics.BearingX.ShouldBe(1);
+        bitmap.Width.ShouldBe(4, "the subpixels are stacked vertically, so the columns stay the coverage box's");
+
+        // Pixel-space Y points down from the baseline: the bar spans [-top, -bottom].
+        float spanTop = -top, spanBottom = -bottom;
+        for (int y = 0; y < bitmap.Height; y++)
+        {
+            int pixelRow = y - bitmap.Metrics.BearingY;
+            for (int x = 0; x < bitmap.Width; x++)
+            {
+                int i = (y * bitmap.Pitch) + (x * 4);
+                byte[] rgb = [bitmap.BitmapData[i], bitmap.BitmapData[i + 1], bitmap.BitmapData[i + 2]];
+                if (orderName == "VBgr")
+                    (rgb[0], rgb[2]) = (rgb[2], rgb[0]);
+
+                for (int c = 0; c < 3; c++)
+                {
+                    double expected = FilteredCoverage(filter, spanTop, spanBottom, (3 * pixelRow) + c);
+                    Math.Abs(rgb[c] - expected).ShouldBeLessThanOrEqualTo(2,
+                        $"row {pixelRow} column {x} subpixel {c}: expected {expected:F1}, got {rgb[c]}");
+                }
+
+                bitmap.BitmapData[i + 3].ShouldBe(rgb.Max(), "alpha is the strongest subpixel");
+            }
+        }
+
+        // The whole filtered footprint is inside the bitmap: every subpixel just outside it is 0.
+        int firstRow = -bitmap.Metrics.BearingY;
+        FilteredCoverage(filter, spanTop, spanBottom, (3 * firstRow) - 1).ShouldBeLessThan(0.5);
+        FilteredCoverage(filter, spanTop, spanBottom, 3 * (firstRow + bitmap.Height)).ShouldBeLessThan(0.5);
+    }
+
+    [Theory]
+    [InlineData("VRgb")]
+    [InlineData("VBgr")]
+    public void VerticalOrders_LeaveVerticalEdgesNeutral(string order)
+    {
+        // The transpose of HorizontalEdges_HaveNoColorFringe: a tall bar with fractional left
+        // and right edges. Away from its top and bottom, a pixel's three stacked subpixels see
+        // the same coverage, so the partially covered columns stay neutral.
+        var glyph = Rectangle(0.3f, 3.6f, bottom: 0f, top: 11f);
+        var bitmap = Renderer("PixelBox", order).Render('x', 1, glyph, Options);
+
+        bool sawPartialColumn = false;
+        for (int pixelRow = -9; pixelRow <= -3; pixelRow++)
+        {
+            int y = pixelRow + bitmap.Metrics.BearingY;
+            for (int x = 0; x < bitmap.Width; x++)
+            {
+                int i = (y * bitmap.Pitch) + (x * 4);
+                byte r = bitmap.BitmapData[i], g = bitmap.BitmapData[i + 1], b = bitmap.BitmapData[i + 2];
+                g.ShouldBe(r, $"row {pixelRow} column {x}");
+                b.ShouldBe(r, $"row {pixelRow} column {x}");
+                if (r is > 0 and < 255)
+                    sawPartialColumn = true;
+            }
+        }
+
+        sawPartialColumn.ShouldBeTrue("the bar must have partially covered columns for this test to mean anything");
+    }
+
+    [Theory]
+    [InlineData("PixelBox", "VRgb", "Rgb", 12f)]
+    [InlineData("PixelBox", "VRgb", "Rgb", 32f)]
+    [InlineData("PixelBox", "VBgr", "Bgr", 16f)]
+    [InlineData("Triangle", "VRgb", "Rgb", 16f)]
+    [InlineData("Identity", "VBgr", "Bgr", 24f)]
+    public void VerticalOrder_IsTheHorizontalOrderWithRowsAndColumnsExchanged(
+        string filter, string vertical, string horizontal, float size)
+    {
+        // Mirroring a glyph across its main diagonal (font units (x, y) -> (-y, -x), which is
+        // pixel (px, py) -> (py, px) under the Y flip) must turn a vertical-panel render into
+        // the horizontal-panel render of the mirrored glyph, transposed: the same values, with
+        // the bearings' X and Y exchanged.
+        using var rasterizer = LoadedRoboto();
+        var failures = new StringBuilder();
+
+        foreach (char character in GlyphSample)
+        {
+            var prepared = PrepareGlyph(rasterizer, character, size);
+            var toPixels = new OutlineTransform(prepared.ToPixels.Scale, 0f);
+            var outline = prepared.Outline;
+            var mirrored = Transpose(outline);
+            var upright = prepared with { ToPixels = toPixels, Box = GlyphBox.Compute(outline, null, toPixels.Scale) };
+            var flipped = prepared with { Outline = mirrored, ToPixels = toPixels, Box = GlyphBox.Compute(mirrored, null, toPixels.Scale) };
+
+            var v = Renderer(filter, vertical).Render(character, 1, upright, Options);
+            var h = Renderer(filter, horizontal).Render(character, 1, flipped, Options);
+
+            v.Width.ShouldBe(h.Height, $"'{character}'");
+            v.Height.ShouldBe(h.Width, $"'{character}'");
+            v.Metrics.BearingX.ShouldBe(-h.Metrics.BearingY, $"'{character}': left column = mirrored top row");
+            (-v.Metrics.BearingY).ShouldBe(h.Metrics.BearingX, $"'{character}': top row = mirrored left column");
+
+            int mismatches = 0;
+            for (int y = 0; y < v.Height; y++)
+            {
+                for (int x = 0; x < v.Width; x++)
+                {
+                    for (int c = 0; c < 4; c++)
+                    {
+                        if (v.BitmapData[(y * v.Pitch) + (x * 4) + c] != h.BitmapData[(x * h.Pitch) + (y * 4) + c])
+                            mismatches++;
+                    }
+                }
+            }
+
+            if (mismatches > 0)
+                failures.Append(CultureInfo.InvariantCulture, $"'{character}': {mismatches} channel values differ\n");
+        }
+
+        failures.ToString().ShouldBeEmpty();
+    }
+
     // ---- Real glyphs ------------------------------------------------------------------------
 
     [Theory]
@@ -137,8 +288,8 @@ public class LcdRendererTests
         foreach (char character in GlyphSample)
         {
             var prepared = PrepareGlyph(face, character, size);
-            var rgb = new LcdRenderer(LcdFilter.PixelBox, LcdSubpixelOrder.Rgb).Render(character, 1, prepared, Options);
-            var bgr = new LcdRenderer(LcdFilter.PixelBox, LcdSubpixelOrder.Bgr).Render(character, 1, prepared, Options);
+            var rgb = new LcdRenderer(LcdFilterKernel.PixelBox, LcdSubpixelOrder.Rgb).Render(character, 1, prepared, Options);
+            var bgr = new LcdRenderer(LcdFilterKernel.PixelBox, LcdSubpixelOrder.Bgr).Render(character, 1, prepared, Options);
 
             bgr.Metrics.ShouldBe(rgb.Metrics);
             var expected = (byte[])rgb.BitmapData.Clone();
@@ -432,9 +583,22 @@ public class LcdRendererTests
         return new PreparedGlyph(outline, new OutlineTransform(1f, 0f), box, (int)MathF.Ceiling(right));
     }
 
+    /// <summary>Mirrors an outline across the diagonal: font units (x, y) become (-y, -x), which
+    /// under the Y-down pixel mapping exchanges pixel X and Y.</summary>
+    private static GlyphOutline Transpose(GlyphOutline outline) => GlyphOutline.FromCommands(
+        outline.Commands.Select(c => c with
+        {
+            EndX = -c.EndY,
+            EndY = -c.EndX,
+            Ctrl1X = -c.Ctrl1Y,
+            Ctrl1Y = -c.Ctrl1X,
+            Ctrl2X = -c.Ctrl2Y,
+            Ctrl2Y = -c.Ctrl2X,
+        }).ToArray());
+
     /// <summary>The exact filtered value, 0-255, of global subpixel <paramref name="s"/> for a
     /// full-height bar spanning [left, right].</summary>
-    private static double FilteredCoverage(LcdFilter filter, float left, float right, int s)
+    private static double FilteredCoverage(LcdFilterKernel filter, float left, float right, int s)
     {
         double sum = 0;
         for (int k = 0; k < filter.Weights.Count; k++)

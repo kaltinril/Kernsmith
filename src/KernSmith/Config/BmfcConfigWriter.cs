@@ -165,6 +165,10 @@ public static class BmfcConfigWriter
         // two modes the standard keys cannot express need an extension.
         if (options.AntiAlias is AntiAliasMode.Light or AntiAliasMode.Lcd)
             extensions.AppendLine($"antiAlias={options.AntiAlias.ToString().ToLowerInvariant()}");
+        if (options.LcdFilter != LcdFilter.Default)
+            extensions.AppendLine($"lcdFilter={options.LcdFilter.ToString().ToLowerInvariant()}");
+        if (options.LcdSubpixelOrder != LcdSubpixelOrder.Rgb)
+            extensions.AppendLine($"lcdOrder={options.LcdSubpixelOrder.ToString().ToLowerInvariant()}");
         if (options.ShadowOpacity != 1.0f)
             extensions.AppendLine($"shadowOpacity={options.ShadowOpacity.ToString(CultureInfo.InvariantCulture)}");
         if (options.HardShadow)

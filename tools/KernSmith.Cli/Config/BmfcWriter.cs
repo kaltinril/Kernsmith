@@ -54,6 +54,8 @@ internal static class BmfcWriter
             Bold = options.Bold,
             Italic = options.Italic,
             AntiAlias = options.AntiAlias,
+            LcdFilter = options.LcdFilter ?? KernSmith.LcdFilter.Default,
+            LcdSubpixelOrder = options.LcdSubpixelOrder ?? KernSmith.LcdSubpixelOrder.Rgb,
             Padding = options.Padding,
             Spacing = options.Spacing,
             PackingAlgorithm = options.PackingAlgorithm,

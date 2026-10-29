@@ -215,6 +215,8 @@ internal sealed class GenerateCommand
             ForceSyntheticBold = options.ForceSyntheticBold,
             ForceSyntheticItalic = options.ForceSyntheticItalic,
             AntiAlias = options.AntiAlias,
+            LcdFilter = options.LcdFilter ?? KernSmith.LcdFilter.Default,
+            LcdSubpixelOrder = options.LcdSubpixelOrder ?? KernSmith.LcdSubpixelOrder.Rgb,
             MaxTextureSize = options.MaxTextureSize,
             Padding = options.Padding,
             Spacing = options.Spacing,
@@ -508,6 +510,26 @@ internal sealed class GenerateCommand
                         var a => throw new ArgumentException($"Unknown anti-alias mode: {a}")
                     };
                     break;
+                case "--lcd-filter":
+                    options.LcdFilter = NextArg(args, ref i, "--lcd-filter").ToLowerInvariant() switch
+                    {
+                        "default" => LcdFilter.Default,
+                        "light" => LcdFilter.Light,
+                        "smooth" => LcdFilter.Smooth,
+                        "none" => LcdFilter.None,
+                        var f => throw new ArgumentException($"Unknown --lcd-filter: {f}. Use default, light, smooth or none.")
+                    };
+                    break;
+                case "--lcd-order":
+                    options.LcdSubpixelOrder = NextArg(args, ref i, "--lcd-order").ToLowerInvariant() switch
+                    {
+                        "rgb" => LcdSubpixelOrder.Rgb,
+                        "bgr" => LcdSubpixelOrder.Bgr,
+                        "vrgb" => LcdSubpixelOrder.VRgb,
+                        "vbgr" => LcdSubpixelOrder.VBgr,
+                        var o => throw new ArgumentException($"Unknown --lcd-order: {o}. Use rgb, bgr, vrgb or vbgr.")
+                    };
+                    break;
                 case "--dpi":
                     options.Dpi = int.Parse(NextArg(args, ref i, args[i]));
                     break;
@@ -744,6 +766,8 @@ internal sealed class GenerateCommand
         // GC-1: Previously missing fields — these CLI values were silently dropped.
         if (cli.OutputFormat != OutputFormat.Text) config.OutputFormat = cli.OutputFormat;
         if (cli.AntiAlias != AntiAliasMode.Grayscale) config.AntiAlias = cli.AntiAlias;
+        if (cli.LcdFilter.HasValue) config.LcdFilter = cli.LcdFilter;
+        if (cli.LcdSubpixelOrder.HasValue) config.LcdSubpixelOrder = cli.LcdSubpixelOrder;
         if (cli.MaxTextureSize != 1024) config.MaxTextureSize = cli.MaxTextureSize;
         if (cli.Outline > 0) { config.Outline = cli.Outline; config.OutlineColor = cli.OutlineColor ?? config.OutlineColor; }
         if (cli.OutlineShape.HasValue) config.OutlineShape = cli.OutlineShape;
@@ -963,6 +987,8 @@ internal sealed class GenerateCommand
               -s, --size <n>              Font size in pixels — accepts fractional (e.g. 10.5) (required)
               --dpi <n>                   DPI (default: 72)
               --aa <none|grayscale|light|lcd>  Anti-aliasing mode (default: grayscale)
+              --lcd-filter <filter>       LCD filter: default, light, smooth, none (--aa lcd; native only)
+              --lcd-order <order>         LCD subpixel order: rgb (default), bgr, vrgb, vbgr (--aa lcd; native only)
               --sdf                       Enable Signed Distance Field rendering
               --sdf-spread <n>            SDF search radius (spread) in pixels (default: 8)
               --sdf-mode <mode>           Distance field: none, sdf, msdf, mtsdf (msdf/mtsdf need --rasterizer native)

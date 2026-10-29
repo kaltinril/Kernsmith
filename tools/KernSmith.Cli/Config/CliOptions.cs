@@ -14,6 +14,8 @@ internal sealed class CliOptions
     public float? Size { get; set; }
     public int Dpi { get; set; } = 72;
     public AntiAliasMode AntiAlias { get; set; } = AntiAliasMode.Grayscale;
+    public LcdFilter? LcdFilter { get; set; }
+    public LcdSubpixelOrder? LcdSubpixelOrder { get; set; }
     public bool Sdf { get; set; }
     public SdfMode SdfMode { get; set; }
     public bool Bold { get; set; }

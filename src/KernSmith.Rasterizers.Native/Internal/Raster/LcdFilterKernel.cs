@@ -10,7 +10,7 @@ namespace KernSmith.Rasterizers.Native.Internal.Raster;
 /// colour balance. Weights are integers over a common <see cref="Denominator"/>; they sum to it,
 /// so the filter conserves ink, and they are symmetric, so it does not move the glyph.
 /// </remarks>
-internal sealed class LcdFilter
+internal sealed class LcdFilterKernel
 {
     private readonly int[] _weights;
 
@@ -20,21 +20,36 @@ internal sealed class LcdFilter
     /// by +1/3, 0 and -1/3 px (the "Harmony" description of LCD rendering), and what the
     /// FreeType backend's LCD output measures as. Spills one subpixel onto each side.
     /// </summary>
-    public static LcdFilter PixelBox { get; } = new([1, 1, 1], 3);
+    public static LcdFilterKernel PixelBox { get; } = new([1, 1, 1], 3);
 
     /// <summary>
     /// The ClearType-style 5-tap kernel [1, 2, 3, 2, 1] / 9 — the pixel box convolved with
     /// itself. Softer colour fringes than <see cref="PixelBox"/>, slightly blurrier stems.
     /// Spills two subpixels onto each side.
     /// </summary>
-    public static LcdFilter Triangle { get; } = new([1, 2, 3, 2, 1], 9);
+    public static LcdFilterKernel Triangle { get; } = new([1, 2, 3, 2, 1], 9);
+
+    /// <summary>No filtering: a single tap, so each subpixel keeps its own one-third-pixel coverage.</summary>
+    public static LcdFilterKernel Identity { get; } = new([1], 1);
+
+    /// <summary>The kernel for a public <see cref="LcdFilter"/> preset.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">If <paramref name="filter"/> is not a defined preset.</exception>
+    public static LcdFilterKernel For(LcdFilter filter) => filter switch
+    {
+        // Native's default is the pixel box: it is what the FreeType backend's LCD output
+        // measures as, and the output LCD had before the filter was selectable.
+        LcdFilter.Default or LcdFilter.Light => PixelBox,
+        LcdFilter.Smooth => Triangle,
+        LcdFilter.None => Identity,
+        _ => throw new ArgumentOutOfRangeException(nameof(filter), filter, "Unknown LCD filter."),
+    };
 
     /// <summary>Creates a kernel.</summary>
     /// <param name="weights">An odd number of taps, centre tap in the middle.</param>
     /// <param name="denominator">What every weight is divided by.</param>
     /// <exception cref="ArgumentException">If <paramref name="weights"/> has an even length.</exception>
     /// <exception cref="ArgumentOutOfRangeException">If <paramref name="denominator"/> is not positive.</exception>
-    public LcdFilter(int[] weights, int denominator)
+    public LcdFilterKernel(int[] weights, int denominator)
     {
         ArgumentNullException.ThrowIfNull(weights);
         if (weights.Length % 2 == 0)

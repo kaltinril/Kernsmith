@@ -33,6 +33,20 @@ public class FontGeneratorOptions
     public AntiAliasMode AntiAlias { get; set; } = AntiAliasMode.Grayscale;
 
     /// <summary>
+    /// The low-pass filter for <see cref="AntiAliasMode.Lcd"/> output (default
+    /// <see cref="KernSmith.LcdFilter.Default"/>, the backend's choice). Honoured by the Native
+    /// backend; others ignore it.
+    /// </summary>
+    public LcdFilter LcdFilter { get; set; }
+
+    /// <summary>
+    /// The display's subpixel layout for <see cref="AntiAliasMode.Lcd"/> output (default
+    /// <see cref="KernSmith.LcdSubpixelOrder.Rgb"/>). Honoured by the Native backend; others
+    /// ignore it.
+    /// </summary>
+    public LcdSubpixelOrder LcdSubpixelOrder { get; set; }
+
+    /// <summary>
     /// Shortcut to set both MaxTextureWidth and MaxTextureHeight at once.
     /// Reading returns MaxTextureWidth.
     /// </summary>
@@ -147,7 +161,9 @@ public class FontGeneratorOptions
 
     /// <summary>
     /// Super sampling level (1-4). Higher values render at Nx size then
-    /// downscale for smoother edges. 1 = no super sampling.
+    /// downscale for smoother edges. 1 = no super sampling. Not applied when the backend
+    /// renders <see cref="AntiAliasMode.Lcd"/>: downscaling would average the subpixel pattern
+    /// away, so LCD glyphs render at the final size.
     /// </summary>
     public int SuperSampleLevel { get; set; } = 1;
 
