@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using KernSmith.Rasterizers.Native.Internal;
+using KernSmith.Rasterizers.Native.Internal.Bitmaps;
 using KernSmith.Rasterizers.Native.Internal.Cff;
 
 namespace KernSmith.Rasterizers.Native.Tests.Fuzzing;
@@ -119,6 +120,39 @@ internal sealed class FontMutator
             }
 
             _hotRanges[tag] = ranges;
+        }
+
+        // Bitmap glyphs: each sampled glyph's image record (its metrics, length and PNG) in every strike.
+        var bitmapRanges = new List<(int, int)>();
+        if (face.Tables.TryGetTable("CBLC") is { } cblc && face.Tables.TryGetTable("CBDT") is { } cbdtData)
+        {
+            var cbdt = CbdtTable.Parse(cblc, cbdtData);
+            for (int s = 0; s < cbdt.StrikeCount; s++)
+            {
+                foreach (int glyph in glyphs)
+                {
+                    if (cbdt.TryLocate(s, glyph, out var bitmap) && MemoryMarshal.TryGetArray(bitmap.Png, out var segment))
+                        bitmapRanges.Add((Math.Max(0, segment.Offset - 12), segment.Count + 12));
+                }
+            }
+
+            _hotRanges["CBDT"] = bitmapRanges;
+        }
+
+        if (face.Tables.TryGetTable("sbix") is { } sbixData)
+        {
+            var sbix = SbixTable.Parse(sbixData, face.Maxp.NumGlyphs);
+            var sbixRanges = new List<(int, int)>();
+            for (int s = 0; s < sbix.StrikeCount; s++)
+            {
+                foreach (int glyph in glyphs)
+                {
+                    if (sbix.TryLocate(s, glyph, out var bitmap) && MemoryMarshal.TryGetArray(bitmap.Png, out var segment))
+                        sbixRanges.Add((Math.Max(0, segment.Offset - 8), segment.Count + 8));
+                }
+            }
+
+            _hotRanges["sbix"] = sbixRanges;
         }
     }
 

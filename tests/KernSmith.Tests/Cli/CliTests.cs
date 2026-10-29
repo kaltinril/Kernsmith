@@ -165,13 +165,13 @@ public class CliTests : IDisposable
     [Fact]
     public void Generate_BackendRejectsFont_PrintsOneLineErrorWithBackendName()
     {
-        // Native has no outline glyphs to draw in a CBDT-only color font, so LoadFont throws
-        // RasterizationException. That is an expected user error, not a crash.
+        // A CBDT-only color font has no outlines for Native to compute a distance field from, so
+        // an SDF request without color is refused. That is an expected user error, not a crash.
         var emojiPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "NotoColorEmoji.ttf");
 
         // Act
         var (exitCode, _, stderr) = RunCli(
-            "generate", "-f", emojiPath, "-s", "32", "--rasterizer", "native",
+            "generate", "-f", emojiPath, "-s", "32", "--rasterizer", "native", "--sdf",
             "-o", Path.Combine(_tempDir, "emoji"), "--no-color");
 
         // Assert
@@ -180,6 +180,21 @@ public class CliTests : IDisposable
         stderr.Trim().ShouldNotContain('\n');
         stderr.ShouldContain("native", Case.Sensitive);
         stderr.ShouldContain("color bitmaps", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_NativeColorBitmapFont_WritesAColorAtlas()
+    {
+        var emojiPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "NotoColorEmoji.ttf");
+        var output = Path.Combine(_tempDir, "emoji-color");
+
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", emojiPath, "-s", "32", "--rasterizer", "native", "--color-font",
+            "--chars", "\U0001F600❤", "-o", output, "--no-color");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        File.Exists(output + ".fnt").ShouldBeTrue();
+        File.Exists(output + "_0.png").ShouldBeTrue();
     }
 
     [Fact]

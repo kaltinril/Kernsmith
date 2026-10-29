@@ -2,6 +2,7 @@ using KernSmith.Font.Models;
 using KernSmith.Font.Tables;
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.Native.Internal;
+using KernSmith.Rasterizers.Native.Internal.Bitmaps;
 using KernSmith.Rasterizers.Native.Internal.Color;
 using KernSmith.Rasterizers.Native.Internal.Outlines;
 using KernSmith.Rasterizers.Native.Internal.Pipeline;
@@ -22,9 +23,10 @@ namespace KernSmith.Rasterizers.Native;
 /// TrueType variable fonts (Phase 171) render at the instance <see cref="SetVariationAxes"/>
 /// selects: <c>gvar</c> outlines, <c>HVAR</c> (or phantom-point) advances and <c>MVAR</c> font
 /// metrics. Color fonts render from <c>COLR</c> version 1 paint graphs and version 0 layers with
-/// <c>CPAL</c> palettes when <see cref="RasterOptions.ColorFont"/> is on (Phase 172); glyphs
-/// without either render as plain coverage. Bitmap-only color fonts (<c>CBDT</c>/<c>sbix</c>,
-/// no outlines) are rejected at load time.
+/// <c>CPAL</c> palettes when <see cref="RasterOptions.ColorFont"/> is on (Phase 172), and from
+/// <c>CBDT</c>/<c>sbix</c> PNG bitmaps, scaled from the best strike, for glyphs without
+/// <c>COLR</c> data; glyphs with none of these render as plain coverage. A font drawn only by
+/// bitmaps renders them as grayscale ink coverage when color is off.
 ///
 /// <see cref="RasterOptions.Bold"/> and <see cref="RasterOptions.Italic"/> are applied as
 /// font-unit outline transforms matching the FreeType backend's synthetic styles (Phase 167):
@@ -54,6 +56,7 @@ public sealed class NativeRasterizer : IRasterizer
     private NativeFontFace? _face;
     private GlyphPipeline? _pipeline;
     private ColorGlyphs? _colorGlyphs;
+    private BitmapGlyphs? _bitmapGlyphs;
     private FontVariations? _variations;
     private bool _disposed;
 
@@ -61,8 +64,8 @@ public sealed class NativeRasterizer : IRasterizer
     public IRasterizerCapabilities Capabilities => CapabilitiesInstance;
 
     /// <inheritdoc />
-    /// <exception cref="FontFormatException">If the font, or its outline table, is malformed.</exception>
-    /// <exception cref="RasterizationException">If the font has only bitmap color glyphs.</exception>
+    /// <exception cref="FontFormatException">If the font, or its outline table, is malformed (for a
+    /// font with no outlines, its color bitmap tables).</exception>
     public void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -78,6 +81,7 @@ public sealed class NativeRasterizer : IRasterizer
         _variations = variations;
         _pipeline = new GlyphPipeline(decoder, face.Head.UnitsPerEm, new GlyphHinter(face.GetGlyphIndex, face.Os2, () => InstanceStamp(variations)));
         _colorGlyphs = ColorGlyphs.TryLoad(face.Tables, face.Maxp.NumGlyphs, variations);
+        _bitmapGlyphs = BitmapGlyphs.TryLoad(face);
     }
 
     /// <inheritdoc />
@@ -143,7 +147,7 @@ public sealed class NativeRasterizer : IRasterizer
         EnsureFontLoaded();
         ArgumentNullException.ThrowIfNull(options);
         ValidateSize(options);
-        var renderer = GlyphRenderers.SelectForFace(options, _colorGlyphs, _pipeline!);
+        var renderer = GlyphRenderers.SelectForFace(options, _colorGlyphs, _pipeline!, _bitmapGlyphs);
 
         int glyphIndex = _face!.GetGlyphIndex(codepoint);
         if (glyphIndex == 0)
@@ -190,7 +194,7 @@ public sealed class NativeRasterizer : IRasterizer
         EnsureFontLoaded();
         ArgumentNullException.ThrowIfNull(options);
         ValidateSize(options);
-        var renderer = GlyphRenderers.SelectForFace(options, _colorGlyphs, _pipeline!);
+        var renderer = GlyphRenderers.SelectForFace(options, _colorGlyphs, _pipeline!, _bitmapGlyphs);
 
         int glyphIndex = _face!.GetGlyphIndex(codepoint);
         if (glyphIndex == 0)
@@ -291,6 +295,7 @@ public sealed class NativeRasterizer : IRasterizer
         _face = null;
         _pipeline = null;
         _colorGlyphs = null;
+        _bitmapGlyphs = null;
         _variations = null;
     }
 
@@ -390,11 +395,11 @@ public sealed class NativeRasterizer : IRasterizer
     }
 
     /// <summary>
-    /// True when the glyph is drawn from color layers, so a blank base outline (common in
-    /// <c>COLR</c> fonts) must still reach the renderer.
+    /// True when the glyph is drawn from color layers or a bitmap, so a blank base outline (common
+    /// in <c>COLR</c> fonts, and every glyph of a bitmap-only font) must still reach the renderer.
     /// </summary>
     private static bool DrawsLayers(IGlyphRenderer renderer, int glyphIndex) =>
-        renderer is ColorLayerRenderer color && color.HasLayers(glyphIndex);
+        renderer is IDrawsWithoutOutline drawer && drawer.DrawsWithoutOutline(glyphIndex);
 
     /// <summary>A whitespace glyph: a real advance, but nothing to draw.</summary>
     private static RasterizedGlyph BlankGlyph(int codepoint, int glyphIndex, int advance) =>

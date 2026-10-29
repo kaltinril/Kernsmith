@@ -7,8 +7,8 @@ internal static class OutlineDecoders
 {
     /// <summary>
     /// The decoder for <paramref name="face"/>: TrueType for a <c>glyf</c> face, CFF for a
-    /// <c>CFF </c> or <c>CFF2</c> face. CFF tables are parsed here, so a malformed one fails the
-    /// load rather than every glyph.
+    /// <c>CFF </c> or <c>CFF2</c> face, and empty outlines for a face drawn only by color bitmaps.
+    /// CFF tables are parsed here, so a malformed one fails the load rather than every glyph.
     /// </summary>
     /// <param name="face">The loaded face.</param>
     /// <param name="variations">The face's variation state, for a variable font.</param>
@@ -19,6 +19,9 @@ internal static class OutlineDecoders
 
         if (face.HasGlyfOutlines)
             return new TrueTypeOutlineDecoder(face, variations);
+
+        if (!face.Tables.IsCff)
+            return new BitmapOnlyOutlineDecoder(face);
 
         return new CffOutlineDecoder(face, variations);
     }

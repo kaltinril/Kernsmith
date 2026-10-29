@@ -13,7 +13,7 @@
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <IsAotCompatible>true</IsAotCompatible>
     <PackageId>KernSmith.Rasterizers.Native</PackageId>
-    <Description>Native KernSmith rasterizer backend. Fully custom, pure C#, cross-platform, with zero external NuGet dependencies. EXPERIMENTAL — renders TrueType ('glyf') and CFF/CFF2 (.otf) outlines, variable fonts, COLR v0/v1 color glyphs, synthetic bold/italic, SDF and MSDF/MTSDF, LCD subpixel and light auto-hinted output; no TrueType bytecode hinting or outline stroke of its own. This project is deliberately not published yet.</Description>
+    <Description>Native KernSmith rasterizer backend. Fully custom, pure C#, cross-platform, with zero external NuGet dependencies. EXPERIMENTAL — renders TrueType ('glyf') and CFF/CFF2 (.otf) outlines, variable fonts, COLR v0/v1 color glyphs, CBDT/sbix color bitmaps, synthetic bold/italic, SDF and MSDF/MTSDF, LCD subpixel and light auto-hinted output; no TrueType bytecode hinting or outline stroke of its own. This project is deliberately not published yet.</Description>
     <PackageProjectUrl>https://github.com/kaltinril/Kernsmith</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Authors>Kaltinril (Jeremy Swartwood)</Authors>
@@ -27,6 +27,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\KernSmith\KernSmith.csproj" />
+    <!-- Our own PNG decoder, for CBDT/sbix bitmap glyphs (pure managed, like this backend). -->
+    <ProjectReference Include="..\KernSmith.Imaging\KernSmith.Imaging.csproj" />
   </ItemGroup>
 
   <ItemGroup>

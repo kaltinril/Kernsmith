@@ -26,7 +26,7 @@ namespace KernSmith.Rasterizers.Native.Internal.Pipeline;
 /// the rasterizer hands such glyphs here even when the base outline is blank (see
 /// <see cref="HasLayers"/>).
 /// </remarks>
-internal sealed class ColorLayerRenderer : IGlyphRenderer
+internal sealed class ColorLayerRenderer : IGlyphRenderer, IDrawsWithoutOutline
 {
     private readonly ColorGlyphs _colorGlyphs;
     private readonly GlyphPipeline _pipeline;
@@ -50,6 +50,10 @@ internal sealed class ColorLayerRenderer : IGlyphRenderer
 
     /// <summary>True when the glyph renders from a paint graph or color layers rather than its own outline.</summary>
     public bool HasLayers(int glyphIndex) => _colorGlyphs.HasPaintGraph(glyphIndex) || _colorGlyphs.HasLayers(glyphIndex);
+
+    /// <inheritdoc />
+    public bool DrawsWithoutOutline(int glyphIndex) =>
+        HasLayers(glyphIndex) || (_fallback is IDrawsWithoutOutline inner && inner.DrawsWithoutOutline(glyphIndex));
 
     /// <inheritdoc />
     public GlyphMetrics Measure(PreparedGlyph glyph, RasterOptions options)

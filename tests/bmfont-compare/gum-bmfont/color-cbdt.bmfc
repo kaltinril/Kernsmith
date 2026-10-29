@@ -1,0 +1,63 @@
+# AngelCode Bitmap Font Generator configuration file
+# Exercises color bitmap glyphs (CBDT/CBLC PNGs, one 109 ppem strike) with the committed
+# Noto Color Emoji fixture. KernSmith-only keys: colorFont=1 turns color rendering on.
+# Native scales the strike to fontSize; FreeType returns the strike's own 109 ppem bitmaps
+# whatever the size; outline-only backends have nothing to draw. Every channel holds the glyph
+# (the default ChannelConfig); a non-default channel setup would overwrite the colors.
+fileVersion=1
+
+# font settings
+fontName=Noto Color Emoji
+fontFile=../../KernSmith.Tests/Fixtures/NotoColorEmoji.ttf
+charSet=0
+fontSize=32
+aa=1
+scaleH=100
+useSmoothing=1
+isBold=0
+isItalic=0
+useUnicode=1
+disableBoxChars=1
+outputInvalidCharGlyph=0
+dontIncludeKerningPairs=0
+useHinting=1
+renderFromOutline=0
+useClearType=0
+autoFitNumPages=0
+
+# character alignment
+paddingDown=0
+paddingUp=0
+paddingRight=0
+paddingLeft=0
+spacingHoriz=1
+spacingVert=1
+useFixedHeight=0
+forceZero=0
+widthPaddingFactor=0.00
+
+# output file
+outWidth=1024
+outHeight=1024
+outBitDepth=32
+fontDescFormat=0
+fourChnlPacked=0
+textureFormat=png
+textureCompression=0
+alphaChnl=0
+redChnl=0
+greenChnl=0
+blueChnl=0
+invA=0
+invR=0
+invG=0
+invB=0
+
+# outline
+outlineThickness=0
+
+# selected chars
+chars=128512-128527,10084,11088,128640
+
+# KernSmith extensions
+colorFont=1

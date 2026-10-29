@@ -78,10 +78,14 @@ internal static class GoldenCatalog
     public static readonly GoldenFont Bungee = new("bungee", Path.Combine("Color", "BungeeColor-Regular.ttf"), Latin);
     public static readonly GoldenFont ReemKufi = new("reemkufi", Path.Combine("Color", "ReemKufiInk-Regular.ttf"), Arabic);
 
+    /// <summary>Noto Color Emoji (CBDT bitmaps only, one 109 ppem strike): a blank, a keycap base,
+    /// emoji, and an unmapped Latin letter.</summary>
+    public static readonly GoldenFont NotoEmoji = new("notoemoji", "NotoColorEmoji.ttf", " #😀❤⭐🚀🎉A");
+
     /// <summary>
-    /// Every committed outline fixture. <c>NotoColorEmoji.ttf</c> is deliberately absent: it is
-    /// bitmap-only (<c>CBDT</c>), which Native rejects at <c>LoadFont</c>
-    /// (<c>NativeColorFontTests</c> pins that), so there is no output to golden.
+    /// Every committed outline fixture. <c>NotoColorEmoji.ttf</c> is deliberately absent: it has no
+    /// outlines, so the mode, distance-field and style matrices do not apply; its own color-bitmap
+    /// cases are listed separately below.
     /// </summary>
     public static readonly GoldenFont[] Fonts =
         [Roboto, NotoSans, NotoSansCff, SourceSerif, SourceCode, RobotoFlex, RobotoFlexLatin, DancingScript, Bungee, ReemKufi];
@@ -109,6 +113,7 @@ internal static class GoldenCatalog
         "roboto/msdf/32px",
         "bungee/color/48px/palette=6",
         "reemkufi/color/48px",
+        "notoemoji/color/32px",
     ];
 
     private static readonly Lazy<IReadOnlyDictionary<string, GoldenCase>> RasterCases = new(BuildRasterCases);
@@ -213,6 +218,15 @@ internal static class GoldenCatalog
         Add("bungee/color-sdf/32px/palette=0", Bungee, new RasterOptions { Size = 32, ColorFont = true, Sdf = true });
         Add("reemkufi/color-sdf/32px", ReemKufi, new RasterOptions { Size = 32, ColorFont = true, Sdf = true });
 
+        // Color bitmaps (CBDT): downscaled, at the strike, upscaled, and through the other options.
+        foreach (float size in new[] { 16f, 32f, 109f, 160f })
+            Add($"notoemoji/color/{Px(size)}", NotoEmoji, new RasterOptions { Size = size, ColorFont = true });
+
+        Add("notoemoji/grayscale/32px", NotoEmoji, new RasterOptions { Size = 32 });
+        Add("notoemoji/color-none/32px", NotoEmoji, new RasterOptions { Size = 32, ColorFont = true, AntiAlias = AntiAliasMode.None });
+        Add("notoemoji/color/32px/bold-italic", NotoEmoji, new RasterOptions { Size = 32, ColorFont = true, Bold = true, Italic = true });
+        Add("notoemoji/color-sdf/32px", NotoEmoji, new RasterOptions { Size = 32, ColorFont = true, Sdf = true });
+
         return cases.ToDictionary(c => c.Id, StringComparer.Ordinal);
     }
 
@@ -275,6 +289,12 @@ internal static class GoldenCatalog
                 o.ColorFont = true;
                 return o;
             }),
+            new("generate/notoemoji/color-32", NotoEmoji, () =>
+            {
+                var o = Options(32, NotoEmoji.Glyphs);
+                o.ColorFont = true;
+                return o;
+            }, Reference: true),
         };
 
         return cases.ToDictionary(c => c.Id, StringComparer.Ordinal);

@@ -15,7 +15,7 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// <summary>
 /// Phase 172 — color fonts end to end on the committed fixtures: COLR version 0 output measured
 /// against FreeType, COLR version 1 paint graphs checked against the font's palettes and plain
-/// coverage, and bitmap-only color fonts rejected with a clear message.
+/// coverage. Bitmap color glyphs (CBDT/sbix) are in NativeBitmapEmojiTests and NativeBitmapGlyphTests.
 /// </summary>
 /// <remarks>
 /// FreeType is compared with hinting off (Native has no hinter) and returns premultiplied RGBA,
@@ -287,38 +287,12 @@ public class NativeColorFontTests
         result.Pages[0].PixelData.ShouldContain(b => b != 0);
     }
 
-    // ---- Bitmap-only color fonts (Noto Color Emoji) ----------------------------------------
-
-    [Fact]
-    public void NotoColorEmoji_IsRejectedAtLoad_WithAClearMessage()
-    {
-        using var native = new NativeRasterizer();
-
-        var ex = Should.Throw<RasterizationException>(() => native.LoadFont(TestFonts.NotoColorEmojiBytes()));
-        ex.Message.ShouldContain("CBDT", Case.Sensitive);
-        ex.Message.ShouldContain("bitmap", Case.Sensitive);
-        ex.Message.ShouldContain("FreeType", Case.Sensitive);
-    }
-
-    [Fact]
-    public void Generate_NotoColorEmoji_WithNative_FailsWithTheSameMessage()
-    {
-        var options = new FontGeneratorOptions
-        {
-            Size = 32,
-            Characters = CharacterSet.FromChars(new[] { 0x1F600 }),
-            Backend = RasterizerBackend.Native,
-            ColorFont = true
-        };
-
-        var ex = Should.Throw<Exception>(() => BmFont.Generate(TestFonts.NotoColorEmojiBytes(), options));
-        ex.ToString().ShouldContain("CBDT", Case.Sensitive);
-    }
+    // ---- Bitmap color fonts: NativeBitmapEmojiTests and NativeBitmapGlyphTests ---------------
 
     [Fact]
     public void NotoColorEmoji_FontInfoStillReads()
     {
-        // The rejection is the Native backend's; core's own font parsing is unaffected.
+        // Core's own font parsing of a bitmap-only color font, independent of any backend.
         var info = BmFont.ReadFontInfo(TestFonts.NotoColorEmojiBytes());
 
         info.NumGlyphs.ShouldBeGreaterThan(0);

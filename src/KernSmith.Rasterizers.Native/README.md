@@ -42,6 +42,19 @@ them before the backend sees the bytes.
   gradients and composites are computed in linear light, as the `COLR` spec requires. Glyphs with
   no color definition render as grayscale. Color glyphs stay color under single-channel SDF;
   MSDF/MTSDF with `ColorFont` is rejected.
+- **Color bitmap glyphs** — `CBDT`/`CBLC` (index formats 1-5, PNG image formats 17/18/19) and
+  `sbix` (`'png '` graphics, `'dupe'` records, origin offsets) render with `ColorFont`, decoded
+  by our own PNG decoder (`KernSmith.Imaging`), so bitmap-only fonts such as Noto Color Emoji
+  work. Per glyph, the smallest strike at or above the requested size is used (else the largest)
+  and scaled to the request — exact area averaging when shrinking, bilinear when enlarging, in
+  premultiplied sRGB — so unlike the FreeType backend (which returns the strike's own size) the
+  emoji come out at the size asked for; at a strike's own size the two agree exactly. The advance
+  is the `hmtx` one. Precedence is `COLR`, then a bitmap, then the outline. Without `ColorFont`,
+  a font with outlines draws its outlines and a bitmap-only font draws grayscale ink coverage.
+  Bold and italic leave bitmap glyphs unchanged (as on FreeType); `None` thresholds alpha at
+  50% and crops to the ink; LCD and light hinting do not apply. `'jpg '`/`'tiff'` graphics and
+  the uncompressed EBDT formats are skipped (the outline, or nothing, draws instead); a distance
+  field without `ColorFont` on a bitmap-only font is a `NotSupportedException`.
 - **Anti-aliasing** — `None` (50% threshold with dropout control, boxes cropped to the ink),
   `Grayscale`, `Light` (grayscale plus the auto-hinter below) and `Lcd` (RGBA, one horizontal
   subpixel per colour channel in RGB order, alpha = the strongest subpixel, filtered with a
@@ -51,7 +64,6 @@ them before the backend sees the bytes.
 Not supported — each raises a clear error or is ignored, as noted:
 
 - **Outline stroking** (Phase 168) — the backend has none of its own; KernSmith core still draws outlines as a bitmap effect
-- **Bitmap-only color fonts** (`CBDT`/`sbix`, e.g. Noto Color Emoji) — rejected at `LoadFont` with a `RasterizationException`
 - **TrueType bytecode hinting** — never run; the auto-hinter is Native's own and fits y only
 - **System fonts by name** — `LoadSystemFont` throws `NotSupportedException`; load font bytes instead
 - **LCD options** — RGB order and the one-pixel box filter only; no BGR, vertical or alternative filter selection yet
@@ -86,8 +98,9 @@ heights) renders unhinted rather than snapped to zones that do not describe it.
 ## Errors, limits and threads
 
 - **Damaged fonts** fail with KernSmith exceptions, never a crash or hang: a malformed table
-  directory or core table is a `FontFormatException` at `LoadFont` (a bitmap-only color font is
-  a `RasterizationException`); malformed glyph, variation or color data is a
+  directory or core table is a `FontFormatException` at `LoadFont` (for a font with no outlines,
+  so are malformed or empty color bitmap tables); malformed glyph, variation or color data (a
+  bitmap glyph's PNG included) is a
   `RasterizationException` from `RasterizeGlyph`/`GetGlyphMetrics`/`SetVariationAxes`. A seeded
   fuzz harness (`NativeFuzzTests`) holds this for every committed fixture.
 - **Size limits** — a glyph box larger than 64 ems, or a bitmap larger than 16384 px per side
@@ -138,7 +151,7 @@ Everything is internal; add a feature to its stage rather than to `NativeRasteri
 | 2 | Transforms, in order, in font units | `Internal/Pipeline/IGlyphTransform.cs`, `GlyphTransforms.cs` | implementing `IGlyphTransform` and adding it in `GlyphTransforms.For` — `BoldTransform` then `ItalicTransform` today (167). `WidthScaleTransform`, `SmallCapsTransform` (before bold) and `StrokeTransform` (last, as a separate layer) exist but are not registered until core options reach them (168). Build results with `WithOutline` / `WithAdvanceWidth`. |
 | 3 | Bounds → pixel grid | `Internal/Raster/GlyphBox.cs`, `Internal/Outlines/OutlineBounds.cs` | nothing: a replaced outline loses its declared bbox and is measured from its tight bounds. |
 | 4 | Scale, then pixel-space hinting | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs`; `Internal/Hinting/` | `GlyphHinter.Apply` runs the auto-hinter (174) for hinted requests: `FontHintMetrics` (per face/size/style/instance, cached) and `GridFitter`. It returns a pixel-space outline with an identity `ToPixels`. |
-| 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs`, `SdfRenderer.cs`, `MsdfRenderer.cs` (distance code and edge coloring in `Internal/Distance/`), `LcdRenderer.cs` (filters in `Internal/Raster/LcdFilter.cs`), `ColorLayerRenderer.cs`, `PaintGraphRenderer.cs` | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` (distance fields first, then LCD, else coverage). Color glyphs (172) wrap that renderer in `GlyphRenderers.SelectForFace`: `ColorLayerRenderer` sends `COLR` version 1 paint graphs to `PaintGraphRenderer` and draws version 0 layers itself, preparing every clip or layer glyph through stages 1–4. `Measure` must match what `Render` produces. |
+| 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs`, `SdfRenderer.cs`, `MsdfRenderer.cs` (distance code and edge coloring in `Internal/Distance/`), `LcdRenderer.cs` (filters in `Internal/Raster/LcdFilter.cs`), `ColorLayerRenderer.cs`, `PaintGraphRenderer.cs`, `BitmapGlyphRenderer.cs` (strikes and scaling in `Internal/Bitmaps/`) | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` (distance fields first, then LCD, else coverage). Color glyphs (172) wrap that renderer in `GlyphRenderers.SelectForFace`: `BitmapGlyphRenderer` draws `CBDT`/`sbix` bitmaps, and `ColorLayerRenderer` outside it sends `COLR` version 1 paint graphs to `PaintGraphRenderer` and draws version 0 layers itself, preparing every clip or layer glyph through stages 1–4. A bitmap-only face decodes through `BitmapOnlyOutlineDecoder` (empty outlines, `hmtx` advances). `Measure` must match what `Render` produces. |
 
 Invariants:
 
@@ -155,7 +168,7 @@ Invariants:
 - `AntiAliasMode.None` output is cropped to its ink after rendering (`ScanlineRasterizer.RasterizeMono`;
   color glyphs in `ColorLayerRenderer`): thresholding empties edge rows and columns of the
   outward-rounded box. A None `Measure` therefore renders too (into pooled scratch).
-- Blank glyphs (no outline, or an empty box) never reach a renderer — except a `COLR` color glyph, whose own outline is not what gets drawn and is often empty.
+- Blank glyphs (no outline, or an empty box) never reach a renderer — except a `COLR` or bitmap color glyph (a renderer implementing `IDrawsWithoutOutline`), whose own outline is not what gets drawn and is often empty.
 - `PreparedGlyph.GlyphIndex` is the only way `Measure` can identify the glyph; a hint stage must carry it over (build with `with`).
 - The default instance (no axes, or every axis at its default) takes the exact static decode
   path, so non-variable output cannot drift.

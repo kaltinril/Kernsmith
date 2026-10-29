@@ -11,10 +11,11 @@ internal static class FontValidator
 
     /// <summary>
     /// Verifies that all mandatory SFNT tables are present, plus the outline tables
-    /// appropriate for the font's flavour (TrueType <c>glyf</c>/<c>loca</c> or CFF).
+    /// appropriate for the font's flavour (TrueType <c>glyf</c>/<c>loca</c>, CFF, or color bitmaps).
     /// </summary>
+    /// <remarks>A TrueType-flavoured face with no <c>glyf</c> is accepted when it has color bitmap
+    /// tables (<c>CBLC</c> + <c>CBDT</c>, or <c>sbix</c>) to draw its glyphs instead.</remarks>
     /// <exception cref="FontFormatException">If any required table is missing.</exception>
-    /// <exception cref="RasterizationException">If the font has only bitmap color glyphs.</exception>
     public static void Validate(TableProvider provider)
     {
         ArgumentNullException.ThrowIfNull(provider);
@@ -32,13 +33,9 @@ internal static class FontValidator
         }
         else
         {
-            // A valid font this backend cannot draw, so a RasterizationException rather than a
-            // format error. NotoColorEmoji is the committed example.
-            if (!provider.HasTable("glyf") && (provider.HasTable("CBDT") || provider.HasTable("sbix")))
-                throw new RasterizationException(
-                    "This font draws its glyphs as color bitmaps (CBDT/CBLC or sbix) and has no outlines. "
-                    + "The native rasterizer renders outline glyphs only (bitmap color glyphs are a later "
-                    + "part of Phase 172); use the FreeType backend for this font.");
+            // No outlines: drawn by color bitmaps alone (NotoColorEmoji is the committed example).
+            if (!provider.HasTable("glyf") && HasColorBitmaps(provider))
+                return;
 
             if (!provider.HasTable("glyf"))
                 throw new FontFormatException("TrueType font is missing the required 'glyf' table.");
@@ -46,4 +43,7 @@ internal static class FontValidator
                 throw new FontFormatException("TrueType font is missing the required 'loca' table.");
         }
     }
+
+    private static bool HasColorBitmaps(TableProvider provider) =>
+        (provider.HasTable("CBLC") && provider.HasTable("CBDT")) || provider.HasTable("sbix");
 }

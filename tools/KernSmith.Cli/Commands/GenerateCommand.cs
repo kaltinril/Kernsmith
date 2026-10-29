@@ -120,8 +120,8 @@ internal sealed class GenerateCommand
             ConsoleOutput.WriteError($"Font error: {ex.Message}");
             return ExitCodes.FontParseError;
         }
-        // A backend refusing a font or an option (e.g. Native on a bitmap-only color font,
-        // StbTrueType asked for color) is an expected user error, not a crash.
+        // A backend refusing a font or an option (e.g. Native asked for a distance field from a
+        // bitmap-only color font, StbTrueType asked for color) is an expected user error, not a crash.
         catch (Exception ex) when (ex is BmFontException or NotSupportedException)
         {
             ConsoleOutput.WriteError($"Generation error ({BackendName(options)} rasterizer): {ex.Message}");

@@ -17,6 +17,9 @@ internal static class SrgbTransfer
         return new LinearColor(ByteToLinear[color.R] * a, ByteToLinear[color.G] * a, ByteToLinear[color.B] * a, a);
     }
 
+    /// <summary>Decodes an 8-bit sRGB value to linear light in 0..1.</summary>
+    public static float ToLinear(byte value) => ByteToLinear[value];
+
     /// <summary>Encodes a linear-light channel in 0..1 (clamped) as an 8-bit sRGB value.</summary>
     public static byte Encode(float linear)
     {

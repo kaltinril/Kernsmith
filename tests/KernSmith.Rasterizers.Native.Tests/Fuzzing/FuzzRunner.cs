@@ -11,13 +11,16 @@ namespace KernSmith.Rasterizers.Native.Tests.Fuzzing;
 /// <param name="Axes">The font's <c>fvar</c> axes, or null for a static font.</param>
 /// <param name="Instance">A non-default instance set on alternate cases, or null.</param>
 /// <param name="Tables">The tables to damage.</param>
+/// <param name="BitmapOnly">True for a font drawn only by color bitmaps: distance fields without
+/// color are a documented <see cref="NotSupportedException"/> for it, so those combinations are skipped.</param>
 internal sealed record FuzzProfile(
     string Name,
     byte[] Font,
     int[] Sample,
     IReadOnlyList<VariationAxis>? Axes,
     Dictionary<string, float>? Instance,
-    string[] Tables);
+    string[] Tables,
+    bool BitmapOnly = false);
 
 /// <summary>One harness finding: a case that failed in a way the rasterizer's contract forbids.</summary>
 internal sealed record FuzzFailure(string Case, string Stage, string Problem, Exception? Error)
@@ -108,6 +111,9 @@ internal static class FuzzRunner
 
             foreach (var options in new[] { first, second })
             {
+                if (profile.BitmapOnly && !options.ColorFont && options.EffectiveSdfMode != SdfMode.None)
+                    continue;
+
                 if (options.ColorFont && iteration % 3 == 0)
                 {
                     stage = "SelectColorPalette";
