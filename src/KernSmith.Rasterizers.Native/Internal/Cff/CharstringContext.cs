@@ -28,10 +28,11 @@ internal sealed class CharstringContext
     public IReadOnlyList<int> RegionCounts { get; init; } = [];
 
     /// <summary>
-    /// CFF2: the scalar for each region of a given <c>vsindex</c> at the requested instance, or
-    /// null to render the default instance (every delta ignored). Phase 171 supplies this.
+    /// CFF2: the scalar for each region of a given <c>vsindex</c> at the current instance, in the
+    /// ItemVariationData's region order. A null delegate, or a null result, renders the default
+    /// instance (every delta ignored). <c>CffOutlineDecoder</c> supplies it.
     /// </summary>
-    public Func<int, double[]>? BlendScalars { get; init; }
+    public Func<int, double[]?>? BlendScalars { get; init; }
 
     /// <summary>
     /// CFF <c>seac</c>: the charstring of the glyph a Standard Encoding code names, or null when

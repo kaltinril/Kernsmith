@@ -1,8 +1,10 @@
+using KernSmith.Font.Tables;
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.FreeType;
 using KernSmith.Rasterizers.Native.Internal;
 using KernSmith.Rasterizers.Native.Internal.Cff;
 using KernSmith.Rasterizers.Native.Internal.Outlines;
+using KernSmith.Rasterizers.Native.Internal.Variations;
 using Shouldly;
 
 namespace KernSmith.Rasterizers.Native.Tests;
@@ -271,6 +273,126 @@ public class CffTableTests
         Should.Throw<FontFormatException>(() => Decoder(example, "CFF2"));
     }
 
+    // ---- CFF2 variation instances --------------------------------------------------------------
+
+    /// <summary>A one-axis 'wght' (100..400..900): 250 normalizes to -0.5, 175 to -0.75, 100 to -1.</summary>
+    private static readonly VariationAxis[] WeightAxis = [new("wght", 100, 400, 900, null)];
+
+    private static (CffOutlineDecoder Decoder, FontVariations Variations) VariableDecoder(byte[] cff2)
+    {
+        var font = SyntheticFonts.WithTables(
+            SyntheticFonts.CffFlavoured(cff2, "CFF2"), new Dictionary<string, byte[]?> { ["fvar"] = OneAxisFvar() });
+        var face = NativeFontFace.Load(font);
+        var variations = FontVariations.Load(face) ?? throw new InvalidOperationException("no fvar");
+        return ((CffOutlineDecoder)OutlineDecoders.ForFace(face, variations), variations);
+    }
+
+    private static void SetWeight(FontVariations variations, float weight) =>
+        variations.SetAxes(WeightAxis, new Dictionary<string, float> { ["wght"] = weight });
+
+    [Fact]
+    public void Cff2_SpecExample_FollowsTheInstance()
+    {
+        // Regions: R0 (-1, -0.5, 0), R1 (-1, -1, -0.5). The square's left edge is 50 + 50 R0 + 100 R1
+        // and its width 500 - 100 R0 - 200 R1. Switching instances must re-blend, and returning to
+        // the default must give the default outline back.
+        var (decoder, variations) = VariableDecoder(Cff2Example());
+        const string Default = "M 50,0 L 550,0 L 550,500 L 50,500 Z";
+
+        SetWeight(variations, 250);   // R0 = 1, R1 = 0
+        Path(decoder, 0).ShouldBe("M 100,0 L 500,0 L 500,500 L 100,500 Z");
+
+        SetWeight(variations, 175);   // R0 = 0.5, R1 = 0.5
+        Path(decoder, 0).ShouldBe("M 125,0 L 475,0 L 475,500 L 125,500 Z");
+
+        SetWeight(variations, 100);   // R0 = 0, R1 = 1
+        Path(decoder, 1).ShouldBe("M 150,0 L 450,0 L 450,500 L 150,500 Z");
+
+        SetWeight(variations, 400);
+        Path(decoder, 0).ShouldBe(Default);
+
+        SetWeight(variations, 250);
+        Path(decoder, 0).ShouldBe("M 100,0 L 500,0 L 500,500 L 100,500 Z");
+
+        SetWeight(variations, 700);   // outside every region
+        Path(decoder, 0).ShouldBe(Default);
+    }
+
+    [Fact]
+    public void Cff2_VsIndex_SelectsTheRegionsOfItsItemVariationData()
+    {
+        // Store: R0 (0, 0.5, 1), R1 (0, 1, 1), R2 (-1, -1, 0); ItemVariationData 0 selects
+        // [R2, R0], 1 selects [R1]. Glyph 0 blends against data 0 (100 - 40 R2 + 60 R0); glyph 1's
+        // Private DICT says vsindex 1 and glyph 2's charstring does (100 + 20 R1).
+        var (decoder, variations) = VariableDecoder(Cff2WithTwoVariationData());
+
+        SetWeight(variations, 775);   // +0.75: R0 = 0.5, R1 = 0.75, R2 = 0
+        Path(decoder, 0).ShouldBe("M 0,0 L 130,0 L 130,100 Z");
+        Path(decoder, 1).ShouldBe("M 0,0 L 115,0 L 115,100 Z");
+        Path(decoder, 2).ShouldBe("M 0,0 L 115,0 L 115,100 Z");
+
+        SetWeight(variations, 250);   // -0.5: R2 = 0.5, others 0
+        Path(decoder, 0).ShouldBe("M 0,0 L 80,0 L 80,100 Z");
+        Path(decoder, 1).ShouldBe("M 0,0 L 100,0 L 100,100 Z");
+    }
+
+    /// <summary>A one-axis <c>fvar</c> (wght 100..400..900, no named instances).</summary>
+    private static byte[] OneAxisFvar() => Be.Concat(
+        Be.U16(1), Be.U16(0), Be.U16(16), Be.U16(2), Be.U16(1), Be.U16(20), Be.U16(0), Be.U16(8),
+        Be.Tag("wght"), Be.I32(100 << 16), Be.I32(400 << 16), Be.I32(900 << 16), Be.U16(0), Be.U16(256));
+
+    /// <summary>
+    /// A three-glyph CFF2 table over <see cref="VariationDataTests.BuildCff2StyleStore"/>, with two
+    /// Font DICTs: FD 0's Private DICT is empty (vsindex 0), FD 1's sets vsindex 1. Glyphs 0 and 2
+    /// use FD 0, glyph 1 FD 1; glyph 2 selects vsindex 1 itself.
+    /// </summary>
+    private static byte[] Cff2WithTwoVariationData()
+    {
+        byte[][] charStrings =
+        [
+            Cs.Of(0, 0, T2.RMoveTo, 100, -40, 60, 1, T2.Blend, T2.HLineTo, 100, T2.VLineTo),
+            Cs.Of(0, 0, T2.RMoveTo, 100, 20, 1, T2.Blend, T2.HLineTo, 100, T2.VLineTo),
+            Cs.Of(1, T2.VsIndex, 0, 0, T2.RMoveTo, 100, 20, 1, T2.Blend, T2.HLineTo, 100, T2.VLineTo),
+        ];
+        byte[] store = VariationDataTests.BuildCff2StyleStore();
+        byte[] private1 = [.. Cs.Number(1), (byte)CffDict.VsIndex];
+
+        const int HeaderSize = 5;
+        const int TopDictSize = 26;                       // four 5-byte offsets, two 1- and two 2-byte operators
+        int globalSubrs = HeaderSize + TopDictSize;
+        int vstore = globalSubrs + 4;                     // after an empty CFF2 INDEX
+        int charStringsOffset = vstore + 2 + store.Length;
+        byte[] charStringIndex = CffBytes.Index(charStrings, cff2: true);
+        int fdSelect = charStringsOffset + charStringIndex.Length;
+        byte[] fdSelectData = SyntheticCff.FdSelectFormat0(0, 1, 0);
+        int private1Offset = fdSelect + fdSelectData.Length;
+        int fdArray = private1Offset + private1.Length;
+
+        static byte[] FontDict(int size, int offset) => [.. CffBytes.Int32(size), .. CffBytes.Int32(offset), (byte)CffDict.Private];
+        byte[] fdArrayIndex = CffBytes.Index([FontDict(0, private1Offset), FontDict(private1.Length, private1Offset)], cff2: true);
+
+        byte[] top =
+        [
+            .. CffBytes.Int32(charStringsOffset), (byte)CffDict.CharStrings,
+            .. CffBytes.Int32(fdArray), 12, 36,
+            .. CffBytes.Int32(fdSelect), 12, 37,
+            .. CffBytes.Int32(vstore), (byte)CffDict.VariationStore,
+        ];
+        top.Length.ShouldBe(TopDictSize);
+
+        return
+        [
+            2, 0, HeaderSize, 0, TopDictSize,
+            .. top,
+            0, 0, 0, 0,
+            (byte)(store.Length >> 8), (byte)store.Length, .. store,
+            .. charStringIndex,
+            .. fdSelectData,
+            .. private1,
+            .. fdArrayIndex,
+        ];
+    }
+
     /// <summary>
     /// The 226-byte example CFF2 table from the OpenType CFF2 chapter, verbatim: two glyphs that
     /// both call one local subroutine drawing a blended 500-unit square, a single Font DICT whose
@@ -355,5 +477,29 @@ public class CffTableTests
         Should.Throw<FontFormatException>(() => CffDict.Parse([255, 17], cff2: false));      // reserved byte
         Should.Throw<FontFormatException>(() => CffDict.Parse([12], cff2: false));           // truncated escape
         Should.Throw<FontFormatException>(() => CffDict.Parse([.. Enumerable.Repeat((byte)139, 49), 17], cff2: false));
+    }
+
+    [Fact]
+    public void Cff2Dict_Blend_KeepsTheDefaults_SizedByThePrivateDictVsIndex()
+    {
+        // k = 2 for vsindex 0 and 1 for vsindex 1. "40 15 -20 20 -9 -1 2 blend StemSnapH" (the
+        // spec example's, k = 2) keeps 40 15; after "1 vsindex", "55 -29 1 blend StdHW" keeps 55,
+        // and the next operator starts from a clean stack.
+        static int RegionCount(int vsIndex) => vsIndex == 0 ? 2 : 1;
+        byte[] stemSnapH = [.. Cs.Of(40, 15, -20, 20, -9, -1, 2), (byte)CffDict.Blend, 12, 12];
+        byte[] stdHw = [.. Cs.Of(55, -29, 1), (byte)CffDict.Blend, 10];
+        byte[] subrs = [.. Cs.Of(114), (byte)CffDict.Subrs];
+
+        var withoutVsIndex = CffDict.Parse([.. stemSnapH, .. subrs], cff2: true, RegionCount);
+        withoutVsIndex.Get(1212).ShouldBe([40, 15]);
+        withoutVsIndex.GetInt(CffDict.Subrs).ShouldBe(114);
+
+        var withVsIndex = CffDict.Parse([.. Cs.Of(1), (byte)CffDict.VsIndex, .. stdHw, .. subrs], cff2: true, RegionCount);
+        withVsIndex.GetInt(CffDict.VsIndex).ShouldBe(1);
+        withVsIndex.Get(10).ShouldBe([55]);
+        withVsIndex.GetInt(CffDict.Subrs).ShouldBe(114);
+
+        // With k = 2 the same StdHW operands are one short.
+        Should.Throw<FontFormatException>(() => CffDict.Parse([.. stdHw], cff2: true, RegionCount));
     }
 }

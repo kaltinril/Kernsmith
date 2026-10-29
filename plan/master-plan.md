@@ -107,8 +107,8 @@ Work order for finishing the backend. Tracks inside a wave are independent and c
   - **Staged-pipeline refactor** ([166 Part 1](done/phase-166-cff-charstring-interpreter.md#part-1--staged-pipeline-refactor-wave-0)): `NativeRasterizer.RasterizeGlyph` becomes decode via a new `IOutlineDecoder` (TrueType `glyf` behind it) -> outline transform list (bold/italic/stroke hook) -> bbox computed from the outline (declared `glyf` bbox optional) -> scale/hint hook -> render-mode dispatch (coverage / SDF / LCD / color). Output-identical for existing `glyf` fonts.
   - **[178](done/phase-178-woff-decompression.md) WOFF2** -- complete: core decoding (own managed Brotli decoder), `KernSmith.Fonts.Web` prefers WOFF2.
   - **[177](phase-177-performance-optimization.md) benchmark harness** -- BenchmarkDotNet Native vs StbTrueType vs FreeType, so every later wave is measured against a baseline.
-- **Wave 1** (after the Wave 0 refactor, all parallel): [166](done/phase-166-cff-charstring-interpreter.md) CFF (complete); [167](done/phase-167-synthetic-bold-italic.md) -> [168](phase-168-synthetic-outline-stroke.md) synthetic styles then stroke/small caps/condensed; [169](done/phase-169-sdf-generation.md) -> [170](done/phase-170-msdf-generation.md) SDF then MSDF; [171](phase-171-variable-font-support.md) TrueType variations (`gvar`/`avar`/`HVAR`/`MVAR`); [172](phase-172-color-font-support.md) COLRv0 + CPAL.
-- **Wave 2**: [174](phase-174-auto-hinting.md) auto-hinting (after 167/168); 171 CFF2 `blend` (after 166); 172 COLRv1; [173](phase-173-lcd-subpixel-rendering.md) LCD, including core anti-alias-mode negotiation.
+- **Wave 1** (after the Wave 0 refactor, all parallel): [166](done/phase-166-cff-charstring-interpreter.md) CFF (complete); [167](done/phase-167-synthetic-bold-italic.md) -> [168](phase-168-synthetic-outline-stroke.md) synthetic styles then stroke/small caps/condensed; [169](done/phase-169-sdf-generation.md) -> [170](done/phase-170-msdf-generation.md) SDF then MSDF; [171](done/phase-171-variable-font-support.md) TrueType variations (`gvar`/`avar`/`HVAR`/`MVAR`); [172](phase-172-color-font-support.md) COLRv0 + CPAL.
+- **Wave 2**: [174](phase-174-auto-hinting.md) auto-hinting (after 167/168); 171 CFF2 `blend` (complete); 172 COLRv1; [173](phase-173-lcd-subpixel-rendering.md) LCD, including core anti-alias-mode negotiation.
 - **Wave 3**: 177 optimisation; [179](phase-179-validation-golden-masters.md) validation, golden masters and release decision; docs/status sweep.
 - **Needs decision** (not scheduled): [175](phase-175-gsub-layout.md) GSUB and [176](phase-176-supersampling-height-stretch.md) supersample/height stretch -- see each doc's open question.
 
@@ -121,7 +121,7 @@ Every phase that changes Native pixel output runs `regression_check.py` with a `
 | 168 | [Synthetic Outline/Stroke](phase-168-synthetic-outline-stroke.md) | Outline stroke, small caps, condensed/extended | In progress -- Native geometry done; core plumbing needs decision |
 | 169 | [SDF Generation](done/phase-169-sdf-generation.md) | Single-channel SDF from outlines | Complete |
 | 170 | [MSDF Generation](done/phase-170-msdf-generation.md) | Multi-channel SDF (MSDF/MTSDF) | Complete |
-| 171 | [Variable Font Support](phase-171-variable-font-support.md) | TrueType variations; CFF2 `blend` | In progress -- Wave 1 (TrueType) complete; Wave 2 (CFF2) after 166 |
+| 171 | [Variable Font Support](done/phase-171-variable-font-support.md) | TrueType variations; CFF2 `blend` | Complete |
 | 172 | [Color Font Support](phase-172-color-font-support.md) | COLRv0/CPAL, then COLRv1; CBDT/sbix stretch | In progress -- COLRv0/CPAL complete; COLRv1 Wave 2 |
 | 173 | [LCD Subpixel Rendering](phase-173-lcd-subpixel-rendering.md) | LCD subpixel rendering + core AA-mode negotiation | In progress -- negotiation and Native LCD done; LCD options and degradation policy need decision |
 | 174 | [Auto-Hinting](phase-174-auto-hinting.md) | Auto-hinting | Future -- Wave 2 |

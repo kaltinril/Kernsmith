@@ -22,9 +22,12 @@ outline decoding (including a Type 2 charstring interpreter with CID-keyed font 
 adaptive curve flattening, and a signed-area scanline fill, with font and glyph metrics that
 track FreeType to within a pixel. WOFF and WOFF2 files work too: KernSmith core decompresses
 them before the backend sees the bytes.
-TrueType variable fonts (Phase 171) render at the requested instance:
-`fvar`/`avar` normalization, `gvar` outline deltas (composites included), `HVAR` advances
-(phantom points when a font has no `HVAR`) and `MVAR` line metrics.
+Variable fonts (Phase 171) render at the requested instance:
+`fvar`/`avar` normalization, `gvar` outline deltas (composites included) for TrueType and
+charstring `blend`/`vsindex` for CFF2, `HVAR` advances (phantom points when a TrueType font has
+no `HVAR`) and `MVAR` line metrics. `avar` version 2 axis mixing is not applied (its version 1
+segment maps are), and blended CFF2 Private DICT hint values are read at their defaults (no
+hinting uses them).
 Synthetic bold and italic (Phase 167) are outline transforms that match the FreeType backend's:
 its embolden strength (`max(0.5px, ppem/24)`, advance grown to match) and its 12° slant. They
 apply to variable instances and to every `COLR` layer as well.
@@ -40,9 +43,6 @@ Not yet supported — each raises a clear error or is ignored, as noted:
 
 - **Hinting** — none, so small sizes are softer than FreeType or GDI output
 - **Outline stroking** (Phase 168) — the backend has none of its own; KernSmith core still draws outlines as a bitmap effect
-- **CFF2 variable instances** (Phase 171 Wave 2) — a CFF2 font renders its default instance
-  whatever axes are set; `avar` version 2 axis mixing is not applied (its version 1 segment
-  maps are)
 - **Color fonts** (Phase 172) — `COLR` version 0 layers with `CPAL` palettes render as RGBA (straight alpha) and `ColorPaletteIndex` selects the palette. `COLR` version 1 glyphs render as plain grayscale coverage, and bitmap-only color fonts (`CBDT`/`sbix`, e.g. Noto Color Emoji) are rejected at `LoadFont` with a `RasterizationException`
 - **System fonts by name** — load font bytes instead
 - **`Light` anti-aliasing** — renders as `Grayscale` until hinting lands (Phase 174); KernSmith core degrades the request before Native sees it
@@ -84,7 +84,7 @@ disagree. Everything is internal; add a feature to its stage rather than to `Nat
 
 | # | Stage | Code | Add a feature by |
 |---|-------|------|------------------|
-| 1 | Decode → `DecodedGlyph` (cubic outline, advance, optional declared bbox; font units) | `Internal/Outlines/IOutlineDecoder.cs`, `TrueTypeOutlineDecoder.cs`, `CffOutlineDecoder.cs` (interpreter in `Internal/Cff/`); variations in `Internal/Variations/` | implementing `IOutlineDecoder` and returning it from `OutlineDecoders.ForFace`. Variation deltas live inside the decoder: both decoders receive the face's `FontVariations` (set by `SetVariationAxes`); `TrueTypeOutlineDecoder` applies `gvar`, and CFF2 `blend` will through `CharstringContext.BlendScalars`. |
+| 1 | Decode → `DecodedGlyph` (cubic outline, advance, optional declared bbox; font units) | `Internal/Outlines/IOutlineDecoder.cs`, `TrueTypeOutlineDecoder.cs`, `CffOutlineDecoder.cs` (interpreter in `Internal/Cff/`); variations in `Internal/Variations/` | implementing `IOutlineDecoder` and returning it from `OutlineDecoders.ForFace`. Variation deltas live inside the decoder: both decoders receive the face's `FontVariations` (set by `SetVariationAxes`); `TrueTypeOutlineDecoder` applies `gvar`; `CffOutlineDecoder` feeds CFF2 `blend` per-`vsindex` region scalars through `CharstringContext.BlendScalars`. |
 | 2 | Transforms, in order, in font units | `Internal/Pipeline/IGlyphTransform.cs`, `GlyphTransforms.cs` | implementing `IGlyphTransform` and adding it in `GlyphTransforms.For` — `BoldTransform` then `ItalicTransform` today (167). `WidthScaleTransform`, `SmallCapsTransform` (before bold) and `StrokeTransform` (last, as a separate layer) exist but are not registered until core options reach them (168). Build results with `WithOutline` / `WithAdvanceWidth`. |
 | 3 | Bounds → pixel grid | `Internal/Raster/GlyphBox.cs`, `Internal/Outlines/OutlineBounds.cs` | nothing: a replaced outline loses its declared bbox and is measured from its tight bounds. |
 | 4 | Scale, then pixel-space hint hook | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs` | filling in `GlyphHinter.Apply` — auto-hinting (174). |

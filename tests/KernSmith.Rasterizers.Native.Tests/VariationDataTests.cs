@@ -166,6 +166,33 @@ public class VariationDataTests
         store.GetDelta(0, 99, scalars).ShouldBe(0f);         // past the subtable's rows
     }
 
+    [Fact]
+    public void ItemVariationStore_SubtableRegionScalars_FollowEachSubtablesRegionIndexes()
+    {
+        // CFF2 style: rowless subtables that only select regions. Regions: R0 (0, 0.5, 1),
+        // R1 (0, 1, 1), R2 (-1, -1, 0); subtable 0 selects [R2, R0], subtable 1 selects [R1].
+        var store = ItemVariationStore.Parse(BuildCff2StyleStore());
+        store.SubtableCount.ShouldBe(2);
+
+        var at075 = store.ComputeRegionScalars([0.75f]);
+        store.SubtableRegionScalars(0, at075).ShouldBe([0f, 0.5f]);
+        store.SubtableRegionScalars(1, at075).ShouldBe([0.75f]);
+
+        var atMinus05 = store.ComputeRegionScalars([-0.5f]);
+        store.SubtableRegionScalars(0, atMinus05).ShouldBe([0.5f, 0f]);
+        store.SubtableRegionScalars(1, atMinus05).ShouldBe([0f]);
+    }
+
+    [Fact]
+    public void ItemVariationStore_SubtableRegionScalars_RejectAMissingSubtable()
+    {
+        var store = ItemVariationStore.Parse(BuildItemVariationStore());
+        var scalars = store.ComputeRegionScalars([1f]);
+
+        Should.Throw<FontFormatException>(() => store.SubtableRegionScalars(2, scalars));   // NULL offset
+        Should.Throw<FontFormatException>(() => store.SubtableRegionScalars(3, scalars));   // past the array
+    }
+
     // ------------------------------------------------------------ delta-set index maps
 
     [Fact]
@@ -313,6 +340,28 @@ public class VariationDataTests
     }
 
     private static byte[] Pad2(byte[] data) => data.Length % 2 == 0 ? data : [.. data, 0];
+
+    /// <summary>
+    /// One-axis store as CFF2 uses it: three regions — R0 (0, 0.5, 1), R1 (0, 1, 1),
+    /// R2 (-1, -1, 0) — and two subtables with no rows, selecting [R2, R0] and [R1].
+    /// </summary>
+    internal static byte[] BuildCff2StyleStore()
+    {
+        const int HeaderLength = 2 + 4 + 2 + (2 * 4);
+        byte[] regions = Be.Concat(
+            Be.U16(1), Be.U16(3),
+            Be.F2Dot14(0), Be.F2Dot14(0.5), Be.F2Dot14(1),
+            Be.F2Dot14(0), Be.F2Dot14(1), Be.F2Dot14(1),
+            Be.F2Dot14(-1), Be.F2Dot14(-1), Be.F2Dot14(0));
+        byte[] data0 = Be.Concat(Be.U16(0), Be.U16(0), Be.U16(2), Be.U16(2), Be.U16(0));
+        byte[] data1 = Be.Concat(Be.U16(0), Be.U16(0), Be.U16(1), Be.U16(1));
+
+        int data0Offset = HeaderLength + regions.Length;
+        return Be.Concat(
+            Be.U16(1), Be.U32(HeaderLength), Be.U16(2),
+            Be.U32((uint)data0Offset), Be.U32((uint)(data0Offset + data0.Length)),
+            regions, data0, data1);
+    }
 
     /// <summary>
     /// One-axis store, two regions — R0 (0, 1, 1) and R1 (-1, -1, 0) — and three subtables:

@@ -307,7 +307,7 @@ public class NativeVariableFontTests
     /// The extent of a glyph's visible ink relative to the pen and baseline (Y up), ignoring
     /// anti-aliasing dust under an eighth coverage; null for a glyph with none.
     /// </summary>
-    private static (int Left, int Top, int Right, int Bottom)? InkBounds(RasterizedGlyph glyph)
+    internal static (int Left, int Top, int Right, int Bottom)? InkBounds(RasterizedGlyph glyph)
     {
         int minX = int.MaxValue, minY = int.MaxValue, maxX = int.MinValue, maxY = int.MinValue;
         for (int y = 0; y < glyph.Height; y++)
@@ -331,10 +331,10 @@ public class NativeVariableFontTests
             glyph.Metrics.BearingX + maxX + 1, glyph.Metrics.BearingY - maxY - 1);
     }
 
-    private static IReadOnlyList<VariationAxis> FvarAxes(byte[] bytes) =>
+    internal static IReadOnlyList<VariationAxis> FvarAxes(byte[] bytes) =>
         BmFont.ReadFontInfo(bytes).VariationAxes ?? throw new InvalidOperationException("not a variable font");
 
-    private static Dictionary<string, float> Axes(string instance) =>
+    internal static Dictionary<string, float> Axes(string instance) =>
         instance.Split(',').Select(p => p.Split('=')).ToDictionary(
             p => p[0], p => float.Parse(p[1], CultureInfo.InvariantCulture));
 
@@ -342,7 +342,7 @@ public class NativeVariableFontTests
     /// SSIM of two glyph bitmaps placed on a shared canvas by their bearings, so a one-pixel
     /// box difference is compared as the offset it is rather than as a mismatch everywhere.
     /// </summary>
-    private static double Ssim(RasterizedGlyph a, RasterizedGlyph b)
+    internal static double Ssim(RasterizedGlyph a, RasterizedGlyph b)
     {
         int left = Math.Min(a.Metrics.BearingX, b.Metrics.BearingX);
         int top = Math.Max(a.Metrics.BearingY, b.Metrics.BearingY);

@@ -1,3 +1,5 @@
+using KernSmith.Rasterizers.Native.Internal.Variations;
+
 namespace KernSmith.Rasterizers.Native.Internal.Cff;
 
 /// <summary>
@@ -21,6 +23,7 @@ internal sealed class CffFont
     private readonly ushort[]? _fdSelect;
     private readonly ReadOnlyMemory<byte> _table;
     private readonly int _charsetOffset;
+    private readonly int? _variationStoreOffset;
     private ushort[]? _charset;
 
     private CffFont(
@@ -32,7 +35,8 @@ internal sealed class CffFont
         int[] regionCounts,
         ReadOnlyMemory<byte> table,
         int charsetOffset,
-        bool isCidKeyed)
+        bool isCidKeyed,
+        int? variationStoreOffset = null)
     {
         IsCff2 = isCff2;
         CharStrings = charStrings;
@@ -43,6 +47,7 @@ internal sealed class CffFont
         _table = table;
         _charsetOffset = charsetOffset;
         IsCidKeyed = isCidKeyed;
+        _variationStoreOffset = variationStoreOffset;
     }
 
     /// <summary>True for a <c>CFF2</c> table.</summary>
@@ -62,6 +67,9 @@ internal sealed class CffFont
     /// — how many deltas each <c>blend</c> operand carries. Empty when there is no variation store.
     /// </summary>
     public IReadOnlyList<int> RegionCounts { get; }
+
+    /// <summary>True for a CFF2 table with a VariationStore — one whose charstrings may <c>blend</c>.</summary>
+    public bool HasVariationStore => _variationStoreOffset is not null;
 
     /// <summary>Number of Font DICTs (1 for a name-keyed CFF).</summary>
     public int FontDictCount => _privates.Length;
@@ -164,9 +172,8 @@ internal sealed class CffFont
         var globalSubrs = CffIndex.Parse(table, headerSize + topDictSize, cff2: true, out _);
         var charStrings = CffIndex.Parse(table, RequireOffset(top, CffDict.CharStrings, "CharStrings"), cff2: true, out _);
 
-        int[] regionCounts = top.GetInt(CffDict.VariationStore) is int vstore
-            ? ParseRegionCounts(table, vstore)
-            : [];
+        int? vstore = top.GetInt(CffDict.VariationStore);
+        int[] regionCounts = vstore is int storeOffset ? ParseRegionCounts(table, storeOffset) : [];
         Func<int, int>? regionCount = regionCounts.Length == 0 ? null : vsIndex => RegionCount(regionCounts, vsIndex);
 
         var fdArray = CffIndex.Parse(table, RequireOffset(top, CffDict.FdArray, "FDArray"), cff2: true, out _);
@@ -178,7 +185,43 @@ internal sealed class CffFont
 
         return new CffFont(
             isCff2: true, charStrings, globalSubrs, privates, fdSelect, regionCounts,
-            table, charsetOffset: 0, isCidKeyed: false);
+            table, charsetOffset: 0, isCidKeyed: false, vstore);
+    }
+
+    /// <summary>
+    /// Parses the CFF2 VariationStore — a uint16 length, then an ItemVariationStore of that
+    /// length — in full. Only a variable instance needs its regions, so this is not done at load:
+    /// a damaged store leaves the default instance renderable.
+    /// </summary>
+    /// <returns>The store, or null when the table has none.</returns>
+    /// <exception cref="FontFormatException">If the store is malformed or disagrees with the region counts read at load.</exception>
+    public ItemVariationStore? ReadVariationStore()
+    {
+        if (_variationStoreOffset is not int offset)
+            return null;
+
+        var span = _table.Span;
+        if ((long)offset + 2 > span.Length)
+            throw new FontFormatException("CFF2", offset, "the VariationStore is outside the table.");
+
+        int length = (span[offset] << 8) | span[offset + 1];
+        if ((long)offset + 2 + length > span.Length)
+            throw new FontFormatException("CFF2", offset, "the VariationStore runs past the end of the table.");
+
+        ItemVariationStore store;
+        try
+        {
+            store = ItemVariationStore.Parse(span.Slice(offset + 2, length));
+        }
+        catch (OverflowException ex)
+        {
+            throw new FontFormatException("CFF2", offset, $"the VariationStore is malformed: {ex.Message}");
+        }
+
+        if (store.SubtableCount != RegionCounts.Count)
+            throw new FontFormatException("CFF2", offset, "the VariationStore's ItemVariationData count changed.");
+
+        return store;
     }
 
     /// <summary>The region count for <paramref name="vsIndex"/>.</summary>

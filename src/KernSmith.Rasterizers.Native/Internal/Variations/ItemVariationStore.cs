@@ -3,7 +3,7 @@ namespace KernSmith.Rasterizers.Native.Internal.Variations;
 /// <summary>
 /// An item variation store (OpenType Font Variations Common Table Formats): a region list and
 /// subtables of delta-set rows, addressed by an (outer, inner) delta-set index. Shared by
-/// <c>HVAR</c> and <c>MVAR</c>, and later CFF2.
+/// <c>HVAR</c>, <c>MVAR</c> and the CFF2 VariationStore.
 /// </summary>
 /// <remarks>
 /// Region scalars depend only on the instance, so callers compute them once per instance with
@@ -80,6 +80,24 @@ internal sealed class ItemVariationStore
         return scalars;
     }
 
+    /// <summary>The number of ItemVariationData subtables, NULL offsets included.</summary>
+    public int SubtableCount => _subtables.Length;
+
+    /// <summary>
+    /// The scalars of the regions one ItemVariationData subtable selects, in its
+    /// <c>regionIndexes</c> order — the order CFF2 <c>blend</c> lists its deltas in.
+    /// </summary>
+    /// <param name="outer">The subtable (a CFF2 <c>vsindex</c>).</param>
+    /// <param name="regionScalars">Every region's scalar, from <see cref="ComputeRegionScalars"/>.</param>
+    /// <exception cref="FontFormatException">If there is no such subtable.</exception>
+    public float[] SubtableRegionScalars(int outer, ReadOnlySpan<float> regionScalars)
+    {
+        if ((uint)outer >= (uint)_subtables.Length || _subtables[outer] is not { } subtable)
+            throw new FontFormatException($"ItemVariationStore has no ItemVariationData {outer}.");
+
+        return subtable.RegionScalars(regionScalars);
+    }
+
     /// <summary>
     /// The net adjustment for one delta set at the instance <paramref name="regionScalars"/>
     /// describes. Missing data — the no-variation index, a NULL or absent subtable, a row past
@@ -152,6 +170,18 @@ internal sealed class ItemVariationStore
             }
 
             return new ItemVariationData(itemCount, regionIndexes, deltas);
+        }
+
+        public float[] RegionScalars(ReadOnlySpan<float> regionScalars)
+        {
+            var selected = new float[_regionIndexes.Length];
+            for (int column = 0; column < selected.Length; column++)
+            {
+                int region = _regionIndexes[column];
+                selected[column] = region < regionScalars.Length ? regionScalars[region] : 0f;
+            }
+
+            return selected;
         }
 
         public float GetDelta(int item, ReadOnlySpan<float> regionScalars)
