@@ -158,5 +158,21 @@ Invariants:
   the decoder's `GlyfScratch` (per instance — instances are single-threaded); the extractor and
   flattener rent from `ArrayPool<T>.Shared`, because renderers are shared singletons.
 
+## Golden masters (contributors)
+
+`NativeGoldenMasterTests` and its sibling classes pin Native's exact output — every fixture
+font across sizes, anti-alias modes, distance fields, styles, variation instances and color, and
+`BmFont.Generate` output — against `tests/KernSmith.Rasterizers.Native.Tests/Goldens/`. Any
+changed byte fails, naming the changed glyphs and writing actual (and, for reference cases,
+expected and diff) images under `GoldenFailures/` in the test output folder. After a deliberate
+output change, regenerate and review the diff:
+
+```
+KERNSMITH_UPDATE_GOLDENS=1 dotnet test --project tests/KernSmith.Rasterizers.Native.Tests -- --filter-class "*NativeGolden*"
+```
+
+`NativeSimilarityMatrixTests` scores Native against FreeType and stb_truetype; its measured table
+is in `plan/phase-179-validation-golden-masters.md`.
+
 See the [KernSmith repository](https://github.com/kaltinril/Kernsmith) for full project
 documentation.
