@@ -207,6 +207,7 @@ internal sealed class GenerateCommand
             Outline = options.Outline,
             OutlineShape = options.OutlineShape ?? KernSmith.OutlineShape.Round,
             Sdf = options.Sdf,
+            SdfMode = options.SdfMode,
             PowerOfTwo = options.PowerOfTwo ?? true,
             Dpi = options.Dpi,
             FaceIndex = options.FaceIndex,
@@ -467,6 +468,16 @@ internal sealed class GenerateCommand
                     break;
                 case "--sdf":
                     options.Sdf = true;
+                    break;
+                case "--sdf-mode":
+                    options.SdfMode = NextArg(args, ref i, "--sdf-mode").ToLowerInvariant() switch
+                    {
+                        "none" => SdfMode.None,
+                        "sdf" => SdfMode.Sdf,
+                        "msdf" => SdfMode.Msdf,
+                        "mtsdf" => SdfMode.Mtsdf,
+                        var m => throw new ArgumentException($"Unknown --sdf-mode: {m}. Use none, sdf, msdf or mtsdf.")
+                    };
                     break;
                 case "--mono":
                     options.AntiAlias = AntiAliasMode.None;
@@ -733,6 +744,7 @@ internal sealed class GenerateCommand
         if (cli.ForceSyntheticBold) config.ForceSyntheticBold = true;
         if (cli.ForceSyntheticItalic) config.ForceSyntheticItalic = true;
         if (cli.Sdf) config.Sdf = true;
+        if (cli.SdfMode != SdfMode.None) config.SdfMode = cli.SdfMode;
         if (cli.DryRun) config.DryRun = true;
         if (cli.Verbose) config.Verbose = true;
         if (cli.Quiet) config.Quiet = true;
@@ -839,7 +851,8 @@ internal sealed class GenerateCommand
         else if (options.Bold) effects.Add("bold");
         if (options.ForceSyntheticItalic) effects.Add("synthetic-italic");
         else if (options.Italic) effects.Add("italic");
-        if (options.Sdf) effects.Add("SDF");
+        if (options.SdfMode is SdfMode.Msdf or SdfMode.Mtsdf) effects.Add(options.SdfMode.ToString().ToUpperInvariant());
+        else if (options.Sdf || options.SdfMode == SdfMode.Sdf) effects.Add("SDF");
         if (options.Outline > 0)
             effects.Add(options.OutlineShape is { } shape && shape != OutlineShape.Round
                 ? $"outline {options.Outline}px ({shape.ToString().ToLowerInvariant()})"
@@ -936,6 +949,7 @@ internal sealed class GenerateCommand
               --aa <none|grayscale|light|lcd>  Anti-aliasing mode (default: grayscale)
               --sdf                       Enable Signed Distance Field rendering
               --sdf-spread <n>            SDF search radius (spread) in pixels (default: 8)
+              --sdf-mode <mode>           Distance field: none, sdf, msdf, mtsdf (msdf/mtsdf need --rasterizer native)
               --mono                      Disable anti-aliasing (alias for --aa none)
               --super-sample <n>          Super sampling level 1-4 (default: 1)
               --rasterizer <backend>      Rasterizer backend: freetype (default), stbtruetype, gdi, directwrite, native

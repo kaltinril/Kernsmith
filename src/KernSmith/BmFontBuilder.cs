@@ -197,6 +197,11 @@ public sealed class BmFontBuilder
     /// <returns>This builder.</returns>
     public BmFontBuilder WithSdf(bool sdf = true) { _options.Sdf = sdf; return this; }
 
+    /// <summary>Selects the distance field to generate; see <see cref="FontGeneratorOptions.SdfMode"/>.</summary>
+    /// <param name="mode">The distance-field mode.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithSdfMode(SdfMode mode) { _options.SdfMode = mode; return this; }
+
     /// <summary>If true, rounds texture dimensions up to powers of two.</summary>
     /// <param name="powerOfTwo">Enable power-of-two sizing.</param>
     /// <returns>This builder.</returns>
@@ -462,6 +467,9 @@ public sealed class BmFontBuilder
         _options.OutlineB = source.OutlineB;
         _options.OutlineShape = source.OutlineShape;
         _options.Sdf = source.Sdf;
+        _options.SdfSpread = source.SdfSpread;
+        _options.SdfScale = source.SdfScale;
+        _options.SdfMode = source.SdfMode;
         _options.PowerOfTwo = source.PowerOfTwo;
         _options.Dpi = source.Dpi;
         _options.FaceIndex = source.FaceIndex;

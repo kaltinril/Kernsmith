@@ -184,6 +184,7 @@ public sealed record RasterOptions
     public bool Bold { get; init; }                      // synthetic bold
     public bool Italic { get; init; }                    // synthetic italic/oblique
     public bool Sdf { get; init; }                       // SDF rendering mode
+    public SdfMode SdfMode { get; init; }                // None/Sdf/Msdf/Mtsdf; EffectiveSdfMode resolves it against Sdf
     public bool ColorFont { get; init; }                 // render color glyphs
     public int ColorPaletteIndex { get; init; }          // CPAL palette index for color fonts
     public Dictionary<string, float>? VariationAxes { get; init; } // variable font axis overrides
@@ -202,6 +203,20 @@ public enum PixelFormat
     Rgba32 = 1       // 4 bytes per pixel, used for color fonts or composed atlas pages
 }
 ```
+
+### SdfMode
+
+```csharp
+public enum SdfMode
+{
+    None,   // no distance field unless the legacy bool Sdf is set
+    Sdf,    // single-channel, Grayscale8
+    Msdf,   // multi-channel: RGB distances (median = shape), A = 255, Rgba32
+    Mtsdf   // Msdf plus the single-channel distance in A, Rgba32
+}
+```
+
+> **Note:** `Msdf`/`Mtsdf` need `IRasterizerCapabilities.SupportsMsdf` (default-interface member, false).
 
 ## Texture Packing Layer Types
 

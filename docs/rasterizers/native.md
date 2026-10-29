@@ -39,6 +39,8 @@ kernsmith generate --font Roboto-Regular.ttf --size 32 --rasterizer native --out
 - Super sampling (applied by the core pipeline)
 - Color fonts with `COLR` version 0 layers and `CPAL` palettes (`ColorFont`, `ColorPaletteIndex`); glyphs come out as straight-alpha RGBA
 - Synthetic bold and italic (`Bold` / `Italic`), applied to the outline before rasterizing and matched to the FreeType backend: the same emboldening strength (growing the advance to match) and the same 12° slant. They apply to every `COLR` layer and to variable-font instances too. Caller-supplied `BoldPostProcessor` / `ItalicPostProcessor` are skipped when the matching flag is set, as on every other backend
+- Signed distance fields (`Sdf`), computed from the outline itself. `SdfSpread` and `SdfScale` are honored, and the output uses FreeType's encoding and padding (inside bright, 128 on the edge, the glyph box padded by the spread)
+- Multi-channel distance fields (`SdfMode.Msdf` / `SdfMode.Mtsdf`) -- the only backend that reports `SupportsMsdf`. RGB hold three distances whose median keeps corners sharp; MTSDF adds the single-channel field in alpha
 - Font and glyph metrics that track FreeType to within a pixel
 
 ## Limitations
@@ -47,7 +49,6 @@ Each item below either raises a clear error or is ignored, as noted:
 
 - **CFF/OTF (PostScript) outlines** -- rejected at load time with a `RasterizationException`. This is the one that bites: a `.otf` file will not render at all.
 - **Hinting** -- none, so small sizes are softer than FreeType or GDI output
-- **SDF rendering** -- rejected with `NotSupportedException`
 - **Outline stroke** -- the backend has no stroke of its own; outlines (`Outline` / `outlineThickness`) still work because KernSmith core draws them as a bitmap effect for every backend
 - **CFF2 variable fonts** -- rejected along with all CFF outlines. TrueType variable fonts work: `VariationAxes` (or `variationAxes` in a `.bmfc`) selects the instance, and outlines, advances and line metrics follow it. A font whose `avar` table is version 2 gets only its version 1 axis mappings
 - **Color fonts beyond `COLR` version 0** -- `COLR` version 1 glyphs (gradients, transforms) render as plain grayscale coverage, the same as with `ColorFont` off. Bitmap-only color fonts (`CBDT`/`sbix`, such as Noto Color Emoji) are rejected at load time with a `RasterizationException`; use [FreeType](freetype.md) for those
@@ -56,4 +57,4 @@ Each item below either raises a clear error or is ignored, as noted:
 
 ## When to Use
 
-Use Native when you are building KernSmith from source and want plain TrueType text rendered with no third-party dependencies whatsoever -- for example to audit the whole rasterization path, or to avoid pulling in a vendored C library. For shipping managed-only builds today, use [StbTrueType](stbtruetype.md): it is published, AOT-tested, and adds SDF.
+Use Native when you are building KernSmith from source and want plain TrueType text rendered with no third-party dependencies whatsoever -- for example to audit the whole rasterization path, or to avoid pulling in a vendored C library. For shipping managed-only builds today, use [StbTrueType](stbtruetype.md): it is published and AOT-tested.

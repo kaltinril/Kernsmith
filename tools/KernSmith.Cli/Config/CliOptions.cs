@@ -15,6 +15,7 @@ internal sealed class CliOptions
     public int Dpi { get; set; } = 72;
     public AntiAliasMode AntiAlias { get; set; } = AntiAliasMode.Grayscale;
     public bool Sdf { get; set; }
+    public SdfMode SdfMode { get; set; }
     public bool Bold { get; set; }
     public bool Italic { get; set; }
     public bool ForceSyntheticBold { get; set; }

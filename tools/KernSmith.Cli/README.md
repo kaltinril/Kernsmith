@@ -62,6 +62,7 @@ kernsmith generate -f <font> -s <size> [options]
 | `--mono` | Disable anti-aliasing (alias for `--aa none`) |
 | `--sdf` | Enable Signed Distance Field rendering |
 | `--sdf-spread <n>` | SDF search radius (spread) in pixels (default: 8) |
+| `--sdf-mode <mode>` | Distance field: `none`, `sdf`, `msdf` or `mtsdf`. `msdf`/`mtsdf` write RGBA multi-channel fields and need `--rasterizer native` |
 | `--super-sample <n>` | Super sampling level 1-4 (default: 1) |
 | `--gamma <n>` | Gamma correction applied during rasterization (FreeType, default: 1.8) |
 | `--hinting / --no-hinting` | Enable/disable FreeType hinting (default: on) |
@@ -373,7 +374,7 @@ kernsmith generate -f font.ttf -s 32 --rasterizer native
 kernsmith generate -f font.ttf -s 32
 ```
 
-The `native` backend is experimental and ships with the CLI only (there is no NuGet package yet). It renders **TrueType (`glyf`) outlines only** -- a CFF/OTF font is rejected with an error -- and does not support hinting, SDF, outline stroke, synthetic bold/italic, color fonts, system fonts, or `--aa light` / `--aa lcd`. TrueType variable fonts work (`--axis`/`variationAxes`).
+The `native` backend is experimental and ships with the CLI only (there is no NuGet package yet). It renders **TrueType (`glyf`) outlines only** -- a CFF/OTF font is rejected with an error -- and does not support hinting, outline stroke, synthetic bold/italic, color fonts, system fonts, or `--aa light` / `--aa lcd`. TrueType variable fonts work (`--axis`/`variationAxes`).
 
 ---
 
@@ -714,6 +715,12 @@ kernsmith generate -f font.ttf -s 32 --sdf --sdf-spread 12 --padding 8
 ```
 
 SDF fonts typically need extra padding to store the distance field. A padding of 4-8 pixels is recommended. Use `--sdf-spread` to control the distance-field search radius in pixels (default 8); larger values capture distance information further from the glyph edge.
+
+Multi-channel fields (`--sdf-mode msdf`, or `mtsdf` to add the single-channel distance in alpha) keep corners sharp when magnified: sample the RGB channels and take their median in the shader. They write an RGBA atlas and currently need the experimental Native backend:
+
+```
+kernsmith generate -f font.ttf -s 48 --sdf-mode msdf --sdf-spread 6 --rasterizer native
+```
 
 ### Variable Fonts
 

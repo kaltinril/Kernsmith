@@ -20,9 +20,16 @@ internal static class GlyphRenderers
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        // Signed distance field (Phases 169/170).
-        if (options.Sdf)
-            throw new NotSupportedException("Native rasterizer does not support SDF rendering.");
+        // Distance fields: single-channel (Phase 169), multi-channel (Phase 170).
+        switch (options.EffectiveSdfMode)
+        {
+            case SdfMode.Sdf:
+                return SdfRenderer.Instance;
+            case SdfMode.Msdf:
+                return MsdfRenderer.Msdf;
+            case SdfMode.Mtsdf:
+                return MsdfRenderer.Mtsdf;
+        }
 
         // LCD subpixel (Phase 173) branches on options.AntiAlias here; until then every
         // anti-alias mode is coverage.
@@ -38,12 +45,22 @@ internal static class GlyphRenderers
     /// <param name="options">The request.</param>
     /// <param name="colorGlyphs">The face's color glyphs, or null when it has none.</param>
     /// <param name="pipeline">The face's pipeline, which color layers are prepared through.</param>
-    /// <exception cref="NotSupportedException">If no renderer handles the requested mode.</exception>
+    /// <remarks>
+    /// With single-channel SDF, color glyphs still render as color layers and only glyphs
+    /// without layers become distance fields — FreeType's behavior. Multi-channel fields are
+    /// rejected instead: color layers in an MSDF atlas would read as distances.
+    /// </remarks>
+    /// <exception cref="NotSupportedException">If no renderer handles the requested mode, or
+    /// MSDF/MTSDF is requested together with color on a face that has color glyphs.</exception>
     public static IGlyphRenderer SelectForFace(RasterOptions options, ColorGlyphs? colorGlyphs, GlyphPipeline pipeline)
     {
         var renderer = Select(options);
-        return options.ColorFont && colorGlyphs is not null
-            ? new ColorLayerRenderer(colorGlyphs, pipeline, renderer)
-            : renderer;
+        if (!options.ColorFont || colorGlyphs is null)
+            return renderer;
+
+        if (options.EffectiveSdfMode is SdfMode.Msdf or SdfMode.Mtsdf)
+            throw new NotSupportedException("Native rasterizer cannot combine color glyphs with MSDF/MTSDF rendering.");
+
+        return new ColorLayerRenderer(colorGlyphs, pipeline, renderer);
     }
 }

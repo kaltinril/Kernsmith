@@ -11,7 +11,8 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// Synthetic bold and italic (Phase 167) combined with the other outline-level features: every
 /// <c>COLR</c> layer of a color glyph (Phase 172) is styled, core leaves Native's RGBA output to
 /// it instead of running the bitmap fallbacks, and a variable-font instance (Phase 171) is styled
-/// after its variation is applied.
+/// after its variation is applied. Distance fields (Phases 169-170) are built from the styled
+/// outline.
 /// </summary>
 public class NativeStyledColorAndVariationTests
 {
@@ -115,7 +116,66 @@ public class NativeStyledColorAndVariationTests
         failures.ToString().ShouldBeEmpty($"RobotoFlex wght=700 bold={bold} italic={italic}");
     }
 
+    // ---- Distance fields -------------------------------------------------------------------
+
+    [Theory]
+    [InlineData('H')]
+    [InlineData('O')]
+    [InlineData('g')]
+    [InlineData('m')]
+    public void BoldSdf_FieldIsBuiltFromTheEmboldenedOutline(char character)
+    {
+        // SDF (Phase 169) measures the outline the transforms produced: an emboldened glyph's
+        // field covers a wider box and its inside (>= 128) region grows, and metrics still
+        // describe exactly the bitmap rendered.
+        using var native = Load(TestFonts.RobotoRegularBytes());
+        var plainOptions = new RasterOptions { Size = 32, Dpi = 72, Sdf = true, SdfSpread = 8 };
+        var boldOptions = plainOptions with { Bold = true };
+
+        var plain = native.RasterizeGlyph(character, plainOptions)!;
+        var bold = native.RasterizeGlyph(character, boldOptions)!;
+
+        bold.Format.ShouldBe(PixelFormat.Grayscale8);
+        bold.Width.ShouldBeGreaterThan(plain.Width, "the distance field ignored synthetic bold");
+        InsideCount(bold, step: 1).ShouldBeGreaterThan(InsideCount(plain, step: 1));
+        bold.Metrics.Advance.ShouldBeGreaterThan(plain.Metrics.Advance);
+        native.GetGlyphMetrics(character, boldOptions).ShouldBe(bold.Metrics);
+    }
+
+    [Theory]
+    [InlineData(SdfMode.Msdf)]
+    [InlineData(SdfMode.Mtsdf)]
+    public void ItalicMsdf_FieldIsBuiltFromTheShearedOutline(SdfMode mode)
+    {
+        // A 12° shear widens a 32px cap's box by several pixels while the advance stays.
+        using var native = Load(TestFonts.RobotoRegularBytes());
+        var plainOptions = new RasterOptions { Size = 32, Dpi = 72, SdfMode = mode, SdfSpread = 8 };
+        var italicOptions = plainOptions with { Italic = true };
+
+        var plain = native.RasterizeGlyph('H', plainOptions)!;
+        var italic = native.RasterizeGlyph('H', italicOptions)!;
+
+        italic.Format.ShouldBe(PixelFormat.Rgba32);
+        italic.Width.ShouldBeGreaterThanOrEqualTo(plain.Width + 4, "the multi-channel field ignored synthetic italic");
+        italic.Metrics.Advance.ShouldBe(plain.Metrics.Advance);
+        InsideCount(italic, step: 4).ShouldBeGreaterThan(0);
+        native.GetGlyphMetrics('H', italicOptions).ShouldBe(italic.Metrics);
+    }
+
     // ---- Helpers ---------------------------------------------------------------------------
+
+    /// <summary>Texels whose (first-channel) distance encodes inside the outline.</summary>
+    private static int InsideCount(RasterizedGlyph glyph, int step)
+    {
+        int count = 0;
+        for (int i = 0; i < glyph.BitmapData.Length; i += step)
+        {
+            if (glyph.BitmapData[i] >= 128)
+                count++;
+        }
+
+        return count;
+    }
 
     private static RasterOptions ColorOptions(bool bold, bool italic) =>
         new() { Size = 48, Dpi = 72, ColorFont = true, Bold = bold, Italic = italic };

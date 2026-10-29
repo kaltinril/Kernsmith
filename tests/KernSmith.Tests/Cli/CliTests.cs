@@ -281,6 +281,45 @@ public class CliTests : IDisposable
         bytes[3].ShouldBe((byte)3);
     }
 
+    // -- Distance-field mode --
+
+    [Theory]
+    [InlineData("msdf", "alphaChnl=4")]
+    [InlineData("mtsdf", "alphaChnl=0")]
+    public void Generate_SdfModeOnNative_WritesTheMultiChannelFont(string mode, string alphaChannel)
+    {
+        var outputBase = Path.Combine(_tempDir, mode);
+
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "32", "--chars", "AB", "-o", outputBase,
+            "--rasterizer", "native", "--sdf-mode", mode);
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        var fnt = File.ReadAllText(outputBase + ".fnt");
+        fnt.ShouldContain(alphaChannel, Case.Sensitive);
+        fnt.ShouldContain($"sdfMode={mode}", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_SdfModeMsdf_OnABackendWithoutMsdf_Fails()
+    {
+        var (exitCode, stdout, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "32", "--chars", "AB", "-o", Path.Combine(_tempDir, "ft"),
+            "--sdf-mode", "msdf");
+
+        exitCode.ShouldNotBe(0);
+        (stdout + stderr).ShouldContain("MSDF", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_UnknownSdfMode_IsRejected()
+    {
+        var (exitCode, _, stderr) = RunCli("generate", "-f", FontPath, "-s", "32", "--sdf-mode", "bogus");
+
+        exitCode.ShouldNotBe(0);
+        stderr.ShouldContain("--sdf-mode", Case.Sensitive);
+    }
+
     // -- Size option --
 
     [Fact]

@@ -332,6 +332,11 @@ public static class BmfcConfigReader
                     case "useSdf":
                         options.Sdf = value == "1";
                         break;
+                    case "sdfMode":
+                        options.SdfMode = Enum.TryParse<SdfMode>(value, ignoreCase: true, out var sdfMode) && Enum.IsDefined(sdfMode)
+                            ? sdfMode
+                            : SdfMode.None;
+                        break;
                     // Retained for configs written before `aa` carried the supersample factor.
                     case "superSample":
                         options.SuperSampleLevel = int.Parse(value, CultureInfo.InvariantCulture);

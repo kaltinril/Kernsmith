@@ -33,7 +33,7 @@ RasterizerBackend enum:
   Native        — Cross-platform, pure C#, no external dependencies (experimental, unpublished)
 ```
 
-> **Native backend status**: The Native backend renders as of Phase 165 — SFNT/table parsing (161), `glyf`/`loca` parsing (162), outline extraction and flattening (163), and the signed-area scanline fill (164) have all landed, and it is registered via `[ModuleInitializer]` and wired into the pipeline (165). It renders **TrueType (`glyf`) outlines only**: a CFF/OTF face is rejected at `LoadFont` with a `RasterizationException` (CFF is Phase 166). TrueType variable fonts render at the requested instance (Phase 171: `avar`, `gvar`, `HVAR`, `MVAR`), `COLR` version 0 color glyphs render from `CPAL` palettes (Phase 172), and synthetic bold/italic work (Phase 167, matched to FreeType's). Hinting, SDF, outline stroke and `COLR` version 1 are still unimplemented. The project remains `IsPackable=false` and unpublished, so `RasterizerBackend.Native` resolves only from a source build or the KernSmith CLI (which project-references it) — never from an app built on the released NuGet packages.
+> **Native backend status**: The Native backend renders as of Phase 165 — SFNT/table parsing (161), `glyf`/`loca` parsing (162), outline extraction and flattening (163), and the signed-area scanline fill (164) have all landed, and it is registered via `[ModuleInitializer]` and wired into the pipeline (165). It renders **TrueType (`glyf`) outlines only**: a CFF/OTF face is rejected at `LoadFont` with a `RasterizationException` (CFF is Phase 166). TrueType variable fonts render at the requested instance (Phase 171: `avar`, `gvar`, `HVAR`, `MVAR`), `COLR` version 0 color glyphs render from `CPAL` palettes (Phase 172), synthetic bold/italic work (Phase 167, matched to FreeType's), and SDF and multi-channel MSDF/MTSDF are rendered from the outline (Phases 169-170). Hinting, outline stroke and `COLR` version 1 are still unimplemented. The project remains `IsPackable=false` and unpublished, so `RasterizerBackend.Native` resolves only from a source build or the KernSmith CLI (which project-references it) — never from an app built on the released NuGet packages.
 
 ---
 
@@ -167,7 +167,7 @@ RasterizerBackend enum:
 
 **Status**: Experimental, but functional as of Phase 165. Font loading, table parsing, outline extraction, adaptive curve flattening and a signed-area scanline fill all work, and font/glyph metrics track FreeType to within a pixel. It renders TrueType (`glyf`) outlines only — a CFF/OTF face is rejected at `LoadFont` with a `RasterizationException` (Phase 166). Reachable from a source build or the KernSmith CLI (`--rasterizer native`); not from the released NuGet packages.
 
-**When to use**: A fully-owned, dependency-free fallback for the most constrained environments (Blazor WASM, Native AOT, trimmed/single-file apps) where no third-party or vendored rasterizer code is wanted — Native contains no `unsafe` code, interop or third-party code. For those scenarios today, use StbTrueType — it is published, and it adds SDF.
+**When to use**: A fully-owned, dependency-free fallback for the most constrained environments (Blazor WASM, Native AOT, trimmed/single-file apps) where no third-party or vendored rasterizer code is wanted — Native contains no `unsafe` code, interop or third-party code. For those scenarios today, use StbTrueType — it is published and AOT-tested.
 
 **Strengths**:
 
@@ -181,7 +181,7 @@ RasterizerBackend enum:
 - TrueType (`glyf`) outlines only — CFF/CFF2 (`.otf`) faces are rejected at load (Phase 166). WOFF and WOFF2 are decompressed by KernSmith core before rasterization, so both are accepted.
 - No hinting, so small sizes are softer than FreeType or GDI output.
 - Color fonts: `COLR` version 0 + `CPAL` only; `COLR` version 1 glyphs render as plain coverage and bitmap-only color fonts (`CBDT`/`sbix`) are rejected at load.
-- No SDF (rejected by core) or backend outline stroke (core's bitmap outline effect still applies).
+- No backend outline stroke (core's bitmap outline effect still applies). SDF and MSDF/MTSDF are computed from the outline; with `ColorFont`, COLR glyphs stay color under SDF and MSDF is rejected.
 - Variable fonts: TrueType only (`gvar` outlines, `HVAR` or phantom-point advances, `MVAR` `hcla`/`hcld` line metrics); `avar` version 2 axis mixing is not applied.
 - Cannot load system-installed fonts by family name (`LoadSystemFont` throws `NotSupportedException`).
 - Anti-alias modes declared are None and Grayscale only; core does not negotiate modes, so a `Light` or `LCD` request reaches Native and renders as Grayscale.

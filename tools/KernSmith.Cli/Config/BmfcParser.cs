@@ -45,6 +45,7 @@ internal static class BmfcParser
             Dpi = gen.Dpi,
             AntiAlias = gen.AntiAlias,
             Sdf = gen.Sdf,
+            SdfMode = gen.SdfMode,
             Bold = gen.Bold,
             Italic = gen.Italic,
 

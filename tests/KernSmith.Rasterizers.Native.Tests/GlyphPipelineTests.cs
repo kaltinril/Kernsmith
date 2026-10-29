@@ -166,10 +166,11 @@ public class GlyphPipelineTests
     }
 
     [Fact]
-    public void Dispatch_RejectsSdf_WithTheExistingMessage()
+    public void Dispatch_SelectsTheDistanceFieldRenderer_ForEachSdfMode()
     {
-        Should.Throw<NotSupportedException>(() => GlyphRenderers.Select(new RasterOptions { Size = 32, Sdf = true }))
-            .Message.ShouldBe("Native rasterizer does not support SDF rendering.");
+        GlyphRenderers.Select(new RasterOptions { Size = 32, Sdf = true }).ShouldBeOfType<SdfRenderer>();
+        GlyphRenderers.Select(new RasterOptions { Size = 32, SdfMode = SdfMode.Msdf }).ShouldBeSameAs(MsdfRenderer.Msdf);
+        GlyphRenderers.Select(new RasterOptions { Size = 32, SdfMode = SdfMode.Mtsdf }).ShouldBeSameAs(MsdfRenderer.Mtsdf);
     }
 
     [Fact]
@@ -196,12 +197,12 @@ public class GlyphPipelineTests
     }
 
     [Fact]
-    public void Rasterizer_StillRejectsSdf_EvenForUnmappedCodepoints()
+    public void Rasterizer_UnmappedCodepoint_IsNull_WithSdfOrColorRequested()
     {
         using var rasterizer = new NativeRasterizer();
         rasterizer.LoadFont(TestFonts.RobotoRegularBytes());
 
-        Should.Throw<NotSupportedException>(() => rasterizer.RasterizeGlyph(0x1F600, new RasterOptions { Size = 32, Sdf = true }));
+        rasterizer.RasterizeGlyph(0x1F600, new RasterOptions { Size = 32, Sdf = true }).ShouldBeNull();
         rasterizer.GetGlyphMetrics(0x1F600, new RasterOptions { Size = 32, ColorFont = true }).ShouldBeNull();
     }
 

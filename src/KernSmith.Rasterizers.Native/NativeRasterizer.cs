@@ -28,10 +28,12 @@ namespace KernSmith.Rasterizers.Native;
 /// <see cref="RasterOptions.Bold"/> and <see cref="RasterOptions.Italic"/> are applied as
 /// font-unit outline transforms matching the FreeType backend's synthetic styles (Phase 167):
 /// FreeType's embolden strength, <c>max(0.5px, ppem/24)</c>, with the advance grown to match,
-/// then a 12° shear — to every color layer as well as plain outlines. Outline stroking
-/// (Phase 168) and SDF (Phase 169) are not implemented; their
-/// <see cref="IRasterizerCapabilities"/> flags are false. <see cref="RasterOptions.SuperSample"/>
-/// is likewise ignored: with
+/// then a 12° shear — to every color layer as well as plain outlines.
+///
+/// Distance fields are computed from the (transformed) outline: single-channel SDF (Phase 169)
+/// and multi-channel MSDF/MTSDF (Phase 170), selected by <see cref="RasterOptions.EffectiveSdfMode"/>.
+/// Outline stroking (Phase 168) is not implemented; its <see cref="IRasterizerCapabilities"/>
+/// flag is false. <see cref="RasterOptions.SuperSample"/> is ignored: with
 /// <see cref="IRasterizerCapabilities.HandlesOwnSizing"/> false the pipeline already renders
 /// at the supersampled size and box-filters the result back down, exactly as it does for the
 /// FreeType backend.

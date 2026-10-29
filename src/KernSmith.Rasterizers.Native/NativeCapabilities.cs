@@ -3,11 +3,11 @@ using KernSmith.Rasterizer;
 namespace KernSmith.Rasterizers.Native;
 
 /// <summary>
-/// Describes what the native rasterizer backend supports. It renders TrueType (<c>glyf</c>)
-/// outlines with grayscale or thresholded coverage, including variable-font instances (171),
-/// color glyphs from <c>COLR</c> version 0 layers (Phase 172), and synthetic bold/italic as
-/// outline transforms (Phase 167). The other optional features are still <c>false</c> and
-/// expand as later phases land — outline stroking (168) and SDF (169).
+/// Describes what the native rasterizer backend supports: TrueType (<c>glyf</c>) outlines with
+/// grayscale or thresholded coverage, including variable-font instances (171), color glyphs
+/// from <c>COLR</c> version 0 layers (172), synthetic bold/italic as outline transforms (167),
+/// single-channel signed distance fields (169) and multi-channel MSDF/MTSDF (170). Outline
+/// stroking (168) is still <c>false</c>.
 /// </summary>
 internal sealed class NativeCapabilities : IRasterizerCapabilities
 {
@@ -17,11 +17,12 @@ internal sealed class NativeCapabilities : IRasterizerCapabilities
     /// </summary>
     public bool SupportsColorFonts => true;
     public bool SupportsVariableFonts => true;
-    public bool SupportsSdf => false;
+    public bool SupportsSdf => true;
     public bool SupportsOutlineStroke => false;
     public bool SupportsSystemFonts => false;
     public bool SupportsSyntheticBold => true;
     public bool SupportsSyntheticItalic => true;
+    public bool SupportsMsdf => true;
 
     /// <summary>
     /// False: the pipeline converts the requested BMFont cell height into an em size before

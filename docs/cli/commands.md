@@ -26,6 +26,7 @@ kernsmith generate -f <font> -s <size> [options]
 | `--mono` | Disable anti-aliasing (alias for `--aa none`) |
 | `--sdf` | Enable Signed Distance Field rendering |
 | `--sdf-spread <n>` | SDF search radius (spread) in pixels (default: 8) |
+| `--sdf-mode <mode>` | Distance field: `none`, `sdf`, `msdf` or `mtsdf`. `msdf`/`mtsdf` write RGBA multi-channel fields and need `--rasterizer native` |
 | `--super-sample <n>` | Super sampling level 1-4 (default: 1) |
 | `--gamma <n>` | Gamma correction applied during rasterization (FreeType, default: 1.8) |
 | `--hinting / --no-hinting` | Enable/disable FreeType hinting (default: on) |
@@ -340,7 +341,7 @@ kernsmith generate -f font.ttf -s 32 --rasterizer native
 kernsmith generate -f font.ttf -s 32
 ```
 
-The `native` backend is experimental and ships with the CLI only (there is no NuGet package yet). It renders **TrueType (`glyf`) outlines only** -- a CFF/OTF font is rejected with an error -- and does not support hinting, SDF, outline stroke, system fonts, or `--aa light` / `--aa lcd`. It renders synthetic bold/italic, TrueType variable fonts (`--axis`) and `COLR` version 0 color glyphs, but not `COLR` version 1 or bitmap color fonts.
+The `native` backend is experimental and ships with the CLI only (there is no NuGet package yet). It renders **TrueType (`glyf`) outlines only** -- a CFF/OTF font is rejected with an error -- and does not support hinting, outline stroke, system fonts, or `--aa light` / `--aa lcd`. It renders synthetic bold/italic, TrueType variable fonts (`--axis`) and `COLR` version 0 color glyphs, but not `COLR` version 1 or bitmap color fonts, and it is the only backend for `--sdf-mode msdf|mtsdf`.
 
 ---
 

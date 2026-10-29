@@ -11,6 +11,12 @@ public sealed class ExtendedMetadata
     /// <summary>SDF spread value, if SDF mode was used.</summary>
     public int? SdfSpread { get; init; }
 
+    /// <summary>
+    /// The multi-channel distance-field mode (<see cref="KernSmith.SdfMode.Msdf"/> or
+    /// <see cref="KernSmith.SdfMode.Mtsdf"/>), or null for single-channel SDF and plain bitmaps.
+    /// </summary>
+    public SdfMode? SdfMode { get; init; }
+
     /// <summary>Outline thickness, if outline post-processor was used.</summary>
     public float? OutlineThickness { get; init; }
 
@@ -66,6 +72,7 @@ public sealed class ExtendedMetadata
     /// </summary>
     internal bool HasExtendedFields =>
         SdfSpread.HasValue ||
+        SdfMode.HasValue ||
         OutlineThickness.HasValue ||
         GradientTopColor != null ||
         GradientBottomColor != null ||

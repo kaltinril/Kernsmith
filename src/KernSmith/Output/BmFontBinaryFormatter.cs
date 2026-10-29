@@ -181,6 +181,7 @@ internal sealed class BmFontBinaryFormatter : IBmFontBinaryFormatter
         };
 
         if (extended.SdfSpread.HasValue) dict["sdfSpread"] = extended.SdfSpread.Value;
+        if (extended.SdfMode.HasValue) dict["sdfMode"] = extended.SdfMode.Value.ToString().ToLowerInvariant();
         if (extended.OutlineThickness.HasValue) dict["outlineThickness"] = extended.OutlineThickness.Value;
         if (extended.GradientTopColor != null) dict["gradientTopColor"] = extended.GradientTopColor;
         if (extended.GradientBottomColor != null) dict["gradientBottomColor"] = extended.GradientBottomColor;
