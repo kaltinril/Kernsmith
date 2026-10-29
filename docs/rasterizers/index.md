@@ -28,7 +28,7 @@ For per-OS status (Windows, Linux, macOS, Android, iOS, Mac Catalyst, Blazor WAS
 | BMFont.exe parity | No | Yes | No | No | No |
 | ClearType-hinted grayscale | No | No | Yes | No | No |
 | Synthetic bold/italic | Yes | Yes | Yes | Yes | Yes |
-| Anti-aliasing modes | Grayscale, Light, LCD, None | Grayscale, None | Grayscale, None | Grayscale, None | Grayscale, None |
+| Anti-aliasing modes | Grayscale, Light, LCD, None | Grayscale, None | Grayscale, None | Grayscale, None | Grayscale, LCD, None |
 | Font formats | TTF, OTF, WOFF, WOFF2 | TTF, OTF, WOFF, WOFF2 | TTF, OTF, WOFF, WOFF2 | TTF, WOFF, WOFF2 (TrueType outlines only) | TTF, WOFF, WOFF2 (TrueType outlines only) |
 | Native dependencies | Yes | Yes | Yes | None | None |
 | Published on NuGet | Yes | Yes | Yes | Yes | No |

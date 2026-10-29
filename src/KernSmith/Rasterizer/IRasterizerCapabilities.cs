@@ -17,7 +17,12 @@ public interface IRasterizerCapabilities
     /// <summary>Whether the rasterizer can stroke glyph outlines.</summary>
     bool SupportsOutlineStroke { get; }
 
-    /// <summary>The anti-alias modes this rasterizer supports.</summary>
+    /// <summary>
+    /// The anti-alias modes this rasterizer supports. The generation pipeline never hands the
+    /// rasterizer a mode missing from this list, except <see cref="AntiAliasMode.None"/>: an
+    /// unlisted <see cref="AntiAliasMode.Light"/> or <see cref="AntiAliasMode.Lcd"/> request
+    /// arrives as <see cref="AntiAliasMode.Grayscale"/> when that is listed.
+    /// </summary>
     IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; }
 
     /// <summary>

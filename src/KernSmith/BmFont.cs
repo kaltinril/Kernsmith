@@ -880,7 +880,11 @@ public static class BmFont
                 rasterizer.SetVariationAxes(fontInfo.VariationAxes, options.VariationAxes);
             }
 
-            var rasterOptions = RasterOptions.FromGeneratorOptions(options);
+            var rasterOptions = RasterOptions.FromGeneratorOptions(options) with
+            {
+                AntiAlias = AntiAliasNegotiation.Resolve(
+                    options.AntiAlias, rasterizer.Capabilities.SupportedAntiAliasModes)
+            };
             var padding = options.Padding;
             var spacing = options.Spacing;
 

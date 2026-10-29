@@ -174,11 +174,29 @@ public class GlyphPipelineTests
 
     // ---- Render-mode dispatch --------------------------------------------------------------
 
-    [Fact]
-    public void Dispatch_UsesCoverage_ForEveryAntiAliasMode()
+    [Theory]
+    [InlineData(AntiAliasMode.None)]
+    [InlineData(AntiAliasMode.Grayscale)]
+    [InlineData(AntiAliasMode.Light)]
+    public void Dispatch_UsesCoverage_ForEveryNonLcdAntiAliasMode(AntiAliasMode mode)
     {
-        foreach (var mode in Enum.GetValues<AntiAliasMode>())
-            GlyphRenderers.Select(new RasterOptions { Size = 32, AntiAlias = mode }).ShouldBeOfType<CoverageRenderer>();
+        GlyphRenderers.Select(new RasterOptions { Size = 32, AntiAlias = mode }).ShouldBeOfType<CoverageRenderer>();
+    }
+
+    [Fact]
+    public void Dispatch_UsesTheLcdRenderer_ForLcd()
+    {
+        GlyphRenderers.Select(new RasterOptions { Size = 32, AntiAlias = AntiAliasMode.Lcd }).ShouldBeSameAs(LcdRenderer.Instance);
+    }
+
+    [Fact]
+    public void Dispatch_DistanceFieldsTakePriorityOverLcd()
+    {
+        // Color layers wrap the selected renderer per face instead (see LcdInteractionTests).
+        var lcd = new RasterOptions { Size = 32, AntiAlias = AntiAliasMode.Lcd };
+        GlyphRenderers.Select(lcd with { Sdf = true }).ShouldBeOfType<SdfRenderer>();
+        GlyphRenderers.Select(lcd with { SdfMode = SdfMode.Msdf }).ShouldBeSameAs(MsdfRenderer.Msdf);
+        GlyphRenderers.Select(lcd with { SdfMode = SdfMode.Mtsdf }).ShouldBeSameAs(MsdfRenderer.Mtsdf);
     }
 
     [Fact]

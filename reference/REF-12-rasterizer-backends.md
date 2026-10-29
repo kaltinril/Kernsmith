@@ -52,7 +52,7 @@ RasterizerBackend enum:
 | **Anti-alias: None** | Yes | Yes | Yes | Yes | Yes |
 | **Anti-alias: Grayscale** | Yes | Yes | Yes | Yes | Yes |
 | **Anti-alias: Light** | Yes | No | No | No | No |
-| **Anti-alias: LCD** | Yes | No | No | No | No |
+| **Anti-alias: LCD** | Yes | No | No | No | Yes (RGBA, RGB order) |
 | **Hinting** | FreeType auto-hinter + font bytecode | Windows GDI hinter | DirectWrite natural/symmetric hinting | None | None |
 | **Bold/italic simulation** | FreeType emboldening + oblique shear | GDI font mapper + MAT2 shear | DWRITE_FONT_SIMULATIONS flags | Synthetic bold + oblique shear | FreeType-matched outline emboldening + 12° shear |
 | **Font collection (TTC) support** | Yes (faceIndex parameter) | No (faceIndex must be 0) | Yes (faceIndex parameter) | Yes (faceIndex parameter) | Yes (faceIndex parameter) |
@@ -184,7 +184,7 @@ RasterizerBackend enum:
 - No backend outline stroke (core's bitmap outline effect still applies). SDF and MSDF/MTSDF are computed from the outline; with `ColorFont`, COLR glyphs stay color under SDF and MSDF is rejected.
 - Variable fonts: TrueType only (`gvar` outlines, `HVAR` or phantom-point advances, `MVAR` `hcla`/`hcld` line metrics); `avar` version 2 axis mixing is not applied.
 - Cannot load system-installed fonts by family name (`LoadSystemFont` throws `NotSupportedException`).
-- Anti-alias modes declared are None and Grayscale only; core does not negotiate modes, so a `Light` or `LCD` request reaches Native and renders as Grayscale.
+- Anti-alias modes declared are None, Grayscale and LCD (RGBA subpixel, RGB order); core negotiates modes, so a `Light` request reaches Native as Grayscale.
 - Not thread-safe: create one instance per thread for parallel rasterization.
 
 ---

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The Native rasterizer renders `AntiAliasMode.Lcd` as LCD subpixel output: glyphs come back as RGBA with one horizontal subpixel per colour channel (RGB order, one-pixel box filter -- per-channel output matches the FreeType backend's LCD rendering) and alpha set to the strongest subpixel, so an LCD atlas is an RGBA page. `Lcd` is now in Native's `SupportedAntiAliasModes`.
 - The Native rasterizer applies synthetic bold and italic (`Bold` / `Italic`) as outline transforms matched to the FreeType backend: the same emboldening strength (`max(0.5px, ppem/24)`, with the advance grown to match) and the same 12° slant, sized from the styled outline so nothing is clipped. They apply to variable-font instances and to every `COLR` color layer. It now reports `SupportsSyntheticBold` / `SupportsSyntheticItalic`, so core skips a caller's `BoldPostProcessor` / `ItalicPostProcessor` for Native as for the other backends.
 - The experimental Native rasterizer renders signed distance fields (`Sdf`) computed directly from the glyph outline, matching FreeType's SDF output (encoding, padding, bearings) and honoring `SdfSpread` and `SdfScale`. Overlapping contours produce no interior seam (FreeType's SDF has one), and distance fields follow variable-font axes. `SupportsSdf` is now true, so SDF configs run on Native instead of being skipped. The package tags advertise `sdf` again.
 - `tests/bmfont-compare/gum-bmfont/sdf-scale1.bmfc` covers SDF at `sdfScale=1`.
@@ -24,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- KernSmith core now resolves the requested anti-alias mode against the backend's `SupportedAntiAliasModes` before rendering: an unadvertised `Light` or `Lcd` is handed to the backend as `Grayscale` (silently), `None` always passes, and the caller's options are untouched. No built-in backend's output changes -- GDI, DirectWrite and StbTrueType already rendered those modes as grayscale, and FreeType supports all four. A custom `IRasterizer` now only receives modes it advertises.
 - `KernSmith.Fonts.Web` downloads the `.woff2` source of an `@font-face` rule when the CDN offers one (smaller), falling back to `.woff`; a source's format is read from its `format()` hint, else its file extension. The disk cache names files `.woff2` or `.woff` to match (older `.woff` cache files are still read).
 - The Native rasterizer renders each glyph through an internal staged pipeline (outline decoder, outline transforms, bounds, scale/hint, render-mode dispatch) so CFF, synthetic styles, SDF, variations, color and LCD can each plug into one stage. Output is byte-identical to before.
 
@@ -35,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **FreeType rendered a scrambled instance for every variable-font request.** `SetVariationAxes` passed the axis coordinates to FreeType as 32-bit integers, but the bundled FreeType's `FT_Fixed` is pointer-sized, so it read them in pairs and pushed every axis to an extreme -- even asking for the default values changed the glyphs. Coordinates are now marshalled at the correct width.
 - `KernSmith.Fonts.Web` with `WebFontProvider.GoogleFonts` threw `InvalidOperationException` for every font: Google serves only `.woff2` to the browser User-Agent the package sends, and the package only accepted `.woff`.
 - `KernSmith.Fonts.Web` in the browser (Blazor WebAssembly) failed with a `NetworkError` in Firefox: the `User-Agent` it set became a non-CORS-safelisted `fetch()` header, and Bunny and Google Fonts reject the resulting preflight. In the browser it now leaves the User-Agent to the browser.
-- The Native rasterizer docs (`docs/rasterizers/native.md`, the package README) now describe its real behavior: WOFF1 files work (core decompresses them first), `Light`/`LCD` anti-aliasing requests render as grayscale, and core still draws outlines for it.
+- The Native rasterizer docs (`docs/rasterizers/native.md`, the package README) now describe its real behavior: WOFF1 files work (core decompresses them first), `Light` anti-aliasing requests render as grayscale, and core still draws outlines for it.
 
 ## [0.24.0] - 2026-10-18
 

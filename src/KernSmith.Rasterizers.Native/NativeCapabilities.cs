@@ -4,11 +4,11 @@ namespace KernSmith.Rasterizers.Native;
 
 /// <summary>
 /// Describes what the native rasterizer backend supports: TrueType (<c>glyf</c>) and CFF/CFF2
-/// outlines with grayscale or thresholded coverage, including TrueType variable-font instances
-/// (171; CFF2 renders its default instance until the CFF2 <c>blend</c> wave), color glyphs from
-/// <c>COLR</c> version 0 layers (172), synthetic bold/italic as outline transforms (167),
-/// single-channel signed distance fields (169) and multi-channel MSDF/MTSDF (170). Outline
-/// stroking (168) is still <c>false</c>.
+/// outlines with grayscale, thresholded or LCD subpixel (173) coverage, including TrueType
+/// variable-font instances (171; CFF2 renders its default instance until the CFF2 <c>blend</c>
+/// wave), color glyphs from <c>COLR</c> version 0 layers (172), synthetic bold/italic as outline
+/// transforms (167), single-channel signed distance fields (169) and multi-channel MSDF/MTSDF
+/// (170). Outline stroking (168) is still <c>false</c>.
 /// </summary>
 internal sealed class NativeCapabilities : IRasterizerCapabilities
 {
@@ -31,6 +31,10 @@ internal sealed class NativeCapabilities : IRasterizerCapabilities
     /// </summary>
     public bool HandlesOwnSizing => false;
 
+    /// <summary>
+    /// <see cref="AntiAliasMode.Light"/> is left out until Phase 174 adds light hinting, so core
+    /// negotiation degrades it to <see cref="AntiAliasMode.Grayscale"/>.
+    /// </summary>
     public IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; } =
-        [AntiAliasMode.None, AntiAliasMode.Grayscale];
+        [AntiAliasMode.None, AntiAliasMode.Grayscale, AntiAliasMode.Lcd];
 }

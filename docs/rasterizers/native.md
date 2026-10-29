@@ -36,7 +36,7 @@ kernsmith generate --font Roboto-Regular.ttf --size 32 --rasterizer native --out
 - TrueType Collections (`.ttc`) via face index
 - WOFF and WOFF2 files wrapping either outline format (KernSmith core decompresses them before the backend sees the bytes)
 - `cmap` formats 4 and 12 for character lookup
-- Anti-aliasing: `Grayscale` and `None` only
+- Anti-aliasing: `Grayscale`, `None` and `Lcd` (LCD subpixel: RGBA glyphs, one horizontal subpixel per colour channel, RGB order; `COLR` color glyphs ignore it, as on FreeType)
 - Super sampling (applied by the core pipeline)
 - Color fonts with `COLR` version 0 layers and `CPAL` palettes (`ColorFont`, `ColorPaletteIndex`); glyphs come out as straight-alpha RGBA
 - Synthetic bold and italic (`Bold` / `Italic`), applied to the outline before rasterizing and matched to the FreeType backend: the same emboldening strength (growing the advance to match) and the same 12° slant. They apply to every `COLR` layer and to variable-font instances too. Caller-supplied `BoldPostProcessor` / `ItalicPostProcessor` are skipped when the matching flag is set, as on every other backend
@@ -53,7 +53,8 @@ Each item below either raises a clear error or is ignored, as noted:
 - **CFF2 variable instances** -- a CFF2 font renders its default instance whatever axes are set. TrueType variable fonts work: `VariationAxes` (or `variationAxes` in a `.bmfc`) selects the instance, and outlines, advances and line metrics follow it. A font whose `avar` table is version 2 gets only its version 1 axis mappings
 - **Color fonts beyond `COLR` version 0** -- `COLR` version 1 glyphs (gradients, transforms) render as plain grayscale coverage, the same as with `ColorFont` off. Bitmap-only color fonts (`CBDT`/`sbix`, such as Noto Color Emoji) are rejected at load time with a `RasterizationException`; use [FreeType](freetype.md) for those
 - **System font loading by name** -- not supported; load font bytes instead
-- **`Light` and `LCD` anti-aliasing** -- not supported; requesting them silently renders `Grayscale`
+- **`Light` anti-aliasing** -- not supported; KernSmith core silently renders it as `Grayscale`
+- **LCD options** -- RGB subpixel order and a one-pixel box filter only; BGR, vertical and other filters are not selectable
 
 ## When to Use
 

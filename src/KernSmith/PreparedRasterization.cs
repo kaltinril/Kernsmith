@@ -207,6 +207,8 @@ internal sealed class PreparedRasterization : IDisposable
 
             var rasterOptions = RasterOptions.FromGeneratorOptions(options) with
             {
+                AntiAlias = AntiAliasNegotiation.Resolve(
+                    options.AntiAlias, rasterizer.Capabilities.SupportedAntiAliasModes),
                 Bold = effectiveBold,
                 ForceSyntheticBold = effectiveForceSyntheticBold,
                 Italic = effectiveItalic,

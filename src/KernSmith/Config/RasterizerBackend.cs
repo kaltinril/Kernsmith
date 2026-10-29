@@ -21,17 +21,16 @@ public enum RasterizerBackend
     /// Native KernSmith rasterizer. Pure C#, cross-platform, no external dependencies.
     /// <para>
     /// <b>Experimental, and not published to NuGet yet.</b> The backend renders TrueType
-    /// (<c>glyf</c>) outlines and is supplied by the <c>KernSmith.Rasterizers.Native</c>
+    /// (<c>glyf</c>) and CFF/CFF2 (<c>.otf</c>) outlines and is supplied by the <c>KernSmith.Rasterizers.Native</c>
     /// project, which currently ships only in the KernSmith repository and CLI. Until that
     /// package is released, <see cref="KernSmith.Rasterizer.RasterizerFactory.Create"/>
     /// throws for this value in apps built against the NuGet packages.
     /// </para>
     /// <para>
-    /// Limitations: TrueType outlines only — CFF/PostScript fonts (typically <c>.otf</c>)
-    /// are rejected — plus no hinting, outline stroking, synthetic bold/italic,
-    /// variable fonts, color fonts, or system-font lookup, and only
-    /// <see cref="AntiAliasMode.None"/> and <see cref="AntiAliasMode.Grayscale"/>
-    /// anti-aliasing. Use <see cref="FreeType"/> or <see cref="StbTrueType"/> for those.
+    /// Limitations: no hinting, outline stroking or system-font lookup, color fonts from
+    /// <c>COLR</c> version 0 layers only, a CFF2 variable font renders its default instance,
+    /// and no <see cref="AntiAliasMode.Light"/> anti-aliasing (it renders as grayscale). Use
+    /// <see cref="FreeType"/> or <see cref="StbTrueType"/> for those.
     /// </para>
     /// </summary>
     Native
