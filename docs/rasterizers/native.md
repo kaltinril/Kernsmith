@@ -5,7 +5,7 @@ KernSmith's own rasterizer backend -- a font rasterizer written entirely in C# i
 > [!IMPORTANT]
 > This backend is **experimental** and **not published to NuGet**. `RasterizerBackend.Native` resolves only in builds that reference the `KernSmith.Rasterizers.Native` project directly (a source build) or in the KernSmith CLI, which ships it. In an app built against the released NuGet packages, `RasterizerFactory.Create(RasterizerBackend.Native)` throws "not registered". Use [FreeType](freetype.md) or [StbTrueType](stbtruetype.md) for production work.
 
-**Platform:** Cross-platform (net8.0, net10.0). No native binaries required. Verified on Windows, Linux (x64 and arm64), macOS, Android, iOS (simulator), and Mac Catalyst; Blazor WASM is expected to work but not yet verified. See the [platform support table](../../README.md#platform-support).
+**Platform:** Cross-platform (net8.0, net10.0). No native binaries required. Verified on Windows, Linux (x64 and arm64), macOS, Android, iOS (simulator), Mac Catalyst and Blazor WASM (interpreted build). See the [platform support table](../../README.md#platform-support).
 
 ## Usage
 

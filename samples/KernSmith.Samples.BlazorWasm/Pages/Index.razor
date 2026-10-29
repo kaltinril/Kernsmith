@@ -4,6 +4,7 @@
 @using KernSmith.Font
 @using KernSmith.Rasterizer
 @inject IJSRuntime JS
+@inject NavigationManager Nav
 
 <h1>KernSmith - Blazor WASM Validation</h1>
 
@@ -39,7 +40,12 @@ else
 </div>
 
 <div style="margin-top: 8px;">
-    <label>Size: </label>
+    <label>Backend: </label>
+    <select @bind="_backend">
+        <option value="@RasterizerBackend.StbTrueType">StbTrueType</option>
+        <option value="@RasterizerBackend.Native">Native (experimental)</option>
+    </select>
+    <label style="margin-left: 12px;">Size: </label>
     <input type="number" @bind="_fontSize" min="8" max="200" style="width: 60px;" />
     <label style="margin-left: 12px;">
         <input type="checkbox" @bind="_sdf" /> SDF
@@ -59,7 +65,7 @@ else
 
 @if (_elapsed is not null)
 {
-    <p>Elapsed: @_elapsed.Value.TotalMilliseconds.ToString("F1") ms</p>
+    <p>Backend: @_generatedBackend &middot; Glyphs: @_glyphCount &middot; Pages: @_pageCount &middot; Elapsed: @_elapsed.Value.TotalMilliseconds.ToString("F1") ms</p>
 }
 
 @if (_fntPreview is not null)
@@ -80,7 +86,23 @@ else
 }
 
 @code {
+    // Optional query string, so a headless browser can generate without a click:
+    // ?backend=native&font=<url> fetches the font (relative URLs resolve against the app's base)
+    // and generates immediately with the chosen backend.
+    [SupplyParameterFromQuery(Name = "backend")]
+    public string? BackendQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "font")]
+    public string? FontQuery { get; set; }
+
+    private static readonly RasterizerBackend[] ManagedBackends =
+        [RasterizerBackend.StbTrueType, RasterizerBackend.Native];
+
     private List<(string Name, string Result)>? _checks;
+    private RasterizerBackend _backend = RasterizerBackend.StbTrueType;
+    private RasterizerBackend _generatedBackend;
+    private int _glyphCount;
+    private int _pageCount;
     private byte[]? _fontData;
     private string? _fileName;
     private int _fontSize = 32;
@@ -93,18 +115,39 @@ else
     private byte[]? _pngData;
     private string? _atlasDataUrl;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         RunChecks();
+
+        if (Enum.TryParse<RasterizerBackend>(BackendQuery, ignoreCase: true, out var backend))
+            _backend = backend;
+
+        if (!string.IsNullOrEmpty(FontQuery))
+        {
+            try
+            {
+                using var http = new HttpClient { BaseAddress = new Uri(Nav.BaseUri) };
+                _fontData = await http.GetByteArrayAsync(FontQuery);
+                _fileName = Path.GetFileNameWithoutExtension(FontQuery);
+                Generate();
+            }
+            catch (Exception ex)
+            {
+                _error = $"Could not load font '{FontQuery}': {ex.Message}";
+            }
+        }
     }
 
     private void RunChecks()
     {
         var results = new List<(string, string)>();
 
-        // Check StbTrueType registration
-        bool stbRegistered = RasterizerFactory.IsRegistered(RasterizerBackend.StbTrueType);
-        results.Add(("StbTrueType registered", stbRegistered ? "PASS" : "FAIL - not registered"));
+        // Check the managed backends are registered (explicitly, in Program.cs)
+        foreach (var backend in ManagedBackends)
+        {
+            bool registered = RasterizerFactory.IsRegistered(backend);
+            results.Add(($"{backend} registered", registered ? "PASS" : "FAIL - not registered"));
+        }
 
         // Check FreeType is NOT registered (no native leak)
         bool ftRegistered = RasterizerFactory.IsRegistered(RasterizerBackend.FreeType);
@@ -114,20 +157,23 @@ else
         var backends = RasterizerFactory.GetAvailableBackends();
         results.Add(("Available backends", $"PASS - [{string.Join(", ", backends)}]"));
 
-        // Create a StbTrueType rasterizer and verify capabilities
-        try
+        // Create each managed rasterizer and report its capabilities
+        foreach (var backend in ManagedBackends)
         {
-            using var rasterizer = RasterizerFactory.Create(RasterizerBackend.StbTrueType);
-            var caps = rasterizer.Capabilities;
-            results.Add(("Create StbTrueType rasterizer", "PASS"));
-            results.Add(("Capabilities - SDF", $"PASS - {caps.SupportsSdf}"));
-            results.Add(("Capabilities - Color", $"PASS - {caps.SupportsColorFonts}"));
-            results.Add(("Capabilities - Variable", $"PASS - {caps.SupportsVariableFonts}"));
-            results.Add(("Capabilities - Outline", $"PASS - {caps.SupportsOutlineStroke}"));
-        }
-        catch (Exception ex)
-        {
-            results.Add(("Create StbTrueType rasterizer", $"FAIL - {ex.Message}"));
+            try
+            {
+                using var rasterizer = RasterizerFactory.Create(backend);
+                var caps = rasterizer.Capabilities;
+                results.Add(($"Create {backend} rasterizer", "PASS"));
+                results.Add(($"{backend} capabilities - SDF", $"PASS - {caps.SupportsSdf}"));
+                results.Add(($"{backend} capabilities - Color", $"PASS - {caps.SupportsColorFonts}"));
+                results.Add(($"{backend} capabilities - Variable", $"PASS - {caps.SupportsVariableFonts}"));
+                results.Add(($"{backend} capabilities - Outline", $"PASS - {caps.SupportsOutlineStroke}"));
+            }
+            catch (Exception ex)
+            {
+                results.Add(($"Create {backend} rasterizer", $"FAIL - {ex.Message}"));
+            }
         }
 
         // System font provider - should return empty, not throw
@@ -185,7 +231,7 @@ else
             {
                 Size = _fontSize,
                 Characters = CharacterSet.Ascii,
-                Backend = RasterizerBackend.StbTrueType,
+                Backend = _backend,
                 Sdf = _sdf
             };
 
@@ -194,6 +240,9 @@ else
             sw.Stop();
 
             _elapsed = sw.Elapsed;
+            _generatedBackend = _backend;
+            _glyphCount = result.Model.Characters.Count;
+            _pageCount = result.Pages.Count;
             _fntText = result.FntText;
 
             // First 20 lines

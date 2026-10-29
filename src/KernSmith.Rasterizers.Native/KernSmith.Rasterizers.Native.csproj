@@ -6,7 +6,6 @@
          this flag also keeps a solution-wide `dotnet pack` (see RELEASING.md) from
          producing a package that has not been signed off for release. -->
     <IsPackable>false</IsPackable>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>CS1591</NoWarn>
     <IsTrimmable>true</IsTrimmable>

@@ -1,6 +1,6 @@
 # Phase 179 — Native Rasterizer: Validation, Golden Masters & Release
 
-> **Status**: In progress — robustness, golden masters, the similarity matrix and the cross-cutting docs are done; remaining: performance validation (after Phase 177), a Blazor WASM run, a library usage sample, and the release decision (publish Native, with `KernSmith.Imaging`, to NuGet?)
+> **Status**: In progress — robustness, golden masters, the similarity matrix and the cross-cutting docs are done; remaining: performance validation (after Phase 177), an AOT Blazor WASM run, a library usage sample, and the release decision (publish Native, with `KernSmith.Imaging`, to NuGet?)
 > **Created**: 2026-04-01
 > **Depends on**: Phases 166–174, 177 and 178 (175 and 176 only if Jeremy keeps them)
 
@@ -115,7 +115,7 @@ Whatever is still unsupported at release must behave deliberately, and the docs 
 
 ### Documentation
 
-- Verify Blazor WASM (the README platform table still shows ⏳ for Native) and record the result
+- Blazor WASM: the published sample (interpreted) generates with Native and StbTrueType in headless Chrome, all checks pass, no console errors; README table shows ✅. Still to run: the AOT build (`RunAOTCompilation`, needs the `wasm-tools` workload)
 - A library usage example in `samples/` (the MonoGame minimal sample already takes `--rasterizer native`)
 - Keep the backend tables, `docs/rasterizers/native.md`, the Native README and REF-12 current as the open decisions land (the known differences vs FreeType are in the similarity matrix above)
 
@@ -123,7 +123,7 @@ Whatever is still unsupported at release must behave deliberately, and the docs 
 
 - `NativeCapabilities` accurately reflects every supported feature and AA mode
 - Publish `KernSmith.Imaging` with Native (Native references it; both are `IsPackable=false` today)
-- Decide whether the Native csproj keeps `AllowUnsafeBlocks` (it contains no `unsafe` code)
+- Native and `KernSmith.Imaging` build without `AllowUnsafeBlocks` (decided, see `project_decisions.md`)
 - Ensure all analyzer warnings resolved (trimming, AOT, nullable)
 - Code review pass for security (no buffer overflows, bounds checking)
 - License headers on all new files (MIT)
@@ -137,7 +137,7 @@ Whatever is still unsupported at release must behave deliberately, and the docs 
 ## Success Criteria
 
 - [x] SSIM > 0.95 for standard rendering across all reference fonts/sizes (mean per font and size, grayscale vs FreeType and stb)
-- [ ] All glyph metrics within ±1 pixel of FreeType (unstyled: bearings and boxes 100%; italic boxes and FreeType's 26.6 advance rounding differ — see the similarity matrix)
+- [ ] Glyph metrics are correct by the font's own glyph math, with FreeType as the reference approximation: within ±1 pixel of FreeType, and every difference beyond that explained, validated against the font data and signed off by Jeremy (open: italic boxes and FreeType's 26.6 advance rounding — see the similarity matrix)
 - [x] Golden master tests established and passing
 - [x] All edge cases handled without crashes
 - [ ] Performance meets Phase 177 targets

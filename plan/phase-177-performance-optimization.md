@@ -12,7 +12,7 @@
 ## Starting point
 
 - Native allocates per glyph: outline command and edge lists, `glyf` flag arrays. The scanline fill allocates only the output bitmap, which is intentionally fresh (Phase 160 D11); its delta buffer comes from `ArrayPool`.
-- WASM rule (Phase 160): no `Parallel.ForEach`, `.Result`/`.Wait()` or `Reflection.Emit` in Native.
+- WASM rule (Phase 160): no `.Result`/`.Wait()` or `Reflection.Emit` in Native; parallelism only behind an opt-out option that is forced off on browser-wasm and other single-threaded targets.
 
 ## Harness (Wave 0)
 
@@ -131,14 +131,14 @@ Profile first (`dotnet-trace`/PerfView); do only what the profile justifies.
 
 - **Parsing**: composite `glyf` glyphs through the scratch path; lazy table parsing.
 - **Feature paths**: SDF segment bucketing (Phase 169), `gvar` decode caching (Phase 171), COLR layer canvas reuse (Phase 172), as the harness shows them hot.
-- **Parallelism**: optional and only outside the browser (`OperatingSystem.IsBrowser()` guard); one buffer set per worker. Core already parallelizes post-processing, so measure whether backend-level parallelism adds anything.
+- **Parallelism** (decided, not started): allowed where it helps, behind an opt-out option — on by default where supported, forced off on browser-wasm (`OperatingSystem.IsBrowser()`) and any other single-threaded target; one buffer set per worker. Core already parallelizes post-processing, so measure first whether backend-level parallelism adds anything.
 
 ## Testing
 
 - Low-variance benchmark runs; results recorded here
 - Zero per-glyph scratch allocations in the coverage hot path (`GC.GetAllocatedBytesForCurrentThread`)
 - No quality change: SSIM and golden masters unchanged; `regression_check.py` identical
-- Browser path executes no parallel code
+- Browser and other single-threaded targets execute no parallel code, whatever the option says; turning the option off gives byte-identical output
 
 **Regression coverage**: optimisation must be output-neutral, so the existing configs must report Native identical to `main`; no new config needed. The one exception is the scanline-fill rewrite, whose rounding-level grayscale deltas are measured above.
 

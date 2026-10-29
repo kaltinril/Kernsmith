@@ -39,11 +39,11 @@ public class Game1 : Game
         });
 
         // Load the atlas texture into MonoGame.
-        // GetRgbaPixelData() returns RGBA bytes regardless of the page's native
-        // format (grayscale pages expand to white-with-alpha automatically).
+        // BlendState.AlphaBlend expects premultiplied texels, so upload the premultiplied
+        // bytes; straight-alpha GetRgbaPixelData() would draw every transparent texel white.
         AtlasPage page = result.Pages[0];
         _atlas = new Texture2D(GraphicsDevice, page.Width, page.Height, false, SurfaceFormat.Color);
-        _atlas.SetData(page.GetRgbaPixelData());
+        _atlas.SetData(page.GetPremultipliedRgbaPixelData());
     }
 
     protected override void Update(GameTime gameTime)

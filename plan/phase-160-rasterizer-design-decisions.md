@@ -33,9 +33,9 @@ We are building a **fifth backend**, `Native`: a fully custom, pure C# rasterize
 - Registration is dual-path: self-registers via `[ModuleInitializer]` (`NativeRegistration.cs:9`) AND is reflection auto-discovered by `RasterizerFactory` (`RasterizerFactory.cs:23`), with an `ILLink.Descriptors.xml` trim root so the initializer survives trimming
 - Target: `net8.0;net10.0` (multi-targets with the rest of the repo)
 - Must set `<IsTrimmable>true</IsTrimmable>`, `<IsAotCompatible>true</IsAotCompatible>`
-- `<AllowUnsafeBlocks>true</AllowUnsafeBlocks>` is set (allowed in backend projects only, per `project_facts.md`), but the backend contains no `unsafe` code and should stay that way
+- No `<AllowUnsafeBlocks>`: the backend contains no `unsafe` code and builds without the flag, so none can creep in
 - **Pure managed C# we write, end to end** — no P/Invoke, no native libraries, zero NuGet dependencies, and no new third-party packages without Jeremy's sign-off. This also binds any core code Native depends on (e.g. WOFF2's Brotli decoder). It is the entire point: Native must keep working on browser-wasm and iOS/NativeAOT (see Native Rasterizer in `project_decisions.md`)
-- WASM-compatible: no `Parallel.ForEach`, no `.Result`/`.Wait()`, no `Reflection.Emit`
+- WASM-compatible: no `.Result`/`.Wait()`, no `Reflection.Emit`. Parallelism is allowed where it helps, but behind an opt-out option, on by default where supported and forced off on browser-wasm and any other single-threaded target (see Native Rasterizer in `project_decisions.md`); not implemented yet — Phase 177 measures it first
 
 ## Architecture Decision
 

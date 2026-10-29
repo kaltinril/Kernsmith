@@ -117,7 +117,7 @@ Every phase that changes Native pixel output runs `regression_check.py` with a `
 | 175 | [GSUB Layout](phase-175-gsub-layout.md) | GSUB substitutions | Deferred -- awaiting Jeremy's decision |
 | 176 | [Supersampling + Height Stretch](phase-176-supersampling-height-stretch.md) | In-rasterizer supersample / height stretch | Deferred -- awaiting Jeremy's decision |
 | 177 | [Performance Optimization](phase-177-performance-optimization.md) | Benchmark harness, then optimisation | In progress -- harness, baseline, scanline fill, dropout control, metrics shortcut, per-glyph pooling and Brotli done; remaining feature paths and parallelism |
-| 179 | [Validation / Golden Masters](phase-179-validation-golden-masters.md) | Validation, golden masters, release | In progress -- Wave 3 (robustness, golden masters, similarity matrix and docs sweep done; performance validation, Blazor WASM check, a library sample and the release decision remain) |
+| 179 | [Validation / Golden Masters](phase-179-validation-golden-masters.md) | Validation, golden masters, release | In progress -- Wave 3 (robustness, golden masters, similarity matrix and docs sweep done; performance validation, the AOT Blazor WASM run, a library sample and the release decision remain) |
 | 180 | [Innovation Research](phase-180-innovation-research.md) | Innovation research (ongoing experiments) | Future (Ongoing Research) |
 
 ---

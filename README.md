@@ -96,14 +96,14 @@ var result = BmFont.Builder()
 | **Android** | ✅ | ✅ ¹ | ❌ | ❌ | ✅ |
 | **iOS** ³ | ✅ | ❌ ² | ❌ | ❌ | ✅ |
 | **Mac Catalyst** | ✅ | ❌ | ❌ | ❌ | ✅ |
-| **Blazor WASM** | ✅ ⁴ | ❌ | ❌ | ❌ | ⏳ |
+| **Blazor WASM** | ✅ ⁴ | ❌ | ❌ | ❌ | ✅ ⁴ |
 
 ✅ tested in CI or on a device/emulator &middot; ⏳ expected to work, not yet verified &middot; ❌ unsupported (no native library or Windows-only API)
 
 1. Android x86_64 (emulators, Chromebooks) needs `KernSmith.Rasterizers.FreeType` 0.23.0 or later, which carries the Android packaging fix (see [CHANGELOG](CHANGELOG.md)); earlier packages leak FreeTypeSharp's desktop Linux library into the APK and fail with `DllNotFoundException`. arm64 works in all versions.
 2. An iOS app that references `KernSmith.Rasterizers.FreeType` fails to link, even if FreeType is never used: FreeTypeSharp 3.1.0's static iOS `libfreetype.a` references libpng symbols (`_png_create_read_struct` and others) that nothing provides. Do not reference the FreeType package in iOS apps; use StbTrueType or Native. FreeTypeSharp has no native library for Linux arm64, Mac Catalyst, or WASM.
 3. iOS is verified on the iOS simulator in CI (Release, no JIT); a real-iPhone confirmation is tracked in [phase 186](plan/phase-186-apple-platform-verification.md).
-4. Blazor WASM is built and published in CI (the `wasm-publish` job) but the output is not run, so it is not runtime-verified.
+4. Blazor WASM is built and published in CI (the `wasm-publish` job) but the output is not run there. StbTrueType and Native were verified by running the published [sample](samples/KernSmith.Samples.BlazorWasm/) in headless Chrome (interpreted build; the AOT build is not yet run in a browser).
 
 Mobile notes:
 
@@ -113,10 +113,13 @@ Mobile notes:
 
 ### Blazor WASM
 
-KernSmith runs entirely client-side in Blazor WebAssembly using the StbTrueType backend. See the [Blazor WASM sample](samples/KernSmith.Samples.BlazorWasm/) for a working example.
+KernSmith runs entirely client-side in Blazor WebAssembly using the StbTrueType or Native (experimental) backend. See the [Blazor WASM sample](samples/KernSmith.Samples.BlazorWasm/) for a working example.
 
 ```csharp
-// Generate in-browser — StbTrueType is auto-discovered
+// At startup: a published Blazor app is trimmed, so auto-discovery cannot be relied on
+RasterizerFactory.Register(RasterizerBackend.StbTrueType, () => new StbTrueTypeRasterizer());
+
+// Generate in-browser
 var result = BmFont.Generate(fontBytes, new FontGeneratorOptions
 {
     Size = 32,
