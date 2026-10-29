@@ -263,12 +263,12 @@ Offset  Size  Field
    - `hmtx`: Reconstruct from stored deltas and glyf-derived LSBs.
 4. Reconstruct the sfnt as with WOFF 1.0.
 
-> **Note**: WOFF2 decompression is significantly more complex than WOFF1 due to the preprocessing transforms. Using a library (e.g., Google's `woff2` reference implementation) is strongly recommended over hand-rolling.
+> **Note**: KernSmith decodes WOFF2 in core with its own pure managed RFC 7932 Brotli decoder (`src/KernSmith/Font/Brotli/`) and transform reversal (`src/KernSmith/Font/Woff2/`), written from the specs. `System.IO.Compression.BrotliDecoder` is not used because browser-wasm does not ship its native library (see `project_decisions.md`).
 
 #### C# Implementation Guidance
 
 - **WOFF 1.0 (zlib)**: The compressed data uses the zlib format (RFC 1950), which wraps DEFLATE with a 2-byte header and 4-byte checksum. .NET's `DeflateStream` expects raw DEFLATE, so you must **skip the first 2 bytes** of each compressed table before passing to `DeflateStream` (and ignore the trailing 4-byte Adler-32 checksum). Alternatively, use `System.IO.Compression.ZLibStream` (.NET 6+) which handles the zlib framing natively, or the `SharpZipLib` NuGet package for older .NET targets.
-- **WOFF 2.0 (Brotli)**: Use `System.IO.Compression.BrotliStream` (built into .NET Core 2.1+ / .NET 5+). This handles the Brotli decompression of the single compressed data block. However, the content-aware **inverse transforms** for `glyf`, `loca`, and `hmtx` tables must be implemented separately -- `BrotliStream` only handles the compression layer, not the OpenType-specific preprocessing. For a complete solution, consider wrapping Google's native `woff2` library via P/Invoke, or using a managed port if available.
+- **WOFF 2.0 (Brotli)**: KernSmith does **not** use `System.IO.Compression.BrotliStream`/`BrotliDecoder`: they wrap the runtime's native Brotli library, which browser-wasm does not ship. Core has its own managed RFC 7932 decoder (`ManagedBrotliDecoder`) for the single compressed data block, and reverses the `glyf`/`loca` and `hmtx` transforms itself (`Woff2Decoder`). The BCL encoder is still handy in tests for producing Brotli vectors on desktop.
 
 ### Key Differences Between WOFF 1.0 and WOFF 2.0
 
@@ -295,10 +295,11 @@ This means WOFF/WOFF2 support requires only a decompression frontend -- the core
 
 KernSmith ships an optional companion package, **`KernSmith.Fonts.Web`**, that *fetches* fonts from CSS-based web font CDNs rather than the local filesystem. It implements the core `KernSmith.Font.IFontSource` abstraction via `WebFontSource`, parameterized by a `WebFontProvider` (built-in `BunnyFonts` and `GoogleFonts`, or `WebFontProvider.Custom(cssBaseUrl)` for any Google-Fonts-style `?family=Name:weight` CSS endpoint).
 
-The flow: request the provider's stylesheet over HTTP, parse the `@font-face` rules, and download the **`.woff`** file for the requested family / weight / style / Unicode subset (results are cached in memory, with an optional `diskCachePath` for cross-run persistence).
+The flow: request the provider's stylesheet over HTTP, parse the `@font-face` rules, and download the font file for the requested family / weight / style / Unicode subset (results are cached in memory, with an optional `diskCachePath` for cross-run persistence).
 
-- **WOFF only, not WOFF2**: only `.woff` URLs are requested; `.woff2` entries are deliberately ignored because WOFF2's Brotli + transform decoding is not yet implemented (consistent with the "unsupported WOFF2" note above). If a CDN offers only `.woff2` for a font, the fetch fails with a clear error.
-- **WASM-friendly**: it depends only on `HttpClient` from the BCL and needs no filesystem, so it works in browser/Blazor WebAssembly scenarios (leave `diskCachePath` null there). Cross-platform on `net8.0`/`net10.0`.
+- **WOFF2 first, WOFF fallback**: each `@font-face` `src` is classified by its `format()` hint (else its file extension); the `.woff2` source is fetched when present, otherwise the `.woff`. Other formats are ignored, and a subset offering neither fails with a clear error. Core decodes both.
+- **User-Agent**: CDNs key the served format on it. Google Fonts returns TTF to unknown agents and only WOFF2 to modern browsers, so outside a browser the package sends a modern Chrome UA. Inside a browser it sends none: a `User-Agent` set on `HttpClient` becomes a `fetch()` header that is not CORS-safelisted, so Firefox preflights it and the CDNs reject the preflight; the browser's own UA already gets WOFF2.
+- **WASM-friendly**: it depends only on `HttpClient` from the BCL and needs no filesystem, so it works in browser/Blazor WebAssembly scenarios (leave `diskCachePath` null there); fetching and decoding WOFF2 from Bunny and Google Fonts was verified under browser-wasm in headless Chrome and Firefox. Cross-platform on `net8.0`/`net10.0`.
 - **No discovery**: CSS CDNs expose no family-listing endpoint, so `ListFamiliesAsync` returns an empty list.
 
 ---

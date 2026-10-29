@@ -1,6 +1,6 @@
 namespace KernSmith.Rasterizers.Native.Tests;
 
-/// <summary>Image comparison metrics shared by the backend-agreement tests.</summary>
+/// <summary>Image comparison metrics shared by the rasterizer comparison tests.</summary>
 internal static class ImageSimilarity
 {
     /// <summary>

@@ -1,6 +1,7 @@
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.Native.Internal.Cff;
 using KernSmith.Rasterizers.Native.Internal.Tables;
+using KernSmith.Rasterizers.Native.Internal.Variations;
 
 namespace KernSmith.Rasterizers.Native.Internal.Outlines;
 
@@ -12,8 +13,9 @@ namespace KernSmith.Rasterizers.Native.Internal.Outlines;
 /// <remarks>
 /// The advance comes from <c>hmtx</c>, not the charstring width, exactly as FreeType does for
 /// an OpenType-wrapped CFF: the two normally agree, and <c>hmtx</c> is what every other backend
-/// and the shared metrics code use. CFF2 renders the default instance; variation (Phase 171)
-/// plugs in by supplying <see cref="CharstringContext.BlendScalars"/> from the request's axes.
+/// and the shared metrics code use. CFF2 renders the default instance whatever axes are set — outline and
+/// advance alike; variation (Phase 171 Wave 2) plugs in by deriving
+/// <see cref="CharstringContext.BlendScalars"/> from <see cref="Variations"/>.
 /// </remarks>
 internal sealed class CffOutlineDecoder : IOutlineDecoder
 {
@@ -22,9 +24,11 @@ internal sealed class CffOutlineDecoder : IOutlineDecoder
     private readonly Dictionary<CffPrivate, CharstringContext> _contexts = [];
 
     /// <summary>Parses the face's <c>CFF2</c> table, or its <c>CFF </c> table when it has no <c>CFF2</c>.</summary>
+    /// <param name="face">The loaded face.</param>
+    /// <param name="variations">The face's variation state, for a variable font.</param>
     /// <exception cref="ArgumentException">If the face has neither table.</exception>
     /// <exception cref="FontFormatException">If the table is malformed.</exception>
-    public CffOutlineDecoder(NativeFontFace face)
+    public CffOutlineDecoder(NativeFontFace face, FontVariations? variations = null)
     {
         ArgumentNullException.ThrowIfNull(face);
 
@@ -43,7 +47,15 @@ internal sealed class CffOutlineDecoder : IOutlineDecoder
         }
 
         _hmtx = face.Hmtx;
+        Variations = variations;
     }
+
+    /// <summary>
+    /// The face's variation state (null for a font without <c>fvar</c>). Held for the CFF2
+    /// <c>blend</c> wave, which will turn its coordinates into
+    /// <see cref="CharstringContext.BlendScalars"/>; until then every instance decodes as the default.
+    /// </summary>
+    internal FontVariations? Variations { get; }
 
     /// <summary>The parsed table. Internal access for tests.</summary>
     internal CffFont Font => _font;

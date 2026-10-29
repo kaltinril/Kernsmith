@@ -40,7 +40,7 @@ Complete. `OutlineDecoders.ForFace` returns `CffOutlineDecoder` for any face wit
 - `callsubr`/`callgsubr` with the 107 / 1131 / 32768 bias; `return`; `endchar` (also the `seac` form, resolved through StandardEncoding and the charset — name-keyed CFF only).
 - Width: the odd leading operand of the first stack-clearing operator is `nominalWidthX + w`, else `defaultWidthX` (CFF only). The decoder takes the advance from `hmtx`, as FreeType does; the charstring width equals `hmtx` for every Source Serif 4 glyph.
 - Arithmetic/storage operators (`and` … `roll`, `put`/`get`, `ifelse`) are supported; `random` and reserved operators throw. `dotsection` is ignored.
-- CFF2: no width or `endchar`, a 513-entry stack, `vsindex`, and `blend` keeping the default values. `CharstringContext.BlendScalars` applies per-region scalars when set — the hook Phase 171 fills in from the request's axes.
+- CFF2: no width or `endchar`, a 513-entry stack, `vsindex`, and `blend` keeping the default values. `CharstringContext.BlendScalars` applies per-region scalars when set — the hook Phase 171 Wave 2 fills in from the `FontVariations` that `OutlineDecoders.ForFace` already hands `CffOutlineDecoder`. Until then a CFF2 font renders its default instance whatever axes are set.
 - Lazy `moveto`: a contour opens at the first drawing operator, so a moveto that draws nothing adds no point to the bounds.
 - Limits, each a `FontFormatException`: operand stack 48 (CFF) / 513 (CFF2), subroutine nesting 10, 2^20 operations per glyph (stops shallow but exponential subroutine fan-out), 2^16 path commands, coordinates within ±65536.
 
@@ -52,6 +52,8 @@ Complete. `OutlineDecoders.ForFace` returns `CffOutlineDecoder` for any face wit
 - `CffFixtureTests`: four glyph outlines match fontTools' interpreter point for point (CFF and CFF2); every glyph decodes; charstring widths equal `hmtx`; seeded fuzzing (byte flips, truncation, random charstrings, mutated fonts through the rasterizer) allows only `FontFormatException`/`RasterizationException`.
 - `NativeCffAgreementTests`: metrics within ±1px of unhinted FreeType at 12–96px for both fixtures; grayscale bitmaps vs FreeType (SSIM ≥ 0.90 per glyph, ≥ 0.98 mean) and vs stb_truetype for CFF in grayscale and monochrome; monochrome vs FreeType by mean SSIM.
 - End to end: `NativeCffEndToEndTests` and `CliTests.Generate_NativeRasterizer_FromOtf_ProducesInkedGlyphs` assert inked glyphs from both `.otf` fixtures.
+- CFF in WOFF2: `NotoSans-Regular-Latin-CFF.woff2` (fontTools, from the committed `.otf`; Source fonts are not used because their Reserved Font Name forbids a reformatted copy) decodes to the `.otf`'s tables byte for byte and renders identically on FreeType, StbTrueType, GDI, DirectWrite (`Woff2CffTests`) and Native (`NativeWoff2Tests`).
+- Variation axes on a CFF2 font (`NativeCff2VariationTests`): no failure, default-instance output, and the face's `FontVariations` reaches `CffOutlineDecoder` for the CFF2 `blend` wave.
 - Regression harness: `tests/bmfont-compare/gum-bmfont/otf-plain.bmfc` (CFF) and `otf-cff2-plain.bmfc` (CFF2).
 
 ## Success Criteria

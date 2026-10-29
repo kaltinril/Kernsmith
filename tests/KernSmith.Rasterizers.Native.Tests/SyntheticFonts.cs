@@ -5,7 +5,8 @@ namespace KernSmith.Rasterizers.Native.Tests;
 
 /// <summary>
 /// Builds font files that no fixture on disk provides: CFF-flavoured faces around a hand-built
-/// (or deliberately broken) <c>CFF </c>/<c>CFF2</c> table.
+/// (or deliberately broken) <c>CFF </c>/<c>CFF2</c> table, and fixture fonts with individual
+/// tables swapped out.
 /// </summary>
 internal static class SyntheticFonts
 {
@@ -33,6 +34,31 @@ internal static class SyntheticFonts
         tables.Sort((a, b) => string.CompareOrdinal(a.Tag, b.Tag));
 
         return BuildSfnt(0x4F54544F, tables); // 'OTTO'
+    }
+
+    /// <summary>
+    /// Rebuilds a TrueType font with some tables replaced or removed (a null value drops the
+    /// table); every other table is copied verbatim.
+    /// </summary>
+    public static byte[] WithTables(byte[] font, IReadOnlyDictionary<string, byte[]?> replacements)
+    {
+        var source = TableProvider.Parse(font);
+
+        var tables = new List<(string Tag, byte[] Data)>();
+        foreach (string tag in source.TableTags)
+        {
+            if (!replacements.ContainsKey(tag))
+                tables.Add((tag, source.GetTable(tag).ToArray()));
+        }
+
+        foreach (var (tag, data) in replacements)
+        {
+            if (data is not null)
+                tables.Add((tag, data));
+        }
+
+        tables.Sort((a, b) => string.CompareOrdinal(a.Tag, b.Tag));
+        return BuildSfnt(0x00010000, tables);
     }
 
     private static byte[] BuildSfnt(uint sfntVersion, List<(string Tag, byte[] Data)> tables)

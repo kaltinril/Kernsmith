@@ -16,7 +16,7 @@
 
 ## Features
 
-- **Font format support** -- TTF, OTF, WOFF, and TTC collections (select a face with `FaceIndex`)
+- **Font format support** -- TTF, OTF, WOFF, WOFF2, and TTC collections (select a face with `FaceIndex`)
 - **BMFont output** -- text, XML, and binary `.fnt` formats with `.png` atlas pages
 - **GPOS kerning** -- extracts kerning pairs directly from OpenType GPOS tables
 - **Atlas packing** -- MaxRects (default) and Skyline algorithms with autofit, power-of-two, and non-square texture support
@@ -43,7 +43,7 @@
 - **Reading BMFont files** -- load and parse existing `.fnt` files (auto-detects text/XML/binary)
 - **Fluent builder API** -- chainable configuration as an alternative to options objects
 - **System font loading** -- generate from installed fonts by family name, with a font registry for platforms without system font access
-- **Web/CDN font sourcing** -- fetch WOFF fonts from font CDNs (Bunny Fonts, Google Fonts) via the `KernSmith.Fonts.Web` package, ideal for WASM where there is no filesystem
+- **Web/CDN font sourcing** -- fetch WOFF2/WOFF fonts from font CDNs (Bunny Fonts, Google Fonts) via the `KernSmith.Fonts.Web` package, ideal for WASM where there is no filesystem
 - **Fully in-memory** -- entire pipeline runs without touching disk unless you call `ToFile()`
 - **Batch generation** -- parallel multi-font generation with font caching
 - **Pipeline metrics** -- stage-level timing breakdown for profiling
@@ -61,7 +61,7 @@ KernSmith supports pluggable rasterizer backends. Install at least one backend p
 | **GDI**<br>[![NuGet](https://img.shields.io/nuget/v/KernSmith.Rasterizers.Gdi.svg?label=&color=blue)](https://www.nuget.org/packages/KernSmith.Rasterizers.Gdi) | Windows only | Yes (native Windows hinting) | No | No | No | Matches BMFont reference output for pixel-perfect parity. |
 | **DirectWrite**<br>[![NuGet](https://img.shields.io/nuget/v/KernSmith.Rasterizers.DirectWrite.TerraFX.svg?label=&color=blue)](https://www.nuget.org/packages/KernSmith.Rasterizers.DirectWrite.TerraFX) | Windows only | Yes (natural/symmetric hinting) | No | No | No | Modern Windows rendering. Color and variable fonts are not yet implemented; use FreeType for those. |
 | **StbTrueType**<br>[![NuGet](https://img.shields.io/nuget/v/KernSmith.Rasterizers.StbTrueType.svg?label=&color=blue)](https://www.nuget.org/packages/KernSmith.Rasterizers.StbTrueType) | Cross-platform | No | No | No | Yes | Pure C#, no native dependencies. Ideal for WASM, AOT, serverless. No hinting engine, so small sizes with `AntiAlias.None` can look rough on thin stems -- prefer `AntiAlias.Grayscale` or raise `SuperSample` for crisper small-size text. |
-| **Native**<br>_experimental, not on NuGet yet_ | Cross-platform | No | No | No | No | KernSmith's own rasterizer -- pure C#, zero third-party dependencies. Renders TrueType (`.ttf`) and CFF/CFF2 (`.otf`) outlines. No hinting, SDF, outline stroke, or synthetic bold/italic yet, and only `AntiAlias.None` / `AntiAlias.Grayscale`. Available today from the repository and the CLI (`--rasterizer native`); the package is not published, so it cannot be resolved from a NuGet-only build. |
+| **Native**<br>_experimental, not on NuGet yet_ | Cross-platform | No | No | Yes (TrueType) | No | KernSmith's own rasterizer -- pure C#, zero third-party dependencies. Renders TrueType (`.ttf`) and CFF/CFF2 (`.otf`) outlines; a CFF2 variable font renders its default instance. No hinting, SDF, outline stroke, or synthetic bold/italic yet, and only `AntiAlias.None` / `AntiAlias.Grayscale`. Available today from the repository and the CLI (`--rasterizer native`); the package is not published, so it cannot be resolved from a NuGet-only build. |
 
 Install a backend:
 

@@ -12,7 +12,7 @@ kernsmith generate -f <font> -s <size> [options]
 
 | Flag | Description |
 |------|-------------|
-| `-f, --font <path>` | Font file path (TTF, OTF, WOFF) |
+| `-f, --font <path>` | Font file path (TTF, OTF, WOFF, WOFF2) |
 | `--system-font <name>` | Use a system-installed font by family name |
 | `--face <n>` | Face index for .ttc collections (default: 0) |
 
@@ -346,7 +346,7 @@ The `native` backend is experimental and ships with the CLI only (there is no Nu
 
 ## info
 
-Show metadata from a font file (TTF, OTF, WOFF). Displays family name, style, glyph count, kerning pairs, variation axes, named instances, and Unicode coverage.
+Show metadata from a font file (TTF, OTF, WOFF, WOFF2). Displays family name, style, glyph count, kerning pairs, variation axes, named instances, and Unicode coverage.
 
 ```
 kernsmith info <path> [--json]

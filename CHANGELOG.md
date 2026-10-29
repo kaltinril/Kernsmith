@@ -10,14 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - The Native rasterizer renders OpenType fonts with PostScript outlines (`.otf`): CFF, CID-keyed CFF and CFF2, the last at its default instance. A malformed CFF table fails `LoadFont` with a `FontFormatException` instead of the old blanket rejection of every CFF font.
+- The Native rasterizer renders TrueType variable fonts at the requested instance (`VariationAxes`, `.bmfc` `variationAxes`, CLI `--axis`): `fvar`/`avar` normalization, `gvar` outline deltas including composites and inferred deltas, `HVAR` advances (phantom points without `HVAR`) and `MVAR` line metrics. `SupportsVariableFonts` is now true for Native; a CFF2 variable font still renders its default instance whatever axes are set.
 - Benchmarks: `NativeComparison*` BenchmarkDotNet classes compare the Native, StbTrueType and FreeType backends (font load, per-glyph rasterization at 12/32/72px, `GetGlyphMetrics`, full `BmFont.Generate`) with memory diagnostics; the measured baseline is recorded in the phase 177 plan.
+
+- WOFF2 input. Core decodes `.woff2` (including WOFF2 font collections, which become a TTC) before any backend sees the bytes, so every backend (FreeType, GDI, DirectWrite, StbTrueType and Native) renders a WOFF2 exactly like the TTF it was made from. Brotli is decoded by KernSmith's own pure managed RFC 7932 decoder rather than `System.IO.Compression.BrotliDecoder`, so WOFF2 also works on browser-wasm, where the BCL decoder has no native library. Malformed, truncated or corrupt WOFF2 input throws `FontParsingException`.
+- The desktop UI's Browse dialogs and drag-and-drop accept `.woff2` files, as does the Blazor WASM sample's file picker.
 
 ### Changed
 
+- `KernSmith.Fonts.Web` downloads the `.woff2` source of an `@font-face` rule when the CDN offers one (smaller), falling back to `.woff`; a source's format is read from its `format()` hint, else its file extension. The disk cache names files `.woff2` or `.woff` to match (older `.woff` cache files are still read).
 - The Native rasterizer renders each glyph through an internal staged pipeline (outline decoder, outline transforms, bounds, scale/hint, render-mode dispatch) so CFF, synthetic styles, SDF, variations, color and LCD can each plug into one stage. Output is byte-identical to before.
 
 ### Fixed
 
+- StbTrueType docs (`docs/rasterizers/stbtruetype.md`, its README, `COMPARISON.md`) no longer say it rejects CFF: it renders CFF `.otf` fonts (and WOFF/WOFF2 wrapping them); only CFF2 is unsupported.
+- **FreeType rendered a scrambled instance for every variable-font request.** `SetVariationAxes` passed the axis coordinates to FreeType as 32-bit integers, but the bundled FreeType's `FT_Fixed` is pointer-sized, so it read them in pairs and pushed every axis to an extreme -- even asking for the default values changed the glyphs. Coordinates are now marshalled at the correct width.
+- `KernSmith.Fonts.Web` with `WebFontProvider.GoogleFonts` threw `InvalidOperationException` for every font: Google serves only `.woff2` to the browser User-Agent the package sends, and the package only accepted `.woff`.
+- `KernSmith.Fonts.Web` in the browser (Blazor WebAssembly) failed with a `NetworkError` in Firefox: the `User-Agent` it set became a non-CORS-safelisted `fetch()` header, and Bunny and Google Fonts reject the resulting preflight. In the browser it now leaves the User-Agent to the browser.
 - The Native rasterizer docs (`docs/rasterizers/native.md`, the package README) now describe its real behavior: WOFF1 files work (core decompresses them first), a color-font request throws, `Light`/`LCD` anti-aliasing requests render as grayscale, and core still draws outlines and runs `BoldPostProcessor`/`ItalicPostProcessor` for it.
 
 ## [0.24.0] - 2026-10-18

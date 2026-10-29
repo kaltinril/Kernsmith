@@ -42,7 +42,7 @@ var result = BmFont.GenerateFromSystem("Segoe UI", new FontGeneratorOptions
 - ClearType-hinted grayscale rendering
 - System font loading by family name
 - Synthetic bold and italic
-- TTF, OTF, WOFF input
+- TTF, OTF, WOFF, WOFF2 input
 - Fractional font sizes (e.g. `Size = 32.5f`) honored natively
 
 ## Limitations

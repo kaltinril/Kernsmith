@@ -9,7 +9,7 @@ loading bitmap fonts.
 
 | Method | Description |
 |--------|-------------|
-| `Generate(byte[] fontData, FontGeneratorOptions? options = null)` | Generate from raw TTF/OTF/WOFF bytes. |
+| `Generate(byte[] fontData, FontGeneratorOptions? options = null)` | Generate from raw TTF/OTF/WOFF/WOFF2 bytes. |
 | `Generate(byte[] fontData, int size)` | Convenience overload using default options at the given size. |
 | `Generate(string fontPath, FontGeneratorOptions? options = null)` | Generate from a font file on disk. |
 | `Generate(string fontPath, int size)` | Convenience overload using default options at the given size. |
@@ -18,8 +18,8 @@ loading bitmap fonts.
 
 All `Generate*` methods return a [`BmFontResult`](result.md).
 
-> WOFF and WOFF2 input is auto-detected and decompressed before parsing. (Note: WOFF2 is not
-> supported at runtime and throws `NotSupportedException`; only WOFF is decompressed.)
+> WOFF and WOFF2 input is auto-detected and decompressed to TTF/OTF before parsing; a WOFF2
+> font collection decodes to a TTC (select a face with `FaceIndex`).
 
 ```csharp
 // From a file

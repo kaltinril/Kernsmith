@@ -49,7 +49,7 @@ public class ScanlineRasterizerSsimTests
         // two tessellate curves differently (Phase 163's adaptive cubic flattening versus stb's
         // quadratic subdivision), not because coverage differs; tightening the flattening
         // tolerance moves the score away from stb, not towards it.
-        double ssim = Ssim(mine, reference, width, height);
+        double ssim = ImageSimilarity.Ssim(mine, reference, width, height);
         ssim.ShouldBeGreaterThan(0.95, $"'{character}' at {pixelSize}px scored {ssim:F4}");
     }
 
@@ -67,7 +67,7 @@ public class ScanlineRasterizerSsimTests
         var oCrop = Crop(o, width, w, h);
         var xCrop = Crop(x, xWidth, w, h);
 
-        Ssim(oCrop, xCrop, w, h).ShouldBeLessThan(0.9);
+        ImageSimilarity.Ssim(oCrop, xCrop, w, h).ShouldBeLessThan(0.9);
     }
 
     /// <summary>
@@ -108,7 +108,4 @@ public class ScanlineRasterizerSsimTests
 
         return cropped;
     }
-
-    private static double Ssim(byte[] a, byte[] b, int width, int height) =>
-        ImageSimilarity.Ssim(a, b, width, height);
 }

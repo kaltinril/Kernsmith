@@ -50,7 +50,7 @@ This is novel work -- no other StbTrueTypeSharp consumer (including FontStashSha
 - No variable font axis support
 - No outline stroke support (use EDT outline effect instead)
 - No system font loading -- provide font file bytes directly
-- TTF only (no OTF/CFF outlines, no WOFF/WOFF2)
+- TrueType and CFF (`.otf`) outlines, but not CFF2 (variable `.otf`); WOFF/WOFF2 work because core decompresses them first
 
 ## Native AOT and Trimming
 

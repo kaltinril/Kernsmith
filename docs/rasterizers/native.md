@@ -34,6 +34,7 @@ kernsmith generate --font Roboto-Regular.ttf --size 32 --rasterizer native --out
 - TrueType (`glyf`) outlines
 - PostScript (`CFF ` / `CFF2`) outlines -- `.otf` files, including CID-keyed fonts; a CFF2 variable font renders its default instance
 - TrueType Collections (`.ttc`) via face index
+- WOFF and WOFF2 files wrapping either outline format (KernSmith core decompresses them before the backend sees the bytes)
 - `cmap` formats 4 and 12 for character lookup
 - Anti-aliasing: `Grayscale` and `None` only
 - Super sampling (applied by the core pipeline)
@@ -43,12 +44,11 @@ kernsmith generate --font Roboto-Regular.ttf --size 32 --rasterizer native --out
 
 Each item below either raises a clear error or is ignored, as noted:
 
-- **WOFF2** -- not supported by KernSmith core for any backend. WOFF1 works: core decompresses it before the backend sees the bytes, so a WOFF1 file wrapping TrueType outlines renders normally
 - **Hinting** -- none, so small sizes are softer than FreeType or GDI output. With `AntiAlias.None` there is no dropout control either, so hairline strokes thinner than half a pixel (a light weight at a small size) can drop out where FreeType keeps them
 - **SDF rendering** -- rejected with `NotSupportedException`
 - **Outline stroke** -- the backend has no stroke of its own; outlines (`Outline` / `outlineThickness`) still work because KernSmith core draws them as a bitmap effect for every backend
 - **Synthetic bold and italic** -- not supported. `Bold` and `Italic` are silently ignored rather than rejected, so requesting them produces regular-weight glyphs. For a bitmap-level approximation, add `BoldPostProcessor` / `ItalicPostProcessor` to `PostProcessors`; because Native reports no synthetic-style capability, the pipeline runs them whether or not `Bold` / `Italic` is set.
-- **Variable fonts** -- not supported; axis settings are ignored and the default instance renders
+- **CFF2 variable instances** -- a CFF2 font renders its default instance whatever axes are set. TrueType variable fonts work: `VariationAxes` (or `variationAxes` in a `.bmfc`) selects the instance, and outlines, advances and line metrics follow it. A font whose `avar` table is version 2 gets only its version 1 axis mappings
 - **Color fonts** -- requesting color rendering (`ColorFont`) throws `NotSupportedException`
 - **System font loading by name** -- not supported; load font bytes instead
 - **`Light` and `LCD` anti-aliasing** -- not supported; requesting them silently renders `Grayscale`

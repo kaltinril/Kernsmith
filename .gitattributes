@@ -16,6 +16,7 @@
 *.ico binary
 *.snk binary
 *.zip binary
+*.bin binary
 
 # Exclude Claude Code skill scripts from GitHub language statistics
 .claude/** linguist-vendored
