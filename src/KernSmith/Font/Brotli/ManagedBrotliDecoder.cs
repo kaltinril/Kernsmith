@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace KernSmith.Font.Brotli;
 
 /// <summary>
@@ -57,6 +59,9 @@ internal static class ManagedBrotliDecoder
 
     /// <summary>Copy length code base for each 64-symbol cell of the command alphabet.</summary>
     private static ReadOnlySpan<byte> CommandCellCopyBase => [0, 8, 0, 8, 0, 8, 16, 0, 16, 8, 16];
+
+    /// <summary>Every insert-and-copy symbol's lengths, worked out once from the tables above.</summary>
+    private static readonly CommandLengths[] s_commandLengths = BuildCommandLengths();
 
     /// <summary>Distance codes 0..15: which ring entry (0 = last) each one starts from...</summary>
     private static ReadOnlySpan<byte> ShortCodeRingIndex => [0, 1, 2, 3, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1];
@@ -177,10 +182,16 @@ internal static class ManagedBrotliDecoder
         var commandCodes = ReadCodes(ref reader, commandBlocks.TypeCount, NumCommandSymbols);
         var distanceCodes = ReadCodes(ref reader, distanceTreeCount, distanceAlphabetSize);
 
+        // The literal table for every (block type, context ID), resolved through the context map once.
+        var literalTables = new int[literalBlocks.TypeCount << LiteralContextBits][];
+        for (var i = 0; i < literalTables.Length; i++)
+            literalTables[i] = literalCodes[literalContextMap[i]].Table;
+
         var buffer = output.Buffer;
         var pos = output.Position;
         var end = pos + metaLength;
         var postfixMask = (1 << postfixBits) - 1;
+        var contextLookup = BrotliContext.SplitLookup;
         Span<byte> word = stackalloc byte[40];
 
         while (pos < end)
@@ -189,25 +200,40 @@ internal static class ManagedBrotliDecoder
             var posBefore = pos;
 
             commandBlocks.Advance(ref reader);
-            var command = commandCodes[commandBlocks.CurrentType].Decode(ref reader);
-            var cell = command >> 6;
-            var insertCode = CommandCellInsertBase[cell] + ((command >> 3) & 7);
-            var copyCode = CommandCellCopyBase[cell] + (command & 7);
-            var insertLength = InsertLengthBase[insertCode] + (int)reader.Read(InsertLengthExtraBits[insertCode]);
-            var copyLength = CopyLengthBase[copyCode] + (int)reader.Read(CopyLengthExtraBits[copyCode]);
+            var lengths = s_commandLengths[commandCodes[commandBlocks.CurrentType].Decode(ref reader)];
+            var insertLength = lengths.InsertBase + (int)reader.Read(lengths.InsertExtraBits);
+            var copyLength = lengths.CopyBase + (int)reader.Read(lengths.CopyExtraBits);
 
             if (insertLength > end - pos)
                 throw Invalid("literal insertion runs past the end of the meta-block");
 
-            for (var i = 0; i < insertLength; i++)
+            if (insertLength > 0)
             {
-                literalBlocks.Advance(ref reader);
-                var type = literalBlocks.CurrentType;
-                var p1 = pos > 0 ? buffer[pos - 1] : (byte)0;
-                var p2 = pos > 1 ? buffer[pos - 2] : (byte)0;
-                var contextId = BrotliContext.LiteralContextId(contextModes[type], p1, p2);
-                var tree = literalContextMap[(type << LiteralContextBits) + contextId];
-                buffer[pos++] = (byte)literalCodes[tree].Decode(ref reader);
+                // The last two output bytes, carried in locals rather than re-read per literal.
+                var p1 = pos > 0 ? buffer[pos - 1] : 0;
+                var p2 = pos > 1 ? buffer[pos - 2] : 0;
+                var insertEnd = pos + insertLength;
+                while (pos < insertEnd)
+                {
+                    // One run per literal block: its type fixes the context mode and tables.
+                    literalBlocks.SwitchIfDue(ref reader);
+                    var type = literalBlocks.CurrentType;
+                    var lookup = contextLookup.AsSpan(contextModes[type] << 9, 512);
+                    var tables = literalTables.AsSpan(type << LiteralContextBits, 1 << LiteralContextBits);
+                    var stop = pos + Math.Min(insertEnd - pos, literalBlocks.Remaining);
+                    var reached = reader.DecodeLiterals(buffer, pos, stop, lookup, tables, ref p1, ref p2);
+                    if (reached == pos)
+                    {
+                        // Near the end of the input: one literal through the padding-aware path.
+                        var literal = BrotliPrefixCode.Decode(ref reader, tables[lookup[p1] | lookup[256 + p2]]);
+                        buffer[reached++] = (byte)literal;
+                        p2 = p1;
+                        p1 = literal;
+                    }
+
+                    literalBlocks.Consume(reached - pos);
+                    pos = reached;
+                }
             }
 
             if (pos == end)
@@ -215,7 +241,7 @@ internal static class ManagedBrotliDecoder
 
             var maxDistance = Math.Min(windowSize, pos);
             int distance;
-            if (cell < 2)
+            if (lengths.ImplicitDistance)
             {
                 // Implicit distance code 0: the last distance, not pushed again.
                 distance = distances.Get(0);
@@ -248,9 +274,18 @@ internal static class ManagedBrotliDecoder
                 }
                 else
                 {
-                    // Overlapping copy: later bytes repeat ones written by this same copy.
-                    for (var i = 0; i < copyLength; i++)
-                        buffer[pos++] = buffer[from + i];
+                    // Overlapping copy: the output repeats the last `distance` bytes. Each pass
+                    // copies the whole pattern written so far, from `from` up to `pos`, which
+                    // ends where the destination begins, so the halves never overlap and the
+                    // run doubles every pass.
+                    var remaining = copyLength;
+                    while (remaining > 0)
+                    {
+                        var chunk = Math.Min(pos - from, remaining);
+                        buffer.AsSpan(from, chunk).CopyTo(buffer.AsSpan(pos, chunk));
+                        pos += chunk;
+                        remaining -= chunk;
+                    }
                 }
             }
             else
@@ -383,6 +418,23 @@ internal static class ManagedBrotliDecoder
         return codes;
     }
 
+    private static CommandLengths[] BuildCommandLengths()
+    {
+        var table = new CommandLengths[NumCommandSymbols];
+        for (var command = 0; command < table.Length; command++)
+        {
+            var cell = command >> 6;
+            var insertCode = CommandCellInsertBase[cell] + ((command >> 3) & 7);
+            var copyCode = CommandCellCopyBase[cell] + (command & 7);
+            table[command] = new CommandLengths(
+                InsertLengthBase[insertCode], InsertLengthExtraBits[insertCode],
+                CopyLengthBase[copyCode], CopyLengthExtraBits[copyCode],
+                ImplicitDistance: cell < 2);
+        }
+
+        return table;
+    }
+
     /// <summary>Block-type and block-count state for one category (literal, command or distance).</summary>
     private sealed class BlockSwitcher
     {
@@ -406,8 +458,10 @@ internal static class ManagedBrotliDecoder
         public static BlockSwitcher Read(ref BrotliBitReader reader)
         {
             var typeCount = ReadCount256(ref reader);
+            // A single block type never switches: its count starts beyond any meta-block's
+            // symbols (at most 2^24), so Advance never reaches zero.
             if (typeCount < 2)
-                return new BlockSwitcher(1, null, null, 0);
+                return new BlockSwitcher(1, null, null, int.MaxValue);
 
             var typeCode = BrotliPrefixCode.Read(ref reader, typeCount + 2);
             var countCode = BrotliPrefixCode.Read(ref reader, NumBlockCountSymbols);
@@ -415,34 +469,48 @@ internal static class ManagedBrotliDecoder
             return new BlockSwitcher(typeCount, typeCode, countCode, firstCount);
         }
 
+        /// <summary>Symbols left in the current block.</summary>
+        public int Remaining => _remaining;
+
         /// <summary>Accounts for one more symbol of this category, switching blocks first when the current one is used up.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Advance(ref BrotliBitReader reader)
         {
-            if (_typeCode is null)
-                return; // a single block type never switches
-
-            if (_remaining == 0)
-            {
-                var symbol = _typeCode.Decode(ref reader);
-                var type = symbol switch
-                {
-                    0 => _previousType,
-                    1 => CurrentType + 1,
-                    _ => symbol - 2,
-                };
-
-                // Symbol 1 wraps from the last type to 0; an explicit type beyond the count is corrupt.
-                if (type == TypeCount && symbol == 1)
-                    type = 0;
-                if (type >= TypeCount)
-                    throw Invalid("block type out of range");
-
-                _previousType = CurrentType;
-                CurrentType = type;
-                _remaining = ReadBlockCount(ref reader, _countCode!);
-            }
-
+            SwitchIfDue(ref reader);
             _remaining--;
+        }
+
+        /// <summary>Starts the next block if the current one is used up.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SwitchIfDue(ref BrotliBitReader reader)
+        {
+            if (_remaining == 0)
+                Switch(ref reader);
+        }
+
+        /// <summary>Accounts for <paramref name="count"/> symbols of the current block (at most <see cref="Remaining"/>).</summary>
+        public void Consume(int count) => _remaining -= count;
+
+        /// <summary>Starts the next block: reads its type and its symbol count.</summary>
+        private void Switch(ref BrotliBitReader reader)
+        {
+            var symbol = _typeCode!.Decode(ref reader);
+            var type = symbol switch
+            {
+                0 => _previousType,
+                1 => CurrentType + 1,
+                _ => symbol - 2,
+            };
+
+            // Symbol 1 wraps from the last type to 0; an explicit type beyond the count is corrupt.
+            if (type == TypeCount && symbol == 1)
+                type = 0;
+            if (type >= TypeCount)
+                throw Invalid("block type out of range");
+
+            _previousType = CurrentType;
+            CurrentType = type;
+            _remaining = ReadBlockCount(ref reader, _countCode!);
         }
     }
 

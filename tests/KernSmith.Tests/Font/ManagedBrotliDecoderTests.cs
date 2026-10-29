@@ -46,6 +46,28 @@ public class ManagedBrotliDecoderTests
         Crc32(BrotliContext.Lut2).ShouldBe(0x0dd7a0d6u);
     }
 
+    [Fact]
+    public void ContextSplitLookup_AgreesWithLiteralContextId_ForEveryModeAndByte()
+    {
+        // The decode loop reads the context ID as two independent lookups ORed together;
+        // they must reproduce the RFC formula for every mode and every pair of previous bytes.
+        var split = BrotliContext.SplitLookup;
+        split.Length.ShouldBe(4 * 512);
+        for (var mode = 0; mode < 4; mode++)
+        {
+            for (var p1 = 0; p1 < 256; p1++)
+            {
+                for (var p2 = 0; p2 < 256; p2++)
+                {
+                    var expected = BrotliContext.LiteralContextId(mode, (byte)p1, (byte)p2);
+                    var actual = split[(mode << 9) + p1] | split[(mode << 9) + 256 + p2];
+                    if (actual != expected)
+                        actual.ShouldBe(expected, $"mode {mode}, p1 {p1}, p2 {p2}");
+                }
+            }
+        }
+    }
+
     // ──────────────────────────────────────────────
     // Hand-built streams
     // ──────────────────────────────────────────────
