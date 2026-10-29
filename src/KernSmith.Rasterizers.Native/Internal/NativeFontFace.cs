@@ -59,10 +59,10 @@ internal sealed class NativeFontFace
     /// <summary>The parsed <c>cmap</c> table.</summary>
     public CmapTable Cmap { get; }
 
-    /// <summary>The parsed <c>loca</c> table, or null for CFF fonts (which have no <c>glyf</c>).</summary>
+    /// <summary>The parsed <c>loca</c> table, or null for CFF and bitmap-only fonts (which have no <c>glyf</c>).</summary>
     public LocaTable? Loca { get; }
 
-    /// <summary>The <c>glyf</c> outline table, or null for CFF fonts.</summary>
+    /// <summary>The <c>glyf</c> outline table, or null for CFF and bitmap-only fonts.</summary>
     public GlyfTable? Glyf { get; }
 
     /// <summary>True when this face carries TrueType (<c>glyf</c>) outlines.</summary>
@@ -89,7 +89,7 @@ internal sealed class NativeFontFace
     /// </exception>
     public ParsedGlyph GetGlyph(int glyphIndex) =>
         Glyf?.GetGlyph(glyphIndex)
-        ?? throw new FontFormatException("This font uses CFF outlines, which have no 'glyf' table.");
+        ?? throw new FontFormatException("This font has no 'glyf' table (CFF outlines or color bitmaps only).");
 
     /// <summary>
     /// Parses a font face from raw bytes: validates the table directory and parses the
@@ -110,10 +110,11 @@ internal sealed class NativeFontFace
         var os2 = Os2Table.Parse(tables.GetTable("OS/2").Span);
         var cmap = CmapTable.Parse(tables.GetTable("cmap").Span);
 
-        // CFF faces have no glyf/loca; CffOutlineDecoder reads their 'CFF '/'CFF2' table.
+        // CFF faces have no glyf/loca; CffOutlineDecoder reads their 'CFF '/'CFF2' table. A
+        // TrueType face without glyf is drawn by color bitmaps alone (FontValidator checked).
         LocaTable? loca = null;
         GlyfTable? glyf = null;
-        if (!tables.IsCff)
+        if (!tables.IsCff && tables.HasTable("glyf"))
         {
             loca = LocaTable.Parse(tables.GetTable("loca").Span, maxp.NumGlyphs, head.LongLocaFormat);
             glyf = new GlyfTable(tables.GetTable("glyf"), loca, maxp.ComponentDepthLimit);

@@ -167,7 +167,8 @@ public class NativeGoldenMasterTests
                 GoldenCatalog.Raster.Keys.Count(k => k.StartsWith($"{font.Id}/", StringComparison.Ordinal) && k.EndsWith("/" + style, StringComparison.Ordinal)).ShouldBeGreaterThanOrEqualTo(2, $"{font.Id} {style}");
         }
 
-        // Every outline fixture in the folder is in the matrix (the CBDT emoji font has no outlines).
+        // Every outline fixture in the folder is in the matrix (the CBDT emoji font has no outlines;
+        // its color-bitmap cases are separate).
         var fixtures = Directory.EnumerateFiles(Path.Combine(AppContext.BaseDirectory, "Fixtures"), "*.*", SearchOption.AllDirectories)
             .Where(f => f.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".otf", StringComparison.OrdinalIgnoreCase))
             .Select(f => Path.GetRelativePath(Path.Combine(AppContext.BaseDirectory, "Fixtures"), f))

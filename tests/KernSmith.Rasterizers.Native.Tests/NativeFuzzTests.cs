@@ -26,7 +26,7 @@ public class NativeFuzzTests
     private static readonly string[] NativeTables =
     [
         FontMutator.Directory, "head", "hhea", "maxp", "hmtx", "OS/2", "cmap", "loca", "glyf",
-        "CFF ", "CFF2", "fvar", "avar", "gvar", "HVAR", "MVAR", "COLR", "CPAL",
+        "CFF ", "CFF2", "fvar", "avar", "gvar", "HVAR", "MVAR", "COLR", "CPAL", "CBLC", "CBDT", "sbix",
     ];
 
     private static readonly int[] LatinSample =
@@ -39,6 +39,9 @@ public class NativeFuzzTests
     [InlineData("RobotoFlex")]
     [InlineData("BungeeColor")]
     [InlineData("ReemKufiInk")]
+    [InlineData("NotoColorEmoji")]
+    [InlineData("SyntheticCbdt")]
+    [InlineData("SyntheticSbix")]
     public void DamagedFont_FailsOnlyWithDocumentedExceptions(string fixture)
     {
         var profile = Profile(fixture);
@@ -162,6 +165,9 @@ public class NativeFuzzTests
         "BungeeColor" => new(fixture, TestFonts.BungeeColorBytes(), [.. "ABO&1 ".Select(c => (int)c), 0xE000], null, null, NativeTables),
         "ReemKufiInk" => new(fixture, TestFonts.ReemKufiInkBytes(),
             [.. "AO1 ".Select(c => (int)c), 0x0628, 0x0639, 0x0661, 0x06F4, 0xE000], null, null, NativeTables),
+        "NotoColorEmoji" => new(fixture, TestFonts.NotoColorEmojiBytes(), [0x1F600, 0x2764, 0x2B50, 0x1F680, 0x23, 0x20, 0xE000], null, null, NativeTables, BitmapOnly: true),
+        "SyntheticCbdt" => new(fixture, SyntheticBitmapFonts.Cbdt(), LatinSample, null, null, NativeTables, BitmapOnly: true),
+        "SyntheticSbix" => new(fixture, SyntheticBitmapFonts.Sbix(), LatinSample, null, null, NativeTables),
         _ => throw new ArgumentOutOfRangeException(nameof(fixture), fixture, null),
     };
 

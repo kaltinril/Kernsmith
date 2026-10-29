@@ -35,6 +35,21 @@ public class WasmCompatibilityTests
     }
 
     [Fact]
+    public void ImagingAssembly_HasNoPInvokeAndNoDependencies()
+    {
+        var assembly = typeof(KernSmith.Imaging.PngDecoder).Assembly;
+        var pinvokeMethods = FindPInvokeMethods(assembly);
+        pinvokeMethods.ShouldBeEmpty(
+            $"KernSmith.Imaging assembly contains P/Invoke: {FormatMethods(pinvokeMethods)}");
+
+        // BCL only: nothing outside the runtime's own System.* assemblies.
+        assembly.GetReferencedAssemblies()
+            .Where(r => r.Name != "netstandard" && !r.Name!.StartsWith("System", StringComparison.Ordinal))
+            .Select(r => r.Name)
+            .ShouldBeEmpty();
+    }
+
+    [Fact]
     public void CoreAssembly_DoesNotReferenceFreeTypeSharp()
     {
         var references = typeof(BmFont).Assembly.GetReferencedAssemblies();

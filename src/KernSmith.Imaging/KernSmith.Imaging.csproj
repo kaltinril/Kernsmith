@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <!-- Only the Native rasterizer uses this today, and Native itself is not published yet
+         (Phase 179). Packing it is part of that release decision; until then this flag keeps a
+         solution-wide `dotnet pack` (see RELEASING.md) from producing an unreviewed package. -->
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <IsAotCompatible>true</IsAotCompatible>
+    <PackageId>KernSmith.Imaging</PackageId>
+    <Description>Pure managed image decoding for KernSmith: a hardened PNG decoder (all color types and bit depths, Adam7) producing straight-alpha RGBA. No unsafe code, no native libraries, no dependencies beyond the BCL; runs on browser-wasm and NativeAOT.</Description>
+    <PackageProjectUrl>https://github.com/kaltinril/Kernsmith</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Authors>Kaltinril (Jeremy Swartwood)</Authors>
+    <PackageTags>kernsmith;png;decoder;image;pure-csharp;wasm</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+</Project>

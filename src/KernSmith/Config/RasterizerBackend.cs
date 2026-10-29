@@ -33,8 +33,7 @@ public enum RasterizerBackend
     /// </para>
     /// <para>
     /// Limitations: no TrueType bytecode hinting (and no hinting outside <c>Light</c>), no
-    /// outline stroking of its own, no system-font lookup, and no bitmap-only color fonts
-    /// (<c>CBDT</c>/<c>sbix</c>). Use <see cref="FreeType"/> for those.
+    /// outline stroking of its own, and no system-font lookup. Use <see cref="FreeType"/> for those.
     /// </para>
     /// </summary>
     Native
