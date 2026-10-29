@@ -155,11 +155,42 @@ public class GlyphPipelineTests
 
     // ---- Render-mode dispatch --------------------------------------------------------------
 
-    [Fact]
-    public void Dispatch_UsesCoverage_ForEveryAntiAliasMode()
+    [Theory]
+    [InlineData(AntiAliasMode.None)]
+    [InlineData(AntiAliasMode.Grayscale)]
+    [InlineData(AntiAliasMode.Light)]
+    public void Dispatch_UsesCoverage_ForEveryNonLcdAntiAliasMode(AntiAliasMode mode)
     {
-        foreach (var mode in Enum.GetValues<AntiAliasMode>())
-            GlyphRenderers.Select(new RasterOptions { Size = 32, AntiAlias = mode }).ShouldBeOfType<CoverageRenderer>();
+        GlyphRenderers.Select(new RasterOptions { Size = 32, AntiAlias = mode }).ShouldBeOfType<CoverageRenderer>();
+    }
+
+    [Fact]
+    public void Dispatch_UsesTheLcdRenderer_ForLcd()
+    {
+        GlyphRenderers.Select(new RasterOptions { Size = 32, AntiAlias = AntiAliasMode.Lcd }).ShouldBeSameAs(LcdRenderer.Instance);
+    }
+
+    [Fact]
+    public void Dispatch_ColorAndSdf_TakePriorityOverLcd()
+    {
+        foreach (var options in new[]
+        {
+            new RasterOptions { Size = 32, AntiAlias = AntiAliasMode.Lcd, Sdf = true },
+            new RasterOptions { Size = 32, AntiAlias = AntiAliasMode.Lcd, ColorFont = true },
+        })
+        {
+            IGlyphRenderer? renderer = null;
+            try
+            {
+                renderer = GlyphRenderers.Select(options);
+            }
+            catch (NotSupportedException)
+            {
+                // Rejected outright today; a later phase returns its own renderer instead.
+            }
+
+            (renderer is LcdRenderer).ShouldBeFalse();
+        }
     }
 
     [Fact]

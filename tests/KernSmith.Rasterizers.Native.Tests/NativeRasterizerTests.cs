@@ -26,7 +26,9 @@ public class NativeRasterizerTests
         caps.SupportsSyntheticItalic.ShouldBeFalse();
         caps.SupportsSystemFonts.ShouldBeFalse();
         caps.HandlesOwnSizing.ShouldBeFalse();
-        caps.SupportedAntiAliasModes.ShouldBe([AntiAliasMode.None, AntiAliasMode.Grayscale]);
+        // Light is not advertised until Phase 174 adds light hinting; core negotiation degrades
+        // it to Grayscale.
+        caps.SupportedAntiAliasModes.ShouldBe([AntiAliasMode.None, AntiAliasMode.Grayscale, AntiAliasMode.Lcd]);
     }
 
     [Fact]

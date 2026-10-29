@@ -4,7 +4,8 @@ namespace KernSmith.Rasterizers.Native;
 
 /// <summary>
 /// Describes what the native rasterizer backend supports. It renders TrueType (<c>glyf</c>)
-/// outlines with grayscale or thresholded coverage, including variable-font instances (171).
+/// outlines with grayscale, thresholded or LCD subpixel coverage (173), including variable-font
+/// instances (171).
 /// The other optional features are still <c>false</c> and expand as later phases land —
 /// synthetic bold/italic (167), outline stroking (168), SDF (169) and color fonts (172).
 /// </summary>
@@ -24,6 +25,10 @@ internal sealed class NativeCapabilities : IRasterizerCapabilities
     /// </summary>
     public bool HandlesOwnSizing => false;
 
+    /// <summary>
+    /// <see cref="AntiAliasMode.Light"/> is left out until Phase 174 adds light hinting, so core
+    /// negotiation degrades it to <see cref="AntiAliasMode.Grayscale"/>.
+    /// </summary>
     public IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; } =
-        [AntiAliasMode.None, AntiAliasMode.Grayscale];
+        [AntiAliasMode.None, AntiAliasMode.Grayscale, AntiAliasMode.Lcd];
 }

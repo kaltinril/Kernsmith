@@ -7,8 +7,8 @@ namespace KernSmith.Rasterizers.Native.Internal.Pipeline;
 
 /// <summary>
 /// The default render mode: flattens the outline and fills it with the signed-area scanline
-/// rasterizer into 8-bit coverage. <see cref="AntiAliasMode.None"/> thresholds it; every other
-/// mode renders as grayscale.
+/// rasterizer into 8-bit coverage. <see cref="AntiAliasMode.None"/> thresholds it; Grayscale and
+/// Light render as grayscale. <see cref="AntiAliasMode.Lcd"/> goes to <see cref="LcdRenderer"/>.
 /// </summary>
 internal sealed class CoverageRenderer : IGlyphRenderer
 {

@@ -22,8 +22,11 @@ internal static class GlyphRenderers
         if (options.Sdf)
             throw new NotSupportedException("Native rasterizer does not support SDF rendering.");
 
-        // LCD subpixel (Phase 173) branches on options.AntiAlias here; until then every
-        // anti-alias mode is coverage.
+        // LCD subpixel (Phase 173). Light has no hinting to be light about yet (Phase 174), so
+        // it renders as coverage; core negotiation already degrades it to Grayscale.
+        if (options.AntiAlias == AntiAliasMode.Lcd)
+            return LcdRenderer.Instance;
+
         return CoverageRenderer.Instance;
     }
 }
