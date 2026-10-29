@@ -20,10 +20,10 @@ namespace KernSmith.Rasterizers.Native;
 ///
 /// TrueType variable fonts (Phase 171) render at the instance <see cref="SetVariationAxes"/>
 /// selects: <c>gvar</c> outlines, <c>HVAR</c> (or phantom-point) advances and <c>MVAR</c> font
-/// metrics. Color fonts render from <c>COLR</c> version 0 layers and <c>CPAL</c> palettes when
-/// <see cref="RasterOptions.ColorFont"/> is on (Phase 172); glyphs without such layers —
-/// including <c>COLR</c> version 1 paint graphs — render as plain coverage. Bitmap-only color
-/// fonts (<c>CBDT</c>/<c>sbix</c>, no outlines) are rejected at load time.
+/// metrics. Color fonts render from <c>COLR</c> version 1 paint graphs and version 0 layers with
+/// <c>CPAL</c> palettes when <see cref="RasterOptions.ColorFont"/> is on (Phase 172); glyphs
+/// without either render as plain coverage. Bitmap-only color fonts (<c>CBDT</c>/<c>sbix</c>,
+/// no outlines) are rejected at load time.
 ///
 /// Synthetic bold/italic (Phase 167), outline stroking (Phase 168) and SDF (Phase 169) are not
 /// implemented; the corresponding
@@ -81,7 +81,7 @@ public sealed class NativeRasterizer : IRasterizer
         _face = face;
         _variations = variations;
         _pipeline = new GlyphPipeline(decoder, face.Head.UnitsPerEm);
-        _colorGlyphs = ColorGlyphs.TryLoad(face.Tables, face.Maxp.NumGlyphs);
+        _colorGlyphs = ColorGlyphs.TryLoad(face.Tables, face.Maxp.NumGlyphs, variations);
     }
 
     /// <inheritdoc />

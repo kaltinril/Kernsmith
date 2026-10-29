@@ -8,7 +8,8 @@ using KernSmith.Rasterizers.Native.Internal.Tables;
 namespace KernSmith.Rasterizers.Native.Internal.Pipeline;
 
 /// <summary>
-/// The color render mode for <c>COLR</c> version 0 glyphs: each layer glyph runs through the
+/// The color render mode for <c>COLR</c> glyphs. Version 1 paint graphs, which take precedence,
+/// render through <see cref="PaintGraphRenderer"/>. For version 0 glyphs each layer glyph runs through the
 /// normal pipeline (decode, transforms, bounds, scale/hint), its coverage is tinted with its
 /// palette color, and the layers are composited bottom to top with source-over onto a canvas
 /// sized to the union of the layer boxes. Glyphs without color layers go to the wrapped
@@ -30,6 +31,7 @@ internal sealed class ColorLayerRenderer : IGlyphRenderer
     private readonly ColorGlyphs _colorGlyphs;
     private readonly GlyphPipeline _pipeline;
     private readonly IGlyphRenderer _fallback;
+    private readonly PaintGraphRenderer _paintGraphs;
 
     /// <summary>Wraps the renderer chosen for the request's other options.</summary>
     /// <param name="colorGlyphs">The face's resolved color layers and selected palette.</param>
@@ -43,15 +45,19 @@ internal sealed class ColorLayerRenderer : IGlyphRenderer
         _colorGlyphs = colorGlyphs;
         _pipeline = pipeline;
         _fallback = fallback;
+        _paintGraphs = new PaintGraphRenderer(pipeline);
     }
 
-    /// <summary>True when the glyph renders from color layers rather than its own outline.</summary>
-    public bool HasLayers(int glyphIndex) => _colorGlyphs.HasLayers(glyphIndex);
+    /// <summary>True when the glyph renders from a paint graph or color layers rather than its own outline.</summary>
+    public bool HasLayers(int glyphIndex) => _colorGlyphs.HasPaintGraph(glyphIndex) || _colorGlyphs.HasLayers(glyphIndex);
 
     /// <inheritdoc />
     public GlyphMetrics Measure(PreparedGlyph glyph, RasterOptions options)
     {
-        if (!HasLayers(glyph.GlyphIndex))
+        if (_colorGlyphs.TryGetPaintGraph(glyph.GlyphIndex, out var graph))
+            return Metrics(_paintGraphs.Measure(graph, glyph.GlyphIndex, options), glyph.Advance);
+
+        if (!_colorGlyphs.HasLayers(glyph.GlyphIndex))
             return _fallback.Measure(glyph, options);
 
         var (_, box) = Layout(glyph.GlyphIndex, options);
@@ -61,12 +67,23 @@ internal sealed class ColorLayerRenderer : IGlyphRenderer
     /// <inheritdoc />
     public RasterizedGlyph Render(int codepoint, int glyphIndex, PreparedGlyph glyph, RasterOptions options)
     {
-        if (!HasLayers(glyphIndex))
+        GlyphBox box;
+        byte[] pixels;
+        if (_colorGlyphs.TryGetPaintGraph(glyphIndex, out var graph))
+        {
+            (box, pixels) = _paintGraphs.Render(graph, glyphIndex, options);
+        }
+        else if (_colorGlyphs.HasLayers(glyphIndex))
+        {
+            (var layers, box) = Layout(glyphIndex, options);
+            pixels = box.IsEmpty ? [] : Composite(layers, box, options.AntiAlias);
+        }
+        else
+        {
             return _fallback.Render(codepoint, glyphIndex, glyph, options);
+        }
 
-        var (layers, box) = Layout(glyphIndex, options);
         var metrics = Metrics(box, glyph.Advance);
-        byte[] pixels = box.IsEmpty ? [] : Composite(layers, box, options.AntiAlias);
 
         return new RasterizedGlyph
         {

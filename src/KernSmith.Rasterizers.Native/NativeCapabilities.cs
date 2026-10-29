@@ -5,15 +5,15 @@ namespace KernSmith.Rasterizers.Native;
 /// <summary>
 /// Describes what the native rasterizer backend supports. It renders TrueType (<c>glyf</c>)
 /// outlines with grayscale or thresholded coverage, including variable-font instances (171),
-/// and color glyphs from <c>COLR</c> version 0 layers (Phase 172). The other optional features
+/// and color glyphs from <c>COLR</c> version 0 layers and version 1 paint graphs (Phase 172). The other optional features
 /// are still <c>false</c> and expand as later phases land — synthetic bold/italic (167), outline
 /// stroking (168) and SDF (169).
 /// </summary>
 internal sealed class NativeCapabilities : IRasterizerCapabilities
 {
     /// <summary>
-    /// True: <c>COLR</c> version 0 layers with <c>CPAL</c> palettes. Version 1 paint graphs fall
-    /// back to plain coverage and bitmap-only color fonts are rejected at load.
+    /// True: <c>COLR</c> version 0 layers and version 1 paint graphs with <c>CPAL</c> palettes.
+    /// Bitmap-only color fonts are rejected at load.
     /// </summary>
     public bool SupportsColorFonts => true;
     public bool SupportsVariableFonts => true;

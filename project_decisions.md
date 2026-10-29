@@ -19,6 +19,7 @@ Decisions made, with the why — consult before re-litigating anything. One per 
 
 - The Native rasterizer, and any core code it depends on, is pure managed C# we write — no P/Invoke, no native libraries, no new third-party packages (not "managed where convenient") — because its reason to exist is running on browser-wasm and iOS/NativeAOT with zero foreign code; a native or P/Invoke dependency reintroduces exactly the platform gaps FreeType has.
 - WOFF2's Brotli stage is a pure managed decoder we write in core (not `System.IO.Compression.BrotliDecoder`, not a third-party package): `BrotliDecoder` wraps the runtime's native Brotli library, which browser-wasm does not ship — it throws `PlatformNotSupportedException` there (dotnet/runtime#91279, open). The API carries no `[UnsupportedOSPlatform("browser")]`, so the analyzer would not catch it. `KernSmith.Fonts.Web` exists to serve browser/WASM, and CSS font CDNs serve WOFF2, so a BCL-Brotli WOFF2 would fail on exactly the platform that needs it.
+- Native's COLR version 1 renderer interpolates gradients and composites in premultiplied linear light, not sRGB, because the COLR and CPAL chapters require it and FreeType's backend cannot render version 1 to match against. Browsers composite in sRGB, so anti-aliased edges between overlapping colored layers come out lighter than in a browser. Version 0 layers stay sRGB source-over to match FreeType.
 
 ## Channels & Compositing
 
