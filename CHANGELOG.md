@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Native placed TrueType glyphs by their `glyf` xMin instead of their `hmtx` left side bearing.** Where the two disagree, a glyph is now positioned by its left side bearing phantom point (pp1 = xMin - lsb), as the TrueType spec and FreeType do; a composite with a `USE_MY_METRICS` component takes that component's phantom point, and a variable font adds the varied `gvar` pp1 delta. Roboto has 52 such glyphs, each off by one font unit (e.g. `&` and `8`); fonts with larger mismatches were off by many pixels.
 - **FreeType rendered a scrambled instance for every variable-font request.** `SetVariationAxes` passed the axis coordinates to FreeType as 32-bit integers, but the bundled FreeType's `FT_Fixed` is pointer-sized, so it read them in pairs and pushed every axis to an extreme -- even asking for the default values changed the glyphs. Coordinates are now marshalled at the correct width.
 - The Native rasterizer docs (`docs/rasterizers/native.md`, the package README) now describe its real behavior: WOFF1 files work (core decompresses them first), a color-font request throws, `Light`/`LCD` anti-aliasing requests render as grayscale, and core still draws outlines and runs `BoldPostProcessor`/`ItalicPostProcessor` for it.
 

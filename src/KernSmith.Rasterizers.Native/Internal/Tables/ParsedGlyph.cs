@@ -19,6 +19,17 @@ internal sealed class GlyphContour
 }
 
 /// <summary>
+/// Where a glyph's horizontal origin comes from. TrueType places an outline by its left side
+/// bearing phantom point, pp1, which starts at <c>xMin - lsb</c> of the glyph named here — the
+/// glyph itself, or for a composite the component carrying <c>USE_MY_METRICS</c> (followed down
+/// nested composites) — and is then moved by that glyph's <c>gvar</c> pp1 delta.
+/// </summary>
+/// <param name="MetricsGlyph">The glyph whose <c>hmtx</c> left side bearing applies.</param>
+/// <param name="XMin">That glyph's <c>glyf</c> header xMin, in its own coordinates.</param>
+/// <param name="VariationDelta">That glyph's pp1 X delta at the current instance; 0 when static.</param>
+internal readonly record struct HorizontalOrigin(int MetricsGlyph, short XMin, float VariationDelta);
+
+/// <summary>
 /// A glyph's outline as parsed from the <c>glyf</c> table, in font design units and with
 /// composite components already resolved into concrete contours.
 /// </summary>
@@ -32,7 +43,8 @@ internal sealed class ParsedGlyph
         short yMin,
         short xMax,
         short yMax,
-        bool isComposite)
+        bool isComposite,
+        HorizontalOrigin? origin = null)
     {
         GlyphIndex = glyphIndex;
         Contours = contours;
@@ -41,6 +53,7 @@ internal sealed class ParsedGlyph
         XMax = xMax;
         YMax = yMax;
         IsComposite = isComposite;
+        Origin = origin ?? new HorizontalOrigin(glyphIndex, xMin, 0f);
     }
 
     /// <summary>The glyph index this outline was parsed from.</summary>
@@ -63,6 +76,13 @@ internal sealed class ParsedGlyph
 
     /// <summary>True when the glyph was assembled from component glyphs.</summary>
     public bool IsComposite { get; }
+
+    /// <summary>
+    /// What places this outline horizontally. Its <see cref="HorizontalOrigin.VariationDelta"/>
+    /// has already been applied to <see cref="Contours"/>; the <c>hmtx</c> part
+    /// (<c>xMin - lsb</c>) has not, so the contours still agree with the header box above.
+    /// </summary>
+    public HorizontalOrigin Origin { get; }
 
     /// <summary>True when the glyph has no outline at all.</summary>
     public bool IsEmpty => Contours.Length == 0;

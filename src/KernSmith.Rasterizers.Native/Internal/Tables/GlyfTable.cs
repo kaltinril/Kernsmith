@@ -44,6 +44,7 @@ internal sealed class GlyfTable
     private const ushort MoreComponents = 0x0020;
     private const ushort WeHaveAnXAndYScale = 0x0040;
     private const ushort WeHaveATwoByTwo = 0x0080;
+    private const ushort UseMyMetrics = 0x0200;
     private const ushort ScaledComponentOffset = 0x0800;
     private const ushort UnscaledComponentOffset = 0x1000;
 
@@ -77,11 +78,16 @@ internal sealed class GlyfTable
     /// <summary>
     /// Decodes a glyph at a variation instance: every glyph of a composite tree is varied at its
     /// own level — outline points for simple glyphs, placement offsets for components — before
-    /// it is assembled, and the outline is moved so the varied horizontal origin stays at x = 0.
+    /// it is assembled, and the outline is moved by the pp1 delta of
+    /// <see cref="ParsedGlyph.Origin"/>, so the varied horizontal origin stays where the default
+    /// one was. Placing that default origin (<c>xMin - lsb</c>) needs <c>hmtx</c> and is left
+    /// to the caller.
     /// </summary>
     /// <param name="glyphIndex">The glyph to decode.</param>
     /// <param name="variations">Delta source for the current instance; null decodes the static glyph.</param>
-    /// <param name="phantom">How the glyph's horizontal phantom points moved.</param>
+    /// <param name="phantom">How the glyph's own horizontal phantom points moved — for a
+    /// <c>USE_MY_METRICS</c> composite these still carry its advance, while its origin follows
+    /// the component (see <see cref="ParsedGlyph.Origin"/>).</param>
     /// <exception cref="ArgumentOutOfRangeException">If the glyph index is outside the font.</exception>
     /// <exception cref="FontFormatException">If the glyph's data is malformed or truncated.</exception>
     public ParsedGlyph GetGlyph(int glyphIndex, IGlyphVariationProvider? variations, out PhantomDeltas phantom)
@@ -90,8 +96,9 @@ internal sealed class GlyfTable
         var glyph = ParseGlyph(glyphIndex, depth: 0, ref componentBudget, variations, out phantom);
 
         // The left side bearing phantom point is the horizontal origin; the pen sits on it.
-        if (!phantom.Left.Equals(0f))
-            Translate(glyph.Contours, -phantom.Left, 0f);
+        float originDelta = glyph.Origin.VariationDelta;
+        if (!originDelta.Equals(0f))
+            Translate(glyph.Contours, -originDelta, 0f);
 
         return InsertImplicitOnCurvePoints(glyph);
     }
@@ -124,7 +131,8 @@ internal sealed class GlyfTable
         if (length == 0)
         {
             phantom = PhantomOnly(glyphIndex, variations);
-            return ParsedGlyph.Empty(glyphIndex);
+            return new ParsedGlyph(glyphIndex, [], 0, 0, 0, 0, isComposite: false,
+                new HorizontalOrigin(glyphIndex, 0, phantom.Left));
         }
 
         if (length < GlyphHeaderLength)
@@ -142,11 +150,13 @@ internal sealed class GlyfTable
         short xMax = reader.ReadInt16();
         short yMax = reader.ReadInt16();
 
+        HorizontalOrigin? componentOrigin = null;
         GlyphContour[] contours = numberOfContours >= 0
             ? ParseSimpleContours(ref reader, glyphIndex, numberOfContours, variations, out phantom)
-            : ParseCompositeContours(ref reader, glyphIndex, depth, ref componentBudget, variations, out phantom);
+            : ParseCompositeContours(ref reader, glyphIndex, depth, ref componentBudget, variations, out phantom, out componentOrigin);
 
-        return new ParsedGlyph(glyphIndex, contours, xMin, yMin, xMax, yMax, numberOfContours < 0);
+        var origin = componentOrigin ?? new HorizontalOrigin(glyphIndex, xMin, phantom.Left);
+        return new ParsedGlyph(glyphIndex, contours, xMin, yMin, xMax, yMax, numberOfContours < 0, origin);
     }
 
     private static GlyphContour[] ParseSimpleContours(
@@ -264,7 +274,7 @@ internal sealed class GlyfTable
 
     private GlyphContour[] ParseCompositeContours(
         ref FontReader reader, int glyphIndex, int depth, ref int componentBudget,
-        IGlyphVariationProvider? variations, out PhantomDeltas phantom)
+        IGlyphVariationProvider? variations, out PhantomDeltas phantom, out HorizontalOrigin? metricsOrigin)
     {
         // Read every component record before resolving any: the composite's variation data
         // addresses its components by position and ends with phantom points after the last one,
@@ -321,6 +331,7 @@ internal sealed class GlyfTable
             phantom = new PhantomDeltas(vx[components.Count], vx[components.Count + 1], AnyNonZero(vx, vy, components.Count));
         }
 
+        metricsOrigin = null;
         var contours = new List<GlyphContour>();
         for (int i = 0; i < components.Count; i++)
         {
@@ -336,9 +347,13 @@ internal sealed class GlyfTable
             var component = ParseGlyph(record.GlyphIndex, depth + 1, ref componentBudget, variations, out var componentPhantom);
             var transformed = ApplyLinearTransform(component.Contours, a, b, c, d);
 
-            // USE_MY_METRICS is not followed: it hands the composite a component's hinted
-            // metrics, and unhinted the composite's own hmtx entry and phantom deltas apply —
-            // the same advance HVAR gives, and the one the static path already uses.
+            // USE_MY_METRICS hands the composite this component's phantom points; the last
+            // flagged component wins. They are taken as the component computed them, before its
+            // offset or transform. Only the origin (pp1) follows it here: the advance stays the
+            // composite's own hmtx entry and phantom deltas — the same advance HVAR gives.
+            if ((record.Flags & UseMyMetrics) != 0)
+                metricsOrigin = component.Origin;
+
             if (componentPhantom.OutlineVaried)
                 phantom = phantom with { OutlineVaried = true };
 
@@ -495,7 +510,7 @@ internal sealed class GlyfTable
 
         return rebuilt is null
             ? glyph
-            : new ParsedGlyph(glyph.GlyphIndex, rebuilt, glyph.XMin, glyph.YMin, glyph.XMax, glyph.YMax, glyph.IsComposite);
+            : new ParsedGlyph(glyph.GlyphIndex, rebuilt, glyph.XMin, glyph.YMin, glyph.XMax, glyph.YMax, glyph.IsComposite, glyph.Origin);
     }
 
     private static bool HasAdjacentOffCurvePoints(GlyphPoint[] points)
