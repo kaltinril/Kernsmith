@@ -11,7 +11,7 @@ public class EndToEndBenchmarks
     [GlobalSetup]
     public void Setup()
     {
-        _fontData = File.ReadAllBytes(FindFont("Roboto-Regular.ttf"));
+        _fontData = BenchmarkFixtures.ReadFont("Roboto-Regular.ttf");
     }
 
     [Benchmark(Description = "Game UI: ASCII 32px, outline 2px, gradient")]
@@ -88,15 +88,4 @@ public class EndToEndBenchmarks
         Characters = CharacterSet.Latin,
         SuperSampleLevel = 4
     });
-
-    private static string FindFont(string name)
-    {
-        var paths = new[]
-        {
-            Path.Combine("tests", "KernSmith.Tests", "Fixtures", name),
-            Path.Combine("..", "..", "..", "..", "tests", "KernSmith.Tests", "Fixtures", name),
-        };
-        return paths.Select(Path.GetFullPath).FirstOrDefault(File.Exists)
-            ?? throw new FileNotFoundException($"Test font not found: {name}");
-    }
 }
