@@ -35,6 +35,7 @@ Each item is ranked 1 (low) to 5 (high) on three dimensions.
 |---|------|------|------------|------------|--------|
 | 1 | Perf 6 Phase B -- pool atlas page buffers | 2 | 4 | 4 | Deferred |
 | 2 | Perf 6 Phase C -- pool per-glyph bitmap buffers | 2 | 4 | 3 | Deferred |
+| 3 | GPOS PairPos format 1 coverage rescans | 4 | 1 | 2 | Deferred |
 
 **Legend**: Ease = ease to implement (5=easy). Break Risk = chance of breaking other things (5=high risk). Importance = importance to implement (5=critical).
 
@@ -161,6 +162,12 @@ blocker: the design needs a way to express buffer ownership / "this buffer is in
 
 Same bar as Phase B: the bmfont-compare regression harness must pass **exit 0 -- 0 diffs** across all
 backends and FNT metadata. The optimization only changes buffer provenance, not pixel or metric values.
+
+---
+
+## GPOS PairPos format 1 coverage rescans
+
+`TtfParser.ParsePairPosFormat1` (`src/KernSmith/Font/TtfParser.cs`) finds each pair set's first glyph by scanning the whole parsed coverage list for the entry whose coverage index equals the pair-set index, so a subtable costs O(pairSetCount × coverage size) — quadratic in the number of covered glyphs. Real fonts keep this small, but a large format 1 kerning subtable (thousands of covered glyphs) pays it on every parse. The fix is to build the index→glyph lookup once per subtable (an array sized by `pairSetCount`, filled from the coverage list) and index into it. Unlike the Perf 6 items it needs no API change; the parsed `GposPairs` must stay identical, which the existing GPOS/kerning tests and the regression harness's `.fnt` kerning comparison check.
 
 ---
 

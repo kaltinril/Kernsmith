@@ -27,6 +27,7 @@ Each issue is ranked 1 (low) to 5 (high) on three dimensions:
 | 3 | Native DW Kerning | 3 | 2 | 1 | Open |
 | 4 | GDI MatchCharHeight Bug | 2 | 3 | 2 | Open |
 | 5 | Synthetic Bold/Italic Ignores Capabilities (core) | 4 | 2 | 4 | Fixed |
+| 6 | StbTrueType embolden is FreeType-derived (FTL) | 3 | 2 | 1 | Note only |
 
 **Legend**: Ease = ease to implement (5=easy). Break Risk = chance of breaking other things (5=high risk). Importance = importance to implement (5=critical).
 
@@ -105,6 +106,12 @@ FreeType, GDI, DirectWrite and StbTrueType all report `true`, so their branch is
 
 Native still renders bold/italic configs differently from FreeType, but that is the backend genuinely lacking synthetic styling (Phase 167), not this defect.
 
+### 6. StbTrueType Synthetic Bold Is a FreeType-Derived Port — Note Only
+
+> Ease: 3 | Break Risk: 2 | Importance: 1
+
+`src/KernSmith.Rasterizers.StbTrueType/OutlineTransforms.cs` (`ApplyEmbolden` / `EmboldenContour`) is a port of FreeType's `FT_Outline_EmboldenXY`, carried under the FreeType License with attribution in `THIRD-PARTY-NOTICES.md` (section 2.1). It is the only third-party-derived source in a backend whose point is a dependency-free managed path, and it keeps an FTL credit obligation on every StbTrueType consumer. An original implementation (for example sharing whatever Native's Phase 167 embolden ends up as) would remove that. Recorded so the provenance is visible; no change is planned, and any replacement must keep StbTrueType's bold output identical or be called out as a harness diff.
+
 ## Files Reference
 
 | File | Relevance |
@@ -118,3 +125,4 @@ Native still renders bold/italic configs differently from FreeType, but that is 
 | `src/KernSmith/Rasterizer/IRasterizerCapabilities.cs` | Issue 5 — `SupportsSyntheticBold` / `SupportsSyntheticItalic`, the flags the gate consults |
 | `src/KernSmith.Rasterizers.Native/NativeCapabilities.cs` | Issue 5 — the first backend to report `false`, which is what exposed the bug |
 | `tests/KernSmith.Rasterizers.Native.Tests/SyntheticStyleFallbackTests.cs` | Issue 5 — regression coverage, both directions of the gate |
+| `src/KernSmith.Rasterizers.StbTrueType/OutlineTransforms.cs` | Issue 6 — the FTL-derived embolden port |
