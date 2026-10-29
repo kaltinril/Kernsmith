@@ -55,7 +55,9 @@ dotnet tools/KernSmith.Cli/bin/Debug/net10.0/KernSmith.Cli.dll generate -f <font
 Native options: `--aa none|grayscale|light|lcd` (`--mono` = `none`), `--hinting`/`--no-hinting`,
 `--sdf` or `--sdf-mode sdf|msdf|mtsdf`, `--sdf-spread <n>`, `--color-font`, `--color-palette <n>`,
 `--axis <tag>=<value>` (repeatable), `--instance <name>` (a named instance; `--axis` overrides its
-values), `-b/--bold`, `-i/--italic`. `kernsmith info <font>` lists a font's axes and named instances.
+values), `-b/--bold`, `-i/--italic`, `--italic-angle <deg>`, `--width-percent <n>`,
+`--lcd-filter default|light|smooth|none`, `--lcd-order rgb|bgr|vrgb|vbgr`, `--outline <n> --outline-mode vector`.
+`kernsmith info <font>` lists a font's axes and named instances.
 
 ## MonoGame sample
 
@@ -160,7 +162,7 @@ FreeType by switching the rasterizer.
 | Variable CFF2 | `SourceCodeVF-Upright.otf` | Weight follows `wght` (the default instance is ExtraLight) |
 | COLR v0 | `Color/BungeeColor-Regular.ttf`, Color Font on | Two-tone letters; palettes 0-8 recolor them; palette 9 is an error |
 | COLR v1 | `Color/ReemKufiInk-Regular.ttf`, Color Font on, characters ٠١٢٣٤٥٦٧٨٩ (U+0660-0669) | Gradient-filled digits (Latin text stays gray) |
-| Bitmap color (CBDT/sbix) | `NotoColorEmoji.ttf`, Color Font on | Emoji in color, like FreeType |
+| Bitmap color (CBDT/sbix) | `NotoColorEmoji.ttf`, Color Font on | Emoji in color, scaled to the requested size (FreeType returns the font's strike size; at that size the two match) |
 | Synthetic bold / italic | Roboto, Bold / Italic | Same stroke weight and 12° slant as FreeType, nothing clipped |
 | Italic angle | Roboto, Italic, **Italic Angle** 30 then -12 | Steeper slant at 30, leaning left at -12, nothing clipped; switching to FreeType disables the box and renders 12° |
 | Width % | Roboto, **Width %** 50 then 150 | Glyphs, advances and kerning half / one-and-a-half as wide; switching to FreeType disables the box and renders 100% |

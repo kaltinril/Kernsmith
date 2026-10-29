@@ -68,7 +68,7 @@ The right panel contains collapsible sections for each effect type.
 
 Native-only settings are disabled on other backends and show the value used there; your choice comes back when you switch to Native.
 - **Hinting**: Sharper rendering at small sizes (enabled by default)
-- **Super Sample**: Render at 2x or 4x resolution then downsample for smoother results. Higher values are slower.
+- **Super Sample**: Render at 2x or 4x resolution then downsample for smoother results. Higher values are slower. LCD output is never super sampled (it would average the subpixels away).
 
 ### Outline
 
@@ -77,7 +77,7 @@ Adds a colored border around each glyph.
 - **Width**: 1-10 pixels
 - **Color**: Hex color picker (#RRGGBB)
 - **Shape**: Round (default), Square, or Plus corners
-- **Mode**: Effect (bitmap outline, default) or Vector (strokes the glyph outline before rasterizing; Native only, not with a distance field)
+- **Mode**: Effect (bitmap outline, default) or Vector (the backend draws the ring from the glyph's vector outline: same width and cells, crisper edge; Native only, not with a distance field)
 
 ### Shadow
 

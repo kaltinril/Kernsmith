@@ -576,65 +576,51 @@ Settings can be stored in `.bmfc` files (INI-like format) or `.hiero` files (Hie
 
 ### Sample .bmfc File
 
+`.bmfc` is BMFont's flat `key=value` format; KernSmith reads BMFont's keys plus its own extensions (`kernsmith init` writes one from any set of flags). An abridged example:
+
 ```ini
 # mygame-font.bmfc
+fileVersion=1
 
-[font]
-path = fonts/Roboto-Regular.ttf
-face-index = 0
+# font settings
+fontFile=fonts/Roboto-Regular.ttf
+fontSize=32
+isBold=0
+isItalic=0
+useSmoothing=1
+aa=2
+useHinting=1
 
-[rendering]
-size = 32
-dpi = 72
-rasterizer = freetype
-anti-alias = grayscale
-bold = false
-italic = false
-super-sample = 2
-hinting = true
+# character alignment
+paddingUp=2
+paddingDown=2
+paddingRight=2
+paddingLeft=2
+spacingHoriz=1
+spacingVert=1
 
-[characters]
-preset = latin
-# chars = ABCabc
-# chars-file = my-chars.txt
-# ranges = 0020-007E, 00A0-00FF
+# output file
+outWidth=1024
+outHeight=1024
+fontDescFormat=0
+textureFormat=png
 
-[atlas]
-max-texture-size = 1024
-padding = 2
-spacing = 1
-power-of-two = true
-packer = maxrects
-texture-format = png
-autofit = false
+# outline
+outlineThickness=2
 
-[effects]
-outline = 2
-fill-color = FF8800
-gradient-top = FFFFFF
-gradient-bottom = 888888
-gradient-offset = 0
-gradient-scale = 1
-gradient-cyclic = false
-shadow-offset-x = 1
-shadow-offset-y = 1
-shadow-color = 000000
-shadow-blur = 1
-shadow-blur-kernel = 0
-shadow-blur-passes = 1
-hard-shadow = false
+# selected chars
+chars=32-126
 
-[kerning]
-enabled = true
+# output path
+outputPath=output/roboto
 
-[variable]
-instance = Bold
-# wght = 700
-# wdth = 90
-
-[output]
-format = text
-path = output/roboto
+# kernsmith extensions
+gradientTop=FFFFFF
+gradientBottom=888888
+shadowOffsetX=1
+shadowOffsetY=1
+shadowBlur=1
+rasterizer=freetype
 ```
 
 ### Sample .hiero File
