@@ -134,7 +134,7 @@ public sealed class NativeRasterizer : IRasterizer
     }
 
     /// <inheritdoc />
-    /// <exception cref="ArgumentOutOfRangeException">If the size is not a positive finite number or the DPI is not positive.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">If the size is not a positive finite number or the DPI is negative (zero means 72).</exception>
     /// <exception cref="RasterizationException">
     /// If the glyph's data is malformed, or its bitmap would exceed the size limits (64 ems, or
     /// 16384 px per side after distance-field padding).
@@ -144,7 +144,7 @@ public sealed class NativeRasterizer : IRasterizer
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
         ArgumentNullException.ThrowIfNull(options);
-        ValidateSize(options);
+        options = ValidateSize(options);
         var renderer = GlyphRenderers.SelectForFace(options, _colorGlyphs, _pipeline!);
 
         int glyphIndex = _face!.GetGlyphIndex(codepoint);
@@ -184,14 +184,14 @@ public sealed class NativeRasterizer : IRasterizer
     }
 
     /// <inheritdoc />
-    /// <exception cref="ArgumentOutOfRangeException">If the size is not a positive finite number or the DPI is not positive.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">If the size is not a positive finite number or the DPI is negative (zero means 72).</exception>
     /// <exception cref="RasterizationException">As for <see cref="RasterizeGlyph"/>.</exception>
     public GlyphMetrics? GetGlyphMetrics(int codepoint, RasterOptions options)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
         ArgumentNullException.ThrowIfNull(options);
-        ValidateSize(options);
+        options = ValidateSize(options);
         var renderer = GlyphRenderers.SelectForFace(options, _colorGlyphs, _pipeline!);
 
         int glyphIndex = _face!.GetGlyphIndex(codepoint);
@@ -230,13 +230,13 @@ public sealed class NativeRasterizer : IRasterizer
     }
 
     /// <inheritdoc />
-    /// <exception cref="ArgumentOutOfRangeException">If the size is not a positive finite number or the DPI is not positive.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">If the size is not a positive finite number or the DPI is negative (zero means 72).</exception>
     public RasterizerFontMetrics? GetFontMetrics(RasterOptions options)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
         ArgumentNullException.ThrowIfNull(options);
-        ValidateSize(options);
+        options = ValidateSize(options);
 
         double scale = GlyphPipeline.PixelScale(options, _face!.Head.UnitsPerEm);
 
@@ -298,14 +298,17 @@ public sealed class NativeRasterizer : IRasterizer
 
     /// <summary>
     /// Rejects a size or DPI no glyph can be scaled by: a zero, negative, NaN or infinite scale
-    /// would yield blank glyphs with negative or saturated advances and line metrics.
+    /// would yield blank glyphs with negative or saturated advances and line metrics. A DPI of
+    /// zero means 72, as it does to FreeType, so the request comes back with that filled in.
     /// </summary>
-    private static void ValidateSize(RasterOptions options)
+    private static RasterOptions ValidateSize(RasterOptions options)
     {
         if (!(options.Size > 0f) || float.IsPositiveInfinity(options.Size))
             throw new ArgumentOutOfRangeException(nameof(options), options.Size, "Size must be a positive, finite number of pixels.");
-        if (options.Dpi <= 0)
-            throw new ArgumentOutOfRangeException(nameof(options), options.Dpi, "Dpi must be positive.");
+        if (options.Dpi < 0)
+            throw new ArgumentOutOfRangeException(nameof(options), options.Dpi, "Dpi must not be negative.");
+
+        return options.Dpi == 0 ? options with { Dpi = 72 } : options;
     }
 
     private void EnsureFontLoaded()

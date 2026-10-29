@@ -74,33 +74,17 @@ internal sealed partial class GlyfTable
     /// <param name="glyphIndex">A simple glyph with at least one contour.</param>
     /// <param name="offsetX">Added to every X, as <see cref="OutlineExtractor.Extract"/> adds it.</param>
     /// <param name="scratch">Buffers reused across calls; one per thread.</param>
+    /// <param name="controlBox">The bounds of the glyph's stored points, before
+    /// <paramref name="offsetX"/>: what <see cref="ReadSimpleControlBox"/> returns.</param>
     /// <exception cref="FontFormatException">If the glyph's data is malformed or truncated.</exception>
-    public GlyphOutline DecodeSimpleOutline(int glyphIndex, float offsetX, GlyfScratch scratch)
+    public GlyphOutline DecodeSimpleOutline(int glyphIndex, float offsetX, GlyfScratch scratch, out OutlineBounds controlBox)
     {
-        ArgumentNullException.ThrowIfNull(scratch);
-
-        var reader = new FontReader(SimpleGlyphData(glyphIndex));
-        int numberOfContours = reader.ReadInt16();
-        if (numberOfContours <= 0)
-            throw new InvalidOperationException($"Glyph {glyphIndex} is not a simple glyph with contours.");
-        reader.Skip(8); // the header box
-
+        int numberOfContours = ReadSimplePoints(glyphIndex, scratch, out int pointCount);
         var endPoints = scratch.EndPoints(numberOfContours);
-        int previousEnd = -1;
-        for (int i = 0; i < numberOfContours; i++)
-            previousEnd = endPoints[i] = ReadEndPoint(ref reader, glyphIndex, i, previousEnd);
-
-        int pointCount = previousEnd + 1;
-
-        // Hinting bytecode: present, but never executed.
-        reader.Skip(reader.ReadUInt16());
-
         var flags = scratch.Flags(pointCount);
-        ReadFlags(ref reader, glyphIndex, flags);
         var xs = scratch.Xs(pointCount);
-        ReadCoordinates(ref reader, flags, xs, XShortVector, XSameOrPositive);
         var ys = scratch.Ys(pointCount);
-        ReadCoordinates(ref reader, flags, ys, YShortVector, YSameOrPositive);
+        controlBox = ControlBox(xs, ys);
 
         // Materialising implicit points at most doubles a contour.
         var commands = scratch.Commands(OutlineExtractor.MaxCommands(2 * pointCount, numberOfContours));
@@ -115,6 +99,103 @@ internal sealed partial class GlyfTable
         }
 
         return OutlineExtractor.ToOutline(commands[..commandCount]);
+    }
+
+    /// <summary>
+    /// The bounds of a simple glyph's stored points — on- and off-curve, so they contain the
+    /// outline — read without building the outline or keeping the coordinates. For a glyph with
+    /// at least one contour whose end points <see cref="TryReadSimpleHeader"/> has validated.
+    /// </summary>
+    /// <exception cref="FontFormatException">If the glyph's data is malformed or truncated.</exception>
+    public OutlineBounds ReadSimpleControlBox(int glyphIndex, GlyfScratch scratch)
+    {
+        ArgumentNullException.ThrowIfNull(scratch);
+
+        var reader = new FontReader(SimpleGlyphData(glyphIndex));
+        int numberOfContours = reader.ReadInt16();
+        if (numberOfContours <= 0)
+            throw new InvalidOperationException($"Glyph {glyphIndex} is not a simple glyph with contours.");
+
+        // The header box, then every end point but the last, which counts the points.
+        reader.Skip(8 + (2 * (numberOfContours - 1)));
+        int pointCount = reader.ReadUInt16() + 1;
+
+        // Hinting bytecode: present, but never executed.
+        reader.Skip(reader.ReadUInt16());
+
+        var flags = scratch.Flags(pointCount);
+        ReadFlags(ref reader, glyphIndex, flags);
+        var (xMin, xMax) = CoordinateRange(ref reader, flags, XShortVector, XSameOrPositive);
+        var (yMin, yMax) = CoordinateRange(ref reader, flags, YShortVector, YSameOrPositive);
+        return new OutlineBounds(xMin, yMin, xMax, yMax);
+    }
+
+    /// <summary><see cref="ReadCoordinates"/> reduced to the axis's smallest and largest value.</summary>
+    private static (int Min, int Max) CoordinateRange(ref FontReader reader, ReadOnlySpan<byte> flags, byte shortFlag, byte sameOrPositiveFlag)
+    {
+        int value = 0, min = int.MaxValue, max = int.MinValue;
+        foreach (byte flag in flags)
+        {
+            if ((flag & shortFlag) != 0)
+            {
+                byte delta = reader.ReadUInt8();
+                value += (flag & sameOrPositiveFlag) != 0 ? delta : -delta;
+            }
+            else if ((flag & sameOrPositiveFlag) == 0)
+            {
+                value += reader.ReadInt16();
+            }
+
+            min = Math.Min(min, value);
+            max = Math.Max(max, value);
+        }
+
+        return (min, max);
+    }
+
+    /// <summary>
+    /// Reads a simple glyph's contour end points, flags and absolute coordinates into
+    /// <paramref name="scratch"/>; returns its contour count.
+    /// </summary>
+    private int ReadSimplePoints(int glyphIndex, GlyfScratch scratch, out int pointCount)
+    {
+        ArgumentNullException.ThrowIfNull(scratch);
+
+        var reader = new FontReader(SimpleGlyphData(glyphIndex));
+        int numberOfContours = reader.ReadInt16();
+        if (numberOfContours <= 0)
+            throw new InvalidOperationException($"Glyph {glyphIndex} is not a simple glyph with contours.");
+        reader.Skip(8); // the header box
+
+        var endPoints = scratch.EndPoints(numberOfContours);
+        int previousEnd = -1;
+        for (int i = 0; i < numberOfContours; i++)
+            previousEnd = endPoints[i] = ReadEndPoint(ref reader, glyphIndex, i, previousEnd);
+
+        pointCount = previousEnd + 1;
+
+        // Hinting bytecode: present, but never executed.
+        reader.Skip(reader.ReadUInt16());
+
+        var flags = scratch.Flags(pointCount);
+        ReadFlags(ref reader, glyphIndex, flags);
+        ReadCoordinates(ref reader, flags, scratch.Xs(pointCount), XShortVector, XSameOrPositive);
+        ReadCoordinates(ref reader, flags, scratch.Ys(pointCount), YShortVector, YSameOrPositive);
+        return numberOfContours;
+    }
+
+    private static OutlineBounds ControlBox(ReadOnlySpan<int> xs, ReadOnlySpan<int> ys)
+    {
+        int xMin = int.MaxValue, yMin = int.MaxValue, xMax = int.MinValue, yMax = int.MinValue;
+        for (int i = 0; i < xs.Length; i++)
+        {
+            xMin = Math.Min(xMin, xs[i]);
+            xMax = Math.Max(xMax, xs[i]);
+            yMin = Math.Min(yMin, ys[i]);
+            yMax = Math.Max(yMax, ys[i]);
+        }
+
+        return new OutlineBounds(xMin, yMin, xMax, yMax);
     }
 
     /// <summary>

@@ -30,7 +30,8 @@ internal sealed class DecodedGlyph
     public float AdvanceWidth { get; }
 
     /// <summary>
-    /// The bounding box the font declares for <see cref="Outline"/> (the <c>glyf</c> header box),
+    /// The bounding box the font declares for <see cref="Outline"/> (the <c>glyf</c> header box,
+    /// or the points' control box where the header is stale),
     /// or null when the source has none (CFF) or a transform has replaced the outline.
     /// </summary>
     public OutlineBounds? DeclaredBounds { get; }

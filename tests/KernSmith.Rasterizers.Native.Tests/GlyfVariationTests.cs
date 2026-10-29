@@ -149,20 +149,20 @@ public class GlyfVariationTests
     public void Composite_WithUseMyMetrics_IsPlacedByTheComponentsPhantomPoint()
     {
         // USE_MY_METRICS hands the composite the square's phantom points: its varied pp1 (-3)
-        // places the outline and the composite's own pp1 delta is not used for it. The
-        // composite's own deltas are still reported, since they carry its advance.
+        // places the outline and its pp2 (+7) carries the advance; the composite's own phantom
+        // deltas (+5, +11) are used for neither.
         var table = BuildTable(scaledOffset: false, useMyMetrics: true);
         var provider = new FakeProvider
         {
-            [0] = ([0, 0, 0, 0, -3, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]),
-            [1] = ([0, 5, 0, 0, 0], [0, 0, 0, 0, 0]),
+            [0] = ([0, 0, 0, 0, -3, 7, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]),
+            [1] = ([0, 5, 11, 0, 0], [0, 0, 0, 0, 0]),
         };
 
         var glyph = table.GetGlyph(1, provider, out var phantom);
 
         glyph.Origin.ShouldBe(new HorizontalOrigin(0, 0, -3f));
         glyph.Contours[0].Points[0].ShouldBe(new GlyphPoint(53, -25, true));
-        phantom.Left.ShouldBe(5f);
+        phantom.ShouldBe(new PhantomDeltas(-3f, 7f, OutlineVaried: false));
     }
 
     [Fact]

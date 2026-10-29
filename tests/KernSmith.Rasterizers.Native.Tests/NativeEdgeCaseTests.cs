@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using KernSmith.Font.Models;
 using KernSmith.Font.Tables;
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.Native.Internal;
@@ -99,10 +100,31 @@ public class NativeEdgeCaseTests
         Should.Throw<ArgumentOutOfRangeException>(() => native.GetFontMetrics(options));
     }
 
+    [Fact]
+    public void Dpi_Zero_RendersAt72_AsFreeTypeDoes()
+    {
+        var bytes = TestFonts.RobotoRegularBytes();
+        using var native = Load(bytes);
+        var atZero = new RasterOptions { Size = 32, Dpi = 0 };
+        var at72 = new RasterOptions { Size = 32, Dpi = 72 };
+
+        var glyph = Render(native, 'A', atZero);
+        var expected = Render(native, 'A', at72);
+        glyph.BitmapData.ShouldBe(expected.BitmapData);
+        glyph.Metrics.ShouldBe(expected.Metrics);
+        native.GetFontMetrics(atZero).ShouldBe(native.GetFontMetrics(at72));
+
+        // The parity this mirrors: FreeType reads a zero resolution as 72.
+        using IRasterizer freeType = new FreeType.FreeTypeRasterizer();
+        freeType.LoadFont(bytes);
+        freeType.GetGlyphMetrics('A', atZero).ShouldBe(freeType.GetGlyphMetrics('A', at72));
+    }
+
     [Theory]
-    [InlineData(0)]
+    [InlineData(-1)]
     [InlineData(-72)]
-    public void Dpi_NotPositive_IsAnArgumentError(int dpi)
+    [InlineData(int.MinValue)]
+    public void Dpi_Negative_IsAnArgumentError(int dpi)
     {
         using var native = Load(TestFonts.RobotoRegularBytes());
         var options = new RasterOptions { Size = 32, Dpi = dpi };
@@ -200,6 +222,114 @@ public class NativeEdgeCaseTests
         int padding = mode is "sdf" or "msdf" or "mtsdf" ? 2 * 4 : 0;
         glyph.Height.ShouldBeInRange(256 + padding, 258 + padding);
         glyph.BitmapData.ShouldContain(b => b != 0);
+    }
+
+    // ------------------------------------------------------------ stale glyf header boxes
+
+    [Theory]
+    [InlineData('O', "gray")]
+    [InlineData('O', "mono")]
+    [InlineData('O', "sdf")]
+    [InlineData('O', "light")]
+    [InlineData('À', "gray")]
+    [InlineData('À', "mono")]
+    public void StaleHeaderBox_TooSmallAndOffset_RendersTheWholeOutline(char character, string mode)
+    {
+        // The header box no longer contains the outline: it ends 40% short on the right and
+        // sits a third of the glyph too high, shrunk to half its height. xMin is kept, so pp1
+        // (xMin - lsb) and with it the outline's placement are those of the intact font.
+        var bytes = TestFonts.RobotoRegularBytes();
+        var face = NativeFontFace.Load(bytes);
+        int glyphIndex = face.GetGlyphIndex(character);
+        var real = face.GetGlyph(glyphIndex);
+        int width = real.XMax - real.XMin, height = real.YMax - real.YMin;
+        var stale = SyntheticFonts.WithGlyphHeaderBox(bytes, glyphIndex,
+            real.XMin, (short)(real.YMin + (height / 3)), (short)(real.XMax - (width * 2 / 5)), (short)(real.YMin + (height * 5 / 6)));
+
+        using var intact = Load(bytes);
+        using var damaged = Load(stale);
+        var options = Options(mode, 64);
+
+        var expected = Render(intact, character, options);
+        var actual = Render(damaged, character, options);
+
+        actual.Metrics.ShouldBe(expected.Metrics);
+        actual.BitmapData.ShouldBe(expected.BitmapData);
+
+        // The parity this mirrors: FreeType measures the outline itself, so the stale box
+        // changes nothing there either.
+        var unhinted = new RasterOptions { Size = 64, EnableHinting = false };
+        FreeTypeMetrics(stale, character, unhinted).ShouldBe(FreeTypeMetrics(bytes, character, unhinted));
+    }
+
+    [Fact]
+    public void StaleHeaderBox_StaleXMin_PlacesTheOutlineAsFreeTypeDoes()
+    {
+        // pp1 = xMin - lsb reads the header's xMin, stale or not, so the outline moves; the box
+        // must still cover all of it.
+        var bytes = TestFonts.RobotoRegularBytes();
+        var face = NativeFontFace.Load(bytes);
+        int glyphIndex = face.GetGlyphIndex('O');
+        var real = face.GetGlyph(glyphIndex);
+        var stale = SyntheticFonts.WithGlyphHeaderBox(bytes, glyphIndex,
+            (short)(real.XMin + 384), real.YMin, real.XMax, real.YMax);
+        var options = new RasterOptions { Size = 64, EnableHinting = false };
+
+        using var intact = Load(bytes);
+        using var damaged = Load(stale);
+        var expected = Render(intact, 'O', options);
+        var actual = Render(damaged, 'O', options);
+
+        // 384 units is exactly 12 px at 64 px in a 2048-unit em.
+        actual.Metrics.ShouldBe(expected.Metrics with { BearingX = expected.Metrics.BearingX - 12 });
+        actual.BitmapData.ShouldBe(expected.BitmapData, "the ink must be whole, only moved");
+
+        var freeTypeMoved = FreeTypeMetrics(stale, 'O', options);
+        var freeTypeIntact = FreeTypeMetrics(bytes, 'O', options);
+        freeTypeMoved.ShouldBe(freeTypeIntact with { BearingX = freeTypeIntact.BearingX - 12 });
+    }
+
+    private static GlyphMetrics FreeTypeMetrics(byte[] font, int codepoint, RasterOptions options)
+    {
+        using IRasterizer freeType = new FreeType.FreeTypeRasterizer();
+        freeType.LoadFont(font);
+        return freeType.GetGlyphMetrics(codepoint, options)!.Value;
+    }
+
+    [Fact]
+    public void HeaderBox_HoldingTheInkButNotEveryControlPoint_IsKept()
+    {
+        // A curve's off-curve point at y = 1000 pulls it only to y = 500: a header bounding the
+        // ink (0..500) rather than the control points is not stale, and still sizes the grid.
+        byte[] glyph = Concat(
+            I16(1), I16(0), I16(0), I16(1000), I16(500),
+            U16(2), U16(0),
+            [0x01, 0x00, 0x01],
+            I16(0), I16(500), I16(500),
+            I16(0), I16(1000), I16(-1000));
+        using var native = Load(RobotoWithGlyphA(glyph));
+
+        var rendered = Render(native, 'A', new RasterOptions { Size = 64 });
+
+        // 500 units at 64/2048 px per unit is 15.6 px; the control points would make it 32.
+        rendered.Height.ShouldBe(16);
+    }
+
+    [Fact]
+    public void TruncatedPointData_FailsMetricsAsItFailsRendering()
+    {
+        // The header and end points are intact; the coordinates stop after one X delta. The
+        // metrics shortcut reads the coordinates to vet the header box, so it fails too.
+        byte[] glyph = Concat(
+            I16(1), I16(0), I16(0), I16(500), I16(500),
+            U16(2), U16(0),
+            [0x01, 0x01, 0x01],
+            I16(0));
+        using var native = Load(RobotoWithGlyphA(glyph));
+        var options = new RasterOptions { Size = 32 };
+
+        Should.Throw<RasterizationException>(() => native.RasterizeGlyph('A', options));
+        Should.Throw<RasterizationException>(() => native.GetGlyphMetrics('A', options));
     }
 
     // ------------------------------------------------------------ distance-field spreads

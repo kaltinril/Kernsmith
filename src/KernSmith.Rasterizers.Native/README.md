@@ -98,8 +98,9 @@ heights) renders unhinted rather than snapped to zones that do not describe it.
 - **Size limits** — a glyph box larger than 64 ems, or a bitmap larger than 16384 px per side
   (distance-field padding included), is a `RasterizationException`, so damaged metrics or a huge
   `SdfSpread`/DPI cannot allocate without bound. `SdfSpread` below one pixel (and NaN) pads by one.
-- **Options** — a `Size` that is not a positive finite number, or a `Dpi` of zero or less, is an
-  `ArgumentOutOfRangeException`; so is a palette index the font's `CPAL` lacks. Variation values
+- **Options** — a `Size` that is not a positive finite number, or a negative `Dpi`, is an
+  `ArgumentOutOfRangeException` (a `Dpi` of zero means 72, as on FreeType); so is a palette index
+  the font's `CPAL` lacks. Variation values
   outside an axis's range clamp to its nearest end; NaN leaves the axis at its default.
 - **Threads** — an instance is not thread-safe. KernSmith core never shares one: each
   `BmFont.Generate` (and each `GenerateBatch` job) creates its own, so parallel generation is
@@ -152,9 +153,12 @@ Invariants:
 - A TrueType outline is placed by its left side bearing phantom point, pp1 = `xMin - lsb`
   (a `USE_MY_METRICS` component's, for such a composite; plus its `gvar` delta), which the
   decoder puts at x = 0 — so the outline sits at the `hmtx` bearing even when it disagrees with
-  the `glyf` xMin. The declared header box is moved with it.
+  the `glyf` xMin. The declared header box is moved with it. A `USE_MY_METRICS` composite takes
+  the component's advance too (with the component's `HVAR` or phantom-point delta at an instance).
 - Untransformed TrueType glyphs size from the `glyf` header bbox, falling back to the control
-  hull when it scales to nothing. A glyph whose outline a variation moved drops the header box
+  hull when it scales to nothing. A stale header — one that misses a stored point by more than a
+  unit and the drawn outline too — is replaced by the points' control box (FreeType's box), so a
+  damaged header can neither clip nor shift the ink; correct headers are used unchanged. A glyph whose outline a variation moved drops the header box
   and is measured tightly. `NativeOutputCharacterizationTests` pins the resulting bytes;
   a deliberate pixel change updates its hashes.
 - `AntiAliasMode.None` output is cropped to its ink after rendering (`ScanlineRasterizer.RasterizeMono`;
@@ -165,7 +169,8 @@ Invariants:
 - The default instance (no axes, or every axis at its default) takes the exact static decode
   path, so non-variable output cannot drift.
 - Metrics shortcut: `GetGlyphMetrics` skips decoding an untransformed, unhinted, default-instance
-  simple `glyf` glyph and measures its header box (`IOutlineDecoder.TryDecodeBounds` →
+  simple `glyf` glyph and measures its header box once its stored coordinates (read, not
+  decoded into an outline) show the header holds them (`IOutlineDecoder.TryDecodeBounds` →
   `GlyphPipeline.TryPrepareBox`, which applies the same `GlyphLimits`), but only for a renderer
   implementing `IBoxMeasuringRenderer` whose `MeasuresFromBox` is true for the request (coverage
   except `None`, SDF, MSDF). A mode whose extent reads the outline or pixels must answer false.

@@ -25,6 +25,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="KernSmith.Tests" />
     <InternalsVisibleTo Include="KernSmith.Cli" />
+    <InternalsVisibleTo Include="KernSmith.Benchmarks" />
   </ItemGroup>
 
   <!-- RFC 7932 static dictionary for the managed Brotli decoder (WOFF2), raw-deflate

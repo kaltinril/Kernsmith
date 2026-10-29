@@ -1,8 +1,8 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
-using System.Reflection;
 using BenchmarkDotNet.Attributes;
 using KernSmith;
+using KernSmith.Font.Brotli;
 
 // WOFF2's Brotli stage: KernSmith's managed decoder against the BCL's native one on the same
 // stream (Roboto-Regular.woff2), plus the whole WOFF2 read next to the plain TTF read so the
@@ -13,14 +13,11 @@ using KernSmith;
 [BenchmarkCategory("Woff2")]
 public class Woff2DecodeBenchmarks
 {
-    private delegate byte[] BrotliDecompress(ReadOnlySpan<byte> input, int maxOutputLength);
-
     private byte[] _woff2 = null!;
     private byte[] _ttf = null!;
     private byte[] _stream = null!;
     private byte[] _bclOutput = null!;
     private int _decodedLength;
-    private BrotliDecompress _managed = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -29,18 +26,14 @@ public class Woff2DecodeBenchmarks
         _ttf = BenchmarkFixtures.ReadFont("Roboto-Regular.ttf");
         _stream = BrotliStream(_woff2);
 
-        // The decoder is internal to core; bind it once rather than widen its visibility.
-        var decoder = typeof(BmFont).Assembly.GetType("KernSmith.Font.Brotli.ManagedBrotliDecoder", throwOnError: true)!;
-        _managed = decoder.GetMethod("Decompress", BindingFlags.Public | BindingFlags.Static)!.CreateDelegate<BrotliDecompress>();
-
-        _decodedLength = _managed(_stream, int.MaxValue).Length;
+        _decodedLength = ManagedBrotliDecoder.Decompress(_stream, int.MaxValue).Length;
         _bclOutput = new byte[_decodedLength];
         if (!BrotliDecoder.TryDecompress(_stream, _bclOutput, out int written) || written != _decodedLength)
             throw new InvalidOperationException("The BCL decoder disagrees with the managed decoder on the stream length.");
     }
 
     [Benchmark(Description = "Brotli: managed decoder")]
-    public int ManagedBrotli() => _managed(_stream, _decodedLength).Length;
+    public int ManagedBrotli() => ManagedBrotliDecoder.Decompress(_stream, _decodedLength).Length;
 
     [Benchmark(Description = "Brotli: BCL (native) decoder", Baseline = true)]
     public int BclBrotli()

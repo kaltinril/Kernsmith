@@ -7,17 +7,19 @@ namespace KernSmith.Rasterizers.Native.Internal.Outlines;
 /// <summary>
 /// Decodes TrueType (<c>glyf</c>) outlines: composites resolved by <see cref="GlyfTable"/>,
 /// quadratics elevated to cubics by <see cref="OutlineExtractor"/>, the advance from <c>hmtx</c>
-/// and the <c>glyf</c> header box as the declared bounds. At a non-default variation instance the
+/// and the <c>glyf</c> header box as the declared bounds — or, where the header is stale, the
+/// points' control box (see <see cref="DeclaredBox"/>). At a non-default variation instance the
 /// outline carries <c>gvar</c> deltas and the advance its <c>HVAR</c> (or phantom-point) delta.
 /// </summary>
 /// <remarks>
 /// The outline is placed by its left side bearing phantom point, pp1 = <c>xMin - lsb</c>, which
 /// becomes x = 0 — so it lands with its xMin at the <c>hmtx</c> bearing even where a font's
-/// bearing and xMin disagree. <see cref="ParsedGlyph.Origin"/> names whose metrics apply (a
-/// <c>USE_MY_METRICS</c> component's, for such a composite); <see cref="GlyfTable"/> has already
-/// applied the varied part. <c>HVAR</c> side-bearing deltas are not read: they restate the
-/// phantom-point metrics for layout without outlines, while the outline is placed by the phantom
-/// points themselves.
+/// bearing and xMin disagree. <see cref="ParsedGlyph.Origin"/> names whose metrics apply — the
+/// bearing and the advance alike: a <c>USE_MY_METRICS</c> component's, for such a composite,
+/// with that component's <c>HVAR</c> or phantom-point advance delta at an instance;
+/// <see cref="GlyfTable"/> has already applied the varied origin. <c>HVAR</c> side-bearing deltas
+/// are not read: they restate the phantom-point metrics for layout without outlines, while the
+/// outline is placed by the phantom points themselves.
 /// </remarks>
 internal sealed class TrueTypeOutlineDecoder : IOutlineDecoder
 {
@@ -49,18 +51,24 @@ internal sealed class TrueTypeOutlineDecoder : IOutlineDecoder
             if (_glyf.TryReadSimpleHeader(glyphIndex, out var simple))
             {
                 float simpleShift = SimpleBearingShift(glyphIndex, simple);
+                var header = new OutlineBounds(simple.XMin + simpleShift, simple.YMin, simple.XMax + simpleShift, simple.YMax);
+                if (simple.NumberOfContours == 0)
+                    return new DecodedGlyph(GlyphOutline.Empty, _hmtx.GetAdvanceWidth(glyphIndex), header);
+
+                var simpleOutline = _glyf.DecodeSimpleOutline(glyphIndex, simpleShift, _scratch, out var points);
                 return new DecodedGlyph(
-                    simple.NumberOfContours == 0 ? GlyphOutline.Empty : _glyf.DecodeSimpleOutline(glyphIndex, simpleShift, _scratch),
+                    simpleOutline,
                     _hmtx.GetAdvanceWidth(glyphIndex),
-                    new OutlineBounds(simple.XMin + simpleShift, simple.YMin, simple.XMax + simpleShift, simple.YMax));
+                    DeclaredBox(header, Shifted(points, simpleShift), simpleOutline));
             }
 
             var parsed = _glyf.GetGlyph(glyphIndex);
             float shift = BearingShift(parsed);
+            var parsedOutline = OutlineExtractor.Extract(parsed, shift);
             return new DecodedGlyph(
-                OutlineExtractor.Extract(parsed, shift),
-                _hmtx.GetAdvanceWidth(glyphIndex),
-                new OutlineBounds(parsed.XMin + shift, parsed.YMin, parsed.XMax + shift, parsed.YMax));
+                parsedOutline,
+                _hmtx.GetAdvanceWidth(parsed.Origin.MetricsGlyph),
+                DeclaredBox(HeaderBox(parsed, shift), ControlBox(parsed, shift), parsedOutline));
         }
 
         var varied = _glyf.GetGlyph(glyphIndex, variations, out var phantom);
@@ -68,25 +76,27 @@ internal sealed class TrueTypeOutlineDecoder : IOutlineDecoder
         var outline = OutlineExtractor.Extract(varied, bearingShift);
 
         // HVAR, when present, is the font's own statement of the varied advance; otherwise the
-        // phantom points carry it.
-        int defaultAdvance = _hmtx.GetAdvanceWidth(glyphIndex);
+        // phantom points carry it. Both are the metrics glyph's, as the phantom deltas are.
+        int metricsGlyph = varied.Origin.MetricsGlyph;
+        int defaultAdvance = _hmtx.GetAdvanceWidth(metricsGlyph);
         float advance = variations.HasAdvanceVariations
-            ? defaultAdvance + variations.GetAdvanceDelta(glyphIndex)
+            ? defaultAdvance + variations.GetAdvanceDelta(metricsGlyph)
             : defaultAdvance + phantom.Right - phantom.Left;
 
         // The glyf header box describes the default outline only; a moved outline is measured.
         bool unmoved = !phantom.OutlineVaried && varied.Origin.VariationDelta.Equals(0f);
         return unmoved
             ? new DecodedGlyph(outline, advance,
-                new OutlineBounds(varied.XMin + bearingShift, varied.YMin, varied.XMax + bearingShift, varied.YMax))
+                DeclaredBox(HeaderBox(varied, bearingShift), ControlBox(varied, bearingShift), outline))
             : new DecodedGlyph(outline, advance);
     }
 
     /// <inheritdoc />
     /// <remarks>
-    /// Answers for a simple glyph at the default instance — the header box and contour end
-    /// points say everything <see cref="Decode"/> would — unless its only contours are single
-    /// points, whose flags decide whether anything draws.
+    /// Answers for a simple glyph at the default instance — the header box, contour end points
+    /// and stored coordinates say everything <see cref="Decode"/> would — unless its only
+    /// contours are single points, whose flags decide whether anything draws, or its header box
+    /// misses a stored point, where only the drawn outline tells whether the header is stale.
     /// </remarks>
     public bool TryDecodeBounds(int glyphIndex, RasterOptions options, out DecodedBounds bounds)
     {
@@ -105,9 +115,62 @@ internal sealed class TrueTypeOutlineDecoder : IOutlineDecoder
             return false;
 
         float shift = SimpleBearingShift(glyphIndex, simple);
-        bounds = new DecodedBounds(advance, IsEmpty: false,
-            new OutlineBounds(simple.XMin + shift, simple.YMin, simple.XMax + shift, simple.YMax));
+        var header = new OutlineBounds(simple.XMin + shift, simple.YMin, simple.XMax + shift, simple.YMax);
+        if (!Holds(header, Shifted(_glyf.ReadSimpleControlBox(glyphIndex, _scratch), shift)))
+            return false;
+
+        bounds = new DecodedBounds(advance, IsEmpty: false, header);
         return true;
+    }
+
+    /// <summary>
+    /// How far, in font units, a stored point may lie outside the header box before the header
+    /// counts as missing it: headers are whole units, rounded from the fractional points a scaled
+    /// composite component produces, and an overshoot under a unit clips nothing visible.
+    /// </summary>
+    private const float HeaderSlack = 1f;
+
+    /// <summary>
+    /// The box to declare for an untransformed outline: its <c>glyf</c> header box, unless that
+    /// box is stale — it misses a stored point and the drawn outline as well — and then the
+    /// points' control box, which is what FreeType sizes every glyph from.
+    /// </summary>
+    /// <remarks>
+    /// A header that holds the ink but not every off-curve point (a tight-bounds header) is
+    /// kept: only a header that would clip ink is replaced. Correct headers hold every point, so
+    /// they never reach the tight-bounds test, and their output cannot change.
+    /// </remarks>
+    private static OutlineBounds DeclaredBox(OutlineBounds header, OutlineBounds controlBox, GlyphOutline outline) =>
+        Holds(header, controlBox) || Holds(header, OutlineBounds.Tight(outline)) ? header : controlBox;
+
+    /// <summary>Whether <paramref name="header"/> contains <paramref name="inner"/>, give or take <see cref="HeaderSlack"/>.</summary>
+    private static bool Holds(OutlineBounds header, OutlineBounds inner) =>
+        inner.XMin >= header.XMin - HeaderSlack && inner.YMin >= header.YMin - HeaderSlack
+        && inner.XMax <= header.XMax + HeaderSlack && inner.YMax <= header.YMax + HeaderSlack;
+
+    private static OutlineBounds Shifted(OutlineBounds box, float shift) =>
+        box with { XMin = box.XMin + shift, XMax = box.XMax + shift };
+
+    /// <summary>A parsed glyph's header box, moved right by <paramref name="shift"/>.</summary>
+    private static OutlineBounds HeaderBox(ParsedGlyph glyph, float shift) =>
+        new(glyph.XMin + shift, glyph.YMin, glyph.XMax + shift, glyph.YMax);
+
+    /// <summary>The bounds of a parsed glyph's points, moved right by <paramref name="shift"/>.</summary>
+    private static OutlineBounds ControlBox(ParsedGlyph glyph, float shift)
+    {
+        float xMin = float.MaxValue, yMin = float.MaxValue, xMax = float.MinValue, yMax = float.MinValue;
+        foreach (var contour in glyph.Contours)
+        {
+            foreach (var point in contour.Points)
+            {
+                xMin = MathF.Min(xMin, point.X);
+                xMax = MathF.Max(xMax, point.X);
+                yMin = MathF.Min(yMin, point.Y);
+                yMax = MathF.Max(yMax, point.Y);
+            }
+        }
+
+        return glyph.IsEmpty ? default : new OutlineBounds(xMin + shift, yMin, xMax + shift, yMax);
     }
 
     /// <summary><see cref="BearingShift"/> for a simple glyph, whose own metrics place it.</summary>

@@ -85,9 +85,9 @@ internal sealed partial class GlyfTable
     /// </summary>
     /// <param name="glyphIndex">The glyph to decode.</param>
     /// <param name="variations">Delta source for the current instance; null decodes the static glyph.</param>
-    /// <param name="phantom">How the glyph's own horizontal phantom points moved — for a
-    /// <c>USE_MY_METRICS</c> composite these still carry its advance, while its origin follows
-    /// the component (see <see cref="ParsedGlyph.Origin"/>).</param>
+    /// <param name="phantom">How the glyph's horizontal phantom points moved — for a
+    /// <c>USE_MY_METRICS</c> composite, the component's, whose metrics it takes (see
+    /// <see cref="ParsedGlyph.Origin"/>).</param>
     /// <exception cref="ArgumentOutOfRangeException">If the glyph index is outside the font.</exception>
     /// <exception cref="FontFormatException">If the glyph's data is malformed or truncated.</exception>
     public ParsedGlyph GetGlyph(int glyphIndex, IGlyphVariationProvider? variations, out PhantomDeltas phantom)
@@ -344,12 +344,14 @@ internal sealed partial class GlyfTable
             var component = ParseGlyph(record.GlyphIndex, depth + 1, ref componentBudget, variations, out var componentPhantom);
             var transformed = ApplyLinearTransform(component.Contours, a, b, c, d);
 
-            // USE_MY_METRICS hands the composite this component's phantom points; the last
-            // flagged component wins. They are taken as the component computed them, before its
-            // offset or transform. Only the origin (pp1) follows it here: the advance stays the
-            // composite's own hmtx entry and phantom deltas — the same advance HVAR gives.
+            // USE_MY_METRICS hands the composite this component's phantom points — origin and
+            // advance both; the last flagged component wins. They are taken as the component
+            // computed them, before its offset or transform.
             if ((record.Flags & UseMyMetrics) != 0)
+            {
                 metricsOrigin = component.Origin;
+                phantom = phantom with { Left = componentPhantom.Left, Right = componentPhantom.Right };
+            }
 
             if (componentPhantom.OutlineVaried)
                 phantom = phantom with { OutlineVaried = true };

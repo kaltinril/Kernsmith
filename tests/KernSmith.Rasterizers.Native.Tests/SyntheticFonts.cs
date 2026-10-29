@@ -90,6 +90,45 @@ internal static class SyntheticFonts
         return WithTables(font, new Dictionary<string, byte[]?> { ["hmtx"] = hmtx });
     }
 
+    /// <summary>
+    /// Rebuilds a TrueType font with one glyph's <c>hmtx</c> advance width moved by
+    /// <paramref name="delta"/> font units; the glyph must have a full (advance, lsb) pair.
+    /// </summary>
+    public static byte[] WithAdvanceWidthShifted(byte[] font, int glyphIndex, int delta)
+    {
+        var face = NativeFontFace.Load(font);
+        var hmtx = face.Tables.GetTable("hmtx").ToArray();
+        if (glyphIndex >= face.Hhea.NumberOfHMetrics)
+            throw new ArgumentOutOfRangeException(nameof(glyphIndex), glyphIndex, "The glyph shares the last advance width.");
+
+        int offset = glyphIndex * 4;
+        ushort advance = BinaryPrimitives.ReadUInt16BigEndian(hmtx.AsSpan(offset));
+        BinaryPrimitives.WriteUInt16BigEndian(hmtx.AsSpan(offset), checked((ushort)(advance + delta)));
+
+        return WithTables(font, new Dictionary<string, byte[]?> { ["hmtx"] = hmtx });
+    }
+
+    /// <summary>
+    /// Rebuilds a TrueType font with one glyph's <c>glyf</c> header box overwritten; the
+    /// outline points (and every other table) are untouched, so the box can be made stale.
+    /// </summary>
+    public static byte[] WithGlyphHeaderBox(byte[] font, int glyphIndex, short xMin, short yMin, short xMax, short yMax)
+    {
+        var face = NativeFontFace.Load(font);
+        var glyf = face.Tables.GetTable("glyf").ToArray();
+        var (offset, length) = face.Loca!.GetGlyphRange(glyphIndex);
+        if (length < 10)
+            throw new ArgumentOutOfRangeException(nameof(glyphIndex), glyphIndex, "The glyph has no header.");
+
+        var header = glyf.AsSpan(offset + 2, 8);
+        BinaryPrimitives.WriteInt16BigEndian(header, xMin);
+        BinaryPrimitives.WriteInt16BigEndian(header[2..], yMin);
+        BinaryPrimitives.WriteInt16BigEndian(header[4..], xMax);
+        BinaryPrimitives.WriteInt16BigEndian(header[6..], yMax);
+
+        return WithTables(font, new Dictionary<string, byte[]?> { ["glyf"] = glyf });
+    }
+
     private static byte[] BuildSfnt(uint sfntVersion, List<(string Tag, byte[] Data)> tables)
     {
         int directoryEnd = 12 + (tables.Count * 16);
