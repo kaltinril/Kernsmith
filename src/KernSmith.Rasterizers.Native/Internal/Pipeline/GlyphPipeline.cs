@@ -13,16 +13,19 @@ internal sealed class GlyphPipeline
 {
     private readonly IOutlineDecoder _decoder;
     private readonly int _unitsPerEm;
+    private readonly GlyphHinter? _hinter;
 
     /// <summary>Creates a pipeline over one face's decoder.</summary>
     /// <param name="decoder">Stage 1, chosen for the face's outline format.</param>
     /// <param name="unitsPerEm">The face's <c>head.unitsPerEm</c>.</param>
-    public GlyphPipeline(IOutlineDecoder decoder, int unitsPerEm)
+    /// <param name="hinter">The face's auto-hinter; null renders every request unhinted.</param>
+    public GlyphPipeline(IOutlineDecoder decoder, int unitsPerEm, GlyphHinter? hinter = null)
     {
         ArgumentNullException.ThrowIfNull(decoder);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(unitsPerEm);
         _decoder = decoder;
         _unitsPerEm = unitsPerEm;
+        _hinter = hinter;
     }
 
     /// <summary>The face's <c>head.unitsPerEm</c>, for building <see cref="GlyphTransforms.For"/>.</summary>
@@ -47,12 +50,8 @@ internal sealed class GlyphPipeline
 
         float scale = PixelScale(options, _unitsPerEm);
 
-        // 1. Decode.
-        var glyph = _decoder.Decode(glyphIndex, options);
-
-        // 2. Transform, in font units.
-        for (int i = 0; i < transforms.Count; i++)
-            glyph = transforms[i].Apply(glyph);
+        // 1. Decode, and 2. transform, in font units.
+        var glyph = Shape(glyphIndex, options, transforms);
 
         // 3. Bounds, and 4. scale: the box lands on the pixel grid with the baseline on row 0,
         // its own Y origin placing the bitmap against it.
@@ -60,7 +59,32 @@ internal sealed class GlyphPipeline
         int advance = (int)Math.Round(glyph.AdvanceWidth * (double)scale);
         var prepared = new PreparedGlyph(glyph.Outline, new OutlineTransform(scale, 0f), box, advance) { GlyphIndex = glyphIndex };
 
-        // 4. Pixel-space hint hook.
-        return GlyphHinter.Apply(prepared, options);
+        // 4. Pixel-space hinting, measuring reference glyphs through the same stages 1-2.
+        return _hinter is null
+            ? prepared
+            : _hinter.Apply(prepared, options, _unitsPerEm, reference => ReferenceShape(reference, options, transforms));
+    }
+
+    private DecodedGlyph Shape(int glyphIndex, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms)
+    {
+        var glyph = _decoder.Decode(glyphIndex, options);
+        for (int i = 0; i < transforms.Count; i++)
+            glyph = transforms[i].Apply(glyph);
+
+        return glyph;
+    }
+
+    /// <summary>A reference glyph's outline for hint measurement; a malformed one counts as missing
+    /// rather than failing the glyph actually being rendered.</summary>
+    private GlyphOutline? ReferenceShape(int glyphIndex, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms)
+    {
+        try
+        {
+            return Shape(glyphIndex, options, transforms).Outline;
+        }
+        catch (Exception ex) when (ex is FontFormatException or ArgumentOutOfRangeException)
+        {
+            return null;
+        }
     }
 }

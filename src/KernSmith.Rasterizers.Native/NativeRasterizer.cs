@@ -81,7 +81,7 @@ public sealed class NativeRasterizer : IRasterizer
 
         _face = face;
         _variations = variations;
-        _pipeline = new GlyphPipeline(decoder, face.Head.UnitsPerEm);
+        _pipeline = new GlyphPipeline(decoder, face.Head.UnitsPerEm, new GlyphHinter(face.GetGlyphIndex, face.Os2, () => InstanceStamp(variations)));
         _colorGlyphs = ColorGlyphs.TryLoad(face.Tables, face.Maxp.NumGlyphs);
     }
 
@@ -268,6 +268,18 @@ public sealed class NativeRasterizer : IRasterizer
     {
         EnsureFontLoaded();
         return _face!.GetGlyphIndex(codepoint);
+    }
+
+    /// <summary>Identifies the selected variation instance for the hinter's per-instance measurements.</summary>
+    private static int InstanceStamp(FontVariations? variations)
+    {
+        if (variations is null || variations.IsDefaultInstance)
+            return 0;
+
+        var hash = new HashCode();
+        foreach (float coordinate in variations.Coordinates)
+            hash.Add(coordinate);
+        return hash.ToHashCode();
     }
 
     /// <summary>The <c>MVAR</c> delta for a font-wide metric at the current instance; 0 when unvaried.</summary>

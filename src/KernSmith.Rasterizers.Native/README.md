@@ -31,18 +31,38 @@ apply to variable instances and to every `COLR` layer as well.
 Not yet supported — each raises a clear error or is ignored, as noted:
 
 - **CFF/OTF (PostScript) outlines** — rejected at `LoadFont` with a `RasterizationException` (Phase 166)
-- **Hinting** — none, so small sizes are softer than FreeType or GDI output
 - **Outline stroking** (Phase 168) — the backend has none of its own; KernSmith core still draws outlines as a bitmap effect
 - **SDF** (Phase 169) — rejected with `NotSupportedException`
 - **CFF2 variable fonts** (Phase 171 Wave 2) — rejected with the rest of CFF; `avar` version 2
   axis mixing is not applied (its version 1 segment maps are)
 - **Color fonts** (Phase 172) — `COLR` version 0 layers with `CPAL` palettes render as RGBA (straight alpha) and `ColorPaletteIndex` selects the palette. `COLR` version 1 glyphs render as plain grayscale coverage, and bitmap-only color fonts (`CBDT`/`sbix`, e.g. Noto Color Emoji) are rejected at `LoadFont` with a `RasterizationException`
 - **System fonts by name** — load font bytes instead
-- **Anti-aliasing** — `None` and `Grayscale` only; a `Light` or `LCD` request renders as `Grayscale`
+- **Anti-aliasing** — `None`, `Grayscale` and `Light` (see [Hinting](#hinting)); an `LCD` request renders as `Grayscale`
 
 The package is not published to NuGet yet, so `RasterizerBackend.Native` resolves only in
 builds that reference this project directly. The KernSmith CLI ships it — try
 `kernsmith generate -f font.ttf -s 32 --rasterizer native`.
+
+## Hinting
+
+Native has its own auto-hinter (Phase 174), no TrueType bytecode interpreter. It runs for
+`AntiAlias = Light` with `EnableHinting` on (`.bmfc`: `antiAlias=light`, `useHinting=1`) and
+fits the outline vertically only:
+
+- **Blue zones** — baseline, x-height, cap height, ascender and descender, with the overshoot
+  of round glyphs, measured from 'x', 'o', 'H', 'O', 'd' and 'p' after any synthetic style or
+  variation instance (`OS/2` `sxHeight`/`sCapHeight` stand in when 'x'/'H' are missing). Edges
+  in a zone snap to its pixel line; overshoots under half a pixel snap with the flat glyphs, and
+  top zones round up from a third of a pixel.
+- **Strokes** — a horizontal stroke (a bottom edge paired with the top edge above it) gets a
+  whole-pixel thickness, at least one pixel, rounded from the font's standard stroke when close
+  to it; remaining flat edges round to the nearest row.
+- **Everything else** moves by one monotone interpolation between the fitted edges, so the
+  outline cannot fold over itself. X is untouched: advances and side bearings match unhinted.
+
+Every other request, including the default (`Grayscale` with `EnableHinting` true), renders
+unhinted. A font with no x-height and no cap height (no Latin reference glyphs, no `OS/2`
+heights) renders unhinted rather than snapped to zones that do not describe it.
 
 ## Usage
 
@@ -79,7 +99,7 @@ disagree. Everything is internal; add a feature to its stage rather than to `Nat
 | 1 | Decode → `DecodedGlyph` (cubic outline, advance, optional declared bbox; font units) | `Internal/Outlines/IOutlineDecoder.cs`, `TrueTypeOutlineDecoder.cs`; variations in `Internal/Variations/` | implementing `IOutlineDecoder` and returning it from `OutlineDecoders.ForFace` — CFF (166). Variation deltas live inside the decoder: `TrueTypeOutlineDecoder` reads the face's `FontVariations` (set by `SetVariationAxes`); a CFF2 decoder would read the same coordinates. |
 | 2 | Transforms, in order, in font units | `Internal/Pipeline/IGlyphTransform.cs`, `GlyphTransforms.cs` | implementing `IGlyphTransform` and adding it in `GlyphTransforms.For` — `BoldTransform` then `ItalicTransform` today (167). `WidthScaleTransform`, `SmallCapsTransform` (before bold) and `StrokeTransform` (last, as a separate layer) exist but are not registered until core options reach them (168). Build results with `WithOutline` / `WithAdvanceWidth`. |
 | 3 | Bounds → pixel grid | `Internal/Raster/GlyphBox.cs`, `Internal/Outlines/OutlineBounds.cs` | nothing: a replaced outline loses its declared bbox and is measured from its tight bounds. |
-| 4 | Scale, then pixel-space hint hook | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs` | filling in `GlyphHinter.Apply` — auto-hinting (174). |
+| 4 | Scale, then pixel-space hinting | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs`; `Internal/Hinting/` | `GlyphHinter.Apply` runs the auto-hinter (174) for hinted requests: `FontHintMetrics` (per face/size/style/instance, cached) and `GridFitter`. It returns a pixel-space outline with an identity `ToPixels`. |
 | 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs`, `ColorLayerRenderer.cs` | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` — SDF (169/170), LCD (173). Color layers (172) wrap that renderer in `GlyphRenderers.SelectForFace` and prepare each layer glyph through stages 1–4. `Measure` must match what `Render` produces. |
 
 Invariants:

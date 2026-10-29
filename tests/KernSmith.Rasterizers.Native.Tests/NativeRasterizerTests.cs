@@ -26,7 +26,7 @@ public class NativeRasterizerTests
         caps.SupportsSyntheticItalic.ShouldBeTrue();
         caps.SupportsSystemFonts.ShouldBeFalse();
         caps.HandlesOwnSizing.ShouldBeFalse();
-        caps.SupportedAntiAliasModes.ShouldBe([AntiAliasMode.None, AntiAliasMode.Grayscale]);
+        caps.SupportedAntiAliasModes.ShouldBe([AntiAliasMode.None, AntiAliasMode.Grayscale, AntiAliasMode.Light]);
     }
 
     [Fact]
