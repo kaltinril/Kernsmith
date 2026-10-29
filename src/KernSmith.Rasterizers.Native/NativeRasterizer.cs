@@ -2,6 +2,7 @@ using KernSmith.Font.Models;
 using KernSmith.Font.Tables;
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.Native.Internal;
+using KernSmith.Rasterizers.Native.Internal.Color;
 using KernSmith.Rasterizers.Native.Internal.Outlines;
 using KernSmith.Rasterizers.Native.Internal.Pipeline;
 using KernSmith.Rasterizers.Native.Internal.Variations;
@@ -19,10 +20,15 @@ namespace KernSmith.Rasterizers.Native;
 ///
 /// TrueType variable fonts (Phase 171) render at the instance <see cref="SetVariationAxes"/>
 /// selects: <c>gvar</c> outlines, <c>HVAR</c> (or phantom-point) advances and <c>MVAR</c> font
-/// metrics. Distance fields are computed from the outline: single-channel SDF (Phase 169) and
+/// metrics. Color fonts render from <c>COLR</c> version 0 layers and <c>CPAL</c> palettes when
+/// <see cref="RasterOptions.ColorFont"/> is on (Phase 172); glyphs without such layers —
+/// including <c>COLR</c> version 1 paint graphs — render as plain coverage. Bitmap-only color
+/// fonts (<c>CBDT</c>/<c>sbix</c>, no outlines) are rejected at load time.
+///
+/// Distance fields are computed from the outline: single-channel SDF (Phase 169) and
 /// multi-channel MSDF/MTSDF (Phase 170), selected by <see cref="RasterOptions.EffectiveSdfMode"/>.
-/// Synthetic bold/italic (Phase 167), outline stroking (Phase 168) and color fonts (Phase 172)
-/// are not implemented; the corresponding
+/// Synthetic bold/italic (Phase 167) and outline stroking (Phase 168) are not implemented; the
+/// corresponding
 /// <see cref="IRasterizerCapabilities"/> flags are false. <see cref="RasterOptions.Bold"/>
 /// and <see cref="RasterOptions.Italic"/> are ignored rather than rejected, so a font
 /// configuration that works on other backends still generates here — just without the styling.
@@ -45,6 +51,7 @@ public sealed class NativeRasterizer : IRasterizer
 
     private NativeFontFace? _face;
     private GlyphPipeline? _pipeline;
+    private ColorGlyphs? _colorGlyphs;
     private FontVariations? _variations;
     private bool _disposed;
 
@@ -52,7 +59,9 @@ public sealed class NativeRasterizer : IRasterizer
     public IRasterizerCapabilities Capabilities => CapabilitiesInstance;
 
     /// <inheritdoc />
-    /// <exception cref="RasterizationException">If the font uses CFF (PostScript) outlines.</exception>
+    /// <exception cref="RasterizationException">
+    /// If the font uses CFF (PostScript) outlines, or has only bitmap color glyphs.
+    /// </exception>
     public void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -74,6 +83,23 @@ public sealed class NativeRasterizer : IRasterizer
         _face = face;
         _variations = variations;
         _pipeline = new GlyphPipeline(decoder, face.Head.UnitsPerEm);
+        _colorGlyphs = ColorGlyphs.TryLoad(face.Tables, face.Maxp.NumGlyphs);
+    }
+
+    /// <inheritdoc />
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// If the font has no usable <c>CPAL</c> table or no palette at <paramref name="paletteIndex"/>.
+    /// </exception>
+    public void SelectColorPalette(int paletteIndex)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        EnsureFontLoaded();
+
+        if (_colorGlyphs is null)
+            throw new ArgumentOutOfRangeException(nameof(paletteIndex), paletteIndex,
+                "The font has no usable CPAL color palette table.");
+
+        _colorGlyphs.SelectPalette(paletteIndex);
     }
 
     /// <summary>
@@ -117,14 +143,14 @@ public sealed class NativeRasterizer : IRasterizer
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
         ArgumentNullException.ThrowIfNull(options);
-        var renderer = GlyphRenderers.Select(options);
+        var renderer = GlyphRenderers.SelectForFace(options, _colorGlyphs, _pipeline!);
 
         int glyphIndex = _face!.GetGlyphIndex(codepoint);
         if (glyphIndex == 0)
             return null;
 
         var glyph = Prepare(codepoint, glyphIndex, options);
-        if (glyph.IsBlank)
+        if (glyph.IsBlank && !DrawsLayers(renderer, glyphIndex))
             return BlankGlyph(codepoint, glyphIndex, glyph.Advance);
 
         return renderer.Render(codepoint, glyphIndex, glyph, options);
@@ -154,14 +180,14 @@ public sealed class NativeRasterizer : IRasterizer
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
         ArgumentNullException.ThrowIfNull(options);
-        var renderer = GlyphRenderers.Select(options);
+        var renderer = GlyphRenderers.SelectForFace(options, _colorGlyphs, _pipeline!);
 
         int glyphIndex = _face!.GetGlyphIndex(codepoint);
         if (glyphIndex == 0)
             return null;
 
         var glyph = Prepare(codepoint, glyphIndex, options);
-        if (glyph.IsBlank)
+        if (glyph.IsBlank && !DrawsLayers(renderer, glyphIndex))
             return new GlyphMetrics(BearingX: 0, BearingY: 0, Advance: glyph.Advance, Width: 0, Height: 0);
 
         return renderer.Measure(glyph, options);
@@ -228,6 +254,7 @@ public sealed class NativeRasterizer : IRasterizer
         _disposed = true;
         _face = null;
         _pipeline = null;
+        _colorGlyphs = null;
         _variations = null;
     }
 
@@ -269,6 +296,13 @@ public sealed class NativeRasterizer : IRasterizer
             throw new RasterizationException(codepoint, ex.Message);
         }
     }
+
+    /// <summary>
+    /// True when the glyph is drawn from color layers, so a blank base outline (common in
+    /// <c>COLR</c> fonts) must still reach the renderer.
+    /// </summary>
+    private static bool DrawsLayers(IGlyphRenderer renderer, int glyphIndex) =>
+        renderer is ColorLayerRenderer color && color.HasLayers(glyphIndex);
 
     /// <summary>A whitespace glyph: a real advance, but nothing to draw.</summary>
     private static RasterizedGlyph BlankGlyph(int codepoint, int glyphIndex, int advance) =>

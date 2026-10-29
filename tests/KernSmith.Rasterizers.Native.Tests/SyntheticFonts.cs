@@ -6,7 +6,7 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// <summary>
 /// Builds font files that no fixture on disk provides — a CFF-flavoured face, used to prove the
 /// native backend rejects PostScript outlines instead of rendering nothing, and fixture fonts
-/// with individual tables swapped out.
+/// with individual tables added, swapped out or removed.
 /// </summary>
 internal static class SyntheticFonts
 {
@@ -30,6 +30,13 @@ internal static class SyntheticFonts
 
         return BuildSfnt(0x4F54544F, tables); // 'OTTO'
     }
+
+    /// <summary>
+    /// Roboto with extra tables added (or replaced) — e.g. a hand-built <c>COLR</c>/<c>CPAL</c>
+    /// pair, so color layering can be tested on glyph shapes the other tests already know.
+    /// </summary>
+    public static byte[] RobotoWith(params (string Tag, byte[] Data)[] extraTables) =>
+        WithTables(TestFonts.RobotoRegularBytes(), extraTables.ToDictionary(t => t.Tag, t => (byte[]?)t.Data));
 
     /// <summary>
     /// Rebuilds a TrueType font with some tables replaced or removed (a null value drops the

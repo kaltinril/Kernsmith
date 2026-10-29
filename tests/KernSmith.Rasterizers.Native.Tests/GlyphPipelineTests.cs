@@ -1,5 +1,6 @@
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.Native.Internal;
+using KernSmith.Rasterizers.Native.Internal.Color;
 using KernSmith.Rasterizers.Native.Internal.Outlines;
 using KernSmith.Rasterizers.Native.Internal.Pipeline;
 using KernSmith.Rasterizers.Native.Internal.Raster;
@@ -163,25 +164,44 @@ public class GlyphPipelineTests
     }
 
     [Fact]
-    public void Dispatch_RejectsColor_WithTheExistingMessage_AndRendersSdf()
+    public void Dispatch_SelectsTheDistanceFieldRenderer_ForEachSdfMode()
     {
-        Should.Throw<NotSupportedException>(() => GlyphRenderers.Select(new RasterOptions { Size = 32, ColorFont = true }))
-            .Message.ShouldBe("Native rasterizer does not support color font rendering.");
         GlyphRenderers.Select(new RasterOptions { Size = 32, Sdf = true }).ShouldBeOfType<SdfRenderer>();
-
-        // Color is checked first, as before the pipeline existed.
-        Should.Throw<NotSupportedException>(() => GlyphRenderers.Select(new RasterOptions { Size = 32, ColorFont = true, Sdf = true }))
-            .Message.ShouldContain("color", Case.Sensitive);
+        GlyphRenderers.Select(new RasterOptions { Size = 32, SdfMode = SdfMode.Msdf }).ShouldBeSameAs(MsdfRenderer.Msdf);
+        GlyphRenderers.Select(new RasterOptions { Size = 32, SdfMode = SdfMode.Mtsdf }).ShouldBeSameAs(MsdfRenderer.Mtsdf);
     }
 
     [Fact]
-    public void Rasterizer_StillRejectsColor_EvenForUnmappedCodepoints()
+    public void Dispatch_ColorFont_UsesTheModeRenderer_WhenTheFaceHasNoColorGlyphs()
+    {
+        var color = new RasterOptions { Size = 32, ColorFont = true };
+        var face = Roboto();
+        var pipeline = new GlyphPipeline(OutlineDecoders.ForFace(face)!, face.Head.UnitsPerEm);
+
+        GlyphRenderers.Select(color).ShouldBeOfType<CoverageRenderer>();
+        GlyphRenderers.SelectForFace(color, colorGlyphs: null, pipeline).ShouldBeOfType<CoverageRenderer>();
+    }
+
+    [Fact]
+    public void Dispatch_ColorFont_UsesColorLayers_WhenTheFaceHasColorGlyphs()
+    {
+        var face = NativeFontFace.Load(TestFonts.BungeeColorBytes());
+        var colorGlyphs = ColorGlyphs.TryLoad(face.Tables, face.Maxp.NumGlyphs);
+        var pipeline = new GlyphPipeline(OutlineDecoders.ForFace(face)!, face.Head.UnitsPerEm);
+
+        colorGlyphs.ShouldNotBeNull();
+        GlyphRenderers.SelectForFace(new RasterOptions { Size = 32, ColorFont = true }, colorGlyphs, pipeline).ShouldBeOfType<ColorLayerRenderer>();
+        GlyphRenderers.SelectForFace(new RasterOptions { Size = 32 }, colorGlyphs, pipeline).ShouldBeOfType<CoverageRenderer>();
+    }
+
+    [Fact]
+    public void Rasterizer_UnmappedCodepoint_IsNull_WithSdfOrColorRequested()
     {
         using var rasterizer = new NativeRasterizer();
         rasterizer.LoadFont(TestFonts.RobotoRegularBytes());
 
-        Should.Throw<NotSupportedException>(() => rasterizer.RasterizeGlyph(0x1F600, new RasterOptions { Size = 32, ColorFont = true }));
-        Should.Throw<NotSupportedException>(() => rasterizer.GetGlyphMetrics(0x1F600, new RasterOptions { Size = 32, ColorFont = true }));
+        rasterizer.RasterizeGlyph(0x1F600, new RasterOptions { Size = 32, Sdf = true }).ShouldBeNull();
+        rasterizer.GetGlyphMetrics(0x1F600, new RasterOptions { Size = 32, ColorFont = true }).ShouldBeNull();
     }
 
     // ---- Test doubles ----------------------------------------------------------------------

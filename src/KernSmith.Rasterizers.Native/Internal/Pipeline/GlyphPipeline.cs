@@ -55,7 +55,7 @@ internal sealed class GlyphPipeline
         // its own Y origin placing the bitmap against it.
         var box = GlyphBox.Compute(glyph.Outline, glyph.DeclaredBounds, scale);
         int advance = (int)Math.Round(glyph.AdvanceWidth * (double)scale);
-        var prepared = new PreparedGlyph(glyph.Outline, new OutlineTransform(scale, 0f), box, advance);
+        var prepared = new PreparedGlyph(glyph.Outline, new OutlineTransform(scale, 0f), box, advance) { GlyphIndex = glyphIndex };
 
         // 4. Pixel-space hint hook.
         return GlyphHinter.Apply(prepared, options);

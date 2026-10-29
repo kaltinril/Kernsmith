@@ -1,6 +1,6 @@
 # Phase 172 — Native Rasterizer: Color Font Support
 
-> **Status**: Future — COLRv0 + CPAL Wave 1; COLRv1 Wave 2; CBDT/sbix stretch (blocked on an open question)
+> **Status**: In progress — COLRv0 + CPAL (Wave 1) complete; COLRv1 (Wave 2) next; CBDT/sbix blocked on an open question
 > **Created**: 2026-04-01
 > **Depends on**: Phase 166 Part 1 (render-mode dispatch)
 
@@ -8,21 +8,24 @@
 
 Render color glyphs in the Native rasterizer: COLR v0 layered glyphs with CPAL palettes first, then the COLR v1 paint graph.
 
-## Starting point
+## Current state
 
-- `NativeCapabilities.SupportsColorFonts = false`. A `ColorFont = true` request reaches Native and **throws `NotSupportedException`** from `RejectUnsupported` — it does not fall back to monochrome.
-- Core calls `SelectColorPalette(index)` only when the capability is true and the index is non-zero; the rasterizer stores it and must not read `RasterOptions.ColorPaletteIndex` itself.
-- FreeType (COLR/CPAL) is the reference backend.
-- **No COLR fixture is committed.** `NotoColorEmoji.ttf` is CBDT/CBLC only.
+- `SupportsColorFonts = true`. With `ColorFont` on, `GlyphRenderers.SelectForFace` wraps the mode renderer in `ColorLayerRenderer` (`Internal/Pipeline/`) when the face has a usable `CPAL`; `Internal/Tables/CpalTable.cs` / `ColrTable.cs` parse, `Internal/Color/ColorGlyphs.cs` resolves layers and holds the selected palette.
+- Core calls `SelectColorPalette(index)` only when the capability is true and the index is non-zero; Native stores it and never reads `RasterOptions.ColorPaletteIndex`. An index the font lacks (or a font with no usable `CPAL`) throws `ArgumentOutOfRangeException`, as FreeType errors.
+- Fixtures (`tests/KernSmith.Tests/Fixtures/Color/`, OFL texts beside them): `BungeeColor-Regular.ttf` (COLR v0, CPAL v0, 9 palettes) and `ReemKufiInk-Regular.ttf` (COLR v1 paints only, no v0 records). They sit in a subfolder because core `ColorFontTests` picks the first color font directly in `Fixtures/` and expects NotoColorEmoji.
+- Behavior, matched against FreeType (the reference) where noted:
+  - Output is `Rgba32`, **straight alpha** (compositing is premultiplied internally). FreeType returns premultiplied values that core then treats as straight, so FreeType's colored edges come out darker; tests premultiply Native before comparing.
+  - Canvas = union of the layer boxes; advance = the base glyph's. A base glyph with an empty outline still draws its layers; layers that are all blank give a 0x0 RGBA glyph (FreeType).
+  - Foreground entry `0xFFFF` = opaque black, or white when the selected palette is flagged `USABLE_WITH_DARK_BACKGROUND` (FreeType's documented default; FreeType itself only applies the flag inside `FT_Palette_Select` and reads the previous palette's flags there).
+  - Layers are read in order and stop at the first invalid one (glyph past `maxp`, palette entry past the palette, record past the array); if the first is invalid the glyph renders as plain coverage (FreeType). Malformed `COLR`/`CPAL`, or `COLR` without `CPAL`, are ignored — plain coverage, no error.
+  - Glyphs without v0 layers, including COLRv1-only glyphs, render as plain grayscale coverage. FreeType throws on COLRv1 glyphs with `FT_LOAD_COLOR`.
+  - `AntiAlias = None` thresholds each layer. SDF + color: color layers win for COLR glyphs and the mode renderer handles the rest (FreeType ignores SDF for COLR glyphs); today core rejects SDF on Native before that matters. Bold/Italic: layers go through `GlyphTransforms.For`, so Phase 167 transforms will apply per layer; until then core's bitmap Bold/Italic post-processors run on the RGBA glyph (FreeType drops emboldening on layered glyphs, keeping only the wider advance).
+  - Bitmap-only color fonts (`CBDT`/`sbix`, no `glyf`) are rejected at `LoadFont` by `FontValidator` with a `RasterizationException` pointing at FreeType.
+- Known decode-stage difference (not color-specific): FreeType moves a glyph so its `hmtx` left side bearing is honored when it disagrees with `glyf` xMin; Native draws the outline where it is. Bungee Color's '4' inline layer is off by 350 units because of it; Roboto has 52 glyphs off by one unit.
 
 ## Work items — COLR v0 + CPAL (Wave 1)
 
-- **Add fixtures first**: a small OFL font with COLR v0 + CPAL (several palettes), and one with COLR v1, each with a `FONT-LICENSES.md` entry.
-- CPAL: palettes, color records (BGRA), palette count; v1 type/label fields parsed but unused.
-- COLR v0: base glyph records (binary search by glyph ID) → layer records (glyph ID, palette index; `0xFFFF` = foreground color — render it white and check how core's fill tint treats RGBA glyphs, matching FreeType's behavior).
-- Render: decode each layer glyph through the normal pipeline (so transforms and variations apply), rasterize coverage into a shared canvas sized to the union bbox, tint by palette color, composite bottom-to-top with source-over (premultiplied internally, straight alpha out).
-- Output `PixelFormat.Rgba32` for color glyphs; glyphs with no COLR entry fall through to grayscale coverage.
-- Color branch in the render-mode dispatch; remove the `ColorFont` throw; `SupportsColorFonts = true`.
+Done; see Current state. CPAL v1 palette/entry label name IDs are not read (UI-only strings).
 
 ## Work items — COLR v1 (Wave 2)
 
@@ -45,14 +48,14 @@ Render color glyphs in the Native rasterizer: COLR v0 layered glyphs with CPAL p
 - COLR v1: solid, each gradient type and extend mode, transforms, composite modes, `PaintColrGlyph` reuse
 - Malformed/cyclic paint graphs fail gracefully
 
-**Regression coverage**: add `tests/bmfont-compare/gum-bmfont/color-colr.bmfc` with `fontFile` pointing at the committed COLR fixture, `colorFont=1` (and a second palette via `colorPalette=1`); force-add it. Today Native throws on it and the harness tolerates that, so the test must assert Native produced RGBA glyphs.
+**Regression coverage**: `tests/bmfont-compare/gum-bmfont/color-colr.bmfc` (Bungee Color, `colorFont=1`) and `color-colr-palette.bmfc` (same with `colorPalette=6`). The harness tolerates a backend failing a config, so `NativeColorFontTests` asserts Native produces a colored RGBA atlas.
 
 ## Success Criteria
 
-- [ ] COLR v0 + CPAL fixtures committed
-- [ ] CPAL parsed; palette selection works
-- [ ] COLR v0 layered rendering matches FreeType
+- [x] COLR v0 + CPAL fixtures committed
+- [x] CPAL parsed; palette selection works
+- [x] COLR v0 layered rendering matches FreeType
 - [ ] COLR v1 paint graph (gradients, transforms, composites) renders
-- [ ] `SupportsColorFonts = true`; `ColorFont` no longer throws
+- [x] `SupportsColorFonts = true`; `ColorFont` no longer throws
 - [ ] CBDT/sbix decision recorded (implement or drop)
 - [ ] All tests pass; `regression_check.py` run with the COLR config

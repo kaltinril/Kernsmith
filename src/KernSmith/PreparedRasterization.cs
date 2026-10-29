@@ -500,6 +500,8 @@ internal sealed class PreparedRasterization : IDisposable
             conflict = "a custom channel configuration";
         else if (options.Variants is { Count: > 0 })
             conflict = "atlas variants";
+        else if (options.ColorFont)
+            conflict = "color font rendering";
 
         if (conflict is not null)
             throw new InvalidOperationException(

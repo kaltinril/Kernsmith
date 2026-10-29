@@ -110,7 +110,7 @@ public sealed class SdfModeTests
 
     public static TheoryData<string> MsdfIncompatibilities => new()
     {
-        "ChannelPacking", "Outline", "Gradient", "Shadow", "FillColor", "Channels", "SuperSample", "Variants",
+        "ChannelPacking", "Outline", "Gradient", "Shadow", "FillColor", "Channels", "SuperSample", "Variants", "ColorFont",
     };
 
     [Theory]
@@ -128,6 +128,7 @@ public sealed class SdfModeTests
             case "Channels": options.Channels = new ChannelConfig { Alpha = ChannelContent.Glyph, Red = ChannelContent.One, Green = ChannelContent.One, Blue = ChannelContent.One }; break;
             case "SuperSample": options.SuperSampleLevel = 2; break;
             case "Variants": options.Variants = [new AtlasVariant("shadow", AtlasVariantKind.ShadowSilhouette)]; break;
+            case "ColorFont": options.ColorFont = true; break;
         }
 
         var ex = Should.Throw<Exception>(() => BmFont.Generate(Font(), options));

@@ -123,7 +123,7 @@ Every phase that changes Native pixel output runs `regression_check.py` with a `
 | 169 | [SDF Generation](done/phase-169-sdf-generation.md) | Single-channel SDF from outlines | Complete |
 | 170 | [MSDF Generation](done/phase-170-msdf-generation.md) | Multi-channel SDF (MSDF/MTSDF) | Complete |
 | 171 | [Variable Font Support](phase-171-variable-font-support.md) | TrueType variations; CFF2 `blend` | In progress -- Wave 1 (TrueType) complete; Wave 2 (CFF2) after 166 |
-| 172 | [Color Font Support](phase-172-color-font-support.md) | COLRv0/CPAL, then COLRv1; CBDT/sbix stretch | Future -- Wave 1 (v0), Wave 2 (v1) |
+| 172 | [Color Font Support](phase-172-color-font-support.md) | COLRv0/CPAL, then COLRv1; CBDT/sbix stretch | In progress -- COLRv0/CPAL complete; COLRv1 Wave 2 |
 | 173 | [LCD Subpixel Rendering](phase-173-lcd-subpixel-rendering.md) | LCD subpixel rendering + core AA-mode negotiation | Future -- Wave 2 |
 | 174 | [Auto-Hinting](phase-174-auto-hinting.md) | Auto-hinting | Future -- Wave 2 |
 | 175 | [GSUB Layout](phase-175-gsub-layout.md) | GSUB substitutions | Needs decision |
