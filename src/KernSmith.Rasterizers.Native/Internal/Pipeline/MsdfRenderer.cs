@@ -34,6 +34,10 @@ internal sealed class MsdfRenderer : IBoxMeasuringRenderer
         SdfRenderer.Instance.Measure(glyph, options);
 
     /// <inheritdoc />
+    /// <remarks>Always: the field fills the padded box whatever the anti-alias mode.</remarks>
+    public bool MeasuresFromBox(RasterOptions options) => true;
+
+    /// <inheritdoc />
     public GlyphMetrics MeasureBox(GlyphBox box, int advance, RasterOptions options) =>
         SdfRenderer.Instance.MeasureBox(box, advance, options);
 

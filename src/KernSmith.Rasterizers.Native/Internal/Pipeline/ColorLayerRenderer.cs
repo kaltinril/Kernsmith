@@ -54,6 +54,10 @@ internal sealed class ColorLayerRenderer : IGlyphRenderer
     /// <inheritdoc />
     public GlyphMetrics Measure(PreparedGlyph glyph, RasterOptions options)
     {
+        // A None box depends on which pixels the threshold keeps, so measuring means drawing.
+        if (options.AntiAlias == AntiAliasMode.None && HasLayers(glyph.GlyphIndex))
+            return Metrics(Draw(glyph.GlyphIndex, options).Box, glyph.Advance);
+
         if (_colorGlyphs.TryGetPaintGraph(glyph.GlyphIndex, out var graph))
             return Metrics(_paintGraphs.Measure(graph, glyph.GlyphIndex, options), glyph.Advance);
 
@@ -67,22 +71,10 @@ internal sealed class ColorLayerRenderer : IGlyphRenderer
     /// <inheritdoc />
     public RasterizedGlyph Render(int codepoint, int glyphIndex, PreparedGlyph glyph, RasterOptions options)
     {
-        GlyphBox box;
-        byte[] pixels;
-        if (_colorGlyphs.TryGetPaintGraph(glyphIndex, out var graph))
-        {
-            (box, pixels) = _paintGraphs.Render(graph, glyphIndex, options);
-        }
-        else if (_colorGlyphs.HasLayers(glyphIndex))
-        {
-            (var layers, box) = Layout(glyphIndex, options);
-            pixels = box.IsEmpty ? [] : Composite(layers, box, options.AntiAlias);
-        }
-        else
-        {
+        if (!HasLayers(glyphIndex))
             return _fallback.Render(codepoint, glyphIndex, glyph, options);
-        }
 
+        var (box, pixels) = Draw(glyphIndex, options);
         var metrics = Metrics(box, glyph.Advance);
 
         return new RasterizedGlyph
@@ -96,6 +88,61 @@ internal sealed class ColorLayerRenderer : IGlyphRenderer
             Metrics = metrics,
             Format = PixelFormat.Rgba32
         };
+    }
+
+    /// <summary>Draws a paint graph or version 0 layers; under <see cref="AntiAliasMode.None"/>
+    /// cropped to the ink as plain coverage is.</summary>
+    private (GlyphBox Box, byte[] Pixels) Draw(int glyphIndex, RasterOptions options)
+    {
+        GlyphBox box;
+        byte[] pixels;
+        if (_colorGlyphs.TryGetPaintGraph(glyphIndex, out var graph))
+        {
+            (box, pixels) = _paintGraphs.Render(graph, glyphIndex, options);
+        }
+        else
+        {
+            (var layers, box) = Layout(glyphIndex, options);
+            pixels = box.IsEmpty ? [] : Composite(layers, box, options.AntiAlias);
+        }
+
+        return options.AntiAlias == AntiAliasMode.None ? CropToInk(box, pixels) : (box, pixels);
+    }
+
+    /// <summary>
+    /// Drops fully transparent edge rows and columns, as <see cref="ScanlineRasterizer.RasterizeMono"/>
+    /// does for plain coverage, so a color glyph that paints its own outline keeps the same box.
+    /// A fully transparent glyph keeps its box.
+    /// </summary>
+    private static (GlyphBox Box, byte[] Pixels) CropToInk(GlyphBox box, byte[] rgba)
+    {
+        if (box.IsEmpty)
+            return (box, rgba);
+
+        int width = box.Width, height = box.Height;
+        int left = width, top = height, right = -1, bottom = -1;
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                if (rgba[(((y * width) + x) * 4) + 3] == 0)
+                    continue;
+                left = Math.Min(left, x);
+                right = Math.Max(right, x);
+                top = Math.Min(top, y);
+                bottom = Math.Max(bottom, y);
+            }
+        }
+
+        if (right < 0 || (left == 0 && top == 0 && right == width - 1 && bottom == height - 1))
+            return (box, rgba);
+
+        int croppedWidth = right - left + 1, croppedHeight = bottom - top + 1;
+        var cropped = new byte[croppedWidth * croppedHeight * 4];
+        for (int row = 0; row < croppedHeight; row++)
+            Array.Copy(rgba, (((top + row) * width) + left) * 4, cropped, row * croppedWidth * 4, croppedWidth * 4);
+
+        return (new GlyphBox(box.MinX + left, box.MinY + top, croppedWidth, croppedHeight), cropped);
     }
 
     /// <summary>Prepares every non-blank layer and the union of their boxes.</summary>

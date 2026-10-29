@@ -122,6 +122,9 @@ Invariants:
   hull when it scales to nothing. A glyph whose outline a variation moved drops the header box
   and is measured tightly. `NativeOutputCharacterizationTests` pins the resulting bytes;
   a deliberate pixel change updates its hashes.
+- `AntiAliasMode.None` output is cropped to its ink after rendering (`ScanlineRasterizer.RasterizeMono`;
+  color glyphs in `ColorLayerRenderer`): thresholding empties edge rows and columns of the
+  outward-rounded box. A None `Measure` therefore renders too (into pooled scratch).
 - Blank glyphs (no outline, or an empty box) never reach a renderer — except a `COLR` color glyph, whose own outline is not what gets drawn and is often empty.
 - `PreparedGlyph.GlyphIndex` is the only way `Measure` can identify the glyph; a hint stage must carry it over (build with `with`).
 - The default instance (no axes, or every axis at its default) takes the exact static decode

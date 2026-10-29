@@ -8,9 +8,9 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// Pins Native's exact output — bitmaps, bearings, advances and <c>GetGlyphMetrics</c> — for
 /// a representative Roboto glyph set, so restructuring the glyph pipeline cannot change a
 /// single byte unnoticed. A legitimate pixel change must update them deliberately; the last one
-/// replaced the coverage accumulator, which changed only the grayscale hashes, by one level on
-/// under 0.3% of pixels (float rounding of the same exact-area coverage), and left the
-/// <see cref="AntiAliasMode.None"/> hashes untouched.
+/// cropped <see cref="AntiAliasMode.None"/> glyph boxes to their ink, which changed only the
+/// None hashes: most glyphs lose an empty edge row or column, with every lit pixel's pen-
+/// relative position and advance unchanged.
 /// </summary>
 public class NativeOutputCharacterizationTests
 {
@@ -26,10 +26,10 @@ public class NativeOutputCharacterizationTests
     [Theory]
     [InlineData(8f, 72, AntiAliasMode.Grayscale, "4D45F8102FEF1A7D13E9D33640CB067E6FA2DAE9FB6F4F12EA366C6EA7A64087")]
     [InlineData(12f, 72, AntiAliasMode.Grayscale, "407F35FD83545B5E2A5B7C395075E1284723205FA386BD5A7D0C242979238914")]
-    [InlineData(12f, 72, AntiAliasMode.None, "DB938F3774AC59B43714559A376088DA0672AE927517B94F56F85C6CE3973AE4")]
+    [InlineData(12f, 72, AntiAliasMode.None, "7BBCA214C44A67D88D636FABCF2499B0374D73FCBDA92FCA80BE1D2D51C1439D")]
     [InlineData(17.5f, 72, AntiAliasMode.Grayscale, "4F0B04FD8DE616F6321E85941F42ADD2A09F3731D1DBFDE246F1C2C3B842301A")]
     [InlineData(32f, 72, AntiAliasMode.Grayscale, "598F0AEFEFE0E3B6B7EC62DE40E88D6DBE1547F24E30913DD6CE6464D2FA36DD")]
-    [InlineData(32f, 96, AntiAliasMode.None, "A7CD8AFC71351BCE144EF3619EDFEB5723DCD8F3BE57E45F56EB8171696ED250")]
+    [InlineData(32f, 96, AntiAliasMode.None, "B4991B8DAB0716E75F041B3BB1898F3627C8248721B62D4A5363571B20AE0264")]
     [InlineData(72f, 72, AntiAliasMode.Grayscale, "696D393750D9D21C2A74891E6E7B909448D22026080891ED9FFCD166A9F88C00")]
     public void Output_IsByteIdenticalToTheCharacterizedBaseline(
         float size, int dpi, AntiAliasMode antiAlias, string expectedHash)

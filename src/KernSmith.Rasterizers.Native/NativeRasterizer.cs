@@ -182,7 +182,7 @@ public sealed class NativeRasterizer : IRasterizer
 
         // Where the box alone decides the metrics, skip decoding the outline (Phase 177).
         var transforms = GlyphTransforms.For(options, _face.Head.UnitsPerEm);
-        if (renderer is IBoxMeasuringRenderer boxRenderer && TryPrepareBox(codepoint, glyphIndex, options, transforms, out var box, out int advance))
+        if (renderer is IBoxMeasuringRenderer boxRenderer && boxRenderer.MeasuresFromBox(options) && TryPrepareBox(codepoint, glyphIndex, options, transforms, out var box, out int advance))
         {
             return box.IsEmpty
                 ? new GlyphMetrics(BearingX: 0, BearingY: 0, Advance: advance, Width: 0, Height: 0)

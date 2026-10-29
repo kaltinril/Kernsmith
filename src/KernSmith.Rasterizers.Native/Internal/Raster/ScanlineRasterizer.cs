@@ -96,6 +96,85 @@ internal static class ScanlineRasterizer
     }
 
     /// <summary>
+    /// Renders <see cref="AntiAliasMode.None"/> output — thresholded, with dropout control — in
+    /// the given box and returns it cropped to its ink, bearings moved to match.
+    /// </summary>
+    /// <param name="edges">Directed edges in pixel space.</param>
+    /// <param name="width">Width of the box to render in; it must hold every partially covered pixel.</param>
+    /// <param name="height">Height of the box to render in.</param>
+    /// <param name="originX">Pixel-space X of the box's column 0.</param>
+    /// <param name="originY">Pixel-space Y of the box's row 0.</param>
+    /// <param name="bearingX">The box's bearing; the result's moves right by the empty columns cropped.</param>
+    /// <param name="bearingY">The box's bearing; the result's moves down by the empty rows cropped.</param>
+    /// <remarks>
+    /// The box an outline rounds out to keeps every partially covered pixel, but thresholding at
+    /// 50% empties an edge row or column wherever the outline covers under half of it. Only
+    /// empty rows and columns are cropped, so every lit pixel — dropout control's included —
+    /// stays where it was; rounding the box to the nearest pixel instead would cut off a dropout
+    /// pixel restored in a column the outline covers under half of. A render with no ink keeps
+    /// its box. The only allocation is the returned bitmap.
+    /// </remarks>
+    public static RasterResult RasterizeMono(EdgeSegment[] edges, int width, int height, float originX, float originY, int bearingX, int bearingY) =>
+        Mono(edges, width, height, originX, originY, bearingX, bearingY, keepBitmap: true);
+
+    /// <summary>
+    /// The size and bearings <see cref="RasterizeMono"/> would return, with an empty bitmap. It
+    /// still renders to find the ink, into pooled scratch only.
+    /// </summary>
+    public static RasterResult MeasureMono(EdgeSegment[] edges, int width, int height, float originX, float originY, int bearingX, int bearingY) =>
+        Mono(edges, width, height, originX, originY, bearingX, bearingY, keepBitmap: false);
+
+    private static RasterResult Mono(EdgeSegment[] edges, int width, int height, float originX, float originY, int bearingX, int bearingY, bool keepBitmap)
+    {
+        ArgumentNullException.ThrowIfNull(edges);
+        ArgumentOutOfRangeException.ThrowIfNegative(width);
+        ArgumentOutOfRangeException.ThrowIfNegative(height);
+
+        int size = width * height;
+        byte[] scratch = ArrayPool<byte>.Shared.Rent(Math.Max(size, 1));
+        try
+        {
+            // Fill skips untouched bands, so the rented buffer must start zeroed.
+            var full = scratch.AsSpan(0, size);
+            full.Clear();
+            if (size > 0 && edges.Length > 0 && Fill(scratch, edges, width, height, originX, originY, AntiAliasMode.None))
+                DropoutControl.Apply(scratch, edges, width, height, originX, originY);
+
+            int top = full.IndexOfAnyExcept((byte)0);
+            if (top < 0)
+                return new RasterResult(keepBitmap ? new byte[size] : [], width, height, bearingX, bearingY);
+
+            top /= width;
+            int bottom = full.LastIndexOfAnyExcept((byte)0) / width;
+            int left = width, right = 0;
+            for (int row = top; row <= bottom; row++)
+            {
+                var line = full.Slice(row * width, width);
+                int first = line.IndexOfAnyExcept((byte)0);
+                if (first < 0)
+                    continue;
+                left = Math.Min(left, first);
+                right = Math.Max(right, line.LastIndexOfAnyExcept((byte)0));
+            }
+
+            int croppedWidth = right - left + 1, croppedHeight = bottom - top + 1;
+            byte[] bitmap = [];
+            if (keepBitmap)
+            {
+                bitmap = new byte[croppedWidth * croppedHeight];
+                for (int row = 0; row < croppedHeight; row++)
+                    full.Slice(((top + row) * width) + left, croppedWidth).CopyTo(bitmap.AsSpan(row * croppedWidth));
+            }
+
+            return new RasterResult(bitmap, croppedWidth, croppedHeight, bearingX + left, bearingY - top);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(scratch);
+        }
+    }
+
+    /// <summary>
     /// Accumulates every edge into a pooled delta buffer one band of rows at a time and resolves
     /// each band into <paramref name="bitmap"/>.
     /// </summary>
