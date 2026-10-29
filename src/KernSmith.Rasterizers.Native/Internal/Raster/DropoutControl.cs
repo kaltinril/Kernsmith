@@ -61,15 +61,28 @@ internal static class DropoutControl
         int lines = horizontal ? height : width;
         float lineOrigin = horizontal ? originY : originX;
 
-        int[] offsets = ArrayPool<int>.Shared.Rent(lines + 1);
-        int[]? bucket = null;
+        // Bucket every edge under the scanlines it can reach (a counting sort). The pair count
+        // comes first so one rental holds both the per-scanline offsets and the buckets: with
+        // one array per element type in flight, every rental returns to the pool's per-thread
+        // cache and the next glyph allocates nothing.
+        long pairs = 0;
+        foreach (var edge in edges)
+        {
+            if (Reach(edge, horizontal, lineOrigin, lines, out int first, out int last))
+                pairs += last - first + 1;
+        }
+
+        if (pairs < 2)
+            return;
+
+        int[] index = ArrayPool<int>.Shared.Rent(checked(lines + 1 + (int)pairs));
         float[]? positions = null;
         Step[]? steps = null;
         try
         {
-            // Bucket every edge under the scanlines it can reach (a counting sort): count per
-            // scanline, prefix-sum the counts into start offsets, then fill.
-            var starts = offsets.AsSpan(0, lines + 1);
+            // Count per scanline, prefix-sum the counts into start offsets, then fill.
+            var starts = index.AsSpan(0, lines + 1);
+            var bucket = index.AsSpan(lines + 1, (int)pairs);
             starts.Clear();
             foreach (var edge in edges)
             {
@@ -90,7 +103,6 @@ internal static class DropoutControl
             if (widest < 2)
                 return;
 
-            bucket = ArrayPool<int>.Shared.Rent(starts[lines]);
             positions = ArrayPool<float>.Shared.Rent(widest);
             steps = ArrayPool<Step>.Shared.Rent(widest);
 
@@ -115,7 +127,7 @@ internal static class DropoutControl
                     continue;
 
                 float at = line + 0.5f + lineOrigin;
-                int count = Crossings(edges, bucket.AsSpan(from, to - from), at, horizontal, positions, steps);
+                int count = Crossings(edges, bucket.Slice(from, to - from), at, horizontal, positions, steps);
                 if (count < 2)
                     continue;
 
@@ -126,9 +138,7 @@ internal static class DropoutControl
         }
         finally
         {
-            ArrayPool<int>.Shared.Return(offsets);
-            if (bucket is not null)
-                ArrayPool<int>.Shared.Return(bucket);
+            ArrayPool<int>.Shared.Return(index);
             if (positions is not null)
                 ArrayPool<float>.Shared.Return(positions);
             if (steps is not null)
