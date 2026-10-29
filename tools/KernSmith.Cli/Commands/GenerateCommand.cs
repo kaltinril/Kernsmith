@@ -127,6 +127,15 @@ internal sealed class GenerateCommand
             ConsoleOutput.WriteError($"Generation error ({BackendName(options)} rasterizer): {ex.Message}");
             return ExitCodes.GenerationError;
         }
+        // Whether a palette index exists depends on the font's CPAL table, so a bad
+        // --color-palette is the backend rejecting an option for this font, not a malformed
+        // argument: the rasterizer reports it as an out-of-range paletteIndex.
+        catch (ArgumentOutOfRangeException ex) when (ex.ParamName == "paletteIndex")
+        {
+            var reason = ex.Message.Split(" (Parameter '", 2)[0];
+            ConsoleOutput.WriteError($"Generation error ({BackendName(options)} rasterizer): --color-palette {ex.ActualValue}: {reason}");
+            return ExitCodes.GenerationError;
+        }
         catch (InvalidOperationException ex)
         {
             ConsoleOutput.WriteError($"Generation error: {ex.Message}");

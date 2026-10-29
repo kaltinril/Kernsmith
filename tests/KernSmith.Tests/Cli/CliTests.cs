@@ -203,6 +203,28 @@ public class CliTests : IDisposable
         stderr.ShouldContain("does not fit in a 1024x1024 page", Case.Sensitive);
     }
 
+    [Theory]
+    [InlineData("freetype", "99")]
+    [InlineData("freetype", "-1")]
+    public void Generate_ColorPaletteTheFontLacks_IsAGenerationError(string rasterizer, string palette)
+    {
+        // Whether a palette index exists depends on the font's CPAL table, so a bad one is the
+        // backend rejecting an option for this font -- exit 4 like every other such rejection.
+        // NotoColorEmoji is CBDT-only (no CPAL), so it has no palette at any index.
+        var colorFont = Path.Combine(AppContext.BaseDirectory, "Fixtures", "NotoColorEmoji.ttf");
+
+        // Act
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", colorFont, "-s", "32", "--rasterizer", rasterizer, "--color-font",
+            "--color-palette", palette, "-o", Path.Combine(_tempDir, "palette"), "--no-color");
+
+        // Assert
+        exitCode.ShouldBe(4, $"stderr: {stderr}");
+        stderr.ShouldNotContain("Unhandled exception", Case.Sensitive);
+        stderr.Trim().ShouldNotContain('\n');
+        stderr.ShouldContain($"Generation error ({rasterizer} rasterizer): --color-palette {palette}:", Case.Sensitive);
+    }
+
     [Fact]
     public void Generate_BackendDeclinesOption_PrintsOneLineErrorWithBackendName()
     {

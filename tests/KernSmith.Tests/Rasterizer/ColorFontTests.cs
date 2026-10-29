@@ -423,6 +423,25 @@ public class ColorFontTests : IDisposable
         ex.Message.ShouldContain("Font not loaded");
     }
 
+    [Theory]
+    [InlineData(99)]
+    [InlineData(-1)]
+    [InlineData(65536)]
+    public void SelectColorPalette_IndexTheFontLacks_ThrowsArgumentOutOfRange(int paletteIndex)
+    {
+        // Arrange -- NotoColorEmoji is CBDT-only (no CPAL), so it has no palette at any index.
+        _rasterizer = new FreeTypeRasterizer();
+        _rasterizer.LoadFont(File.ReadAllBytes(Path.Combine(FixturesDir, "NotoColorEmoji.ttf")));
+
+        // Act
+        var act = () => _rasterizer.SelectColorPalette(paletteIndex);
+
+        // Assert
+        var ex = Should.Throw<ArgumentOutOfRangeException>(act);
+        ex.ParamName.ShouldBe("paletteIndex");
+        ex.ActualValue.ShouldBe(paletteIndex);
+    }
+
     // ---------------------------------------------------------------
     // Integration: color font rendering (full pipeline)
     // ---------------------------------------------------------------
