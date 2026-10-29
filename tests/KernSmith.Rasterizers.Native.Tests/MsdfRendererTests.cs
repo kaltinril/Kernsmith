@@ -10,7 +10,7 @@ namespace KernSmith.Rasterizers.Native.Tests;
 
 /// <summary>
 /// Phase 170 — multi-channel distance fields: edge coloring, per-channel pseudo-distances,
-/// median reconstruction (sharp corners), clash correction, MTSDF alpha, and RGBA output.
+/// median reconstruction (sharp corners), artifact correction, MTSDF alpha, and RGBA output.
 /// </summary>
 public class MsdfRendererTests
 {
@@ -102,7 +102,7 @@ public class MsdfRendererTests
 
         var sdf = SignedDistanceField.Compute(shape, width, height, pad);
         var msdf = MultiChannelDistanceField.Compute(shape, width, height, pad);
-        MultiChannelDistanceField.CorrectClashes(msdf, width, height);
+        MultiChannelDistanceField.CorrectArtifacts(msdf, sdf, width, height);
 
         int sdfErrors = 0, msdfErrors = 0, samples = 0;
         const int k = 8;
@@ -170,7 +170,7 @@ public class MsdfRendererTests
     [InlineData(16f, 4f)]
     [InlineData(32f, 4f)]
     [InlineData(48f, 6f)]
-    public void ClashCorrection_LeavesNoInterpolationArtifacts_OnRobotoAscii(float size, float spread)
+    public void ArtifactCorrection_LeavesNoInterpolationArtifacts_OnRobotoAscii(float size, float spread)
     {
         // Between two adjacent texels that are both more than half a pixel inside (or outside)
         // the true outline, the edge cannot pass, so the interpolated median there must keep
@@ -182,20 +182,114 @@ public class MsdfRendererTests
 
         for (int c = 0x21; c < 0x7F; c++)
         {
-            var glyph = pipeline.Prepare(face.GetGlyphIndex(c), options, []);
-            int pad = SdfRenderer.SpreadPixels(options);
-            int width = glyph.Box.Width + (2 * pad), height = glyph.Box.Height + (2 * pad);
-            var shape = DistanceShape.Build(glyph.Outline, glyph.ToPixels, glyph.Box.MinX - pad, glyph.Box.MinY - pad,
-                SignedDistanceField.ToleranceFor(pad), colorEdges: true);
-
-            var truth = SignedDistanceField.Compute(shape, width, height, pad);
-            var msdf = MultiChannelDistanceField.Compute(shape, width, height, pad);
-            MultiChannelDistanceField.CorrectClashes(msdf, width, height);
+            var (truth, msdf, width, height, _) = GlyphFields(pipeline, face.GetGlyphIndex(c), options);
+            MultiChannelDistanceField.CorrectArtifacts(msdf, truth, width, height);
 
             artifacts += CountArtifacts(truth, msdf, width, height);
         }
 
         artifacts.ShouldBe(0);
+    }
+
+    public static TheoryData<string> ClashingShapes => ["hash", "star"];
+
+    [Theory]
+    [MemberData(nameof(ClashingShapes))]
+    public void ArtifactCorrection_RemovesTheClashesOfShapesKnownToProduceThem(string name)
+    {
+        // Edges of one color recur around these shapes (the bars of a '#', the sharp points of
+        // a star), so neighbouring texels can take an outlying channel from different edges and
+        // interpolate to a median of the wrong sign well inside or outside the shape.
+        var outline = ClashingShape(name);
+        const int pad = 4;
+        var (shape, width, height, _, _) = Field(outline, pad);
+        var truth = SignedDistanceField.Compute(shape, width, height, pad);
+        var msdf = MultiChannelDistanceField.Compute(shape, width, height, pad);
+
+        int before = CountArtifacts(truth, msdf, width, height);
+        int flattened = MultiChannelDistanceField.CorrectArtifacts(msdf, truth, width, height);
+        int after = CountArtifacts(truth, msdf, width, height);
+
+        before.ShouldBeGreaterThan(0, "the uncorrected field should clash on this shape");
+        after.ShouldBe(0, $"{before} artifacts before correction");
+        flattened.ShouldBeLessThanOrEqualTo(2 * before, "only the texels the artifacts depend on are flattened");
+    }
+
+    [Fact]
+    public void ArtifactCorrection_LeavesAFieldWithoutArtifactsUntouched()
+    {
+        // The off-grid square of the reconstruction test: its corners need all three channels,
+        // and nothing there contradicts the true distance, so nothing may be flattened.
+        var outline = TestOutlines.Outline(TestOutlines.Rect(4.3f, 3.6f, 15.7f, 14.2f));
+        const int pad = 4;
+        var (shape, width, height, _, _) = Field(outline, pad);
+        var truth = SignedDistanceField.Compute(shape, width, height, pad);
+        var msdf = MultiChannelDistanceField.Compute(shape, width, height, pad);
+        var original = (float[])msdf.Clone();
+
+        MultiChannelDistanceField.CorrectArtifacts(msdf, truth, width, height).ShouldBe(0);
+        msdf.ShouldBe(original);
+    }
+
+    [Fact]
+    public void ArtifactCorrection_KeepsEveryTexelsMedian_OnRobotoAscii()
+    {
+        // Flattening sets a texel's channels to their own median, so the edge reconstructed at
+        // texel centres cannot move.
+        var face = NativeFontFace.Load(TestFonts.RobotoRegularBytes());
+        var pipeline = new GlyphPipeline(new TrueTypeOutlineDecoder(face), face.Head.UnitsPerEm);
+        var options = Options(SdfMode.Msdf, 4f, 32f);
+        int flattened = 0;
+
+        for (int c = 0x21; c < 0x7F; c++)
+        {
+            var (truth, msdf, width, height, _) = GlyphFields(pipeline, face.GetGlyphIndex(c), options);
+            var original = (float[])msdf.Clone();
+            flattened += MultiChannelDistanceField.CorrectArtifacts(msdf, truth, width, height);
+
+            for (int t = 0; t < width * height; t++)
+            {
+                MultiChannelDistanceField.Median(msdf[3 * t], msdf[(3 * t) + 1], msdf[(3 * t) + 2])
+                    .ShouldBe(MultiChannelDistanceField.Median(original[3 * t], original[(3 * t) + 1], original[(3 * t) + 2]), $"'{(char)c}' texel {t}");
+            }
+        }
+
+        flattened.ShouldBeGreaterThan(0, "Roboto at 32px has artifacts to correct");
+    }
+
+    [Fact]
+    public void ArtifactCorrection_NeverWorsensTheReconstructedCoverage_OnSourceSerifAt16px()
+    {
+        // At 16px Source Serif's hairlines and serif tips are thinner than a texel; only the
+        // extra channels draw them, and a probe just past such a tip can read wrong by a few
+        // hundredths of a pixel. Flattening for that would erase the tip, so each repair is
+        // weighed against what it changes nearby. Per glyph, the worst difference between the
+        // coverage reconstructed from the field (8x8 bilinear samples of the median per pixel)
+        // and the grayscale coverage bitmap must not grow.
+        var bytes = TestFonts.SourceSerifOtfBytes();
+        var face = NativeFontFace.Load(bytes);
+        using var rasterizer = new NativeRasterizer();
+        rasterizer.LoadFont(bytes);
+        var pipeline = new GlyphPipeline(OutlineDecoders.ForFace(face), face.Head.UnitsPerEm);
+        var options = Options(SdfMode.Msdf, 4f, 16f);
+        var worse = new List<string>();
+
+        for (int c = 0x21; c < 0x7F; c++)
+        {
+            var (truth, msdf, width, height, pad) = GlyphFields(pipeline, face.GetGlyphIndex(c), options);
+            var coverage = rasterizer.RasterizeGlyph(c, new RasterOptions { Size = 16f })!;
+            coverage.Width.ShouldBe(width - (2 * pad));
+            coverage.Height.ShouldBe(height - (2 * pad));
+
+            double before = MaxCoverageError(msdf, width, coverage, pad);
+            MultiChannelDistanceField.CorrectArtifacts(msdf, truth, width, height);
+            double after = MaxCoverageError(msdf, width, coverage, pad);
+
+            if (after > before + 1e-9)
+                worse.Add($"'{(char)c}' {before:F3} -> {after:F3}");
+        }
+
+        worse.ShouldBeEmpty();
     }
 
     // ---- Output ----------------------------------------------------------------------------
@@ -354,6 +448,77 @@ public class MsdfRendererTests
         int originX = prepared.Box.MinX - pad, originY = prepared.Box.MinY - pad;
         var shape = DistanceShape.Build(outline, TestOutlines.Identity, originX, originY, 1f / 128, colorEdges: true);
         return (shape, prepared.Box.Width + (2 * pad), prepared.Box.Height + (2 * pad), originX, originY);
+    }
+
+    /// <summary>The true distance and uncorrected MSDF of one glyph, laid out as MsdfRenderer lays them out.</summary>
+    private static (float[] Truth, float[] Msdf, int Width, int Height, int Pad) GlyphFields(
+        GlyphPipeline pipeline, int glyphIndex, RasterOptions options)
+    {
+        var glyph = pipeline.Prepare(glyphIndex, options, []);
+        int pad = SdfRenderer.SpreadPixels(options);
+        int width = glyph.Box.Width + (2 * pad), height = glyph.Box.Height + (2 * pad);
+        var shape = DistanceShape.Build(glyph.Outline, glyph.ToPixels, glyph.Box.MinX - pad, glyph.Box.MinY - pad,
+            SignedDistanceField.ToleranceFor(pad), colorEdges: true);
+        return (SignedDistanceField.Compute(shape, width, height, pad), MultiChannelDistanceField.Compute(shape, width, height, pad), width, height, pad);
+    }
+
+    /// <summary>
+    /// Shapes whose uncorrected fields clash: a '#' of four overlapping bars, and a five-point
+    /// star with sharp points, both placed off the texel grid.
+    /// </summary>
+    private static GlyphOutline ClashingShape(string name)
+    {
+        if (name == "hash")
+        {
+            const float t = 2.5f, a = 6.75f;
+            return TestOutlines.Outline(
+                TestOutlines.Rect(a, 2.2f, a + t, 20.2f),
+                TestOutlines.Rect(a + 4 + t, 2.2f, a + 4 + (2 * t), 20.2f),
+                TestOutlines.Rect(2.85f, 7.1f, 18.4f, 7.1f + t),
+                TestOutlines.Rect(2.85f, 11.1f + t, 18.4f, 11.1f + (2 * t)));
+        }
+
+        var points = new (float X, float Y)[10];
+        for (int i = 0; i < 10; i++)
+        {
+            double angle = -(Math.PI / 2) - (i * Math.PI / 5);
+            double radius = i % 2 == 0 ? 12 : 12 / 4.5;
+            points[i] = ((float)(14.4 + (radius * Math.Cos(angle))), (float)(14.1 + (radius * Math.Sin(angle))));
+        }
+
+        return TestOutlines.Outline(TestOutlines.Polygon(points));
+    }
+
+    /// <summary>
+    /// The largest difference, over the coverage bitmap's pixels, between its coverage and the
+    /// fraction of an 8x8 grid of bilinear samples of the field's median that read inside.
+    /// </summary>
+    private static double MaxCoverageError(float[] msdf, int width, RasterizedGlyph coverage, int pad)
+    {
+        const int k = 8;
+        double worst = 0;
+        for (int y = 0; y < coverage.Height; y++)
+        {
+            for (int x = 0; x < coverage.Width; x++)
+            {
+                int inside = 0;
+                for (int sy = 0; sy < k; sy++)
+                {
+                    for (int sx = 0; sx < k; sx++)
+                    {
+                        double fx = x + pad + ((sx + 0.5) / k) - 0.5, fy = y + pad + ((sy + 0.5) / k) - 0.5;
+                        double r = Sample(msdf, width, 3, 0, fx, fy), g = Sample(msdf, width, 3, 1, fx, fy), b = Sample(msdf, width, 3, 2, fx, fy);
+                        if (Math.Max(Math.Min(r, g), Math.Min(Math.Max(r, g), b)) >= 0)
+                            inside++;
+                    }
+                }
+
+                double expected = coverage.BitmapData[(y * coverage.Width) + x] / 255.0;
+                worst = Math.Max(worst, Math.Abs((inside / (double)(k * k)) - expected));
+            }
+        }
+
+        return worst;
     }
 
     /// <summary>Bilinear sample of one channel at texel-centre coordinates (fx, fy).</summary>
