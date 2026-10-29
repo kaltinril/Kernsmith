@@ -709,6 +709,22 @@ public class PreviewPanel : Panel
             _atlasPageTextures = new List<Texture2D>();
             foreach (var page in _preview.Pages)
             {
+                // Distance-field pages hold distances, not coverage (an MSDF page's RGB would
+                // draw as colored boxes), so the sample shows the shape they encode instead.
+                // The Preview tab still shows the raw atlas.
+                var decoded = DistanceFieldPreview.DecodeToCoverage(page.Page, model.Extended);
+                if (decoded != null)
+                {
+                    if (!_sampleTextureCache.TryGetValue(page.PageIndex, out var fieldTex))
+                    {
+                        fieldTex = new Texture2D(_graphicsDevice, page.Width, page.Height);
+                        fieldTex.SetData(decoded);
+                        _sampleTextureCache[page.PageIndex] = fieldTex;
+                    }
+                    _atlasPageTextures.Add(fieldTex);
+                    continue;
+                }
+
                 if (page.IsRgba)
                 {
                     // RGBA pages can share the preview cache texture directly

@@ -61,7 +61,8 @@ public class EffectsPanel : Panel
         // Two-column, three-row layout:
         // Row 1: Bold | Synthetic
         // Row 2: Italic | Synthetic
-        // Row 3: Hinting | Anti-Alias
+        // Row 3: Hinting
+        // (the anti-alias mode is a combo in the grid below)
         var styleRow = new ContainerRuntime();
         styleRow.WidthUnits = DimensionUnitType.RelativeToParent;
         styleRow.Width = 0;
@@ -97,9 +98,9 @@ public class EffectsPanel : Panel
         hintCheck.Checked += (_, _) => _effects.Hinting = true;
         hintCheck.Unchecked += (_, _) => _effects.Hinting = false;
         leftCol.Children.Add(hintCheck.Visual);
-        TooltipService.SetTooltip(hintCheck, "Font hinting for sharper small sizes");
+        TooltipService.SetTooltip(hintCheck, "Font hinting for sharper small sizes. The Native backend hints only in Light anti-alias mode (its own vertical auto-hinter).");
 
-        // Right column: Synthetic, Synthetic, Anti-Alias
+        // Right column: Synthetic, Synthetic
         var rightCol = new ContainerRuntime();
         rightCol.WidthUnits = DimensionUnitType.Ratio;
         rightCol.Width = 1;
@@ -120,14 +121,6 @@ public class EffectsPanel : Panel
         synItalicCheck.IsEnabled = false;
         rightCol.Children.Add(synItalicCheck.Visual);
         TooltipService.SetTooltip(synItalicCheck, "Force synthetic italic, skip native face lookup");
-
-        var aaCheck = new CheckBox();
-        aaCheck.Text = "Anti-Alias";
-        aaCheck.IsChecked = true;
-        aaCheck.Checked += (_, _) => _effects.AntiAlias = true;
-        aaCheck.Unchecked += (_, _) => _effects.AntiAlias = false;
-        rightCol.Children.Add(aaCheck.Visual);
-        TooltipService.SetTooltip(aaCheck, "Smooth glyph edges with anti-aliasing");
 
         // Guard flag to prevent recursive property change loops
         var updatingSyntheticChecks = false;
@@ -314,6 +307,49 @@ public class EffectsPanel : Panel
         };
         ssGrid.AddRow("Super Sample:", ssCombo);
         TooltipService.SetTooltip(ssCombo, "Render at higher resolution then downscale for smoother edges. Higher values improve quality but increase generation time.");
+
+        // Anti-alias mode: only the modes the selected backend advertises are offered.
+        var aaCombo = new ComboBox();
+        aaCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
+        aaCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        aaCombo.Visual.Width = 0;
+        var aaModes = new List<AntiAliasMode>();
+        var updatingAaCombo = false;
+        void RefreshAaCombo()
+        {
+            var modes = _effects.BackendAntiAliasModes;
+            if (!modes.Contains(_effects.AntiAlias))
+            {
+                // Same policy as the distance-field combo: an unsupported choice falls back when
+                // the backend changes. Setting it re-enters this method through PropertyChanged.
+                _effects.AntiAlias = modes.Contains(AntiAliasMode.Grayscale) ? AntiAliasMode.Grayscale : modes[0];
+                return;
+            }
+
+            updatingAaCombo = true;
+            aaModes.Clear();
+            aaModes.AddRange(modes);
+            aaCombo.Items!.Clear();
+            foreach (var mode in aaModes)
+                aaCombo.Items.Add(mode == AntiAliasMode.Lcd ? "LCD" : mode.ToString());
+            aaCombo.SelectedIndex = aaModes.IndexOf(_effects.AntiAlias);
+            updatingAaCombo = false;
+        }
+        aaCombo.SelectionChanged += (_, _) =>
+        {
+            if (updatingAaCombo) return;
+            var idx = aaCombo.SelectedIndex;
+            if (idx >= 0 && idx < aaModes.Count)
+                _effects.AntiAlias = aaModes[idx];
+        };
+        ssGrid.AddRow("Anti-Alias:", aaCombo);
+        TooltipService.SetTooltip(aaCombo, "None: aliased 1-bit edges. Grayscale: smooth edges (default). Light: grayscale with light hinting (Native: its own vertical auto-hinter, needs Hinting on). LCD: subpixel RGB coverage (Native writes RGBA glyphs). Only the selected rasterizer's modes are listed.");
+        _effects.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(EffectsViewModel.BackendAntiAliasModes) or nameof(EffectsViewModel.AntiAlias))
+                RefreshAaCombo();
+        };
+        RefreshAaCombo();
     }
 
     private void BuildEffectsSection(global::Gum.Wireframe.GraphicalUiElement stack)
@@ -535,13 +571,44 @@ public class EffectsPanel : Panel
         var advancedGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
         expander.AddContent(advancedGrid);
 
-        var sdfCheck = new CheckBox();
-        sdfCheck.Text = "";
-        sdfCheck.IsEnabled = _effects.BackendSupportsSdf;
-        sdfCheck.Checked += (_, _) => _effects.SdfEnabled = true;
-        sdfCheck.Unchecked += (_, _) => _effects.SdfEnabled = false;
-        advancedGrid.AddRow("SDF:", sdfCheck);
-        TooltipService.SetTooltip(sdfCheck, "Signed Distance Field rendering for resolution-independent scaling. Supported by the FreeType and StbTrueType backends.");
+        // Distance field mode: SDF needs SupportsSdf, MSDF/MTSDF need SupportsMsdf (Native only).
+        var sdfCombo = new ComboBox();
+        sdfCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
+        sdfCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
+        sdfCombo.Visual.Width = 0;
+        var sdfModes = new List<SdfMode>();
+        var updatingSdfCombo = false;
+        void RefreshSdfCombo()
+        {
+            var modes = new List<SdfMode> { SdfMode.None };
+            if (_effects.BackendSupportsSdf) modes.Add(SdfMode.Sdf);
+            if (_effects.BackendSupportsMsdf) { modes.Add(SdfMode.Msdf); modes.Add(SdfMode.Mtsdf); }
+            if (!modes.Contains(_effects.SdfMode))
+            {
+                // Re-enters this method through PropertyChanged.
+                _effects.SdfMode = SdfMode.None;
+                return;
+            }
+
+            updatingSdfCombo = true;
+            sdfModes.Clear();
+            sdfModes.AddRange(modes);
+            sdfCombo.Items!.Clear();
+            foreach (var mode in sdfModes)
+                sdfCombo.Items.Add(mode == SdfMode.None ? "None" : mode.ToString().ToUpperInvariant());
+            sdfCombo.SelectedIndex = sdfModes.IndexOf(_effects.SdfMode);
+            sdfCombo.IsEnabled = sdfModes.Count > 1;
+            updatingSdfCombo = false;
+        }
+        sdfCombo.SelectionChanged += (_, _) =>
+        {
+            if (updatingSdfCombo) return;
+            var idx = sdfCombo.SelectedIndex;
+            if (idx >= 0 && idx < sdfModes.Count)
+                _effects.SdfMode = sdfModes[idx];
+        };
+        advancedGrid.AddRow("Distance Field:", sdfCombo);
+        TooltipService.SetTooltip(sdfCombo, "Distance field output for resolution-independent scaling. SDF: single channel (FreeType, StbTrueType, Native). MSDF: RGB multi-channel with sharp corners; MTSDF: MSDF plus a true SDF in alpha (Native only). Multi-channel atlases are RGBA; the Sample tab decodes them.");
 
         // SDF incompatibility warning (covers super-sample, outline, shadow, gradient)
         var sdfWarning = new TextRuntime();
@@ -569,7 +636,19 @@ public class EffectsPanel : Panel
         colorCheck.Checked += (_, _) => _effects.ColorFontEnabled = true;
         colorCheck.Unchecked += (_, _) => _effects.ColorFontEnabled = false;
         advancedGrid.AddRow("Color Font:", colorCheck);
-        TooltipService.SetTooltip(colorCheck, "Render color glyphs (emoji). Requires the FreeType backend and a font with color tables (COLR/CPAL or CBDT/CBLC).");
+        TooltipService.SetTooltip(colorCheck, "Render color glyphs. Needs a backend with color support and a font with color tables: FreeType renders COLR/CPAL and CBDT/CBLC (emoji); Native renders COLR v0/v1 and rejects bitmap-only (CBDT/sbix) fonts.");
+
+        var paletteBox = new TextBox();
+        paletteBox.Width = 36;
+        paletteBox.Text = _effects.ColorPaletteIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        paletteBox.IsEnabled = _effects.ColorFontEnabled;
+        paletteBox.TextChanged += (_, _) =>
+        {
+            if (int.TryParse(paletteBox.Text, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var val))
+                _effects.ColorPaletteIndex = val;
+        };
+        advancedGrid.AddRow("Palette:", paletteBox);
+        TooltipService.SetTooltip(paletteBox, "CPAL palette index for color glyphs (0 = the font's default). An index the font lacks fails generation with an error in the status bar.");
 
         // Color font + Gradient mutual exclusion feedback
         var colorGradientWarning = new TextRuntime();
@@ -593,20 +672,39 @@ public class EffectsPanel : Panel
         TooltipService.SetTooltip(gammaSlider, "Lighten/darken glyph edges; 1.8 = default, higher = darker.");
 
         // Track whether we are programmatically updating checkboxes to avoid recursive loops
-        bool updatingSdfCheck = false;
         bool updatingColorCheck = false;
 
         // Wire up validation, SDF auto-disable, color/gradient mutual exclusion, and backend capability gating
         _effects.PropertyChanged += (_, e) =>
         {
             // --- SDF compatibility warning (informational only, does NOT auto-disable) ---
-            if (e.PropertyName is nameof(EffectsViewModel.SdfEnabled)
+            if (e.PropertyName is nameof(EffectsViewModel.SdfMode)
                 or nameof(EffectsViewModel.SuperSampleLevel)
                 or nameof(EffectsViewModel.OutlineEnabled)
                 or nameof(EffectsViewModel.ShadowEnabled)
-                or nameof(EffectsViewModel.GradientEnabled))
+                or nameof(EffectsViewModel.GradientEnabled)
+                or nameof(EffectsViewModel.ChannelPackingEnabled)
+                or nameof(EffectsViewModel.ColorFontEnabled)
+                or nameof(EffectsViewModel.FillColor))
             {
-                if (_effects.SdfEnabled)
+                if (_effects.SdfMode is SdfMode.Msdf or SdfMode.Mtsdf)
+                {
+                    // Core rejects these with MSDF/MTSDF (RGB holds distances, not color).
+                    var conflicts = new List<string>();
+                    if (_effects.SuperSampleLevel > 1) conflicts.Add("super sampling");
+                    if (_effects.OutlineEnabled) conflicts.Add("outline");
+                    if (_effects.ShadowEnabled) conflicts.Add("shadow");
+                    if (_effects.GradientEnabled) conflicts.Add("gradient");
+                    if (_effects.ChannelPackingEnabled) conflicts.Add("channel packing");
+                    if (_effects.ColorFontEnabled) conflicts.Add("color font");
+                    if (!string.Equals(_effects.FillColor, "#FFFFFF", StringComparison.OrdinalIgnoreCase)) conflicts.Add("fill color");
+
+                    sdfWarning.Text = conflicts.Count > 0
+                        ? $"{_effects.SdfMode.ToString().ToUpperInvariant()} cannot be combined with {string.Join(", ", conflicts)}"
+                        : "";
+                    sdfWarning.Visible = conflicts.Count > 0;
+                }
+                else if (_effects.SdfEnabled)
                 {
                     var incompatible = new List<string>();
                     if (_effects.SuperSampleLevel > 1) incompatible.Add("super sampling");
@@ -659,22 +757,20 @@ public class EffectsPanel : Panel
                 or nameof(EffectsViewModel.BackendSupportsColorFonts))
                 colorCheck.IsEnabled = _effects.HasColorGlyphs && _effects.BackendSupportsColorFonts;
 
-            // Enable/disable SDF checkbox based on backend capability
-            if (e.PropertyName is nameof(EffectsViewModel.BackendSupportsSdf))
-            {
-                sdfCheck.IsEnabled = _effects.BackendSupportsSdf;
-                if (!_effects.BackendSupportsSdf && _effects.SdfEnabled)
-                {
-                    _effects.SdfEnabled = false;
-                    if (!updatingSdfCheck)
-                    {
-                        updatingSdfCheck = true;
-                        sdfCheck.IsChecked = false;
-                        updatingSdfCheck = false;
-                    }
-                }
-            }
+            if (e.PropertyName is nameof(EffectsViewModel.ColorFontEnabled))
+                paletteBox.IsEnabled = _effects.ColorFontEnabled;
+
+            if (e.PropertyName is nameof(EffectsViewModel.ColorPaletteIndex)
+                && paletteBox.Text != _effects.ColorPaletteIndex.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                paletteBox.Text = _effects.ColorPaletteIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+            // Offer only the distance-field modes the backend supports
+            if (e.PropertyName is nameof(EffectsViewModel.BackendSupportsSdf)
+                or nameof(EffectsViewModel.BackendSupportsMsdf)
+                or nameof(EffectsViewModel.SdfMode))
+                RefreshSdfCombo();
         };
+        RefreshSdfCombo();
     }
 
     private void BuildFallbackSection(global::Gum.Wireframe.GraphicalUiElement stack)
@@ -703,7 +799,7 @@ public class EffectsPanel : Panel
         var expander = UiFactory.CreateExpander("Variable Font", isExpanded: false);
         expander.Visual.Visible = false;
         stack.Children.Add(expander.Visual);
-        TooltipService.SetTooltip(expander, "Variable font axis controls. Requires the FreeType backend and a variable font (with fvar table).");
+        TooltipService.SetTooltip(expander, "Variable font axis controls. Requires a backend with variable-font support (FreeType or Native) and a variable font (with fvar table).");
 
         // Container for dynamically rebuilt axis sliders
         var varFontContainer = new ContainerRuntime();
@@ -724,6 +820,7 @@ public class EffectsPanel : Panel
         _effects.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(EffectsViewModel.HasVariationAxes)
+                or nameof(EffectsViewModel.VariationAxesList)
                 or nameof(EffectsViewModel.BackendSupportsVariableFonts))
             {
                 var hasAxes = _effects.HasVariationAxes;
@@ -757,7 +854,10 @@ public class EffectsPanel : Panel
                         var axisSlider = new Slider();
                         axisSlider.Minimum = axis.MinValue;
                         axisSlider.Maximum = axis.MaxValue;
-                        axisSlider.Value = axis.DefaultValue;
+                        var initialValue = _effects.VariationAxisValues.TryGetValue(axis.Tag, out var loadedValue)
+                            ? loadedValue
+                            : axis.DefaultValue;
+                        axisSlider.Value = initialValue;
                         axisSlider.Width = 100;
                         axisSlider.IsEnabled = backendSupports;
                         // Use tick frequency of 1 for integer-like axes, finer for float axes
@@ -766,7 +866,7 @@ public class EffectsPanel : Panel
                         axisGrid.AddChild(axisSlider, row: 0, column: 1);
 
                         var axisValue = new Label();
-                        axisValue.Text = axis.DefaultValue.ToString("F0");
+                        axisValue.Text = initialValue.ToString("F0");
                         axisGrid.AddChild(axisValue, row: 0, column: 2);
 
                         var capturedTag = axis.Tag;

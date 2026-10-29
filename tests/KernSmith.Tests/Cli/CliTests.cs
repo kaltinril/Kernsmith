@@ -531,6 +531,54 @@ public class CliTests : IDisposable
         File.Exists(Path.Combine(_tempDir, "native-otf_0.png")).ShouldBeTrue();
     }
 
+    // -- Named variation instances --
+
+    private static readonly string RobotoFlexPath = Path.Combine(
+        AppContext.BaseDirectory, "Fixtures", "RobotoFlex-Variable.ttf");
+
+    private string RenderRobotoFlexHash(string name, params string[] extra)
+    {
+        var outputBase = Path.Combine(_tempDir, name);
+        var (exitCode, _, stderr) = RunCli(
+            ["generate", "-f", RobotoFlexPath, "-s", "32", "--chars", "AGQ", "-o", outputBase,
+             "--rasterizer", "native", .. extra]);
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            File.ReadAllBytes(Path.Combine(_tempDir, name + "_0.png"))));
+    }
+
+    [Fact]
+    public void Generate_NamedInstance_RendersThatInstance()
+    {
+        // Roboto Flex's "Black" instance is wght=900 with every other axis at its default, so it
+        // must render exactly like --axis wght=900, and differently from the default instance.
+        var instance = RenderRobotoFlexHash("instance", "--instance", "Black");
+        var axis = RenderRobotoFlexHash("axis", "--axis", "wght=900");
+        var regular = RenderRobotoFlexHash("regular");
+
+        instance.ShouldBe(axis);
+        instance.ShouldNotBe(regular);
+    }
+
+    [Fact]
+    public void Generate_NamedInstance_ExplicitAxisWins()
+    {
+        RenderRobotoFlexHash("black-thin", "--instance", "Black", "--axis", "wght=100")
+            .ShouldBe(RenderRobotoFlexHash("thin", "--instance", "Thin"));
+    }
+
+    [Fact]
+    public void Generate_UnknownNamedInstance_FailsListingTheNames()
+    {
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", RobotoFlexPath, "-s", "32", "--chars", "A", "-o", Path.Combine(_tempDir, "x"),
+            "--rasterizer", "native", "--instance", "Bogus");
+
+        exitCode.ShouldBe(1);
+        stderr.ShouldContain("Bogus", Case.Sensitive);
+        stderr.ShouldContain("Black", Case.Sensitive);
+    }
+
     [Fact]
     public void Generate_UnknownRasterizer_ListsNativeAmongValidValues()
     {

@@ -11,11 +11,16 @@ public class Game1 : Game
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch = null!;
     private Texture2D _atlas = null!;
+    private readonly RasterizerBackend _backend;
+    private readonly string? _fontPath;
 
-    public Game1()
+    public Game1(RasterizerBackend backend = RasterizerBackend.StbTrueType, string? fontPath = null)
     {
         _graphics = new GraphicsDeviceManager(this);
         IsMouseVisible = true;
+        _backend = backend;
+        _fontPath = fontPath;
+        Window.Title = $"KernSmith minimal sample ({backend})";
     }
 
     protected override void LoadContent()
@@ -23,14 +28,14 @@ public class Game1 : Game
         _spriteBatch = new SpriteBatch(GraphicsDevice);
 
         // Load a TTF and generate a bitmap font — that's it
-        var fontPath = Path.GetFullPath(Path.Combine(
+        var fontPath = _fontPath ?? Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory, "..", "..", "..", "..", "..",
             "tests", "KernSmith.Tests", "Fixtures", "Roboto-Regular.ttf"));
 
         var result = BmFont.Generate(File.ReadAllBytes(fontPath), new FontGeneratorOptions
         {
             Size = 32,
-            Backend = RasterizerBackend.StbTrueType
+            Backend = _backend
         });
 
         // Load the atlas texture into MonoGame.

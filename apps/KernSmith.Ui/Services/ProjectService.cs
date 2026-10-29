@@ -1,3 +1,4 @@
+using KernSmith.Rasterizer;
 using KernSmith.Ui.ViewModels;
 
 namespace KernSmith.Ui.Services;
@@ -63,6 +64,10 @@ public class ProjectService
         if (options.FaceIndex > 0 && fontConfig.IsFontLoaded)
             fontConfig.ReloadWithFaceIndex(options.FaceIndex);
 
+        // A backend this build lacks keeps the current selection rather than failing the load.
+        if (RasterizerFactory.IsRegistered(options.Backend))
+            fontConfig.SelectedBackend = options.Backend;
+
         // Atlas config
         atlasConfig.MaxWidth = options.MaxTextureWidth;
         atlasConfig.MaxHeight = options.MaxTextureHeight;
@@ -85,7 +90,7 @@ public class ProjectService
         effects.Italic = options.Italic;
         effects.ForceSyntheticBold = options.ForceSyntheticBold;
         effects.ForceSyntheticItalic = options.ForceSyntheticItalic;
-        effects.AntiAlias = options.AntiAlias != AntiAliasMode.None;
+        effects.AntiAlias = options.AntiAlias;
         effects.Hinting = options.EnableHinting;
         effects.SuperSampleLevel = options.SuperSampleLevel;
         effects.OutlineEnabled = options.Outline > 0;
@@ -114,9 +119,12 @@ public class ProjectService
         // ChannelPacking, while Channels is preserved for round-tripping (no editor for it yet).
         effects.ChannelPackingEnabled = options.ChannelPacking;
         effects.Channels = options.Channels;
-        effects.SdfEnabled = options.Sdf;
+        effects.SdfMode = options.EffectiveSdfMode;
         effects.SdfSpread = options.SdfSpread;
         effects.ColorFontEnabled = options.ColorFont;
+        effects.ColorPaletteIndex = options.ColorPaletteIndex;
+        effects.HasColorGlyphs = fontConfig.HasColorGlyphs;
+        effects.LoadVariationAxes(fontConfig.LoadedVariationAxes, options.VariationAxes);
 
         // Character set
         var codepoints = options.Characters.GetCodepoints().ToList();
@@ -170,7 +178,7 @@ public class ProjectService
             Italic = effects.Italic,
             ForceSyntheticBold = effects.ForceSyntheticBold,
             ForceSyntheticItalic = effects.ForceSyntheticItalic,
-            AntiAlias = effects.AntiAlias ? AntiAliasMode.Grayscale : AntiAliasMode.None,
+            AntiAlias = effects.AntiAlias,
             EnableHinting = effects.Hinting,
             SuperSampleLevel = effects.SuperSampleLevel,
             Outline = effects.OutlineEnabled ? effects.OutlineWidth : 0,
@@ -199,9 +207,16 @@ public class ProjectService
             GradientScale = effects.GradientEnabled ? effects.GradientScale : 1f,
             GradientCyclic = effects.GradientEnabled && effects.GradientCyclic,
             FaceIndex = fontConfig.FaceIndex,
-            Sdf = effects.SdfEnabled,
+            // Single-channel SDF stays on the BMFont-style useSdf key; only MSDF/MTSDF need sdfMode.
+            Sdf = effects.SdfMode == SdfMode.Sdf,
+            SdfMode = effects.SdfMode is SdfMode.Msdf or SdfMode.Mtsdf ? effects.SdfMode : SdfMode.None,
             SdfSpread = effects.SdfSpread,
             ColorFont = effects.ColorFontEnabled,
+            ColorPaletteIndex = effects.ColorPaletteIndex,
+            VariationAxes = effects.VariationAxisValues.Count > 0
+                ? new Dictionary<string, float>(effects.VariationAxisValues)
+                : null,
+            Backend = fontConfig.SelectedBackend,
             ChannelPacking = effects.ChannelPackingEnabled,
             Channels = effects.Channels
         };
