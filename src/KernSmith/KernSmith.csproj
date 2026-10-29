@@ -27,6 +27,12 @@
     <InternalsVisibleTo Include="KernSmith.Cli" />
   </ItemGroup>
 
+  <!-- RFC 7932 static dictionary for the managed Brotli decoder (WOFF2), raw-deflate
+       compressed. The logical name is the string BrotliStaticDictionary loads. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Font\Brotli\BrotliDictionary.bin" LogicalName="KernSmith.Font.Brotli.BrotliDictionary.bin" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="StbImageSharp" />
     <PackageReference Include="StbImageWriteSharp" />

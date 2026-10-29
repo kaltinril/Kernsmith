@@ -41,6 +41,17 @@
     <None Include="..\KernSmith.Tests\Fixtures\Color\ReemKufiInk-Regular.ttf"
           Link="Fixtures\Color\ReemKufiInk-Regular.ttf"
           CopyToOutputDirectory="PreserveNewest" />
+    <!-- WOFF2 fixtures and the TTFs they were made from: core decodes WOFF2, these prove
+         Native renders the decoded font exactly like the source TTF. -->
+    <None Include="..\KernSmith.Tests\Fixtures\Roboto-Regular.woff2;..\KernSmith.Tests\Fixtures\NotoSans-Regular-Latin.ttf;..\KernSmith.Tests\Fixtures\NotoSans-Regular-Latin.woff2;..\KernSmith.Tests\Fixtures\RobotoFlex-Latin.ttf;..\KernSmith.Tests\Fixtures\RobotoFlex-Latin.woff2"
+          Link="Fixtures\%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\KernSmith.Tests\Fixtures\RobotoFlex-Variable.ttf"
+          Link="Fixtures\RobotoFlex-Variable.ttf"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\KernSmith.Tests\Fixtures\DancingScript-Variable.ttf"
+          Link="Fixtures\DancingScript-Variable.ttf"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

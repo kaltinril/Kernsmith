@@ -1,6 +1,6 @@
 # CLI Tool
 
-`kernsmith` is a cross-platform command-line tool for generating BMFont-compatible bitmap fonts from TTF, OTF, and WOFF files. It produces `.fnt` + `.png` pairs ready for use in game engines and rendering frameworks.
+`kernsmith` is a cross-platform command-line tool for generating BMFont-compatible bitmap fonts from TTF, OTF, WOFF, and WOFF2 files. It produces `.fnt` + `.png` pairs ready for use in game engines and rendering frameworks.
 
 ## Installation
 

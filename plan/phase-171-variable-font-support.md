@@ -1,6 +1,6 @@
 # Phase 171 — Native Rasterizer: Variable Font Support
 
-> **Status**: Future — TrueType variations Wave 1; CFF2 `blend` Wave 2
+> **Status**: In progress — Wave 1 (TrueType: `avar` v1, `gvar`, `HVAR`, `MVAR`) complete; Wave 2 (CFF2 `blend`) pending Phase 166 Part 2 and a CFF2 fixture
 > **Created**: 2026-04-01
 > **Depends on**: Phase 166 Part 1 (decoder stage) for TrueType; Phase 166 Part 2 (CFF2 structure) for CFF2
 
@@ -10,7 +10,6 @@ Render variable fonts at user-chosen axis values in the Native rasterizer: glyph
 
 ## Starting point
 
-- `NativeCapabilities.SupportsVariableFonts = false`, so core never calls `SetVariationAxes` and Native renders the default instance; axis requests are silently ignored.
 - Core already parses `fvar`: `PreparedRasterization.Prepare` (and the metrics-only path in `BmFont.cs`) call `IRasterizer.SetVariationAxes(fontInfo.VariationAxes, options.VariationAxes)` when the capability is true. Native does **not** need its own `fvar` axis parser — it receives the axis list. It may still need `fvar` for named instances only if they become user-selectable.
 - FreeType (`FreeTypeRasterizer.SetVariationAxes`) is the quality baseline.
 - Fixture: `tests/KernSmith.Tests/Fixtures/RobotoFlex-Variable.ttf` has `fvar`, `avar`, `gvar`, `HVAR` and `MVAR`. No CFF2 fixture is committed.
@@ -43,6 +42,14 @@ Render variable fonts at user-chosen axis values in the Native rasterizer: glyph
 - `SupportsVariableFonts = true`; update README backend table, Native README, `docs/rasterizers/native.md`, REF-12.
 - Cache per-glyph varied outlines per instance if Phase 177 shows `gvar` decode dominating.
 
+### As built (Wave 1)
+
+- Code lives in `Internal/Variations/`; `FontVariations` holds the instance and is read by `TrueTypeOutlineDecoder` and `GetFontMetrics`. A CFF2 decoder should read the same `FontVariations` coordinates and reuse `ItemVariationStore`.
+- `avar` v2 axis mixing is not implemented; a v2 table gets its v1 segment maps only.
+- `USE_MY_METRICS` is not followed for phantom-point advances: unhinted, the composite's own `hmtx` and phantom deltas apply (they match `HVAR`; RobotoFlex's `ç` shows the component's would not).
+- Packed deltas follow OpenType 1.9.1: `0x80` is a zero run whatever `0x40` says (no 32-bit delta runs).
+- `MVAR` feeds `GetFontMetrics` through `hcla`/`hcld` only (the values it reads); the `hhea` fallback is not varied.
+
 ## Work items — CFF2 `blend` (Wave 2)
 
 - `vsindex` selects the ItemVariationData; `blend` pops `n × k` deltas + `n` defaults and pushes `n` blended values using the region scalars at the current instance.
@@ -62,9 +69,9 @@ Render variable fonts at user-chosen axis values in the Native rasterizer: glyph
 
 ## Success Criteria
 
-- [ ] Normalization + `avar` correct
-- [ ] `gvar` deltas (including IUP, phantom points, composites) applied
-- [ ] `HVAR`/`MVAR` applied to advances and font metrics
-- [ ] `SupportsVariableFonts = true`; default instance unchanged
+- [x] Normalization + `avar` correct
+- [x] `gvar` deltas (including IUP, phantom points, composites) applied
+- [x] `HVAR`/`MVAR` applied to advances and font metrics
+- [x] `SupportsVariableFonts = true`; default instance unchanged
 - [ ] CFF2 `blend`/`vsindex` (Wave 2, with a CFF2 fixture)
-- [ ] All tests pass; `regression_check.py` run with the variable config
+- [x] All tests pass; `regression_check.py` run with the variable config

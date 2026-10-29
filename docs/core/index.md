@@ -4,7 +4,7 @@ The `KernSmith` NuGet package is the core library that powers bitmap font genera
 
 ## Pipeline Flow
 
-1. **Font reading** -- parse TTF/OTF/WOFF tables (cmap, head, hhea, OS/2, GPOS) for the requested codepoints
+1. **Font reading** -- parse TTF/OTF/WOFF/WOFF2 tables (cmap, head, hhea, OS/2, GPOS) for the requested codepoints
 2. **Rasterization** -- render glyphs via a [pluggable rasterizer backend](../rasterizers/index.md) (FreeType by default, with GDI and DirectWrite alternatives) with optional effects (outline, gradient, shadow)
 3. **Atlas packing** -- arrange glyphs into texture pages using MaxRects or Skyline algorithms
 4. **Output formatting** -- produce BMFont `.fnt` descriptors (text, XML, or binary) and encoded atlas images
@@ -117,4 +117,4 @@ BmFont.RegisterFont("Roboto", bytes);
 var result = BmFont.GenerateFromSystem("Roboto", size: 32);
 ```
 
-> Only `.woff` is supported -- `.woff2` URLs are skipped because WOFF2's Brotli compression is not yet decoded. See the [package README](https://github.com/kaltinril/Kernsmith/tree/main/src/KernSmith.Fonts.Web) for providers, caching, and subset options.
+> The package requests only `.woff` for now -- `.woff2` URLs are skipped. Core decodes WOFF2, but switching this package over to it is a pending follow-up. See the [package README](https://github.com/kaltinril/Kernsmith/tree/main/src/KernSmith.Fonts.Web) for providers, caching, and subset options.

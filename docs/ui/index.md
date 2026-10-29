@@ -202,7 +202,7 @@ The Font Config panel includes a rasterizer backend dropdown. Different backends
 | GDI | Windows | No | No | No |
 | StbTrueType | All | No | No | Yes |
 
-FreeType is the only backend that currently renders color (COLR/CPAL) and variable fonts; DirectWrite's color and variable-font support is stubbed and not yet implemented.
+Of the backends listed here, FreeType is the only one that currently renders color (COLR/CPAL) and variable fonts; DirectWrite's color and variable-font support is stubbed and not yet implemented.
 
 Install the corresponding NuGet package to enable a backend. They auto-register via module initializer -- no code changes needed.
 

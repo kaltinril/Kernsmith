@@ -18,8 +18,8 @@ loading bitmap fonts.
 
 All `Generate*` methods return a [`BmFontResult`](result.md).
 
-> WOFF and WOFF2 input is auto-detected and decompressed before parsing. (Note: WOFF2 is not
-> supported at runtime and throws `NotSupportedException`; only WOFF is decompressed.)
+> WOFF and WOFF2 input is auto-detected and decompressed to TTF/OTF before parsing; a WOFF2
+> font collection decodes to a TTC (select a face with `FaceIndex`).
 
 ```csharp
 // From a file
