@@ -93,8 +93,9 @@ heights) renders unhinted rather than snapped to zones that do not describe it.
 - **Size limits** — a glyph box larger than 64 ems, or a bitmap larger than 16384 px per side
   (distance-field padding included), is a `RasterizationException`, so damaged metrics or a huge
   `SdfSpread`/DPI cannot allocate without bound. `SdfSpread` below one pixel (and NaN) pads by one.
-- **Options** — a `Size` that is not a positive finite number, or a `Dpi` of zero or less, is an
-  `ArgumentOutOfRangeException`; so is a palette index the font's `CPAL` lacks. Variation values
+- **Options** — a `Size` that is not a positive finite number, or a negative `Dpi`, is an
+  `ArgumentOutOfRangeException` (a `Dpi` of zero means 72, as on FreeType); so is a palette index
+  the font's `CPAL` lacks. Variation values
   outside an axis's range clamp to its nearest end; NaN leaves the axis at its default.
 - **Threads** — an instance is not thread-safe. KernSmith core never shares one: each
   `BmFont.Generate` (and each `GenerateBatch` job) creates its own, so parallel generation is

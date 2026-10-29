@@ -99,10 +99,31 @@ public class NativeEdgeCaseTests
         Should.Throw<ArgumentOutOfRangeException>(() => native.GetFontMetrics(options));
     }
 
+    [Fact]
+    public void Dpi_Zero_RendersAt72_AsFreeTypeDoes()
+    {
+        var bytes = TestFonts.RobotoRegularBytes();
+        using var native = Load(bytes);
+        var atZero = new RasterOptions { Size = 32, Dpi = 0 };
+        var at72 = new RasterOptions { Size = 32, Dpi = 72 };
+
+        var glyph = Render(native, 'A', atZero);
+        var expected = Render(native, 'A', at72);
+        glyph.BitmapData.ShouldBe(expected.BitmapData);
+        glyph.Metrics.ShouldBe(expected.Metrics);
+        native.GetFontMetrics(atZero).ShouldBe(native.GetFontMetrics(at72));
+
+        // The parity this mirrors: FreeType reads a zero resolution as 72.
+        using IRasterizer freeType = new FreeType.FreeTypeRasterizer();
+        freeType.LoadFont(bytes);
+        freeType.GetGlyphMetrics('A', atZero).ShouldBe(freeType.GetGlyphMetrics('A', at72));
+    }
+
     [Theory]
-    [InlineData(0)]
+    [InlineData(-1)]
     [InlineData(-72)]
-    public void Dpi_NotPositive_IsAnArgumentError(int dpi)
+    [InlineData(int.MinValue)]
+    public void Dpi_Negative_IsAnArgumentError(int dpi)
     {
         using var native = Load(TestFonts.RobotoRegularBytes());
         var options = new RasterOptions { Size = 32, Dpi = dpi };
