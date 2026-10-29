@@ -20,7 +20,7 @@ For per-OS status (Windows, Linux, macOS, Android, iOS, Mac Catalyst, Blazor WAS
 |---------|----------|-----|-------------|-------------|--------|
 | Cross-platform | Yes | No | No | Yes | Yes |
 | Color fonts (COLR/CPAL) | Yes | No | No | No | No |
-| Variable fonts | Yes | No | No | No | No |
+| Variable fonts | Yes | No | No | No | Yes (TrueType only) |
 | SDF rendering | Yes | No | No | Yes | Yes |
 | MSDF / MTSDF | No | No | No | No | Yes |
 | Outline stroke | Yes | No | No | No | No |
@@ -29,11 +29,11 @@ For per-OS status (Windows, Linux, macOS, Android, iOS, Mac Catalyst, Blazor WAS
 | ClearType-hinted grayscale | No | No | Yes | No | No |
 | Synthetic bold/italic | Yes | Yes | Yes | Yes | No |
 | Anti-aliasing modes | Grayscale, Light, LCD, None | Grayscale, None | Grayscale, None | Grayscale, None | Grayscale, None |
-| Font formats | TTF, OTF, WOFF | TTF, OTF, WOFF | TTF, OTF, WOFF | TTF, WOFF (TrueType outlines only) | TTF, WOFF (TrueType outlines only) |
+| Font formats | TTF, OTF, WOFF, WOFF2 | TTF, OTF, WOFF, WOFF2 | TTF, OTF, WOFF, WOFF2 | TTF, WOFF, WOFF2 (TrueType outlines only) | TTF, WOFF, WOFF2 (TrueType outlines only) |
 | Native dependencies | Yes | Yes | Yes | None | None |
 | Published on NuGet | Yes | Yes | Yes | Yes | No |
 
-WOFF1 is decompressed by KernSmith core before rasterization, so all backends accept it for fonts whose outlines they otherwise support. WOFF2 is not yet supported.
+WOFF and WOFF2 are decompressed by KernSmith core before rasterization, so all backends accept them for fonts whose outlines they otherwise support.
 
 ## Auto-Registration
 
@@ -87,8 +87,8 @@ Use this decision tree to pick the right backend:
 
 1. **Need cross-platform support?** Use [FreeType](freetype.md), [StbTrueType](stbtruetype.md), or [Native](native.md) -- all three run on Windows, Linux x64, macOS, and Android. FreeType has the richest feature set; StbTrueType also runs in Blazor WASM. See the [platform support table](../../README.md#platform-support).
 2. **Need pixel-perfect BMFont.exe compatibility?** Use [GDI](gdi.md) -- it matches BMFont's native rasterizer output.
-3. **Need color fonts or variable font axes?** Use [FreeType](freetype.md) -- it is the only backend that implements COLR/CPAL color glyphs and fvar variable font axes. (DirectWrite's real niche is ClearType-hinted grayscale rendering and loading system fonts on Windows; its color and variable font paths are currently stubbed.)
-4. **Need SDF (Signed Distance Field) output?** Use [FreeType](freetype.md) or [StbTrueType](stbtruetype.md) -- they are the only backends with SDF rendering.
+3. **Need color fonts or variable font axes?** Use [FreeType](freetype.md) -- it is the only backend that implements COLR/CPAL color glyphs, and the only published one with fvar variable font axes (the experimental [Native](native.md) backend also renders TrueType variable fonts). (DirectWrite's real niche is ClearType-hinted grayscale rendering and loading system fonts on Windows; its color and variable font paths are currently stubbed.)
+4. **Need SDF (Signed Distance Field) output?** Use [FreeType](freetype.md) or [StbTrueType](stbtruetype.md) -- the published backends with SDF rendering. The experimental [Native](native.md) backend renders SDF too, and is the only one with multi-channel MSDF/MTSDF.
 5. **Need cross-platform SDF without native binaries?** Use [StbTrueType](stbtruetype.md) -- it supports SDF and runs fully managed.
 6. **Need WASM/Blazor or NativeAOT without native binaries?** Use [StbTrueType](stbtruetype.md) -- it is the only published fully managed backend with zero native dependencies. See the [Blazor WASM sample](https://github.com/kaltinril/Kernsmith/tree/main/samples/KernSmith.Samples.BlazorWasm) for a working example. Enable AOT compilation for production performance.
 7. **Want zero third-party code, and building from source?** Try [Native](native.md) -- KernSmith's own rasterizer. It handles plain TrueType text with no external dependencies at all, but it is experimental: TrueType outlines only (no CFF/OTF), and no hinting, stroke, or synthetic bold/italic.

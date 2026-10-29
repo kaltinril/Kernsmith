@@ -4,15 +4,15 @@ namespace KernSmith.Rasterizers.Native;
 
 /// <summary>
 /// Describes what the native rasterizer backend supports: TrueType (<c>glyf</c>) outlines with
-/// grayscale or thresholded coverage, single-channel signed distance fields (Phase 169) and
-/// multi-channel MSDF/MTSDF (Phase 170). The other
-/// optional features are still <c>false</c> and expand as later phases land — synthetic
-/// bold/italic (167), outline stroking (168), variable fonts (171) and color fonts (172).
+/// grayscale or thresholded coverage, including variable-font instances (171), single-channel
+/// signed distance fields (169) and multi-channel MSDF/MTSDF (170). The other optional
+/// features are still <c>false</c> and expand as later phases land — synthetic bold/italic
+/// (167), outline stroking (168) and color fonts (172).
 /// </summary>
 internal sealed class NativeCapabilities : IRasterizerCapabilities
 {
     public bool SupportsColorFonts => false;
-    public bool SupportsVariableFonts => false;
+    public bool SupportsVariableFonts => true;
     public bool SupportsSdf => true;
     public bool SupportsOutlineStroke => false;
     public bool SupportsSystemFonts => false;

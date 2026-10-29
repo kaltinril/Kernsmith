@@ -64,8 +64,8 @@ public class ScanlineRasterizerSsimTests
         // Crop both to the smaller box so the metric is well defined.
         int w = Math.Min(width, xWidth);
         int h = Math.Min(height, xHeight);
-        var oCrop = ImageSimilarity.Crop(o, width, w, h);
-        var xCrop = ImageSimilarity.Crop(x, xWidth, w, h);
+        var oCrop = Crop(o, width, w, h);
+        var xCrop = Crop(x, xWidth, w, h);
 
         ImageSimilarity.Ssim(oCrop, xCrop, w, h).ShouldBeLessThan(0.9);
     }
@@ -98,5 +98,14 @@ public class ScanlineRasterizerSsimTests
             -reference.Metrics.BearingY);
 
         return (result.Bitmap, reference.BitmapData, reference.Width, reference.Height);
+    }
+
+    private static byte[] Crop(byte[] source, int sourceWidth, int width, int height)
+    {
+        var cropped = new byte[width * height];
+        for (int y = 0; y < height; y++)
+            Array.Copy(source, y * sourceWidth, cropped, y * width, width);
+
+        return cropped;
     }
 }

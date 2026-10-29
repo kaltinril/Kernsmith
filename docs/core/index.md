@@ -4,7 +4,7 @@ The `KernSmith` NuGet package is the core library that powers bitmap font genera
 
 ## Pipeline Flow
 
-1. **Font reading** -- parse TTF/OTF/WOFF tables (cmap, head, hhea, OS/2, GPOS) for the requested codepoints
+1. **Font reading** -- parse TTF/OTF/WOFF/WOFF2 tables (cmap, head, hhea, OS/2, GPOS) for the requested codepoints
 2. **Rasterization** -- render glyphs via a [pluggable rasterizer backend](../rasterizers/index.md) (FreeType by default, with GDI and DirectWrite alternatives) with optional effects (outline, gradient, shadow)
 3. **Atlas packing** -- arrange glyphs into texture pages using MaxRects or Skyline algorithms
 4. **Output formatting** -- produce BMFont `.fnt` descriptors (text, XML, or binary) and encoded atlas images
@@ -105,7 +105,7 @@ See the [Blazor WASM sample](https://github.com/kaltinril/Kernsmith/tree/main/sa
 
 ### Web font sourcing
 
-The optional `KernSmith.Fonts.Web` package fetches fonts over the network instead of from disk, which is handy in browser/WASM scenarios that have no filesystem. Its `WebFontSource` implements the `KernSmith.Font.IFontSource` abstraction: it requests a stylesheet from a CSS font CDN (Bunny Fonts, Google Fonts, or a custom endpoint), parses the `@font-face` rules, and downloads the matching `.woff` for the requested family, weight, style, and subset. It uses only `HttpClient` from the BCL, so it is WASM-friendly.
+The optional `KernSmith.Fonts.Web` package fetches fonts over the network instead of from disk, which is handy in browser/WASM scenarios that have no filesystem. Its `WebFontSource` implements the `KernSmith.Font.IFontSource` abstraction: it requests a stylesheet from a CSS font CDN (Bunny Fonts, Google Fonts, or a custom endpoint), parses the `@font-face` rules, and downloads the matching font file for the requested family, weight, style, and subset -- the `.woff2` when the CDN offers one, otherwise the `.woff`. Core decodes both (WOFF2 with a pure managed Brotli decoder, so it works in the browser too). It uses only `HttpClient` from the BCL, so it is WASM-friendly.
 
 ```csharp
 using KernSmith.Fonts.Web;
@@ -117,4 +117,4 @@ BmFont.RegisterFont("Roboto", bytes);
 var result = BmFont.GenerateFromSystem("Roboto", size: 32);
 ```
 
-> Only `.woff` is supported -- `.woff2` URLs are skipped because WOFF2's Brotli compression is not yet decoded. See the [package README](https://github.com/kaltinril/Kernsmith/tree/main/src/KernSmith.Fonts.Web) for providers, caching, and subset options.
+> See the [package README](https://github.com/kaltinril/Kernsmith/tree/main/src/KernSmith.Fonts.Web) for providers, caching, and subset options.

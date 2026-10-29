@@ -24,7 +24,7 @@ Each boundary piece updates only the texels inside its capsule of radius `spread
 
 ## Testing
 
-`SdfRendererTests`: exact fields for a rectangle (spreads 4/8/16), a cubic circle and a square ring; reversed contours give identical output; overlapping bars equal the single-contour plus; collinear overlaps and nested same-direction contours equal the union rectangle; padding per spread; `GetGlyphMetrics` equals the rendered glyph for every ASCII glyph; 1-Lipschitz field (no seams) at spreads 4/8/16; `'A'` monotone across each edge; threshold at 128 agrees with coverage wherever coverage is unambiguous; FreeType comparison (identical boxes and bearings, SSIM > 0.99, max |diff| ≤ 2); end-to-end generation at the `sdf.bmfc` settings with `sdfScale` 2 and 1.
+`SdfRendererTests`: exact fields for a rectangle (spreads 4/8/16), a cubic circle and a square ring; reversed contours give identical output; overlapping bars equal the single-contour plus; collinear overlaps and nested same-direction contours equal the union rectangle; padding per spread; `GetGlyphMetrics` equals the rendered glyph for every ASCII glyph; 1-Lipschitz field (no seams) at spreads 4/8/16; `'A'` monotone across each edge; threshold at 128 agrees with coverage wherever coverage is unambiguous; FreeType comparison (identical boxes and bearings, SSIM > 0.99, max |diff| ≤ 2); end-to-end generation at the `sdf.bmfc` settings with `sdfScale` 2 and 1. `NativeVariableDistanceFieldTests`: RobotoFlex at wght 900 — SDF and MSDF follow the instance, match FreeType where contours do not overlap, and show no interior seam where they do (FreeType's field does).
 
 **Regression coverage**: `sdf.bmfc` (Arial 48, spread 6, `sdfScale=2`) and `sdf-scale1.bmfc` (spread 4, `sdfScale=1`) run on Native.
 

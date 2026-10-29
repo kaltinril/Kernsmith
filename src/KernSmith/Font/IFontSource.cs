@@ -1,7 +1,7 @@
 namespace KernSmith.Font;
 
 /// <summary>
-/// Obtains raw font bytes (TTF/OTF/WOFF) from a source such as a web font CDN.
+/// Obtains raw font bytes (TTF/OTF/WOFF/WOFF2) from a source such as a web font CDN.
 /// </summary>
 /// <remarks>
 /// KernSmith accepts raw font bytes from any source. File loading
@@ -22,7 +22,7 @@ public interface IFontSource
     /// <param name="style">Font style (normal or italic).</param>
     /// <param name="subset">Unicode subset to request (e.g., "latin", "cyrillic", "greek").</param>
     /// <param name="cancellationToken">Token to cancel the operation.</param>
-    /// <returns>The raw font file bytes (TTF/OTF/WOFF).</returns>
+    /// <returns>The raw font file bytes (TTF/OTF/WOFF/WOFF2).</returns>
     Task<byte[]> GetFontAsync(
         string family,
         int weight = 400,

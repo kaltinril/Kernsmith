@@ -12,7 +12,7 @@ kernsmith generate -f <font> -s <size> [options]
 
 | Flag | Description |
 |------|-------------|
-| `-f, --font <path>` | Font file path (TTF, OTF, WOFF) |
+| `-f, --font <path>` | Font file path (TTF, OTF, WOFF, WOFF2) |
 | `--system-font <name>` | Use a system-installed font by family name |
 | `--face <n>` | Face index for .ttc collections (default: 0) |
 
@@ -341,13 +341,13 @@ kernsmith generate -f font.ttf -s 32 --rasterizer native
 kernsmith generate -f font.ttf -s 32
 ```
 
-The `native` backend is experimental and ships with the CLI only (there is no NuGet package yet). It renders **TrueType (`glyf`) outlines only** -- a CFF/OTF font is rejected with an error -- and does not support hinting, outline stroke, synthetic bold/italic, color fonts, variable fonts, system fonts, or `--aa light` / `--aa lcd`.
+The `native` backend is experimental and ships with the CLI only (there is no NuGet package yet). It renders **TrueType (`glyf`) outlines only** -- a CFF/OTF font is rejected with an error -- and does not support hinting, outline stroke, synthetic bold/italic, color fonts, system fonts, or `--aa light` / `--aa lcd`. TrueType variable fonts work (`--axis`/`variationAxes`).
 
 ---
 
 ## info
 
-Show metadata from a font file (TTF, OTF, WOFF). Displays family name, style, glyph count, kerning pairs, variation axes, named instances, and Unicode coverage.
+Show metadata from a font file (TTF, OTF, WOFF, WOFF2). Displays family name, style, glyph count, kerning pairs, variation axes, named instances, and Unicode coverage.
 
 ```
 kernsmith info <path> [--json]

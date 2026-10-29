@@ -9,19 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- The experimental Native rasterizer renders signed distance fields (`Sdf`) computed directly from the glyph outline, matching FreeType's SDF output (encoding, padding, bearings) and honoring `SdfSpread` and `SdfScale`. Overlapping contours produce no interior seam. `SupportsSdf` is now true, so SDF configs run on Native instead of being skipped. The package tags advertise `sdf` again.
+- The experimental Native rasterizer renders signed distance fields (`Sdf`) computed directly from the glyph outline, matching FreeType's SDF output (encoding, padding, bearings) and honoring `SdfSpread` and `SdfScale`. Overlapping contours produce no interior seam (FreeType's SDF has one), and distance fields follow variable-font axes. `SupportsSdf` is now true, so SDF configs run on Native instead of being skipped. The package tags advertise `sdf` again.
 - `tests/bmfont-compare/gum-bmfont/sdf-scale1.bmfc` covers SDF at `sdfScale=1`.
 - Multi-channel signed distance fields: `SdfMode` (`None`, `Sdf`, `Msdf`, `Mtsdf`) on `FontGeneratorOptions` and `RasterOptions` (with `EffectiveSdfMode`), `BmFontBuilder.WithSdfMode`, the `.bmfc` key `sdfMode=msdf|mtsdf` and CLI `--sdf-mode <none|sdf|msdf|mtsdf>`. MSDF writes RGBA atlases with `alphaChnl=4` and `sdfMode=` in the `.fnt` `kernsmith` line (MTSDF keeps the distance in alpha). `IRasterizerCapabilities.SupportsMsdf` (default false) gates it; only the experimental Native backend supports it, with Chlumský-style edge coloring, per-channel pseudo-distances and clash correction. The existing `bool Sdf` keeps working unchanged.
 - `tests/bmfont-compare/gum-bmfont/msdf.bmfc`; `GenerateAll` skips it on backends without `SupportsMsdf`.
+- The Native rasterizer renders TrueType variable fonts at the requested instance (`VariationAxes`, `.bmfc` `variationAxes`, CLI `--axis`): `fvar`/`avar` normalization, `gvar` outline deltas including composites and inferred deltas, `HVAR` advances (phantom points without `HVAR`) and `MVAR` line metrics. `SupportsVariableFonts` is now true for Native; CFF2 variable fonts are still rejected with the rest of CFF.
 - Benchmarks: `NativeComparison*` BenchmarkDotNet classes compare the Native, StbTrueType and FreeType backends (font load, per-glyph rasterization at 12/32/72px, `GetGlyphMetrics`, full `BmFont.Generate`) with memory diagnostics; the measured baseline is recorded in the phase 177 plan.
+
+- WOFF2 input. Core decodes `.woff2` (including WOFF2 font collections, which become a TTC) before any backend sees the bytes, so every backend (FreeType, GDI, DirectWrite, StbTrueType and Native) renders a WOFF2 exactly like the TTF it was made from. Brotli is decoded by KernSmith's own pure managed RFC 7932 decoder rather than `System.IO.Compression.BrotliDecoder`, so WOFF2 also works on browser-wasm, where the BCL decoder has no native library. Malformed, truncated or corrupt WOFF2 input throws `FontParsingException`.
+- The desktop UI's Browse dialogs and drag-and-drop accept `.woff2` files, as does the Blazor WASM sample's file picker.
 
 ### Changed
 
+- `KernSmith.Fonts.Web` downloads the `.woff2` source of an `@font-face` rule when the CDN offers one (smaller), falling back to `.woff`; a source's format is read from its `format()` hint, else its file extension. The disk cache names files `.woff2` or `.woff` to match (older `.woff` cache files are still read).
 - The Native rasterizer renders each glyph through an internal staged pipeline (outline decoder, outline transforms, bounds, scale/hint, render-mode dispatch) so CFF, synthetic styles, SDF, variations, color and LCD can each plug into one stage. Output is byte-identical to before.
 
 ### Fixed
 
 - `BmFontBuilder.FromConfig` now carries `SdfSpread` and `SdfScale` from the config; it dropped them, so builder-based generation (including the `tests/bmfont-compare` harness's `sdf.bmfc`) rendered SDF at the default spread 8 and scale 1.
+- **FreeType rendered a scrambled instance for every variable-font request.** `SetVariationAxes` passed the axis coordinates to FreeType as 32-bit integers, but the bundled FreeType's `FT_Fixed` is pointer-sized, so it read them in pairs and pushed every axis to an extreme -- even asking for the default values changed the glyphs. Coordinates are now marshalled at the correct width.
+- `KernSmith.Fonts.Web` with `WebFontProvider.GoogleFonts` threw `InvalidOperationException` for every font: Google serves only `.woff2` to the browser User-Agent the package sends, and the package only accepted `.woff`.
+- `KernSmith.Fonts.Web` in the browser (Blazor WebAssembly) failed with a `NetworkError` in Firefox: the `User-Agent` it set became a non-CORS-safelisted `fetch()` header, and Bunny and Google Fonts reject the resulting preflight. In the browser it now leaves the User-Agent to the browser.
 - The Native rasterizer docs (`docs/rasterizers/native.md`, the package README) now describe its real behavior: WOFF1 files work (core decompresses them first), a color-font request throws, `Light`/`LCD` anti-aliasing requests render as grayscale, and core still draws outlines and runs `BoldPostProcessor`/`ItalicPostProcessor` for it.
 
 ## [0.24.0] - 2026-10-18

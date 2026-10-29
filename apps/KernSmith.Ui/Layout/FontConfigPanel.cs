@@ -4,6 +4,7 @@ using global::Gum.Forms;
 using global::Gum.Forms.Controls;
 using Gum.Themes.Editor;
 using KernSmith.Ui.Models;
+using KernSmith.Ui.Services;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using Gum.GueDeriving;
@@ -117,7 +118,7 @@ public class FontConfigPanel : Panel
             {
                 using var dialog = new NativeFileDialog();
                 dialog.SelectFile()
-                    .AddFilter("Font Files", "ttf,otf,woff,ttc")
+                    .AddFilter("Font Files", FontFileTypes.DialogFilter)
                     .AddFilter("All Files", "*");
                 var result = dialog.Open(out string? path);
                 if (result == DialogResult.Okay && path != null)

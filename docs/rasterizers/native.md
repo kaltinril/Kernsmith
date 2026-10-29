@@ -33,6 +33,7 @@ kernsmith generate --font Roboto-Regular.ttf --size 32 --rasterizer native --out
 
 - TrueType (`glyf`) outlines
 - TrueType Collections (`.ttc`) via face index
+- WOFF and WOFF2 files wrapping TrueType outlines (KernSmith core decompresses them before the backend sees the bytes)
 - `cmap` formats 4 and 12 for character lookup
 - Anti-aliasing: `Grayscale` and `None` only
 - Super sampling (applied by the core pipeline)
@@ -45,11 +46,10 @@ kernsmith generate --font Roboto-Regular.ttf --size 32 --rasterizer native --out
 Each item below either raises a clear error or is ignored, as noted:
 
 - **CFF/OTF (PostScript) outlines** -- rejected at load time with a `RasterizationException`. This is the one that bites: a `.otf` file will not render at all.
-- **WOFF2** -- not supported by KernSmith core for any backend. WOFF1 works: core decompresses it before the backend sees the bytes, so a WOFF1 file wrapping TrueType outlines renders normally
 - **Hinting** -- none, so small sizes are softer than FreeType or GDI output
 - **Outline stroke** -- the backend has no stroke of its own; outlines (`Outline` / `outlineThickness`) still work because KernSmith core draws them as a bitmap effect for every backend
 - **Synthetic bold and italic** -- not supported. `Bold` and `Italic` are silently ignored rather than rejected, so requesting them produces regular-weight glyphs. For a bitmap-level approximation, add `BoldPostProcessor` / `ItalicPostProcessor` to `PostProcessors`; because Native reports no synthetic-style capability, the pipeline runs them whether or not `Bold` / `Italic` is set.
-- **Variable fonts** -- not supported; axis settings are ignored and the default instance renders
+- **CFF2 variable fonts** -- rejected along with all CFF outlines. TrueType variable fonts work: `VariationAxes` (or `variationAxes` in a `.bmfc`) selects the instance, and outlines, advances and line metrics follow it. A font whose `avar` table is version 2 gets only its version 1 axis mappings
 - **Color fonts** -- requesting color rendering (`ColorFont`) throws `NotSupportedException`
 - **System font loading by name** -- not supported; load font bytes instead
 - **`Light` and `LCD` anti-aliasing** -- not supported; requesting them silently renders `Grayscale`

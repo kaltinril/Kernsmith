@@ -65,7 +65,7 @@ public sealed class BmFontBuilder
     }
 
     /// <summary>Loads a font from a file path.</summary>
-    /// <param name="fontPath">Path to a .ttf, .otf, or .woff file.</param>
+    /// <param name="fontPath">Path to a .ttf, .otf, .woff, or .woff2 file.</param>
     /// <returns>This builder.</returns>
     public BmFontBuilder WithFont(string fontPath)
     {

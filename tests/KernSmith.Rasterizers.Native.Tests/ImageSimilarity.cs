@@ -1,17 +1,8 @@
 namespace KernSmith.Rasterizers.Native.Tests;
 
-/// <summary>Image comparison metrics shared by the tests that measure Native against other backends.</summary>
+/// <summary>Image comparison metrics shared by the rasterizer comparison tests.</summary>
 internal static class ImageSimilarity
 {
-    public static byte[] Crop(byte[] source, int sourceWidth, int width, int height)
-    {
-        var cropped = new byte[width * height];
-        for (int y = 0; y < height; y++)
-            Array.Copy(source, y * sourceWidth, cropped, y * width, width);
-
-        return cropped;
-    }
-
     /// <summary>
     /// Mean structural similarity over 8x8 windows, the usual formulation with C1 = (0.01*255)^2
     /// and C2 = (0.03*255)^2. Images smaller than one window are scored as a single window.
