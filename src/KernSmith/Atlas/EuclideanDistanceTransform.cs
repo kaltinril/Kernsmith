@@ -20,8 +20,18 @@ internal static class EuclideanDistanceTransform
     /// <returns>Array of squared distances, one float per pixel.</returns>
     public static float[] Compute(byte[] alphaData, int width, int height)
     {
+        var grid = new float[width * height];
+        Compute(alphaData, width, height, grid);
+        return grid;
+    }
+
+    /// <summary>
+    /// <see cref="Compute(byte[], int, int)"/> into the first <c>width * height</c> entries
+    /// of <paramref name="grid"/>.
+    /// </summary>
+    public static void Compute(byte[] alphaData, int width, int height, float[] grid)
+    {
         var size = width * height;
-        var grid = new float[size];
 
         // Initialize: inside pixels = 0, outside pixels = infinity.
         for (var i = 0; i < size; i++)
@@ -57,8 +67,6 @@ internal static class EuclideanDistanceTransform
                 for (var x = 0; x < width; x++)
                     grid[y * width + x] = d[x];
             }
-
-            return grid;
         }
         finally
         {
