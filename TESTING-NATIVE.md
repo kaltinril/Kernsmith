@@ -161,7 +161,7 @@ FreeType by switching the rasterizer.
 | Variable TrueType | `RobotoFlex-Variable.ttf` (wght 100-1000, wdth, opsz, ...), `DancingScript-Variable.ttf` | Glyphs follow the sliders; CLI `--instance Black` equals `--axis wght=900` |
 | Variable CFF2 | `SourceCodeVF-Upright.otf` | Weight follows `wght` (the default instance is ExtraLight) |
 | COLR v0 | `Color/BungeeColor-Regular.ttf`, Color Font on | Two-tone letters; palettes 0-8 recolor them; palette 9 is an error |
-| COLR v1 | `Color/ReemKufiInk-Regular.ttf`, Color Font on, characters ٠١٢٣٤٥٦٧٨٩ (U+0660-0669) | Gradient-filled digits (Latin text stays gray) |
+| COLR v1 | `Color/ReemKufiInk-Regular.ttf`, Color Font on, characters ٠١٢٣٤٥٦٧٨٩ (U+0660-0669) | Digits in solid dark red (`#8E0B14`), dark gray (`#404040`) with palette 1; Latin text stays white (uncolored). No gradient: this font's gradients are only on contextual Arabic letter forms, which a per-character atlas never reaches |
 | Bitmap color (CBDT/sbix) | `NotoColorEmoji.ttf`, Color Font on | Emoji in color, scaled to the requested size (FreeType returns the font's strike size; at that size the two match) |
 | Synthetic bold / italic | Roboto, Bold / Italic | Same stroke weight and 12° slant as FreeType, nothing clipped |
 | Italic angle | Roboto, Italic, **Italic Angle** 30 then -12 | Steeper slant at 30, leaning left at -12, nothing clipped; switching to FreeType disables the box and renders 12° |
