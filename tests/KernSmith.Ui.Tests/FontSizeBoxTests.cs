@@ -1,6 +1,4 @@
-using Gum.Forms;
 using Gum.Forms.Controls;
-using Gum.Forms.DefaultVisuals.V3;
 using KernSmith.Ui.Layout;
 using KernSmith.Ui.Services;
 using KernSmith.Ui.ViewModels;
@@ -11,16 +9,12 @@ namespace KernSmith.Ui.Tests;
 /// <summary>
 /// The Size (pt) box must show the size a loaded project applied, not the size typed before it.
 /// </summary>
+[Collection(HeadlessGum.Name)]
 public sealed class FontSizeBoxTests : IDisposable
 {
     private readonly string _dir = Directory.CreateTempSubdirectory("kernsmith-ui-size-tests").FullName;
 
-    static FontSizeBoxTests()
-    {
-        // No GumService here: give TextBox a visual that needs no graphics device.
-        FrameworkElement.DefaultFormsTemplates[typeof(TextBox)] =
-            new VisualTemplate(() => new TextBoxVisual(tryCreateFormsObject: false));
-    }
+    static FontSizeBoxTests() => HeadlessGum.EnsureInitialized();
 
     public void Dispose()
     {

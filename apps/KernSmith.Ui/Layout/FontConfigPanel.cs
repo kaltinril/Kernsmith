@@ -297,8 +297,9 @@ public class FontConfigPanel : Panel
             sizeGrid.AddRow("Rasterizer:", _rasterizerCombo);
             TooltipService.SetTooltip(_rasterizerCombo, "Glyph rasterizer backend. FreeType: cross-platform default. GDI: Windows-only, matches BMFont.exe output. DirectWrite: Windows-only, ClearType-hinted grayscale. StbTrueType: fully managed, no native dependencies. Native (experimental, not on NuGet yet): KernSmith's own fully managed rasterizer with color (COLR, CBDT/sbix) and variable fonts, SDF and MSDF/MTSDF, Light auto-hinting, LCD, vector outlines, synthetic width and italic angle; no system-font lookup of its own.");
 
-            var advanceXBox = UiFactory.CreateSmallFloatBox(_mainViewModel.Effects.AdvanceAdjustX,
-                v => _mainViewModel.Effects.AdvanceAdjustX = v);
+            var effects = _mainViewModel.Effects;
+            var advanceXBox = UiFactory.CreateSmallFloatBox(effects, nameof(EffectsViewModel.AdvanceAdjustX),
+                () => effects.AdvanceAdjustX, v => effects.AdvanceAdjustX = v);
             sizeGrid.AddRow("Advance X:", advanceXBox);
             TooltipService.SetTooltip(advanceXBox, "Add this many pixels to every glyph's horizontal advance (spacing between characters). 0 = no change.");
 

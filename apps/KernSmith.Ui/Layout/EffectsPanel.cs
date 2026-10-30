@@ -697,11 +697,13 @@ public class EffectsPanel : Panel
             _effects.GradientEndColor, hex => _effects.GradientEndColor = hex);
         UiFactory.AddSliderRow(gradientContent, "Angle:", 0, 360, 90,
             val => _effects.GradientAngle = val);
-        var gradientOffsetBox = UiFactory.AddFloatBoxRow(gradientContent, "Offset:", 0f,
-            val => _effects.GradientOffset = val);
+        var gradientOffsetBox = UiFactory.AddFloatBoxRow(gradientContent, "Offset:",
+            _effects, nameof(EffectsViewModel.GradientOffset),
+            () => _effects.GradientOffset, val => _effects.GradientOffset = val);
         TooltipService.SetTooltip(gradientOffsetBox, "Shift the gradient along its axis. 0 = centered.");
-        var gradientScaleBox = UiFactory.AddFloatBoxRow(gradientContent, "Scale:", 1f,
-            val => _effects.GradientScale = val);
+        var gradientScaleBox = UiFactory.AddFloatBoxRow(gradientContent, "Scale:",
+            _effects, nameof(EffectsViewModel.GradientScale),
+            () => _effects.GradientScale, val => _effects.GradientScale = val);
         TooltipService.SetTooltip(gradientScaleBox, "Stretch (>1) or compress (<1) the gradient. 1 = normal.");
 
         var gradientChecksGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using global::Gum.DataTypes;
 using global::Gum.Forms.Controls;
 using KernSmith.Ui.Layout;
@@ -141,11 +142,13 @@ public static class UiFactory
     /// <summary>
     /// Creates a label : float-text-box row for a precise/unbounded float value.
     /// Mirrors the two-column rhythm of <see cref="AddSliderRow"/> using a fixed-width label.
+    /// See <see cref="CreateSmallFloatBox"/> for the binding parameters.
     /// </summary>
     public static TextBox AddFloatBoxRow(
         global::Gum.Wireframe.GraphicalUiElement parent,
-        string label, float initialValue,
-        Action<float> onChanged)
+        string label,
+        INotifyPropertyChanged source, string propertyName,
+        Func<float> getValue, Action<float> setValue)
     {
         var grid = new Grid();
         grid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -161,7 +164,7 @@ public static class UiFactory
         lbl.Text = label;
         grid.AddChild(lbl, row: 0, column: 0);
 
-        var box = CreateSmallFloatBox(initialValue, onChanged);
+        var box = CreateSmallFloatBox(source, propertyName, getValue, setValue);
         grid.AddChild(box, row: 0, column: 1);
 
         return box;
@@ -170,18 +173,35 @@ public static class UiFactory
     /// <summary>
     /// Creates a small text box for a precise/unbounded float value, parsing on edit.
     /// Use this for params that benefit from exact entry (advance adjust, gradient offset/scale).
+    /// The box shows <paramref name="getValue"/> and writes parsed edits to <paramref name="setValue"/>.
     /// </summary>
-    public static TextBox CreateSmallFloatBox(float initialValue, Action<float> onChanged)
+    /// <param name="source">The view model that owns the value.</param>
+    /// <param name="propertyName">The property <paramref name="source"/> raises when the value changes.</param>
+    /// <param name="getValue">Reads the value.</param>
+    /// <param name="setValue">Writes a parsed edit.</param>
+    public static TextBox CreateSmallFloatBox(
+        INotifyPropertyChanged source, string propertyName,
+        Func<float> getValue, Action<float> setValue)
     {
         var box = new TextBox();
         box.Width = 56;
         box.Height = 24;
-        box.Text = initialValue.ToString("0.0###");
+        box.Text = getValue().ToString("0.0###");
         box.TextChanged += (_, _) =>
         {
             if (float.TryParse(box.Text, System.Globalization.NumberStyles.Float,
                     System.Globalization.CultureInfo.CurrentCulture, out var val))
-                onChanged(val);
+                setValue(val);
+        };
+        // Show values set from code (e.g. a loaded project). Text that already parses to the value
+        // is left alone, so "0.50" or "1." being typed is not rewritten under the cursor.
+        source.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != propertyName) return;
+            if (float.TryParse(box.Text, System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.CurrentCulture, out var shown) && shown == getValue())
+                return;
+            box.Text = getValue().ToString("0.0###");
         };
         return box;
     }
