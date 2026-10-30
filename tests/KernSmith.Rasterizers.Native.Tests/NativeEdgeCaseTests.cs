@@ -436,7 +436,7 @@ public class NativeEdgeCaseTests
 
         var coordinates = AxisNormalizer.Normalize(axes, new Dictionary<string, float> { ["wght"] = float.NaN }, avar: null);
 
-        coordinates.ShouldAllBe(c => c == 0f);
+        coordinates.ShouldAllBe(c => c.Equals(0f));
     }
 
     [Fact]

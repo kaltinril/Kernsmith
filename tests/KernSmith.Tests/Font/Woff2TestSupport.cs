@@ -336,7 +336,7 @@ internal static class Woff2TestSupport
             fontIndices.Add((BinaryPrimitives.ReadUInt32BigEndian(font), indices));
         }
 
-        var header = new MemoryStream();
+        using var header = new MemoryStream();
         foreach (var (tag, data) in unique)
         {
             var known = Array.IndexOf(KnownTags, tag);
@@ -360,7 +360,7 @@ internal static class Woff2TestSupport
             }
         }
 
-        var stream = new MemoryStream();
+        using var stream = new MemoryStream();
         foreach (var (_, data) in unique)
             stream.Write(data);
         var compressed = BclCompress(stream.ToArray());
@@ -384,7 +384,7 @@ internal static class Woff2TestSupport
     {
         var headerSize = 12 + 4 * fonts.Length;
         var directorySizes = fonts.Select(f => 12 + 16 * BinaryPrimitives.ReadUInt16BigEndian(f.AsSpan(4))).ToArray();
-        var output = new MemoryStream();
+        using var output = new MemoryStream();
         output.Write(new byte[headerSize + directorySizes.Sum()]);
         var buffer = output.GetBuffer();
 

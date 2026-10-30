@@ -32,7 +32,7 @@ internal readonly struct ColorLineSampler
         if (sortedStops.Length == 0)
             return false;
 
-        bool zeroLength = sortedStops[^1].Offset == sortedStops[0].Offset;
+        bool zeroLength = sortedStops[^1].Offset.Equals(sortedStops[0].Offset);
         return !(zeroLength && sortedStops.Length > 1 && extend != ColorLineExtend.Pad);
     }
 

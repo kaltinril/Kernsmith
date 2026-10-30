@@ -218,7 +218,7 @@ public class ColrV1RenderingTests
         for (int col = 0; col < 64; col += 7)
         {
             var (r, g, b, a) = Pixel(glyph, col, 10);
-            ((int)a).ShouldBeInRange((int)Math.Round((1 - (X(col) / 2048.0)) * 255) - 1, (int)Math.Round((1 - (X(col) / 2048.0)) * 255) + 1);
+            a.ShouldBeInRange((int)Math.Round((1 - (X(col) / 2048.0)) * 255) - 1, (int)Math.Round((1 - (X(col) / 2048.0)) * 255) + 1);
             (r, g, b).ShouldBe((255, 0, 0));
         }
     }
@@ -407,9 +407,9 @@ public class ColrV1RenderingTests
 
         foreach (var paint in statics)
         {
-            var variable = paint switch
+            Paint variable = paint switch
             {
-                Translate t => (Paint)(t with { Var = 0 }),
+                Translate t => t with { Var = 0 },
                 Scale s => s with { Var = 0 },
                 ScaleUniform s => s with { Var = 0 },
                 Rotate r => r with { Var = 0 },

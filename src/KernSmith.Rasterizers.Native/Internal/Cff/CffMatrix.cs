@@ -41,8 +41,8 @@ internal readonly record struct CffMatrix(double A, double B, double C, double D
         if (matrix is not { } m)
             return null;
 
-        double yScale = m.D != 0 ? Math.Abs(m.D) : Math.Abs(m.B);
-        if (yScale == 0 || !double.IsFinite(1 / yScale))
+        double yScale = !m.D.Equals(0d) ? Math.Abs(m.D) : Math.Abs(m.B);
+        if (yScale.Equals(0d) || !double.IsFinite(1 / yScale))
             throw new FontFormatException("CFF FontMatrix has no y scale.");
 
         var scaled = new CffMatrix(m.A / yScale, m.B / yScale, m.C / yScale, m.D / yScale, m.E / yScale, m.F / yScale);

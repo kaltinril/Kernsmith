@@ -127,7 +127,7 @@ internal sealed class CffFont
 
         var top = CffDict.Parse(topDicts[0].Span, cff2: false);
 
-        if (top.GetNumber(CffDict.CharstringType, 2) != 2)
+        if (!top.GetNumber(CffDict.CharstringType, 2).Equals(2d))
             throw new FontFormatException("CFF ", 0, "only Type 2 charstrings are supported.");
 
         var charStrings = CffIndex.Parse(table, RequireOffset(top, CffDict.CharStrings, "CharStrings"), cff2: false, out _);

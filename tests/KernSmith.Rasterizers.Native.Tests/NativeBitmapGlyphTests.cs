@@ -191,8 +191,8 @@ public class NativeBitmapGlyphTests
         // ppem = unitsPerEm / 16, so Roboto's xMin/yMin land on whole strike pixels after floor.
         var parsed = RobotoFace.Value.GetGlyph(GlyphA);
         const int ppem = 128;
-        double left = 1 + (parsed.XMin * ppem / 2048.0);
-        double bottom = -2 + (parsed.YMin * ppem / 2048.0);
+        double left = 1 + ((double)parsed.XMin * ppem / 2048.0);
+        double bottom = -2 + ((double)parsed.YMin * ppem / 2048.0);
         var sbix = Sbix(RobotoGlyphCount, new SbixStrike(ppem, 72, [new SbixEntry(GlyphA, 1, -2, "png ", Distinct)]));
         var font = MixedRoboto(("sbix", sbix));
 

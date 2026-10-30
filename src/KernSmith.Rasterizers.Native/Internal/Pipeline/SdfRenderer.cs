@@ -49,7 +49,7 @@ internal sealed class SdfRenderer : IBoxMeasuringRenderer
     public GlyphMetrics MeasureBox(int glyphIndex, GlyphBox box, int advance, RasterOptions options)
     {
         int pad = SpreadPixels(options);
-        GlyphLimits.EnsureBitmap(glyphIndex, box.Width + (2L * pad), box.Height + (2L * pad));
+        GlyphLimits.EnsureBitmap(glyphIndex, box.Width + (2d * pad), box.Height + (2d * pad));
         return new GlyphMetrics(
             BearingX: box.BearingX - pad,
             BearingY: box.BearingY + pad,

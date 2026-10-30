@@ -79,7 +79,7 @@ public class CffFixtureTests
         {
             double width = decoder.CharstringWidth(glyph);
             width.ShouldBe(face.Hmtx.GetAdvanceWidth(glyph), $"glyph {glyph}");
-            if (width == decoder.Font.PrivateFor(glyph).DefaultWidthX)
+            if (width.Equals(decoder.Font.PrivateFor(glyph).DefaultWidthX))
                 defaults++;
         }
 

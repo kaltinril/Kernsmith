@@ -139,7 +139,8 @@ internal static class GridFitter
         float ideal = keys.Eval((top.Y + bottom.Y) / 2f) - (width / 2f);
         float nearest = GridMath.Round(ideal);
         float step = ideal >= nearest ? 1f : -1f;
-        foreach (float candidate in (ReadOnlySpan<float>)[nearest, nearest + step, nearest - step])
+        ReadOnlySpan<float> candidates = [nearest, nearest + step, nearest - step];
+        foreach (float candidate in candidates)
         {
             if (keys.TryAdd(bottom.Y, candidate, top.Y, candidate + width))
             {

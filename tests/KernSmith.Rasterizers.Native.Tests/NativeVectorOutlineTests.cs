@@ -89,7 +89,7 @@ public class NativeVectorOutlineTests
         At(bevel, 0, 0).ShouldBe((byte)0);
         // The square pen fills the corner square, so its pixel is covered by (column) x (row).
         At(miter, 0, 0).ShouldBeGreaterThan((byte)0);
-        Math.Abs(At(miter, 0, 0) - (At(miter, 0, 3) * At(miter, 3, 0) / 255.0)).ShouldBeLessThan(6.0, "the square pen fills the corner");
+        Math.Abs(At(miter, 0, 0) - ((double)At(miter, 0, 3) * At(miter, 3, 0) / 255.0)).ShouldBeLessThan(6.0, "the square pen fills the corner");
         At(round, 1, 1).ShouldBeGreaterThan(At(bevel, 1, 1), "a round pen reaches further into the corner than a diamond");
     }
 

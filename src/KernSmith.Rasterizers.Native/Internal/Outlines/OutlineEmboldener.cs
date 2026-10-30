@@ -62,7 +62,7 @@ internal static class OutlineEmboldener
 
         var commands = outline.Commands;
         double area = SignedArea(commands);
-        if (area == 0 || !double.IsFinite(area))
+        if (area.Equals(0d) || !double.IsFinite(area))
             return null;
 
         // Y up: a negative (clockwise) total area puts the ink on the right of travel, so the
@@ -203,11 +203,11 @@ internal static class OutlineEmboldener
         for (int i = 0; i < n; i++)
         {
             int incoming = (i - 1 + n) % n;
-            while (length[incoming] == 0)
+            while (length[incoming].Equals(0d))
                 incoming = (incoming - 1 + n) % n;
 
             int outgoing = i;
-            while (length[outgoing] == 0)
+            while (length[outgoing].Equals(0d))
                 outgoing = (outgoing + 1) % n;
 
             var offset = CornerOffset(dirX[incoming], dirY[incoming], dirX[outgoing], dirY[outgoing], side, distance);
@@ -225,7 +225,7 @@ internal static class OutlineEmboldener
         for (int e = 0; e < n; e++)
         {
             edgeScale[e] = 1;
-            if (length[e] == 0)
+            if (length[e].Equals(0d))
                 continue;
 
             // A valid edge e starts at vertex e and ends at vertex e + 1.

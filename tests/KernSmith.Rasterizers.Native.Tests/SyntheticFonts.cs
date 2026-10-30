@@ -41,7 +41,7 @@ internal static class SyntheticFonts
     /// pair, so color layering can be tested on glyph shapes the other tests already know.
     /// </summary>
     public static byte[] RobotoWith(params (string Tag, byte[] Data)[] extraTables) =>
-        WithTables(TestFonts.RobotoRegularBytes(), extraTables.ToDictionary(t => t.Tag, t => (byte[]?)t.Data));
+        WithTables(TestFonts.RobotoRegularBytes(), extraTables.ToDictionary(t => t.Tag, byte[]? (t) => t.Data));
 
     /// <summary>
     /// Rebuilds a font with some tables replaced or removed (a null value drops the table); every

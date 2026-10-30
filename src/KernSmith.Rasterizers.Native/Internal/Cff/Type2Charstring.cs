@@ -350,17 +350,17 @@ internal static class Type2Charstring
                         break;
                     }
 
-                case 3: Binary((a, b) => a != 0 && b != 0 ? 1 : 0); break; // and
-                case 4: Binary((a, b) => a != 0 || b != 0 ? 1 : 0); break; // or
-                case 5: Unary(a => a == 0 ? 1 : 0); break; // not
+                case 3: Binary((a, b) => !a.Equals(0d) && !b.Equals(0d) ? 1 : 0); break; // and
+                case 4: Binary((a, b) => !a.Equals(0d) || !b.Equals(0d) ? 1 : 0); break; // or
+                case 5: Unary(a => a.Equals(0d) ? 1 : 0); break; // not
                 case 9: Unary(Math.Abs); break; // abs
                 case 10: Binary((a, b) => a + b); break; // add
                 case 11: Binary((a, b) => a - b); break; // sub
                 case 12: // div
-                    Binary((a, b) => b == 0 ? throw new FontFormatException("Charstring divides by zero.") : a / b);
+                    Binary((a, b) => b.Equals(0d) ? throw new FontFormatException("Charstring divides by zero.") : a / b);
                     break;
                 case 14: Unary(a => -a); break; // neg
-                case 15: Binary((a, b) => a == b ? 1 : 0); break; // eq
+                case 15: Binary((a, b) => a.Equals(b) && !double.IsNaN(a) ? 1 : 0); break; // eq (NaN is never equal, as with ==)
                 case 18: // drop
                     Pop();
                     break;
@@ -629,7 +629,7 @@ internal static class Type2Charstring
 
         private static int Integer(double value)
         {
-            if (value != Math.Floor(value) || value < int.MinValue || value > int.MaxValue)
+            if (!double.IsInteger(value) || value < int.MinValue || value > int.MaxValue)
                 throw new FontFormatException($"Charstring operand {value} is not an integer.");
 
             return (int)value;

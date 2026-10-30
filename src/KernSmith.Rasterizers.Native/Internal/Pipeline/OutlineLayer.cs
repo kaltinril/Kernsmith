@@ -230,10 +230,10 @@ internal static class OutlineLayer
         private static double Chebyshev(double ex, double ey, double dx, double dy)
         {
             double best = Math.Min(Max(ex, ey), Max(ex - dx, ey - dy));
-            Try(dx != 0 ? ex / dx : -1, ref best);
-            Try(dy != 0 ? ey / dy : -1, ref best);
-            Try(dx != dy ? (ex - ey) / (dx - dy) : -1, ref best);
-            Try(dx != -dy ? (ex + ey) / (dx + dy) : -1, ref best);
+            Try(!dx.Equals(0d) ? ex / dx : -1, ref best);
+            Try(!dy.Equals(0d) ? ey / dy : -1, ref best);
+            Try(!dx.Equals(dy) ? (ex - ey) / (dx - dy) : -1, ref best);
+            Try(!dx.Equals(-dy) ? (ex + ey) / (dx + dy) : -1, ref best);
             return best;
 
             void Try(double t, ref double result)
@@ -249,8 +249,8 @@ internal static class OutlineLayer
         private static double Manhattan(double ex, double ey, double dx, double dy)
         {
             double best = Math.Min(Math.Abs(ex) + Math.Abs(ey), Math.Abs(ex - dx) + Math.Abs(ey - dy));
-            Try(dx != 0 ? ex / dx : -1, ref best);
-            Try(dy != 0 ? ey / dy : -1, ref best);
+            Try(!dx.Equals(0d) ? ex / dx : -1, ref best);
+            Try(!dy.Equals(0d) ? ey / dy : -1, ref best);
             return best;
 
             void Try(double t, ref double result)

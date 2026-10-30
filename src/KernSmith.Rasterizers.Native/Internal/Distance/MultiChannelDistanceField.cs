@@ -171,7 +171,11 @@ internal static class MultiChannelDistanceField
 
     private static float ProbeU(int probe) => (probe % ProbeSteps) / (ProbeSteps - 1f);
 
-    private static float ProbeV(int probe) => (probe / ProbeSteps) / (ProbeSteps - 1f);
+    private static float ProbeV(int probe)
+    {
+        int row = probe / ProbeSteps; // whole rows: the integer division is intended
+        return row / (ProbeSteps - 1f);
+    }
 
     /// <summary>
     /// Flattens texels of the cell at (<paramref name="x"/>, <paramref name="y"/>) until the
@@ -294,8 +298,10 @@ internal static class MultiChannelDistanceField
                 || (IsFlat(t0) && IsFlat(t0 + 3) && IsFlat(t2) && IsFlat(t2 + 3));
         }
 
+        // The NaN test keeps == semantics: float.Equals would call three NaN channels flat.
         /// <summary>True when the texel starting at <paramref name="t"/> has three equal channels.</summary>
-        public bool IsFlat(int t) => Values[t] == Values[t + 1] && Values[t + 1] == Values[t + 2];
+        public bool IsFlat(int t) =>
+            !float.IsNaN(Values[t]) && Values[t].Equals(Values[t + 1]) && Values[t + 1].Equals(Values[t + 2]);
 
         /// <summary>The median of the three channels, each interpolated bilinearly at (u, v).</summary>
         public float Median(int x, int y, float u, float v)

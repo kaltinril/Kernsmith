@@ -228,7 +228,8 @@ public static class PngDecoder
         int offset = 0;
         foreach (var range in idat)
         {
-            var segment = data[range];
+            var (start, length) = range.GetOffsetAndLength(data.Length);
+            var segment = data.Slice(start, length);
             segment.CopyTo(compressed.AsSpan(offset));
             offset += segment.Length;
         }

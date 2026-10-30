@@ -56,7 +56,7 @@ internal readonly record struct Affine2D(double Xx, double Yx, double Xy, double
     public bool TryInvert(out Affine2D inverse)
     {
         double det = Determinant;
-        if (det == 0 || !double.IsFinite(det))
+        if (det.Equals(0d) || !double.IsFinite(det))
         {
             inverse = default;
             return false;

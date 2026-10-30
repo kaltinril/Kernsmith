@@ -81,7 +81,7 @@ internal sealed class CffDict
             throw new FontFormatException($"CFF DICT operator {op} is missing operand {operandIndex}.");
 
         double value = operands[operandIndex];
-        if (value < 0 || value > int.MaxValue || value != Math.Floor(value))
+        if (value < 0 || value > int.MaxValue || !double.IsInteger(value))
             throw new FontFormatException($"CFF DICT operator {op} has invalid operand {value}.");
 
         return (int)value;
@@ -161,7 +161,7 @@ internal sealed class CffDict
 
         double nValue = stack[^1];
         int k = regionCount(vsIndex);
-        if (nValue < 0 || nValue != Math.Floor(nValue) || nValue * (k + 1) + 1 > stack.Count)
+        if (nValue < 0 || !double.IsInteger(nValue) || nValue * (k + 1) + 1 > stack.Count)
             throw new FontFormatException("CFF2 DICT blend has too few operands.");
 
         int n = (int)nValue;
@@ -177,10 +177,10 @@ internal sealed class CffDict
             return b0 - 139;
 
         if (b0 is >= 247 and <= 250)
-            return ((b0 - 247) * 256) + Next(data, ref i) + 108;
+            return ((b0 - 247) * 256d) + Next(data, ref i) + 108;
 
         if (b0 is >= 251 and <= 254)
-            return -((b0 - 251) * 256) - Next(data, ref i) - 108;
+            return -((b0 - 251) * 256d) - Next(data, ref i) - 108;
 
         switch (b0)
         {

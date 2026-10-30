@@ -158,7 +158,7 @@ public class ColorLayerRenderingTests
 
         for (int p = 0; p < coverage.Length; p++)
         {
-            int expectedAlpha = (int)Math.Round(coverage[p] * 128 / 255.0);
+            int expectedAlpha = (int)Math.Round(coverage[p] * 128.0 / 255.0);
             ((int)glyph.BitmapData[(p * 4) + 3]).ShouldBeInRange(expectedAlpha - 1, expectedAlpha + 1);
             if (glyph.BitmapData[(p * 4) + 3] != 0)
                 glyph.BitmapData[p * 4].ShouldBe((byte)255);

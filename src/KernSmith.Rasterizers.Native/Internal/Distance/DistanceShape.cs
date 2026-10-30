@@ -197,7 +197,7 @@ internal sealed class DistanceShape
     {
         var (sx, sy) = FirstNonZero(x1 - x0, y1 - y0, x2 - x0, y2 - y0, x3 - x0, y3 - y0);
         var (ex, ey) = FirstNonZero(x3 - x2, y3 - y2, x3 - x1, y3 - y1, x3 - x0, y3 - y0);
-        if (sx == 0 && sy == 0)
+        if (sx.Equals(0d) && sy.Equals(0d))
             return; // all four points coincide
 
         // Wang's bound: n uniform steps in t keep a cubic within `tolerance` of its chords

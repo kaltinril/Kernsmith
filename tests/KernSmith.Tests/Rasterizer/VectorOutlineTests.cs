@@ -136,10 +136,10 @@ public class VectorOutlineTests
 
         backend.Calls.Count.ShouldBe(16);
         backend.MaxConcurrentCalls.ShouldBe(1, "rasterizers are not thread-safe; layers must be asked for in the serial step");
-        backend.Calls.ShouldAllBe(c => c.Width == Ow && c.Shape == OutlineShape.Square && c.HeightScale == 1f);
+        backend.Calls.ShouldAllBe(c => c.Width == Ow && c.Shape == OutlineShape.Square && c.HeightScale.Equals(1f));
         // Same thickness definition as the effect: Outline pixels at the supersampled render size.
-        backend.Calls.ShouldAllBe(c => c.Size == backend.GlyphSizes[0]);
-        backend.GlyphSizes.ShouldAllBe(s => s == backend.GlyphSizes[0]);
+        backend.Calls.ShouldAllBe(c => c.Size.Equals(backend.GlyphSizes[0]));
+        backend.GlyphSizes.ShouldAllBe(s => s.Equals(backend.GlyphSizes[0]));
     }
 
     [Fact]
@@ -232,7 +232,7 @@ public class VectorOutlineTests
         var e = Glyph(Rasterize(Stretched(OutlineMode.Effect), plain), 'H');
 
         backend.Calls.ShouldNotBeEmpty();
-        backend.Calls.ShouldAllBe(c => c.HeightScale == 1.5f);
+        backend.Calls.ShouldAllBe(c => c.HeightScale.Equals(1.5f));
         // The layer is drawn Ow / 1.5 px tall, so once stretched it is Ow all round — the
         // effect's canvas, and the same body placement.
         v.Width.ShouldBe(e.Width);

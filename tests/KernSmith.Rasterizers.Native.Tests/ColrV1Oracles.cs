@@ -90,7 +90,7 @@ internal static class W3C
         14 => HardLight(cs: cb, cb: cs),                                    // overlay = hard-light, swapped
         15 => Math.Min(cb, cs),                                             // darken
         16 => Math.Max(cb, cs),                                             // lighten
-        17 => cb == 0 ? 0 : cs >= 1 ? 1 : Math.Min(1, cb / (1 - cs)),       // color-dodge
+        17 => cb.Equals(0d) ? 0 : cs >= 1 ? 1 : Math.Min(1, cb / (1 - cs)),       // color-dodge
         18 => cb >= 1 ? 1 : cs <= 0 ? 0 : 1 - Math.Min(1, (1 - cb) / cs),   // color-burn
         19 => HardLight(cb, cs),                                            // hard-light
         20 => SoftLight(cb, cs),                                            // soft-light

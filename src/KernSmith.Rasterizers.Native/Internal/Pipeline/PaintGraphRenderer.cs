@@ -405,7 +405,7 @@ internal sealed class PaintGraphRenderer
             double dx = g.X2 - g.X0, dy = g.Y2 - g.Y0;   // p0 → p2
             double denominator = (ax * dy) - (ay * dx);
             double lengths = Math.Sqrt(((ax * ax) + (ay * ay)) * ((dx * dx) + (dy * dy)));
-            if (lengths == 0 || Math.Abs(denominator) <= lengths * 1e-6)
+            if (lengths.Equals(0d) || Math.Abs(denominator) <= lengths * 1e-6)
                 return null;
 
             return (x, y) => ((((x - g.X0) * dy) - ((y - g.Y0) * dx)) / denominator);
@@ -418,7 +418,7 @@ internal sealed class PaintGraphRenderer
         private static Func<double, double, double?>? RadialParameter(RadialGradientPaint g)
         {
             double cdx = g.X1 - g.X0, cdy = g.Y1 - g.Y0, dr = g.R1 - g.R0;
-            if ((cdx == 0 && cdy == 0 && dr == 0) || (g.R0 == 0 && g.R1 == 0))
+            if ((cdx.Equals(0d) && cdy.Equals(0d) && dr.Equals(0d)) || (g.R0.Equals(0d) && g.R1.Equals(0d)))
                 return null;
 
             double a = (cdx * cdx) + (cdy * cdy) - (dr * dr);
@@ -433,7 +433,7 @@ internal sealed class PaintGraphRenderer
 
                 if (linear)
                 {
-                    if (b == 0)
+                    if (b.Equals(0d))
                         return null;
                     double w = c / (2 * b);
                     return g.R0 + (w * dr) >= 0 ? w : null;
@@ -458,7 +458,7 @@ internal sealed class PaintGraphRenderer
         private static Func<double, double, double?>? SweepParameter(SweepGradientPaint g, ColorLineSampler line)
         {
             double start = g.StartDegrees, end = g.EndDegrees;
-            bool equal = start == end;
+            bool equal = start.Equals(end);
             if (equal && line.Extend != ColorLineExtend.Pad)
                 return null;
 

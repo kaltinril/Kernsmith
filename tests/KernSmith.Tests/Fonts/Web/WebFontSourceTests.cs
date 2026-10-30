@@ -219,7 +219,10 @@ public class WebFontSourceTests
             else
                 content = new StringContent(_css, Encoding.UTF8, "text/css");
 
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = content });
+            return Task.FromResult(Ok(content));
         }
+
+        // HttpClient disposes the response it is handed.
+        private static HttpResponseMessage Ok(HttpContent content) => new(HttpStatusCode.OK) { Content = content };
     }
 }

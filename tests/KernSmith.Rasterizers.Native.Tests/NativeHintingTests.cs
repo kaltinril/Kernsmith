@@ -211,7 +211,7 @@ public class NativeHintingTests
             edge += glyph.BitmapData[(edgeRow * glyph.Pitch) + x];
         }
 
-        return inner == 0 ? 0 : edge / inner;
+        return inner.Equals(0d) ? 0 : edge / inner;
     }
 
     /// <summary>Total partial coverage: each pixel's distance from fully off or fully on, in [0, 1].</summary>

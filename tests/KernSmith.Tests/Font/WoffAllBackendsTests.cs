@@ -81,7 +81,7 @@ public class WoffAllBackendsTests
         }
 
         var tableDataStart = HeaderSize + numTables * DirEntrySize;
-        var body = new MemoryStream();
+        using var body = new MemoryStream();
         var entries = new (uint Tag, int Offset, int CompLength, int OrigLength, uint Checksum)[numTables];
 
         for (var i = 0; i < numTables; i++)

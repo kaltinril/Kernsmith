@@ -69,7 +69,7 @@ public class NativeWidthAndAngleTests
         double drift = InkCentre(slanted, 1) - InkCentre(slanted, slanted.Height - 2);
         double expected = (slanted.Height - 3) * Math.Tan(degrees * Math.PI / 180);
         Math.Abs(drift - expected).ShouldBeLessThan(1.0, $"drift {drift:0.00} vs {expected:0.00}");
-        if (degrees == 0f)
+        if (degrees.Equals(0f))
             slanted.BitmapData.ShouldBe(upright.BitmapData);
     }
 
