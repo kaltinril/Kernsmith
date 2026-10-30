@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Buffers.Binary;
 using System.IO.Compression;
 using KernSmith.Imaging.Internal;
@@ -126,10 +127,19 @@ public static class PngDecoder
         if (idat.Count == 0)
             throw new PngFormatException("The PNG has no IDAT image data.");
 
-        var raw = Inflate(data, idat, compressedLength, Adam7.RawSize(header));
-        var rgba = new byte[(long)header.Width * header.Height * 4];
-        Scanlines.Reconstruct(raw, header, pixels, rgba);
-        return new PngImage(header.Width, header.Height, rgba);
+        // The decompressed scanlines are scratch: pooled, and only their first RawSize bytes are used.
+        long rawSize = Adam7.RawSize(header);
+        var raw = Inflate(data, idat, compressedLength, rawSize);
+        try
+        {
+            var rgba = new byte[(long)header.Width * header.Height * 4];
+            Scanlines.Reconstruct(raw.AsSpan(0, (int)rawSize), header, pixels, rgba);
+            return new PngImage(header.Width, header.Height, rgba);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(raw);
+        }
     }
 
     private static void CheckSignature(ReadOnlySpan<byte> data)
@@ -216,6 +226,8 @@ public static class PngDecoder
     /// Inflates the concatenated <c>IDAT</c> data to exactly <paramref name="expected"/> bytes.
     /// Anything the stream holds past that is never decompressed.
     /// </summary>
+    /// <returns>A pooled array whose first <paramref name="expected"/> bytes hold the data; the
+    /// caller returns it to <see cref="ArrayPool{T}.Shared"/>.</returns>
     private static byte[] Inflate(ReadOnlySpan<byte> data, List<Range> idat, long compressedLength, long expected)
     {
         if (expected > Array.MaxLength)
@@ -224,24 +236,26 @@ public static class PngDecoder
         if (expected > (compressedLength * MaxDeflateRatio) + 1024)
             throw new PngFormatException($"The PNG's {compressedLength} bytes of image data cannot hold the {expected} bytes its header declares.");
 
-        var compressed = new byte[compressedLength];
-        int offset = 0;
-        foreach (var range in idat)
-        {
-            var (start, length) = range.GetOffsetAndLength(data.Length);
-            var segment = data.Slice(start, length);
-            segment.CopyTo(compressed.AsSpan(offset));
-            offset += segment.Length;
-        }
-
-        var raw = new byte[expected];
+        int length = (int)compressedLength;
+        byte[] compressed = ArrayPool<byte>.Shared.Rent(Math.Max(length, 1));
+        byte[] raw = ArrayPool<byte>.Shared.Rent((int)Math.Max(expected, 1));
+        bool filledRaw = false;
         try
         {
-            using var zlib = new ZLibStream(new MemoryStream(compressed, writable: false), CompressionMode.Decompress);
-            int filled = 0;
-            while (filled < raw.Length)
+            int offset = 0;
+            foreach (var range in idat)
             {
-                int read = zlib.Read(raw, filled, raw.Length - filled);
+                var (start, count) = range.GetOffsetAndLength(data.Length);
+                var segment = data.Slice(start, count);
+                segment.CopyTo(compressed.AsSpan(offset));
+                offset += segment.Length;
+            }
+
+            using var zlib = new ZLibStream(new MemoryStream(compressed, 0, length, writable: false), CompressionMode.Decompress);
+            int filled = 0;
+            while (filled < expected)
+            {
+                int read = zlib.Read(raw, filled, (int)expected - filled);
                 if (read == 0)
                     throw new PngFormatException($"The PNG's image data ends after {filled} of {expected} bytes.");
                 filled += read;
@@ -251,13 +265,19 @@ public static class PngDecoder
             // stream ends here; data beyond the image is ignored, never decompressed further.
             Span<byte> probe = stackalloc byte[1];
             _ = zlib.Read(probe);
+            filledRaw = true;
+            return raw;
         }
         catch (InvalidDataException ex)
         {
             throw new PngFormatException($"The PNG's compressed image data is corrupt: {ex.Message}", ex);
         }
-
-        return raw;
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(compressed);
+            if (!filledRaw)
+                ArrayPool<byte>.Shared.Return(raw);
+        }
     }
 
     private static bool IsCritical(uint type) => (type & 0x2000_0000) == 0;

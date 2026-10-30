@@ -74,6 +74,27 @@ public class NativeAllocationTests
             $"{allocated} B allocated, {kept} B kept by the glyphs: scratch is being allocated per glyph");
     }
 
+    [Fact]
+    public void RasterizeGlyph_ScaledColorBitmap_AllocatesNoStrikeSizedScratch()
+    {
+        // Noto Color Emoji's 136x128 strike scaled to 32px: the decoder's RGBA image (its public
+        // result) and the glyph's bitmap are kept; premultiplied and filtered copies of the strike
+        // are pooled, as are the decoder's inflate buffers.
+        using var native = new NativeRasterizer();
+        native.LoadFont(TestFonts.NotoColorEmojiBytes());
+        var options = new RasterOptions { Size = 32, ColorFont = true };
+        const int Emoji = 0x1F600;
+        var glyph = native.RasterizeGlyph(Emoji, options)!; // also warms caches and JIT
+        glyph.Format.ShouldBe(PixelFormat.Rgba32);
+
+        long kept = ArrayBytes<byte>(136 * 128 * 4) + ArrayBytes<byte>(glyph.BitmapData.Length);
+        long allocated = AllocationMeter.BytesAllocatedBy(() => native.RasterizeGlyph(Emoji, options));
+
+        // Room for the resampler's tap tables, the inflater's own state and the result objects;
+        // a strike-sized float copy alone is 278 KB.
+        (allocated - kept).ShouldBeLessThan(16 * 1024, $"{allocated} B allocated, {kept} B kept");
+    }
+
     /// <summary>Printable ASCII glyphs Roboto stores as simple (non-composite) outlines.</summary>
     private static int[] SimpleAsciiGlyphs(NativeRasterizer native)
     {
