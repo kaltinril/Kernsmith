@@ -1,6 +1,6 @@
 # Phase 177 — Native Rasterizer: Benchmarks & Performance Optimization
 
-> **Status**: In progress — harness, baseline, scanline fill, dropout control, metrics shortcut, per-glyph pooling and Brotli done; remaining: feature paths, parallelism
+> **Status**: In progress — harness, baseline, scanline fill, dropout control, metrics shortcut, pooling, Brotli and the feature-path pass done; remaining: quiet-machine timings for the feature pass, composite/varied `glyf` scratch, parallelism
 > **Created**: 2026-04-01
 > **Depends on**: nothing for the harness; the feature phases (166–174) for the optimisation pass
 
@@ -125,12 +125,39 @@ Rasterization time is dominated by the fill and moved within the error bars; the
 
 Run the WOFF2 benchmark with `--filter *Woff2Decode*` (`Woff2DecodeBenchmarks`: managed vs BCL Brotli on the same stream, plus `ReadFontInfo` WOFF2 vs TTF).
 
+## Feature paths (done)
+
+Profiled per path (stage timing in a scratch harness, `dotnet-trace` samples, allocation per stage), then changed only what the profile showed. Every change is output-neutral: byte-identical fingerprints of rendered bitmaps and metrics for every mode over five fonts (variable instances included), 7-72 px, ASCII + Latin-1, plus a 510,543-glyph `None` sweep (6-96 px, fractional sizes, hinted, bold-italic), and goldens unchanged.
+
+| Path | Profile finding | Change | Allocation per glyph |
+|---|---|---|---|
+| `None` | dropout control ~60% of the glyph: three `Reach` evaluations per edge per pass, padded scanline ranges that tripled bucket entries, a general sort per scanline | each edge oriented once per pass; ranges trimmed to the scanlines the crossing test accepts; insertion sort; branchless 50% threshold | unchanged |
+| CBDT (Noto Color Emoji, 32 px) | resample ~60% and a 278 KB premultiplied copy of the strike (large-object heap); decode ~35% | one premultiplied source row at a time, pooled filter buffer, alpha table; pooled IDAT and scanline buffers; 4-byte palette copies | 464 → 83 KB (the rest is the decoder's RGBA result) |
+| Light hinting | the fit (~2.2 µs) copied its key lists on every attempted placement | in-place key map with rollback; pooled per-slot arrays | 6.5 → 5.1 KB (metrics 5.7 → 4.3 KB) |
+| `COLR` v0 metrics | base and every layer fully decoded to union the layer boxes | layers measured by the header-box shortcut, composites prepared | 7.3 → 5.4 KB |
+| LCD | filter ~35%: a bounds-tested tap loop and an integer division per subpixel | whole-row filter, level table built with the same rounding | unchanged |
+| MSDF | artifact correction ~50%: ~12,700 probes per glyph | probes skipped where two channels at all four corners fix the median's sign (exact in float arithmetic) | unchanged |
+| SDF (and MSDF's true distance) | `Splat`'s column loop | lane-wise `Vector<float>` over columns, scalar fallback where not accelerated; vector path held bit-identical to scalar by test | unchanged |
+| `COLR` v1 | `Math.Pow` per channel in sRGB encode (~13 µs of the glyph) | 255 thresholds derived from the formula, binary search; checked equal over every float in [0, 1] | unchanged |
+| Metrics: CFF2, bold | charstring stacks (513 doubles) per glyph; emboldener lists and arrays per contour | pooled | CFF2 6.3 → 0.7 KB, bold 6.3 → 1.4 KB |
+| Grayscale | flattened edges copied to an exact-size array per glyph | renderers read the pooled buffer | 1,465 → 1,072 B |
+
+Speed under load (in-process interleaved A/B against the previous build, median ratio; the machine was busy, so absolute timings await a quiet BenchmarkDotNet run): `None` 0.69, CBDT 0.78, Light 0.93 (metrics 0.89), `COLR` v0 metrics 0.69, LCD 0.78, MSDF 0.66, SDF 0.56, `COLR` v1 0.66, CFF2 metrics 0.75, bold metrics 0.80.
+
+Measured and not kept:
+
+- **Vector outlines** (`OutlineLayer`): sub-sample distances and inside tests are ~60%, building the distance shape ~23% (much of it allocation). Batched inside tests per sub-sample line and nearest-segment-first pruning (44% fewer distance evaluations) both measured slower; the bookkeeping cost more than the evaluations saved.
+- **`gvar` scratch pooling**: 17% less allocation but slower, per-tuple clearing and the pooling bracket outweighing the small arrays.
+- **Probe-table precomputation** in MSDF correction: within noise.
+
+Remaining, with the profile behind each: composite and varied `glyf` glyphs still decode through `ParsedGlyph` (3.5 KB per composite, 2.5 KB per `gvar` glyph); the MSDF field's own `Splat` (~30%) is per-channel and not vectorized; `ScanlineRasterizer.Resolve` column-interleaved SIMD, band-bucketed edges for multi-band glyphs, SDF buffer pooling, `GlyphTransforms` caching and PNG CRC slicing are untried.
+
 ## Work items — optimisation (Wave 3)
 
 Profile first (`dotnet-trace`/PerfView); do only what the profile justifies.
 
-- **Parsing**: composite `glyf` glyphs through the scratch path; lazy table parsing.
-- **Feature paths**: SDF segment bucketing (Phase 169), `gvar` decode caching (Phase 171), COLR layer canvas reuse (Phase 172), as the harness shows them hot.
+- **Parsing**: composite and varied `glyf` glyphs through the scratch path; lazy table parsing.
+- **Feature paths**: done (see Feature paths above); what remains is listed there with its profile.
 - **Parallelism** (decided, not started): allowed where it helps, behind an opt-out option — on by default where supported, forced off on browser-wasm (`OperatingSystem.IsBrowser()`) and any other single-threaded target; one buffer set per worker. Core already parallelizes post-processing, so measure first whether backend-level parallelism adds anything.
 
 ## Testing
@@ -147,6 +174,6 @@ Profile first (`dotnet-trace`/PerfView); do only what the profile justifies.
 - [x] Harness compares Native, StbTrueType and FreeType with memory diagnostics; baseline recorded
 - [x] Within 2× of StbTrueType for ASCII at 32px
 - [x] No per-glyph scratch allocations in the hot path
-- [ ] SIMD paths only where measured faster
+- [x] SIMD paths only where measured faster
 - [ ] No output change; WASM-safe
 - [ ] All tests pass
