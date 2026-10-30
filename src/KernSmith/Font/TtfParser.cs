@@ -103,6 +103,9 @@ internal class TtfParser
             _tables.ContainsKey(Tag('C', 'B', 'D', 'T'));
     }
 
+    private ReadOnlyMemory<byte> GetTableMemory(uint tag) =>
+        _tables.TryGetValue(tag, out var entry) ? _data.Slice(entry.offset, entry.length) : ReadOnlyMemory<byte>.Empty;
+
     private ReadOnlySpan<byte> GetTable(uint tag)
     {
         if (_tables.TryGetValue(tag, out var entry))
@@ -222,7 +225,7 @@ internal class TtfParser
 
         try
         {
-            Hmtx = HmtxTable.Parse(table, Hhea.NumberOfHMetrics);
+            Hmtx = HmtxTable.Parse(GetTableMemory(Tag('h', 'm', 't', 'x')), Hhea.NumberOfHMetrics);
         }
         catch (FontFormatException)
         {
@@ -296,10 +299,11 @@ internal class TtfParser
         // Target nameIDs: 0=copyright, 1=family, 2=subfamily, 3=uniqueId, 4=fullName,
         // 5=version, 6=postScript, 7=trademark, 8=manufacturer, 9=designer,
         // 10=description, 13=license, 14=licenseUrl
-        var targetIds = new HashSet<int> { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14 };
-        // Store best match: nameID -> (priority, string)
-        // Priority: Windows English=3, Windows other=2, Mac=1
-        var results = new Dictionary<int, (int priority, string value)>();
+        const int targetIds = 0b110_0111_1111_1111;
+        // Best match per nameID: the first record of the highest priority (Windows English=3,
+        // Windows other=2, Mac=1); only the winners are decoded.
+        Span<NameRecord> best = stackalloc NameRecord[15];
+        best.Clear();
 
         for (var i = 0; i < count; i++)
         {
@@ -314,55 +318,52 @@ internal class TtfParser
             var length = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(recOffset + 8));
             var offset = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(recOffset + 10));
 
-            if (!targetIds.Contains(nameID))
+            if (nameID > 14 || (targetIds & (1 << nameID)) == 0)
                 continue;
 
             var strStart = stringOffset + offset;
             if (strStart + length > table.Length)
                 continue;
 
-            var strData = table.Slice(strStart, length);
-            string value;
             int priority;
-
             if (platformID == 3 && encodingID == 1)
-            {
-                // Windows Unicode BMP - UTF-16 big-endian
-                value = DecodeUtf16BigEndian(strData);
-                priority = languageID == 0x0409 ? 3 : 2;
-            }
+                priority = languageID == 0x0409 ? 3 : 2; // Windows Unicode BMP - UTF-16 big-endian
             else if (platformID == 1 && encodingID == 0)
-            {
-                // Mac Roman - ASCII/Latin-1
-                value = DecodeLatin1(strData);
-                priority = 1;
-            }
+                priority = 1;                            // Mac Roman - ASCII/Latin-1
             else
-            {
                 continue;
-            }
 
-            if (!results.TryGetValue(nameID, out var existing) || priority > existing.priority)
-            {
-                results[nameID] = (priority, value);
-            }
+            if (priority > best[nameID].Priority)
+                best[nameID] = new NameRecord(priority, strStart, length);
+        }
+
+        string? Decode(ReadOnlySpan<byte> names, ReadOnlySpan<NameRecord> winners, int nameID)
+        {
+            var record = winners[nameID];
+            if (record.Priority == 0)
+                return null;
+            var strData = names.Slice(record.Start, record.Length);
+            return record.Priority == 1 ? DecodeLatin1(strData) : DecodeUtf16BigEndian(strData);
         }
 
         Names = new NameInfo(
-            FontFamily: results.TryGetValue(1, out var family) ? family.value : null,
-            FontSubfamily: results.TryGetValue(2, out var subfamily) ? subfamily.value : null,
-            FullName: results.TryGetValue(4, out var fullName) ? fullName.value : null,
-            PostScriptName: results.TryGetValue(6, out var psName) ? psName.value : null,
-            Copyright: results.TryGetValue(0, out var copyright) ? copyright.value : null,
-            Trademark: results.TryGetValue(7, out var trademark) ? trademark.value : null,
-            UniqueId: results.TryGetValue(3, out var uniqueId) ? uniqueId.value : null,
-            Version: results.TryGetValue(5, out var version) ? version.value : null,
-            Manufacturer: results.TryGetValue(8, out var manufacturer) ? manufacturer.value : null,
-            Designer: results.TryGetValue(9, out var designer) ? designer.value : null,
-            Description: results.TryGetValue(10, out var description) ? description.value : null,
-            License: results.TryGetValue(13, out var license) ? license.value : null,
-            LicenseUrl: results.TryGetValue(14, out var licenseUrl) ? licenseUrl.value : null);
+            FontFamily: Decode(table, best, 1),
+            FontSubfamily: Decode(table, best, 2),
+            FullName: Decode(table, best, 4),
+            PostScriptName: Decode(table, best, 6),
+            Copyright: Decode(table, best, 0),
+            Trademark: Decode(table, best, 7),
+            UniqueId: Decode(table, best, 3),
+            Version: Decode(table, best, 5),
+            Manufacturer: Decode(table, best, 8),
+            Designer: Decode(table, best, 9),
+            Description: Decode(table, best, 10),
+            License: Decode(table, best, 13),
+            LicenseUrl: Decode(table, best, 14));
     }
+
+    /// <summary>A name record's priority (0 = none yet) and string bytes within the name table.</summary>
+    private readonly record struct NameRecord(int Priority, int Start, int Length);
 
     /// <summary>
     /// Resolves a name ID from the name table, returning the best available string.
@@ -588,7 +589,8 @@ internal class TtfParser
         var subtable = table.Slice(bestOffset);
         var format = BinaryPrimitives.ReadUInt16BigEndian(subtable);
 
-        var cmap = new Dictionary<int, int>();
+        // A subset bounds the entry count; entries are only ever added or overwritten.
+        var cmap = new Dictionary<int, int>(_requestedCodepoints?.Count ?? 0);
 
         if (format == 12)
             ParseCmapFormat12(subtable, cmap);

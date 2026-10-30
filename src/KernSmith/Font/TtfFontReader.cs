@@ -33,11 +33,13 @@ internal class TtfFontReader : IFontReader
         }
 
         // Available codepoints: all codepoints that map to a non-zero glyph index, sorted
-        var availableCodepoints = parser.CmapTable
-            .Where(kvp => kvp.Value != 0)
-            .Select(kvp => kvp.Key)
-            .OrderBy(cp => cp)
-            .ToList();
+        var availableCodepoints = new List<int>(parser.CmapTable.Count);
+        foreach (var (codepoint, glyphIndex) in parser.CmapTable)
+        {
+            if (glyphIndex != 0)
+                availableCodepoints.Add(codepoint);
+        }
+        availableCodepoints.Sort(); // keys are unique, so this is the stable order too
 
         // Merge kerning pairs: start with kern, overlay GPOS (GPOS takes precedence). A pair
         // keeps the position of its first insertion (Dictionary enumeration order with no
@@ -57,7 +59,7 @@ internal class TtfFontReader : IFontReader
         var isItalic = subfamily.Contains("Italic", StringComparison.OrdinalIgnoreCase) ||
                        subfamily.Contains("Oblique", StringComparison.OrdinalIgnoreCase);
 
-        var numGlyphs = parser.CmapTable.Values.Distinct().Count();
+        var numGlyphs = new HashSet<int>(parser.CmapTable.Values).Count;
 
         // Per-codepoint design metrics (advance width + left side bearing), keyed the same
         // way as availableCodepoints. Empty if the font has no hmtx table (or one that failed
