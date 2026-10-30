@@ -70,7 +70,7 @@ internal static class ScanlineRasterizer
     /// <remarks>Anything falling outside the bitmap is clipped, so oversized or misplaced
     /// outlines cannot overrun the buffers. The only allocation is the returned bitmap.</remarks>
     public static RasterResult Rasterize(
-        EdgeSegment[] edges,
+        ReadOnlySpan<EdgeSegment> edges,
         int width,
         int height,
         float originX = 0f,
@@ -79,7 +79,6 @@ internal static class ScanlineRasterizer
         int bearingX = 0,
         int bearingY = 0)
     {
-        ArgumentNullException.ThrowIfNull(edges);
         ArgumentOutOfRangeException.ThrowIfNegative(width);
         ArgumentOutOfRangeException.ThrowIfNegative(height);
 
@@ -114,19 +113,18 @@ internal static class ScanlineRasterizer
     /// pixel restored in a column the outline covers under half of. A render with no ink keeps
     /// its box. The only allocation is the returned bitmap.
     /// </remarks>
-    public static RasterResult RasterizeMono(EdgeSegment[] edges, int width, int height, float originX, float originY, int bearingX, int bearingY) =>
+    public static RasterResult RasterizeMono(ReadOnlySpan<EdgeSegment> edges, int width, int height, float originX, float originY, int bearingX, int bearingY) =>
         Mono(edges, width, height, originX, originY, bearingX, bearingY, keepBitmap: true);
 
     /// <summary>
     /// The size and bearings <see cref="RasterizeMono"/> would return, with an empty bitmap. It
     /// still renders to find the ink, into pooled scratch only.
     /// </summary>
-    public static RasterResult MeasureMono(EdgeSegment[] edges, int width, int height, float originX, float originY, int bearingX, int bearingY) =>
+    public static RasterResult MeasureMono(ReadOnlySpan<EdgeSegment> edges, int width, int height, float originX, float originY, int bearingX, int bearingY) =>
         Mono(edges, width, height, originX, originY, bearingX, bearingY, keepBitmap: false);
 
-    private static RasterResult Mono(EdgeSegment[] edges, int width, int height, float originX, float originY, int bearingX, int bearingY, bool keepBitmap)
+    private static RasterResult Mono(ReadOnlySpan<EdgeSegment> edges, int width, int height, float originX, float originY, int bearingX, int bearingY, bool keepBitmap)
     {
-        ArgumentNullException.ThrowIfNull(edges);
         ArgumentOutOfRangeException.ThrowIfNegative(width);
         ArgumentOutOfRangeException.ThrowIfNegative(height);
 
@@ -179,7 +177,7 @@ internal static class ScanlineRasterizer
     /// each band into <paramref name="bitmap"/>.
     /// </summary>
     /// <returns>Whether any edge reached a row of the bitmap.</returns>
-    private static bool Fill(byte[] bitmap, EdgeSegment[] edges, int width, int height, float originX, float originY, AntiAliasMode antiAlias)
+    private static bool Fill(byte[] bitmap, ReadOnlySpan<EdgeSegment> edges, int width, int height, float originX, float originY, AntiAliasMode antiAlias)
     {
         // One spare cell per row: a piece in the last column parks its carry share past it.
         int stride = width + 1;

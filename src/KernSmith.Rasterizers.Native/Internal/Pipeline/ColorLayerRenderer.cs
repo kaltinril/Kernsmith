@@ -266,8 +266,9 @@ internal sealed class ColorLayerRenderer : IGlyphRenderer, IDrawsWithoutOutline
         foreach (var (glyph, color) in layers)
         {
             var box = glyph.Box;
-            var edges = OutlineFlattener.Flatten(glyph.Outline, glyph.ToPixels, includeHorizontal: antiAlias == AntiAliasMode.None);
-            var coverage = ScanlineRasterizer.Rasterize(edges, box.Width, box.Height, box.MinX, box.MinY, antiAlias).Bitmap;
+            byte[] coverage;
+            using (var edges = OutlineFlattener.FlattenPooled(glyph.Outline, glyph.ToPixels, includeHorizontal: antiAlias == AntiAliasMode.None))
+                coverage = ScanlineRasterizer.Rasterize(edges.Edges, box.Width, box.Height, box.MinX, box.MinY, antiAlias).Bitmap;
 
             float alpha = color.A / 255f;
             float red = color.R / 255f * alpha;

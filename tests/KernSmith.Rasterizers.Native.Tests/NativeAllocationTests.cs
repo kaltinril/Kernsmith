@@ -8,9 +8,9 @@ namespace KernSmith.Rasterizers.Native.Tests;
 
 /// <summary>
 /// Per-glyph allocation ceilings for the hot paths (Phase 177). A glyph may allocate what it
-/// hands back — the bitmap, the outline's command array, the edge array the fill consumes and a
-/// few small result objects — but no scratch: parse, extraction and flattening buffers are
-/// reused, so their size never shows up per glyph.
+/// hands back — the bitmap, the outline's command array and a few small result objects — but no
+/// scratch: parse, extraction and flattening buffers, the flattened edges included, are pooled,
+/// so their size never shows up per glyph.
 /// </summary>
 public class NativeAllocationTests
 {
@@ -49,18 +49,16 @@ public class NativeAllocationTests
         var options = new RasterOptions { Size = size };
         int[] simple = SimpleAsciiGlyphs(native);
 
-        // What each glyph legitimately keeps: its bitmap, its outline commands and the exact
-        // edge array the fill reads — measured through the same decoder and flattener.
+        // What each glyph legitimately keeps: its bitmap and its outline commands — measured
+        // through the same decoder. The flattened edges are pooled, so they are not kept.
         var decoder = new TrueTypeOutlineDecoder(native.Face!);
-        var toPixels = new OutlineTransform(GlyphPipeline.PixelScale(options, native.Face!.Head.UnitsPerEm), 0f);
         long kept = 0;
         foreach (int codepoint in simple)
         {
             var glyph = native.RasterizeGlyph(codepoint, options)!; // also warms caches and JIT
             var outline = decoder.Decode(native.GetGlyphIndex(codepoint), options).Outline;
             kept += ArrayBytes<byte>(glyph.BitmapData.Length)
-                + ArrayBytes<OutlineCommand>(outline.Commands.Length)
-                + ArrayBytes<EdgeSegment>(OutlineFlattener.Flatten(outline, toPixels).Length);
+                + ArrayBytes<OutlineCommand>(outline.Commands.Length);
         }
 
         long allocated = AllocationMeter.BytesAllocatedBy(() =>

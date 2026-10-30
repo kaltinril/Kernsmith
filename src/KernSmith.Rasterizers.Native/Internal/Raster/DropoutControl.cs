@@ -39,10 +39,9 @@ internal static class DropoutControl
     /// <param name="height">Bitmap height.</param>
     /// <param name="originX">Pixel-space X of bitmap column 0.</param>
     /// <param name="originY">Pixel-space Y of bitmap row 0.</param>
-    public static void Apply(byte[] bitmap, EdgeSegment[] edges, int width, int height, float originX, float originY)
+    public static void Apply(byte[] bitmap, ReadOnlySpan<EdgeSegment> edges, int width, int height, float originX, float originY)
     {
         ArgumentNullException.ThrowIfNull(bitmap);
-        ArgumentNullException.ThrowIfNull(edges);
 
         if (width <= 0 || height <= 0 || edges.Length < 2)
             return;
@@ -56,7 +55,7 @@ internal static class DropoutControl
     /// Runs every scanline of one direction: rows (horizontal scanlines, crossed at some x) or
     /// columns (vertical scanlines, crossed at some y).
     /// </summary>
-    private static void Pass(byte[] bitmap, EdgeSegment[] edges, int width, int height, float originX, float originY, bool horizontal)
+    private static void Pass(byte[] bitmap, ReadOnlySpan<EdgeSegment> edges, int width, int height, float originX, float originY, bool horizontal)
     {
         int lines = horizontal ? height : width;
         float lineOrigin = horizontal ? originY : originX;

@@ -311,8 +311,8 @@ internal sealed class PaintGraphRenderer
             if (outline.IsEmpty)
                 return null;
 
-            var edges = OutlineFlattener.Flatten(outline, toPixels, includeHorizontal: _options.AntiAlias == AntiAliasMode.None);
-            var coverage = ScanlineRasterizer.Rasterize(edges, _box.Width, _box.Height, _box.MinX, _box.MinY, _options.AntiAlias).Bitmap;
+            using var edges = OutlineFlattener.FlattenPooled(outline, toPixels, includeHorizontal: _options.AntiAlias == AntiAliasMode.None);
+            var coverage = ScanlineRasterizer.Rasterize(edges.Edges, _box.Width, _box.Height, _box.MinX, _box.MinY, _options.AntiAlias).Bitmap;
             return Array.Exists(coverage, c => c != 0) ? coverage : null;
         }
 

@@ -105,9 +105,10 @@ internal sealed class LcdRenderer : IGlyphRenderer
         // the panel frame (the flattener drops horizontal edges, so the exchange has to happen
         // before it, not on its output); the rasterizer's coverage is the magnitude of the
         // winding, so the mirror's reversed orientation does not matter.
-        var edges = _vertical
-            ? OutlineFlattener.Flatten(MirrorToPanelFrame(glyph.Outline, glyph.ToPixels), PanelFrameToPixels, OutlineFlattener.DefaultTolerance / 3f)
-            : OutlineFlattener.Flatten(glyph.Outline, glyph.ToPixels, OutlineFlattener.DefaultTolerance / 3f);
+        using var flattened = _vertical
+            ? OutlineFlattener.FlattenPooled(MirrorToPanelFrame(glyph.Outline, glyph.ToPixels), PanelFrameToPixels, OutlineFlattener.DefaultTolerance / 3f)
+            : OutlineFlattener.FlattenPooled(glyph.Outline, glyph.ToPixels, OutlineFlattener.DefaultTolerance / 3f);
+        var edges = flattened.Edges;
         for (int i = 0; i < edges.Length; i++)
         {
             var e = edges[i];
