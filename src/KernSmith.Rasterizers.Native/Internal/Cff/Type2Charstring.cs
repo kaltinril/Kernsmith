@@ -1,3 +1,4 @@
+using System.Buffers;
 using KernSmith.Rasterizers.Native.Internal.Outlines;
 
 namespace KernSmith.Rasterizers.Native.Internal.Cff;
@@ -44,12 +45,42 @@ internal static class Type2Charstring
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var commands = new List<OutlineCommand>();
-        var run = new Run(context, commands, new Budget(), allowSeac: true, offsetX: 0, offsetY: 0);
+        // The command buffer and every run's stacks are pooled; only the outline is kept.
+        using var commands = new CommandBuffer();
+        using var run = new Run(context, commands, new Budget(), allowSeac: true, offsetX: 0, offsetY: 0);
         run.Execute(charstring.Span, depth: 0);
         run.Finish();
 
-        return new CharstringOutline([.. commands], run.Width, run.StemCount);
+        return new CharstringOutline(commands.ToArray(), run.Width, run.StemCount);
+    }
+
+    /// <summary>The commands a glyph and its seac components emit, in a pooled, growing array.</summary>
+    private sealed class CommandBuffer : IDisposable
+    {
+        private OutlineCommand[] _items = ArrayPool<OutlineCommand>.Shared.Rent(64);
+
+        public int Count { get; private set; }
+
+        public void Add(OutlineCommand command)
+        {
+            if (Count == _items.Length)
+            {
+                var grown = ArrayPool<OutlineCommand>.Shared.Rent(_items.Length * 2);
+                _items.AsSpan(0, Count).CopyTo(grown);
+                ArrayPool<OutlineCommand>.Shared.Return(_items);
+                _items = grown;
+            }
+
+            _items[Count++] = command;
+        }
+
+        public OutlineCommand[] ToArray() => _items.AsSpan(0, Count).ToArray();
+
+        public void Dispose()
+        {
+            ArrayPool<OutlineCommand>.Shared.Return(_items);
+            _items = [];
+        }
     }
 
     /// <summary>Work shared by a glyph and its seac components.</summary>
@@ -58,17 +89,19 @@ internal static class Type2Charstring
         public int Operations;
     }
 
-    /// <summary>One charstring execution: its stack, hint state, pen and output.</summary>
-    private sealed class Run
+    /// <summary>One charstring execution: its stack, hint state, pen and output. Dispose to
+    /// return its pooled stacks.</summary>
+    private sealed class Run : IDisposable
     {
         private readonly CharstringContext _context;
-        private readonly List<OutlineCommand> _commands;
+        private readonly CommandBuffer _commands;
         private readonly Budget _budget;
         private readonly bool _allowSeac;
         private readonly double _offsetX;
         private readonly double _offsetY;
         private readonly double[] _stack;
-        private readonly double[] _transient = new double[TransientArraySize];
+        private readonly int _stackLimit;
+        private readonly double[] _transient;
 
         private int _count;
         private bool _widthParsed;
@@ -81,7 +114,7 @@ internal static class Type2Charstring
         private double _startX;
         private double _startY;
 
-        public Run(CharstringContext context, List<OutlineCommand> commands, Budget budget, bool allowSeac, double offsetX, double offsetY)
+        public Run(CharstringContext context, CommandBuffer commands, Budget budget, bool allowSeac, double offsetX, double offsetY)
         {
             _context = context;
             _commands = commands;
@@ -89,9 +122,22 @@ internal static class Type2Charstring
             _allowSeac = allowSeac;
             _offsetX = offsetX;
             _offsetY = offsetY;
-            _stack = new double[context.IsCff2 ? 513 : 48];
+
+            // Rented arrays may be longer than asked for, so the stack's limit is kept apart from
+            // its length; both are cleared, so a read sees what a fresh array would hold.
+            _stackLimit = context.IsCff2 ? 513 : 48;
+            _stack = ArrayPool<double>.Shared.Rent(_stackLimit);
+            Array.Clear(_stack, 0, _stackLimit);
+            _transient = ArrayPool<double>.Shared.Rent(TransientArraySize);
+            Array.Clear(_transient, 0, TransientArraySize);
             _vsIndex = context.VsIndex;
             Width = context.IsCff2 ? 0 : context.DefaultWidthX;
+        }
+
+        public void Dispose()
+        {
+            ArrayPool<double>.Shared.Return(_stack);
+            ArrayPool<double>.Shared.Return(_transient);
         }
 
         public double Width { get; private set; }
@@ -465,7 +511,7 @@ internal static class Type2Charstring
             var charstring = _context.SeacComponent!(standardCode)
                 ?? throw new FontFormatException($"seac names Standard Encoding code {standardCode}, which the font lacks.");
 
-            var component = new Run(_context, _commands, _budget, allowSeac: false, _offsetX + dx, _offsetY + dy);
+            using var component = new Run(_context, _commands, _budget, allowSeac: false, _offsetX + dx, _offsetY + dy);
             component.Execute(charstring.Span, depth: 0);
             component.Finish();
         }
@@ -611,8 +657,8 @@ internal static class Type2Charstring
 
         private void Push(double value)
         {
-            if (_count >= _stack.Length)
-                throw new FontFormatException($"Charstring operand stack exceeds {_stack.Length} entries.");
+            if (_count >= _stackLimit)
+                throw new FontFormatException($"Charstring operand stack exceeds {_stackLimit} entries.");
 
             _stack[_count++] = value;
         }

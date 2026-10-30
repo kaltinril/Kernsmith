@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace KernSmith.Rasterizers.Native.Internal.Outlines;
 
 /// <summary>
@@ -61,7 +63,11 @@ internal static class OutlineEmboldener
             return outline;
 
         var commands = outline.Commands;
-        double area = SignedArea(commands);
+
+        // Scratch is pooled (this class is shared); a command adds at most three vertices, so
+        // no contour needs more than three per command.
+        using var scratch = new Scratch(3 * commands.Length);
+        double area = SignedArea(commands, scratch.Points);
         if (area.Equals(0d) || !double.IsFinite(area))
             return null;
 
@@ -72,22 +78,53 @@ internal static class OutlineEmboldener
         float shift = strength / 2f;
 
         var result = new OutlineCommand[commands.Length];
-        var points = new List<Point>();
         int start = 0;
         while (start < commands.Length)
         {
             int end = ContourEnd(commands, start);
 
-            points.Clear();
+            int count = 0;
             for (int i = start; i < end; i++)
-                AppendPoints(commands[i], points);
+                count = AppendPoints(commands[i], scratch.Points, count);
 
-            var offsets = OffsetContour(points, side, distance);
+            var points = scratch.Points.AsSpan(0, count);
+            var offsets = OffsetContour(points, side, distance, scratch);
             WriteContour(commands, start, end, points, offsets, shift, result);
             start = end;
         }
 
         return GlyphOutline.FromCommands(result);
+    }
+
+    /// <summary>One emboldening's pooled buffers, each long enough for any of its contours.</summary>
+    private readonly struct Scratch : IDisposable
+    {
+        public Scratch(int capacity)
+        {
+            capacity = Math.Max(capacity, 1);
+            Points = ArrayPool<Point>.Shared.Rent(capacity);
+            Offsets = ArrayPool<Point>.Shared.Rent(capacity);
+            Doubles = ArrayPool<double>.Shared.Rent(6 * capacity);
+            Ints = ArrayPool<int>.Shared.Rent(2 * capacity);
+        }
+
+        public Point[] Points { get; }
+
+        public Point[] Offsets { get; }
+
+        /// <summary>Edge directions, lengths, slides and scales: six runs of the contour's length.</summary>
+        public double[] Doubles { get; }
+
+        /// <summary>Each vertex's incoming and outgoing edge: two runs of the contour's length.</summary>
+        public int[] Ints { get; }
+
+        public void Dispose()
+        {
+            ArrayPool<Point>.Shared.Return(Points);
+            ArrayPool<Point>.Shared.Return(Offsets);
+            ArrayPool<double>.Shared.Return(Doubles);
+            ArrayPool<int>.Shared.Return(Ints);
+        }
     }
 
     private readonly record struct Point(double X, double Y);
@@ -110,44 +147,47 @@ internal static class OutlineEmboldener
         return commands.Length;
     }
 
-    /// <summary>Appends the control-polygon vertices a command contributes, in path order.</summary>
-    private static void AppendPoints(OutlineCommand command, List<Point> points)
+    /// <summary>Appends the control-polygon vertices a command contributes, in path order,
+    /// after the first <paramref name="count"/>; returns the new count.</summary>
+    private static int AppendPoints(OutlineCommand command, Point[] points, int count)
     {
         switch (command.Type)
         {
             case OutlineCommandType.MoveTo:
             case OutlineCommandType.LineTo:
-                points.Add(new Point(command.EndX, command.EndY));
+                points[count++] = new Point(command.EndX, command.EndY);
                 break;
 
             case OutlineCommandType.CubicTo:
-                points.Add(new Point(command.Ctrl1X, command.Ctrl1Y));
-                points.Add(new Point(command.Ctrl2X, command.Ctrl2Y));
-                points.Add(new Point(command.EndX, command.EndY));
+                points[count++] = new Point(command.Ctrl1X, command.Ctrl1Y);
+                points[count++] = new Point(command.Ctrl2X, command.Ctrl2Y);
+                points[count++] = new Point(command.EndX, command.EndY);
                 break;
 
                 // Close repeats the start point, which is already the first vertex.
         }
+
+        return count;
     }
 
     /// <summary>Twice the signed area of the control polygons of every contour (shoelace sum).</summary>
-    private static double SignedArea(OutlineCommand[] commands)
+    private static double SignedArea(OutlineCommand[] commands, Point[] buffer)
     {
         double total = 0;
-        var points = new List<Point>();
         int start = 0;
         while (start < commands.Length)
         {
             int end = ContourEnd(commands, start);
 
-            points.Clear();
+            int count = 0;
             for (int i = start; i < end; i++)
-                AppendPoints(commands[i], points);
+                count = AppendPoints(commands[i], buffer, count);
 
-            for (int i = 0; i < points.Count; i++)
+            var points = buffer.AsSpan(0, count);
+            for (int i = 0; i < points.Length; i++)
             {
                 var a = points[i];
-                var b = points[(i + 1) % points.Count];
+                var b = points[(i + 1) % points.Length];
                 total += (a.X * b.Y) - (b.X * a.Y);
             }
 
@@ -162,17 +202,21 @@ internal static class OutlineEmboldener
     /// neighbour takes its direction from the nearest edges that have a length, so coincident
     /// points move together and a zero-length edge never contributes a direction.
     /// </summary>
-    private static Point[] OffsetContour(List<Point> points, double side, double distance)
+    private static Span<Point> OffsetContour(ReadOnlySpan<Point> points, double side, double distance, Scratch scratch)
     {
-        int n = points.Count;
-        var offsets = new Point[n];
+        int n = points.Length;
+        var offsets = scratch.Offsets.AsSpan(0, n);
+        offsets.Clear();
         if (n < 2)
             return offsets;
 
-        // Edge i runs from vertex i to vertex i + 1 (wrapping).
-        var dirX = new double[n];
-        var dirY = new double[n];
-        var length = new double[n];
+        // Edge i runs from vertex i to vertex i + 1 (wrapping). An edge without a usable
+        // direction keeps length 0, which the passes below test for, so the runs start cleared.
+        var doubles = scratch.Doubles.AsSpan(0, 6 * n);
+        doubles.Clear();
+        var dirX = doubles.Slice(0, n);
+        var dirY = doubles.Slice(n, n);
+        var length = doubles.Slice(2 * n, n);
         bool anyEdge = false;
         for (int i = 0; i < n; i++)
         {
@@ -196,10 +240,10 @@ internal static class OutlineEmboldener
         // Each vertex's edges, and how far its offset slides it back along the incoming edge
         // and forward along the outgoing one. Only an inward corner slides into its edges; an
         // outward corner extends them, which costs nothing.
-        var incomingEdge = new int[n];
-        var outgoingEdge = new int[n];
-        var slideIn = new double[n];
-        var slideOut = new double[n];
+        var incomingEdge = scratch.Ints.AsSpan(0, n);
+        var outgoingEdge = scratch.Ints.AsSpan(n, n);
+        var slideIn = doubles.Slice(3 * n, n);
+        var slideOut = doubles.Slice(4 * n, n);
         for (int i = 0; i < n; i++)
         {
             int incoming = (i - 1 + n) % n;
@@ -221,7 +265,7 @@ internal static class OutlineEmboldener
         // An edge's two ends may together slide no further than its length, or it would turn
         // round. Where they would, both ends are pulled back in proportion; a vertex then takes
         // the tighter of its two edges' limits.
-        var edgeScale = new double[n];
+        var edgeScale = doubles.Slice(5 * n, n);
         for (int e = 0; e < n; e++)
         {
             edgeScale[e] = 1;
@@ -278,7 +322,7 @@ internal static class OutlineEmboldener
     /// <summary>Writes one contour's commands with every vertex offset and shifted.</summary>
     private static void WriteContour(
         OutlineCommand[] source, int start, int end,
-        List<Point> points, Point[] offsets, float shift, OutlineCommand[] result)
+        ReadOnlySpan<Point> points, ReadOnlySpan<Point> offsets, float shift, OutlineCommand[] result)
     {
         int vertex = 0;
         for (int i = start; i < end; i++)
@@ -289,16 +333,16 @@ internal static class OutlineEmboldener
                 case OutlineCommandType.MoveTo:
                 case OutlineCommandType.LineTo:
                     {
-                        var (x, y) = Moved(vertex++);
+                        var (x, y) = Moved(points, offsets, shift, vertex++);
                         result[i] = command with { EndX = x, EndY = y };
                         break;
                     }
 
                 case OutlineCommandType.CubicTo:
                     {
-                        var (c1x, c1y) = Moved(vertex++);
-                        var (c2x, c2y) = Moved(vertex++);
-                        var (x, y) = Moved(vertex++);
+                        var (c1x, c1y) = Moved(points, offsets, shift, vertex++);
+                        var (c2x, c2y) = Moved(points, offsets, shift, vertex++);
+                        var (x, y) = Moved(points, offsets, shift, vertex++);
                         result[i] = command with { Ctrl1X = c1x, Ctrl1Y = c1y, Ctrl2X = c2x, Ctrl2Y = c2y, EndX = x, EndY = y };
                         break;
                     }
@@ -306,15 +350,17 @@ internal static class OutlineEmboldener
                 case OutlineCommandType.Close:
                     {
                         // The closing point is the contour's start, moved with it.
-                        var (x, y) = points.Count > 0 ? Moved(0) : (command.EndX + shift, command.EndY + shift);
+                        var (x, y) = points.Length > 0 ? Moved(points, offsets, shift, 0) : (command.EndX + shift, command.EndY + shift);
                         result[i] = command with { EndX = x, EndY = y };
                         break;
                     }
             }
         }
 
-        (float X, float Y) Moved(int index) =>
-            ((float)(points[index].X + offsets[index].X) + shift,
-             (float)(points[index].Y + offsets[index].Y) + shift);
     }
+
+    /// <summary>A vertex moved by its offset and the shift.</summary>
+    private static (float X, float Y) Moved(ReadOnlySpan<Point> points, ReadOnlySpan<Point> offsets, float shift, int index) =>
+        ((float)(points[index].X + offsets[index].X) + shift,
+         (float)(points[index].Y + offsets[index].Y) + shift);
 }

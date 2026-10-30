@@ -95,6 +95,48 @@ public class NativeAllocationTests
         (allocated - kept).ShouldBeLessThan(16 * 1024, $"{allocated} B allocated, {kept} B kept");
     }
 
+    [Theory]
+    [InlineData("cff2")]
+    [InlineData("bold")]
+    public void GetGlyphMetrics_FullPath_AllocatesOnlyTheOutlinesItBuilds(string path)
+    {
+        // Paths the box shortcut does not take: a CFF2 charstring at a variable instance, and a
+        // simple glyf glyph through synthetic bold. Each builds its outline (and bold a second,
+        // emboldened one), but the charstring stacks and the emboldener's per-contour buffers
+        // are pooled scratch.
+        using var native = new NativeRasterizer();
+        var options = new RasterOptions { Size = 32 };
+        int[] codepoints;
+        if (path == "cff2")
+        {
+            var bytes = TestFonts.SourceCodeVariableOtfBytes();
+            native.LoadFont(bytes);
+            var axes = new Dictionary<string, float> { ["wght"] = 900f };
+            native.SetVariationAxes(BmFont.ReadFontInfo(bytes).VariationAxes!, axes);
+            options = options with { VariationAxes = axes };
+            codepoints = Enumerable.Range(0x21, 0x7E - 0x21 + 1).ToArray();
+        }
+        else
+        {
+            native.LoadFont(TestFonts.RobotoRegularBytes());
+            options = options with { Bold = true };
+            codepoints = SimpleAsciiGlyphs(native);
+        }
+
+        foreach (int codepoint in codepoints)
+            native.GetGlyphMetrics(codepoint, options); // warm caches and JIT
+
+        long allocated = AllocationMeter.BytesAllocatedBy(() =>
+        {
+            foreach (int codepoint in codepoints)
+                native.GetGlyphMetrics(codepoint, options);
+        });
+
+        // About 0.8 KB (CFF2) and 1.4 KB (bold) per glyph remain; the scratch was 4-5 KB more.
+        long perGlyph = allocated / codepoints.Length;
+        perGlyph.ShouldBeLessThan(2048, $"{allocated} B over {codepoints.Length} glyphs");
+    }
+
     /// <summary>Printable ASCII glyphs Roboto stores as simple (non-composite) outlines.</summary>
     private static int[] SimpleAsciiGlyphs(NativeRasterizer native)
     {
