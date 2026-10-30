@@ -71,9 +71,9 @@ Decisions made, with the why — consult before re-litigating anything. One per 
 
 - Filter by `problem.severity: recommendation`, never by rule id, so nothing CodeQL rates error or warning is ever hidden. Dropping the filter restores the style-suggestion noise that previously buried real findings.
 - No `paths-ignore` block in the config (removed in PR #197): it is inert for C# when the workflow builds, and dead config that looks load-bearing is worse than no config.
-- Generated-code alerts (`RegexGenerator.g.cs`) are dismissed "won't fix" rather than filtered — the finding is real (an unread `timeout` local) but the file is emitted by Microsoft's regex source generator on every build.
+- Generated-code alerts are removed at the source, not dismissed: no Roslyn source generator whose output trips CodeQL is used in a solution project. The regex generator (`RegexGenerator.g.cs`, `cs/useless-assignment-to-local`) is replaced by runtime `Regex` instances, and the System.Text.Json generator (`cs/useless-cast-to-self`) by hand-written `Utf8JsonWriter` code (`KernSmith.ColdStart`'s `ColdStartReport.ToJson`). Both replacements stay trim/NativeAOT/WASM safe. `CssParser` uses `RegexOptions.NonBacktracking` because CDN CSS is untrusted input and its `url(` pattern backtracks catastrophically on a long whitespace run (20,000 spaces did not finish in 30 s); that engine can split whitespace differently between a lazy group and an adjacent `\s*`, so every captured group is trimmed before use.
 - The rasterizer float-equality alerts were resolved in code (`float.Equals`, see Float Equality above) rather than dismissed, so the alert list stays at zero and a *new* float-equality alert is always signal, not known noise.
-- If generated-code noise ever grows, the real lever is the build step in `codeql.yml`, not the config file.
+- If a generator that cannot be replaced ever adds noise, the real lever is the build step in `codeql.yml`, not the config file.
 
 ## Regression Harness
 

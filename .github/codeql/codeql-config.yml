@@ -22,6 +22,8 @@ query-filters:
 # and codeql.yml builds the solution explicitly. Adding the block is inert and
 # only misleads the next reader into thinking obj/ is out of scope.
 #
-# Generated-code alerts are dismissed individually as "won't fix" instead. If
-# that ever becomes too noisy, the real lever is the build step in codeql.yml,
-# not this file.
+# Instead the repo does not use the generators whose output trips CodeQL
+# (runtime Regex instead of [GeneratedRegex], Utf8JsonWriter instead of a
+# System.Text.Json source-generated context); see project_decisions.md. If a
+# generator that cannot be replaced ever adds noise, the real lever is the
+# build step in codeql.yml, not this file.

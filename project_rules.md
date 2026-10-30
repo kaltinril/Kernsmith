@@ -53,6 +53,7 @@ Git workflow, TDD, the regression harness, context management and security live 
 - Verify PR CodeQL results on `refs/pull/N/merge`, never `/head`.
 - Keep dismissal comments under 280 characters, and surface API stderr rather than swallowing it.
 - Do not re-add a `paths-ignore` block to the CodeQL config — it is inert for C# here.
+- Do not add `[GeneratedRegex]` or a System.Text.Json `JsonSerializerContext`: use a runtime `Regex` (`NonBacktracking` for untrusted input) or a `Utf8JsonWriter`. See CodeQL Configuration in `project_decisions.md`.
 - A float comparison that must be exact uses `float.Equals`, never an epsilon — see Float Equality in `project_decisions.md` before touching one.
 
 ## Working Style
