@@ -28,6 +28,13 @@ namespace KernSmith.Rasterizers.Native.Internal.Hinting;
 /// cannot make an outline intersect itself, which per-contour interpolation cannot promise.
 /// X coordinates are never touched, so advances and horizontal positions are unchanged.
 /// </para>
+/// <para>
+/// INVARIANT: no placed edge moves more than <see cref="MaxShift"/> (one pixel). Every other
+/// point moves by a blend of two neighbouring edges' shifts, or with the nearest end, so no
+/// point moves further — light hinting snaps a glyph to the grid, it does not reshape it. A
+/// placement that would need more (a stroke stacked on a stroke that already moved, a zone
+/// or rounding that pulls a feature a pixel or more) is refused and the edge is interpolated.
+/// </para>
 /// </remarks>
 internal static class GridFitter
 {
@@ -39,6 +46,15 @@ internal static class GridFitter
 
     /// <summary>Adjacent horizontal runs closer than this in height are one edge.</summary>
     private const float MergeTolerance = 0.25f;
+
+    /// <summary>The furthest, in pixels, fitting may move an edge from its unhinted height.</summary>
+    private const float MaxShift = 1f;
+
+    /// <summary>
+    /// The furthest, in pixels, a stroke may be from the font's standard thickness and still be
+    /// fitted as one: past that it is a different stroke, and its own width is rounded.
+    /// </summary>
+    private const float MaxStandardStemDeviation = 0.5f;
 
     /// <summary>
     /// Fits an outline to the pixel grid.
@@ -153,11 +169,15 @@ internal static class GridFitter
 
     /// <summary>
     /// A stroke's fitted thickness: whole pixels, at least one, rounded from the font's standard
-    /// thickness when the stroke is close to it so equal strokes stay equal.
+    /// thickness when the stroke is close to it so equal strokes stay equal. Close is relative
+    /// to the standard, but never more than <see cref="MaxStandardStemDeviation"/>: at large
+    /// sizes a percentage of the standard spans pixels, and fitting a visibly thinner stroke
+    /// at the standard width moves its edges by a pixel or more.
     /// </summary>
     private static float StemWidth(float width, float standard)
     {
-        float basis = standard > 0f && MathF.Abs(width - standard) <= 0.1f + (0.15f * standard) ? standard : width;
+        float tolerance = MathF.Min(0.1f + (0.15f * standard), MaxStandardStemDeviation);
+        float basis = standard > 0f && MathF.Abs(width - standard) <= tolerance ? standard : width;
         return MathF.Max(1f, GridMath.Round(basis));
     }
 
@@ -674,11 +694,18 @@ internal static class GridFitter
         public bool TryAdd(float from1, float to1, float from2, float to2) => TryAdd([(from1, to1), (from2, to2)], zone: false);
 
         /// <summary>
-        /// Adds the keys together, or none of them when that would bring two fitted heights
-        /// closer than half their original distance (capped at half a pixel) or reorder them.
+        /// Adds the keys together, or none of them when one would move its height more than
+        /// <see cref="MaxShift"/>, or bring two fitted heights closer than half their original
+        /// distance (capped at half a pixel) or reorder them.
         /// </summary>
         private bool TryAdd(ReadOnlySpan<(float From, float To)> keys, bool zone)
         {
+            foreach (var (f, t) in keys)
+            {
+                if (MathF.Abs(t - f) > MaxShift)
+                    return false;
+            }
+
             var from = new List<float>(_from);
             var to = new List<float>(_to);
             var zones = new List<bool>(_zone);

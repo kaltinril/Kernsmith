@@ -117,13 +117,15 @@ fits the outline vertically only:
 - **Blue zones** — baseline, x-height, cap height, ascender and descender, with the overshoot
   of round glyphs, measured from 'x', 'o', 'H', 'O', 'd' and 'p' after any synthetic style or
   variation instance (`OS/2` `sxHeight`/`sCapHeight` stand in when 'x'/'H' are missing). Edges
-  in a zone snap to its pixel line; overshoots under half a pixel snap with the flat glyphs, and
-  top zones round up from a third of a pixel.
+  in a zone, or at most half a pixel outside it, snap to its pixel line; overshoots under half a
+  pixel snap with the flat glyphs, and top zones round up from a third of a pixel.
 - **Strokes** — a horizontal stroke (a bottom edge paired with the top edge above it) gets a
-  whole-pixel thickness, at least one pixel, rounded from the font's standard stroke when close
-  to it; remaining flat edges round to the nearest row.
+  whole-pixel thickness, at least one pixel, rounded from the font's standard stroke when within
+  half a pixel of it; remaining flat edges round to the nearest row.
 - **Everything else** moves by one monotone interpolation between the fitted edges, so the
   outline cannot fold over itself. X is untouched: advances and side bearings match unhinted.
+- **No point moves more than one pixel**: a fit that would move an edge further is skipped and
+  the edge is interpolated instead, so hinting snaps a glyph to the grid without reshaping it.
 
 It applies to TrueType and CFF outlines and to `COLR` version 0 layers and version 1 glyph clips.
 Every other request, including the default (`Grayscale` with `EnableHinting` true), `Lcd` and
