@@ -206,22 +206,22 @@ internal static class Scanlines
                 return;
 
             case PngColorType.Indexed when depth == 8 && pass.StepX == 1:
-            {
-                // A palette entry is four RGBA bytes, so each pixel is one 4-byte copy; reading
-                // and writing both as uint keeps the byte order whatever the platform's.
-                var entryWords = MemoryMarshal.Cast<byte, uint>(format.Palette!);
-                var targetWords = MemoryMarshal.Cast<byte, uint>(rgba.AsSpan(target, count * 4));
-                int paletteEntries = format.PaletteCount;
-                for (int x = 0; x < count; x++)
                 {
-                    int index = row[x];
-                    if (index >= paletteEntries)
-                        throw new PngFormatException($"The PNG uses palette index {index}, but its PLTE has only {paletteEntries} entries.");
-                    targetWords[x] = entryWords[index];
-                }
+                    // A palette entry is four RGBA bytes, so each pixel is one 4-byte copy; reading
+                    // and writing both as uint keeps the byte order whatever the platform's.
+                    var entryWords = MemoryMarshal.Cast<byte, uint>(format.Palette!);
+                    var targetWords = MemoryMarshal.Cast<byte, uint>(rgba.AsSpan(target, count * 4));
+                    int paletteEntries = format.PaletteCount;
+                    for (int x = 0; x < count; x++)
+                    {
+                        int index = row[x];
+                        if (index >= paletteEntries)
+                            throw new PngFormatException($"The PNG uses palette index {index}, but its PLTE has only {paletteEntries} entries.");
+                        targetWords[x] = entryWords[index];
+                    }
 
-                return;
-            }
+                    return;
+                }
 
             default: // Indexed
                 var palette = format.Palette!;
