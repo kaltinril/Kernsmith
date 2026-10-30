@@ -67,7 +67,7 @@ internal sealed class GlyphPipeline
         // 3. Bounds, and 4. scale: the box lands on the pixel grid with the baseline on row 0,
         // its own Y origin placing the bitmap against it.
         var box = GlyphBox.Compute(glyph.Outline, glyph.DeclaredBounds, scale);
-        int advance = (int)Math.Round(glyph.AdvanceWidth * (double)scale);
+        int advance = PixelAdvance(glyph.AdvanceWidth, scale);
         GlyphLimits.EnsureGlyphBox(glyphIndex, box.Width, box.Height, options);
         var prepared = new PreparedGlyph(glyph.Outline, new OutlineTransform(scale, 0f), box, advance) { GlyphIndex = glyphIndex };
 
@@ -98,7 +98,7 @@ internal sealed class GlyphPipeline
             return false;
 
         float scale = PixelScale(options, _unitsPerEm);
-        advance = (int)Math.Round(bounds.AdvanceWidth * (double)scale);
+        advance = PixelAdvance(bounds.AdvanceWidth, scale);
         if (bounds.IsEmpty)
             return true;
 
@@ -114,6 +114,16 @@ internal sealed class GlyphPipeline
         GlyphLimits.EnsureGlyphBox(glyphIndex, box.Width, box.Height, options);
         return true;
     }
+
+    /// <summary>
+    /// An advance in font units on the pixel grid, rounded once to the nearest pixel with an
+    /// exact half pixel rounding away from zero (up, for any real advance), as FreeType's does:
+    /// ties-to-even would give 10 for a 10.5 px advance where FreeType gives 11.
+    /// <see cref="Prepare"/> and <see cref="TryPrepareBox"/> must both use it, or metrics and
+    /// rendering disagree at ties.
+    /// </summary>
+    internal static int PixelAdvance(float advanceWidth, float scale) =>
+        (int)Math.Round(advanceWidth * (double)scale, MidpointRounding.AwayFromZero);
 
     /// <summary>A non-empty outline with an all-zero hull; see <see cref="TryPrepareBox"/>.</summary>
     private static readonly GlyphOutline DeclaredBoxProbe = new([OutlineCommand.Move(0f, 0f)], 0f, 0f, 0f, 0f);
