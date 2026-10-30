@@ -329,8 +329,24 @@ public static class BmfcConfigReader
                             _ => OutlineShape.Round
                         };
                         break;
+                    case "outlineMode":
+                        options.OutlineMode = value.Equals("vector", StringComparison.OrdinalIgnoreCase)
+                            ? OutlineMode.Vector
+                            : OutlineMode.Effect;
+                        break;
+                    case "widthPercent":
+                        options.WidthPercent = int.Parse(value, CultureInfo.InvariantCulture);
+                        break;
+                    case "italicAngle":
+                        options.ItalicAngle = float.Parse(value, CultureInfo.InvariantCulture);
+                        break;
                     case "useSdf":
                         options.Sdf = value == "1";
+                        break;
+                    case "sdfMode":
+                        options.SdfMode = Enum.TryParse<SdfMode>(value, ignoreCase: true, out var sdfMode) && Enum.IsDefined(sdfMode)
+                            ? sdfMode
+                            : SdfMode.None;
                         break;
                     // Retained for configs written before `aa` carried the supersample factor.
                     case "superSample":
@@ -348,6 +364,18 @@ public static class BmfcConfigReader
                             "lcd" => AntiAliasMode.Lcd,
                             _ => options.AntiAlias
                         };
+                        break;
+                    case "lcdFilter":
+                        options.LcdFilter = Enum.TryParse<LcdFilter>(value, ignoreCase: true, out var lcdFilter)
+                            && Enum.IsDefined(lcdFilter)
+                            ? lcdFilter
+                            : LcdFilter.Default;
+                        break;
+                    case "lcdOrder":
+                        options.LcdSubpixelOrder = Enum.TryParse<LcdSubpixelOrder>(value, ignoreCase: true, out var lcdOrder)
+                            && Enum.IsDefined(lcdOrder)
+                            ? lcdOrder
+                            : LcdSubpixelOrder.Rgb;
                         break;
                     case "shadowOpacity":
                         options.ShadowOpacity = float.Parse(value, CultureInfo.InvariantCulture);

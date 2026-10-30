@@ -93,6 +93,7 @@ non-default features were used.
 |--------|------|-------------|
 | `GeneratorVersion` | `string` | KernSmith version that produced the font (required). |
 | `SdfSpread` | `int?` | SDF spread, if SDF mode was used. |
+| `SdfMode` | `SdfMode?` | `Msdf` or `Mtsdf` for multi-channel fonts; null for single-channel SDF and plain bitmaps. |
 | `OutlineThickness` | `float?` | Outline thickness, if an outline was applied. |
 | `GradientTopColor` / `GradientBottomColor` | `string?` | Gradient colors as hex RGB (e.g. `"FFD700"`). |
 | `ShadowOffsetX` / `ShadowOffsetY` | `int?` | Shadow offset, if a shadow was applied. |

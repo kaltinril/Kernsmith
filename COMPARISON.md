@@ -31,9 +31,9 @@ How does KernSmith compare to other bitmap font generators?
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | **TTF/OTF** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **WOFF** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **WOFF2** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **WOFF2** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **Variable Fonts** | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| **Color Fonts (COLR/CPAL)** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Color Fonts (COLR/CPAL, CBDT/sbix)** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **Emoji** | ⚠️ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **System Font Discovery** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ |
 | **Byte Stream Input** | ✅ | ❌ | ❌ | ⚠️ | ❌ | ❌ | ❌ |
@@ -47,9 +47,9 @@ How does KernSmith compare to other bitmap font generators?
 | **Anti-Aliasing** | 4 modes | Multiple modes | Basic | N/A | Basic | Basic | Basic |
 | **Super Sampling** | 1-4x | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **SDF** | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| **MSDF** | 🔜 | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| **MSDF** | ⚠️ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | **Hinting Control** | ✅ | ⚠️ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **MTSDF** | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| **MTSDF** | ⚠️ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 
 ## Effects
 
@@ -220,23 +220,28 @@ Native's platform rows follow from it being pure managed code with no native dep
 | | FreeType | GDI | DirectWrite | StbTrueType | Native |
 |---|:---:|:---:|:---:|:---:|:---:|
 | **TTF** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **OTF (CFF)** | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **OTF (CFF)** | ✅ | ✅ | ✅ | ✅ (not CFF2) | ✅ |
 | **WOFF** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **WOFF2** | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **WOFF2** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **TTC (font collections)** | ✅ | ❌ | ✅ | ✅ | ✅ |
-| **Anti-aliasing** | Grayscale, Light, LCD, None | Grayscale, None | None, Grayscale | Grayscale, None | Grayscale, None |
-| **SDF Rendering** | ✅ | ❌ | ❌ | ✅ | ❌ |
-| **Hinting** | ✅ | ✅ | ✅ | ❌ | ❌ |
-| **Synthetic Bold** | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **Synthetic Italic** | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **Outline Stroke** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Anti-aliasing** | Grayscale, Light, LCD, None | Grayscale, None | None, Grayscale | Grayscale, None | Grayscale, Light, LCD, None |
+| **LCD subpixel order / filter** | ❌ | ❌ | ❌ | ❌ | ✅ (RGB, BGR, vertical; 4 filters) |
+| **SDF Rendering** | ✅ | ❌ | ❌ | ✅ | ✅ |
+| **MSDF / MTSDF** | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **Hinting** | ✅ | ✅ | ✅ | ❌ | ⚠️ |
+| **Synthetic Bold** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Synthetic Italic** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Vector Outline** (`OutlineMode.Vector`) | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **Synthetic Width / Italic Angle** | ❌ | ❌ | ❌ | ❌ | ✅ |
 | **Super Sampling** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Color Fonts (COLR/CPAL)** | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Variable Fonts** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Color Fonts** | ✅ (COLR v0, CBDT/sbix) | ❌ | ❌ | ❌ | ✅ (COLR v0 + v1, CBDT/sbix) |
+| **Variable Fonts** | ✅ | ❌ | ❌ | ❌ | ✅ |
 | **System Font Loading** | ❌ | ✅ | ✅ | ❌ | ❌ |
 | **BMFont.exe Parity** | ❌ | ✅ | ❌ | ❌ | ❌ |
 
-WOFF1 is decompressed by KernSmith core before rasterization, so all backends accept it for fonts whose outlines they otherwise support (StbTrueType and Native still require TrueType `glyf` outlines inside the WOFF). WOFF2 is not yet supported.
+WOFF and WOFF2 are decompressed by KernSmith core before rasterization (WOFF2 with a pure managed Brotli decoder), so all backends accept them for fonts whose outlines they otherwise support (StbTrueType reads TrueType and CFF outlines inside them, but not CFF2).
+
+Native's hinting is ⚠️: its own vertical-only auto-hinter runs for `Light` anti-aliasing; it has no TrueType bytecode interpreter, and other modes are unhinted. FreeType's color support covers `COLR` version 0 and bitmap color fonts (`CBDT`/`sbix`, returned at the strike's own size); it renders `COLR` version 1 glyphs as plain grayscale. Native covers `COLR` versions 0 and 1 and scales `CBDT`/`sbix` bitmaps to the requested size. Outlines (`Outline`) work on every backend as core's bitmap effect; `OutlineMode.Vector` is drawn by the backend only where it is ✅, and a non-default `WidthPercent` or `ItalicAngle` throws `NotSupportedException` elsewhere. Super sampling skips LCD output, which always renders at the final size. Native's unhinted grayscale output measures a mean SSIM of 0.988 or better per font and size against both FreeType and StbTrueType.
 
 ### When to Use
 
@@ -244,7 +249,7 @@ WOFF1 is decompressed by KernSmith core before rasterization, so all backends ac
 - **GDI** -- Pixel-perfect BMFont.exe compatibility on Windows. Use for validating against BMFont reference output.
 - **DirectWrite** -- Windows system-font loading with ClearType-hinted grayscale rendering. High-quality Windows text output. (For color fonts or variable fonts, use FreeType.)
 - **StbTrueType** -- Blazor WASM, NativeAOT, consoles, Mac Catalyst, iOS, or anywhere native libraries are unavailable. Pure C#, zero dependencies.
-- **Native** -- Experimental. Plain TrueType text with no third-party code at all, when you are building from source and can live without hinting, SDF, stroke, or synthetic styles. Not published to NuGet; use StbTrueType for shipping managed-only builds.
+- **Native** -- Experimental. KernSmith's own pure C# rasterizer: TrueType and OpenType (CFF/CFF2), variable fonts, `COLR` and bitmap color fonts, SDF, and the only multi-channel MSDF/MTSDF, vector outlines and synthetic width/italic angle, with no third-party code at all, when you are building from source and can live with light-only hinting. Not published to NuGet; use StbTrueType for shipping managed-only builds.
 
 ## Tool Descriptions
 

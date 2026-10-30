@@ -1,6 +1,6 @@
 # KernSmith -- Testing Strategy
 
-> Part of the [Master Plan](master-plan.md).
+> Part of the [Master Plan](../master-plan.md).
 > Related: [Project Structure](plan-project-structure.md), [API Design](plan-api-design.md)
 
 All data types are defined in [plan-data-types.md](plan-data-types.md). Error types are defined in the "Error Handling Strategy" section of that document.

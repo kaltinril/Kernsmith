@@ -155,14 +155,26 @@ public static class BmfcConfigWriter
             extensions.AppendLine($"outlineColor={FormatColor(options.OutlineR, options.OutlineG, options.OutlineB)}");
         if (options.Outline > 0 && options.OutlineShape != OutlineShape.Round)
             extensions.AppendLine($"outlineShape={options.OutlineShape.ToString().ToLowerInvariant()}");
+        if (options.OutlineMode != OutlineMode.Effect)
+            extensions.AppendLine($"outlineMode={options.OutlineMode.ToString().ToLowerInvariant()}");
+        if (options.WidthPercent != 100)
+            extensions.AppendLine($"widthPercent={options.WidthPercent}");
+        if (!options.ItalicAngle.Equals(12f))
+            extensions.AppendLine($"italicAngle={options.ItalicAngle.ToString(CultureInfo.InvariantCulture)}");
         if (options.Sdf)
             extensions.AppendLine("useSdf=1");
         if (options.SdfScale != 1)
             extensions.AppendLine($"sdfScale={options.SdfScale}");
+        if (options.SdfMode != SdfMode.None)
+            extensions.AppendLine($"sdfMode={options.SdfMode.ToString().ToLowerInvariant()}");
         // None is already conveyed by useSmoothing=0 and Grayscale is the default, so only the
         // two modes the standard keys cannot express need an extension.
         if (options.AntiAlias is AntiAliasMode.Light or AntiAliasMode.Lcd)
             extensions.AppendLine($"antiAlias={options.AntiAlias.ToString().ToLowerInvariant()}");
+        if (options.LcdFilter != LcdFilter.Default)
+            extensions.AppendLine($"lcdFilter={options.LcdFilter.ToString().ToLowerInvariant()}");
+        if (options.LcdSubpixelOrder != LcdSubpixelOrder.Rgb)
+            extensions.AppendLine($"lcdOrder={options.LcdSubpixelOrder.ToString().ToLowerInvariant()}");
         if (options.ShadowOpacity != 1.0f)
             extensions.AppendLine($"shadowOpacity={options.ShadowOpacity.ToString(CultureInfo.InvariantCulture)}");
         if (options.HardShadow)

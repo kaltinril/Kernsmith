@@ -416,6 +416,59 @@ public class ScanlineRasterizerTests
         result.Bitmap[0].ShouldBe((byte)0);
     }
 
+    // ---------------------------------------------------------------- allocation and bands
+
+    [Theory]
+    [InlineData(AntiAliasMode.Grayscale)]
+    [InlineData(AntiAliasMode.Light)]
+    [InlineData(AntiAliasMode.None)]
+    public void Rasterize_AllocatesNothingButTheOutputBitmap(AntiAliasMode antiAlias)
+    {
+        // The fill runs once per glyph, so any scratch it allocates is per-glyph garbage. Only
+        // the returned bitmap and its RasterResult wrapper may come off the heap; the delta
+        // buffer and None's dropout-control scratch are pooled.
+        var (edges, originX, originY) = GlyphEdges('O', 96f);
+        const int width = 80, height = 90;
+        ScanlineRasterizer.Rasterize(edges, width, height, originX, originY, antiAlias); // warm the pool
+
+        RasterResult result = null!;
+        long allocated = AllocationMeter.BytesAllocatedBy(() => result = ScanlineRasterizer.Rasterize(edges, width, height, originX, originY, antiAlias));
+
+        result.Bitmap.ShouldContain(v => v > 0);
+        allocated.ShouldBeLessThanOrEqualTo(width * height + 128, "scratch allocated per glyph");
+    }
+
+    [Fact]
+    public void BitmapTallerThanOneBand_RendersSeamlessly()
+    {
+        // A 45 degree triangle far larger than the delta buffer's band: every diagonal pixel is
+        // cut exactly in half on every row, whichever band the row falls in, and the total
+        // area is exact.
+        const int size = 1200;
+        var edges = new[]
+        {
+            new EdgeSegment(0f, 0f, size, size),
+            new EdgeSegment(size, size, 0f, size),
+            new EdgeSegment(0f, size, 0f, 0f),
+        };
+
+        var bitmap = Render(size, size, edges);
+
+        double total = 0;
+        for (int y = 0; y < size; y++)
+        {
+            ((int)bitmap[(y * size) + y]).ShouldBeInRange(127, 128, $"diagonal pixel on row {y}");
+            if (y > 0)
+                bitmap[(y * size) + y - 1].ShouldBe((byte)255, $"solid pixel on row {y}");
+            if (y < size - 1)
+                bitmap[(y * size) + y + 1].ShouldBe((byte)0, $"empty pixel on row {y}");
+            for (int x = 0; x < size; x++)
+                total += bitmap[(y * size) + x] / 255.0;
+        }
+
+        total.ShouldBe(size * size / 2.0, size * 0.01);
+    }
+
     // ---------------------------------------------------------------- helpers
 
     private static byte[] Render(int width, int height, EdgeSegment[] edges, AntiAliasMode antiAlias = AntiAliasMode.Grayscale) =>

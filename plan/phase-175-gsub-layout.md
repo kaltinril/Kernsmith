@@ -1,79 +1,37 @@
 # Phase 175 — Native Rasterizer: Basic GSUB Layout Features
 
-> **Status**: Future
+> **Status**: Deferred — awaiting Jeremy's later decision on scope and home (see Open question); not scheduled
 > **Created**: 2026-04-01
-> **Depends on**: Phase 165 (IRasterizer integration)
+> **Depends on**: Phase 166 Part 1 (decoder by glyph index)
 
 ## Goal
 
-Implement basic GSUB (Glyph Substitution) features so the Native rasterizer can handle common ligatures and glyph alternates without relying on external shaping libraries.
+Basic GSUB substitutions (ligatures, single substitution) without an external shaper.
 
-## Background
+## Open question (decide before any work)
 
-GSUB defines rules for substituting glyphs based on context. For Latin/Cyrillic/Greek text, the most important features are ligatures (fi, fl, ffi, ffl) and contextual alternates. Full complex script shaping (Arabic, Devanagari, etc.) requires a complete shaper like HarfBuzz — that is out of scope.
+The rasterizer is the wrong layer as currently specified:
 
-Note: GSUB is typically handled by the font reading layer, not the rasterizer. However, since the Native rasterizer has its own font parser, basic GSUB support here means it can self-serve common substitutions.
+- `IRasterizer.RasterizeAll` takes a list of **codepoints**, and every BMFont char id is a codepoint. A ligature glyph (`fi`) has no codepoint of its own, so it has no natural slot in the atlas or the `.fnt`.
+- Substitution depends on the text being laid out, which the rasterizer never sees.
 
-## Scope
+Options, for Jeremy to choose:
 
-### Coverage Table Parser
-- Format 1: individual glyph list
-- Format 2: range records (startGlyph, endGlyph, startCoverageIndex)
+1. **Core text layout** — GSUB belongs with core's text layout engine (Phase 105) and the shared font parser, not a backend. Ligature glyphs would need a glyph-id-addressed atlas entry plus a `.fnt` extension (or private-use codepoints) to be addressable.
+2. **Rasterize-by-glyph-index** — add an `IRasterizer` path that renders a glyph index, so core can request substituted glyphs from any backend.
+3. **Drop** — BMFont output is codepoint-keyed; substitution is the consumer's shaping job.
 
-### GSUB Lookup Types (Subset)
+The parsing work below is reusable under options 1 and 2.
 
-**Type 1 — Single Substitution**: Replace one glyph with another
-- Format 1: replace by adding delta to glyph ID
-- Format 2: replace by direct mapping array
+## Scope (if pursued)
 
-**Type 4 — Ligature Substitution**: Replace sequence of glyphs with one
-- Coverage on first glyph, then match subsequent glyphs
-- e.g., 'f' + 'i' → 'fi' ligature glyph
+- Coverage tables (formats 1 and 2)
+- Lookup type 1 (single substitution, formats 1 and 2) and type 4 (ligature substitution); type 7 (extension) wrapper since many fonts use it
+- ScriptList/FeatureList/LookupList; default script `DFLT`/`latn`; features `ccmp` then `liga`
+- Out of scope: types 2, 3, 5, 6, 8, complex scripts, RTL, full feature negotiation
 
-### Feature List Parser
-- Parse feature records: tag + lookup list indices
-- Support features: `liga` (standard ligatures), `ccmp` (glyph composition/decomposition)
-- Note: `calt` (contextual alternates) requires Lookup Type 6 (Chaining Contextual), which is out of scope for this phase. Add `calt` support when Type 5/6 lookups are implemented.
+## Testing (if pursued)
 
-### Script/Language Selection
-- Parse script list and language system records
-- Default script selection: find 'latn' (Latin) or 'DFLT' (default)
-- Apply features in standard order: ccmp, liga
+- `f`+`i` → ligature glyph in a font that has it; single substitution; `ccmp` before `liga`; fonts without GSUB are a no-op; both coverage formats
 
-### Feature Processing
-
-Given a sequence of glyph indices:
-1. Apply `ccmp` lookups (composition/decomposition)
-2. Apply `liga` lookups (ligature substitution)
-3. Return modified glyph sequence
-
-### Integration
-
-- GSUB processing happens in the `RasterizeAll` path
-- Before rasterizing individual glyphs, run GSUB on the codepoint list
-- The substituted glyph indices go to the rasterizer
-- Note: this only works when the caller provides the text sequence, not individual codepoints
-
-### Out of Scope
-
-- Lookup Types 2 (multiple substitution), 3 (alternate substitution), 5/6 (contextual/chaining contextual), 7 (extension), 8 (reverse chaining)
-- Complex script features (Arabic: init/medi/fina/isol, Devanagari: half forms, etc.)
-- Full OpenType feature negotiation
-- Right-to-left processing
-
-## Testing
-
-- Ligature: 'f'+'i' → fi ligature glyph (in fonts that have it)
-- Single substitution: verify glyph replacement
-- Feature ordering: verify ccmp applied before liga
-- No-op: verify fonts without GSUB features handled gracefully
-- Coverage formats: test both Format 1 and Format 2
-
-## Success Criteria
-
-- [ ] Coverage tables parsed (Format 1, 2)
-- [ ] Single substitution (Type 1) works
-- [ ] Ligature substitution (Type 4) works
-- [ ] Feature list parsed, correct features selected
-- [ ] Standard feature order applied (ccmp → liga)
-- [ ] All tests pass
+**Regression coverage**: depends on the option chosen — a `.bmfc` that requests ligatures exists only if a config surface is added.

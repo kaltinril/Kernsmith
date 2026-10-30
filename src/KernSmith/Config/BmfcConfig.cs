@@ -11,7 +11,7 @@ public sealed class BmfcConfig
     /// <summary>Font generation options parsed from the .bmfc file.</summary>
     public FontGeneratorOptions Options { get; set; } = new();
 
-    /// <summary>Path to a font file (TTF/OTF/WOFF), if specified in the config.</summary>
+    /// <summary>Path to a font file (TTF/OTF/WOFF/WOFF2), if specified in the config.</summary>
     public string? FontFile { get; set; }
 
     /// <summary>System font family name, if specified in the config.</summary>

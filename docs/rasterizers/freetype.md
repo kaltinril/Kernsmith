@@ -35,22 +35,24 @@ var options = new FontGeneratorOptions
 
 ## Capabilities
 
-- TTF, OTF, WOFF input
-- Color fonts (COLR/CPAL)
+- TTF, OTF, WOFF, WOFF2 input
+- Color fonts: `COLR` version 0 layers with `CPAL` palettes, and `CBDT`/`sbix` bitmap color fonts such as Noto Color Emoji (`COLR` version 1 glyphs render as plain grayscale)
 - Variable font axes (fvar)
 - Hinting and anti-aliasing (None, Grayscale, Light, Lcd modes)
 - SDF (Signed Distance Field) rendering
-- Outline stroke
 - Synthetic bold and italic
 - Super sampling
 - Fractional font sizes (e.g. `Size = 32.5f`) honored natively
 
-FreeType is the only backend that implements COLR/CPAL color glyphs and fvar variable font axes.
+FreeType is the only published backend that implements COLR/CPAL color glyphs and fvar variable font axes (the experimental [Native](native.md) backend renders `COLR` version 0 and 1, `CBDT`/`sbix` color glyphs and variable fonts too).
 
 ## Limitations
 
-- Does not load WOFF2 input -- decompress to TTF/OTF/WOFF first
 - Cannot load system-installed fonts by family name -- provide font file bytes directly
+- `Lcd` output is FreeType's raw LCD buffer, three bytes per pixel, so LCD glyphs land three times as wide in the atlas
+- Color glyphs come back premultiplied but are treated as straight alpha, so colored edges come out slightly darker
+- `CBDT`/`sbix` bitmap glyphs come back at the strike's own size, not scaled to the requested size
+- No vector outlines (`OutlineMode.Vector` falls back to core's bitmap outline effect, which works as usual), and no `WidthPercent` or non-default `ItalicAngle` (`NotSupportedException`)
 
 ## When to Use
 

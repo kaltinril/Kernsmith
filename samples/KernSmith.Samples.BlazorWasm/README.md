@@ -1,6 +1,6 @@
 # KernSmith Blazor WASM Sample
 
-Demonstrates bitmap font generation running entirely client-side in the browser using the StbTrueType rasterizer backend.
+Demonstrates bitmap font generation running entirely client-side in the browser using the pure-C# StbTrueType or Native (experimental) rasterizer backend.
 
 ## Running Locally
 
@@ -21,6 +21,10 @@ dotnet serve -d samples/KernSmith.Samples.BlazorWasm/bin/Release/net10.0/publish
 
 Open http://localhost:5050 in your browser.
 
+To generate without a click (e.g. from a headless browser), put a font under `wwwroot` and pass it in the query string: `http://localhost:5050/?backend=native&font=fonts/Roboto-Regular.ttf` fetches the font and generates with the chosen backend (`stbtruetype` or `native`).
+
+To publish without the `wasm-tools` workload, add `-p:RunAOTCompilation=false` (interpreted).
+
 AOT compilation requires the `wasm-tools` workload:
 
 ```
@@ -29,11 +33,11 @@ dotnet workload install wasm-tools
 
 ## What It Demonstrates
 
-- **Automated checks**: Verifies StbTrueType registers, FreeType is absent, capabilities report correctly, system font provider doesn't crash
-- **Font generation**: Upload a TTF file, generate a bitmap font with configurable size and SDF option, preview the atlas, download .fnt and .png
+- **Automated checks**: Verifies StbTrueType and Native register, FreeType is absent, capabilities report correctly, system font provider doesn't crash
+- **Font generation**: Upload a TTF, OTF, WOFF, or WOFF2 file, generate a bitmap font with a chosen backend, size and SDF option, preview the atlas, download .fnt and .png
 - **Zero native dependencies**: Runs entirely on managed C# code — no FreeType, no P/Invoke
 
-## Performance (Roboto-Regular, 32px, ASCII)
+## Performance (StbTrueType, Roboto-Regular, 32px, ASCII)
 
 | Mode | Interpreter | AOT (first load) | AOT (warm) |
 |------|-------------|-------------------|------------|
@@ -45,7 +49,7 @@ AOT compilation is strongly recommended for production use. The browser caches c
 ## WASM Limitations
 
 - **No system font loading** — use `LoadFont()` with font bytes or `BmFont.RegisterFont()`
-- **No FreeType backend** — only StbTrueType is available (pure C#)
+- **No FreeType backend** — only the pure-C# StbTrueType and Native backends work
 - **File I/O** — `ToFile()` is unavailable; use in-memory APIs (`FntText`, `GetPngData()`)
 - **Single-threaded** — batch generation parallelism is automatically disabled
 - **Memory** — default WASM heap is ~127 MB; large CJK fonts may require subsetting
@@ -54,7 +58,7 @@ AOT compilation is strongly recommended for production use. The browser caches c
 
 | File | Purpose |
 |------|---------|
-| `Program.cs` | Forces StbTrueType assembly load to prevent trimming |
+| `Program.cs` | Registers StbTrueType and Native explicitly (a trimmed publish drops backend assemblies nothing references, so auto-discovery finds none) |
 | `Pages/Index.razor` | Validation checks + font generation UI |
 | `wwwroot/index.html` | Host page with JS download helper |
 

@@ -162,6 +162,89 @@ public class CliTests : IDisposable
         stderr.ShouldContain("Unknown option: --bogus-flag");
     }
 
+    [Fact]
+    public void Generate_BackendRejectsFont_PrintsOneLineErrorWithBackendName()
+    {
+        // A CBDT-only color font has no outlines for Native to compute a distance field from, so
+        // an SDF request without color is refused. That is an expected user error, not a crash.
+        var emojiPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "NotoColorEmoji.ttf");
+
+        // Act
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", emojiPath, "-s", "32", "--rasterizer", "native", "--sdf",
+            "-o", Path.Combine(_tempDir, "emoji"), "--no-color");
+
+        // Assert
+        exitCode.ShouldBe(4, $"stderr: {stderr}");
+        stderr.ShouldNotContain("Unhandled exception", Case.Sensitive);
+        stderr.Trim().ShouldNotContain('\n');
+        stderr.ShouldContain("native", Case.Sensitive);
+        stderr.ShouldContain("color bitmaps", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_NativeColorBitmapFont_WritesAColorAtlas()
+    {
+        var emojiPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "NotoColorEmoji.ttf");
+        var output = Path.Combine(_tempDir, "emoji-color");
+
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", emojiPath, "-s", "32", "--rasterizer", "native", "--color-font",
+            "--chars", "\U0001F600❤", "-o", output, "--no-color");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        File.Exists(output + ".fnt").ShouldBeTrue();
+        File.Exists(output + "_0.png").ShouldBeTrue();
+    }
+
+    [Theory]
+    [InlineData("native", "99")]
+    [InlineData("native", "-1")]
+    [InlineData("freetype", "99")]
+    public void Generate_ColorPaletteTheFontLacks_IsAGenerationError(string rasterizer, string palette)
+    {
+        // Whether a palette index exists depends on the font's CPAL table, so a bad one is the
+        // backend rejecting an option for this font -- exit 4 like every other such rejection.
+        var colorFont = Path.Combine(AppContext.BaseDirectory, "Fixtures", "Color", "BungeeColor-Regular.ttf");
+
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", colorFont, "-s", "32", "--rasterizer", rasterizer, "--color-font",
+            "--color-palette", palette, "-o", Path.Combine(_tempDir, "palette"), "--no-color");
+
+        exitCode.ShouldBe(4, $"stderr: {stderr}");
+        stderr.ShouldNotContain("Unhandled exception", Case.Sensitive);
+        stderr.ShouldContain($"Generation error ({rasterizer} rasterizer)", Case.Sensitive);
+        stderr.ShouldContain("palette", Case.Sensitive);
+    }
+
+    [Fact]
+    public void GenerateHelp_ColorFont_NamesEveryColorFormat()
+    {
+        var (exitCode, stdout, _) = RunCli("generate", "--help");
+
+        exitCode.ShouldBe(0);
+        stdout.ShouldContain("COLR/CPAL layers, CBDT/sbix bitmaps", Case.Sensitive);
+        stdout.ShouldNotContain("(COLR/CPAL)", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_BackendDeclinesOption_PrintsOneLineErrorWithBackendName()
+    {
+        // StbTrueType throws NotSupportedException for a color-font request.
+
+        // Act
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "32", "--rasterizer", "stbtruetype", "--color-font",
+            "-o", Path.Combine(_tempDir, "stbcolor"), "--no-color");
+
+        // Assert
+        exitCode.ShouldBe(4, $"stderr: {stderr}");
+        stderr.ShouldNotContain("Unhandled exception", Case.Sensitive);
+        stderr.Trim().ShouldNotContain('\n');
+        stderr.ShouldContain("stbtruetype", Case.Sensitive);
+        stderr.ShouldContain("does not support color font rendering", Case.Sensitive);
+    }
+
     // -- Basic generation (text format, default) --
 
     [Fact]
@@ -188,6 +271,38 @@ public class CliTests : IDisposable
         fntContent.ShouldContain("info face=\"Roboto\"");
         fntContent.ShouldContain("common ");
         fntContent.ShouldContain("char id=");
+    }
+
+    // -- WOFF2 input --
+
+    private static readonly string Woff2FontPath = Path.Combine(
+        AppContext.BaseDirectory, "Fixtures", "Roboto-Regular.woff2");
+
+    [Fact]
+    public void Generate_Woff2Font_MatchesTtfOutput()
+    {
+        var ttfDir = Directory.CreateDirectory(Path.Combine(_tempDir, "ttf")).FullName;
+        var woff2Dir = Directory.CreateDirectory(Path.Combine(_tempDir, "woff2")).FullName;
+
+        var ttf = RunCli("generate", "-f", FontPath, "-s", "24", "-o", Path.Combine(ttfDir, "out"));
+        var woff2 = RunCli("generate", "-f", Woff2FontPath, "-s", "24", "-o", Path.Combine(woff2Dir, "out"));
+
+        ttf.ExitCode.ShouldBe(0, $"stderr: {ttf.StdErr}");
+        woff2.ExitCode.ShouldBe(0, $"stderr: {woff2.StdErr}");
+        File.ReadAllText(Path.Combine(woff2Dir, "out.fnt"))
+            .ShouldBe(File.ReadAllText(Path.Combine(ttfDir, "out.fnt")));
+        File.ReadAllBytes(Path.Combine(woff2Dir, "out_0.png"))
+            .ShouldBe(File.ReadAllBytes(Path.Combine(ttfDir, "out_0.png")));
+    }
+
+    [Fact]
+    public void Info_Woff2Font_ReportsWoff2Format()
+    {
+        var (exitCode, stdout, stderr) = RunCli("info", Woff2FontPath);
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain("WOFF2", Case.Sensitive);
+        stdout.ShouldContain("Roboto", Case.Sensitive);
     }
 
     // -- Output formats --
@@ -247,6 +362,45 @@ public class CliTests : IDisposable
         bytes[1].ShouldBe((byte)77);
         bytes[2].ShouldBe((byte)70);
         bytes[3].ShouldBe((byte)3);
+    }
+
+    // -- Distance-field mode --
+
+    [Theory]
+    [InlineData("msdf", "alphaChnl=4")]
+    [InlineData("mtsdf", "alphaChnl=0")]
+    public void Generate_SdfModeOnNative_WritesTheMultiChannelFont(string mode, string alphaChannel)
+    {
+        var outputBase = Path.Combine(_tempDir, mode);
+
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "32", "--chars", "AB", "-o", outputBase,
+            "--rasterizer", "native", "--sdf-mode", mode);
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        var fnt = File.ReadAllText(outputBase + ".fnt");
+        fnt.ShouldContain(alphaChannel, Case.Sensitive);
+        fnt.ShouldContain($"sdfMode={mode}", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_SdfModeMsdf_OnABackendWithoutMsdf_Fails()
+    {
+        var (exitCode, stdout, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "32", "--chars", "AB", "-o", Path.Combine(_tempDir, "ft"),
+            "--sdf-mode", "msdf");
+
+        exitCode.ShouldNotBe(0);
+        (stdout + stderr).ShouldContain("MSDF", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_UnknownSdfMode_IsRejected()
+    {
+        var (exitCode, _, stderr) = RunCli("generate", "-f", FontPath, "-s", "32", "--sdf-mode", "bogus");
+
+        exitCode.ShouldNotBe(0);
+        stderr.ShouldContain("--sdf-mode", Case.Sensitive);
     }
 
     // -- Size option --
@@ -380,6 +534,20 @@ public class CliTests : IDisposable
     }
 
     [Fact]
+    public void ListRasterizers_NamesTheVectorOutlineCapability()
+    {
+        // SupportsOutlineStroke means the backend draws OutlineMode.Vector outlines itself; every
+        // backend gets bitmap outlines from core, so a bare "Outline" label would mislead.
+        var (exitCode, stdout, stderr) = RunCli("list-rasterizers");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        var lines = stdout.Split('\n').Select(line => line.TrimEnd()).ToArray();
+        lines.Single(line => line.TrimStart().StartsWith("native ", StringComparison.Ordinal))
+            .ShouldContain("Vector Outline", Case.Sensitive);
+        lines.ShouldAllBe(line => !line.Contains(", Outline,") && !line.EndsWith(", Outline"));
+    }
+
+    [Fact]
     public void Generate_NativeRasterizer_ProducesFntAndPng()
     {
         // Arrange
@@ -397,6 +565,77 @@ public class CliTests : IDisposable
 
         var pngPath = Path.Combine(_tempDir, "native-out_0.png");
         File.Exists(pngPath).ShouldBeTrue();
+    }
+
+    [Theory]
+    [InlineData("SourceSerif4-Regular.otf")]
+    [InlineData("SourceCodeVF-Upright.otf")]
+    public void Generate_NativeRasterizer_FromOtf_ProducesInkedGlyphs(string fixture)
+    {
+        // PostScript-outline (CFF / CFF2) fonts through the real CLI. The .fnt must describe real
+        // glyph cells — a backend that loaded the font but drew nothing would still exit 0.
+        var outputBase = Path.Combine(_tempDir, "native-otf");
+        var fontPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", fixture);
+
+        var (exitCode, stdout, stderr) = RunCli(
+            "generate", "-f", fontPath, "-s", "32", "-o", outputBase, "--rasterizer", "native");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain("Done.");
+
+        var model = KernSmith.Output.BmFontReader.ReadText(File.ReadAllText(outputBase + ".fnt"));
+        var upperA = model.Characters.First(c => c.Id == 'A');
+        upperA.Width.ShouldBeGreaterThan(10);
+        upperA.Height.ShouldBeGreaterThan(10);
+        File.Exists(Path.Combine(_tempDir, "native-otf_0.png")).ShouldBeTrue();
+    }
+
+    // -- Named variation instances --
+
+    private static readonly string RobotoFlexPath = Path.Combine(
+        AppContext.BaseDirectory, "Fixtures", "RobotoFlex-Variable.ttf");
+
+    private string RenderRobotoFlexHash(string name, params string[] extra)
+    {
+        var outputBase = Path.Combine(_tempDir, name);
+        var (exitCode, _, stderr) = RunCli(
+            ["generate", "-f", RobotoFlexPath, "-s", "32", "--chars", "AGQ", "-o", outputBase,
+             "--rasterizer", "native", .. extra]);
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            File.ReadAllBytes(Path.Combine(_tempDir, name + "_0.png"))));
+    }
+
+    [Fact]
+    public void Generate_NamedInstance_RendersThatInstance()
+    {
+        // Roboto Flex's "Black" instance is wght=900 with every other axis at its default, so it
+        // must render exactly like --axis wght=900, and differently from the default instance.
+        var instance = RenderRobotoFlexHash("instance", "--instance", "Black");
+        var axis = RenderRobotoFlexHash("axis", "--axis", "wght=900");
+        var regular = RenderRobotoFlexHash("regular");
+
+        instance.ShouldBe(axis);
+        instance.ShouldNotBe(regular);
+    }
+
+    [Fact]
+    public void Generate_NamedInstance_ExplicitAxisWins()
+    {
+        RenderRobotoFlexHash("black-thin", "--instance", "Black", "--axis", "wght=100")
+            .ShouldBe(RenderRobotoFlexHash("thin", "--instance", "Thin"));
+    }
+
+    [Fact]
+    public void Generate_UnknownNamedInstance_FailsListingTheNames()
+    {
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", RobotoFlexPath, "-s", "32", "--chars", "A", "-o", Path.Combine(_tempDir, "x"),
+            "--rasterizer", "native", "--instance", "Bogus");
+
+        exitCode.ShouldBe(1);
+        stderr.ShouldContain("Bogus", Case.Sensitive);
+        stderr.ShouldContain("Black", Case.Sensitive);
     }
 
     [Fact]
@@ -729,6 +968,122 @@ public class CliTests : IDisposable
             "-o", Path.Combine(_tempDir, "round"), "--save-config", roundConfig);
         roundExit.ShouldBe(0, $"stderr: {roundErr}");
         File.ReadAllText(roundConfig).ShouldNotContain("outlineShape");
+    }
+
+    // -- LCD options --
+
+    [Fact]
+    public void Generate_LcdFlags_ReachTheSavedConfig()
+    {
+        var savedConfig = Path.Combine(_tempDir, "lcd.bmfc");
+
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "24", "-c", "AB", "--rasterizer", "native", "--aa", "lcd",
+            "--lcd-filter", "smooth", "--lcd-order", "vbgr", "-o", Path.Combine(_tempDir, "lcd"), "--save-config", savedConfig);
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        var saved = File.ReadAllText(savedConfig);
+        saved.ShouldContain("lcdFilter=smooth", Case.Sensitive);
+        saved.ShouldContain("lcdOrder=vbgr", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_ConfigLcdKeys_KeptWhenFlagsAbsent_OverriddenWhenFlagsGiven()
+    {
+        var configPath = Path.Combine(_tempDir, "lcd-base.bmfc");
+        RunCli("init", "-f", FontPath, "-s", "24", "-c", "A", "--aa", "lcd", "--lcd-filter", "none", "--lcd-order", "bgr",
+            "-o", configPath).ExitCode.ShouldBe(0);
+        var initial = File.ReadAllText(configPath);
+        initial.ShouldContain("lcdFilter=none", Case.Sensitive);
+        initial.ShouldContain("lcdOrder=bgr", Case.Sensitive);
+
+        var keptConfig = Path.Combine(_tempDir, "lcd-kept.bmfc");
+        var (keptExit, _, keptErr) = RunCli(
+            "generate", "--config", configPath, "-f", FontPath, "-o", Path.Combine(_tempDir, "lcd-kept"), "--save-config", keptConfig);
+        keptExit.ShouldBe(0, $"stderr: {keptErr}");
+        var kept = File.ReadAllText(keptConfig);
+        kept.ShouldContain("lcdFilter=none", Case.Sensitive);
+        kept.ShouldContain("lcdOrder=bgr", Case.Sensitive);
+
+        var defaultConfig = Path.Combine(_tempDir, "lcd-default.bmfc");
+        var (defaultExit, _, defaultErr) = RunCli(
+            "generate", "--config", configPath, "-f", FontPath, "--lcd-filter", "default", "--lcd-order", "rgb",
+            "-o", Path.Combine(_tempDir, "lcd-default"), "--save-config", defaultConfig);
+        defaultExit.ShouldBe(0, $"stderr: {defaultErr}");
+        var overridden = File.ReadAllText(defaultConfig);
+        overridden.ShouldNotContain("lcdFilter", Case.Sensitive);
+        overridden.ShouldNotContain("lcdOrder", Case.Sensitive);
+    }
+
+    [Theory]
+    [InlineData("--lcd-filter")]
+    [InlineData("--lcd-order")]
+    public void Generate_UnknownLcdOptionValue_IsRejected(string flag)
+    {
+        var (exitCode, _, stderr) = RunCli("generate", "-f", FontPath, "-s", "32", flag, "bogus");
+
+        exitCode.ShouldNotBe(0);
+        stderr.ShouldContain($"Unknown {flag}: bogus", Case.Sensitive);
+    }
+
+    // -- --outline-mode, --width-percent, --italic-angle (Phase 168) --
+
+    [Fact]
+    public void Generate_InvalidOutlineMode_ReturnsError()
+    {
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "24", "--outline", "2", "--outline-mode", "hologram");
+
+        exitCode.ShouldBe(1);
+        stderr.ShouldContain("Unknown outline mode: hologram", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_OutlineModeVector_OnNative_ChangesPixelsAndIsSaved()
+    {
+        var effectOut = Path.Combine(_tempDir, "effect");
+        var vectorOut = Path.Combine(_tempDir, "vector");
+        var savedConfig = Path.Combine(_tempDir, "vector.bmfc");
+
+        RunCli("generate", "-f", FontPath, "-s", "24", "-c", "@", "--outline", "2", "--rasterizer", "native",
+            "-o", effectOut).ExitCode.ShouldBe(0);
+        var (exitCode, _, stderr) = RunCli("generate", "-f", FontPath, "-s", "24", "-c", "@", "--outline", "2",
+            "--rasterizer", "native", "--outline-mode", "vector", "-o", vectorOut, "--save-config", savedConfig);
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        File.ReadAllBytes(vectorOut + "_0.png").ShouldNotBe(File.ReadAllBytes(effectOut + "_0.png"));
+        File.ReadAllText(savedConfig).ShouldContain("outlineMode=vector", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_WidthPercentAndItalicAngle_OnNative_AreSavedAndKeptFromConfig()
+    {
+        var savedConfig = Path.Combine(_tempDir, "shaped.bmfc");
+        var (exitCode, _, stderr) = RunCli("generate", "-f", FontPath, "-s", "24", "-c", "Al", "--italic",
+            "--rasterizer", "native", "--width-percent", "80", "--italic-angle", "20",
+            "-o", Path.Combine(_tempDir, "shaped"), "--save-config", savedConfig);
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        var text = File.ReadAllText(savedConfig);
+        text.ShouldContain("widthPercent=80", Case.Sensitive);
+        text.ShouldContain("italicAngle=20", Case.Sensitive);
+
+        var resaved = Path.Combine(_tempDir, "resaved.bmfc");
+        var (keptExit, _, keptErr) = RunCli("generate", "--config", savedConfig, "-f", FontPath,
+            "-o", Path.Combine(_tempDir, "kept"), "--save-config", resaved);
+        keptExit.ShouldBe(0, $"stderr: {keptErr}");
+        File.ReadAllText(resaved).ShouldContain("widthPercent=80", Case.Sensitive);
+        File.ReadAllText(resaved).ShouldContain("italicAngle=20", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_WidthPercent_OnABackendWithoutIt_FailsWithTheReason()
+    {
+        var (exitCode, _, stderr) = RunCli("generate", "-f", FontPath, "-s", "24", "-c", "A",
+            "--rasterizer", "freetype", "--width-percent", "80", "-o", Path.Combine(_tempDir, "ft"));
+
+        exitCode.ShouldNotBe(0);
+        stderr.ShouldContain("WidthPercent = 80", Case.Sensitive);
     }
 
     [Fact]

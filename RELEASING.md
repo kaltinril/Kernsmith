@@ -54,14 +54,14 @@ KernSmith                                    (core — no sibling deps)
    so the notices ship inside the `.nupkg`. If the package introduces a new
    third-party runtime dependency (managed or bundled native), add it to
    `THIRD-PARTY-NOTICES.md` with its SPDX license, copyright line, and full
-   license text. See `plan/phase-74b-license-attribution-compliance.md`.
+   license text. See `plan/done/phase-74b-license-attribution-compliance.md`.
 
 ### Packability rules
 
 `Directory.Build.props` defaults `IsPackable` to `false`. Each library project
 opts in by setting `<IsPackable>true</IsPackable>` in its own `.csproj`:
 
-- **`src/` projects** — core library and rasterizer backends.
+- **`src/` projects** — core library and rasterizer backends, except the experimental `KernSmith.Rasterizers.Native` and the `KernSmith.Imaging` PNG decoder it depends on, which set `IsPackable=false` until Native's release decision (Phase 179); they must be packed together.
 - **Everything else** (tests, tools, samples, benchmarks, apps) — not packable.
 
 ### Packing locally

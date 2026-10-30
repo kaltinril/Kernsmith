@@ -18,105 +18,7 @@ public class GenerationService
         {
             System.Diagnostics.Debug.WriteLine($"[GEN] Source={request.SourceKind} Path={request.FontFilePath} Bold={request.Bold} ForceSynBold={request.ForceSyntheticBold} Italic={request.Italic} ForceSynItalic={request.ForceSyntheticItalic}");
 
-            // Build options directly (rather than via the fluent builder) so that the Phase 100
-            // options without dedicated builder methods (FillColor, AdvanceAdjustX, Gamma, SdfSpread,
-            // gradient Offset/Scale/Cyclic, shadow BlurKernelSize/BlurPasses) can be threaded through.
-            // Each assignment mirrors the previous BmFontBuilder call to preserve identical output.
-            var options = new FontGeneratorOptions
-            {
-                Size = request.FontSize,
-                Characters = request.Characters,
-                MaxTextureWidth = request.MaxWidth,
-                MaxTextureHeight = request.MaxHeight,
-                PowerOfTwo = request.PowerOfTwo,
-                AutofitTexture = request.AutofitTexture,
-                Padding = new Padding(request.PaddingUp, request.PaddingRight, request.PaddingDown, request.PaddingLeft),
-                Spacing = new Spacing(request.SpacingH, request.SpacingV),
-                Kerning = request.IncludeKerning,
-                Bold = request.Bold,
-                Italic = request.Italic,
-                AntiAlias = request.AntiAlias ? AntiAliasMode.Grayscale : AntiAliasMode.None,
-                EnableHinting = request.Hinting,
-                SuperSampleLevel = request.SuperSampleLevel,
-                Sdf = request.SdfEnabled,
-                SdfSpread = request.SdfSpread,
-                ColorFont = request.ColorFontEnabled,
-                Backend = request.Backend,
-                PackingAlgorithm = (PackingAlgorithm)request.PackingAlgorithmIndex,
-                // Phase 100: base fill color, advance adjust, and gamma (defaults are no-ops).
-                FillColorR = request.FillColorR,
-                FillColorG = request.FillColorG,
-                FillColorB = request.FillColorB,
-                FillColorA = request.FillColorA,
-                AdvanceAdjustX = request.AdvanceAdjustX,
-                Gamma = request.Gamma,
-            };
-
-            if (request.OutlineEnabled)
-            {
-                options.Outline = request.OutlineWidth;
-                options.OutlineShape = request.OutlineShape;
-                options.OutlineR = request.OutlineColorR;
-                options.OutlineG = request.OutlineColorG;
-                options.OutlineB = request.OutlineColorB;
-            }
-
-            if (request.ShadowEnabled)
-            {
-                options.ShadowOffsetX = request.ShadowOffsetX;
-                options.ShadowOffsetY = request.ShadowOffsetY;
-                options.ShadowBlur = request.ShadowBlur;
-                options.ShadowBlurKernelSize = request.ShadowBlurKernelSize;
-                options.ShadowBlurPasses = request.ShadowBlurPasses;
-                options.ShadowR = request.ShadowColorR;
-                options.ShadowG = request.ShadowColorG;
-                options.ShadowB = request.ShadowColorB;
-                options.ShadowOpacity = request.ShadowOpacity / 100f;
-                options.HardShadow = request.HardShadow;
-            }
-
-            if (request.GradientEnabled)
-            {
-                options.GradientStartR = request.GradientStartR;
-                options.GradientStartG = request.GradientStartG;
-                options.GradientStartB = request.GradientStartB;
-                options.GradientEndR = request.GradientEndR;
-                options.GradientEndG = request.GradientEndG;
-                options.GradientEndB = request.GradientEndB;
-                options.GradientAngle = request.GradientAngle;
-                options.GradientOffset = request.GradientOffset;
-                options.GradientScale = request.GradientScale;
-                options.GradientCyclic = request.GradientCyclic;
-            }
-
-            if (request.ChannelPackingEnabled)
-                options.ChannelPacking = true;
-
-            // Per-channel content routing is a separate mechanism from channel packing. The UI
-            // cannot edit it yet, but a config loaded with routing must still generate with it.
-            options.Channels = request.Channels;
-
-            if (request.ForceSyntheticBold)
-            {
-                options.Bold = true;
-                options.ForceSyntheticBold = true;
-            }
-            if (request.ForceSyntheticItalic)
-            {
-                options.Italic = true;
-                options.ForceSyntheticItalic = true;
-            }
-
-            if (request.FaceIndex > 0)
-                options.FaceIndex = request.FaceIndex;
-
-            if (request.VariationAxisValues is { Count: > 0 })
-            {
-                options.VariationAxes = new Dictionary<string, float>(request.VariationAxisValues);
-            }
-
-            if (!string.IsNullOrEmpty(request.FallbackCharacter))
-                options.FallbackCharacter = request.FallbackCharacter[0];
+            var options = BuildOptions(request);
 
             return request.SourceKind switch
             {
@@ -127,5 +29,124 @@ public class GenerationService
                 _ => BmFont.Generate(request.FontData!, options),
             };
         });
+    }
+
+    /// <summary>
+    /// Maps a <see cref="GenerationRequest"/> to the <see cref="FontGeneratorOptions"/> that
+    /// <see cref="GenerateAsync"/> generates with.
+    /// </summary>
+    public static FontGeneratorOptions BuildOptions(GenerationRequest request)
+    {
+        // Build options directly (rather than via the fluent builder) so that the Phase 100
+        // options without dedicated builder methods (FillColor, AdvanceAdjustX, Gamma, SdfSpread,
+        // gradient Offset/Scale/Cyclic, shadow BlurKernelSize/BlurPasses) can be threaded through.
+        // Each assignment mirrors the previous BmFontBuilder call to preserve identical output.
+        var options = new FontGeneratorOptions
+        {
+            Size = request.FontSize,
+            Characters = request.Characters,
+            MaxTextureWidth = request.MaxWidth,
+            MaxTextureHeight = request.MaxHeight,
+            PowerOfTwo = request.PowerOfTwo,
+            AutofitTexture = request.AutofitTexture,
+            Padding = new Padding(request.PaddingUp, request.PaddingRight, request.PaddingDown, request.PaddingLeft),
+            Spacing = new Spacing(request.SpacingH, request.SpacingV),
+            Kerning = request.IncludeKerning,
+            Bold = request.Bold,
+            Italic = request.Italic,
+            AntiAlias = request.AntiAlias,
+            LcdFilter = request.LcdFilter,
+            LcdSubpixelOrder = request.LcdSubpixelOrder,
+            WidthPercent = request.WidthPercent,
+            ItalicAngle = request.ItalicAngle,
+            EnableHinting = request.Hinting,
+            SuperSampleLevel = request.SuperSampleLevel,
+            // Same split as ProjectService: SDF via Sdf, only MSDF/MTSDF via SdfMode, so the
+            // generated options match a saved-and-reloaded project's (EffectiveSdfMode is equal).
+            Sdf = request.SdfMode == SdfMode.Sdf,
+            SdfMode = request.SdfMode is SdfMode.Msdf or SdfMode.Mtsdf ? request.SdfMode : SdfMode.None,
+            SdfSpread = request.SdfSpread,
+            SdfScale = request.SdfScale,
+            ColorFont = request.ColorFontEnabled,
+            ColorPaletteIndex = request.ColorPaletteIndex,
+            Backend = request.Backend,
+            PackingAlgorithm = (PackingAlgorithm)request.PackingAlgorithmIndex,
+            // Phase 100: base fill color, advance adjust, and gamma (defaults are no-ops).
+            FillColorR = request.FillColorR,
+            FillColorG = request.FillColorG,
+            FillColorB = request.FillColorB,
+            FillColorA = request.FillColorA,
+            AdvanceAdjustX = request.AdvanceAdjustX,
+            Gamma = request.Gamma,
+        };
+
+        if (request.OutlineEnabled)
+        {
+            options.Outline = request.OutlineWidth;
+            options.OutlineShape = request.OutlineShape;
+            options.OutlineMode = request.OutlineMode;
+            options.OutlineR = request.OutlineColorR;
+            options.OutlineG = request.OutlineColorG;
+            options.OutlineB = request.OutlineColorB;
+        }
+
+        if (request.ShadowEnabled)
+        {
+            options.ShadowOffsetX = request.ShadowOffsetX;
+            options.ShadowOffsetY = request.ShadowOffsetY;
+            options.ShadowBlur = request.ShadowBlur;
+            options.ShadowBlurKernelSize = request.ShadowBlurKernelSize;
+            options.ShadowBlurPasses = request.ShadowBlurPasses;
+            options.ShadowR = request.ShadowColorR;
+            options.ShadowG = request.ShadowColorG;
+            options.ShadowB = request.ShadowColorB;
+            options.ShadowOpacity = request.ShadowOpacity / 100f;
+            options.HardShadow = request.HardShadow;
+        }
+
+        if (request.GradientEnabled)
+        {
+            options.GradientStartR = request.GradientStartR;
+            options.GradientStartG = request.GradientStartG;
+            options.GradientStartB = request.GradientStartB;
+            options.GradientEndR = request.GradientEndR;
+            options.GradientEndG = request.GradientEndG;
+            options.GradientEndB = request.GradientEndB;
+            options.GradientAngle = request.GradientAngle;
+            options.GradientOffset = request.GradientOffset;
+            options.GradientScale = request.GradientScale;
+            options.GradientCyclic = request.GradientCyclic;
+        }
+
+        if (request.ChannelPackingEnabled)
+            options.ChannelPacking = true;
+
+        // Per-channel content routing is a separate mechanism from channel packing. The UI
+        // cannot edit it yet, but a config loaded with routing must still generate with it.
+        options.Channels = request.Channels;
+
+        if (request.ForceSyntheticBold)
+        {
+            options.Bold = true;
+            options.ForceSyntheticBold = true;
+        }
+        if (request.ForceSyntheticItalic)
+        {
+            options.Italic = true;
+            options.ForceSyntheticItalic = true;
+        }
+
+        if (request.FaceIndex > 0)
+            options.FaceIndex = request.FaceIndex;
+
+        if (request.VariationAxisValues is { Count: > 0 })
+        {
+            options.VariationAxes = new Dictionary<string, float>(request.VariationAxisValues);
+        }
+
+        if (!string.IsNullOrEmpty(request.FallbackCharacter))
+            options.FallbackCharacter = request.FallbackCharacter[0];
+
+        return options;
     }
 }

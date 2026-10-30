@@ -11,8 +11,10 @@ internal static class FontValidator
 
     /// <summary>
     /// Verifies that all mandatory SFNT tables are present, plus the outline tables
-    /// appropriate for the font's flavour (TrueType <c>glyf</c>/<c>loca</c> or CFF).
+    /// appropriate for the font's flavour (TrueType <c>glyf</c>/<c>loca</c>, CFF, or color bitmaps).
     /// </summary>
+    /// <remarks>A TrueType-flavoured face with no <c>glyf</c> is accepted when it has color bitmap
+    /// tables (<c>CBLC</c> + <c>CBDT</c>, or <c>sbix</c>) to draw its glyphs instead.</remarks>
     /// <exception cref="FontFormatException">If any required table is missing.</exception>
     public static void Validate(TableProvider provider)
     {
@@ -31,10 +33,17 @@ internal static class FontValidator
         }
         else
         {
+            // No outlines: drawn by color bitmaps alone (NotoColorEmoji is the committed example).
+            if (!provider.HasTable("glyf") && HasColorBitmaps(provider))
+                return;
+
             if (!provider.HasTable("glyf"))
                 throw new FontFormatException("TrueType font is missing the required 'glyf' table.");
             if (!provider.HasTable("loca"))
                 throw new FontFormatException("TrueType font is missing the required 'loca' table.");
         }
     }
+
+    private static bool HasColorBitmaps(TableProvider provider) =>
+        (provider.HasTable("CBLC") && provider.HasTable("CBDT")) || provider.HasTable("sbix");
 }

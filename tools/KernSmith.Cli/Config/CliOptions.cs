@@ -14,7 +14,10 @@ internal sealed class CliOptions
     public float? Size { get; set; }
     public int Dpi { get; set; } = 72;
     public AntiAliasMode AntiAlias { get; set; } = AntiAliasMode.Grayscale;
+    public LcdFilter? LcdFilter { get; set; }
+    public LcdSubpixelOrder? LcdSubpixelOrder { get; set; }
     public bool Sdf { get; set; }
+    public SdfMode SdfMode { get; set; }
     public bool Bold { get; set; }
     public bool Italic { get; set; }
     public bool ForceSyntheticBold { get; set; }
@@ -43,6 +46,7 @@ internal sealed class CliOptions
     public int Outline { get; set; }
     public string? OutlineColor { get; set; }
     public OutlineShape? OutlineShape { get; set; }
+    public OutlineMode? OutlineMode { get; set; }
     public string? FillColor { get; set; }
     public string? GradientTop { get; set; }
     public string? GradientBottom { get; set; }
@@ -70,6 +74,8 @@ internal sealed class CliOptions
     public bool EqualizeCellHeights { get; set; }
     public bool ForceOffsetsToZero { get; set; }
     public int HeightPercent { get; set; } = 100;
+    public int WidthPercent { get; set; } = 100;
+    public float? ItalicAngle { get; set; }
     public bool MatchCharHeight { get; set; }
     public bool ColorFont { get; set; }
     public int ColorPaletteIndex { get; set; }

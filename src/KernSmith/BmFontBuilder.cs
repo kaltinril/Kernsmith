@@ -65,7 +65,7 @@ public sealed class BmFontBuilder
     }
 
     /// <summary>Loads a font from a file path.</summary>
-    /// <param name="fontPath">Path to a .ttf, .otf, or .woff file.</param>
+    /// <param name="fontPath">Path to a .ttf, .otf, .woff, or .woff2 file.</param>
     /// <returns>This builder.</returns>
     public BmFontBuilder WithFont(string fontPath)
     {
@@ -121,6 +121,16 @@ public sealed class BmFontBuilder
     /// <param name="mode">Anti-aliasing mode.</param>
     /// <returns>This builder.</returns>
     public BmFontBuilder WithAntiAlias(AntiAliasMode mode) { _options.AntiAlias = mode; return this; }
+
+    /// <summary>Sets the low-pass filter for <see cref="AntiAliasMode.Lcd"/> output; see <see cref="FontGeneratorOptions.LcdFilter"/>.</summary>
+    /// <param name="filter">The LCD filter.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithLcdFilter(LcdFilter filter) { _options.LcdFilter = filter; return this; }
+
+    /// <summary>Sets the display's subpixel layout for <see cref="AntiAliasMode.Lcd"/> output; see <see cref="FontGeneratorOptions.LcdSubpixelOrder"/>.</summary>
+    /// <param name="order">The subpixel layout.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithLcdSubpixelOrder(LcdSubpixelOrder order) { _options.LcdSubpixelOrder = order; return this; }
 
     /// <summary>Sets the max texture size (both width and height) in pixels.</summary>
     /// <param name="size">Max width and height in pixels.</param>
@@ -192,10 +202,20 @@ public sealed class BmFontBuilder
     /// <returns>This builder.</returns>
     public BmFontBuilder WithOutlineShape(OutlineShape shape) { _options.OutlineShape = shape; return this; }
 
+    /// <summary>Selects how the outline is drawn; see <see cref="FontGeneratorOptions.OutlineMode"/>.</summary>
+    /// <param name="mode">Bitmap effect (default) or the backend's vector stroke.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithOutlineMode(OutlineMode mode) { _options.OutlineMode = mode; return this; }
+
     /// <summary>If true, generates signed distance field (SDF) output instead of bitmaps.</summary>
     /// <param name="sdf">Enable SDF.</param>
     /// <returns>This builder.</returns>
     public BmFontBuilder WithSdf(bool sdf = true) { _options.Sdf = sdf; return this; }
+
+    /// <summary>Selects the distance field to generate; see <see cref="FontGeneratorOptions.SdfMode"/>.</summary>
+    /// <param name="mode">The distance-field mode.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithSdfMode(SdfMode mode) { _options.SdfMode = mode; return this; }
 
     /// <summary>If true, rounds texture dimensions up to powers of two.</summary>
     /// <param name="powerOfTwo">Enable power-of-two sizing.</param>
@@ -341,6 +361,16 @@ public sealed class BmFontBuilder
     /// <returns>This builder.</returns>
     public BmFontBuilder WithHeightPercent(int percent) { _options.HeightPercent = percent; return this; }
 
+    /// <summary>Scales glyph width as a percentage (condensed/expanded); see <see cref="FontGeneratorOptions.WidthPercent"/>.</summary>
+    /// <param name="percent">Width as a percentage. 100 = normal, 80 = 20% narrower.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithWidthPercent(int percent) { _options.WidthPercent = percent; return this; }
+
+    /// <summary>Sets the slant of synthetic italic; see <see cref="FontGeneratorOptions.ItalicAngle"/>.</summary>
+    /// <param name="degrees">Degrees from vertical, positive leaning right. Default 12.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithItalicAngle(float degrees) { _options.ItalicAngle = degrees; return this; }
+
     /// <summary>Adds a custom bitmap for a specific character code.</summary>
     /// <param name="codepoint">Unicode character code to replace.</param>
     /// <param name="glyph">The custom glyph data.</param>
@@ -450,6 +480,8 @@ public sealed class BmFontBuilder
         _options.ForceSyntheticBold = source.ForceSyntheticBold;
         _options.ForceSyntheticItalic = source.ForceSyntheticItalic;
         _options.AntiAlias = source.AntiAlias;
+        _options.LcdFilter = source.LcdFilter;
+        _options.LcdSubpixelOrder = source.LcdSubpixelOrder;
         _options.MaxTextureWidth = source.MaxTextureWidth;
         _options.MaxTextureHeight = source.MaxTextureHeight;
         _options.Padding = source.Padding;
@@ -461,7 +493,11 @@ public sealed class BmFontBuilder
         _options.OutlineG = source.OutlineG;
         _options.OutlineB = source.OutlineB;
         _options.OutlineShape = source.OutlineShape;
+        _options.OutlineMode = source.OutlineMode;
         _options.Sdf = source.Sdf;
+        _options.SdfSpread = source.SdfSpread;
+        _options.SdfScale = source.SdfScale;
+        _options.SdfMode = source.SdfMode;
         _options.PowerOfTwo = source.PowerOfTwo;
         _options.Dpi = source.Dpi;
         _options.FaceIndex = source.FaceIndex;
@@ -479,6 +515,8 @@ public sealed class BmFontBuilder
         _options.ForceOffsetsToZero = source.ForceOffsetsToZero;
         _options.Channels = source.Channels;
         _options.HeightPercent = source.HeightPercent;
+        _options.WidthPercent = source.WidthPercent;
+        _options.ItalicAngle = source.ItalicAngle;
         _options.MatchCharHeight = source.MatchCharHeight;
         _options.PackingEfficiencyHint = source.PackingEfficiencyHint;
         _options.ShadowOffsetX = source.ShadowOffsetX;

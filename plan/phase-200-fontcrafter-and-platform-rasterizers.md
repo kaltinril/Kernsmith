@@ -3,7 +3,7 @@
 > **Status**: Not started / Future — deferred pending strategic prioritization. No `KernSmith.FontCrafter` package, no `.fontcrafter` format, and no platform-specific rasterizer distribution exists yet. The idea content below is intact.
 > **Created**: 2026-03-28
 > **Dependencies**: Phase 78 (pluggable rasterizers), Phase 78D (CLI/UI integration)
-> **Goal**: (1) Ship platform-aware CLI/UI binaries so Windows users get all three rasterizers while Linux/macOS get FreeType only, and (2) build KernSmith.FontCrafter -- a simple vector font creation tool that doubles as a proof-of-concept custom rasterizer plugin.
+> **Goal**: (1) Ship platform-aware CLI/UI binaries so Windows users get every backend while Linux/macOS get the cross-platform ones (FreeType where its native library exists, StbTrueType, Native) without Windows-only assemblies, and (2) build KernSmith.FontCrafter -- a simple vector font creation tool that doubles as a proof-of-concept custom rasterizer plugin.
 
 ---
 
@@ -12,8 +12,8 @@
 ### Problem
 
 Phase 78D wires up GDI and DirectWrite backends via compile-time `#if WINDOWS`, but the published binaries need to be built and distributed correctly so that:
-- **Windows** binaries include FreeType + GDI + DirectWrite (3 rasterizers)
-- **Linux/macOS** binaries include FreeType only (no Windows-only assemblies bundled)
+- **Windows** binaries include every backend: FreeType, StbTrueType, Native, GDI, DirectWrite
+- **Linux/macOS** binaries include the cross-platform backends — StbTrueType and Native everywhere, FreeType where FreeTypeSharp ships a native library (not Linux arm64) — and no Windows-only assemblies
 
 ### Requirements
 

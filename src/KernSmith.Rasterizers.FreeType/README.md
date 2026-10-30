@@ -4,7 +4,7 @@ A FreeType rasterizer backend for KernSmith.
 
 ## Overview
 
-This package provides a cross-platform rasterizer using FreeType. It supports color fonts (COLRv0/CPAL, sbix, CBDT), variable fonts, SDF rendering, and outline stroke effects.
+This package provides a cross-platform rasterizer using FreeType. It supports color fonts (COLRv0/CPAL, sbix, CBDT), variable fonts, SDF rendering, and every anti-alias mode.
 
 **Platform**: Cross-platform (`net8.0`, `net10.0`). Native FreeType binaries come from FreeTypeSharp:
 
@@ -27,7 +27,7 @@ dotnet add package KernSmith.Rasterizers.FreeType
 var options = new FontGeneratorOptions
 {
     Size = 32,
-    RasterizerBackend = RasterizerBackend.FreeType
+    Backend = RasterizerBackend.FreeType
 };
 ```
 

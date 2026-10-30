@@ -33,7 +33,7 @@ RasterizerBackend enum:
   Native        — Cross-platform, pure C#, no external dependencies (experimental, unpublished)
 ```
 
-> **Native backend status**: The Native backend renders as of Phase 165 — SFNT/table parsing (161), `glyf`/`loca` parsing (162), outline extraction and flattening (163), and the signed-area scanline fill (164) have all landed, and it is registered via `[ModuleInitializer]` and wired into the pipeline (165). It renders **TrueType (`glyf`) outlines only**: a CFF/OTF face is rejected at `LoadFont` with a `RasterizationException` (CFF is Phase 166). Hinting, SDF, outline stroke, synthetic bold/italic, variable fonts and color fonts are all still unimplemented. The project remains `IsPackable=false` and unpublished, so `RasterizerBackend.Native` resolves only from a source build or the KernSmith CLI (which project-references it) — never from an app built on the released NuGet packages.
+> **Native backend status**: Experimental and unpublished, but broadly functional. It renders TrueType (`glyf`) and, through its own Type 2 charstring interpreter, CFF/CFF2 (`.otf`) outlines — CID-keyed fonts included — at any variable-font instance (`avar` v1, `gvar`, CFF2 `blend`, `HVAR`, `MVAR`); `COLR` version 0 and 1 color glyphs from `CPAL` palettes and `CBDT`/`sbix` PNG bitmaps (decoded by `KernSmith.Imaging`); synthetic bold/italic matched to FreeType's, plus synthetic width and italic angle; vector outline layers (`OutlineMode.Vector`); SDF and multi-channel MSDF/MTSDF from the outline; and `None` (with dropout control), `Grayscale`, `Light` (its own y-only auto-hinter) and `Lcd` (RGB/BGR/vertical orders, selectable filter) anti-aliasing. Not implemented: TrueType bytecode hinting and system fonts. The project remains `IsPackable=false` and unpublished, so `RasterizerBackend.Native` resolves only from a source build or the KernSmith CLI (which project-references it) — never from an app built on the released NuGet packages. The phase docs (`plan/master-plan.md`, Native rasterizer completion) track what remains.
 
 ---
 
@@ -43,18 +43,19 @@ RasterizerBackend enum:
 |---|---|---|---|---|---|
 | **Platform** | Cross-platform (Windows, Linux x64, macOS, Android) | Windows only | Windows only | Cross-platform (Windows, Linux x64 and arm64, macOS, Android, iOS simulator, Mac Catalyst; builds for Blazor WASM) | Cross-platform (Windows, Linux x64 and arm64, macOS, Android, iOS simulator, Mac Catalyst) |
 | **NuGet package** | `KernSmith.Rasterizers.FreeType` | `KernSmith.Rasterizers.Gdi` | `KernSmith.Rasterizers.DirectWrite.TerraFX` | `KernSmith.Rasterizers.StbTrueType` | none (not published) |
-| **Color fonts** (COLR/CPAL, CBDT/CBLC, sbix) | Yes | No | No (stubbed, no impl yet) | No | No |
-| **Variable fonts** (fvar axes) | Yes | No | No (stubbed, no impl yet) | No | No |
-| **SDF rendering** | Yes | No | No | Yes | No |
-| **Outline stroke** | Yes | No | No | No | No |
+| **Color fonts** (COLR/CPAL, CBDT/CBLC, sbix) | Yes (`COLR` v1 as grayscale; bitmaps at strike size) | No | No (stubbed, no impl yet) | No | Yes (`COLR` v0 and v1; bitmaps scaled to the requested size) |
+| **Variable fonts** (fvar axes) | Yes | No | No (stubbed, no impl yet) | No | Yes (TrueType `gvar` and CFF2 `blend`) |
+| **SDF rendering** | Yes | No | No | Yes | Yes (plus MSDF/MTSDF) |
+| **Vector outline layer** (`SupportsOutlineStroke`) | No | No | No | No | Yes |
+| **Synthetic width / italic angle** | No | No | No | No | Yes |
 | **System font loading** | No | Yes | Yes | No | No |
 | **Handles own sizing** | No (core converts cell height to ppem) | Yes (GDI sizes via LOGFONT) | No (core converts) | No (core converts) | No (core converts) |
 | **Anti-alias: None** | Yes | Yes | Yes | Yes | Yes |
 | **Anti-alias: Grayscale** | Yes | Yes | Yes | Yes | Yes |
-| **Anti-alias: Light** | Yes | No | No | No | No |
-| **Anti-alias: LCD** | Yes | No | No | No | No |
-| **Hinting** | FreeType auto-hinter + font bytecode | Windows GDI hinter | DirectWrite natural/symmetric hinting | stb_truetype hinting (limited) | None |
-| **Bold/italic simulation** | FreeType emboldening + oblique shear | GDI font mapper + MAT2 shear | DWRITE_FONT_SIMULATIONS flags | Synthetic bold + oblique shear | No (Phase 167) |
+| **Anti-alias: Light** | Yes | No | No | No | Yes (y-only auto-hinting) |
+| **Anti-alias: LCD** | Yes (raw 3-bytes-per-pixel buffer) | No | No | No | Yes (RGBA; RGB/BGR/vertical orders, `Light`/`Smooth`/`None` filters) |
+| **Hinting** | FreeType auto-hinter + font bytecode | Windows GDI hinter | DirectWrite natural/symmetric hinting | None | Own y-only auto-hinter, `Light` only |
+| **Bold/italic simulation** | FreeType emboldening + oblique shear | GDI font mapper + MAT2 shear | DWRITE_FONT_SIMULATIONS flags | Synthetic bold + oblique shear | FreeType-matched outline emboldening + 12° shear |
 | **Font collection (TTC) support** | Yes (faceIndex parameter) | No (faceIndex must be 0) | Yes (faceIndex parameter) | Yes (faceIndex parameter) | Yes (faceIndex parameter) |
 | **Kerning source** | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser | Falls back to shared GPOS/kern parser |
 | **Font metrics source** | Falls back to shared OS/2 table parser | GDI TEXTMETRIC (own impl) | Falls back to shared OS/2 table parser | Falls back to shared OS/2 table parser | Parses own core tables (`head`/`hhea`/`hmtx`/`OS/2`/`cmap`) |
@@ -65,12 +66,12 @@ RasterizerBackend enum:
 
 **Package**: `KernSmith.Rasterizers.FreeType` (via FreeTypeSharp 3.1.0).
 
-**When to use**: Default choice on every platform where FreeTypeSharp ships a native library (see the README platform support table). Required when you need color fonts, variable fonts, SDF output, or outline stroke effects.
+**When to use**: Default choice on every platform where FreeTypeSharp ships a native library (see the README platform support table). Required when you need color fonts, variable fonts, or SDF output from a published package.
 
 **Strengths**:
 
 - Cross-platform: works on Windows, Linux x64, macOS, and Android. No native library for Linux arm64, Mac Catalyst, or WASM; on iOS an app referencing it fails to link (FreeTypeSharp's static iOS library references libpng symbols nothing provides).
-- Full feature coverage: color fonts, variable fonts (fvar axis coordinates), SDF, outline stroke.
+- Full feature coverage: color fonts, variable fonts (fvar axis coordinates), SDF.
 - All four anti-alias modes: None, Grayscale, Light, LCD.
 - TTC font collection support via `faceIndex`.
 - Mature, widely-used rasterizer with extensive font format coverage.
@@ -99,7 +100,7 @@ RasterizerBackend enum:
 **Limitations**:
 
 - Windows only. Will not work on Linux or macOS.
-- No color fonts, variable fonts, SDF, or outline stroke support.
+- No color fonts (`ColorFont` throws `NotSupportedException`), variable fonts (axes ignored), SDF (rejected by core), or backend outline stroke (core's bitmap outline effect still applies).
 - Anti-alias limited to None and Grayscale (via `GGO_GRAY8_BITMAP` 0-64 value range remapped to 0-255).
 - No TTC font collection support (faceIndex must be 0).
 - Grayscale values come from GDI's 65-level quantization (0-64), remapped to 0-255.
@@ -164,9 +165,9 @@ RasterizerBackend enum:
 
 **Package**: none. The `KernSmith.Rasterizers.Native` project is `IsPackable=false` and is not published to NuGet; it builds in-repo only (cross-platform TFMs: `net8.0`, `net10.0`).
 
-**Status**: Experimental, but functional as of Phase 165. Font loading, table parsing, outline extraction, adaptive curve flattening and a signed-area scanline fill all work, and font/glyph metrics track FreeType to within a pixel. It renders TrueType (`glyf`) outlines only — a CFF/OTF face is rejected at `LoadFont` with a `RasterizationException` (Phase 166). Reachable from a source build or the KernSmith CLI (`--rasterizer native`); not from the released NuGet packages.
+**Status**: Experimental and unpublished. Font loading, table parsing, outline decoding (TrueType and CFF/CFF2), adaptive curve flattening and an exact-area scanline fill all work, and font/glyph metrics track FreeType to within a pixel. Reachable from a source build or the KernSmith CLI (`--rasterizer native`); not from the released NuGet packages.
 
-**When to use**: A fully-owned, dependency-free fallback for the most constrained environments (Blazor WASM, Native AOT, trimmed/single-file apps) where even StbTrueTypeSharp's `AllowUnsafeBlocks` requirement is undesirable. For those scenarios today, use StbTrueType — it is published, and it adds SDF plus synthetic bold/italic.
+**When to use**: A fully-owned, dependency-free fallback for the most constrained environments (Blazor WASM, Native AOT, trimmed/single-file apps) where no third-party or vendored rasterizer code is wanted — Native contains no `unsafe` code, interop or third-party code. It is also the only backend with MSDF/MTSDF. For shipping from NuGet today, use StbTrueType — it is published.
 
 **Strengths**:
 
@@ -174,16 +175,19 @@ RasterizerBackend enum:
 - Cross-platform and WASM/AOT-friendly by design.
 - Parses the core font tables itself (`head`, `hhea`, `hmtx`, `OS/2`, `cmap`) rather than delegating sizing/metrics to a native library.
 - TTC font collection support via `faceIndex`.
+- Synthetic bold/italic as font-unit outline transforms matching FreeType's (`max(0.5px, ppem/24)` embolden with the advance grown to match, then a 12° shear), so bounds come from the styled outline and nothing is clipped.
+- The only backend with MSDF/MTSDF, backend-drawn vector outlines (`OutlineMode.Vector`), `WidthPercent`, `ItalicAngle`, and selectable LCD subpixel order and filter.
 
 **Limitations**:
 
-- TrueType (`glyf`) outlines only — CFF/CFF2 (`.otf`) faces are rejected at load (Phase 166). WOFF1 is decompressed by KernSmith core before rasterization, so it is accepted; WOFF2 is not supported by core.
-- No hinting, so small sizes are softer than FreeType or GDI output.
-- No color fonts, variable fonts, SDF, or outline stroke support.
+- Hinting: only its own y-only auto-hinter, for `Light` with `EnableHinting`; no TrueType bytecode interpreter, and `None`, `Grayscale`, `Lcd` and distance fields are unhinted, so small sizes are softer than FreeType or GDI output.
+- Color fonts: `COLR` version 0 + 1 with `CPAL`, and `CBDT`/`sbix` PNG strikes (`'jpg '`/`'tiff'` graphics and non-PNG bitmap formats are skipped). With `ColorFont`, color glyphs stay color under SDF and MSDF is rejected.
+- Vector outlines decline color faces (they keep core's bitmap outline effect) and are rejected with distance fields.
+- Variable fonts: `avar` version 2 axis mixing is not applied; the backend receives axis values (the CLI's `--instance` resolves a named instance to them).
 - Cannot load system-installed fonts by family name (`LoadSystemFont` throws `NotSupportedException`).
-- Anti-alias modes declared are None and Grayscale only.
-- No synthetic bold or italic (`SupportsSyntheticBold` / `SupportsSyntheticItalic` are `false`).
-- Not thread-safe: create one instance per thread for parallel rasterization.
+- `Gamma` is not applied in any mode.
+- Damaged fonts fail with `FontFormatException` (at load) or `RasterizationException` (per glyph); a glyph box over 64 ems or a bitmap over 16384 px per side is a `RasterizationException`.
+- Not thread-safe: create one instance per thread for parallel rasterization (core already does, one per generation).
 
 ---
 
@@ -191,10 +195,10 @@ RasterizerBackend enum:
 
 The five rendering backends (FreeType, GDI, DirectWrite, StbTrueType, Native) will produce visually different output for the same font, size, and codepoints. This is expected and unavoidable because each uses a different rendering pipeline:
 
-- **Hinting**: FreeType uses its auto-hinter or the font's bytecode interpreter. GDI uses the Windows hinting engine. DirectWrite uses natural or symmetric hinting. These produce different pixel grid alignment, especially at small sizes.
+- **Hinting**: FreeType uses its auto-hinter or the font's bytecode interpreter. GDI uses the Windows hinting engine. DirectWrite uses natural or symmetric hinting. Native auto-hints vertically for `Light` only; StbTrueType never hints. These produce different pixel grid alignment, especially at small sizes.
 - **Gamma and blending**: GDI's `GGO_GRAY8_BITMAP` outputs 65 quantization levels (0-64). FreeType outputs 256 levels. DirectWrite outputs ClearType RGB triples averaged to grayscale. StbTrueType outputs 256 levels via stb_truetype coverage values. The alpha ramps differ.
 - **Metrics rounding**: GDI handles sizing internally via `LOGFONT.lfHeight` (with DPI conversion), while FreeType and DirectWrite receive ppem values from the core. Rounding differences of 1 pixel in bearingX, bearingY, or advance are common.
-- **Bold/italic synthesis**: Each backend applies synthetic bold and italic differently. GDI uses font mapper weight + MAT2 shear. FreeType uses `FT_Outline_Embolden` + `FT_GlyphSlot_Oblique`. DirectWrite uses `DWRITE_FONT_SIMULATIONS` flags. StbTrueType uses outline transforms for synthetic bold and oblique shear for italic.
+- **Bold/italic synthesis**: Each backend applies synthetic bold and italic differently. GDI uses font mapper weight + MAT2 shear. FreeType uses `FT_Outline_Embolden` + `FT_GlyphSlot_Oblique`. DirectWrite uses `DWRITE_FONT_SIMULATIONS` flags. StbTrueType uses outline transforms for synthetic bold and oblique shear for italic. Native emboldens the outline with its own control-polygon offset at FreeType's strength, then applies FreeType's 12° shear.
 - **Kerning**: All five backends return `null` from `GetKerningPairs` and delegate to the shared GPOS/kern table parser, so kerning values are consistent across backends.
 
 For BMFont parity testing, use the GDI backend. For cross-platform builds, use FreeType. For WASM, AOT, or native-dependency-free deployments, use StbTrueType.
@@ -205,7 +209,7 @@ For BMFont parity testing, use the GDI backend. For cross-platform builds, use F
 
 To add a custom rasterizer backend:
 
-1. Implement `IRasterizer` (in `KernSmith.Rasterizer` namespace). This requires `LoadFont`, `RasterizeGlyph`, `RasterizeAll`, and `Dispose`. Optional methods (`GetGlyphMetrics`, `GetFontMetrics`, `GetKerningPairs`, `SetVariationAxes`, `SelectColorPalette`, `LoadSystemFont`) have default implementations that return null or throw.
+1. Implement `IRasterizer` (in `KernSmith.Rasterizer` namespace). This requires `LoadFont`, `RasterizeGlyph`, `RasterizeAll`, and `Dispose`. Optional methods (`GetGlyphMetrics`, `GetFontMetrics`, `GetKerningPairs`, `SetVariationAxes`, `SelectColorPalette`, `LoadSystemFont`, `RasterizeOutlineLayer`) have default implementations that return null or throw.
 
 2. Implement `IRasterizerCapabilities` to declare what your backend supports. The core pipeline checks these flags before calling optional methods.
 
@@ -223,9 +227,12 @@ The `IRasterizerCapabilities` interface:
 | `SupportsColorFonts` | `bool` | COLR/CPAL/sbix/CBDT color glyph rendering |
 | `SupportsVariableFonts` | `bool` | fvar axis coordinate support |
 | `SupportsSdf` | `bool` | Signed distance field output |
-| `SupportsOutlineStroke` | `bool` | Glyph outline stroking |
+| `SupportsOutlineStroke` | `bool` | Implements `IRasterizer.RasterizeOutlineLayer`, so `OutlineMode.Vector` outlines are backend-drawn |
 | `SupportedAntiAliasModes` | `IReadOnlyList<AntiAliasMode>` | Which AA modes are available |
 | `HandlesOwnSizing` | `bool` | If true, core skips ppem conversion |
 | `SupportsSystemFonts` | `bool` | If true, `LoadSystemFont` is available |
 | `SupportsSyntheticBold` | `bool` | If true, can apply synthetic bold (emboldening) to outlines |
 | `SupportsSyntheticItalic` | `bool` | If true, can apply synthetic italic (oblique/shear) to outlines |
+| `SupportsMsdf` | `bool` | If true, renders `SdfMode.Msdf`/`Mtsdf` |
+| `SupportsWidthScale` | `bool` | If true, honors `RasterOptions.WidthPercent` |
+| `SupportsItalicAngle` | `bool` | If true, slants synthetic italic by `RasterOptions.ItalicAngle` |

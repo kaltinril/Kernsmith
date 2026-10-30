@@ -8,9 +8,9 @@ namespace KernSmith.Rasterizers.Native.Internal.Tables;
 /// <remarks>
 /// Hinting instructions are skipped — the native rasterizer does not run the TrueType
 /// interpreter. Implicit on-curve midpoints are materialised once the glyph is fully
-/// assembled, so <see cref="GetGlyph"/> never returns two adjacent off-curve points.
+/// assembled, so <see cref="GetGlyph(int)"/> never returns two adjacent off-curve points.
 /// </remarks>
-internal sealed class GlyfTable
+internal sealed partial class GlyfTable
 {
     /// <summary>numberOfContours(2) + xMin/yMin/xMax/yMax(2 each).</summary>
     private const int GlyphHeaderLength = 10;
@@ -44,6 +44,7 @@ internal sealed class GlyfTable
     private const ushort MoreComponents = 0x0020;
     private const ushort WeHaveAnXAndYScale = 0x0040;
     private const ushort WeHaveATwoByTwo = 0x0080;
+    private const ushort UseMyMetrics = 0x0200;
     private const ushort ScaledComponentOffset = 0x0800;
     private const ushort UnscaledComponentOffset = 0x1000;
 
@@ -72,10 +73,33 @@ internal sealed class GlyfTable
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">If the glyph index is outside the font.</exception>
     /// <exception cref="FontFormatException">If the glyph's data is malformed or truncated.</exception>
-    public ParsedGlyph GetGlyph(int glyphIndex)
+    public ParsedGlyph GetGlyph(int glyphIndex) => GetGlyph(glyphIndex, variations: null, out _);
+
+    /// <summary>
+    /// Decodes a glyph at a variation instance: every glyph of a composite tree is varied at its
+    /// own level — outline points for simple glyphs, placement offsets for components — before
+    /// it is assembled, and the outline is moved by the pp1 delta of
+    /// <see cref="ParsedGlyph.Origin"/>, so the varied horizontal origin stays where the default
+    /// one was. Placing that default origin (<c>xMin - lsb</c>) needs <c>hmtx</c> and is left
+    /// to the caller.
+    /// </summary>
+    /// <param name="glyphIndex">The glyph to decode.</param>
+    /// <param name="variations">Delta source for the current instance; null decodes the static glyph.</param>
+    /// <param name="phantom">How the glyph's horizontal phantom points moved — for a
+    /// <c>USE_MY_METRICS</c> composite, the component's, whose metrics it takes (see
+    /// <see cref="ParsedGlyph.Origin"/>).</param>
+    /// <exception cref="ArgumentOutOfRangeException">If the glyph index is outside the font.</exception>
+    /// <exception cref="FontFormatException">If the glyph's data is malformed or truncated.</exception>
+    public ParsedGlyph GetGlyph(int glyphIndex, IGlyphVariationProvider? variations, out PhantomDeltas phantom)
     {
         int componentBudget = MaxComponentsPerGlyph;
-        var glyph = ParseGlyph(glyphIndex, depth: 0, ref componentBudget);
+        var glyph = ParseGlyph(glyphIndex, depth: 0, ref componentBudget, variations, out phantom);
+
+        // The left side bearing phantom point is the horizontal origin; the pen sits on it.
+        float originDelta = glyph.Origin.VariationDelta;
+        if (!originDelta.Equals(0f))
+            Translate(glyph.Contours, -originDelta, 0f);
+
         return InsertImplicitOnCurvePoints(glyph);
     }
 
@@ -91,7 +115,10 @@ internal sealed class GlyfTable
     /// <see cref="MaxComponentsPerGlyph"/>. Carried by reference so it counts the whole
     /// expansion rather than resetting down each branch.
     /// </param>
-    private ParsedGlyph ParseGlyph(int glyphIndex, int depth, ref int componentBudget)
+    /// <param name="variations">Delta source for the current instance, or null.</param>
+    /// <param name="phantom">How this glyph's horizontal phantom points moved.</param>
+    private ParsedGlyph ParseGlyph(
+        int glyphIndex, int depth, ref int componentBudget, IGlyphVariationProvider? variations, out PhantomDeltas phantom)
     {
         if (depth > _maxComponentDepth)
             throw new FontFormatException("glyf", 0,
@@ -99,9 +126,14 @@ internal sealed class GlyfTable
 
         var (offset, length) = _loca.GetGlyphRange(glyphIndex);
 
-        // Equal consecutive loca offsets mean "no outline" — a space, for example.
+        // Equal consecutive loca offsets mean "no outline" — a space, for example. Its phantom
+        // points can still vary, which is how a space's advance follows the instance.
         if (length == 0)
-            return ParsedGlyph.Empty(glyphIndex);
+        {
+            phantom = PhantomOnly(glyphIndex, variations);
+            return new ParsedGlyph(glyphIndex, [], 0, 0, 0, 0, isComposite: false,
+                new HorizontalOrigin(glyphIndex, 0, phantom.Left));
+        }
 
         if (length < GlyphHeaderLength)
             throw new FontFormatException("glyf", offset,
@@ -118,17 +150,23 @@ internal sealed class GlyfTable
         short xMax = reader.ReadInt16();
         short yMax = reader.ReadInt16();
 
+        HorizontalOrigin? componentOrigin = null;
         GlyphContour[] contours = numberOfContours >= 0
-            ? ParseSimpleContours(ref reader, glyphIndex, numberOfContours)
-            : ParseCompositeContours(ref reader, glyphIndex, depth, ref componentBudget);
+            ? ParseSimpleContours(ref reader, glyphIndex, numberOfContours, variations, out phantom)
+            : ParseCompositeContours(ref reader, glyphIndex, depth, ref componentBudget, variations, out phantom, out componentOrigin);
 
-        return new ParsedGlyph(glyphIndex, contours, xMin, yMin, xMax, yMax, numberOfContours < 0);
+        var origin = componentOrigin ?? new HorizontalOrigin(glyphIndex, xMin, phantom.Left);
+        return new ParsedGlyph(glyphIndex, contours, xMin, yMin, xMax, yMax, numberOfContours < 0, origin);
     }
 
-    private static GlyphContour[] ParseSimpleContours(ref FontReader reader, int glyphIndex, int numberOfContours)
+    private static GlyphContour[] ParseSimpleContours(
+        ref FontReader reader, int glyphIndex, int numberOfContours, IGlyphVariationProvider? variations, out PhantomDeltas phantom)
     {
         if (numberOfContours == 0)
+        {
+            phantom = PhantomOnly(glyphIndex, variations);
             return [];
+        }
 
         var endPoints = new int[numberOfContours];
         for (int i = 0; i < numberOfContours; i++)
@@ -145,9 +183,20 @@ internal sealed class GlyfTable
         ushort instructionLength = reader.ReadUInt16();
         reader.Skip(instructionLength);
 
-        byte[] flags = ReadFlags(ref reader, glyphIndex, pointCount);
-        int[] xs = ReadCoordinates(ref reader, flags, XShortVector, XSameOrPositive);
-        int[] ys = ReadCoordinates(ref reader, flags, YShortVector, YSameOrPositive);
+        var flags = new byte[pointCount];
+        ReadFlags(ref reader, glyphIndex, flags);
+        var xs = new int[pointCount];
+        ReadCoordinates(ref reader, flags, xs, XShortVector, XSameOrPositive);
+        var ys = new int[pointCount];
+        ReadCoordinates(ref reader, flags, ys, YShortVector, YSameOrPositive);
+
+        float[]? dx = null, dy = null;
+        phantom = default;
+        if (variations is not null && variations.TryGetDeltas(glyphIndex, pointCount, xs, ys, endPoints, out var vx, out var vy))
+        {
+            (dx, dy) = (vx, vy);
+            phantom = new PhantomDeltas(vx[pointCount], vx[pointCount + 1], AnyNonZero(vx, vy, pointCount));
+        }
 
         var contours = new GlyphContour[numberOfContours];
         int start = 0;
@@ -158,7 +207,10 @@ internal sealed class GlyfTable
             for (int i = 0; i < points.Length; i++)
             {
                 int index = start + i;
-                points[i] = new GlyphPoint(xs[index], ys[index], (flags[index] & OnCurvePoint) != 0);
+                bool onCurve = (flags[index] & OnCurvePoint) != 0;
+                points[i] = dx is null || dy is null
+                    ? new GlyphPoint(xs[index], ys[index], onCurve)
+                    : new GlyphPoint(xs[index] + dx[index], ys[index] + dy[index], onCurve);
             }
 
             contours[c] = new GlyphContour(points);
@@ -168,11 +220,10 @@ internal sealed class GlyfTable
         return contours;
     }
 
-    /// <summary>Reads the run-length-encoded point flags.</summary>
-    private static byte[] ReadFlags(ref FontReader reader, int glyphIndex, int pointCount)
+    /// <summary>Reads the run-length-encoded point flags, one per element of <paramref name="flags"/>.</summary>
+    private static void ReadFlags(ref FontReader reader, int glyphIndex, Span<byte> flags)
     {
-        var flags = new byte[pointCount];
-
+        int pointCount = flags.Length;
         for (int i = 0; i < pointCount;)
         {
             byte flag = reader.ReadUInt8();
@@ -189,8 +240,6 @@ internal sealed class GlyfTable
             for (int r = 0; r < repeat; r++)
                 flags[i++] = flag;
         }
-
-        return flags;
     }
 
     /// <summary>
@@ -198,9 +247,8 @@ internal sealed class GlyfTable
     /// unsigned byte whose sign comes from the "same or positive" flag; without the short
     /// flag, "same or positive" means a zero delta and anything else is a signed 16-bit delta.
     /// </summary>
-    private static int[] ReadCoordinates(ref FontReader reader, byte[] flags, byte shortFlag, byte sameOrPositiveFlag)
+    private static void ReadCoordinates(ref FontReader reader, ReadOnlySpan<byte> flags, Span<int> coordinates, byte shortFlag, byte sameOrPositiveFlag)
     {
-        var coordinates = new int[flags.Length];
         int value = 0;
 
         for (int i = 0; i < flags.Length; i++)
@@ -219,13 +267,16 @@ internal sealed class GlyfTable
 
             coordinates[i] = value;
         }
-
-        return coordinates;
     }
 
-    private GlyphContour[] ParseCompositeContours(ref FontReader reader, int glyphIndex, int depth, ref int componentBudget)
+    private GlyphContour[] ParseCompositeContours(
+        ref FontReader reader, int glyphIndex, int depth, ref int componentBudget,
+        IGlyphVariationProvider? variations, out PhantomDeltas phantom, out HorizontalOrigin? metricsOrigin)
     {
-        var contours = new List<GlyphContour>();
+        // Read every component record before resolving any: the composite's variation data
+        // addresses its components by position and ends with phantom points after the last one,
+        // so the component count must be known first.
+        var components = new List<ComponentRecord>();
         ushort flags;
 
         do
@@ -264,24 +315,57 @@ internal sealed class GlyfTable
                 d = reader.ReadF2Dot14();
             }
 
+            components.Add(new ComponentRecord(flags, componentIndex, arg1, arg2, a, b, c, d, reader.Position));
+        }
+        while ((flags & MoreComponents) != 0);
+
+        float[]? offsetX = null, offsetY = null;
+        phantom = default;
+        if (variations is not null
+            && variations.TryGetDeltas(glyphIndex, components.Count, [], [], [], out var vx, out var vy))
+        {
+            (offsetX, offsetY) = (vx, vy);
+            phantom = new PhantomDeltas(vx[components.Count], vx[components.Count + 1], AnyNonZero(vx, vy, components.Count));
+        }
+
+        metricsOrigin = null;
+        var contours = new List<GlyphContour>();
+        for (int i = 0; i < components.Count; i++)
+        {
+            var record = components[i];
+            float a = record.A, b = record.B, c = record.C, d = record.D;
+
             // Cyclic references (direct or indirect) are caught by the depth limit; a wide but
             // legal-depth expansion is caught by the budget.
             if (--componentBudget < 0)
-                throw new FontFormatException("glyf", reader.Position,
+                throw new FontFormatException("glyf", record.Position,
                     $"glyph {glyphIndex} expands to more than {MaxComponentsPerGlyph} components.");
 
-            var component = ParseGlyph(componentIndex, depth + 1, ref componentBudget);
+            var component = ParseGlyph(record.GlyphIndex, depth + 1, ref componentBudget, variations, out var componentPhantom);
             var transformed = ApplyLinearTransform(component.Contours, a, b, c, d);
 
-            float dx, dy;
-            if ((flags & ArgsAreXyValues) != 0)
+            // USE_MY_METRICS hands the composite this component's phantom points — origin and
+            // advance both; the last flagged component wins. They are taken as the component
+            // computed them, before its offset or transform.
+            if ((record.Flags & UseMyMetrics) != 0)
             {
-                dx = arg1;
-                dy = arg2;
+                metricsOrigin = component.Origin;
+                phantom = phantom with { Left = componentPhantom.Left, Right = componentPhantom.Right };
+            }
+
+            if (componentPhantom.OutlineVaried)
+                phantom = phantom with { OutlineVaried = true };
+
+            float dx, dy;
+            if ((record.Flags & ArgsAreXyValues) != 0)
+            {
+                // Deltas move the offset itself, so a scaled offset scales the varied value.
+                dx = record.Arg1 + (offsetX?[i] ?? 0f);
+                dy = record.Arg2 + (offsetY?[i] ?? 0f);
 
                 // Offsets are in the parent's units unless the component explicitly asks for
                 // them to be scaled by its own transform. Unscaled is the near-universal default.
-                if ((flags & ScaledComponentOffset) != 0 && (flags & UnscaledComponentOffset) == 0)
+                if ((record.Flags & ScaledComponentOffset) != 0 && (record.Flags & UnscaledComponentOffset) == 0)
                 {
                     (dx, dy) = (a * dx + c * dy, b * dx + d * dy);
                 }
@@ -289,9 +373,10 @@ internal sealed class GlyfTable
             else
             {
                 // Point matching: align point arg1 of the glyph assembled so far with point
-                // arg2 of this component. Rare, but part of the format.
-                var anchor = GetPointAt(contours, arg1, glyphIndex, "composite");
-                var target = GetPointAt(transformed, arg2, componentIndex, "component");
+                // arg2 of this component. Rare, but part of the format. Both points are already
+                // varied, so a delta stored for this component is ignored, as the spec directs.
+                var anchor = GetPointAt(contours, record.Arg1, glyphIndex, "composite");
+                var target = GetPointAt(transformed, record.Arg2, record.GlyphIndex, "component");
                 dx = anchor.X - target.X;
                 dy = anchor.Y - target.Y;
             }
@@ -301,10 +386,31 @@ internal sealed class GlyfTable
             Translate(transformed, dx, dy);
             contours.AddRange(transformed);
         }
-        while ((flags & MoreComponents) != 0);
 
         return contours.ToArray();
     }
+
+    /// <summary>Phantom deltas for a glyph with no outline points of its own.</summary>
+    private static PhantomDeltas PhantomOnly(int glyphIndex, IGlyphVariationProvider? variations) =>
+        variations is not null && variations.TryGetDeltas(glyphIndex, 0, [], [], [], out var dx, out _)
+            ? new PhantomDeltas(dx[0], dx[1], OutlineVaried: false)
+            : default;
+
+    /// <summary>Whether any of the first <paramref name="count"/> X or Y deltas is non-zero.</summary>
+    private static bool AnyNonZero(float[] dx, float[] dy, int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            if (!dx[i].Equals(0f) || !dy[i].Equals(0f))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>A composite component as stored: what to place, and how.</summary>
+    private readonly record struct ComponentRecord(
+        ushort Flags, int GlyphIndex, int Arg1, int Arg2, float A, float B, float C, float D, int Position);
 
     private static GlyphContour[] ApplyLinearTransform(GlyphContour[] contours, float a, float b, float c, float d)
     {
@@ -403,7 +509,7 @@ internal sealed class GlyfTable
 
         return rebuilt is null
             ? glyph
-            : new ParsedGlyph(glyph.GlyphIndex, rebuilt, glyph.XMin, glyph.YMin, glyph.XMax, glyph.YMax, glyph.IsComposite);
+            : new ParsedGlyph(glyph.GlyphIndex, rebuilt, glyph.XMin, glyph.YMin, glyph.XMax, glyph.YMax, glyph.IsComposite, glyph.Origin);
     }
 
     private static bool HasAdjacentOffCurvePoints(GlyphPoint[] points)

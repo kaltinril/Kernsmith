@@ -28,7 +28,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
     /// Stored variation axis coordinates (FT_Fixed 16.16 values) to re-apply after FT_Set_Char_Size,
     /// which can reset variation state in some FreeType builds.
     /// </summary>
-    private int[]? _variationCoords;
+    private nint[]? _variationCoords;
 
     private float _lastSetSize;
     private int _lastSetDpi;
@@ -75,12 +75,20 @@ public sealed class FreeTypeRasterizer : IRasterizer
     /// Must be called after <see cref="LoadFont"/> and before rasterization.
     /// </summary>
     /// <param name="paletteIndex">Zero-based palette index.</param>
+    /// <exception cref="ArgumentOutOfRangeException">If the font has no palette at <paramref name="paletteIndex"/>.</exception>
     public unsafe void SelectColorPalette(int paletteIndex)
     {
         if (_face == null)
             throw new InvalidOperationException("Font not loaded. Call LoadFont first.");
 
-        var error = FreeTypeNative.FT_Palette_Select(_face, (ushort)paletteIndex, IntPtr.Zero);
+        // FreeType answers Invalid_Argument for an index past the CPAL palettes (or no CPAL at
+        // all); report it as the out-of-range option it is, like the Native rasterizer does.
+        var error = paletteIndex is < 0 or > ushort.MaxValue
+            ? FT_Error.FT_Err_Invalid_Argument
+            : FreeTypeNative.FT_Palette_Select(_face, (ushort)paletteIndex, IntPtr.Zero);
+        if (error == FT_Error.FT_Err_Invalid_Argument)
+            throw new ArgumentOutOfRangeException(nameof(paletteIndex), paletteIndex,
+                "The font has no color palette at this index (palettes are indexed from 0).");
         if (error != FT_Error.FT_Err_Ok)
             throw new FreeTypeException(error);
     }
@@ -103,9 +111,11 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
         // Build the coordinate array in fvar axis order.
         // Axes not specified by the user get their default value.
-        // FT_Fixed is a 16.16 fixed-point integer: value * 65536.
+        // FT_Fixed is a 16.16 fixed-point C long, pointer-sized in the bundled FreeType (as
+        // FreeTypeSharp's own FT_F26Dot6 parameters are): an int array is read in pairs and
+        // throws every axis to an extreme.
         var numAxes = fvarAxes.Count;
-        var coordsArray = new int[numAxes];
+        var coordsArray = new nint[numAxes];
 
         for (var i = 0; i < numAxes; i++)
         {
@@ -124,7 +134,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         // which resets variation state in some FreeType builds.
         _variationCoords = coordsArray;
 
-        fixed (int* coords = coordsArray)
+        fixed (nint* coords = coordsArray)
         {
             var error = FreeTypeNative.FT_Set_Var_Design_Coordinates(
                 _face, (uint)numAxes, coords);
@@ -551,7 +561,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         // variation state in some FreeType builds.
         if (_variationCoords != null)
         {
-            fixed (int* coords = _variationCoords)
+            fixed (nint* coords = _variationCoords)
             {
                 error = FreeTypeNative.FT_Set_Var_Design_Coordinates(
                     _face, (uint)_variationCoords.Length, coords);
@@ -565,17 +575,17 @@ public sealed class FreeTypeRasterizer : IRasterizer
     }
 
     /// <summary>
-    /// Applies synthetic bold with a fixed 1-pixel strength to match GDI behavior.
-    /// FreeType's built-in FT_GlyphSlot_Embolden uses ppem/24 which is too aggressive
-    /// at large sizes (e.g., 3 pixels at size 72). GDI uses approximately 1 pixel regardless
-    /// of size. This method calls FT_Outline_Embolden directly with a fixed strength and
-    /// adjusts the glyph slot metrics to match.
+    /// Applies synthetic bold at <c>max(0.5px, y_ppem / 24)</c> — FreeType's own
+    /// FT_GlyphSlot_Embolden strength (~1.3px at 32, 2px at 48, 3px at 72), floored at half a
+    /// pixel — via FT_Outline_Embolden, then grows the slot metrics and advance by the strength
+    /// as FT_GlyphSlot_Embolden does. Heavier than GDI's roughly fixed 1px at large sizes.
     /// </summary>
+    /// <remarks>
+    /// INVARIANT: the Native backend's <c>BoldTransform.StrengthInFontUnits</c> reproduces this
+    /// strength exactly; change both together.
+    /// </remarks>
     private static unsafe void EmboldenGlyph(FT_GlyphSlotRec_* slot, FT_FaceRec_* face)
     {
-        // Use FreeType's default emboldening strength (ppem/24) for visible synthetic bold.
-        // ~1.3px at 32, ~2px at 48, ~3px at 72. Heavier than GDI's ~1px but more
-        // clearly distinguishable from regular weight.
         var ppem = (int)face->size->metrics.y_ppem;
         var strength = Math.Max(32, ppem * 64 / 24); // 26.6 fixed-point, minimum 0.5px
 
@@ -716,7 +726,10 @@ public sealed class FreeTypeRasterizer : IRasterizer
         public bool SupportsColorFonts => true;
         public bool SupportsVariableFonts => true;
         public bool SupportsSdf => true;
-        public bool SupportsOutlineStroke => true;
+
+        // False: this backend does not implement IRasterizer.RasterizeOutlineLayer, so the
+        // pipeline draws its outlines (OutlineMode.Vector included) with the bitmap effect.
+        public bool SupportsOutlineStroke => false;
         public bool HandlesOwnSizing => false;
         public bool SupportsSyntheticBold => true;
         public bool SupportsSyntheticItalic => true;

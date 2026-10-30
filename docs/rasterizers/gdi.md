@@ -46,7 +46,7 @@ var result = BmFont.GenerateFromSystem("Arial", new FontGeneratorOptions
 - No SDF rendering support
 - No color font support
 - No variable font axis support
-- No outline stroke support
+- No vector outlines (`OutlineMode.Vector` falls back to core's bitmap outline effect, which works as usual), and no `WidthPercent` or non-default `ItalicAngle` (`NotSupportedException`)
 - Cannot apply synthetic bold when a native bold face exists for the same family -- use FreeType or DirectWrite if you need to force synthetic bold in that scenario
 - Fractional font sizes are rounded to the nearest integer. The underlying Win32 `LOGFONTW.lfHeight` field is integer-only, so values like `Size = 32.5f` are silently rounded on assignment. Use FreeType, StbTrueType, or DirectWrite if you need true fractional sizes
 

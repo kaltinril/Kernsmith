@@ -1,9 +1,12 @@
 using KernSmith.Font.Models;
+using KernSmith.Font.Tables;
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.Native.Internal;
+using KernSmith.Rasterizers.Native.Internal.Bitmaps;
+using KernSmith.Rasterizers.Native.Internal.Color;
 using KernSmith.Rasterizers.Native.Internal.Outlines;
-using KernSmith.Rasterizers.Native.Internal.Raster;
-using KernSmith.Rasterizers.Native.Internal.Tables;
+using KernSmith.Rasterizers.Native.Internal.Pipeline;
+using KernSmith.Rasterizers.Native.Internal.Variations;
 
 namespace KernSmith.Rasterizers.Native;
 
@@ -12,19 +15,40 @@ namespace KernSmith.Rasterizers.Native;
 /// dependencies. Cross-platform and WASM/AOT-friendly.
 /// </summary>
 /// <remarks>
-/// Renders TrueType (<c>glyf</c>) outlines only: the font is parsed in-house, outlines are
-/// flattened to line segments and filled with a signed-area scanline rasterizer. CFF/OTF
-/// (PostScript) outlines are rejected at load time until Phase 166 adds a CFF interpreter.
+/// Renders TrueType (<c>glyf</c>) and PostScript (<c>CFF </c>/<c>CFF2</c>, typically
+/// <c>.otf</c>) outlines: the font is parsed in-house, outlines are flattened to line segments
+/// and filled with a signed-area scanline rasterizer. A CFF2 variable font renders its default
+/// instance.
 ///
-/// Synthetic bold/italic (Phase 167), outline stroking (Phase 168), SDF (Phase 169), variable
-/// fonts (Phase 171) and color fonts (Phase 172) are not implemented; the corresponding
-/// <see cref="IRasterizerCapabilities"/> flags are all false. <see cref="RasterOptions.Bold"/>
-/// and <see cref="RasterOptions.Italic"/> are ignored rather than rejected, so a font
-/// configuration that works on other backends still generates here — just without the styling.
-/// <see cref="RasterOptions.SuperSample"/> is likewise ignored: with
+/// TrueType variable fonts (Phase 171) render at the instance <see cref="SetVariationAxes"/>
+/// selects: <c>gvar</c> outlines, <c>HVAR</c> (or phantom-point) advances and <c>MVAR</c> font
+/// metrics. Color fonts render from <c>COLR</c> version 1 paint graphs and version 0 layers with
+/// <c>CPAL</c> palettes when <see cref="RasterOptions.ColorFont"/> is on (Phase 172), and from
+/// <c>CBDT</c>/<c>sbix</c> PNG bitmaps, scaled from the best strike, for glyphs without
+/// <c>COLR</c> data; glyphs with none of these render as plain coverage. A font drawn only by
+/// bitmaps renders them as grayscale ink coverage when color is off.
+///
+/// <see cref="RasterOptions.Bold"/> and <see cref="RasterOptions.Italic"/> are applied as
+/// font-unit outline transforms matching the FreeType backend's synthetic styles (Phase 167):
+/// FreeType's embolden strength, <c>max(0.5px, ppem/24)</c>, with the advance grown to match,
+/// then a 12° shear — to every color layer and <c>COLR</c> version 1 glyph clip as well as plain outlines.
+///
+/// Distance fields are computed from the (transformed) outline: single-channel SDF (Phase 169)
+/// and multi-channel MSDF/MTSDF (Phase 170), selected by <see cref="RasterOptions.EffectiveSdfMode"/>.
+/// <see cref="RasterOptions.WidthPercent"/> (condensed/expanded) and
+/// <see cref="RasterOptions.ItalicAngle"/> are outline transforms too, and
+/// <see cref="RasterizeOutlineLayer"/> strokes the vector outline for <see cref="OutlineMode.Vector"/>
+/// (Phase 168). <see cref="RasterOptions.SuperSample"/> is ignored: with
 /// <see cref="IRasterizerCapabilities.HandlesOwnSizing"/> false the pipeline already renders
 /// at the supersampled size and box-filters the result back down, exactly as it does for the
-/// FreeType backend.
+/// FreeType backend — except for <see cref="AntiAliasMode.Lcd"/>, which it renders at the final
+/// size. <see cref="RasterOptions.LcdFilter"/> and <see cref="RasterOptions.LcdSubpixelOrder"/>
+/// select the LCD filter and panel layout (Phase 173).
+///
+/// Each glyph runs a staged pipeline (see the package README): decode via an
+/// <see cref="IOutlineDecoder"/>, outline transforms, bounds, scale/hint, then render-mode
+/// dispatch. <see cref="GetGlyphMetrics"/> runs the same stages as
+/// <see cref="RasterizeGlyph"/>, so metrics and bitmaps cannot disagree.
 ///
 /// Instances are NOT thread-safe (Phase 160, D9). Create one instance per thread for
 /// parallel rasterization.
@@ -34,13 +58,18 @@ public sealed class NativeRasterizer : IRasterizer
     private static readonly IRasterizerCapabilities CapabilitiesInstance = new NativeCapabilities();
 
     private NativeFontFace? _face;
+    private GlyphPipeline? _pipeline;
+    private ColorGlyphs? _colorGlyphs;
+    private BitmapGlyphs? _bitmapGlyphs;
+    private FontVariations? _variations;
     private bool _disposed;
 
     /// <inheritdoc />
     public IRasterizerCapabilities Capabilities => CapabilitiesInstance;
 
     /// <inheritdoc />
-    /// <exception cref="RasterizationException">If the font uses CFF (PostScript) outlines.</exception>
+    /// <exception cref="FontFormatException">If the font, or its outline table, is malformed (for a
+    /// font with no outlines, its color bitmap tables).</exception>
     public void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -49,16 +78,55 @@ public sealed class NativeRasterizer : IRasterizer
             throw new InvalidOperationException("Font already loaded. Create a new NativeRasterizer instance.");
 
         var face = NativeFontFace.Load(fontData, faceIndex);
-
-        // Fail here rather than on the first glyph: a CFF face parses fine and would otherwise
-        // render an entire atlas of nothing before anyone noticed.
-        if (!face.HasGlyfOutlines)
-            throw new RasterizationException(
-                "The native rasterizer renders TrueType ('glyf') outlines only, and this font uses "
-                + "CFF/CFF2 (PostScript) outlines — typically a .otf file. CFF outline support is "
-                + "Phase 166; until then use the FreeType or StbTrueType backend for this font.");
+        var variations = FontVariations.Load(face);
+        var decoder = OutlineDecoders.ForFace(face, variations);
 
         _face = face;
+        _variations = variations;
+        _pipeline = new GlyphPipeline(decoder, face.Head.UnitsPerEm, new GlyphHinter(face.GetGlyphIndex, face.Os2, () => InstanceStamp(variations)));
+        _colorGlyphs = ColorGlyphs.TryLoad(face.Tables, face.Maxp.NumGlyphs, variations);
+        _bitmapGlyphs = BitmapGlyphs.TryLoad(face);
+    }
+
+    /// <inheritdoc />
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// If the font has no usable <c>CPAL</c> table or no palette at <paramref name="paletteIndex"/>.
+    /// </exception>
+    public void SelectColorPalette(int paletteIndex)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        EnsureFontLoaded();
+
+        if (_colorGlyphs is null)
+            throw new ArgumentOutOfRangeException(nameof(paletteIndex), paletteIndex,
+                "The font has no usable CPAL color palette table.");
+
+        _colorGlyphs.SelectPalette(paletteIndex);
+    }
+
+    /// <summary>
+    /// Selects the variable-font instance to render. Axes missing from
+    /// <paramref name="userAxes"/> stay at their default and values are clamped to each axis's
+    /// range. Ignored for a font without an <c>fvar</c> table.
+    /// </summary>
+    /// <param name="fvarAxes">The font's <c>fvar</c> axes, in order.</param>
+    /// <param name="userAxes">User-scale values by axis tag (e.g. "wght" = 700).</param>
+    /// <exception cref="RasterizationException">If the font's variation tables are malformed.</exception>
+    public void SetVariationAxes(IReadOnlyList<VariationAxis> fvarAxes, Dictionary<string, float> userAxes)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        EnsureFontLoaded();
+        ArgumentNullException.ThrowIfNull(fvarAxes);
+        ArgumentNullException.ThrowIfNull(userAxes);
+
+        try
+        {
+            _variations?.SetAxes(fvarAxes, userAxes);
+        }
+        catch (FontFormatException ex)
+        {
+            throw new RasterizationException($"The font's variation data is malformed: {ex.Message}", ex);
+        }
     }
 
     /// <summary>
@@ -72,55 +140,79 @@ public sealed class NativeRasterizer : IRasterizer
     }
 
     /// <inheritdoc />
+    /// <exception cref="ArgumentOutOfRangeException">If the size is not a positive finite number or the DPI is negative (zero means 72).</exception>
+    /// <exception cref="RasterizationException">
+    /// If the glyph's data is malformed, or its bitmap would exceed the size limits (64 ems, or
+    /// 16384 px per side after distance-field padding).
+    /// </exception>
     public RasterizedGlyph? RasterizeGlyph(int codepoint, RasterOptions options)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
         ArgumentNullException.ThrowIfNull(options);
-        RejectUnsupported(options);
+        options = ValidateSize(options);
+        var renderer = GlyphRenderers.SelectForFace(options, _colorGlyphs, _pipeline!, _bitmapGlyphs);
 
         int glyphIndex = _face!.GetGlyphIndex(codepoint);
         if (glyphIndex == 0)
             return null;
 
-        float scale = PixelScale(options);
-        int advance = ScaleAdvance(glyphIndex, scale);
+        var glyph = Prepare(codepoint, glyphIndex, options);
+        if (glyph.IsBlank && !DrawsLayers(renderer, glyphIndex))
+            return BlankGlyph(codepoint, glyphIndex, glyph.Advance);
 
-        var parsed = LoadGlyph(codepoint, glyphIndex);
-        var outline = OutlineExtractor.Extract(parsed);
-        var box = GlyphBox.Compute(parsed, outline, scale);
-
-        if (outline.IsEmpty || box.IsEmpty)
-            return BlankGlyph(codepoint, glyphIndex, advance);
-
-        // Baseline on row 0: the box's own Y origin then places the bitmap against it.
-        var edges = OutlineFlattener.Flatten(outline, new OutlineTransform(scale, 0f));
-        var raster = ScanlineRasterizer.Rasterize(
-            edges,
-            box.Width,
-            box.Height,
-            box.MinX,
-            box.MinY,
-            options.AntiAlias,
-            box.BearingX,
-            box.BearingY);
-
-        return new RasterizedGlyph
+        try
         {
-            Codepoint = codepoint,
-            GlyphIndex = glyphIndex,
-            BitmapData = raster.Bitmap,
-            Width = raster.Width,
-            Height = raster.Height,
-            Pitch = raster.Width,
-            Metrics = new GlyphMetrics(
-                BearingX: raster.BearingX,
-                BearingY: raster.BearingY,
-                Advance: advance,
-                Width: raster.Width,
-                Height: raster.Height),
-            Format = PixelFormat.Grayscale8
-        };
+            return renderer.Render(codepoint, glyphIndex, glyph, options);
+        }
+        catch (RasterizationException ex) when (ex.Codepoint is null)
+        {
+            throw new RasterizationException(codepoint, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// The glyph dilated by <paramref name="width"/> pixels — every point within that distance of
+    /// its filled region, measured with a round, square (Chebyshev) or diamond (Manhattan, for
+    /// <see cref="OutlineShape.Plus"/>) pen — in the same frame and anti-alias mode as
+    /// <see cref="RasterizeGlyph"/> (LCD as grayscale coverage, since the layer is one color).
+    /// </summary>
+    /// <returns>Null for an unmapped or blank glyph, for distance fields, and when
+    /// <see cref="RasterOptions.ColorFont"/> is on for a face with color glyphs (<c>COLR</c> layers
+    /// or <c>CBDT</c>/<c>sbix</c> bitmaps): a color glyph's silhouette is its layers' or image's,
+    /// so the pipeline's bitmap outline draws every outline of such a font, keeping them
+    /// consistent. A bitmap-only face has no outlines, so it never gets a layer.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">If the size, DPI, width or height scale is out of range.</exception>
+    /// <exception cref="RasterizationException">As for <see cref="RasterizeGlyph"/>.</exception>
+    public RasterizedGlyph? RasterizeOutlineLayer(int codepoint, RasterOptions options, int width, OutlineShape shape, float heightScale = 1f)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        EnsureFontLoaded();
+        ArgumentNullException.ThrowIfNull(options);
+        options = ValidateSize(options);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        if (!(heightScale > 0) || !float.IsFinite(heightScale))
+            throw new ArgumentOutOfRangeException(nameof(heightScale), heightScale, "Height scale must be positive and finite.");
+
+        if (options.EffectiveSdfMode != SdfMode.None || (options.ColorFont && (_colorGlyphs is not null || _bitmapGlyphs is not null)))
+            return null;
+
+        int glyphIndex = _face!.GetGlyphIndex(codepoint);
+        if (glyphIndex == 0)
+            return null;
+
+        var glyph = Prepare(codepoint, glyphIndex, options);
+        if (glyph.IsBlank)
+            return null;
+
+        try
+        {
+            return OutlineLayer.Render(codepoint, glyphIndex, glyph, width, shape, heightScale, aliased: options.AntiAlias == AntiAliasMode.None);
+        }
+        catch (RasterizationException ex) when (ex.Codepoint is null)
+        {
+            throw new RasterizationException(codepoint, ex.Message);
+        }
     }
 
     /// <inheritdoc />
@@ -142,43 +234,61 @@ public sealed class NativeRasterizer : IRasterizer
     }
 
     /// <inheritdoc />
+    /// <exception cref="ArgumentOutOfRangeException">If the size is not a positive finite number or the DPI is negative (zero means 72).</exception>
+    /// <exception cref="RasterizationException">As for <see cref="RasterizeGlyph"/>.</exception>
     public GlyphMetrics? GetGlyphMetrics(int codepoint, RasterOptions options)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
         ArgumentNullException.ThrowIfNull(options);
-        RejectUnsupported(options);
+        options = ValidateSize(options);
+        var renderer = GlyphRenderers.SelectForFace(options, _colorGlyphs, _pipeline!, _bitmapGlyphs);
 
         int glyphIndex = _face!.GetGlyphIndex(codepoint);
         if (glyphIndex == 0)
             return null;
 
-        float scale = PixelScale(options);
-        int advance = ScaleAdvance(glyphIndex, scale);
+        // Where the box alone decides the metrics, skip decoding the outline (Phase 177).
+        var transforms = GlyphTransforms.For(options, _face.Head.UnitsPerEm);
+        if (renderer is IBoxMeasuringRenderer boxRenderer && boxRenderer.MeasuresFromBox(options) && TryPrepareBox(codepoint, glyphIndex, options, transforms, out var box, out int advance))
+        {
+            if (box.IsEmpty)
+                return new GlyphMetrics(BearingX: 0, BearingY: 0, Advance: advance, Width: 0, Height: 0);
 
-        var parsed = LoadGlyph(codepoint, glyphIndex);
-        var outline = OutlineExtractor.Extract(parsed);
-        var box = GlyphBox.Compute(parsed, outline, scale);
+            try
+            {
+                return boxRenderer.MeasureBox(glyphIndex, box, advance, options);
+            }
+            catch (RasterizationException ex) when (ex.Codepoint is null)
+            {
+                throw new RasterizationException(codepoint, ex.Message);
+            }
+        }
 
-        if (outline.IsEmpty || box.IsEmpty)
-            return new GlyphMetrics(BearingX: 0, BearingY: 0, Advance: advance, Width: 0, Height: 0);
+        var glyph = Prepare(codepoint, glyphIndex, options, transforms);
+        if (glyph.IsBlank && !DrawsLayers(renderer, glyphIndex))
+            return new GlyphMetrics(BearingX: 0, BearingY: 0, Advance: glyph.Advance, Width: 0, Height: 0);
 
-        return new GlyphMetrics(
-            BearingX: box.BearingX,
-            BearingY: box.BearingY,
-            Advance: advance,
-            Width: box.Width,
-            Height: box.Height);
+        try
+        {
+            return renderer.Measure(glyph, options);
+        }
+        catch (RasterizationException ex) when (ex.Codepoint is null)
+        {
+            throw new RasterizationException(codepoint, ex.Message);
+        }
     }
 
     /// <inheritdoc />
+    /// <exception cref="ArgumentOutOfRangeException">If the size is not a positive finite number or the DPI is negative (zero means 72).</exception>
     public RasterizerFontMetrics? GetFontMetrics(RasterOptions options)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
         ArgumentNullException.ThrowIfNull(options);
+        options = ValidateSize(options);
 
-        double scale = PixelScale(options);
+        double scale = GlyphPipeline.PixelScale(options, _face!.Head.UnitsPerEm);
 
         // OS/2 usWinAscent/usWinDescent, not hhea: these are what GDI reports as
         // tmAscent/tmDescent and therefore what bmfont.exe writes as base/lineHeight. Using
@@ -188,14 +298,19 @@ public sealed class NativeRasterizer : IRasterizer
         //
         // Ceiling, not rounding: a line box a fraction of a pixel short clips the glyphs it is
         // supposed to contain.
-        var os2 = _face!.Os2;
+        //
+        // A variable font's MVAR moves usWinAscent/usWinDescent ('hcla'/'hcld') with the
+        // instance; at the default instance both deltas are exactly zero.
+        var os2 = _face.Os2;
         if (os2.WinAscent > 0)
         {
+            double winAscent = os2.WinAscent + (double)MetricDelta("hcla");
+            double winDescent = os2.WinDescent + (double)MetricDelta("hcld");
             return new RasterizerFontMetrics
             {
-                Ascent = (int)Math.Ceiling(os2.WinAscent * scale),
-                Descent = (int)Math.Ceiling(os2.WinDescent * scale),
-                LineHeight = (int)Math.Ceiling((os2.WinAscent + os2.WinDescent) * scale)
+                Ascent = (int)Math.Ceiling(winAscent * scale),
+                Descent = (int)Math.Ceiling(winDescent * scale),
+                LineHeight = (int)Math.Ceiling((winAscent + winDescent) * scale)
             };
         }
 
@@ -226,6 +341,25 @@ public sealed class NativeRasterizer : IRasterizer
 
         _disposed = true;
         _face = null;
+        _pipeline = null;
+        _colorGlyphs = null;
+        _bitmapGlyphs = null;
+        _variations = null;
+    }
+
+    /// <summary>
+    /// Rejects a size or DPI no glyph can be scaled by: a zero, negative, NaN or infinite scale
+    /// would yield blank glyphs with negative or saturated advances and line metrics. A DPI of
+    /// zero means 72, as it does to FreeType, so the request comes back with that filled in.
+    /// </summary>
+    private static RasterOptions ValidateSize(RasterOptions options)
+    {
+        if (!(options.Size > 0f) || float.IsPositiveInfinity(options.Size))
+            throw new ArgumentOutOfRangeException(nameof(options), options.Size, "Size must be a positive, finite number of pixels.");
+        if (options.Dpi < 0)
+            throw new ArgumentOutOfRangeException(nameof(options), options.Dpi, "Dpi must not be negative.");
+
+        return options.Dpi == 0 ? options with { Dpi = 72 } : options;
     }
 
     private void EnsureFontLoaded()
@@ -241,25 +375,37 @@ public sealed class NativeRasterizer : IRasterizer
         return _face!.GetGlyphIndex(codepoint);
     }
 
+    /// <summary>Identifies the selected variation instance for the hinter's per-instance measurements.</summary>
+    private static int InstanceStamp(FontVariations? variations)
+    {
+        if (variations is null || variations.IsDefaultInstance)
+            return 0;
+
+        var hash = new HashCode();
+        foreach (float coordinate in variations.Coordinates)
+            hash.Add(coordinate);
+        return hash.ToHashCode();
+    }
+
+    /// <summary>The <c>MVAR</c> delta for a font-wide metric at the current instance; 0 when unvaried.</summary>
+    private float MetricDelta(string tag) => _variations?.GetMetricDelta(tag) ?? 0f;
+
     /// <summary>The parsed font face. Internal access for tests and later-phase decoders.</summary>
     internal NativeFontFace? Face => _face;
 
     /// <summary>
-    /// Pixels per font unit. <see cref="IRasterizerCapabilities.HandlesOwnSizing"/> is false,
-    /// so <see cref="RasterOptions.Size"/> is already the em size the pipeline wants; only the
-    /// point-to-pixel DPI conversion is applied on top of it.
+    /// Runs pipeline stages 1–4 for a glyph, reporting malformed glyph data against the
+    /// codepoint that asked for it.
     /// </summary>
-    private float PixelScale(RasterOptions options) =>
-        options.Size * options.Dpi / 72f / _face!.Head.UnitsPerEm;
+    private PreparedGlyph Prepare(int codepoint, int glyphIndex, RasterOptions options) =>
+        Prepare(codepoint, glyphIndex, options, GlyphTransforms.For(options, _face!.Head.UnitsPerEm));
 
-    private int ScaleAdvance(int glyphIndex, float scale) =>
-        (int)Math.Round(_face!.Hmtx.GetAdvanceWidth(glyphIndex) * (double)scale);
-
-    private ParsedGlyph LoadGlyph(int codepoint, int glyphIndex)
+    /// <inheritdoc cref="Prepare(int, int, RasterOptions)"/>
+    private PreparedGlyph Prepare(int codepoint, int glyphIndex, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms)
     {
         try
         {
-            return _face!.GetGlyph(glyphIndex);
+            return _pipeline!.Prepare(glyphIndex, options, transforms);
         }
         catch (FontFormatException ex)
         {
@@ -269,16 +415,42 @@ public sealed class NativeRasterizer : IRasterizer
         {
             throw new RasterizationException(codepoint, ex.Message);
         }
+        catch (RasterizationException ex) when (ex.Codepoint is null)
+        {
+            throw new RasterizationException(codepoint, ex.Message);
+        }
     }
 
-    private static void RejectUnsupported(RasterOptions options)
+    /// <summary>
+    /// <see cref="GlyphPipeline.TryPrepareBox"/>, reporting malformed glyph data against the
+    /// codepoint as <see cref="Prepare(int, int, RasterOptions)"/> does.
+    /// </summary>
+    private bool TryPrepareBox(int codepoint, int glyphIndex, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms, out Internal.Raster.GlyphBox box, out int advance)
     {
-        if (options.ColorFont)
-            throw new NotSupportedException("Native rasterizer does not support color font rendering.");
-
-        if (options.Sdf)
-            throw new NotSupportedException("Native rasterizer does not support SDF rendering.");
+        try
+        {
+            return _pipeline!.TryPrepareBox(glyphIndex, options, transforms, out box, out advance);
+        }
+        catch (FontFormatException ex)
+        {
+            throw new RasterizationException(codepoint, ex.Message);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            throw new RasterizationException(codepoint, ex.Message);
+        }
+        catch (RasterizationException ex) when (ex.Codepoint is null)
+        {
+            throw new RasterizationException(codepoint, ex.Message);
+        }
     }
+
+    /// <summary>
+    /// True when the glyph is drawn from color layers or a bitmap, so a blank base outline (common
+    /// in <c>COLR</c> fonts, and every glyph of a bitmap-only font) must still reach the renderer.
+    /// </summary>
+    private static bool DrawsLayers(IGlyphRenderer renderer, int glyphIndex) =>
+        renderer is IDrawsWithoutOutline drawer && drawer.DrawsWithoutOutline(glyphIndex);
 
     /// <summary>A whitespace glyph: a real advance, but nothing to draw.</summary>
     private static RasterizedGlyph BlankGlyph(int codepoint, int glyphIndex, int advance) =>

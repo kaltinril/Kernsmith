@@ -61,11 +61,14 @@ public class MainViewModel : ViewModel
         AtlasConfig = new AtlasConfigViewModel();
         Effects = new EffectsViewModel();
         WindowTitle = BaseTitle;
+        // FontConfig computed its backend's capabilities before Effects existed.
+        SyncBackendCapabilitiesToEffects();
 
         // Wire auto-regeneration and dirty tracking from sub-viewmodels
         FontConfig.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName is nameof(FontConfigViewModel.FontSize))
+            if (e.PropertyName is nameof(FontConfigViewModel.FontSize)
+                or nameof(FontConfigViewModel.SelectedBackend))
             {
                 MarkDirty();
                 RequestAutoRegenerateDebounced();
@@ -79,12 +82,14 @@ public class MainViewModel : ViewModel
             if (e.PropertyName is nameof(FontConfigViewModel.SelectedBackend)
                 or nameof(FontConfigViewModel.BackendSupportsColorFonts)
                 or nameof(FontConfigViewModel.BackendSupportsVariableFonts)
-                or nameof(FontConfigViewModel.BackendSupportsSdf))
+                or nameof(FontConfigViewModel.BackendSupportsSdf)
+                or nameof(FontConfigViewModel.BackendSupportsMsdf)
+                or nameof(FontConfigViewModel.BackendAntiAliasModes)
+                or nameof(FontConfigViewModel.BackendSupportsOutlineStroke)
+                or nameof(FontConfigViewModel.BackendSupportsWidthScale)
+                or nameof(FontConfigViewModel.BackendSupportsItalicAngle))
             {
-                Effects.BackendSupportsColorFonts = FontConfig.BackendSupportsColorFonts;
-                Effects.BackendSupportsVariableFonts = FontConfig.BackendSupportsVariableFonts;
-                Effects.BackendSupportsSdf = FontConfig.BackendSupportsSdf;
-                Effects.BackendIsGdi = FontConfig.SelectedBackend == RasterizerBackend.Gdi;
+                SyncBackendCapabilitiesToEffects();
             }
 
             if (e.PropertyName is nameof(FontConfigViewModel.CurrentFontGroup))
@@ -148,7 +153,7 @@ public class MainViewModel : ViewModel
     {
         using var dialog = new NativeFileDialog();
         dialog.SelectFile()
-            .AddFilter("Font Files", "ttf,otf,woff,ttc")
+            .AddFilter("Font Files", FontFileTypes.DialogFilter)
             .AddFilter("All Files", "*");
         var result = dialog.Open(out string? path);
         if (result == DialogResult.Okay && path != null)
@@ -180,18 +185,23 @@ public class MainViewModel : ViewModel
         }
     }
 
+    private void SyncBackendCapabilitiesToEffects()
+    {
+        Effects.BackendSupportsColorFonts = FontConfig.BackendSupportsColorFonts;
+        Effects.BackendSupportsVariableFonts = FontConfig.BackendSupportsVariableFonts;
+        Effects.BackendSupportsSdf = FontConfig.BackendSupportsSdf;
+        Effects.BackendSupportsMsdf = FontConfig.BackendSupportsMsdf;
+        Effects.BackendAntiAliasModes = FontConfig.BackendAntiAliasModes;
+        Effects.BackendSupportsOutlineStroke = FontConfig.BackendSupportsOutlineStroke;
+        Effects.BackendSupportsWidthScale = FontConfig.BackendSupportsWidthScale;
+        Effects.BackendSupportsItalicAngle = FontConfig.BackendSupportsItalicAngle;
+        Effects.BackendIsGdi = FontConfig.SelectedBackend == RasterizerBackend.Gdi;
+    }
+
     private void SyncVariationAxesToEffects()
     {
-        Effects.VariationAxisValues.Clear();
-        Effects.VariationAxesList = FontConfig.LoadedVariationAxes;
-        Effects.HasVariationAxes = FontConfig.HasVariationAxes;
+        Effects.LoadVariationAxes(FontConfig.LoadedVariationAxes);
         Effects.HasColorGlyphs = FontConfig.HasColorGlyphs;
-
-        if (FontConfig.LoadedVariationAxes is { Count: > 0 })
-        {
-            foreach (var axis in FontConfig.LoadedVariationAxes)
-                Effects.VariationAxisValues[axis.Tag] = axis.DefaultValue;
-        }
     }
 
     /// <summary>
@@ -229,90 +239,7 @@ public class MainViewModel : ViewModel
 
         try
         {
-            var outlineRgb = EffectsViewModel.ParseHex(Effects.OutlineColor);
-            var shadowRgb = EffectsViewModel.ParseHex(Effects.ShadowColor);
-            var gradStartRgb = EffectsViewModel.ParseHex(Effects.GradientStartColor);
-            var gradEndRgb = EffectsViewModel.ParseHex(Effects.GradientEndColor);
-            var fillRgb = EffectsViewModel.ParseHex(Effects.FillColor);
-
-            var request = new GenerationRequest
-            {
-                FontData = FontConfig.FontData,
-                FontFilePath = FontConfig.FontFilePath,
-                // For system fonts, pass the family name so the core library handles
-                // bold/italic variant resolution (including ForceSynthetic logic).
-                // For file-based fonts, SystemFontFamily stays null.
-                SystemFontFamily = FontConfig.FontSourceKind == FontSourceKind.System
-                    ? FontConfig.FamilyName
-                    : null,
-                SourceKind = FontConfig.FontSourceKind,
-                FontSize = FontConfig.FontSize,
-                Characters = CharacterGrid.ToCharacterSet(),
-                MaxWidth = AtlasConfig.MaxWidth,
-                MaxHeight = AtlasConfig.MaxHeight,
-                PowerOfTwo = AtlasConfig.PowerOfTwo,
-                AutofitTexture = AtlasConfig.AutofitTexture,
-                PaddingUp = AtlasConfig.PaddingUp,
-                PaddingRight = AtlasConfig.PaddingRight,
-                PaddingDown = AtlasConfig.PaddingDown,
-                PaddingLeft = AtlasConfig.PaddingLeft,
-                SpacingH = AtlasConfig.SpacingH,
-                SpacingV = AtlasConfig.SpacingV,
-                IncludeKerning = AtlasConfig.IncludeKerning,
-                FillColorR = fillRgb.R,
-                FillColorG = fillRgb.G,
-                FillColorB = fillRgb.B,
-                FillColorA = 255,
-                AdvanceAdjustX = Effects.AdvanceAdjustX,
-                Gamma = Effects.Gamma,
-                Bold = Effects.Bold,
-                Italic = Effects.Italic,
-                ForceSyntheticBold = Effects.ForceSyntheticBold,
-                ForceSyntheticItalic = Effects.ForceSyntheticItalic,
-                AntiAlias = Effects.AntiAlias,
-                Hinting = Effects.Hinting,
-                SuperSampleLevel = Effects.SuperSampleLevel,
-                OutlineEnabled = Effects.OutlineEnabled,
-                OutlineWidth = Effects.OutlineWidth,
-                OutlineShape = Effects.OutlineShape,
-                OutlineColorR = outlineRgb.R,
-                OutlineColorG = outlineRgb.G,
-                OutlineColorB = outlineRgb.B,
-                ShadowEnabled = Effects.ShadowEnabled,
-                ShadowOffsetX = Effects.ShadowOffsetX,
-                ShadowOffsetY = Effects.ShadowOffsetY,
-                ShadowBlur = Effects.ShadowBlur,
-                ShadowBlurKernelSize = Effects.ShadowBlurKernelSize,
-                ShadowBlurPasses = Effects.ShadowBlurPasses,
-                ShadowColorR = shadowRgb.R,
-                ShadowColorG = shadowRgb.G,
-                ShadowColorB = shadowRgb.B,
-                ShadowOpacity = Effects.ShadowOpacity,
-                HardShadow = Effects.HardShadow,
-                GradientEnabled = Effects.GradientEnabled,
-                GradientStartR = gradStartRgb.R,
-                GradientStartG = gradStartRgb.G,
-                GradientStartB = gradStartRgb.B,
-                GradientEndR = gradEndRgb.R,
-                GradientEndG = gradEndRgb.G,
-                GradientEndB = gradEndRgb.B,
-                GradientAngle = Effects.GradientAngle,
-                GradientOffset = Effects.GradientOffset,
-                GradientScale = Effects.GradientScale,
-                GradientCyclic = Effects.GradientCyclic,
-                ChannelPackingEnabled = Effects.ChannelPackingEnabled,
-                Channels = Effects.Channels,
-                SdfEnabled = Effects.SdfEnabled,
-                SdfSpread = Effects.SdfSpread,
-                ColorFontEnabled = Effects.ColorFontEnabled,
-                PackingAlgorithmIndex = AtlasConfig.PackingAlgorithmIndex,
-                FaceIndex = FontConfig.FaceIndex,
-                VariationAxisValues = Effects.VariationAxisValues.Count > 0
-                    ? new Dictionary<string, float>(Effects.VariationAxisValues)
-                    : null,
-                FallbackCharacter = Effects.FallbackCharacter,
-                Backend = FontConfig.SelectedBackend
-            };
+            var request = BuildGenerationRequest(FontConfig, AtlasConfig, Effects, CharacterGrid);
 
             _lastResult = await _generationService.GenerateAsync(request);
 
@@ -359,6 +286,136 @@ public class MainViewModel : ViewModel
             _game.RunOnMainThread(() => StatusBar.SetError($"Unexpected error: {msg}"));
         }
     }
+
+    /// <summary>
+    /// Snapshots the current ViewModel state into the <see cref="GenerationRequest"/> that
+    /// <see cref="GenerateAsync"/> hands to <see cref="GenerationService"/>.
+    /// </summary>
+    public static GenerationRequest BuildGenerationRequest(
+        FontConfigViewModel fontConfig,
+        AtlasConfigViewModel atlasConfig,
+        EffectsViewModel effects,
+        CharacterGridViewModel characterGrid)
+    {
+        var outlineRgb = EffectsViewModel.ParseHex(effects.OutlineColor);
+        var shadowRgb = EffectsViewModel.ParseHex(effects.ShadowColor);
+        var gradStartRgb = EffectsViewModel.ParseHex(effects.GradientStartColor);
+        var gradEndRgb = EffectsViewModel.ParseHex(effects.GradientEndColor);
+        var fillRgb = EffectsViewModel.ParseHex(effects.FillColor);
+
+        return new GenerationRequest
+        {
+            FontData = fontConfig.FontData,
+            FontFilePath = fontConfig.FontFilePath,
+            // For system fonts, pass the family name so the core library handles
+            // bold/italic variant resolution (including ForceSynthetic logic).
+            // For file-based fonts, SystemFontFamily stays null.
+            SystemFontFamily = fontConfig.FontSourceKind == FontSourceKind.System
+                ? fontConfig.FamilyName
+                : null,
+            SourceKind = fontConfig.FontSourceKind,
+            FontSize = fontConfig.FontSize,
+            Characters = characterGrid.ToCharacterSet(),
+            MaxWidth = atlasConfig.MaxWidth,
+            MaxHeight = atlasConfig.MaxHeight,
+            PowerOfTwo = atlasConfig.PowerOfTwo,
+            AutofitTexture = atlasConfig.AutofitTexture,
+            PaddingUp = atlasConfig.PaddingUp,
+            PaddingRight = atlasConfig.PaddingRight,
+            PaddingDown = atlasConfig.PaddingDown,
+            PaddingLeft = atlasConfig.PaddingLeft,
+            SpacingH = atlasConfig.SpacingH,
+            SpacingV = atlasConfig.SpacingV,
+            IncludeKerning = atlasConfig.IncludeKerning,
+            FillColorR = fillRgb.R,
+            FillColorG = fillRgb.G,
+            FillColorB = fillRgb.B,
+            FillColorA = 255,
+            AdvanceAdjustX = effects.AdvanceAdjustX,
+            Gamma = effects.Gamma,
+            Bold = effects.Bold,
+            Italic = effects.Italic,
+            ForceSyntheticBold = effects.ForceSyntheticBold,
+            ForceSyntheticItalic = effects.ForceSyntheticItalic,
+            AntiAlias = effects.AntiAlias,
+            LcdFilter = effects.LcdFilter,
+            LcdSubpixelOrder = effects.LcdSubpixelOrder,
+            // Non-default width/angle/vector outline go only to a backend that supports them;
+            // the others throw NotSupportedException (and core rejects a vector outline with SDF).
+            WidthPercent = EffectiveWidthPercent(fontConfig, effects),
+            ItalicAngle = EffectiveItalicAngle(fontConfig, effects),
+            Hinting = effects.Hinting,
+            SuperSampleLevel = effects.SuperSampleLevel,
+            OutlineEnabled = effects.OutlineEnabled,
+            OutlineWidth = effects.OutlineWidth,
+            OutlineShape = effects.OutlineShape,
+            OutlineMode = EffectiveOutlineMode(fontConfig, effects),
+            OutlineColorR = outlineRgb.R,
+            OutlineColorG = outlineRgb.G,
+            OutlineColorB = outlineRgb.B,
+            ShadowEnabled = effects.ShadowEnabled,
+            ShadowOffsetX = effects.ShadowOffsetX,
+            ShadowOffsetY = effects.ShadowOffsetY,
+            ShadowBlur = effects.ShadowBlur,
+            ShadowBlurKernelSize = effects.ShadowBlurKernelSize,
+            ShadowBlurPasses = effects.ShadowBlurPasses,
+            ShadowColorR = shadowRgb.R,
+            ShadowColorG = shadowRgb.G,
+            ShadowColorB = shadowRgb.B,
+            ShadowOpacity = effects.ShadowOpacity,
+            HardShadow = effects.HardShadow,
+            GradientEnabled = effects.GradientEnabled,
+            GradientStartR = gradStartRgb.R,
+            GradientStartG = gradStartRgb.G,
+            GradientStartB = gradStartRgb.B,
+            GradientEndR = gradEndRgb.R,
+            GradientEndG = gradEndRgb.G,
+            GradientEndB = gradEndRgb.B,
+            GradientAngle = effects.GradientAngle,
+            GradientOffset = effects.GradientOffset,
+            GradientScale = effects.GradientScale,
+            GradientCyclic = effects.GradientCyclic,
+            ChannelPackingEnabled = effects.ChannelPackingEnabled,
+            Channels = effects.Channels,
+            SdfMode = effects.SdfMode,
+            SdfSpread = effects.SdfSpread,
+            SdfScale = effects.SdfScale,
+            ColorFontEnabled = effects.ColorFontEnabled,
+            ColorPaletteIndex = effects.ColorPaletteIndex,
+            PackingAlgorithmIndex = atlasConfig.PackingAlgorithmIndex,
+            FaceIndex = fontConfig.FaceIndex,
+            VariationAxisValues = effects.VariationAxisValues.Count > 0
+                ? new Dictionary<string, float>(effects.VariationAxisValues)
+                : null,
+            FallbackCharacter = effects.FallbackCharacter,
+            Backend = fontConfig.SelectedBackend
+        };
+    }
+
+    /// <summary>
+    /// The synthetic width to generate and save with: the ViewModel value when the selected
+    /// backend supports width scaling, otherwise the default 100 (other backends throw for any
+    /// other value). The ViewModel keeps its value, so switching back restores it.
+    /// </summary>
+    public static int EffectiveWidthPercent(FontConfigViewModel fontConfig, EffectsViewModel effects)
+        => fontConfig.BackendSupportsWidthScale ? effects.WidthPercent : 100;
+
+    /// <summary>
+    /// The synthetic italic angle to generate and save with: the ViewModel value when the
+    /// selected backend supports italic angles, otherwise the default 12 degrees.
+    /// </summary>
+    public static float EffectiveItalicAngle(FontConfigViewModel fontConfig, EffectsViewModel effects)
+        => fontConfig.BackendSupportsItalicAngle ? effects.ItalicAngle : 12f;
+
+    /// <summary>
+    /// The outline mode to generate and save with: <see cref="OutlineMode.Vector"/> only when the
+    /// selected backend strokes outlines and no distance field is selected (core rejects vector
+    /// outlines with SDF/MSDF); otherwise the bitmap effect.
+    /// </summary>
+    public static OutlineMode EffectiveOutlineMode(FontConfigViewModel fontConfig, EffectsViewModel effects)
+        => effects.OutlineMode == OutlineMode.Vector && fontConfig.BackendSupportsOutlineStroke && !effects.SdfEnabled
+            ? OutlineMode.Vector
+            : OutlineMode.Effect;
 
     /// <summary>
     /// Opens a save dialog and exports the last generated result to the chosen path.
@@ -492,7 +549,7 @@ public class MainViewModel : ViewModel
     /// Returns the KernSmith-specific settings that would be lost when saving to the Hiero
     /// format, given the current UI state.
     /// </summary>
-    private List<string> GetLossyHieroSettings()
+    public List<string> GetLossyHieroSettings()
     {
         var lost = new List<string>();
         if (Effects.ChannelPackingEnabled)
@@ -506,6 +563,24 @@ public class MainViewModel : ViewModel
             lost.Add("Super sampling level");
         if (Effects.ColorFontEnabled)
             lost.Add("Color font glyphs");
+        // Hiero's distance field is single-channel only, and it stores AA as a mono flag.
+        if (Effects.SdfMode is SdfMode.Msdf or SdfMode.Mtsdf)
+            lost.Add("Multi-channel distance field (MSDF/MTSDF)");
+        if (Effects.AntiAlias is AntiAliasMode.Light or AntiAliasMode.Lcd)
+            lost.Add("Anti-alias mode (Light/LCD)");
+        if (Effects.AntiAlias == AntiAliasMode.Lcd
+            && (Effects.LcdFilter != LcdFilter.Default || Effects.LcdSubpixelOrder != LcdSubpixelOrder.Rgb))
+            lost.Add("LCD filter/subpixel order");
+        // Hiero has no keys for the Native-only shape options; only what would be saved counts.
+        if (Effects.OutlineEnabled && EffectiveOutlineMode(FontConfig, Effects) == OutlineMode.Vector)
+            lost.Add("Vector outline mode");
+        if (EffectiveWidthPercent(FontConfig, Effects) != 100)
+            lost.Add("Synthetic width");
+        if (!EffectiveItalicAngle(FontConfig, Effects).Equals(12f))
+            lost.Add("Italic angle");
+        // The Hiero reader ignores the rasterizer; it reloads as the default (FreeType).
+        if (FontConfig.SelectedBackend != RasterizerBackend.FreeType)
+            lost.Add("Rasterizer backend");
         // HieroConfigWriter never serializes glyph spacing; the reader restores the
         // default (1,1) on reload, so only a non-default spacing is actually lost.
         if (AtlasConfig.SpacingH != 1 || AtlasConfig.SpacingV != 1)

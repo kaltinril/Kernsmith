@@ -25,7 +25,7 @@ The interface uses a three-column layout with a menu bar at the top and a status
 
 There are several ways to load a font:
 
-- **Browse**: Click "Browse for Font..." in the left panel and select a TTF, OTF, WOFF, or TTC file
+- **Browse**: Click "Browse for Font..." in the left panel and select a TTF, OTF, TTC, WOFF, or WOFF2 file
 - **Drag and drop**: Drag a font file directly onto the application window
 - **System fonts**: Use the "System Font" dropdown to pick an installed font (availability depends on rasterizer backend)
 - **Recent fonts**: File > Recent Fonts shows the last 10 loaded fonts
@@ -61,9 +61,14 @@ The right panel contains collapsible sections for each effect type.
 ### Font Style
 
 - **Bold / Italic**: If a matching variant font file exists, it loads that file. Otherwise applies synthetic bold or italic.
-- **Anti-Alias**: Smooth glyph edges (enabled by default)
+- **Anti-Alias**: None (aliased), Grayscale (default), Light, or LCD. The list shows only the modes the selected rasterizer supports; the experimental Native backend supports all four, and hints only in Light.
+- **LCD Filter / LCD Order**: In LCD mode, the subpixel filter (Default, Light, Smooth, None) and the display's subpixel layout (RGB, BGR, V-RGB, V-BGR). Native honors them; other backends ignore them.
+- **Width %**: Synthetic condensed/expanded width, 10-1000 (100 = normal). Native only.
+- **Italic Angle**: Slant of synthetic italic, -60 to 60 degrees (default 12). Native only; enabled with Italic.
+
+Native-only settings are disabled on other backends and show the value used there; your choice comes back when you switch to Native.
 - **Hinting**: Sharper rendering at small sizes (enabled by default)
-- **Super Sample**: Render at 2x or 4x resolution then downsample for smoother results. Higher values are slower.
+- **Super Sample**: Render at 2x or 4x resolution then downsample for smoother results. Higher values are slower. LCD output is never super sampled (it would average the subpixels away).
 
 ### Outline
 
@@ -72,6 +77,7 @@ Adds a colored border around each glyph.
 - **Width**: 1-10 pixels
 - **Color**: Hex color picker (#RRGGBB)
 - **Shape**: Round (default), Square, or Plus corners
+- **Mode**: Effect (bitmap outline, default) or Vector (the backend draws the ring from the glyph's vector outline: same width and cells, crisper edge; Native only, not with a distance field)
 
 ### Shadow
 
@@ -94,9 +100,13 @@ Applies a vertical color gradient across each glyph.
 
 Maps glyph data into individual RGBA channels for compressed output. Useful for game engines that support channel-packed fonts.
 
-### SDF (Signed Distance Field)
+### Distance Field
 
-Generates signed distance field output for resolution-independent rendering. Availability depends on the selected rasterizer backend.
+Generates distance-field output for resolution-independent rendering: **SDF** (single channel), or **MSDF**/**MTSDF** (multi-channel RGBA with sharp corners; Native backend only). The list shows only the modes the selected rasterizer supports. The Preview tab shows the raw field; the Sample tab decodes it back to glyph shapes. **SDF Spread** sets how far the field reaches; **SDF Scale** (1-4) renders it larger for finer precision.
+
+### Color Font
+
+Renders color glyphs when the font has color tables and the rasterizer supports them. **Palette** picks the font's color palette (0 = default).
 
 ### Variable Font Axes
 
@@ -201,8 +211,9 @@ The Font Config panel includes a rasterizer backend dropdown. Different backends
 | DirectWrite | Windows | No (stubbed) | No (stubbed) | No |
 | GDI | Windows | No | No | No |
 | StbTrueType | All | No | No | Yes |
+| Native (experimental) | All | Yes (COLR, CBDT/sbix) | Yes | Yes, plus MSDF/MTSDF |
 
-FreeType is the only backend that currently renders color (COLR/CPAL) and variable fonts; DirectWrite's color and variable-font support is stubbed and not yet implemented.
+FreeType and the experimental Native backend render color and variable fonts; DirectWrite's color and variable-font support is stubbed and not yet implemented. Native also adds Light/LCD anti-aliasing with LCD filter and order, vector outlines, synthetic width and italic angle. It is built from source and not yet on NuGet.
 
 Install the corresponding NuGet package to enable a backend. They auto-register via module initializer -- no code changes needed.
 

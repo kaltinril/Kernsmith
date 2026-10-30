@@ -33,6 +33,20 @@ public class FontGeneratorOptions
     public AntiAliasMode AntiAlias { get; set; } = AntiAliasMode.Grayscale;
 
     /// <summary>
+    /// The low-pass filter for <see cref="AntiAliasMode.Lcd"/> output (default
+    /// <see cref="KernSmith.LcdFilter.Default"/>, the backend's choice). Honoured by the Native
+    /// backend; others ignore it.
+    /// </summary>
+    public LcdFilter LcdFilter { get; set; }
+
+    /// <summary>
+    /// The display's subpixel layout for <see cref="AntiAliasMode.Lcd"/> output (default
+    /// <see cref="KernSmith.LcdSubpixelOrder.Rgb"/>). Honoured by the Native backend; others
+    /// ignore it.
+    /// </summary>
+    public LcdSubpixelOrder LcdSubpixelOrder { get; set; }
+
+    /// <summary>
     /// Shortcut to set both MaxTextureWidth and MaxTextureHeight at once.
     /// Reading returns MaxTextureWidth.
     /// </summary>
@@ -81,6 +95,14 @@ public class FontGeneratorOptions
     /// </summary>
     public OutlineShape OutlineShape { get; set; } = OutlineShape.Round;
 
+    /// <summary>
+    /// How the outline is drawn: <see cref="KernSmith.OutlineMode.Effect"/> (default), the pipeline's
+    /// bitmap outline, or <see cref="KernSmith.OutlineMode.Vector"/>, a stroke of the glyph's
+    /// vector outline drawn by a backend that reports
+    /// <see cref="Rasterizer.IRasterizerCapabilities.SupportsOutlineStroke"/> (others keep the effect).
+    /// </summary>
+    public OutlineMode OutlineMode { get; set; } = OutlineMode.Effect;
+
     /// <summary>Outline color red channel (default 0 = black).</summary>
     public byte OutlineR { get; set; }
 
@@ -90,8 +112,26 @@ public class FontGeneratorOptions
     /// <summary>Outline color blue channel (default 0 = black).</summary>
     public byte OutlineB { get; set; }
 
-    /// <summary>If true, generates a signed distance field (SDF) font.</summary>
+    /// <summary>
+    /// If true, generates a single-channel signed distance field (SDF) font. Equivalent to
+    /// <see cref="SdfMode"/> = <see cref="KernSmith.SdfMode.Sdf"/>, which supersedes it when set.
+    /// </summary>
     public bool Sdf { get; set; }
+
+    /// <summary>
+    /// The distance field to generate (default <see cref="KernSmith.SdfMode.None"/>). When left at
+    /// <see cref="KernSmith.SdfMode.None"/>, <see cref="Sdf"/> decides; see <see cref="EffectiveSdfMode"/>.
+    /// <see cref="KernSmith.SdfMode.Msdf"/> and <see cref="KernSmith.SdfMode.Mtsdf"/> produce RGBA
+    /// atlases and need a backend that reports <see cref="Rasterizer.IRasterizerCapabilities.SupportsMsdf"/>.
+    /// </summary>
+    public SdfMode SdfMode { get; set; }
+
+    /// <summary>
+    /// The distance field actually generated: <see cref="SdfMode"/> when set, otherwise
+    /// <see cref="KernSmith.SdfMode.Sdf"/> if <see cref="Sdf"/> is true, otherwise none.
+    /// </summary>
+    public SdfMode EffectiveSdfMode =>
+        SdfMode != SdfMode.None ? SdfMode : Sdf ? SdfMode.Sdf : SdfMode.None;
 
     /// <summary>
     /// SDF supersampling scale factor (default 1). Higher values render the distance field
@@ -118,7 +158,7 @@ public class FontGeneratorOptions
     /// <summary>If true, packs multiple glyphs into separate RGBA channels for smaller textures.</summary>
     public bool ChannelPacking { get; set; }
 
-    /// <summary>If true, renders color font glyphs (COLR/CPAL tables, like emoji fonts).</summary>
+    /// <summary>If true, renders color font glyphs (COLR/CPAL layers, CBDT/sbix bitmaps, like emoji fonts).</summary>
     public bool ColorFont { get; set; }
 
     /// <summary>Which CPAL color palette to use for color fonts. 0 = default palette.</summary>
@@ -129,7 +169,9 @@ public class FontGeneratorOptions
 
     /// <summary>
     /// Super sampling level (1-4). Higher values render at Nx size then
-    /// downscale for smoother edges. 1 = no super sampling.
+    /// downscale for smoother edges. 1 = no super sampling. Not applied when the backend
+    /// renders <see cref="AntiAliasMode.Lcd"/>: downscaling would average the subpixel pattern
+    /// away, so LCD glyphs render at the final size.
     /// </summary>
     public int SuperSampleLevel { get; set; } = 1;
 
@@ -187,6 +229,23 @@ public class FontGeneratorOptions
     /// Vertical height scaling. 100 = normal, 150 = 50% taller, 75 = 25% shorter.
     /// </summary>
     public int HeightPercent { get; set; } = 100;
+
+    /// <summary>
+    /// Synthetic condensed/expanded width as a percentage (default 100; 10 to 1000): 80 draws every
+    /// glyph, its advance and kerning 20% narrower. Applied to the outline before rasterizing, so it
+    /// needs a backend that reports <see cref="Rasterizer.IRasterizerCapabilities.SupportsWidthScale"/>;
+    /// any other value on another backend throws <see cref="NotSupportedException"/>.
+    /// </summary>
+    public int WidthPercent { get; set; } = 100;
+
+    /// <summary>
+    /// Slant of synthetic italic, in degrees from vertical; positive leans right (default 12, -60
+    /// to 60). Only used when synthetic italic is applied (<see cref="Italic"/> on a font that is
+    /// not already italic, or <see cref="ForceSyntheticItalic"/>). A value other than 12 needs a
+    /// backend that reports <see cref="Rasterizer.IRasterizerCapabilities.SupportsItalicAngle"/>;
+    /// other backends throw <see cref="NotSupportedException"/> rather than slant by their own angle.
+    /// </summary>
+    public float ItalicAngle { get; set; } = 12f;
 
     /// <summary>
     /// Custom glyph images keyed by character code. These replace or add glyphs.

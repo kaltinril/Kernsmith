@@ -1,6 +1,6 @@
 # KernSmith -- Texture Packing
 
-> Part of the [Master Plan](master-plan.md).
+> Part of the [Master Plan](../master-plan.md).
 > Related: [Rasterization](plan-rasterization.md), [Output Formats](plan-output-formats.md), [API Design](plan-api-design.md)
 
 > All types used in this document (`GlyphRect`, `GlyphPlacement`, `PackResult`, `AtlasPage`, `PixelFormat`) are defined in [plan-data-types.md](plan-data-types.md).
@@ -39,7 +39,7 @@ Two implementations are provided: `MaxRectsPacker` (primary) and `SkylinePacker`
 The plan describes WHAT algorithms to use. For HOW to implement them:
 
 ### MaxRects
-See [REF-06-texture-packing-reference.md](../reference/REF-06-texture-packing-reference.md), "MaxRects" section for:
+See [REF-06-texture-packing-reference.md](../../reference/REF-06-texture-packing-reference.md), "MaxRects" section for:
 - Free rectangle splitting mechanism (4-way split when placed rect overlaps a free rect)
 - Containment pruning (remove free rects fully contained within another)
 - BestShortSideFit scoring formula: `min(freeRect.width - rect.width, freeRect.height - rect.height)`

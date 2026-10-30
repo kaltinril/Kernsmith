@@ -1,3 +1,4 @@
+using KernSmith.Rasterizer;
 using KernSmith.Ui.ViewModels;
 
 namespace KernSmith.Ui.Services;
@@ -63,6 +64,10 @@ public class ProjectService
         if (options.FaceIndex > 0 && fontConfig.IsFontLoaded)
             fontConfig.ReloadWithFaceIndex(options.FaceIndex);
 
+        // A backend this build lacks keeps the current selection rather than failing the load.
+        if (RasterizerFactory.IsRegistered(options.Backend))
+            fontConfig.SelectedBackend = options.Backend;
+
         // Atlas config
         atlasConfig.MaxWidth = options.MaxTextureWidth;
         atlasConfig.MaxHeight = options.MaxTextureHeight;
@@ -85,13 +90,18 @@ public class ProjectService
         effects.Italic = options.Italic;
         effects.ForceSyntheticBold = options.ForceSyntheticBold;
         effects.ForceSyntheticItalic = options.ForceSyntheticItalic;
-        effects.AntiAlias = options.AntiAlias != AntiAliasMode.None;
+        effects.AntiAlias = options.AntiAlias;
+        effects.LcdFilter = options.LcdFilter;
+        effects.LcdSubpixelOrder = options.LcdSubpixelOrder;
+        effects.WidthPercent = options.WidthPercent;
+        effects.ItalicAngle = options.ItalicAngle;
         effects.Hinting = options.EnableHinting;
         effects.SuperSampleLevel = options.SuperSampleLevel;
         effects.OutlineEnabled = options.Outline > 0;
         effects.OutlineWidth = options.Outline > 0 ? options.Outline : 1;
         effects.OutlineColor = EffectsViewModel.ToHex(options.OutlineR, options.OutlineG, options.OutlineB);
         effects.OutlineShape = options.OutlineShape;
+        effects.OutlineMode = options.OutlineMode;
         effects.ShadowEnabled = options.ShadowOffsetX != 0 || options.ShadowOffsetY != 0 || options.ShadowBlur != 0;
         effects.ShadowOffsetX = options.ShadowOffsetX;
         effects.ShadowOffsetY = options.ShadowOffsetY;
@@ -114,9 +124,13 @@ public class ProjectService
         // ChannelPacking, while Channels is preserved for round-tripping (no editor for it yet).
         effects.ChannelPackingEnabled = options.ChannelPacking;
         effects.Channels = options.Channels;
-        effects.SdfEnabled = options.Sdf;
+        effects.SdfMode = options.EffectiveSdfMode;
         effects.SdfSpread = options.SdfSpread;
+        effects.SdfScale = options.SdfScale;
         effects.ColorFontEnabled = options.ColorFont;
+        effects.ColorPaletteIndex = options.ColorPaletteIndex;
+        effects.HasColorGlyphs = fontConfig.HasColorGlyphs;
+        effects.LoadVariationAxes(fontConfig.LoadedVariationAxes, options.VariationAxes);
 
         // Character set
         var codepoints = options.Characters.GetCodepoints().ToList();
@@ -170,11 +184,18 @@ public class ProjectService
             Italic = effects.Italic,
             ForceSyntheticBold = effects.ForceSyntheticBold,
             ForceSyntheticItalic = effects.ForceSyntheticItalic,
-            AntiAlias = effects.AntiAlias ? AntiAliasMode.Grayscale : AntiAliasMode.None,
+            AntiAlias = effects.AntiAlias,
+            LcdFilter = effects.LcdFilter,
+            LcdSubpixelOrder = effects.LcdSubpixelOrder,
+            // Same gating as generation, so a saved project never holds a width, angle or
+            // vector outline its rasterizer would reject.
+            WidthPercent = MainViewModel.EffectiveWidthPercent(fontConfig, effects),
+            ItalicAngle = MainViewModel.EffectiveItalicAngle(fontConfig, effects),
             EnableHinting = effects.Hinting,
             SuperSampleLevel = effects.SuperSampleLevel,
             Outline = effects.OutlineEnabled ? effects.OutlineWidth : 0,
             OutlineShape = effects.OutlineShape,
+            OutlineMode = MainViewModel.EffectiveOutlineMode(fontConfig, effects),
             OutlineR = outlineRgb.R,
             OutlineG = outlineRgb.G,
             OutlineB = outlineRgb.B,
@@ -199,9 +220,17 @@ public class ProjectService
             GradientScale = effects.GradientEnabled ? effects.GradientScale : 1f,
             GradientCyclic = effects.GradientEnabled && effects.GradientCyclic,
             FaceIndex = fontConfig.FaceIndex,
-            Sdf = effects.SdfEnabled,
+            // Single-channel SDF stays on the BMFont-style useSdf key; only MSDF/MTSDF need sdfMode.
+            Sdf = effects.SdfMode == SdfMode.Sdf,
+            SdfMode = effects.SdfMode is SdfMode.Msdf or SdfMode.Mtsdf ? effects.SdfMode : SdfMode.None,
             SdfSpread = effects.SdfSpread,
+            SdfScale = effects.SdfScale,
             ColorFont = effects.ColorFontEnabled,
+            ColorPaletteIndex = effects.ColorPaletteIndex,
+            VariationAxes = effects.VariationAxisValues.Count > 0
+                ? new Dictionary<string, float>(effects.VariationAxisValues)
+                : null,
+            Backend = fontConfig.SelectedBackend,
             ChannelPacking = effects.ChannelPackingEnabled,
             Channels = effects.Channels
         };

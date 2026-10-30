@@ -14,9 +14,9 @@ Phase 78BB achieved near-exact BMFont parity: 14/15 lineHeight exact, 15/15 base
 **Since this doc was written, gaps 6 and 7 as originally stated are no longer accurate:**
 
 - **Gap 7 (GDI `lfHeight` sign) is fully resolved** and has been moved to the [Resolved](#resolved) section. The Phase 78C work is merged (`plan/done/`).
-- **Gap 6 (atlas PNG channel configuration) shipped on the core/CLI path.** KernSmith no longer ignores `alphaChnl`/`redChnl`/`greenChnl`/`blueChnl`. The `.bmfc` writer round-trip was closed on 2026-07-28. What remains under gap 6 is confined to the desktop UI, which drops `Channels` on generate and conflates it with channel *packing* on load, so the section has been rewritten to track only those.
+- **Gap 6 (atlas PNG channel configuration) is closed.** Core/CLI, the desktop UI and the `.bmfc` writer all carry `alphaChnl`/`redChnl`/`greenChnl`/`blueChnl` end to end; the section below keeps the details.
 
-Gaps 1-5 and 8 are unchanged.
+Gaps 1-5 and 8 remain. Gaps 1, 2 and 8 share one root cause (BMFont fills outline polygons itself), and the Native backend — KernSmith's own outline renderer — is the path to closing them.
 
 ## Remaining Gaps
 
@@ -24,7 +24,7 @@ Gaps 1-5 and 8 are unchanged.
 
 **Root cause**: BMFont renders its own outlines at 8x via `DrawGlyphFromOutline` using `GGO_NATIVE` + polygon fill, producing different sub-pixel positions than `GetGlyphOutlineW(GGO_GRAY8_BITMAP)`. These are fundamentally different rendering paths in the Windows GDI stack. The 8x supersample approach was tested and reverted because it makes other metrics worse when applied to `GGO_GRAY8_BITMAP` output.
 
-**Status**: Not fixable without implementing BMFont's own outline renderer (GGO_NATIVE polygon fill + 8x rasterization). This would be a major undertaking for diminishing returns (+/-1 pixel).
+**Status**: Not fixable inside the GDI backend's `GGO_GRAY8_BITMAP` path. The path to closing it is KernSmith's own outline renderer — the Native backend already decodes outlines and fills polygons in managed code, so a BMFont-style mode (8x internal supersample, BMFont's rounding of offsets) would be a Native rendering option rather than a new renderer. Diminishing returns (+/-1 pixel); not scheduled.
 
 ### 2. yoffset +/-1-3 -- downstream of xoffset + bearingY rounding
 
@@ -45,7 +45,7 @@ GPOS class 0 fix reduced but didn't fully resolve this. The remaining missing pa
 - BMFont's 32-bit GPOS parser may handle edge cases differently than our implementation
 - There may be additional kerning sources (kern table fallback after GPOS) that BMFont merges
 
-### 6. Atlas PNG channel configuration -- core/CLI shipped, UI + `.bmfc` round-trip still open
+### 6. Atlas PNG channel configuration -- CLOSED
 
 **Core/CLI path: IMPLEMENTED.** `alphaChnl`/`redChnl`/`greenChnl`/`blueChnl` are parsed at `src/KernSmith/Config/BmfcConfigReader.cs:208-223` (plus `invA`/`invR`/`invG`/`invB` at `:224-239`), mapped by `ParseChannelContent` at `:457-467` (`0`=Glyph, `1`=Outline, `2`=GlyphAndOutline, `3`=Zero, `4`=One, `5`=Shadow -- `5` is a KernSmith extension with no BMFont.exe equivalent), and assigned to `options.Channels` at `:406-407`. The gate is `BmFont.ShouldApplyChannelConfig` (`src/KernSmith/BmFont.cs:1282-1283`): `options.Channels is { IsDefault: false }`, with `IsDefault` defined at `src/KernSmith/Config/ChannelConfig.cs:20-25`. Compositing runs at `BmFont.cs:672-683` via `ChannelCompositor.Build`, with per-channel resolution at `src/KernSmith/Atlas/ChannelCompositor.cs:148-151` and `ResolveChannel` at `:273-292`. The `alphaChnl`/`redChnl`/... descriptor is written by `src/KernSmith/Output/BmFontModelBuilder.cs:83-88`. CLI wiring: `BmfcParser.cs:53-54` and `GenerateCommand.cs:212-213`.
 
@@ -81,7 +81,7 @@ These BMFont keys are parsed-then-ignored and are not re-emitted, so a `.bmfc` r
 
 **Root cause**: Our GDI backend uses `GGO_GRAY8_BITMAP` which produces smooth anti-aliasing with many intermediate gray levels (GDI's 65-level grayscale remapped to 0-255). BMFont uses `GGO_NATIVE` to extract vector outlines and rasterizes polygons itself with an 8x internal supersample, producing sharper edges with fewer intermediate gray values. Side-by-side character comparison (Phase 78C testing) shows visibly more anti-aliasing tones in our output vs BMFont's crisper edges.
 
-**Status**: Not fixable without implementing BMFont's `GGO_NATIVE` polygon extraction and manual scanline rasterization (Path A: `DrawGlyphFromOutline`). Same root cause as gaps 1-2 (xoffset/yoffset). This is the fundamental architectural difference between our approach and BMFont's.
+**Status**: Not fixable inside the GDI backend. Same root cause as gaps 1-2 (xoffset/yoffset): BMFont fills polygons itself. The Native backend is the path — it already does its own polygon fill, so a BMFont-style 8x-supersampled coverage mode could reproduce BMFont's crisper ramp without touching GDI.
 
 ## Resolved
 
@@ -113,7 +113,7 @@ All tooling lives under `tests/bmfont-compare/`; see `tests/bmfont-compare/READM
 
 **Generators**
 
-- `tests/bmfont-compare/GenerateAll/` -- drives **four** KernSmith backends (FreeType, GDI, DirectWrite, **stbtruetype** -- `GenerateAll/Program.cs:70-76`), plus BMFont64.exe when it is found (`:64-68`, `:122`). It iterates **every** `.bmfc` file in the input directory (`:59`, `:82`) -- roughly 20 configs in `gum-bmfont/`, not just the fire-effect and plain ones -- and additionally synthesizes real and synthetic bold/italic passes (`:177`, `:262`). Outputs `comparison.png`/`comparison2.png`/`comparison3.png`/`comparison4.png` (`:342-345`) plus a per-font `comparison-{config}.png` for every remaining config (`:444-449`). Usage: `dotnet run --framework net10.0-windows -- [bmfc-dir] [output-dir]` (`Program.cs:40-49`). **A single positional argument is read as the BMFC directory, not the output directory** -- passing only an output dir points the tool at a nonexistent config dir and exits 1 (`:51-55`).
+- `tests/bmfont-compare/GenerateAll/` -- drives **five** KernSmith backends (FreeType, GDI, DirectWrite, StbTrueType, Native), plus BMFont64.exe when it is found (`:64-68`, `:122`). It iterates **every** `.bmfc` file in the input directory (`:59`, `:82`) -- roughly 20 configs in `gum-bmfont/`, not just the fire-effect and plain ones -- and additionally synthesizes real and synthetic bold/italic passes (`:177`, `:262`). Outputs `comparison.png`/`comparison2.png`/`comparison3.png`/`comparison4.png` (`:342-345`) plus a per-font `comparison-{config}.png` for every remaining config (`:444-449`). Usage: `dotnet run --framework net10.0-windows -- [bmfc-dir] [output-dir]` (`Program.cs:40-49`). **A single positional argument is read as the BMFC directory, not the output directory** -- passing only an output dir points the tool at a nonexistent config dir and exits 1 (`:51-55`).
 - `tests/bmfont-compare/GenerateGdi/` -- regenerate KernSmith GDI output
 - `tests/bmfont-compare/GenerateDirectWrite/` -- regenerate KernSmith DirectWrite output
 - `tests/bmfont-compare/CompareGlyphs/` -- character-by-character visual comparison across all backends + BMFont64, outputs `comparison.png` (fire effects) and `comparison2.png` (plain white). Usage: `dotnet run --framework net10.0-windows -- <data-dir>`. Gracefully skips missing backends.
@@ -128,6 +128,6 @@ All tooling lives under `tests/bmfont-compare/`; see `tests/bmfont-compare/READM
 
 ## Potential Approaches
 
-1. **Fixed 8x internal supersample** in GDI backend -- addresses xoffset, yoffset, likely Bell MT xadvance. Attempted and reverted in 78BB because it worsened metrics when applied to GGO_GRAY8_BITMAP. May need GGO_NATIVE + polygon fill approach instead.
+1. **Fixed 8x internal supersample** in GDI backend -- addresses xoffset, yoffset, likely Bell MT xadvance. Attempted and reverted in 78BB because it worsened metrics when applied to GGO_GRAY8_BITMAP. The polygon-fill alternative now exists as the Native backend (see gaps 1, 2 and 8).
 2. **otmrcFontBox-based kerning scaling** -- switch from ppem/unitsPerEm to match BMFont's GPOS scaling formula. Shared change but only affects kerning math.
 3. **Accept as known limitations** -- document that exact parity requires BMFont's proprietary outline renderer, which is outside scope.

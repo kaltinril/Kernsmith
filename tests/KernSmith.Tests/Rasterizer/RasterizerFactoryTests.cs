@@ -60,17 +60,27 @@ public class RasterizerFactoryTests
     [Fact]
     public void Register_ThenCreate_ReturnsRegisteredInstance()
     {
-        var called = false;
-        RasterizerFactory.Register(RasterizerBackend.DirectWrite, () =>
+        // Overrides the global DirectWrite registration, so restore factory-default state
+        // afterwards; otherwise later tests in the collection get a FreeTypeRasterizer
+        // back from Create(DirectWrite).
+        try
         {
-            called = true;
-            return RasterizerFactory.Create(RasterizerBackend.FreeType);
-        });
+            var called = false;
+            RasterizerFactory.Register(RasterizerBackend.DirectWrite, () =>
+            {
+                called = true;
+                return RasterizerFactory.Create(RasterizerBackend.FreeType);
+            });
 
-        using var rasterizer = RasterizerFactory.Create(RasterizerBackend.DirectWrite);
+            using var rasterizer = RasterizerFactory.Create(RasterizerBackend.DirectWrite);
 
-        called.ShouldBeTrue();
-        rasterizer.ShouldNotBeNull();
+            called.ShouldBeTrue();
+            rasterizer.ShouldNotBeNull();
+        }
+        finally
+        {
+            RasterizerFactory.ResetForTesting();
+        }
     }
 
     [Fact]
@@ -83,7 +93,7 @@ public class RasterizerFactoryTests
         caps.SupportsColorFonts.ShouldBeTrue();
         caps.SupportsVariableFonts.ShouldBeTrue();
         caps.SupportsSdf.ShouldBeTrue();
-        caps.SupportsOutlineStroke.ShouldBeTrue();
+        caps.SupportsOutlineStroke.ShouldBeFalse("FreeType does not implement RasterizeOutlineLayer; the pipeline draws its outlines");
         caps.SupportedAntiAliasModes.ShouldContain(AntiAliasMode.None);
         caps.SupportedAntiAliasModes.ShouldContain(AntiAliasMode.Grayscale);
         caps.SupportedAntiAliasModes.ShouldContain(AntiAliasMode.Light);

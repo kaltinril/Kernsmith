@@ -42,7 +42,7 @@
 12. [Font Effects](#12-font-effects)
 13. [Complete .bmfc Configuration Keys](#13-complete-bmfc-configuration-keys)
 14. [Rendering Pseudocode](#14-rendering-pseudocode)
-15. [Sources](#15-sources)
+15. [Sources](#16-sources)
 
 ---
 

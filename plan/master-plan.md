@@ -1,22 +1,18 @@
 # KernSmith -- Master Plan
 
-> **Status**: Current release **v0.19.0**. The latest landed work is **Phase 165 -- Native Rasterizer: IRasterizer Integration & Metrics** (the Native backend is now **functional end to end for TrueType fonts**: full `IRasterizer`, glyph/font metrics within ±1px of FreeType, CFF rejected with a clear `RasterizationException`, and Native surfaced in the CLI, docs and the `tests/bmfont-compare` harness). **Next up: Phase 166 -- CFF/Type2 charstring interpreter**, which turns that CFF rejection into OTF support.
+> **Status**: The Native rasterizer renders TrueType and CFF/CFF2 fonts with variations, COLR v0/v1 and CBDT/sbix bitmap color, synthetic bold/italic/width/slant, vector outlines, SDF/MSDF, LCD and light auto-hinting, and is covered by fuzzing and golden masters; it is still unpublished. **Next up: the remaining Phase 177/179 work** (see [Native rasterizer completion](#native-rasterizer-completion)); GSUB, in-rasterizer supersampling and the release await Jeremy's decision.
 >
-> ⚠️ **Open core defect found in Phase 165**: synthetic bold/italic silently no-op on backends that report `SupportsSyntheticBold/Italic = false` (Native is the first). Tracked as **Issue 5** in [phase-150-deferred-rasterizer-issues.md](phase-150-deferred-rasterizer-issues.md).
+> **Complete** (all archived in `done/`): Phases 1-18 (there is no Phase 19), 20, 21 + 21R, 30-34 (including 32b, 32c, 32d and 33b), 37, 55, 60-86 (including 74b, 75L, 76b, 77b, the full 78 series, and 81-85), 90, 95, 96, 97, 100, 105, 161-174, 178, 181, 182, 183, 185. Phase 34 is Complete (Superseded) by the 160-180 native rasterizer series; Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper); Phase 36 superseded by Phase 110; Phase 98 rejected (invalid bug report); Phase 181 superseded by Phase 182.
 >
-> **Complete** (all archived in `done/`): Phases 1-18 (there is no Phase 19), 20, 21 + 21R, 30-34 (including 32b, 32c, 32d and 33b), 37, 55, 60-86 (including 74b, 75L, 76b, 77b, the full 78 series, and 81-85), 90, 95, 96, 97, 100, 105, 161, 162, 163, 164, 165, 185. Phase 34 is Complete (Superseded) by the 160-180 native rasterizer series; Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper); Phase 36 superseded by Phase 110; Phase 98 rejected (invalid bug report). Phase 182 is complete but its doc still lives in `plan/`.
+> **In flight**: Phase 160 (design record for the Native rasterizer); Phases 177 and 179 (Native rasterizer completion -- see their rows); Phase 186 (Mac Catalyst and iOS simulator verified in CI; real-iPhone run pending); Phase 250 (UI cleanup -- Phase 1 landed with changed scope, Phase 2's Generate-bar issue needs re-validation, Phases 3-5 largely done); Phase 100b (P2/P3 landed, P4/P5 deferred); Phases 99 and 150 (planning).
 >
-> **In flight**: Phase 160 (active design record for the native rasterizer series); Phase 250 (UI cleanup -- Phase 1 landed with changed scope, Phase 2's Generate-bar issue needs re-validation, Phases 3-5 largely done); Phase 100b (P2/P3 landed, P4/P5 deferred); Phases 99 and 150 (planning).
->
-> **Future / deferred**: Phase 50 (in-memory layer retention); Phase 110 (partially done -- the core post-processor architecture is complete, the remainder is future); Phases 111 and 112 (deferred / not started); Phases 166-180 (native rasterizer implementation, all Future); Phase 181 (superseded by 182); Phase 200 (FontCrafter -- not started); Phase 300 (Perf 6 B/C carried from Phase 95).
->
-> **Date**: 2026-08-01
+> **Future / deferred**: Phase 50 (in-memory layer retention); Phase 110 (partially done -- the core post-processor architecture is complete, the remainder is future); Phases 111 and 112 (deferred / not started); Phases 175 and 176 (Native rasterizer; awaiting Jeremy's later decision); Phase 180 (ongoing research); Phase 200 (FontCrafter -- not started); Phase 300 (Perf 6 B/C carried from Phase 95).
 
 ---
 
 ## Project Summary
 
-**KernSmith** is a cross-platform .NET library that generates BMFont-compatible bitmap fonts from TTF files. It combines FreeTypeSharp for glyph rasterization with our own TTF table parsers (for GPOS kerning, OS/2 metadata, etc.), packs glyphs into texture atlases, and outputs industry-standard BMFont `.fnt` + `.png` pairs. The entire pipeline operates in-memory by default with zero disk I/O required.
+**KernSmith** is a cross-platform .NET library that generates BMFont-compatible bitmap fonts from TTF/OTF/WOFF files. Glyph rasterization goes through a pluggable `IRasterizer` backend (FreeType, StbTrueType, GDI, DirectWrite, or KernSmith's own pure-C# Native rasterizer, each in its own package -- the core library has no FreeType dependency), combined with our own TTF table parsers (for GPOS kerning, OS/2 metadata, etc.). It packs glyphs into texture atlases, and outputs industry-standard BMFont `.fnt` + `.png` pairs. The entire pipeline operates in-memory by default with zero disk I/O required.
 
 ---
 
@@ -35,19 +31,21 @@ Input (font file bytes or system font path)
   |
   v
 Font Loading Layer
-  +-- FreeTypeSharp: load font, get face handle
-  +-- Our TTF Parser: read tables (cmap, kern, GPOS, name, OS/2, head, hhea, hmtx)
+  +-- Core: WOFF -> sfnt decompression, then our TTF parser reads tables
+      (cmap, kern, GPOS, name, OS/2, head, hhea, hmtx, fvar)
+  +-- Rasterizer backend (IRasterizer): LoadFont(bytes) or LoadSystemFont(name)
   |
   v
 Font Metrics & Kerning
-  +-- FreeTypeSharp: per-glyph metrics (advance, bearing, bbox), kern table kerning
-  +-- Our Parser: GPOS kerning pairs, font metadata, Unicode ranges, OS/2 metrics
+  +-- Rasterizer backend: per-glyph metrics (advance, bearing, bbox), optional font metrics
+  +-- Our Parser: GPOS/kern kerning pairs, font metadata, Unicode ranges, OS/2 metrics
   +-- Merged into unified FontInfo model
   |
   v
 Glyph Rasterization
-  +-- FreeTypeSharp: render each requested glyph to bitmap buffer
-      (configurable: size, DPI, AA mode, SDF)
+  +-- Rasterizer backend: render each requested glyph to a bitmap buffer
+      (configurable: size, DPI, AA mode, SDF -- gated by IRasterizerCapabilities)
+  +-- Core: supersample downscale, height stretch, effects / post-processors
   |
   v
 Texture Atlas Packing
@@ -71,7 +69,7 @@ Output Layer
 
 | Component | Source | Responsibility |
 |-----------|--------|----------------|
-| **FreeTypeSharp** | Native FreeType | Load font face, rasterize glyph bitmaps, provide scaled glyph metrics (advance, bearing, bbox), kern table kerning via `FT_Get_Kerning`, SDF rendering, synthetic bold/italic |
+| **Rasterizer backend** (`IRasterizer`) | Separate package per backend: FreeType (native FreeType via FreeTypeSharp), StbTrueType (managed), GDI and DirectWrite (Windows APIs), Native (our own pure C#) | Load font face, rasterize glyph bitmaps, provide scaled glyph metrics (advance, bearing, bbox), and -- where `IRasterizerCapabilities` says so -- SDF, synthetic bold/italic, variable axes and color glyphs. Every backend currently returns null from `GetKerningPairs`, deferring to our parser |
 | **Our TTF Parser** | Pure C# | Read GPOS kerning pairs, OS/2 table metadata (weight class, typo metrics, x-height, cap height, panose), name table strings, cmap (Unicode coverage), head/hhea/hmtx tables |
 | **Packer** | Our C# | MaxRects or Skyline bin packing, multi-page overflow, glyph sorting, padding/spacing handling |
 | **Atlas Builder** | Our C# | Compose rasterized glyph bitmaps into atlas page images, PNG encoding |
@@ -81,7 +79,7 @@ Output Layer
 
 ## Active Plans
 
-> **Table scope**: this table lists only plan docs that still live in `plan/`. Anything archived under `plan/done/` belongs in [Completed Phases](#completed-phases-archived-in-done) below -- do not add `done/` rows here. Phases 181 and 182 are already closed (superseded / complete) but their docs have not been archived yet, so they are still listed here.
+> **Table scope**: this table lists only plan docs that still live in `plan/`. Anything archived under `plan/done/` belongs in [Completed Phases](#completed-phases-archived-in-done) below -- do not add `done/` rows here.
 
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
@@ -92,37 +90,34 @@ Output Layer
 | 111 | [Texture Fill for Glyphs](phase-111-texture-fill.md) | Design for texture/pattern fill effects on glyphs; no `TextureFillEffect` exists yet | Deferred / not started |
 | 112 | [Shader Fill for Glyphs](phase-112-shader-fill.md) | Design for shader-computed (per-pixel) fill effects on glyphs; no `ShaderFillEffect` exists yet | Deferred / not started |
 | 150 | [Deferred Rasterizer Issues](phase-150-deferred-rasterizer-issues.md) | Color fonts, variable fonts, native DW kerning, GDI MatchCharHeight bug (deferred from Phase 78G) | Planning |
-| 181 | [Atlas Variants: Padded Silhouette Regions](phase-181-shadow-outline-atlas-variants.md) | GitHub #175 — superseded by Phase 182 (dropshadow-only framing was too narrow) | Superseded |
-| 182 | [Shared Atlas Groups](phase-182-shared-atlas-groups.md) | GitHub #175 — generic mechanism to pack N independent glyph sources (dropshadow variant, later multi-font) into one shared atlas PNG; shipped in 0.18.0-0.18.2 | Complete |
-| 183 | [Runtime Glyph Addition with Stable Packing](phase-183-runtime-glyph-addition.md) | GitHub #208 — add letters/styles at runtime, get back glyph bytes + a suggested in-place position that never moves existing glyphs; `BmFontIncrementalSession` API | Implemented (branch, pending merge) |
-| 186 | [Apple Platform Verification](phase-186-apple-platform-verification.md) | Run the platform smoke test on macOS, iOS simulator (Mono + NativeAOT), Mac Catalyst and a real iPhone to resolve the ⏳ iOS/Mac Catalyst cells in the README platform table | Not started — needs a Mac (Vic) |
+| 186 | [Apple Platform Verification](phase-186-apple-platform-verification.md) | Run the platform smoke test on macOS, iOS simulator, Mac Catalyst and a real iPhone | Mac Catalyst + iOS simulator verified in CI; real iPhone pending (needs a Mac -- Vic) |
 | 200 | [FontCrafter & Platform Rasterizers](phase-200-fontcrafter-and-platform-rasterizers.md) | FontCrafter product concept and platform-specific rasterizer distribution | Not started / Future |
 | 250 | [UI Cleanup & Polish](phase-250-ui-cleanup.md) | Collapsible sections, consistent grids, shared UI helpers, spacing polish. Day-to-day snapshot: [ui-cleanup-progress.md](ui-cleanup-progress.md) | In progress (Phase 1 landed with changed scope, Phases 3-5 largely done; Phase 2's Generate-bar issue needs re-validation) |
 | 300 | [Deferred Performance Work](phase-300-deferred-performance.md) | Perf 6 Phases B/C carried from Phase 95 -- pool atlas page & per-glyph buffers; needs IDisposable/ownership redesign (Perf 10 excluded -- proven impossible) | Deferred / Future |
 
 ### Native Rasterizer Series (Phases 160-180)
 
-Pure C# TTF/OTF rasterizer initiative; see Phase 160 for design decisions. Phases 161 (scaffold), 162 (glyph table parsers), 163 (outline extraction), 164 (scanline rasterizer) and 165 (IRasterizer integration) are complete (see done/).
+KernSmith's own rasterizer (`src/KernSmith.Rasterizers.Native/`); Phase 160 is the design record. Phases 161-174 and 178 are complete (see `done/`): it renders TrueType (`glyf`) and CFF/CFF2 (`.otf`) fonts end to end, is selectable as `RasterizerBackend.Native` / `--rasterizer native`, tracks FreeType metrics within ±1px, and runs in the `tests/bmfont-compare` harness. It stays **pure managed C#** -- no P/Invoke, no native libraries, no new third-party packages without Jeremy's sign-off -- because it must keep working on browser-wasm and iOS/NativeAOT.
 
-**The backend is now functional end to end for TrueType fonts** -- selectable as `RasterizerBackend.Native` / `--rasterizer native`, metrics within ±1px of FreeType, and covered by the `tests/bmfont-compare` harness. CFF/OTF fonts are still rejected with a `RasterizationException`; **Phase 166 (CFF charstring interpreter) is next** and lifts that restriction. Synthetic bold/italic, outline/stroke, SDF, variable and color fonts remain unimplemented (Phases 167-172) -- see Phase 150 Issue 5 for the core gate bug that makes `Bold`/`Italic` silently no-op on Native today.
+#### Native rasterizer completion
+
+Waves 0-2 have landed; what remains is the Wave 3 work and the decisions below. Tracks inside a wave were independent; `->` marks order within a track.
+
+- **Wave 0** (done): staged-pipeline refactor behind `IOutlineDecoder` ([166 Part 1](done/phase-166-cff-charstring-interpreter.md#part-1--staged-pipeline-refactor-wave-0)); [178](done/phase-178-woff-decompression.md) WOFF2 in core with our own Brotli decoder; the [177](phase-177-performance-optimization.md) benchmark harness.
+- **Wave 1** (done): [166](done/phase-166-cff-charstring-interpreter.md) CFF; [167](done/phase-167-synthetic-bold-italic.md) -> [168](done/phase-168-synthetic-outline-stroke.md) synthetic styles, then vector outlines and synthetic width/slant; [169](done/phase-169-sdf-generation.md) -> [170](done/phase-170-msdf-generation.md) SDF then MSDF; [171](done/phase-171-variable-font-support.md) TrueType variations; [172](done/phase-172-color-font-support.md) COLRv0 + CPAL.
+- **Wave 2** (done): [174](done/phase-174-auto-hinting.md) y-only auto-hinting for `Light` and mono dropout control; 171 CFF2 `blend`; 172 COLRv1 and CBDT/sbix bitmaps; [173](done/phase-173-lcd-subpixel-rendering.md) LCD (public filter and subpixel-order options) and core anti-alias-mode negotiation.
+- **Wave 3** (in progress): 177 optimisation (fill, dropout, metrics, pooling and Brotli done); [179](phase-179-validation-golden-masters.md) validation (robustness, golden masters, similarity matrix and docs sweep done) and the release decision.
+- **Awaiting Jeremy's later decision**: [175](phase-175-gsub-layout.md) GSUB; [176](phase-176-supersampling-height-stretch.md) in-rasterizer supersample/height stretch; publishing Native (with `KernSmith.Imaging`) to NuGet (179).
+
+Every phase that changes Native pixel output runs `regression_check.py` with a `.bmfc` config that exercises its path (named in each doc). The harness tolerates a (config, backend) pair that fails on both sides and reports a brand-new config as `NEW` without comparing it, so a phase's own test must assert that Native actually produced output for its config.
 
 | # | Document | Description | Status |
 |---|----------|-------------|--------|
-| 160 | [Rasterizer Design Decisions](phase-160-rasterizer-design-decisions.md) | Rasterizer design decisions / overview (decision record for the series) | Active |
-| 166 | [CFF/Type2 Charstring Interpreter](phase-166-cff-charstring-interpreter.md) | CFF/Type2 charstring interpreter (OTF outlines) | **Next** |
-| 167 | [Synthetic Bold & Italic](phase-167-synthetic-bold-italic.md) | Synthetic bold + italic transforms | Future |
-| 168 | [Synthetic Outline/Stroke](phase-168-synthetic-outline-stroke.md) | Synthetic outline/stroke | Future |
-| 169 | [SDF Generation](phase-169-sdf-generation.md) | SDF generation (native backend) | Future |
-| 170 | [MSDF Generation](phase-170-msdf-generation.md) | MSDF generation | Future |
-| 171 | [Variable Font Support](phase-171-variable-font-support.md) | Variable font support (native backend) | Future |
-| 172 | [Color Font Support](phase-172-color-font-support.md) | Color font support / COLR-CPAL (native backend) | Future |
-| 173 | [LCD Subpixel Rendering](phase-173-lcd-subpixel-rendering.md) | LCD subpixel rendering | Future |
-| 174 | [Auto-Hinting](phase-174-auto-hinting.md) | Auto-hinting | Future |
-| 175 | [GSUB Layout](phase-175-gsub-layout.md) | GSUB layout (ligatures/substitution) | Future |
-| 176 | [Supersampling + Height Stretch](phase-176-supersampling-height-stretch.md) | Supersampling + height stretch (native integration) | Future |
-| 177 | [Performance Optimization](phase-177-performance-optimization.md) | Performance optimization | Future |
-| 178 | [WOFF2 Decompression](phase-178-woff-decompression.md) | WOFF2 decompression | Future |
-| 179 | [Validation / Golden Masters](phase-179-validation-golden-masters.md) | Validation / golden masters | Future |
+| 160 | [Rasterizer Design Decisions](phase-160-rasterizer-design-decisions.md) | Decision record for the Native rasterizer | Active |
+| 175 | [GSUB Layout](phase-175-gsub-layout.md) | GSUB substitutions | Deferred -- awaiting Jeremy's decision |
+| 176 | [Supersampling + Height Stretch](phase-176-supersampling-height-stretch.md) | In-rasterizer supersample / height stretch | Deferred -- awaiting Jeremy's decision |
+| 177 | [Performance Optimization](phase-177-performance-optimization.md) | Benchmark harness, then optimisation | In progress -- harness, baseline, scanline fill, dropout control, metrics shortcut, per-glyph pooling and Brotli done; remaining feature paths and parallelism |
+| 179 | [Validation / Golden Masters](phase-179-validation-golden-masters.md) | Validation, golden masters, release | In progress -- Wave 3 (robustness, golden masters, similarity matrix and docs sweep done; performance validation, the AOT Blazor WASM run, a library sample and the release decision remain) |
 | 180 | [Innovation Research](phase-180-innovation-research.md) | Innovation research (ongoing experiments) | Future (Ongoing Research) |
 
 ---
@@ -216,9 +211,22 @@ Pure C# TTF/OTF rasterizer initiative; see Phase 160 for design decisions. Phase
 | 161 | [Native Rasterizer Scaffold](done/phase-161-native-project-scaffold.md) | Pure C# binary font reader, table directory parser, core table parsers (head/hhea/hmtx/OS2/cmap/maxp), NativeRasterizer IRasterizer shell -- Complete |
 | 162 | [glyf/loca/maxp Parsers](done/phase-162-glyf-loca-maxp-parsers.md) | Pure C# `loca` + `glyf` outline parsers (simple + composite with transforms, implicit on-curve midpoints) and the `maxp` v1.0 extended profile -- Complete |
 | 163 | [Outline Extraction](done/phase-163-outline-extraction.md) | `ParsedGlyph` -> normalized MoveTo/LineTo/CubicTo/Close commands, exact quadratic-to-cubic elevation, font-unit -> pixel transform, adaptive De Casteljau flattening to directed `EdgeSegment`s -- Complete |
-| 164 | [Scanline Rasterizer](done/phase-164-scanline-rasterizer.md) | Signed-area trapezoid coverage over an active-edge table, pooled `area`/`cover` buffers, Grayscale/None anti-aliasing, `RasterResult` output; SSIM > 0.95 vs StbTrueType (perf benchmark deferred) -- Complete |
+| 164 | [Scanline Rasterizer](done/phase-164-scanline-rasterizer.md) | Exact signed-area coverage (accumulator rewritten in Phase 177: a pooled, banded per-row delta buffer read by one prefix sum), Grayscale/None anti-aliasing, `RasterResult` output; SSIM > 0.95 vs StbTrueType -- Complete |
 | 165 | [IRasterizer Integration](done/phase-165-irasterizer-integration.md) | Full `IRasterizer` on the Native backend (cmap -> glyf -> outline -> `GlyphBox` -> flatten -> scanline), OS/2-based font metrics, `GlyphBox` sizing, CFF rejection; metrics within ±1px of FreeType and `.fnt` base/lineHeight exact. Native surfaced in CLI/docs/comparison harness. Exposed Phase 150 Issue 5 -- Complete |
-| 185 | [Font Sourcing](done/phase-185-font-sourcing.md) | IFontSource abstraction + KernSmith.Fonts.Web package for web font CDNs (WOFF) -- Complete |
+| 166 | [Staged Pipeline & CFF/CFF2 Charstring Interpreter](done/phase-166-cff-charstring-interpreter.md) | Staged glyph pipeline behind `IOutlineDecoder`; CFF / CID-keyed CFF / CFF2 outlines via a hardened Type 2 interpreter (CFF2 instances via Phase 171), so `.otf` fonts render on Native -- Complete |
+| 167 | [Synthetic Bold & Italic](done/phase-167-synthetic-bold-italic.md) | Outline-level synthetic bold + italic matched to FreeType's -- Complete |
+| 168 | [Vector Outlines, Width & Italic Angle](done/phase-168-synthetic-outline-stroke.md) | Opt-in `OutlineMode.Vector` (backend-drawn outline layer), `WidthPercent`, `ItalicAngle` on Native; small caps deferred -- Complete |
+| 169 | [SDF Generation](done/phase-169-sdf-generation.md) | Single-channel SDF from outlines, matching FreeType's encoding -- Complete |
+| 170 | [MSDF Generation](done/phase-170-msdf-generation.md) | Multi-channel SDF (MSDF/MTSDF) and the public `SdfMode` -- Complete |
+| 171 | [Variable Font Support](done/phase-171-variable-font-support.md) | TrueType variations (`avar`/`gvar`/`HVAR`/`MVAR`) and CFF2 `blend` -- Complete |
+| 172 | [Color Font Support](done/phase-172-color-font-support.md) | COLR v0/CPAL, COLR v1 paint graphs, and CBDT/CBLC + sbix PNG bitmap glyphs (scaled from the best strike, decoded by our own `KernSmith.Imaging` PNG decoder) -- Complete |
+| 173 | [LCD Subpixel Rendering](done/phase-173-lcd-subpixel-rendering.md) | Native LCD with public `LcdFilter`/`LcdSubpixelOrder`, LCD unsupersampled, silent core AA-mode negotiation -- Complete |
+| 174 | [Auto-Hinting](done/phase-174-auto-hinting.md) | Native's own y-only auto-hinter for `Light` (blue zones, horizontal stems, monotone interpolation) and mono dropout control; `Light`-only and no x fitting, by decision -- Complete |
+| 178 | [WOFF2 Decompression](done/phase-178-woff-decompression.md) | WOFF2 decoded in core with our own managed Brotli decoder (every backend, browser-wasm included); `KernSmith.Fonts.Web` fetches WOFF2 with WOFF fallback -- Complete |
+| 181 | [Atlas Variants: Padded Silhouette Regions](done/phase-181-shadow-outline-atlas-variants.md) | GitHub #175 -- Superseded by Phase 182 (dropshadow-only framing was too narrow) |
+| 182 | [Shared Atlas Groups](done/phase-182-shared-atlas-groups.md) | GitHub #175 -- pack N independent glyph sources (dropshadow variant, later multi-font) into one shared atlas PNG via `AtlasGroupBuilder` -- Complete |
+| 183 | [Runtime Glyph Addition with Stable Packing](done/phase-183-runtime-glyph-addition.md) | GitHub #208 -- add glyphs at runtime with a suggested in-place position that never moves existing glyphs; `BmFontIncrementalSession` API -- Complete |
+| 185 | [Font Sourcing](done/phase-185-font-sourcing.md) | IFontSource abstraction + KernSmith.Fonts.Web package for web font CDNs (WOFF; WOFF2 since Phase 178) -- Complete |
 
 ### Topical Plan Docs (archived in `done/`)
 

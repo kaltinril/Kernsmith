@@ -191,7 +191,7 @@ FreeTypeSharp uses `[DllImport("freetype")]` extensively. It will **not** work i
 Two pure-managed rasterizer backends are viable under WASM:
 
 1. **`KernSmith.Rasterizers.StbTrueType`** (StbTrueTypeSharp) -- available today, validated in the Blazor WASM sample.
-2. **`KernSmith.Rasterizers.Native`** -- the future first-class WASM rasterizer. Fully custom, pure C#, **zero external NuGet/native dependencies** (only references `KernSmith` core). The csproj already sets `IsTrimmable`, `EnableTrimAnalyzer`, and `IsAotCompatible=true`, so it is trim/AOT/WASM-friendly by design and needs no `try/finally` Marshal cleanup (no unmanaged allocations). **Currently a Phase 161 scaffold:** font loading, validation, and core table parsing (`head`, `hhea`, `hmtx`, `OS/2`, `cmap`) are done, but glyph outline decoding and rasterization arrive in Phases 162-165 -- `RasterizeGlyph`/`RasterizeAll` throw `NotImplementedException` until then. Once complete it becomes the recommended zero-dependency WASM rasterizer alongside (and eventually ahead of) StbTrueType.
+2. **`KernSmith.Rasterizers.Native`** -- the future first-class WASM rasterizer. Fully custom, pure C#, **zero external NuGet/native dependencies** (only references `KernSmith` core). The csproj already sets `IsTrimmable`, `EnableTrimAnalyzer`, and `IsAotCompatible=true`, so it is trim/AOT/WASM-friendly by design and needs no `try/finally` Marshal cleanup (no unmanaged allocations). It renders TrueType and CFF/CFF2 fonts end to end (variable, color, SDF/MSDF included) and is verified by the platform smoke test on Android, Linux arm64, iOS (simulator) and Mac Catalyst (full AOT); it is not published to NuGet yet, and Blazor WASM is not yet runtime-verified.
 
 ### StbTrueTypeSharp Findings
 
@@ -209,7 +209,7 @@ Two pure-managed rasterizer backends are viable under WASM:
 ### KernSmith Impact
 
 - StbTrueTypeSharp is viable for WASM today and has been validated in the Blazor WASM sample app.
-- The pure-C# `KernSmith.Rasterizers.Native` backend is the intended long-term WASM rasterizer (zero native deps, AOT/trim-clean) but cannot render yet -- glyph rendering lands in Phases 162-165. Until then, use StbTrueType for WASM.
+- The pure-C# `KernSmith.Rasterizers.Native` backend is the intended long-term WASM rasterizer (zero native deps, AOT/trim-clean). It renders, but it is unpublished and not yet run under browser-wasm, so use StbTrueType for shipping WASM builds today.
 - The mitigations below apply to StbTrueTypeSharp; the Native backend has no unmanaged allocations to wrap.
 - All unmanaged allocations (StbTrueTypeSharp) must be wrapped in `try/finally`.
 - Bitmap data must be copied to managed `byte[]` immediately, then the unmanaged buffer freed.

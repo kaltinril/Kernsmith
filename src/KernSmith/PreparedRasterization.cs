@@ -30,6 +30,7 @@ internal sealed class PreparedRasterization : IDisposable
     private readonly List<IGlyphEffect> _effects;
     private readonly bool _hasEffects;
     private readonly List<IGlyphPostProcessor>? _activePostProcessors;
+    private readonly VectorOutlineRequest? _vectorOutline;
     private bool _disposed;
 
     // Rasterizer-provided metrics/kerning depend only on the fixed _rasterOptions, so
@@ -67,7 +68,8 @@ internal sealed class PreparedRasterization : IDisposable
         int renderScale,
         List<IGlyphEffect> effects,
         bool hasEffects,
-        List<IGlyphPostProcessor>? activePostProcessors)
+        List<IGlyphPostProcessor>? activePostProcessors,
+        VectorOutlineRequest? vectorOutline)
     {
         FontData = fontData;
         FontInfo = fontInfo;
@@ -81,6 +83,7 @@ internal sealed class PreparedRasterization : IDisposable
         _effects = effects;
         _hasEffects = hasEffects;
         _activePostProcessors = activePostProcessors;
+        _vectorOutline = vectorOutline;
     }
 
     /// <summary>
@@ -88,7 +91,7 @@ internal sealed class PreparedRasterization : IDisposable
     /// creation/load, synthetic-style gating, variation axes, color palette, effective-ppem
     /// resolution, render-scale sizing, and effect/post-processor list construction.
     /// </summary>
-    /// <param name="fontData">Raw TTF/OTF/WOFF file bytes.</param>
+    /// <param name="fontData">Raw TTF/OTF/WOFF/WOFF2 file bytes.</param>
     /// <param name="options">Generation options.</param>
     /// <param name="systemFontName">System font family to load via the rasterizer's own system
     /// font path (when supported), or null to load <paramref name="fontData"/> directly.</param>
@@ -109,8 +112,15 @@ internal sealed class PreparedRasterization : IDisposable
         if (WoffDecompressor.IsWoff(fontData) || WoffDecompressor.IsWoff2(fontData))
             fontData = WoffDecompressor.Decompress(fontData);
 
+        if (options.WidthPercent is < 10 or > 1000)
+            throw new ArgumentOutOfRangeException(nameof(options), $"WidthPercent must be between 10 and 1000, was {options.WidthPercent}.");
+        if (!float.IsFinite(options.ItalicAngle) || Math.Abs(options.ItalicAngle) > 60f)
+            throw new ArgumentOutOfRangeException(nameof(options), $"ItalicAngle must be between -60 and 60 degrees, was {options.ItalicAngle}.");
+
         // 0b. Guard: SDF + super sampling is invalid — box filter corrupts distance values.
-        if (options.Sdf && options.SuperSampleLevel > 1)
+        var sdfMode = options.EffectiveSdfMode;
+        var multiChannel = sdfMode is SdfMode.Msdf or SdfMode.Mtsdf;
+        if (sdfMode != SdfMode.None && options.SuperSampleLevel > 1)
             throw new InvalidOperationException(
                 "SDF rendering cannot be combined with super sampling (SuperSampleLevel > 1). " +
                 "The box-filter downscale corrupts signed distance field values.");
@@ -145,6 +155,18 @@ internal sealed class PreparedRasterization : IDisposable
                 throw new InvalidOperationException(
                     "Channel packing cannot be combined with effects (outline, gradient, shadow). " +
                     "Effects produce RGBA glyphs which cannot be packed into individual channels.");
+
+            // Guard: an MSDF glyph's RGB are three distances, not a color. Anything that packs,
+            // tints, composites or re-routes channels would corrupt them.
+            if (multiChannel)
+                RejectMultiChannelIncompatibilities(options);
+
+            // Guard: a vector outline is a coverage layer composited under the body, which means
+            // nothing next to a distance field's encoded distances.
+            if (options.OutlineMode == OutlineMode.Vector && options.Outline > 0 && sdfMode != SdfMode.None)
+                throw new InvalidOperationException(
+                    "Vector outlines (OutlineMode.Vector) cannot be combined with SDF rendering: the outline " +
+                    "layer is coverage, and a distance field's values are distances. Use OutlineMode.Effect.");
 
             if (systemFontName is not null && rasterizer.Capabilities.SupportsSystemFonts)
                 rasterizer.LoadSystemFont(systemFontName);
@@ -184,15 +206,40 @@ internal sealed class PreparedRasterization : IDisposable
                 rasterizer.SelectColorPalette(options.ColorPaletteIndex);
             }
 
-            if (options.Sdf && !rasterizer.Capabilities.SupportsSdf)
+            if (sdfMode == SdfMode.Sdf && !rasterizer.Capabilities.SupportsSdf)
             {
                 throw new NotSupportedException(
                     $"Rasterizer backend does not support SDF rendering. " +
                     $"Use a backend that reports SupportsSdf = true (e.g., FreeType or StbTrueType).");
             }
 
+            if (multiChannel && !rasterizer.Capabilities.SupportsMsdf)
+            {
+                throw new NotSupportedException(
+                    "Rasterizer backend does not support MSDF/MTSDF rendering. " +
+                    "Use a backend that reports SupportsMsdf = true (e.g., Native).");
+            }
+
+            // Synthetic width and slant are outline edits only some backends make; drawing a
+            // different width or angle than asked for would be silently wrong output.
+            if (options.WidthPercent != 100 && !rasterizer.Capabilities.SupportsWidthScale)
+            {
+                throw new NotSupportedException(
+                    $"Rasterizer backend does not support synthetic width scaling (WidthPercent = {options.WidthPercent}). " +
+                    "Use a backend that reports SupportsWidthScale = true (e.g., Native).");
+            }
+
+            if (effectiveItalic && !options.ItalicAngle.Equals(12f) && !rasterizer.Capabilities.SupportsItalicAngle)
+            {
+                throw new NotSupportedException(
+                    $"Rasterizer backend does not support a synthetic italic angle other than 12 degrees (ItalicAngle = {options.ItalicAngle}). " +
+                    "Use a backend that reports SupportsItalicAngle = true (e.g., Native).");
+            }
+
             var rasterOptions = RasterOptions.FromGeneratorOptions(options) with
             {
+                AntiAlias = AntiAliasNegotiation.Resolve(
+                    options.AntiAlias, rasterizer.Capabilities.SupportedAntiAliasModes),
                 Bold = effectiveBold,
                 ForceSyntheticBold = effectiveForceSyntheticBold,
                 Italic = effectiveItalic,
@@ -221,6 +268,17 @@ internal sealed class PreparedRasterization : IDisposable
 
             var ssLevel = Math.Clamp(options.SuperSampleLevel, 1, 4);
 
+            // LCD output is never super sampled: box-filtering an N x render down averages each
+            // channel across N subpixel strips, smearing the pattern the mode exists for. A
+            // backend rendering LCD renders it at the final size (and is told SuperSample = 1, in
+            // case it supersamples on its own); one that degraded LCD to grayscale supersamples
+            // as usual. Distance fields win over LCD, and reject super sampling above.
+            if (rasterOptions.AntiAlias == AntiAliasMode.Lcd && sdfMode == SdfMode.None)
+            {
+                ssLevel = 1;
+                rasterOptions = rasterOptions with { SuperSample = 1 };
+            }
+
             // SDF supersampling: render the distance field at a larger ppem, then box-average
             // back down. Unlike alpha-coverage super sampling (forbidden with SDF above
             // because averaging coverage corrupts distances), a FreeType SDF byte is locally
@@ -228,7 +286,7 @@ internal sealed class PreparedRasterization : IDisposable
             // edge zero-crossing — this is the standard "render SDF high-res, then downsample"
             // technique. SDF and SuperSampleLevel>1 are mutually exclusive (rejected above), so
             // renderScale collapses to a single upscale factor for both paths.
-            var sdfScale = options.Sdf ? Math.Clamp(options.SdfScale, 1, 4) : 1;
+            var sdfScale = sdfMode != SdfMode.None ? Math.Clamp(options.SdfScale, 1, 4) : 1;
             var renderScale = sdfScale > 1 ? sdfScale : ssLevel;
             var effectiveRasterOptions = renderScale > 1
                 ? rasterOptions with { Size = rasterOptions.Size * renderScale }
@@ -265,10 +323,30 @@ internal sealed class PreparedRasterization : IDisposable
                 }
             }
 
+            // Vector outlines: the backend draws the outline layer that the bitmap OutlineEffect (or,
+            // for a routed outline, the channel path's OutlinePostProcessor) would otherwise draw.
+            VectorOutlineRequest? vectorOutline = null;
+            if (options.OutlineMode == OutlineMode.Vector && options.Outline > 0
+                && rasterizer.Capabilities.SupportsOutlineStroke)
+            {
+                var routed = BmFont.ShouldApplyChannelConfig(options);
+                if (!routed || BmFont.RoutesOutline(options.Channels!))
+                {
+                    vectorOutline = new VectorOutlineRequest(
+                        // Same thickness definition as each mode's bitmap outline: the effect grows
+                        // the glyph at the render (supersampled) size, the routed outline at the
+                        // output size.
+                        LayerWidth: routed ? options.Outline * renderScale : options.Outline,
+                        options.OutlineShape,
+                        HeightScale: Math.Max(10, options.HeightPercent) / 100f,
+                        Routed: routed);
+                }
+            }
+
             return new PreparedRasterization(
                 fontData, fontInfo, options, rasterizer, ownsRasterizer,
                 rasterOptions, effectiveRasterOptions, effectiveSize, renderScale,
-                effects, hasEffects, activePostProcessors);
+                effects, hasEffects, activePostProcessors, vectorOutline);
         }
         catch
         {
@@ -319,21 +397,50 @@ internal sealed class PreparedRasterization : IDisposable
 
         var glyphs = _rasterizer.RasterizeAll(codepointList, _effectiveRasterOptions).ToList();
 
+        // Vector outline layers are asked for here, one glyph at a time: rasterizers are not
+        // thread-safe, and the per-glyph pass below runs in parallel.
+        var vector = _vectorOutline;
+        var masks = vector is not null ? RasterizeOutlineMasks(glyphs, vector) : null;
+
         // HeightStretch first (before custom glyphs, matching original order)
         if (options.HeightPercent != 100)
         {
             var stretch = new HeightStretchPostProcessor(options.HeightPercent);
             for (var i = 0; i < glyphs.Count; i++)
-                glyphs[i] = stretch.Process(glyphs[i]);
+            {
+                var unstretched = glyphs[i];
+                glyphs[i] = stretch.Process(unstretched);
+                if (masks is not null && masks.TryGetValue(unstretched.Codepoint, out var mask))
+                    SetOrRemove(masks, unstretched.Codepoint,
+                        mask.Stretch(unstretched.Height, glyphs[i].Height, threshold: options.AntiAlias == AntiAliasMode.None));
+            }
         }
 
         // Custom glyphs (after stretch, before effects - matching original order)
         if (options.CustomGlyphs is { Count: > 0 })
         {
             glyphs = ApplyCustomGlyphs(glyphs, options.CustomGlyphs, codepointList);
+
+            // A custom image has no outline for the backend to stroke: it keeps the bitmap outline.
+            if (masks is not null)
+            {
+                foreach (var codepoint in options.CustomGlyphs.Keys)
+                    masks.Remove(codepoint);
+            }
         }
 
+        // A routed outline is built from the final glyphs after this pass, so its layers follow
+        // each glyph through compositing and downscaling. Arbitrary post-processors could move
+        // the glyph in ways a layer cannot follow; with any active, glyphs keep the bitmap outline.
+        var routedMasks = vector is { Routed: true } && masks is { Count: > 0 } && _activePostProcessors is null
+            ? new OutlineMask?[glyphs.Count]
+            : null;
+
         var needsDownscale = _renderScale > 1;
+
+        // Multi-channel distance fields average each channel on its own: MTSDF alpha is a
+        // distance, not opacity, so premultiplying RGB by it would destroy their distances.
+        var perChannel = options.EffectiveSdfMode is SdfMode.Msdf or SdfMode.Mtsdf;
 
         // Atlas variants (e.g. a shadow silhouette) need the glyph's own bare coverage —
         // not a copy that may already have a baked outline/gradient/shadow composited into
@@ -345,21 +452,36 @@ internal sealed class PreparedRasterization : IDisposable
 
         // Apply remaining per-glyph transforms in a single pass (parallelized on non-WASM,
         // above the small-batch threshold)
-        if (_hasEffects || _activePostProcessors != null || needsDownscale || rawGlyphsForVariants != null)
+        if (_hasEffects || _activePostProcessors != null || needsDownscale || rawGlyphsForVariants != null || routedMasks != null)
         {
             void ProcessGlyph(int i)
             {
                 var g = glyphs[i];
+                OutlineMask? mask = null;
+                masks?.TryGetValue(g.Codepoint, out mask);
                 if (rawGlyphsForVariants != null)
-                    rawGlyphsForVariants[i] = needsDownscale ? SuperSampleDownscale(g, _renderScale) : g;
-                if (_hasEffects) g = GlyphCompositor.Composite(g, _effects,
-                    options.FillColorR, options.FillColorG, options.FillColorB, options.FillColorA);
+                    rawGlyphsForVariants[i] = needsDownscale ? SuperSampleDownscale(g, _renderScale, perChannel) : g;
+                if (_hasEffects)
+                {
+                    var effects = mask is not null && !vector!.Routed ? WithVectorOutline(mask) : _effects;
+                    var unstyled = g;
+                    g = GlyphCompositor.Composite(g, effects,
+                        options.FillColorR, options.FillColorG, options.FillColorB, options.FillColorA);
+                    mask = mask?.Shift(g.Metrics.BearingX - unstyled.Metrics.BearingX, unstyled.Metrics.BearingY - g.Metrics.BearingY);
+                }
                 if (_activePostProcessors != null)
                 {
                     foreach (var processor in _activePostProcessors)
                         g = processor.Process(g);
                 }
-                if (needsDownscale) g = SuperSampleDownscale(g, _renderScale);
+                if (needsDownscale)
+                {
+                    g = SuperSampleDownscale(g, _renderScale, perChannel);
+                    if (routedMasks != null)
+                        mask = mask?.Downscale(_renderScale);
+                }
+                if (routedMasks != null)
+                    routedMasks[i] = mask;
                 glyphs[i] = g;
             }
 
@@ -451,8 +573,73 @@ internal sealed class PreparedRasterization : IDisposable
             EffectiveSize = EffectiveSize,
             RasterizerFontMetrics = _rasterizerFontMetrics,
             RasterizerKerningPairs = _rasterizerKerningPairs,
-            RawGlyphsForVariants = rawGlyphsForVariants
+            RawGlyphsForVariants = rawGlyphsForVariants,
+            ChannelOutlineMasks = routedMasks is null ? null : CollectRoutedMasks(glyphs, routedMasks)
         };
+    }
+
+    /// <summary>
+    /// How <see cref="OutlineMode.Vector"/> asks the backend for layers: the layer width in render
+    /// pixels, the corner shape, the height stretch the layer will go through, and whether the
+    /// outline is routed to a channel (built after the per-glyph pass) or composited as an effect.
+    /// </summary>
+    private sealed record VectorOutlineRequest(int LayerWidth, OutlineShape Shape, float HeightScale, bool Routed);
+
+    /// <summary>
+    /// Asks the backend for every non-blank glyph's outline layer, placed against the glyph. A
+    /// glyph the backend returns no layer for is absent, and keeps the bitmap outline.
+    /// </summary>
+    private Dictionary<int, OutlineMask> RasterizeOutlineMasks(List<RasterizedGlyph> glyphs, VectorOutlineRequest vector)
+    {
+        var masks = new Dictionary<int, OutlineMask>();
+        foreach (var glyph in glyphs)
+        {
+            // The bitmap outline skips blank glyphs too (GlyphCompositor returns them as they are).
+            if (glyph.Width == 0 || glyph.Height == 0 || glyph.BitmapData.Length == 0)
+                continue;
+
+            var layer = _rasterizer.RasterizeOutlineLayer(
+                glyph.Codepoint, _effectiveRasterOptions, vector.LayerWidth, vector.Shape, vector.HeightScale);
+            if (layer is not null && OutlineMask.FromLayer(glyph, layer) is { } mask)
+                masks[glyph.Codepoint] = mask;
+        }
+
+        return masks;
+    }
+
+    private static void SetOrRemove(Dictionary<int, OutlineMask> masks, int codepoint, OutlineMask? mask)
+    {
+        if (mask is null)
+            masks.Remove(codepoint);
+        else
+            masks[codepoint] = mask;
+    }
+
+    /// <summary><see cref="_effects"/> with the bitmap outline replaced by the glyph's vector layer.</summary>
+    private List<IGlyphEffect> WithVectorOutline(OutlineMask mask)
+    {
+        var options = Options;
+        var effects = new List<IGlyphEffect>(_effects.Count);
+        foreach (var effect in _effects)
+        {
+            effects.Add(effect is OutlineEffect
+                ? new VectorOutlineEffect(mask, options.Outline, options.OutlineR, options.OutlineG, options.OutlineB)
+                : effect);
+        }
+
+        return effects;
+    }
+
+    private static Dictionary<int, OutlineMask> CollectRoutedMasks(List<RasterizedGlyph> glyphs, OutlineMask?[] masks)
+    {
+        var byCodepoint = new Dictionary<int, OutlineMask>();
+        for (var i = 0; i < masks.Length; i++)
+        {
+            if (masks[i] is { } mask)
+                byCodepoint[glyphs[i].Codepoint] = mask;
+        }
+
+        return byCodepoint;
     }
 
     public void Dispose()
@@ -464,6 +651,31 @@ internal sealed class PreparedRasterization : IDisposable
         // (options.Rasterizer) is caller-owned and never disposed here.
         if (_ownsRasterizer)
             _rasterizer.Dispose();
+    }
+
+    /// <summary>
+    /// Throws for options that treat a glyph's RGB as color, which an MSDF/MTSDF glyph's are not.
+    /// </summary>
+    private static void RejectMultiChannelIncompatibilities(FontGeneratorOptions options)
+    {
+        string? conflict = null;
+        if (options.ChannelPacking)
+            conflict = "channel packing";
+        else if (HasAnyEffects(options))
+            conflict = "effects (outline, gradient, shadow)";
+        else if (options.FillColorR != 255 || options.FillColorG != 255 || options.FillColorB != 255 || options.FillColorA != 255)
+            conflict = "a fill color";
+        else if (BmFont.ShouldApplyChannelConfig(options))
+            conflict = "a custom channel configuration";
+        else if (options.Variants is { Count: > 0 })
+            conflict = "atlas variants";
+        else if (options.ColorFont)
+            conflict = "color font rendering";
+
+        if (conflict is not null)
+            throw new InvalidOperationException(
+                $"MSDF/MTSDF rendering cannot be combined with {conflict}: the RGB channels hold " +
+                "distances, not color.");
     }
 
     /// <summary>Checks if any built-in effects (outline, gradient, shadow) are enabled.</summary>
@@ -560,8 +772,12 @@ internal sealed class PreparedRasterization : IDisposable
         return effects;
     }
 
-    /// <summary>Downscales a super-sampled glyph using a box filter.</summary>
-    private static RasterizedGlyph SuperSampleDownscale(RasterizedGlyph glyph, int level)
+    /// <summary>
+    /// Downscales a super-sampled glyph using a box filter. RGBA is averaged premultiplied by
+    /// alpha (color glyphs), or with every channel on its own when <paramref name="perChannel"/>
+    /// is set (multi-channel distance fields), exactly as grayscale is.
+    /// </summary>
+    private static RasterizedGlyph SuperSampleDownscale(RasterizedGlyph glyph, int level, bool perChannel = false)
     {
         if (glyph.Width == 0 || glyph.Height == 0)
             return glyph;
@@ -583,7 +799,24 @@ internal sealed class PreparedRasterization : IDisposable
         {
             for (var dx = 0; dx < dstW; dx++)
             {
-                if (bpp == 1)
+                if (perChannel && bpp == 4)
+                {
+                    for (var c = 0; c < 4; c++)
+                    {
+                        int sum = 0;
+                        for (var sy = 0; sy < level; sy++)
+                        {
+                            for (var sx = 0; sx < level; sx++)
+                            {
+                                var srcIdx = (dy * level + sy) * srcPitch + (dx * level + sx) * 4 + c;
+                                if (srcIdx < glyph.BitmapData.Length)
+                                    sum += glyph.BitmapData[srcIdx];
+                            }
+                        }
+                        dst[(dy * dstW + dx) * 4 + c] = (byte)(sum / area);
+                    }
+                }
+                else if (bpp == 1)
                 {
                     int sum = 0;
                     for (var sy = 0; sy < level; sy++)

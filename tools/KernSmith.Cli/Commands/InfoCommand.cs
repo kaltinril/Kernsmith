@@ -5,7 +5,7 @@ using KernSmith.Font;
 namespace KernSmith.Cli.Commands;
 
 /// <summary>
-/// Reads a TTF/OTF/WOFF font file and displays its metadata including family, style,
+/// Reads a TTF/OTF/WOFF/WOFF2 font file and displays its metadata including family, style,
 /// glyph count, kerning pairs, variation axes, and Unicode coverage.
 /// </summary>
 internal sealed class InfoCommand
@@ -255,7 +255,7 @@ internal sealed class InfoCommand
 
             Usage: kernsmith info <path> [options]
 
-              <path>                      Path to a font file (TTF, OTF, WOFF)
+              <path>                      Path to a font file (TTF, OTF, WOFF, WOFF2)
 
             Options:
               --json                      Output as JSON

@@ -13,20 +13,21 @@ public class NativeRasterizerTests
     }
 
     [Fact]
-    public void Capabilities_AreMinimal()
+    public void Capabilities_ReportWhatNativeImplements()
     {
         using var rasterizer = new NativeRasterizer();
         var caps = rasterizer.Capabilities;
 
-        caps.SupportsColorFonts.ShouldBeFalse();
-        caps.SupportsVariableFonts.ShouldBeFalse();
-        caps.SupportsSdf.ShouldBeFalse();
-        caps.SupportsOutlineStroke.ShouldBeFalse();
-        caps.SupportsSyntheticBold.ShouldBeFalse();
-        caps.SupportsSyntheticItalic.ShouldBeFalse();
+        caps.SupportsColorFonts.ShouldBeTrue("COLR version 0 layers render (Phase 172)");
+        caps.SupportsVariableFonts.ShouldBeTrue();
+        caps.SupportsSdf.ShouldBeTrue();
+        caps.SupportsMsdf.ShouldBeTrue();
+        caps.SupportsOutlineStroke.ShouldBeTrue("RasterizeOutlineLayer draws vector outlines (Phase 168)");
+        caps.SupportsSyntheticBold.ShouldBeTrue();
+        caps.SupportsSyntheticItalic.ShouldBeTrue();
         caps.SupportsSystemFonts.ShouldBeFalse();
         caps.HandlesOwnSizing.ShouldBeFalse();
-        caps.SupportedAntiAliasModes.ShouldBe([AntiAliasMode.None, AntiAliasMode.Grayscale]);
+        caps.SupportedAntiAliasModes.ShouldBe([AntiAliasMode.None, AntiAliasMode.Grayscale, AntiAliasMode.Light, AntiAliasMode.Lcd]);
     }
 
     [Fact]
@@ -183,13 +184,24 @@ public class NativeRasterizerTests
     }
 
     [Fact]
-    public void LoadFont_CffFont_ThrowsRasterizationException()
+    public void LoadFont_CffFont_RendersGlyphs()
     {
         using var rasterizer = new NativeRasterizer();
+        rasterizer.LoadFont(TestFonts.SourceSerifOtfBytes());
 
-        var ex = Should.Throw<RasterizationException>(() => rasterizer.LoadFont(SyntheticFonts.CffFlavoured()));
-        ex.Message.ShouldContain("CFF");
-        ex.Message.ShouldContain("166", Case.Insensitive);
+        var glyph = rasterizer.RasterizeGlyph('A', new RasterOptions { Size = 32 });
+        glyph.ShouldNotBeNull();
+        glyph!.Width.ShouldBeGreaterThan(10);
+        glyph.Height.ShouldBeGreaterThan(10);
+        glyph.BitmapData.ShouldContain(b => b == 255);
+    }
+
+    [Fact]
+    public void LoadFont_MalformedCffTable_ThrowsFontFormatException()
+    {
+        using var rasterizer = new NativeRasterizer();
+        var ex = Should.Throw<FontFormatException>(() => rasterizer.LoadFont(SyntheticFonts.CffFlavoured()));
+        ex.Message.ShouldContain("CFF", Case.Sensitive);
     }
 
     [Fact]

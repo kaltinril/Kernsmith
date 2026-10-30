@@ -1,5 +1,4 @@
 using KernSmith.Rasterizers.Native.Internal.Outlines;
-using KernSmith.Rasterizers.Native.Internal.Tables;
 
 namespace KernSmith.Rasterizers.Native.Internal.Raster;
 
@@ -23,36 +22,47 @@ internal readonly record struct GlyphBox(int MinX, int MinY, int Width, int Heig
     public bool IsEmpty => Width <= 0 || Height <= 0;
 
     /// <summary>
-    /// Computes the grid for a glyph at a given scale.
+    /// Computes the grid for an outline at a given scale.
     /// </summary>
-    /// <param name="glyph">The parsed glyph, for its <c>glyf</c> bounding box.</param>
-    /// <param name="outline">The extracted outline, used only as a fallback.</param>
+    /// <param name="outline">The outline to bound, in font units.</param>
+    /// <param name="declaredBounds">
+    /// The font's own box for this exact outline (the <c>glyf</c> header, or the points' control
+    /// box where that header is stale), or null when the source has none (CFF) or a transform
+    /// has replaced the outline.
+    /// </param>
     /// <param name="scale">Pixels per font unit.</param>
     /// <remarks>
-    /// The box comes from the glyph's own <c>glyf</c> header bounds, which the OpenType spec
-    /// defines as the tight bounds of the rendered outline — curve extrema included. That is
-    /// deliberately not <see cref="GlyphOutline"/>'s bounds: those bound the Bezier control
-    /// hull, which a curve never reaches, so they would leave blank rows and columns around
-    /// every rounded glyph. It is also the box stb_truetype and FreeType (unhinted) derive
-    /// their bitmaps from, which keeps native output aligned with the other backends.
+    /// With no declared box, the grid comes from the outline's tight bounds — curve extrema
+    /// included, control points that the curve never reaches excluded — so rounded glyphs get
+    /// no blank border rows or columns.
     ///
-    /// Fonts with a broken or absent header box (composites are the usual offender) fall back
-    /// to the control hull: over-sized by a fraction of a pixel is recoverable, clipped ink is
-    /// not.
+    /// A declared box is used as given. The OpenType spec defines the <c>glyf</c> header box as
+    /// the tight bounds of the outline, and it is the box stb_truetype derives its bitmaps from.
+    /// INVARIANT: untransformed TrueType glyphs keep taking their grid from the declared box —
+    /// the header box whenever it holds the outline (the decoder substitutes the control box
+    /// only for a stale header) — and a declared box that scales to an empty grid keeps falling
+    /// back to the outline's control hull, not its tight bounds. Native's characterized pixel
+    /// output depends on both; changing either changes bitmaps for existing fonts.
     /// </remarks>
-    public static GlyphBox Compute(ParsedGlyph glyph, GlyphOutline outline, float scale)
+    public static GlyphBox Compute(GlyphOutline outline, OutlineBounds? declaredBounds, float scale)
     {
-        ArgumentNullException.ThrowIfNull(glyph);
         ArgumentNullException.ThrowIfNull(outline);
 
         if (outline.IsEmpty)
             return default;
 
-        var box = FromBounds(glyph.XMin, glyph.YMin, glyph.XMax, glyph.YMax, scale);
-        if (!box.IsEmpty)
-            return box;
+        if (declaredBounds is { } declared)
+        {
+            var box = FromBounds(declared.XMin, declared.YMin, declared.XMax, declared.YMax, scale);
+            if (!box.IsEmpty)
+                return box;
 
-        return FromBounds(outline.XMin, outline.YMin, outline.XMax, outline.YMax, scale);
+            // Over-sized by a fraction of a pixel is recoverable; clipped ink is not.
+            return FromBounds(outline.XMin, outline.YMin, outline.XMax, outline.YMax, scale);
+        }
+
+        var tight = OutlineBounds.Tight(outline);
+        return FromBounds(tight.XMin, tight.YMin, tight.XMax, tight.YMax, scale);
     }
 
     /// <summary>

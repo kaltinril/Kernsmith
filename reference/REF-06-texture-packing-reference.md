@@ -13,7 +13,7 @@
 5. [What Existing Tools Use](#what-existing-tools-use)
 6. [Multi-Page Strategy](#multi-page-strategy)
 7. [Existing C# Implementations](#existing-c-implementations)
-8. [Recommendation for KernSmith](#recommendation-for-KernSmith)
+8. [Recommendation for KernSmith](#recommendation-for-kernsmith-1)
 9. [References](#references)
 
 ---

@@ -74,8 +74,8 @@ var backends = new (string Name, Func<IRasterizer> Factory)[]
     ("gdi", () => new KernSmith.Rasterizers.Gdi.GdiRasterizer()),
     ("directwrite", () => new KernSmith.Rasterizers.DirectWrite.TerraFX.DirectWriteRasterizer()),
     ("stbtruetype", () => RasterizerFactory.Create(RasterizerBackend.StbTrueType)),
-    // Native handles TrueType (glyf) only — CFF/OTF configs fail per-config and are skipped
-    // by the per-backend try/catch below (CFF support is Phase 166).
+    // Native renders TrueType (glyf) and CFF/CFF2 (.otf) outlines; a config it cannot render
+    // (e.g. a color font) fails per-config and is skipped by the per-backend try/catch below.
     ("native", () => RasterizerFactory.Create(RasterizerBackend.Native)),
 };
 
@@ -105,6 +105,30 @@ foreach (var bmfcPath in bmfcFiles)
             {
                 (rasterizer as IDisposable)?.Dispose();
                 Console.WriteLine("SKIPPED (backend has no SDF support)");
+                continue;
+            }
+
+            if (!rasterizer.Capabilities.SupportsMsdf && ConfigRequestsMsdf(bmfcPath))
+            {
+                (rasterizer as IDisposable)?.Dispose();
+                Console.WriteLine("SKIPPED (backend has no MSDF support)");
+                continue;
+            }
+
+            // Synthetic width and italic angle are declined (NotSupportedException) by backends
+            // that cannot apply them, so they are capability skips like SDF.
+            if (!rasterizer.Capabilities.SupportsWidthScale && ConfigValue(bmfcPath, "widthPercent") is { } wp && wp != "100")
+            {
+                (rasterizer as IDisposable)?.Dispose();
+                Console.WriteLine("SKIPPED (backend has no synthetic width support)");
+                continue;
+            }
+
+            if (!rasterizer.Capabilities.SupportsItalicAngle && ConfigValue(bmfcPath, "isItalic") == "1"
+                && ConfigValue(bmfcPath, "italicAngle") is { } angle && angle != "12")
+            {
+                (rasterizer as IDisposable)?.Dispose();
+                Console.WriteLine("SKIPPED (backend has no synthetic italic angle support)");
                 continue;
             }
 
@@ -482,6 +506,36 @@ static bool ConfigRequestsSdf(string bmfcPath)
         var line = raw.Trim();
         if (line.StartsWith("useSdf=", StringComparison.OrdinalIgnoreCase))
             return line["useSdf=".Length..].Trim() == "1";
+    }
+    return false;
+}
+
+/// <summary>The value of the first <paramref name="key"/>= line in the .bmfc, or null.</summary>
+static string? ConfigValue(string bmfcPath, string key)
+{
+    foreach (var raw in File.ReadLines(bmfcPath))
+    {
+        var line = raw.Trim();
+        if (line.StartsWith(key + "=", StringComparison.OrdinalIgnoreCase))
+            return line[(key.Length + 1)..].Trim();
+    }
+    return null;
+}
+
+/// <summary>
+/// True when the .bmfc selects a multi-channel distance field (sdfMode=msdf or mtsdf).
+/// </summary>
+static bool ConfigRequestsMsdf(string bmfcPath)
+{
+    foreach (var raw in File.ReadLines(bmfcPath))
+    {
+        var line = raw.Trim();
+        if (line.StartsWith("sdfMode=", StringComparison.OrdinalIgnoreCase))
+        {
+            var mode = line["sdfMode=".Length..].Trim();
+            return mode.Equals("msdf", StringComparison.OrdinalIgnoreCase)
+                || mode.Equals("mtsdf", StringComparison.OrdinalIgnoreCase);
+        }
     }
     return false;
 }

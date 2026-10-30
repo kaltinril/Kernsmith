@@ -1,7 +1,9 @@
 namespace KernSmith;
 
 /// <summary>
-/// How glyphs are anti-aliased when rendered.
+/// How glyphs are anti-aliased when rendered. A backend that does not support the requested
+/// mode (see <see cref="Rasterizer.IRasterizerCapabilities.SupportedAntiAliasModes"/>) renders
+/// <see cref="Grayscale"/> instead.
 /// </summary>
 public enum AntiAliasMode
 {

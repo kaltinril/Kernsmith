@@ -14,10 +14,10 @@
 | Item | Where |
 |------|-------|
 | `RasterResult` output record (bitmap + width/height + bearings) | `src/KernSmith.Rasterizers.Native/Internal/Raster/RasterResult.cs` |
-| Signed-area trapezoid scanline rasterizer with active-edge table | `Internal/Raster/ScanlineRasterizer.cs` |
-| `area[]` / `cover[]` from `ArrayPool<float>.Shared` (cleared after rent, returned in `finally`) | `Internal/Raster/ScanlineRasterizer.cs` |
+| Signed-area coverage scanline rasterizer (accumulator rewritten in [Phase 177](../phase-177-performance-optimization.md); derivation in the class doc comment) | `Internal/Raster/ScanlineRasterizer.cs` |
+| Delta buffer from `ArrayPool<float>.Shared` (cleared after rent, returned in `finally`) | `Internal/Raster/ScanlineRasterizer.cs` |
 | Output bitmap allocated with `new byte[]` (never pooled — the caller holds it for the glyph's lifetime) | `Internal/Raster/ScanlineRasterizer.cs` |
-| 35 tests (19 rasterizer + 16 SSIM), bringing `KernSmith.Rasterizers.Native.Tests` to 137 per TFM | `tests/KernSmith.Rasterizers.Native.Tests/ScanlineRasterizerTests.cs`, `ScanlineRasterizerSsimTests.cs` |
+| Rasterizer and SSIM tests | `tests/KernSmith.Rasterizers.Native.Tests/ScanlineRasterizerTests.cs`, `ScanlineRasterizerSsimTests.cs` |
 | `ProjectReference` to `KernSmith.Rasterizers.StbTrueType` as the SSIM baseline (**test-only** — nothing shipped depends on it) | `tests/KernSmith.Rasterizers.Native.Tests/KernSmith.Rasterizers.Native.Tests.csproj` |
 
 Entry point as shipped:
@@ -34,19 +34,18 @@ internal static RasterResult Rasterize(
     int bearingY = 0);
 ```
 
-All accumulation math is `float` throughout, matching the reference implementations. Nothing is wired into `NativeRasterizer` yet; that is Phase 165.
+All accumulation math is `float`. Nothing is wired into `NativeRasterizer` yet; that is Phase 165.
 
 **Deviations from the plan as written**
 
 - The **existing core `KernSmith.AntiAliasMode` enum is reused** rather than adding a parallel Native-only one. `AntiAliasMode.None` thresholds coverage at 128; every other value passes the grayscale coverage through unchanged. This keeps Phase 165's `RasterOptions.AntiAlias` a straight pass-through with no mapping layer.
 - **`originX` / `originY` were added beyond the literal spec signature.** They define which pixel-space point maps to bitmap (0, 0), so Phase 165 can place the glyph box without allocating a translated `EdgeSegment[]` per glyph.
-- **Per-glyph `RasterEdge[]` arrays are plain allocations, not pooled.** Only the `area` / `cover` buffers were required to be pooled, and pooling the edge array adds a lifetime/clearing concern for no measured win. Flagged as a follow-up if Phase 165 benchmarking shows GC pressure.
-- **A real bug was caught by TDD**: non-finite edge coordinates (NaN/Infinity) propagated into the scanline bounds and threw `IndexOutOfRangeException`. Fixed with an `IsFinite` filter in `Prepare`, which drops such edges before they reach the active-edge table.
+- **A real bug was caught by TDD**: non-finite edge coordinates (NaN/Infinity) propagated into the scanline bounds and threw `IndexOutOfRangeException`. Fixed with an `IsFinite` filter that drops such edges before accumulation.
 - **SSIM vs StbTrueType**: all 15 glyph/size cases clear the > 0.95 floor. Straight-edged glyphs ('I', 'X', 'W' at 12/32/96 px) score > 0.999. Curved cases: 'O' 12px **0.9509**, 16px 0.9863, 24px 0.9937, 32px 0.9718, 48px 0.9867, 96px 0.9958; 'e' 16px 0.9814; '8' 48px 0.9982.
   - ⚠️ **'O' @ 12px at 0.9509 is a thin margin against the 0.95 floor** — it is the first test that will trip if `OutlineFlattener` changes. Treat any flattener tolerance/subdivision edit as requiring a re-run of `ScanlineRasterizerSsimTests`.
   - The curved residual was traced to **curve tessellation, not coverage**: tightening the flattener tolerance moved scores *away* from stb, indicating stb's subdivision is the coarser approximation, not ours.
 - **The stb prefilter idea was deliberately not implemented.** The `stbtt__h_prefilter` / `stbtt__v_prefilter` note below is carried forward as a possible later optimization for sub-20px quality — it is deferred, not dropped.
-- **Performance was not benchmarked.** No benchmark was written for the "within 3x of StbTrueType for ASCII at 32px" criterion, so it is left unticked and explicitly unverified. Add it under `benchmarks/KernSmith.Benchmarks/` when the backend is wired up in Phase 165.
+- **Performance was not benchmarked here.** [Phase 177](../phase-177-performance-optimization.md)'s harness measured it later: within the target (1.05x StbTrueType for ASCII at 32px at baseline).
 
 ## Goal
 
@@ -56,7 +55,7 @@ Implement the core scanline rasterizer using the signed-area trapezoid coverage 
 
 ### Algorithm: Signed-Area Trapezoid Coverage
 
-This is the method used by stb_truetype v2 and font-rs. For each pixel, compute exact fractional coverage.
+For each pixel, compute exact fractional coverage. (The plan below — sorted edges, an active-edge table and `area`/`cover` buffers — is what this phase built; Phase 177 replaced the accumulator with a per-row delta buffer and prefix sum, documented in the `ScanlineRasterizer` class comment.)
 
 #### Step 1: Edge Sorting
 - Sort all edges by minimum Y coordinate (top of edge)
@@ -146,18 +145,14 @@ Phase 165 converts `RasterResult` to the public `RasterizedGlyph` type:
 - **Subpixel positioning**: Edge coordinates are floating-point. The rasterizer naturally handles fractional positions.
 - **Clipping**: Edges extending outside the bitmap bounds must be clipped. Missing this causes buffer overruns.
 - **Empty scanlines**: Skip scanlines with no active edges for performance.
-- **Numeric stability**: Use `float` (not `double`) — precision is sufficient and matches reference implementations.
+- **Numeric stability**: Use `float` (not `double`) — precision is sufficient.
 - **Bitmap padding**: Add 1-pixel border to avoid edge artifacts (trim in final output if needed).
 
 > **FontStashSharp insight:** stb_truetype includes lightweight horizontal/vertical box prefilter kernels (`stbtt__h_prefilter`, `stbtt__v_prefilter`) that blur along one axis as a post-rasterization step for subpixel positioning. This is much cheaper than full supersampling and improves small-size rendering quality. Consider implementing a similar 1D prefilter pass as an optional post-rasterization step, especially for sizes under ~20px where aliasing is most visible.
 
 ## Reference
 
-- stb_truetype.h: `stbtt__rasterize_sorted_edges` (~line 3400)
-- stb_truetype.h: `stbtt__fill_active_edges_new` (~line 3250)
-- stb_truetype.h: `stbtt__handle_clipped_edge` (~line 3200)
-- font-rs: `accumulate` function
-- Sean Barrett's explanation: https://nothings.org/gamedev/rasterize/
+- The general signed-area coverage-accumulation technique, as described in Raph Levien's public write-up on accumulation-buffer font rendering. The implementation is derived from first principles (see the `ScanlineRasterizer` doc comment); no rasterizer source is ported.
 
 ## Testing
 
@@ -177,5 +172,5 @@ Phase 165 converts `RasterResult` to the public `RasterizedGlyph` type:
 - [x] Both anti-alias modes work (Grayscale, None) — `None` asserted to emit only 0 or 255 via a 128 threshold; every other mode passes coverage through
 - [x] No buffer overruns or out-of-bounds access (edges far outside the bitmap on all four sides, zero-size bitmaps, and non-finite coordinates all clip or drop instead of overrunning)
 - [x] ArrayPool buffers properly rented and returned (`area`/`cover` rented from `ArrayPool<float>.Shared`, cleared after rent since the pool does not zero, returned in a `finally`)
-- [ ] Performance within 3x of StbTrueType for ASCII set at 32px — **NOT VERIFIED / DEFERRED**: no benchmark was written in this phase. Add one under `benchmarks/KernSmith.Benchmarks/` once Phase 165 wires the backend into `IRasterizer` so the comparison can run end-to-end.
-- [x] All tests pass — 137 in `KernSmith.Rasterizers.Native.Tests` (net8.0 + net10.0), 35 of them new here
+- [x] Performance within 3x of StbTrueType for ASCII set at 32px — measured by Phase 177's harness, not in this phase
+- [x] All tests pass (net8.0 + net10.0)

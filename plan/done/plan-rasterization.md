@@ -1,6 +1,6 @@
 # KernSmith -- Rasterization
 
-> Part of the [Master Plan](master-plan.md).
+> Part of the [Master Plan](../master-plan.md).
 > Related: [Font Parsing](plan-font-parsing.md), [API Design](plan-api-design.md), [Texture Packing](plan-texture-packing.md)
 
 > **Data Types:** All types used in this document (`RasterizedGlyph`, `GlyphMetrics`, `RasterOptions`, `PixelFormat`) are defined in [plan-data-types.md](plan-data-types.md).
@@ -23,7 +23,7 @@
 Rasterization is abstracted behind `IRasterizer` so the engine can be swapped. The default backend uses FreeTypeSharp (in the `KernSmith.Rasterizers.FreeType` package since Phase 78), but the interface allows replacing it with StbTrueType, GDI, DirectWrite, or any custom implementation.
 
 > `IRasterizer` and `IGlyphPostProcessor` interfaces are defined in [plan-data-types.md](plan-data-types.md#interfaces).
-> `RasterizedGlyph` class is defined in [plan-data-types.md](plan-data-types.md#rasterization-types).
+> `RasterizedGlyph` class is defined in [plan-data-types.md](plan-data-types.md#rasterization-layer-types).
 
 ---
 
@@ -167,7 +167,7 @@ In `BmFont.Generate()`, the rasterizer is wrapped in a `using` block:
 using var rasterizer = options.Rasterizer ?? new FreeTypeRasterizer();
 ```
 
-**Important**: FreeTypeSharp's `FreeTypeFaceFacade` has a potential memory leak (noted in the [FreeTypeSharp Evaluation](../reference/REF-02-freetypesharp-evaluation.md)). We manage the FreeType library and face lifecycle ourselves rather than relying on the facade.
+**Important**: FreeTypeSharp's `FreeTypeFaceFacade` has a potential memory leak (noted in the [FreeTypeSharp Evaluation](../../reference/REF-02-freetypesharp-evaluation.md)). We manage the FreeType library and face lifecycle ourselves rather than relying on the facade.
 
 ---
 
@@ -182,7 +182,7 @@ using var rasterizer = options.Rasterizer ?? new FreeTypeRasterizer();
 
 ## Implementation References
 
-- **FreeTypeSharp API surface and known issues**: See [REF-02-freetypesharp-evaluation.md](../reference/REF-02-freetypesharp-evaluation.md)
+- **FreeTypeSharp API surface and known issues**: See [REF-02-freetypesharp-evaluation.md](../../reference/REF-02-freetypesharp-evaluation.md)
 - **FreeType bitmap struct fields**: `FT_Bitmap_.buffer`, `rows`, `width`, `pitch`, `pixel_mode`
 - **Glyph positioning fields**: `FT_GlyphSlotRec_.bitmap_left` (-> BearingX), `bitmap_top` (-> BearingY)
 - **26.6 fixed-point conversion**: Divide by 64 and round. `(value + 32) >> 6` for rounding, `value >> 6` for truncation.

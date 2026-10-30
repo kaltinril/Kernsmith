@@ -100,7 +100,8 @@ public static class HieroConfigWriter
         if (options.ShadowOffsetX != 0 || options.ShadowOffsetY != 0 || options.ShadowBlur > 0)
             WriteShadowEffect(sb, options);
 
-        if (options.Sdf)
+        // Hiero's DistanceFieldEffect is single-channel; it has no MSDF equivalent.
+        if (options.EffectiveSdfMode == SdfMode.Sdf)
             WriteDistanceFieldEffect(sb, options);
 
         return sb.ToString();

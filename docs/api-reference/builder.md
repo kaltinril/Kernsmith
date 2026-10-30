@@ -22,7 +22,7 @@ Call exactly one of these before `Build()`.
 | Method | Description |
 |--------|-------------|
 | `WithFont(byte[] fontData)` | Load a font from raw bytes. |
-| `WithFont(string fontPath)` | Load a font from a `.ttf`, `.otf`, or `.woff` file. |
+| `WithFont(string fontPath)` | Load a font from a `.ttf`, `.otf`, `.woff`, or `.woff2` file. |
 | `WithSystemFont(string familyName)` | Use a system-installed font by family name. |
 | `FromConfig(string bmfcPath)` | Seed the builder from a `.bmfc` or `.hiero` config file. |
 | `FromConfig(BmfcConfig config)` | Seed the builder from an already-parsed config. |
@@ -31,7 +31,7 @@ Call exactly one of these before `Build()`.
 
 | Method | Description |
 |--------|-------------|
-| `WithSize(float size)` | Font size. Fractional values supported on FreeType, StbTrueType, DirectWrite; GDI rounds to the nearest integer. |
+| `WithSize(float size)` | Font size. Fractional values are supported by every backend except GDI, which rounds to the nearest integer. |
 | `WithCharacters(CharacterSet characters)` | Which characters to include. |
 | `WithFallbackCharacter(char fallbackChar)` | Character to substitute for missing glyphs (BMP only). |
 | `WithFallbackCodepoint(int codepoint)` | Fallback for missing glyphs; supports supplementary-plane codepoints. Takes precedence over `WithFallbackCharacter`. |
@@ -46,15 +46,20 @@ Call exactly one of these before `Build()`.
 | `WithForceSyntheticBold(bool force = true)` | Force synthetic bold even when a native bold face exists. |
 | `WithForceSyntheticItalic(bool force = true)` | Force synthetic italic even when a native italic face exists. |
 | `WithHeightPercent(int percent)` | Vertical height scale. `100` = normal, `200` = double height. |
+| `WithWidthPercent(int percent)` | Synthetic condensed/expanded width, `10`-`1000` (default `100`). Needs a backend with `SupportsWidthScale` (Native). |
+| `WithItalicAngle(float degrees)` | Synthetic italic slant, `-60`-`60` (default `12`). Other values need a backend with `SupportsItalicAngle` (Native). |
 
 ## Rendering quality
 
 | Method | Description |
 |--------|-------------|
 | `WithAntiAlias(AntiAliasMode mode)` | Anti-aliasing mode. |
+| `WithLcdFilter(LcdFilter filter)` | LCD low-pass filter for `AntiAliasMode.Lcd` (Native honors it; others ignore it). |
+| `WithLcdSubpixelOrder(LcdSubpixelOrder order)` | LCD subpixel layout for `AntiAliasMode.Lcd` (Native honors it; others ignore it). |
 | `WithHinting(bool enable = true)` | Enable font hinting for sharper small text. |
 | `WithSuperSampling(int level)` | `1` = off, `2` or `4` for smoother edges. |
 | `WithSdf(bool sdf = true)` | Emit a signed distance field instead of bitmaps. |
+| `WithSdfMode(SdfMode mode)` | Choose the distance field: `None`, `Sdf`, `Msdf` or `Mtsdf` (multi-channel modes need Native). |
 
 ## Effects
 
@@ -63,6 +68,7 @@ Call exactly one of these before `Build()`.
 | `WithOutline(int outline)` | Add a black outline of the given pixel width. |
 | `WithOutline(int width, byte r, byte g = 0, byte b = 0)` | Add a colored outline. |
 | `WithOutlineShape(OutlineShape shape)` | Set the outline corner shape: `Round` (default), `Square`, or `Plus`. |
+| `WithOutlineMode(OutlineMode mode)` | `Effect` (default, core's bitmap outline) or `Vector` (drawn by a backend with `SupportsOutlineStroke` -- Native; others keep the effect). |
 | `WithShadow(int offsetX = 2, int offsetY = 2, int blur = 0, (byte R, byte G, byte B)? color = null, float opacity = 1.0f)` | Add a drop shadow. |
 | `WithHardShadow(bool enabled = true)` | Use a hard (binarized) shadow silhouette. |
 | `WithGradient((byte R, byte G, byte B) startColor, (byte R, byte G, byte B) endColor, float angleDegrees = 90f, float midpoint = 0.5f)` | Apply a color gradient across glyphs. |
@@ -98,7 +104,7 @@ Call exactly one of these before `Build()`.
 
 | Method | Description |
 |--------|-------------|
-| `WithColorFont(bool colorFont = true)` | Render color font layers (COLR/CPAL emoji, etc.). |
+| `WithColorFont(bool colorFont = true)` | Render color glyphs (`COLR`/`CPAL` layers, `CBDT`/`sbix` bitmap emoji). |
 | `WithColorPaletteIndex(int index)` | Select a CPAL palette. |
 | `WithVariationAxis(string tag, float value)` | Set a variable-font axis, e.g. `("wght", 700)`. Call multiple times for multiple axes. |
 

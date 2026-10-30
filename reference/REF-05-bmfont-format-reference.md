@@ -371,6 +371,7 @@ KernSmith records the generation settings that produced a font in an **extended 
 |-------|------|-------------|
 | `version` | string | KernSmith library version that generated the font (always present). |
 | `sdfSpread` | int | SDF spread value, if SDF mode was used. |
+| `sdfMode` | string | `msdf` or `mtsdf` for multi-channel distance fields (take `median(r, g, b)`); absent for single-channel SDF. MSDF also writes `alphaChnl=4` (alpha set to one) in `common`. |
 | `outlineThickness` | float | Outline thickness, if the outline post-processor was used. |
 | `gradientTopColor` | string | Gradient top/start color as hex RGB (e.g. `FFD700`), if a gradient was used. |
 | `gradientBottomColor` | string | Gradient bottom/end color as hex RGB (e.g. `DC143C`), if a gradient was used. |

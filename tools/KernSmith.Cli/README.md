@@ -1,6 +1,6 @@
 # KernSmith CLI
 
-A cross-platform command-line tool for generating BMFont-compatible bitmap fonts from TTF, OTF, and WOFF files. Produces `.fnt` + `.png` pairs ready for use in game engines and rendering frameworks.
+A cross-platform command-line tool for generating BMFont-compatible bitmap fonts from TTF, OTF, WOFF, and WOFF2 files. Produces `.fnt` + `.png` pairs ready for use in game engines and rendering frameworks.
 
 ## Quick Start
 
@@ -48,7 +48,7 @@ kernsmith generate -f <font> -s <size> [options]
 
 | Flag | Description |
 |------|-------------|
-| `-f, --font <path>` | Font file path (TTF, OTF, WOFF) |
+| `-f, --font <path>` | Font file path (TTF, OTF, WOFF, WOFF2) |
 | `--system-font <name>` | Use a system-installed font by family name |
 | `--face <n>` | Face index for .ttc collections (default: 0) |
 
@@ -59,14 +59,18 @@ kernsmith generate -f <font> -s <size> [options]
 | `-s, --size <n>` | Font size in pixels — accepts fractional (e.g. `10.5`) (required) |
 | `--dpi <n>` | DPI (default: 72) |
 | `--aa <mode>` | Anti-aliasing: `none`, `grayscale`, `light`, `lcd` (default: grayscale) |
+| `--lcd-filter <filter>` | LCD filter for `--aa lcd`: `default`, `light`, `smooth`, `none` (Native only; other backends ignore it). `.bmfc` key `lcdFilter` |
+| `--lcd-order <order>` | LCD subpixel order for `--aa lcd`: `rgb` (default), `bgr`, `vrgb`, `vbgr` (Native only; other backends ignore it). `.bmfc` key `lcdOrder` |
 | `--mono` | Disable anti-aliasing (alias for `--aa none`) |
 | `--sdf` | Enable Signed Distance Field rendering |
 | `--sdf-spread <n>` | SDF search radius (spread) in pixels (default: 8) |
-| `--super-sample <n>` | Super sampling level 1-4 (default: 1) |
+| `--sdf-mode <mode>` | Distance field: `none`, `sdf`, `msdf` or `mtsdf`. `msdf`/`mtsdf` write RGBA multi-channel fields and need `--rasterizer native` |
+| `--super-sample <n>` | Super sampling level 1-4 (default: 1). Not applied to `--aa lcd` output, which renders at the final size |
 | `--gamma <n>` | Gamma correction applied during rasterization (FreeType, default: 1.8) |
-| `--hinting / --no-hinting` | Enable/disable FreeType hinting (default: on) |
-| `--rasterizer <name>` | Rasterizer backend: `freetype` (default), `gdi`, `directwrite`, `stbtruetype`, `native` (experimental, TrueType only) |
+| `--hinting / --no-hinting` | Enable/disable hinting (default: on). Native hints only with `--aa light` |
+| `--rasterizer <name>` | Rasterizer backend: `freetype` (default), `gdi`, `directwrite`, `stbtruetype`, `native` (experimental, not on NuGet) |
 | `--height-percent <n>` | Vertical height scaling percentage (default: 100) |
+| `--width-percent <n>` | Synthetic condensed/expanded width percentage, 10-1000 (default: 100). Native only; other backends fail with a generation error. `.bmfc` key `widthPercent` |
 | `--match-char-height` | Match rendered height to requested pixel height |
 | `--advance-x <n>` | Global horizontal advance adjustment added to every glyph (alias `--advance-adjust-x`, default: 0) |
 | `--fallback-char <char>` | Fallback character for missing glyphs (char or codepoint) |
@@ -79,7 +83,8 @@ kernsmith generate -f <font> -s <size> [options]
 | `-i, --italic` | Enable italic (uses native face when available, falls back to synthetic) |
 | `--synthetic-bold` | Force synthetic bold, skip native bold face lookup |
 | `--synthetic-italic` | Force synthetic italic, skip native italic face lookup |
-| `--color-font` | Enable color font rendering (COLR/CPAL) |
+| `--italic-angle <deg>` | Synthetic italic slant in degrees, -60 to 60, positive leans right (default: 12). Other values need Native. `.bmfc` key `italicAngle` |
+| `--color-font` | Enable color font rendering (`COLR`/`CPAL` layers, `CBDT`/`sbix` bitmaps) |
 | `--color-palette <n>` | Color palette index (default: 0) |
 
 With `--font` (file path), `--bold` and `--synthetic-bold` produce identical results since there is no font family to search. With `--system-font`, `--bold` tries the native bold face first; `--synthetic-bold` forces synthetic on the regular face. GDI backend limitation: cannot apply synthetic bold when a native bold face exists -- use FreeType or DirectWrite.
@@ -150,6 +155,7 @@ kernsmith generate -f font.ttf -s 32 --no-pot --packer skyline
 |------|-------------|
 | `--outline <n>[,color]` | Outline width in pixels, optional hex color |
 | `--outline-shape <shape>` | Outline corner shape: `round` (default), `square`, or `plus`; `.bmfc` key is `outlineShape` |
+| `--outline-mode <mode>` | `effect` (default: core's bitmap outline, every backend) or `vector` (the backend draws the outline from the glyph's vector outline; Native only, other backends keep the effect; not with SDF). `.bmfc` key `outlineMode` |
 | `--fill-color <color>` | Base glyph fill color as hex `#RRGGBB` or `#RRGGBBAA` (default: FFFFFF, opaque white) |
 | `--gradient <top>,<bottom>` | Vertical gradient with hex colors |
 | `--gradient-angle <degrees>` | Gradient rotation angle |
@@ -177,7 +183,7 @@ See the [Effects](#effects) section below for detailed examples.
 | Flag | Description |
 |------|-------------|
 | `--axis <tag>=<value>` | Set a variation axis value (repeatable) |
-| `--instance <name>` | Use a named font instance |
+| `--instance <name>` | Use a named instance's axis values (`--axis` overrides single axes; an unknown name lists the font's instances) |
 
 ```
 # Set weight and width axes
@@ -215,6 +221,20 @@ kernsmith generate -f font.ttf -s 32 -o output/myfont
 | `-v, --verbose` | Show detailed progress |
 | `-q, --quiet` | Suppress all output except errors |
 | `--no-color` | Disable colored output |
+
+#### Exit Codes
+
+Commands report their outcome with these process exit codes:
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success |
+| `1` | Invalid arguments (and `batch` when any job failed) |
+| `2` | File not found |
+| `3` | Font could not be parsed |
+| `4` | Generation error -- including a backend rejecting the font or an option (e.g. `--rasterizer stbtruetype --color-font`), printed to stderr as `Error: Generation error (<backend> rasterizer): <message>` |
+| `5` | Output could not be written |
+| `10` | Config file could not be parsed |
 
 ---
 
@@ -344,18 +364,10 @@ kernsmith benchmark-fonts --json
 List available rasterizer backends and their capabilities.
 
 ```
-kernsmith list-rasterizers [--json]
-```
-
-```
-# Human-readable table
 kernsmith list-rasterizers
-
-# JSON output
-kernsmith list-rasterizers --json
 ```
 
-Shows each installed backend with its platform support, color font capability, and variable font support.
+Shows each backend with its availability, platform support, and capabilities (color fonts, variable fonts, SDF, vector outline, synthetic bold/italic, system fonts).
 
 #### Rasterizer Examples
 
@@ -373,13 +385,13 @@ kernsmith generate -f font.ttf -s 32 --rasterizer native
 kernsmith generate -f font.ttf -s 32
 ```
 
-The `native` backend is experimental and ships with the CLI only (there is no NuGet package yet). It renders **TrueType (`glyf`) outlines only** -- a CFF/OTF font is rejected with an error -- and does not support hinting, SDF, outline stroke, synthetic bold/italic, color fonts, variable fonts, system fonts, or `--aa light` / `--aa lcd`.
+The `native` backend is experimental and ships with the CLI only (there is no NuGet package yet). It renders TrueType (`.ttf`) and CFF/CFF2 (`.otf`) outlines, variable fonts of both kinds (`--axis`, `--instance`), `COLR` version 0 and 1 color glyphs and `CBDT`/`sbix` bitmap emoji (`--color-font`, scaled to the requested size) and synthetic bold/italic. It is the only backend for `--sdf-mode msdf|mtsdf`, `--outline-mode vector`, `--width-percent`, `--italic-angle` other than 12, and `--lcd-order`/`--lcd-filter`. `--aa light` with hinting on applies its own vertical-only auto-hinting, `--aa lcd` renders LCD subpixel RGBA glyphs, and `--aa none` keeps thin strokes with dropout control. It has no TrueType bytecode hinting (other modes render unhinted) and no system fonts.
 
 ---
 
 ### info
 
-Show metadata from a font file (TTF, OTF, WOFF). Displays family name, style, glyph count, kerning pairs, variation axes, named instances, and Unicode coverage.
+Show metadata from a font file (TTF, OTF, WOFF, WOFF2). Displays family name, style, glyph count, kerning pairs, variation axes, named instances, and Unicode coverage.
 
 ```
 kernsmith info <path> [--json]
@@ -433,7 +445,7 @@ kernsmith benchmark -f <font> -s <size> [options]
 
 | Flag | Description |
 |------|-------------|
-| `-f, --font <path>` | Font file path (TTF, OTF, WOFF) |
+| `-f, --font <path>` | Font file path (TTF, OTF, WOFF, WOFF2) |
 | `--system-font <name>` | Use a system-installed font by family name |
 | `-s, --size <n>` | Font size in pixels — accepts fractional (e.g. `10.5`) (default: 32) |
 | `-c, --charset <preset>` | Character set: `ascii` (default), `extended`, `latin` |
@@ -465,9 +477,12 @@ kernsmith generate -f font.ttf -s 32 --outline 3,FF0000
 
 # Square-cornered outline (most visible with --mono)
 kernsmith generate -f font.ttf -s 32 --mono --outline 2 --outline-shape square
+
+# Outline drawn from the vector outline (experimental Native backend)
+kernsmith generate -f font.ttf -s 32 --outline 2 --outline-mode vector --rasterizer native
 ```
 
-`--outline-shape` picks the outline's corner shape: `round` (default), `square` (diagonals filled), or `plus` (diamond-shaped corners).
+`--outline-shape` picks the outline's corner shape: `round` (default), `square` (diagonals filled), or `plus` (diamond-shaped corners). `--outline-mode vector` keeps the same width, color, shape and cell sizes but has the backend draw the ring from the glyph's true outline (crisper edge, solid narrow counters); backends other than Native keep the default bitmap `effect`.
 
 ### Gradient
 
@@ -561,65 +576,51 @@ Settings can be stored in `.bmfc` files (INI-like format) or `.hiero` files (Hie
 
 ### Sample .bmfc File
 
+`.bmfc` is BMFont's flat `key=value` format; KernSmith reads BMFont's keys plus its own extensions (`kernsmith init` writes one from any set of flags). An abridged example:
+
 ```ini
 # mygame-font.bmfc
+fileVersion=1
 
-[font]
-path = fonts/Roboto-Regular.ttf
-face-index = 0
+# font settings
+fontFile=fonts/Roboto-Regular.ttf
+fontSize=32
+isBold=0
+isItalic=0
+useSmoothing=1
+aa=2
+useHinting=1
 
-[rendering]
-size = 32
-dpi = 72
-rasterizer = freetype
-anti-alias = grayscale
-bold = false
-italic = false
-super-sample = 2
-hinting = true
+# character alignment
+paddingUp=2
+paddingDown=2
+paddingRight=2
+paddingLeft=2
+spacingHoriz=1
+spacingVert=1
 
-[characters]
-preset = latin
-# chars = ABCabc
-# chars-file = my-chars.txt
-# ranges = 0020-007E, 00A0-00FF
+# output file
+outWidth=1024
+outHeight=1024
+fontDescFormat=0
+textureFormat=png
 
-[atlas]
-max-texture-size = 1024
-padding = 2
-spacing = 1
-power-of-two = true
-packer = maxrects
-texture-format = png
-autofit = false
+# outline
+outlineThickness=2
 
-[effects]
-outline = 2
-fill-color = FF8800
-gradient-top = FFFFFF
-gradient-bottom = 888888
-gradient-offset = 0
-gradient-scale = 1
-gradient-cyclic = false
-shadow-offset-x = 1
-shadow-offset-y = 1
-shadow-color = 000000
-shadow-blur = 1
-shadow-blur-kernel = 0
-shadow-blur-passes = 1
-hard-shadow = false
+# selected chars
+chars=32-126
 
-[kerning]
-enabled = true
+# output path
+outputPath=output/roboto
 
-[variable]
-instance = Bold
-# wght = 700
-# wdth = 90
-
-[output]
-format = text
-path = output/roboto
+# kernsmith extensions
+gradientTop=FFFFFF
+gradientBottom=888888
+shadowOffsetX=1
+shadowOffsetY=1
+shadowBlur=1
+rasterizer=freetype
 ```
 
 ### Sample .hiero File
@@ -695,7 +696,7 @@ The CLI honors the per-channel content fields in `.bmfc` files -- `alphaChnl`, `
 
 ### Super Sampling
 
-Render glyphs at a higher resolution and downsample for smoother edges. Levels 1-4, where 1 is no super sampling.
+Render glyphs at a higher resolution and downsample for smoother edges. Levels 1-4, where 1 is no super sampling. `--aa lcd` output is never super sampled (downsampling would average the subpixels away).
 
 ```
 kernsmith generate -f font.ttf -s 32 --super-sample 2
@@ -714,6 +715,12 @@ kernsmith generate -f font.ttf -s 32 --sdf --sdf-spread 12 --padding 8
 ```
 
 SDF fonts typically need extra padding to store the distance field. A padding of 4-8 pixels is recommended. Use `--sdf-spread` to control the distance-field search radius in pixels (default 8); larger values capture distance information further from the glyph edge.
+
+Multi-channel fields (`--sdf-mode msdf`, or `mtsdf` to add the single-channel distance in alpha) keep corners sharp when magnified: sample the RGB channels and take their median in the shader. They write an RGBA atlas and currently need the experimental Native backend:
+
+```
+kernsmith generate -f font.ttf -s 48 --sdf-mode msdf --sdf-spread 6 --rasterizer native
+```
 
 ### Variable Fonts
 
@@ -763,7 +770,7 @@ kernsmith generate -f font.ttf -s 24 --range 4E00-4FFF
 
 ### Color Fonts
 
-Render color glyphs from fonts with COLR/CPAL tables (e.g., emoji fonts). Select a specific color palette if the font provides multiple.
+Render color glyphs from fonts with `COLR`/`CPAL` tables or `CBDT`/`sbix` bitmaps (e.g., emoji fonts). Select a specific color palette if the font provides multiple. FreeType returns bitmap emoji at the font's strike size; `--rasterizer native` scales them to `-s`.
 
 ```
 kernsmith generate -f NotoColorEmoji.ttf -s 32 --color-font

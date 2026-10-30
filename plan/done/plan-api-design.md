@@ -1,6 +1,6 @@
 # KernSmith -- API Design
 
-> Part of the [Master Plan](master-plan.md).
+> Part of the [Master Plan](../master-plan.md).
 > Related: [Project Structure](plan-project-structure.md), [Font Parsing](plan-font-parsing.md), [Rasterization](plan-rasterization.md), [Texture Packing](plan-texture-packing.md), [Output Formats](plan-output-formats.md)
 
 > All intermediate data types, configuration types, and the error handling strategy are defined in [plan-data-types.md](plan-data-types.md).

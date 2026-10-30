@@ -42,7 +42,7 @@ var result = BmFont.GenerateFromSystem("Segoe UI", new FontGeneratorOptions
 - ClearType-hinted grayscale rendering
 - System font loading by family name
 - Synthetic bold and italic
-- TTF, OTF, WOFF input
+- TTF, OTF, WOFF, WOFF2 input
 - Fractional font sizes (e.g. `Size = 32.5f`) honored natively
 
 ## Limitations
@@ -52,7 +52,7 @@ var result = BmFont.GenerateFromSystem("Segoe UI", new FontGeneratorOptions
 - Windows only -- will not load on Linux or macOS
 - Requires net10.0-windows (not net8.0-windows)
 - No SDF rendering support -- use FreeType for SDF
-- No outline stroke support
+- No vector outlines (`OutlineMode.Vector` falls back to core's bitmap outline effect, which works as usual), and no `WidthPercent` or non-default `ItalicAngle` (`NotSupportedException`)
 
 ## Implementation
 

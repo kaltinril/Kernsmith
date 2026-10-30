@@ -18,6 +18,7 @@ Git workflow, TDD, the regression harness, context management and security live 
 - Never hardcode credentials — use environment variables or `.env` plus an appropriate library.
 - Test with real data; the fixture font is at `tests/KernSmith.Tests/Fixtures/Roboto-Regular.ttf`.
 - Never add a `PackageVersion` property to a csproj — the version lives only in `Directory.Build.props`.
+- Native rasterizer work (and any core code it relies on, e.g. WOFF2/Brotli) stays pure managed C#: no P/Invoke, no native libraries, and no new third-party packages without asking Jeremy first — see Native Rasterizer in `project_decisions.md`.
 - Comments carry INVARIANTS the code cannot show: load-bearing constraints, keep-in-sync obligations, why a dead-looking entry stays, measured "don't undo this" facts.
 - Comments are NOT chronicles: no dated readings, no "was X, became Y", no phase-supersession trails, no reviewer-facing justification. State the constraint in the present tense and stop.
 - Read code, not git history, when debugging.

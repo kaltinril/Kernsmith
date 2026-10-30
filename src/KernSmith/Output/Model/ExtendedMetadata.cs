@@ -11,6 +11,12 @@ public sealed class ExtendedMetadata
     /// <summary>SDF spread value, if SDF mode was used.</summary>
     public int? SdfSpread { get; init; }
 
+    /// <summary>
+    /// The multi-channel distance-field mode (<see cref="KernSmith.SdfMode.Msdf"/> or
+    /// <see cref="KernSmith.SdfMode.Mtsdf"/>), or null for single-channel SDF and plain bitmaps.
+    /// </summary>
+    public SdfMode? SdfMode { get; init; }
+
     /// <summary>Outline thickness, if outline post-processor was used.</summary>
     public float? OutlineThickness { get; init; }
 
@@ -35,7 +41,7 @@ public sealed class ExtendedMetadata
     /// <summary>Variable font axis values used during generation.</summary>
     public IReadOnlyDictionary<string, float>? VariationAxes { get; init; }
 
-    /// <summary>True if color font rendering (COLR/CPAL) was enabled during generation.</summary>
+    /// <summary>True if color font rendering (<see cref="FontGeneratorOptions.ColorFont"/>) was enabled during generation.</summary>
     public bool? ColorFont { get; init; }
 
     /// <summary>Unicode codepoint of the fallback character for missing glyphs, if configured.</summary>
@@ -66,6 +72,7 @@ public sealed class ExtendedMetadata
     /// </summary>
     internal bool HasExtendedFields =>
         SdfSpread.HasValue ||
+        SdfMode.HasValue ||
         OutlineThickness.HasValue ||
         GradientTopColor != null ||
         GradientBottomColor != null ||

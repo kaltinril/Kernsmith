@@ -27,7 +27,7 @@ Nothing changes about file output, atlas packing, or the default behavior. This 
 
 ### Relationship to Phase 182 (narrows the motivation)
 
-[Phase 182 — Shared Atlas Groups](phase-182-shared-atlas-groups.md) is **complete** and already ships the "separate shadow" use case at the *bake* level: `AtlasGroupBuilder` packs a primary glyph set and a `ShadowCoveragePostProcessor`-generated shadow silhouette into one shared atlas, each with its own `BmFontModel`. If the goal is "draw the shadow separately, translated and tinted", that is solved — use an atlas variant, not this phase.
+[Phase 182 — Shared Atlas Groups](done/phase-182-shared-atlas-groups.md) is **complete** and already ships the "separate shadow" use case at the *bake* level: `AtlasGroupBuilder` packs a primary glyph set and a `ShadowCoveragePostProcessor`-generated shadow silhouette into one shared atlas, each with its own `BmFontModel`. If the goal is "draw the shadow separately, translated and tinted", that is solved — use an atlas variant, not this phase.
 
 What remains distinctly Phase 50's is the **runtime / in-memory per-layer** case, where the consumer needs the raw layer pixels in process and the set of layers isn't known at bake time: parallax depth stacking, per-layer runtime shaders, and dynamic per-layer offset/color/opacity changes without regenerating. The use cases below should be read through that lens.
 

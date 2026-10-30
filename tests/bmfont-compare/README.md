@@ -24,7 +24,9 @@ python tests/bmfont-compare/regression_check.py --tolerance 1
 
 This automates the full workflow: stash changes, checkout main, generate baselines, checkout branch, restore stash, generate current, run diff. On failure or Ctrl+C it restores your original branch and stash.
 
-Exit codes: `0` = all identical, `1` = differences found, `2` = error.
+In a git worktree, commit first and pass `--base <sha>`: the stash stack is shared by every worktree (a parallel `git stash pop` can take yours), and a branch checked out in another worktree cannot be checked out here.
+
+Exit codes: `0` = everything produced on both sides is identical, `1` = differences found or a (config, backend) pair that produced output on the base failed on the branch, `2` = error (build/git failure, nothing compared). A pair that fails on **both** sides (a capability skip, CFF2 on StbTrueType) is tolerated.
 
 ### Generate comparison images only
 
@@ -55,10 +57,18 @@ python tests/bmfont-compare/regression_check.py [options]
 
 Steps performed:
 1. Stash uncommitted changes (if any)
-2. Checkout base branch, generate fonts, copy output as `main_`-prefixed baselines
+2. Checkout base branch, **delete every `*.fnt`/`*.png` in the output dir** (current, `main_` and `diff_` files), generate fonts, then **move** the output to `main_`-prefixed baselines
 3. Checkout feature branch, restore stash, generate fonts
 4. Run `diff_comparisons.py` to compare baselines vs current
-5. Restore original branch on failure
+5. Print a summary, then restore the original branch on failure
+
+Because the output dir starts empty and the baseline is moved rather than copied, a stale file from an earlier run can never stand in for output a side did not produce. The summary reports, per config:
+
+- **`NEW config 'x' (no baseline): freetype, gdi, ...`** — the `.bmfc` exists on the branch but not the base, with the backends that produced output. Not a failure, but nothing was compared: look at its `comparison-x.png` yourself. A config only counts as new if it is committed on the branch (`git add -f`); an uncommitted config in the gitignored folder is present on both sides.
+- **`REMOVED config 'x'`** — on the base but not the branch. Not a failure.
+- **`FAIL: ... produced output on the base but failed on the branch`** — each such `config / backend` with the branch's error message. Exit code 1.
+
+The config lists and branch failures are saved to `regression_state.json` in the output dir so `--skip-generate` can report the same summary.
 
 ### GenerateAll
 
@@ -70,8 +80,10 @@ dotnet run --project tests/bmfont-compare/GenerateAll/ --framework net10.0-windo
 
 - Runs FreeType, GDI, DirectWrite, StbTrueType, and Native via KernSmith
 - Runs BMFont64.exe if found at `c:\tools\bmfont64.exe` or on PATH
-- Native renders TrueType (`glyf`) fonts only; CFF/OTF configs fail per-config (logged, run continues)
-  and show as red cells in the comparison images
+- A backend that declines a capability the config requests is skipped for that config (SDF on
+  GDI/DirectWrite, `sdfMode=msdf|mtsdf` on every backend but Native); any other per-config failure
+  (e.g. a bitmap-only color font on Native, CFF2 on StbTrueType) is logged, the run continues, and
+  the cell shows red in the comparison images
 - Output naming: `{configname}-{backend}.fnt` / `{configname}-{backend}_0.png`
 - Also generates `comparison*.png` side-by-side images
 
@@ -108,6 +120,11 @@ Compares baseline vs current output across three categories:
 
 Identical pixels are dimmed, different pixels are bright magenta (#FF00FF).
 
+Files are matched by name across both sides. A file on only the current side is
+`NEW (no baseline)` (not a failure); on only the baseline side it is `MISSING` and
+counts as a difference, unless its config is passed with `--removed-config <name>`
+(repeatable), which reports it as `REMOVED`.
+
 The top **41 rows** of each comparison image (the `--ignore-top` default) are the
 column/config **header label band**. That text is drawn with GDI/DirectWrite
 antialiasing that varies run-to-run, so it is excluded from the diff count — those
@@ -131,7 +148,7 @@ python tests/bmfont-compare/diff_comparisons.py --dir tests/bmfont-compare/outpu
 > run-to-run subpixel antialiasing jitter (a handful of pixels per font). Use
 > `--tolerance 1` to treat that as identical; `.fnt` metadata is always compared exactly.
 
-Exit codes: `0` = all identical, `1` = differences found, `2` = error.
+Exit codes: `0` = every file present on both sides is identical (NEW/REMOVED do not fail), `1` = differences found or a file MISSING on the current side, `2` = error (nothing compared).
 
 #### diff_images.py / diff_fnt.py / diff_all_fonts.py — Atlas and metrics diffs
 
@@ -146,12 +163,19 @@ python tests/bmfont-compare/diff_all_fonts.py
 python tests/bmfont-compare/diff_fnt.py <file_a.fnt> <file_b.fnt>
 ```
 
+#### test_harness.py — Unit tests for the scripts above
+
+```bash
+python -m unittest discover -s tests/bmfont-compare -p "test_*.py" -v
+```
+
 ## Input Files
 
 `.bmfc` configs are in `gum-bmfont/`:
 - `fire.bmfc` — Georgia 56pt with outline, gradient, shadow (fire effect)
 - `plain.bmfc` — Georgia 56pt plain
-- 15 Gum UI font configs (various fonts, sizes, styles with negative fontSize)
+- Feature configs tracked with `git add -f` (generic or committed-fixture fonts), each exercising one path: SDF/MSDF, `.otf` CFF/CFF2, variable instances, COLR color, LCD, hinting pairs, WOFF2, outlines without smoothing, shadow variants and more
+- Gum UI font configs (various fonts, sizes, styles with negative fontSize) — machine-specific fonts, untracked
 
 ## Requirements
 

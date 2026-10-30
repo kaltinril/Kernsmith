@@ -4,6 +4,7 @@
     "projects": [
       "src\\KernSmith\\KernSmith.csproj",
       "src\\KernSmith.Fonts.Web\\KernSmith.Fonts.Web.csproj",
+      "src\\KernSmith.Imaging\\KernSmith.Imaging.csproj",
       "src\\KernSmith.Rasterizers.DirectWrite.TerraFX\\KernSmith.Rasterizers.DirectWrite.TerraFX.csproj",
       "src\\KernSmith.Rasterizers.FreeType\\KernSmith.Rasterizers.FreeType.csproj",
       "src\\KernSmith.Rasterizers.Gdi\\KernSmith.Rasterizers.Gdi.csproj",

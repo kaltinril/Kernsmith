@@ -4,6 +4,7 @@ using global::Gum.Forms;
 using global::Gum.Forms.Controls;
 using Gum.Themes.Editor;
 using KernSmith.Ui.Models;
+using KernSmith.Ui.Services;
 using KernSmith.Ui.Styling;
 using KernSmith.Ui.ViewModels;
 using Gum.GueDeriving;
@@ -117,7 +118,7 @@ public class FontConfigPanel : Panel
             {
                 using var dialog = new NativeFileDialog();
                 dialog.SelectFile()
-                    .AddFilter("Font Files", "ttf,otf,woff,ttc")
+                    .AddFilter("Font Files", FontFileTypes.DialogFilter)
                     .AddFilter("All Files", "*");
                 var result = dialog.Open(out string? path);
                 if (result == DialogResult.Okay && path != null)
@@ -286,12 +287,20 @@ public class FontConfigPanel : Panel
             _rasterizerCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
             _rasterizerCombo.Visual.Width = 0;
             foreach (var backend in _fontConfig.AvailableBackends)
-                _rasterizerCombo.Items!.Add(backend.ToString());
+                _rasterizerCombo.Items!.Add(backend == RasterizerBackend.Native ? "Native (experimental)" : backend.ToString());
             _rasterizerCombo.SelectedIndex = _fontConfig.AvailableBackends.ToList().IndexOf(_fontConfig.SelectedBackend);
             if (_rasterizerCombo.SelectedIndex < 0) _rasterizerCombo.SelectedIndex = 0;
             _rasterizerCombo.SelectionChanged += (_, _) => OnRasterizerComboSelectionChanged();
+            // Follow SelectedBackend when it changes from code (e.g. a loaded project's rasterizer).
+            _fontConfig.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName != nameof(FontConfigViewModel.SelectedBackend)) return;
+                var idx = _fontConfig.AvailableBackends.ToList().IndexOf(_fontConfig.SelectedBackend);
+                if (idx >= 0 && _rasterizerCombo.SelectedIndex != idx)
+                    _rasterizerCombo.SelectedIndex = idx;
+            };
             sizeGrid.AddRow("Rasterizer:", _rasterizerCombo);
-            TooltipService.SetTooltip(_rasterizerCombo, "Glyph rasterizer backend. FreeType: cross-platform default, and the only backend supporting color and variable fonts. GDI: Windows-only, matches BMFont.exe output. DirectWrite: Windows-only, ClearType-hinted grayscale. StbTrueType: fully managed, no native dependencies.");
+            TooltipService.SetTooltip(_rasterizerCombo, "Glyph rasterizer backend. FreeType: cross-platform default. GDI: Windows-only, matches BMFont.exe output. DirectWrite: Windows-only, ClearType-hinted grayscale. StbTrueType: fully managed, no native dependencies. Native (experimental, not on NuGet yet): KernSmith's own fully managed rasterizer with color (COLR, CBDT/sbix) and variable fonts, SDF and MSDF/MTSDF, Light auto-hinting, LCD, vector outlines, synthetic width and italic angle; no system-font lookup of its own.");
 
             var advanceXBox = UiFactory.CreateSmallFloatBox(_mainViewModel.Effects.AdvanceAdjustX,
                 v => _mainViewModel.Effects.AdvanceAdjustX = v);

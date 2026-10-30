@@ -8,7 +8,7 @@ using KernSmith.Rasterizer;
 namespace KernSmith.Cli.Commands;
 
 /// <summary>
-/// Generates BMFont .fnt and texture atlas files from a TTF/OTF/WOFF font, driven by CLI flags
+/// Generates BMFont .fnt and texture atlas files from a TTF/OTF/WOFF/WOFF2 font, driven by CLI flags
 /// or a .bmfc/.hiero configuration file.
 /// </summary>
 internal sealed class GenerateCommand
@@ -26,9 +26,12 @@ internal sealed class GenerateCommand
             return ExitCodes.Success;
         }
 
+        // Hoisted so the catch blocks below can name the backend that rejected the job.
+        CliOptions? options = null;
+
         try
         {
-            var options = ParseArgs(args);
+            options = ParseArgs(args);
 
             // Load config file first, then overlay CLI flags
             if (options.ConfigPath != null)
@@ -117,6 +120,22 @@ internal sealed class GenerateCommand
             ConsoleOutput.WriteError($"Font error: {ex.Message}");
             return ExitCodes.FontParseError;
         }
+        // A backend refusing a font or an option (e.g. Native asked for a distance field from a
+        // bitmap-only color font, StbTrueType asked for color) is an expected user error, not a crash.
+        catch (Exception ex) when (ex is BmFontException or NotSupportedException)
+        {
+            ConsoleOutput.WriteError($"Generation error ({BackendName(options)} rasterizer): {ex.Message}");
+            return ExitCodes.GenerationError;
+        }
+        // Whether a palette index exists depends on the font's CPAL table, so a bad
+        // --color-palette is the backend rejecting an option for this font, not a malformed
+        // argument: the rasterizers report it as an out-of-range paletteIndex.
+        catch (ArgumentOutOfRangeException ex) when (ex.ParamName == "paletteIndex")
+        {
+            var reason = ex.Message.Split(" (Parameter '", 2)[0];
+            ConsoleOutput.WriteError($"Generation error ({BackendName(options)} rasterizer): --color-palette {ex.ActualValue}: {reason}");
+            return ExitCodes.GenerationError;
+        }
         catch (InvalidOperationException ex)
         {
             ConsoleOutput.WriteError($"Generation error: {ex.Message}");
@@ -138,6 +157,12 @@ internal sealed class GenerateCommand
             return ExitCodes.InvalidArguments;
         }
     }
+
+    /// <summary>
+    /// The backend name as the user types it for <c>--rasterizer</c> (e.g. <c>stbtruetype</c>).
+    /// </summary>
+    private static string BackendName(CliOptions? options)
+        => (options?.Backend ?? RasterizerBackend.FreeType).ToString().ToLowerInvariant();
 
     /// <summary>
     /// Result of a single font generation job.
@@ -199,6 +224,8 @@ internal sealed class GenerateCommand
             ForceSyntheticBold = options.ForceSyntheticBold,
             ForceSyntheticItalic = options.ForceSyntheticItalic,
             AntiAlias = options.AntiAlias,
+            LcdFilter = options.LcdFilter ?? KernSmith.LcdFilter.Default,
+            LcdSubpixelOrder = options.LcdSubpixelOrder ?? KernSmith.LcdSubpixelOrder.Rgb,
             MaxTextureSize = options.MaxTextureSize,
             Padding = options.Padding,
             Spacing = options.Spacing,
@@ -206,7 +233,9 @@ internal sealed class GenerateCommand
             Kerning = options.Kerning ?? true,
             Outline = options.Outline,
             OutlineShape = options.OutlineShape ?? KernSmith.OutlineShape.Round,
+            OutlineMode = options.OutlineMode ?? KernSmith.OutlineMode.Effect,
             Sdf = options.Sdf,
+            SdfMode = options.SdfMode,
             PowerOfTwo = options.PowerOfTwo ?? true,
             Dpi = options.Dpi,
             FaceIndex = options.FaceIndex,
@@ -220,6 +249,8 @@ internal sealed class GenerateCommand
             EqualizeCellHeights = options.EqualizeCellHeights,
             ForceOffsetsToZero = options.ForceOffsetsToZero,
             HeightPercent = options.HeightPercent,
+            WidthPercent = options.WidthPercent,
+            ItalicAngle = options.ItalicAngle ?? 12f,
             MatchCharHeight = options.MatchCharHeight,
             ColorFont = options.ColorFont,
             ColorPaletteIndex = options.ColorPaletteIndex,
@@ -326,6 +357,33 @@ internal sealed class GenerateCommand
     }
 
     /// <summary>
+    /// Resolves <c>--instance</c> to that named instance's <c>fvar</c> coordinates; explicit
+    /// <c>--axis</c> values override them. Core only takes axis values, so the CLI does the lookup.
+    /// </summary>
+    private static void ApplyNamedInstance(FontGeneratorOptions genOptions, CliOptions options, byte[]? fontData)
+    {
+        if (fontData == null && options.FontPath == null)
+            throw new ArgumentException("--instance needs --font: named instances are read from the font file.");
+
+        var info = BmFont.ReadFontInfo(fontData ?? File.ReadAllBytes(options.FontPath!), options.FaceIndex);
+        var instances = info.NamedInstances ?? [];
+        var match = instances.FirstOrDefault(n =>
+            string.Equals(n.Name, options.InstanceName, StringComparison.OrdinalIgnoreCase));
+        if (match == null)
+        {
+            var names = instances.Select(n => n.Name).Where(n => !string.IsNullOrEmpty(n)).ToList();
+            throw new ArgumentException(names.Count == 0
+                ? $"--instance '{options.InstanceName}': the font has no named instances."
+                : $"Unknown --instance '{options.InstanceName}'. Named instances: {string.Join(", ", names)}.");
+        }
+
+        var axes = new Dictionary<string, float>(match.Coordinates);
+        foreach (var (tag, value) in options.VariationAxes)
+            axes[tag] = value;
+        genOptions.VariationAxes = axes;
+    }
+
+    /// <summary>
     /// Runs a single font generation job from fully-resolved options and character set.
     /// </summary>
     /// <param name="options">The resolved CLI options for this job.</param>
@@ -345,6 +403,8 @@ internal sealed class GenerateCommand
         characters ??= BuildCharacterSet(options);
 
         var genOptions = BuildGenOptions(options, characters);
+        if (options.InstanceName != null)
+            ApplyNamedInstance(genOptions, options, fontData);
 
         // Determine output path
         var outputPath = ResolveOutputPath(options);
@@ -468,6 +528,16 @@ internal sealed class GenerateCommand
                 case "--sdf":
                     options.Sdf = true;
                     break;
+                case "--sdf-mode":
+                    options.SdfMode = NextArg(args, ref i, "--sdf-mode").ToLowerInvariant() switch
+                    {
+                        "none" => SdfMode.None,
+                        "sdf" => SdfMode.Sdf,
+                        "msdf" => SdfMode.Msdf,
+                        "mtsdf" => SdfMode.Mtsdf,
+                        var m => throw new ArgumentException($"Unknown --sdf-mode: {m}. Use none, sdf, msdf or mtsdf.")
+                    };
+                    break;
                 case "--mono":
                     options.AntiAlias = AntiAliasMode.None;
                     break;
@@ -479,6 +549,26 @@ internal sealed class GenerateCommand
                         "light" => AntiAliasMode.Light,
                         "lcd" => AntiAliasMode.Lcd,
                         var a => throw new ArgumentException($"Unknown anti-alias mode: {a}")
+                    };
+                    break;
+                case "--lcd-filter":
+                    options.LcdFilter = NextArg(args, ref i, "--lcd-filter").ToLowerInvariant() switch
+                    {
+                        "default" => LcdFilter.Default,
+                        "light" => LcdFilter.Light,
+                        "smooth" => LcdFilter.Smooth,
+                        "none" => LcdFilter.None,
+                        var f => throw new ArgumentException($"Unknown --lcd-filter: {f}. Use default, light, smooth or none.")
+                    };
+                    break;
+                case "--lcd-order":
+                    options.LcdSubpixelOrder = NextArg(args, ref i, "--lcd-order").ToLowerInvariant() switch
+                    {
+                        "rgb" => LcdSubpixelOrder.Rgb,
+                        "bgr" => LcdSubpixelOrder.Bgr,
+                        "vrgb" => LcdSubpixelOrder.VRgb,
+                        "vbgr" => LcdSubpixelOrder.VBgr,
+                        var o => throw new ArgumentException($"Unknown --lcd-order: {o}. Use rgb, bgr, vrgb or vbgr.")
                     };
                     break;
                 case "--dpi":
@@ -518,6 +608,14 @@ internal sealed class GenerateCommand
                         "square" => OutlineShape.Square,
                         "plus" => OutlineShape.Plus,
                         var s => throw new ArgumentException($"Unknown outline shape: {s}. Use round, square, or plus.")
+                    };
+                    break;
+                case "--outline-mode":
+                    options.OutlineMode = NextArg(args, ref i, args[i]).ToLowerInvariant() switch
+                    {
+                        "effect" => OutlineMode.Effect,
+                        "vector" => OutlineMode.Vector,
+                        var m => throw new ArgumentException($"Unknown outline mode: {m}. Use effect or vector.")
                     };
                     break;
                 case "--gradient":
@@ -644,6 +742,12 @@ internal sealed class GenerateCommand
                 case "--height-percent":
                     options.HeightPercent = int.Parse(NextArg(args, ref i, args[i]));
                     break;
+                case "--width-percent":
+                    options.WidthPercent = int.Parse(NextArg(args, ref i, args[i]));
+                    break;
+                case "--italic-angle":
+                    options.ItalicAngle = float.Parse(NextArg(args, ref i, args[i]), CultureInfo.InvariantCulture);
+                    break;
                 case "--match-char-height":
                     options.MatchCharHeight = true;
                     break;
@@ -717,9 +821,12 @@ internal sealed class GenerateCommand
         // GC-1: Previously missing fields — these CLI values were silently dropped.
         if (cli.OutputFormat != OutputFormat.Text) config.OutputFormat = cli.OutputFormat;
         if (cli.AntiAlias != AntiAliasMode.Grayscale) config.AntiAlias = cli.AntiAlias;
+        if (cli.LcdFilter.HasValue) config.LcdFilter = cli.LcdFilter;
+        if (cli.LcdSubpixelOrder.HasValue) config.LcdSubpixelOrder = cli.LcdSubpixelOrder;
         if (cli.MaxTextureSize != 1024) config.MaxTextureSize = cli.MaxTextureSize;
         if (cli.Outline > 0) { config.Outline = cli.Outline; config.OutlineColor = cli.OutlineColor ?? config.OutlineColor; }
         if (cli.OutlineShape.HasValue) config.OutlineShape = cli.OutlineShape;
+        if (cli.OutlineMode.HasValue) config.OutlineMode = cli.OutlineMode;
         if (cli.Dpi != 72) config.Dpi = cli.Dpi;
         if (cli.FaceIndex != 0) config.FaceIndex = cli.FaceIndex;
         if (cli.PackingAlgorithm != PackingAlgorithm.MaxRects) config.PackingAlgorithm = cli.PackingAlgorithm;
@@ -733,6 +840,7 @@ internal sealed class GenerateCommand
         if (cli.ForceSyntheticBold) config.ForceSyntheticBold = true;
         if (cli.ForceSyntheticItalic) config.ForceSyntheticItalic = true;
         if (cli.Sdf) config.Sdf = true;
+        if (cli.SdfMode != SdfMode.None) config.SdfMode = cli.SdfMode;
         if (cli.DryRun) config.DryRun = true;
         if (cli.Verbose) config.Verbose = true;
         if (cli.Quiet) config.Quiet = true;
@@ -751,6 +859,8 @@ internal sealed class GenerateCommand
         if (cli.FallbackCharacter.HasValue) config.FallbackCharacter = cli.FallbackCharacter;
         if (cli.TextureFormat != null) config.TextureFormat = cli.TextureFormat;
         if (cli.HeightPercent != 100) config.HeightPercent = cli.HeightPercent;
+        if (cli.WidthPercent != 100) config.WidthPercent = cli.WidthPercent;
+        if (cli.ItalicAngle.HasValue) config.ItalicAngle = cli.ItalicAngle;
         if (cli.MaxTextureWidth.HasValue) config.MaxTextureWidth = cli.MaxTextureWidth;
         if (cli.MaxTextureHeight.HasValue) config.MaxTextureHeight = cli.MaxTextureHeight;
         if (cli.InstanceName != null) config.InstanceName = cli.InstanceName;
@@ -839,11 +949,14 @@ internal sealed class GenerateCommand
         else if (options.Bold) effects.Add("bold");
         if (options.ForceSyntheticItalic) effects.Add("synthetic-italic");
         else if (options.Italic) effects.Add("italic");
-        if (options.Sdf) effects.Add("SDF");
+        if (options.SdfMode is SdfMode.Msdf or SdfMode.Mtsdf) effects.Add(options.SdfMode.ToString().ToUpperInvariant());
+        else if (options.Sdf || options.SdfMode == SdfMode.Sdf) effects.Add("SDF");
         if (options.Outline > 0)
-            effects.Add(options.OutlineShape is { } shape && shape != OutlineShape.Round
+            effects.Add((options.OutlineShape is { } shape && shape != OutlineShape.Round
                 ? $"outline {options.Outline}px ({shape.ToString().ToLowerInvariant()})"
-                : $"outline {options.Outline}px");
+                : $"outline {options.Outline}px")
+                + (options.OutlineMode == OutlineMode.Vector ? " vector" : ""));
+        if (options.WidthPercent != 100) effects.Add($"width {options.WidthPercent}%");
         if (options.GradientTop != null) effects.Add($"gradient {options.GradientTop}->{options.GradientBottom}");
         Console.WriteLine($"[dry-run] Effects:   {(effects.Count > 0 ? string.Join(", ", effects) : "none")}");
 
@@ -922,7 +1035,7 @@ internal sealed class GenerateCommand
             Usage: kernsmith generate -f <font> -s <size> [options]
 
             Font Source (one required):
-              -f, --font <path>           Font file path (TTF, OTF, WOFF)
+              -f, --font <path>           Font file path (TTF, OTF, WOFF, WOFF2)
               --system-font <name>        Use a system-installed font by family name
 
             Output:
@@ -934,14 +1047,18 @@ internal sealed class GenerateCommand
               -s, --size <n>              Font size in pixels — accepts fractional (e.g. 10.5) (required)
               --dpi <n>                   DPI (default: 72)
               --aa <none|grayscale|light|lcd>  Anti-aliasing mode (default: grayscale)
+              --lcd-filter <filter>       LCD filter: default, light, smooth, none (--aa lcd; native only)
+              --lcd-order <order>         LCD subpixel order: rgb (default), bgr, vrgb, vbgr (--aa lcd; native only)
               --sdf                       Enable Signed Distance Field rendering
               --sdf-spread <n>            SDF search radius (spread) in pixels (default: 8)
+              --sdf-mode <mode>           Distance field: none, sdf, msdf, mtsdf (msdf/mtsdf need --rasterizer native)
               --mono                      Disable anti-aliasing (alias for --aa none)
               --super-sample <n>          Super sampling level 1-4 (default: 1)
               --rasterizer <backend>      Rasterizer backend: freetype (default), stbtruetype, gdi, directwrite, native
-              --hinting / --no-hinting    Enable/disable FreeType hinting (default: on)
+              --hinting / --no-hinting    Enable/disable hinting (default: on; native hints only with --aa light)
               --gamma <n>                 Gamma correction applied during rasterization (default: 1.8)
               --height-percent <n>        Vertical height scaling percentage (default: 100)
+              --width-percent <n>         Synthetic condensed/expanded width percentage, 10-1000 (default: 100; native only)
               --match-char-height         Match rendered height to requested pixel height
               --advance-x <n>             Global horizontal advance adjustment added to every glyph (default: 0)
               --fallback-char <char>      Fallback character for missing glyphs (char or codepoint)
@@ -951,7 +1068,8 @@ internal sealed class GenerateCommand
               -i, --italic                Enable synthetic italic
               --synthetic-bold            Force synthetic bold instead of native bold face
               --synthetic-italic          Force synthetic italic instead of native italic face
-              --color-font                Enable color font rendering (COLR/CPAL)
+              --italic-angle <deg>        Synthetic italic slant in degrees, positive leans right (default: 12; other values native only)
+              --color-font                Enable color font rendering (COLR/CPAL layers, CBDT/sbix bitmaps; COLR v1 native only)
               --color-palette <n>         Color palette index (default: 0)
 
             Character Set:
@@ -980,6 +1098,7 @@ internal sealed class GenerateCommand
               --fill-color <color>        Base glyph fill color as hex #RRGGBB or #RRGGBBAA (default: FFFFFF, opaque white)
               --outline <n>[,color]        Outline width in pixels, optional hex color (e.g., --outline 2,FF0000)
               --outline-shape <shape>     Outline corner shape: round (default), square, or plus
+              --outline-mode <mode>       Outline drawing: effect (default, bitmap) or vector (backend strokes the outline; native)
               --gradient <top>,<bottom>   Vertical gradient, colors as hex
               --gradient <top> <bottom>   Vertical gradient (two-argument form)
               --gradient-angle <deg>      Gradient rotation in degrees (default: 90)

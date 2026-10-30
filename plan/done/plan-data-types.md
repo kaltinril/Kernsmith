@@ -178,20 +178,31 @@ public readonly record struct GlyphMetrics(
 ```csharp
 public sealed record RasterOptions
 {
-    public required int Size { get; init; }              // font size in points
+    public required float Size { get; init; }           // font size in points (pixels at the default 72 DPI)
     public int Dpi { get; init; } = 72;
     public AntiAliasMode AntiAlias { get; init; } = AntiAliasMode.Grayscale;
+    public LcdFilter LcdFilter { get; init; }            // Lcd low-pass filter; Default = backend's choice
+    public LcdSubpixelOrder LcdSubpixelOrder { get; init; } // Lcd panel layout; default Rgb
     public bool Bold { get; init; }                      // synthetic bold
     public bool Italic { get; init; }                    // synthetic italic/oblique
-    public bool Sdf { get; init; }                       // SDF rendering mode
+    public bool ForceSyntheticBold { get; init; }
+    public bool ForceSyntheticItalic { get; init; }
+    public bool Sdf { get; init; }                       // true exactly when the effective mode is single-channel SDF
+    public SdfMode SdfMode { get; init; }                // None/Sdf/Msdf/Mtsdf; EffectiveSdfMode resolves it against Sdf
+    public int SdfScale { get; init; } = 1;
+    public float SdfSpread { get; init; } = 8f;
+    public float Gamma { get; init; } = 1.8f;            // FreeType only
     public bool ColorFont { get; init; }                 // render color glyphs
     public int ColorPaletteIndex { get; init; }          // CPAL palette index for color fonts
     public Dictionary<string, float>? VariationAxes { get; init; } // variable font axis overrides
     public bool EnableHinting { get; init; } = true;     // font hinting for sharper rendering
+    public int SuperSample { get; init; } = 1;           // core sends 1 for an effective Lcd request
+    public int WidthPercent { get; init; } = 100;        // 10-1000; only sent to SupportsWidthScale backends
+    public float ItalicAngle { get; init; } = 12f;       // ±60°; only sent to SupportsItalicAngle backends
 }
 ```
 
-> **Note:** Extracted from `FontGeneratorOptions` for the rasterizer's use. The pipeline creates this from the user-facing options.
+> **Note:** Extracted from `FontGeneratorOptions` by `RasterOptions.FromGeneratorOptions`. `OutlineMode` stays on `FontGeneratorOptions`: core decides per glyph whether to call `IRasterizer.RasterizeOutlineLayer`.
 
 ### PixelFormat
 
@@ -202,6 +213,41 @@ public enum PixelFormat
     Rgba32 = 1       // 4 bytes per pixel, used for color fonts or composed atlas pages
 }
 ```
+
+### SdfMode
+
+```csharp
+public enum SdfMode
+{
+    None,   // no distance field unless the legacy bool Sdf is set
+    Sdf,    // single-channel, Grayscale8
+    Msdf,   // multi-channel: RGB distances (median = shape), A = 255, Rgba32
+    Mtsdf   // Msdf plus the single-channel distance in A, Rgba32
+}
+```
+
+> **Note:** `Msdf`/`Mtsdf` need `IRasterizerCapabilities.SupportsMsdf` (default-interface member, false).
+
+### LcdFilter / LcdSubpixelOrder
+
+```csharp
+public enum LcdFilter { Default, Light, Smooth, None }          // Default = backend's choice (Native: Light, the [1,1,1]/3 box); Smooth = [1,2,3,2,1]/9
+public enum LcdSubpixelOrder { Rgb, Bgr, VRgb, VBgr }           // fontconfig rgba names; V* = vertical panels
+```
+
+> **Note:** On both `FontGeneratorOptions` and `RasterOptions`; only backends rendering subpixel output (Native) read them.
+
+### OutlineMode
+
+```csharp
+public enum OutlineMode
+{
+    Effect, // core's bitmap OutlineEffect (default, every backend)
+    Vector  // the backend draws the layer (IRasterizer.RasterizeOutlineLayer) when SupportsOutlineStroke; else Effect
+}
+```
+
+> **Note:** On `FontGeneratorOptions` only. `Vector` with any distance field is an `InvalidOperationException`.
 
 ## Texture Packing Layer Types
 
@@ -362,10 +408,12 @@ public interface IRasterizer : IDisposable
     RasterizedGlyph? RasterizeGlyph(int codepoint, RasterOptions options);
     IReadOnlyList<RasterizedGlyph> RasterizeAll(IEnumerable<int> codepoints, RasterOptions options);
     GlyphMetrics? GetGlyphMetrics(int codepoint, RasterOptions options) => null;
+    RasterizedGlyph? RasterizeOutlineLayer(int codepoint, RasterOptions options, int width,
+        OutlineShape shape, float heightScale = 1f) => null; // OutlineMode.Vector layer; null = use the effect
 }
 ```
 
-> **Note:** `RasterizeGlyph` returns `null` for codepoints with no glyph. `RasterizeAll` skips nulls.
+> **Note:** `RasterizeGlyph` returns `null` for codepoints with no glyph. `RasterizeAll` skips nulls. Other optional members (`LoadSystemFont`, `GetFontMetrics`, `GetKerningPairs`, `SetVariationAxes`, `SelectColorPalette`) have default implementations too; `IRasterizerCapabilities` declares what a backend supports, with default-false members `SupportsMsdf`, `SupportsWidthScale` and `SupportsItalicAngle`.
 
 ### IGlyphPostProcessor
 
@@ -467,6 +515,8 @@ public class FontParsingException : BmFontException { /* ... */ }
 public class RasterizationException : BmFontException { /* ... */ }
 public class AtlasPackingException : BmFontException { /* ... */ }
 ```
+
+> **Note:** `KernSmith.Imaging.PngFormatException` derives from `FormatException`, not `BmFontException`, so that assembly stays free of KernSmith dependencies; the Native rasterizer wraps it in `RasterizationException`.
 
 ## Cross-Reference Index
 

@@ -5,7 +5,7 @@
 > **Created**: 2026-03-27
 > **Updated**: 2026-03-29
 > **Dependencies**: Phase 78C (DirectWrite backend)
-> **Parent**: [Phase 78 -- Pluggable Rasterizer Backends](../phase-78-pluggable-rasterizers.md)
+> **Parent**: [Phase 78 -- Pluggable Rasterizer Backends](phase-78-pluggable-rasterizers.md)
 > **Goal**: Track and resolve remaining open issues discovered during Phase 78C DirectWrite work.
 
 ---

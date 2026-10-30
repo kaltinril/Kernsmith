@@ -144,6 +144,8 @@ internal sealed class XmlFormatter : IBmFontTextFormatter
 
         if (extended.SdfSpread.HasValue)
             writer.WriteAttributeString("sdfSpread", extended.SdfSpread.Value.ToString());
+        if (extended.SdfMode.HasValue)
+            writer.WriteAttributeString("sdfMode", extended.SdfMode.Value.ToString().ToLowerInvariant());
         if (extended.OutlineThickness.HasValue)
             writer.WriteAttributeString("outlineThickness", extended.OutlineThickness.Value.ToString());
         if (extended.GradientTopColor != null)

@@ -1,0 +1,63 @@
+# AngelCode Bitmap Font Generator configuration file
+# Exercises COLR version 1 paint graphs (PaintGlyph, solid fills, clip boxes) with the committed
+# Reem Kufi Ink fixture; only its Arabic marks and digits map to color glyphs, so those are the
+# chars. KernSmith-only keys: colorFont=1 turns color rendering on.
+# Backends without color support render plain coverage. Every channel holds the glyph (the
+# default ChannelConfig); a non-default channel setup would overwrite the colors.
+fileVersion=1
+
+# font settings
+fontName=Reem Kufi Ink
+fontFile=../../KernSmith.Tests/Fixtures/Color/ReemKufiInk-Regular.ttf
+charSet=0
+fontSize=48
+aa=1
+scaleH=100
+useSmoothing=1
+isBold=0
+isItalic=0
+useUnicode=1
+disableBoxChars=1
+outputInvalidCharGlyph=0
+dontIncludeKerningPairs=0
+useHinting=1
+renderFromOutline=0
+useClearType=0
+autoFitNumPages=0
+
+# character alignment
+paddingDown=0
+paddingUp=0
+paddingRight=0
+paddingLeft=0
+spacingHoriz=1
+spacingVert=1
+useFixedHeight=0
+forceZero=0
+widthPaddingFactor=0.00
+
+# output file
+outWidth=1024
+outHeight=1024
+outBitDepth=32
+fontDescFormat=0
+fourChnlPacked=0
+textureFormat=png
+textureCompression=0
+alphaChnl=0
+redChnl=0
+greenChnl=0
+blueChnl=0
+invA=0
+invR=0
+invG=0
+invB=0
+
+# outline
+outlineThickness=0
+
+# selected chars
+chars=1548,1557,1563,1567,1569,1600,1611-1622,1626,1632-1641,1648,1652,1761,1764,1776-1785,9676
+
+# KernSmith extensions
+colorFont=1

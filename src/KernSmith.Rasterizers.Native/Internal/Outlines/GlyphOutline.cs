@@ -69,23 +69,69 @@ internal sealed class GlyphOutline
         YMax = yMax;
     }
 
+    /// <summary>
+    /// Creates an outline over the supplied commands, bounding it by its control hull. This is
+    /// how outline transforms build their result.
+    /// </summary>
+    public static GlyphOutline FromCommands(OutlineCommand[] commands)
+    {
+        ArgumentNullException.ThrowIfNull(commands);
+
+        if (commands.Length == 0)
+            return Empty;
+
+        var (xMin, yMin, xMax, yMax) = ControlHull(commands);
+        return new GlyphOutline(commands, xMin, yMin, xMax, yMax);
+    }
+
     /// <summary>The pen commands, contour by contour, each opened by a
     /// <see cref="OutlineCommandType.MoveTo"/> and terminated by a
     /// <see cref="OutlineCommandType.Close"/>.</summary>
     public OutlineCommand[] Commands { get; }
 
-    /// <summary>Left edge of the outline's bounding box, in font units.</summary>
+    /// <summary>Left edge of the outline's control hull, in font units.</summary>
     public float XMin { get; }
 
-    /// <summary>Bottom edge of the outline's bounding box, in font units.</summary>
+    /// <summary>Bottom edge of the outline's control hull, in font units.</summary>
     public float YMin { get; }
 
-    /// <summary>Right edge of the outline's bounding box, in font units.</summary>
+    /// <summary>Right edge of the outline's control hull, in font units.</summary>
     public float XMax { get; }
 
-    /// <summary>Top edge of the outline's bounding box, in font units.</summary>
+    /// <summary>Top edge of the outline's control hull, in font units.</summary>
     public float YMax { get; }
 
     /// <summary>True when the outline has nothing to draw.</summary>
     public bool IsEmpty => Commands.Length == 0;
+
+    /// <summary>
+    /// Bounds every point a command touches, control points included. A cubic never leaves
+    /// its control hull, so this is conservative — it can only over-estimate, never clip.
+    /// </summary>
+    private static (float XMin, float YMin, float XMax, float YMax) ControlHull(OutlineCommand[] commands)
+    {
+        float xMin = float.MaxValue, yMin = float.MaxValue;
+        float xMax = float.MinValue, yMax = float.MinValue;
+
+        foreach (var command in commands)
+        {
+            Include(command.EndX, command.EndY);
+
+            if (command.Type != OutlineCommandType.CubicTo)
+                continue;
+
+            Include(command.Ctrl1X, command.Ctrl1Y);
+            Include(command.Ctrl2X, command.Ctrl2Y);
+        }
+
+        return (xMin, yMin, xMax, yMax);
+
+        void Include(float x, float y)
+        {
+            if (x < xMin) xMin = x;
+            if (y < yMin) yMin = y;
+            if (x > xMax) xMax = x;
+            if (y > yMax) yMax = y;
+        }
+    }
 }

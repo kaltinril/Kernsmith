@@ -38,4 +38,12 @@ internal sealed class RasterizationResult
     /// may already have a baked shadow/outline/gradient composited into its RGBA.
     /// </summary>
     public List<RasterizedGlyph>? RawGlyphsForVariants { get; init; }
+
+    /// <summary>
+    /// Backend-drawn outline layers by codepoint, at the output size and placed against the final
+    /// <see cref="Glyphs"/>, for an Outline channel to use instead of the bitmap outline. Only
+    /// populated for <see cref="OutlineMode.Vector"/> with a channel layout that routes the
+    /// outline; a glyph missing here falls back to the bitmap outline.
+    /// </summary>
+    public IReadOnlyDictionary<int, OutlineMask>? ChannelOutlineMasks { get; init; }
 }

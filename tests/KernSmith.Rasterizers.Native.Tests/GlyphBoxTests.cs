@@ -44,7 +44,7 @@ public class GlyphBoxTests
         // Guard: the hull really is taller, otherwise this test proves nothing.
         outline.YMax.ShouldBeGreaterThan(glyph.YMax);
 
-        var box = GlyphBox.Compute(glyph, outline, scale: 0.1f);
+        var box = GlyphBox.Compute(outline, Declared(glyph), scale: 0.1f);
 
         box.Height.ShouldBe(20, "expected the 200-unit ink height, not the 400-unit control hull");
         box.BearingY.ShouldBe(20);
@@ -61,7 +61,7 @@ public class GlyphBoxTests
         var broken = new ParsedGlyph(1, source.Contours, 0, 0, 0, 0, isComposite: true);
         var outline = OutlineExtractor.Extract(broken);
 
-        var box = GlyphBox.Compute(broken, outline, scale: 0.1f);
+        var box = GlyphBox.Compute(outline, Declared(broken), scale: 0.1f);
 
         box.IsEmpty.ShouldBeFalse();
         box.Height.ShouldBeGreaterThan(20, "the control hull is the fallback, and it overshoots the ink");
@@ -70,10 +70,60 @@ public class GlyphBoxTests
     [Fact]
     public void Compute_EmptyOutline_IsEmpty()
     {
-        var box = GlyphBox.Compute(ParsedGlyph.Empty(3), GlyphOutline.Empty, scale: 0.1f);
+        var box = GlyphBox.Compute(GlyphOutline.Empty, Declared(ParsedGlyph.Empty(3)), scale: 0.1f);
 
         box.IsEmpty.ShouldBeTrue();
         box.Width.ShouldBe(0);
         box.Height.ShouldBe(0);
     }
+
+    [Fact]
+    public void Compute_WithoutDeclaredBounds_UsesTheTightOutlineBounds()
+    {
+        // No declared box (a CFF glyph, or a transformed outline): the curve's own extrema
+        // size the grid, so the control point pulled to y=400 leaves no blank rows.
+        var outline = OutlineExtractor.Extract(OvershootingControlPoint());
+
+        var box = GlyphBox.Compute(outline, declaredBounds: null, scale: 0.1f);
+
+        box.ShouldBe(new GlyphBox(MinX: 0, MinY: -20, Width: 20, Height: 20));
+    }
+
+    [Fact]
+    public void Tight_FindsInteriorCurveExtrema()
+    {
+        // y(t) = 900·t(1-t)(1-2t): extrema of ±50·√3 at t = 0.5 ∓ √3/6, far inside the
+        // ±300 control hull and nowhere near an endpoint.
+        var outline = GlyphOutline.FromCommands(
+        [
+            OutlineCommand.Move(0, 0),
+            OutlineCommand.Cubic(100, 300, 200, -300, 300, 0),
+            OutlineCommand.CloseAt(0, 0),
+        ]);
+
+        var bounds = OutlineBounds.Tight(outline);
+
+        outline.YMax.ShouldBe(300f, "guard: the control hull really is larger");
+        bounds.XMin.ShouldBe(0f);
+        bounds.XMax.ShouldBe(300f);
+        bounds.YMax.ShouldBe(50f * MathF.Sqrt(3f), 0.001f);
+        bounds.YMin.ShouldBe(-50f * MathF.Sqrt(3f), 0.001f);
+    }
+
+    [Fact]
+    public void Tight_OfAStraightLineOutline_IsItsPointBounds()
+    {
+        var outline = GlyphOutline.FromCommands(
+        [
+            OutlineCommand.Move(-10, 5),
+            OutlineCommand.Line(40, 5),
+            OutlineCommand.Line(40, 90),
+            OutlineCommand.CloseAt(-10, 5),
+        ]);
+
+        OutlineBounds.Tight(outline).ShouldBe(new OutlineBounds(-10, 5, 40, 90));
+    }
+
+    private static OutlineBounds Declared(ParsedGlyph glyph) =>
+        new(glyph.XMin, glyph.YMin, glyph.XMax, glyph.YMax);
 }

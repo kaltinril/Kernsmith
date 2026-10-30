@@ -22,7 +22,7 @@ dotnet add package KernSmith.Rasterizers.DirectWrite.TerraFX
 var options = new FontGeneratorOptions
 {
     Size = 32,
-    RasterizerBackend = RasterizerBackend.DirectWrite
+    Backend = RasterizerBackend.DirectWrite
 };
 ```
 
