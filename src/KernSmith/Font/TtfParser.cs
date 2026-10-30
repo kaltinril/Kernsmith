@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.ObjectModel;
 using System.Text;
@@ -943,13 +944,49 @@ internal class TtfParser
         if (subtable.Length < 10)
             return;
 
-        var pairSetCount = BinaryPrimitives.ReadUInt16BigEndian(subtable.Slice(8));
-        var coverage = ParseCoverage(From(subtable, coverageOffset));
+        // Pair sets whose offset fits in the subtable; the offset array ends the walk there.
+        var pairSetCount = Math.Min(
+            (int)BinaryPrimitives.ReadUInt16BigEndian(subtable.Slice(8)),
+            (subtable.Length - 10) / 2);
+        if (pairSetCount == 0)
+            return;
 
+        // The first glyph of pair set i is the first coverage entry (in table order) whose
+        // coverage index is i; a set no entry points at has none and is skipped.
+        var firstGlyphPool = ArrayPool<int>.Shared.Rent(pairSetCount);
+        try
+        {
+            var firstGlyphOf = firstGlyphPool.AsSpan(0, pairSetCount);
+            firstGlyphOf.Fill(-1);
+            foreach (var (glyph, index) in ParseCoverage(From(subtable, coverageOffset)))
+            {
+                if ((uint)index < (uint)pairSetCount && firstGlyphOf[index] < 0)
+                    firstGlyphOf[index] = glyph;
+            }
+
+            // Each record: secondGlyph (uint16) + value1 + value2
+            ReadPairSets(subtable, firstGlyphOf, valueFormat1, 2 + valueRecord1Size + valueRecord2Size, pairs);
+        }
+        finally
+        {
+            ArrayPool<int>.Shared.Return(firstGlyphPool);
+        }
+    }
+
+    private void ReadPairSets(
+        ReadOnlySpan<byte> subtable, ReadOnlySpan<int> firstGlyphOf, int valueFormat1, int recordSize,
+        List<KerningPair> pairs)
+    {
+        var pairSetCount = firstGlyphOf.Length;
         for (var i = 0; i < pairSetCount; i++)
         {
-            if (10 + (i + 1) * 2 > subtable.Length)
-                break;
+            var firstGlyph = firstGlyphOf[i];
+            if (firstGlyph < 0)
+                continue;
+
+            // A first glyph outside the subset filters out every pair in the set.
+            if (_relevantGlyphIndices != null && !_relevantGlyphIndices.Contains(firstGlyph))
+                continue;
 
             var pairSetOffset = BinaryPrimitives.ReadUInt16BigEndian(subtable.Slice(10 + i * 2));
             var pairSet = From(subtable, pairSetOffset);
@@ -957,22 +994,6 @@ internal class TtfParser
                 continue;
 
             var pairValueCount = BinaryPrimitives.ReadUInt16BigEndian(pairSet);
-            // Each record: secondGlyph (uint16) + value1 + value2
-            var recordSize = 2 + valueRecord1Size + valueRecord2Size;
-
-            // Find the first glyph index from coverage that maps to this pair set index
-            int firstGlyph = -1;
-            foreach (var (glyph, index) in coverage)
-            {
-                if (index == i)
-                {
-                    firstGlyph = glyph;
-                    break;
-                }
-            }
-
-            if (firstGlyph < 0)
-                continue;
 
             for (var p = 0; p < pairValueCount; p++)
             {
@@ -980,16 +1001,14 @@ internal class TtfParser
                 if (recOffset + recordSize > pairSet.Length)
                     break;
 
-                var secondGlyph = BinaryPrimitives.ReadUInt16BigEndian(pairSet.Slice(recOffset));
                 var xAdvance = ReadXAdvanceFromValueRecord(pairSet.Slice(recOffset + 2), valueFormat1);
+                if (xAdvance == 0)
+                    continue;
 
-                if (xAdvance != 0)
-                {
-                    if (_relevantGlyphIndices != null &&
-                        (!_relevantGlyphIndices.Contains(firstGlyph) || !_relevantGlyphIndices.Contains(secondGlyph)))
-                        continue;
-                    pairs.Add(new KerningPair(firstGlyph, secondGlyph, xAdvance));
-                }
+                var secondGlyph = BinaryPrimitives.ReadUInt16BigEndian(pairSet.Slice(recOffset));
+                if (_relevantGlyphIndices != null && !_relevantGlyphIndices.Contains(secondGlyph))
+                    continue;
+                pairs.Add(new KerningPair(firstGlyph, secondGlyph, xAdvance));
             }
         }
     }
