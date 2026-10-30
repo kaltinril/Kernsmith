@@ -1,3 +1,4 @@
+using System.Buffers;
 using KernSmith.Rasterizers.Native.Internal.Outlines;
 
 namespace KernSmith.Rasterizers.Native.Internal.Hinting;
@@ -248,8 +249,26 @@ internal static class GridFitter
     /// <summary>Moves every point: placed edges by their own shift, the rest through the map.</summary>
     private static GlyphOutline Apply(OutlineCommand[] commands, List<Edge> edges, List<(int Alias, int Canonical)> aliases, KeyMap keys)
     {
-        var y = new float[commands.Length * 3];
-        var placed = new bool[y.Length];
+        // Scratch is pooled; only the fitted commands are kept.
+        int slotCount = commands.Length * 3;
+        float[] yBuffer = ArrayPool<float>.Shared.Rent(slotCount);
+        bool[] placedBuffer = ArrayPool<bool>.Shared.Rent(slotCount);
+        try
+        {
+            return Apply(commands, edges, aliases, keys, yBuffer.AsSpan(0, slotCount), placedBuffer.AsSpan(0, slotCount));
+        }
+        finally
+        {
+            ArrayPool<float>.Shared.Return(yBuffer);
+            ArrayPool<bool>.Shared.Return(placedBuffer);
+        }
+    }
+
+    private static GlyphOutline Apply(
+        OutlineCommand[] commands, List<Edge> edges, List<(int Alias, int Canonical)> aliases, KeyMap keys, Span<float> y, Span<bool> placed)
+    {
+        // Every slot is written below before it is read; placed must start false.
+        placed.Clear();
 
         foreach (var edge in edges)
         {
@@ -706,40 +725,50 @@ internal static class GridFitter
                     return false;
             }
 
-            var from = new List<float>(_from);
-            var to = new List<float>(_to);
-            var zones = new List<bool>(_zone);
-
+            // Inserted in place and taken out again on rejection, newest first, so a refused
+            // placement leaves the map exactly as it was.
+            Span<int> inserted = stackalloc int[keys.Length];
+            int insertedCount = 0;
+            bool accepted = true;
             foreach (var (f, t) in keys)
             {
-                int index = from.BinarySearch(f);
+                int index = _from.BinarySearch(f);
                 if (index >= 0)
                 {
                     // The same height placed twice must agree.
-                    if (MathF.Abs(to[index] - t) > 1e-4f)
-                        return false;
+                    if (MathF.Abs(_to[index] - t) > 1e-4f)
+                    {
+                        accepted = false;
+                        break;
+                    }
+
                     continue;
                 }
 
-                from.Insert(~index, f);
-                to.Insert(~index, t);
-                zones.Insert(~index, zone);
+                _from.Insert(~index, f);
+                _to.Insert(~index, t);
+                _zone.Insert(~index, zone);
+                inserted[insertedCount++] = ~index;
             }
 
-            for (int i = 1; i < from.Count; i++)
+            for (int i = 1; accepted && i < _from.Count; i++)
             {
-                float minimum = zones[i] && zones[i - 1] ? 0f : 0.5f * MathF.Min(from[i] - from[i - 1], 1f);
-                if (to[i] - to[i - 1] < minimum)
-                    return false;
+                float minimum = _zone[i] && _zone[i - 1] ? 0f : 0.5f * MathF.Min(_from[i] - _from[i - 1], 1f);
+                if (_to[i] - _to[i - 1] < minimum)
+                    accepted = false;
             }
 
-            _from.Clear();
-            _from.AddRange(from);
-            _to.Clear();
-            _to.AddRange(to);
-            _zone.Clear();
-            _zone.AddRange(zones);
-            return true;
+            if (!accepted)
+            {
+                for (int k = insertedCount - 1; k >= 0; k--)
+                {
+                    _from.RemoveAt(inserted[k]);
+                    _to.RemoveAt(inserted[k]);
+                    _zone.RemoveAt(inserted[k]);
+                }
+            }
+
+            return accepted;
         }
     }
 }
