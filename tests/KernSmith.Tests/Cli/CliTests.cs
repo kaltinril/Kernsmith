@@ -627,15 +627,30 @@ public class CliTests : IDisposable
     }
 
     [Fact]
-    public void Generate_UnknownNamedInstance_FailsListingTheNames()
+    public void Generate_UnknownNamedInstance_IsAGenerationErrorListingTheNames()
     {
+        // Which instances exist depends on the font's fvar table, so an unknown name is an option
+        // this font rejects -- exit 4 like a --color-palette the font lacks, not 1 (bad arguments).
         var (exitCode, _, stderr) = RunCli(
             "generate", "-f", RobotoFlexPath, "-s", "32", "--chars", "A", "-o", Path.Combine(_tempDir, "x"),
-            "--rasterizer", "native", "--instance", "Bogus");
+            "--rasterizer", "native", "--instance", "Bogus", "--no-color");
 
-        exitCode.ShouldBe(1);
+        exitCode.ShouldBe(4, $"stderr: {stderr}");
+        stderr.ShouldContain("Generation error", Case.Sensitive);
         stderr.ShouldContain("Bogus", Case.Sensitive);
         stderr.ShouldContain("Black", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_NamedInstanceOnAStaticFont_IsAGenerationError()
+    {
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "32", "--chars", "A", "-o", Path.Combine(_tempDir, "x"),
+            "--rasterizer", "native", "--instance", "Black", "--no-color");
+
+        exitCode.ShouldBe(4, $"stderr: {stderr}");
+        stderr.ShouldContain("Generation error", Case.Sensitive);
+        stderr.ShouldContain("no named instances", Case.Sensitive);
     }
 
     [Fact]
