@@ -95,6 +95,7 @@ public class FontConfigPanel : Panel
             fontFileExpander.AddContent(sourceRow);
 
             var browseRadio = new RadioButton();
+            browseRadio.Visual.Name = "BrowseFileRadio";
             browseRadio.Text = "Browse File";
             browseRadio.IsChecked = true;
             browseRadio.Visual.YOrigin = global::RenderingLibrary.Graphics.VerticalAlignment.Center;
@@ -103,6 +104,7 @@ public class FontConfigPanel : Panel
             sourceRow.AddChild(browseRadio);
 
             var systemRadio = new RadioButton();
+            systemRadio.Visual.Name = "SystemFontRadio";
             systemRadio.Text = "System Font";
             systemRadio.Visual.YOrigin = global::RenderingLibrary.Graphics.VerticalAlignment.Center;
             systemRadio.Visual.Y = 0;
@@ -150,6 +152,7 @@ public class FontConfigPanel : Panel
             };
 
             var faceCombo = new ComboBox();
+            faceCombo.Visual.Name = nameof(FontConfigViewModel.FaceIndex);
             //faceCombo.VisualTemplate = NoWrapItemTemplate;
             faceCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
             faceCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -157,24 +160,39 @@ public class FontConfigPanel : Panel
             var faceRow = fontGrid.AddRow("Face:", faceCombo);
             faceRow.Visible = false;
 
-            _fontConfig.PropertyChanged += (_, e) =>
+            // Lists the collection's faces and selects FaceIndex (e.g. a loaded project's face)
+            // without reloading the font through SelectionChanged.
+            var updatingFaceCombo = false;
+            void ShowFaces()
             {
-                if (e.PropertyName == nameof(FontConfigViewModel.IsFontCollection))
+                faceRow.Visible = _fontConfig.IsFontCollection;
+                if (!_fontConfig.IsFontCollection) return;
+                updatingFaceCombo = true;
+                try
                 {
-                    faceRow.Visible = _fontConfig.IsFontCollection;
-                    if (_fontConfig.IsFontCollection)
+                    if (faceCombo.Items!.Count != _fontConfig.FaceCount)
                     {
-                        faceCombo.Items!.Clear();
+                        faceCombo.Items.Clear();
                         for (int i = 0; i < _fontConfig.FaceCount; i++)
                             faceCombo.Items.Add($"Face {i}");
-                        faceCombo.SelectedIndex = 0;
                     }
+                    if (_fontConfig.FaceIndex >= 0 && _fontConfig.FaceIndex < faceCombo.Items.Count)
+                        faceCombo.SelectedIndex = _fontConfig.FaceIndex;
                 }
+                finally { updatingFaceCombo = false; }
+            }
+
+            _fontConfig.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is nameof(FontConfigViewModel.IsFontCollection)
+                    or nameof(FontConfigViewModel.FaceCount)
+                    or nameof(FontConfigViewModel.FaceIndex))
+                    ShowFaces();
             };
 
             faceCombo.SelectionChanged += (_, _) =>
             {
-                if (faceCombo.SelectedIndex >= 0 && _fontConfig.IsFontCollection)
+                if (!updatingFaceCombo && faceCombo.SelectedIndex >= 0 && _fontConfig.IsFontCollection)
                     _fontConfig.ReloadWithFaceIndex(faceCombo.SelectedIndex);
             };
 
@@ -231,6 +249,15 @@ public class FontConfigPanel : Panel
                 browseBtn.IsVisible = false;
                 fontRow.Visible = true;
             };
+            // Follow the source of a font loaded from code (e.g. a project's font file).
+            _fontConfig.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName != nameof(FontConfigViewModel.FontSourceKind)) return;
+                if (_fontConfig.FontSourceKind == Models.FontSourceKind.File)
+                    browseRadio.IsChecked = true;
+                else if (_fontConfig.FontSourceKind == Models.FontSourceKind.System)
+                    systemRadio.IsChecked = true;
+            };
 
             // --- Always-visible font info rows ---
             var glyphCount = new Label();
@@ -271,10 +298,12 @@ public class FontConfigPanel : Panel
             var sizeGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
 
             var sizeTextBox = CreateFontSizeBox(_fontConfig);
+            sizeTextBox.Visual.Name = nameof(FontConfigViewModel.FontSize);
             sizeGrid.AddRow("Size (pt):", sizeTextBox);
             TooltipService.SetTooltip(sizeTextBox, "Font size in points (4-500)");
 
             _rasterizerCombo = new ComboBox();
+            _rasterizerCombo.Visual.Name = nameof(FontConfigViewModel.SelectedBackend);
             //_rasterizerCombo.VisualTemplate = NoWrapItemTemplate;
             _rasterizerCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
             _rasterizerCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -394,6 +423,7 @@ public class FontConfigPanel : Panel
         expander.AddContent(atlasChecksGrid);
 
         var forceSizeCheck = new CheckBox();
+        forceSizeCheck.Visual.Name = nameof(AtlasConfigViewModel.AutofitTexture);
         forceSizeCheck.Text = "";
         forceSizeCheck.IsChecked = !_atlasConfig.AutofitTexture;
         TooltipService.SetTooltip(forceSizeCheck, "Use exact atlas dimensions instead of auto-fitting");
@@ -408,6 +438,7 @@ public class FontConfigPanel : Panel
         sizeControlRow.Spacing = Theme.ControlSpacing;
 
         var maxWidthCombo = new ComboBox();
+        maxWidthCombo.Visual.Name = nameof(AtlasConfigViewModel.MaxWidth);
         //maxWidthCombo.VisualTemplate = NoWrapItemTemplate;
         maxWidthCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         maxWidthCombo.Width = 80;
@@ -426,6 +457,7 @@ public class FontConfigPanel : Panel
         sizeControlRow.AddChild(xLabel);
 
         var maxHeightCombo = new ComboBox();
+        maxHeightCombo.Visual.Name = nameof(AtlasConfigViewModel.MaxHeight);
         //maxHeightCombo.VisualTemplate = NoWrapItemTemplate;
         maxHeightCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         maxHeightCombo.Width = 80;
@@ -464,6 +496,7 @@ public class FontConfigPanel : Panel
         var atlasGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
 
         var packAlgoCombo = new ComboBox();
+        packAlgoCombo.Visual.Name = nameof(AtlasConfigViewModel.PackingAlgorithmIndex);
         //packAlgoCombo.VisualTemplate = NoWrapItemTemplate;
         packAlgoCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         packAlgoCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -518,6 +551,7 @@ public class FontConfigPanel : Panel
         var padLeftSpacer = new Label(); padLeftSpacer.Text = ""; padLeftSpacer.Height = 24;
         padColLeft.AddChild(padLeftSpacer);
         var padLeftBox = CreateSmallIntBox(_atlasConfig.PaddingLeft, v => { if (!updatingFromVm) _atlasConfig.PaddingLeft = Math.Clamp(v, 0, 32); });
+        padLeftBox.Visual.Name = nameof(AtlasConfigViewModel.PaddingLeft);
         padColLeft.AddChild(padLeftBox);
         var padLeftSpacer2 = new Label(); padLeftSpacer2.Text = ""; padLeftSpacer2.Height = 24;
         padColLeft.AddChild(padLeftSpacer2);
@@ -527,10 +561,12 @@ public class FontConfigPanel : Panel
         var padColCenter = new StackPanel();
         padColCenter.Spacing = 2;
         var padUpBox = CreateSmallIntBox(_atlasConfig.PaddingUp, v => { if (!updatingFromVm) _atlasConfig.PaddingUp = Math.Clamp(v, 0, 32); });
+        padUpBox.Visual.Name = nameof(AtlasConfigViewModel.PaddingUp);
         padColCenter.AddChild(padUpBox);
         var padCenterLabel = new Label(); padCenterLabel.Text = "Aa";
         padColCenter.AddChild(padCenterLabel);
         var padDownBox = CreateSmallIntBox(_atlasConfig.PaddingDown, v => { if (!updatingFromVm) _atlasConfig.PaddingDown = Math.Clamp(v, 0, 32); });
+        padDownBox.Visual.Name = nameof(AtlasConfigViewModel.PaddingDown);
         padColCenter.AddChild(padDownBox);
         padCross.AddChild(padColCenter);
 
@@ -540,6 +576,7 @@ public class FontConfigPanel : Panel
         var padRightSpacer = new Label(); padRightSpacer.Text = ""; padRightSpacer.Height = 24;
         padColRight.AddChild(padRightSpacer);
         var padRightBox = CreateSmallIntBox(_atlasConfig.PaddingRight, v => { if (!updatingFromVm) _atlasConfig.PaddingRight = Math.Clamp(v, 0, 32); });
+        padRightBox.Visual.Name = nameof(AtlasConfigViewModel.PaddingRight);
         padColRight.AddChild(padRightBox);
         var padRightSpacer2 = new Label(); padRightSpacer2.Text = ""; padRightSpacer2.Height = 24;
         padColRight.AddChild(padRightSpacer2);
@@ -570,6 +607,7 @@ public class FontConfigPanel : Panel
         spcHLabel.Visual.YUnits = global::Gum.Converters.GeneralUnitType.PixelsFromMiddle;
         hRow.AddChild(spcHLabel);
         var spacingHBox = CreateSmallIntBox(_atlasConfig.SpacingH, v => { if (!updatingFromVm) _atlasConfig.SpacingH = Math.Clamp(v, 0, 32); });
+        spacingHBox.Visual.Name = nameof(AtlasConfigViewModel.SpacingH);
         hRow.AddChild(spacingHBox);
 
         var vRow = new StackPanel();
@@ -583,6 +621,7 @@ public class FontConfigPanel : Panel
         spcVLabel.Visual.YUnits = global::Gum.Converters.GeneralUnitType.PixelsFromMiddle;
         vRow.AddChild(spcVLabel);
         var spacingVBox = CreateSmallIntBox(_atlasConfig.SpacingV, v => { if (!updatingFromVm) _atlasConfig.SpacingV = Math.Clamp(v, 0, 32); });
+        spacingVBox.Visual.Name = nameof(AtlasConfigViewModel.SpacingV);
         vRow.AddChild(spacingVBox);
 
         // Sync UI from ViewModel when preset is applied
@@ -625,6 +664,7 @@ public class FontConfigPanel : Panel
 
         var formats = new[] { ("Text", OutputFormat.Text), ("XML", OutputFormat.Xml), ("Binary", OutputFormat.Binary) };
         var formatCombo = new ComboBox();
+        formatCombo.Visual.Name = nameof(AtlasConfigViewModel.DescriptorFormat);
         //formatCombo.VisualTemplate = NoWrapItemTemplate;
         formatCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         formatCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -641,6 +681,7 @@ public class FontConfigPanel : Panel
         TooltipService.SetTooltip(formatCombo, "Output format: Text, XML, or Binary");
 
         var kerningCb = new CheckBox();
+        kerningCb.Visual.Name = nameof(AtlasConfigViewModel.IncludeKerning);
         kerningCb.Text = "";
         kerningCb.IsChecked = _atlasConfig.IncludeKerning;
         TooltipService.SetTooltip(kerningCb, "Include kerning pairs for better spacing");

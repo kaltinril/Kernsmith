@@ -83,20 +83,21 @@ public class EffectsPanel : Panel
         styleRow.Children.Add(leftCol);
 
         var boldCheck = new CheckBox();
+        boldCheck.Visual.Name = nameof(EffectsViewModel.Bold);
         boldCheck.Text = "Bold";
         leftCol.Children.Add(boldCheck.Visual);
         TooltipService.SetTooltip(boldCheck, "Use the native bold face if available, otherwise apply synthetic emboldening");
 
         var italicCheck = new CheckBox();
+        italicCheck.Visual.Name = nameof(EffectsViewModel.Italic);
         italicCheck.Text = "Italic";
         leftCol.Children.Add(italicCheck.Visual);
         TooltipService.SetTooltip(italicCheck, "Use the native italic face if available, otherwise apply synthetic oblique");
 
         var hintCheck = new CheckBox();
         hintCheck.Text = "Hinting";
-        hintCheck.IsChecked = true;
-        hintCheck.Checked += (_, _) => _effects.Hinting = true;
-        hintCheck.Unchecked += (_, _) => _effects.Hinting = false;
+        UiFactory.BindCheckBox(hintCheck, _effects, nameof(EffectsViewModel.Hinting),
+            () => _effects.Hinting, v => _effects.Hinting = v);
         leftCol.Children.Add(hintCheck.Visual);
         TooltipService.SetTooltip(hintCheck, "Font hinting for sharper small sizes. The Native backend hints only in Light anti-alias mode (its own vertical auto-hinter).");
 
@@ -111,12 +112,14 @@ public class EffectsPanel : Panel
         styleRow.Children.Add(rightCol);
 
         var synBoldCheck = new CheckBox();
+        synBoldCheck.Visual.Name = nameof(EffectsViewModel.ForceSyntheticBold);
         synBoldCheck.Text = "Synthetic";
         synBoldCheck.IsEnabled = false;
         rightCol.Children.Add(synBoldCheck.Visual);
         TooltipService.SetTooltip(synBoldCheck, "Force synthetic bold, skip native face lookup");
 
         var synItalicCheck = new CheckBox();
+        synItalicCheck.Visual.Name = nameof(EffectsViewModel.ForceSyntheticItalic);
         synItalicCheck.Text = "Synthetic";
         synItalicCheck.IsEnabled = false;
         rightCol.Children.Add(synItalicCheck.Visual);
@@ -251,6 +254,37 @@ public class EffectsPanel : Panel
             }
         };
 
+        // Show style flags set from code (e.g. Load Project). The guard keeps the click handlers
+        // below from writing them back.
+        void ShowStyleChecks()
+        {
+            updatingSyntheticChecks = true;
+            try
+            {
+                boldCheck.IsChecked = _effects.Bold;
+                italicCheck.IsChecked = _effects.Italic;
+                synBoldCheck.IsChecked = _effects.ForceSyntheticBold;
+                synItalicCheck.IsChecked = _effects.ForceSyntheticItalic;
+            }
+            finally { updatingSyntheticChecks = false; }
+        }
+        _effects.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(EffectsViewModel.ForceSyntheticBold) or nameof(EffectsViewModel.ForceSyntheticItalic))
+                ShowStyleChecks();
+            if (e.PropertyName is nameof(EffectsViewModel.Bold))
+            {
+                ShowStyleChecks();
+                UpdateSynBoldState();
+            }
+            if (e.PropertyName is nameof(EffectsViewModel.Italic))
+            {
+                ShowStyleChecks();
+                UpdateSynItalicState();
+            }
+        };
+        ShowStyleChecks();
+
         // Synthetic bold: when checked, auto-check Bold (synthetic implies bold)
         synBoldCheck.Checked += (_, _) =>
         {
@@ -295,21 +329,34 @@ public class EffectsPanel : Panel
 
         var ssLevels = new[] { 1, 2, 4 };
         var ssCombo = new ComboBox();
+        ssCombo.Visual.Name = nameof(EffectsViewModel.SuperSampleLevel);
         ssCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         ssCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
         ssCombo.Visual.Width = 0;
         foreach (var level in ssLevels) ssCombo.Items!.Add($"{level}x");
-        ssCombo.SelectedIndex = 0;
+        var updatingSsCombo = false;
+        void ShowSuperSample()
+        {
+            updatingSsCombo = true;
+            try { ssCombo.SelectedIndex = Math.Max(0, Array.IndexOf(ssLevels, _effects.SuperSampleLevel)); }
+            finally { updatingSsCombo = false; }
+        }
         ssCombo.SelectionChanged += (_, _) =>
         {
-            if (ssCombo.SelectedIndex >= 0)
+            if (!updatingSsCombo && ssCombo.SelectedIndex >= 0)
                 _effects.SuperSampleLevel = ssLevels[ssCombo.SelectedIndex];
         };
+        _effects.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(EffectsViewModel.SuperSampleLevel)) ShowSuperSample();
+        };
+        ShowSuperSample();
         ssGrid.AddRow("Super Sample:", ssCombo);
         TooltipService.SetTooltip(ssCombo, "Render at higher resolution then downscale for smoother edges. Higher values improve quality but increase generation time.");
 
         // Anti-alias mode: only the modes the selected backend advertises are offered.
         var aaCombo = new ComboBox();
+        aaCombo.Visual.Name = nameof(EffectsViewModel.AntiAlias);
         aaCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         aaCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
         aaCombo.Visual.Width = 0;
@@ -357,6 +404,7 @@ public class EffectsPanel : Panel
             [LcdFilter.Default, LcdFilter.Light, LcdFilter.Smooth, LcdFilter.None],
             v => v.ToString(), () => _effects.LcdFilter, v => _effects.LcdFilter = v,
             nameof(EffectsViewModel.LcdFilter));
+        lcdFilterCombo.Visual.Name = nameof(EffectsViewModel.LcdFilter);
         ssGrid.AddRow("LCD Filter:", lcdFilterCombo);
         TooltipService.SetTooltip(lcdFilterCombo, "LCD mode only. Low-pass filter across the subpixels: Default (Native: Light), Light, Smooth (fewer color fringes, softer), None (sharpest, strongest fringes). Honored by Native; other backends ignore it.");
 
@@ -370,6 +418,7 @@ public class EffectsPanel : Panel
             },
             () => _effects.LcdSubpixelOrder, v => _effects.LcdSubpixelOrder = v,
             nameof(EffectsViewModel.LcdSubpixelOrder));
+        lcdOrderCombo.Visual.Name = nameof(EffectsViewModel.LcdSubpixelOrder);
         ssGrid.AddRow("LCD Order:", lcdOrderCombo);
         TooltipService.SetTooltip(lcdOrderCombo, "LCD mode only. The display's subpixel layout: RGB/BGR run left to right, V-RGB/V-BGR top to bottom. Honored by Native; other backends ignore it.");
 
@@ -388,6 +437,7 @@ public class EffectsPanel : Panel
             text => int.TryParse(text, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var v)
                 && v is >= 10 and <= 1000 ? v : null,
             v => _effects.WidthPercent = (int)v);
+        widthBox.Box.Visual.Name = nameof(EffectsViewModel.WidthPercent);
         ssGrid.AddRow("Width %:", widthBox.Box);
         TooltipService.SetTooltip(widthBox.Box, "Synthetic condensed/expanded width, 10-1000 (100 = normal). Scales glyphs, advances and kerning. Native only; other backends use 100.");
 
@@ -396,6 +446,7 @@ public class EffectsPanel : Panel
             text => float.TryParse(text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v)
                 && float.IsFinite(v) && Math.Abs(v) <= 60f ? v : null,
             v => _effects.ItalicAngle = (float)v);
+        angleBox.Box.Visual.Name = nameof(EffectsViewModel.ItalicAngle);
         ssGrid.AddRow("Italic Angle:", angleBox.Box);
         TooltipService.SetTooltip(angleBox.Box, "Slant of synthetic italic in degrees, -60 to 60 (12 = default; positive leans right). Used only when synthetic italic is applied (Italic on a non-italic face, or Synthetic). Native only; other backends use 12.");
 
@@ -501,7 +552,7 @@ public class EffectsPanel : Panel
         expander.AddContent(fillColorContent);
 
         UiFactory.AddColorRow(_graphicsDevice, fillColorContent, "Fill:",
-            _effects.FillColor, hex => _effects.FillColor = hex,
+            _effects, nameof(EffectsViewModel.FillColor), () => _effects.FillColor, hex => _effects.FillColor = hex,
             "Base glyph color before outline/shadow/gradient. Default white.");
 
         // --- Outline ---
@@ -523,13 +574,18 @@ public class EffectsPanel : Panel
         outlineContent.Visible = false;
         expander.AddContent(outlineContent);
 
-        outlineCheck.Checked += (_, _) => { outlineContent.Visible = true; _effects.OutlineEnabled = true; };
-        outlineCheck.Unchecked += (_, _) => { outlineContent.Visible = false; _effects.OutlineEnabled = false; };
+        UiFactory.BindCheckBox(outlineCheck, _effects, nameof(EffectsViewModel.OutlineEnabled),
+            () => _effects.OutlineEnabled, v => _effects.OutlineEnabled = v);
+        outlineContent.Visible = _effects.OutlineEnabled;
+        _effects.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(EffectsViewModel.OutlineEnabled)) outlineContent.Visible = _effects.OutlineEnabled;
+        };
 
-        UiFactory.AddSliderRow(outlineContent, "Width:", 1, 10, 1,
-            val => _effects.OutlineWidth = val);
+        UiFactory.AddSliderRow(outlineContent, "Width:", 1, 10,
+            _effects, nameof(EffectsViewModel.OutlineWidth), () => _effects.OutlineWidth, val => _effects.OutlineWidth = val);
         UiFactory.AddColorRow(_graphicsDevice, outlineContent, "Color:",
-            _effects.OutlineColor, hex => _effects.OutlineColor = hex);
+            _effects, nameof(EffectsViewModel.OutlineColor), () => _effects.OutlineColor, hex => _effects.OutlineColor = hex);
 
         var shapeGrid = new Grid();
         shapeGrid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -547,6 +603,7 @@ public class EffectsPanel : Panel
 
         var outlineShapes = new[] { OutlineShape.Round, OutlineShape.Square, OutlineShape.Plus };
         var shapeCombo = new ComboBox();
+        shapeCombo.Visual.Name = nameof(EffectsViewModel.OutlineShape);
         shapeCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         shapeCombo.Width = 100;
         foreach (var shape in outlineShapes) shapeCombo.Items!.Add(shape.ToString());
@@ -587,6 +644,7 @@ public class EffectsPanel : Panel
 
         var outlineModes = new[] { OutlineMode.Effect, OutlineMode.Vector };
         var modeCombo = new ComboBox();
+        modeCombo.Visual.Name = nameof(EffectsViewModel.OutlineMode);
         modeCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         modeCombo.Width = 100;
         foreach (var mode in outlineModes) modeCombo.Items!.Add(mode.ToString());
@@ -638,24 +696,29 @@ public class EffectsPanel : Panel
         shadowContent.Visible = false;
         expander.AddContent(shadowContent);
 
-        shadowCheck.Checked += (_, _) => { shadowContent.Visible = true; _effects.ShadowEnabled = true; };
-        shadowCheck.Unchecked += (_, _) => { shadowContent.Visible = false; _effects.ShadowEnabled = false; };
+        UiFactory.BindCheckBox(shadowCheck, _effects, nameof(EffectsViewModel.ShadowEnabled),
+            () => _effects.ShadowEnabled, v => _effects.ShadowEnabled = v);
+        shadowContent.Visible = _effects.ShadowEnabled;
+        _effects.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(EffectsViewModel.ShadowEnabled)) shadowContent.Visible = _effects.ShadowEnabled;
+        };
 
-        UiFactory.AddSliderRow(shadowContent, "Offset X:", -10, 10, 2,
-            val => _effects.ShadowOffsetX = val);
-        UiFactory.AddSliderRow(shadowContent, "Offset Y:", -10, 10, 2,
-            val => _effects.ShadowOffsetY = val);
-        UiFactory.AddSliderRow(shadowContent, "Blur:", 0, 10, 0,
-            val => _effects.ShadowBlur = val);
+        UiFactory.AddSliderRow(shadowContent, "Offset X:", -10, 10,
+            _effects, nameof(EffectsViewModel.ShadowOffsetX), () => _effects.ShadowOffsetX, val => _effects.ShadowOffsetX = val);
+        UiFactory.AddSliderRow(shadowContent, "Offset Y:", -10, 10,
+            _effects, nameof(EffectsViewModel.ShadowOffsetY), () => _effects.ShadowOffsetY, val => _effects.ShadowOffsetY = val);
+        UiFactory.AddSliderRow(shadowContent, "Blur:", 0, 10,
+            _effects, nameof(EffectsViewModel.ShadowBlur), () => _effects.ShadowBlur, val => _effects.ShadowBlur = val);
         UiFactory.AddColorRow(_graphicsDevice, shadowContent, "Color:",
-            _effects.ShadowColor, hex => _effects.ShadowColor = hex);
-        UiFactory.AddSliderRow(shadowContent, "Opacity:", 0, 100, 100,
-            val => _effects.ShadowOpacity = val);
-        var shadowKernelSlider = UiFactory.AddSliderRow(shadowContent, "Blur Kernel:", 0, 10, 0,
-            val => _effects.ShadowBlurKernelSize = val);
+            _effects, nameof(EffectsViewModel.ShadowColor), () => _effects.ShadowColor, hex => _effects.ShadowColor = hex);
+        UiFactory.AddSliderRow(shadowContent, "Opacity:", 0, 100,
+            _effects, nameof(EffectsViewModel.ShadowOpacity), () => _effects.ShadowOpacity, val => _effects.ShadowOpacity = val);
+        var shadowKernelSlider = UiFactory.AddSliderRow(shadowContent, "Blur Kernel:", 0, 10,
+            _effects, nameof(EffectsViewModel.ShadowBlurKernelSize), () => _effects.ShadowBlurKernelSize, val => _effects.ShadowBlurKernelSize = val);
         TooltipService.SetTooltip(shadowKernelSlider, "Extra blur kernel size on top of Blur; 0 = none, higher = softer.");
-        var shadowPassesSlider = UiFactory.AddSliderRow(shadowContent, "Blur Passes:", 1, 10, 1,
-            val => _effects.ShadowBlurPasses = val);
+        var shadowPassesSlider = UiFactory.AddSliderRow(shadowContent, "Blur Passes:", 1, 10,
+            _effects, nameof(EffectsViewModel.ShadowBlurPasses), () => _effects.ShadowBlurPasses, val => _effects.ShadowBlurPasses = val);
         TooltipService.SetTooltip(shadowPassesSlider, "How many times the blur is applied; more passes = softer, wider shadow.");
 
         var shadowChecksGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
@@ -663,10 +726,9 @@ public class EffectsPanel : Panel
 
         var hardShadowCheck = new CheckBox();
         hardShadowCheck.Text = "";
-        hardShadowCheck.IsChecked = _effects.HardShadow;
         TooltipService.SetTooltip(hardShadowCheck, "Use a crisp silhouette instead of soft antialiased edges");
-        hardShadowCheck.Checked += (_, _) => _effects.HardShadow = true;
-        hardShadowCheck.Unchecked += (_, _) => _effects.HardShadow = false;
+        UiFactory.BindCheckBox(hardShadowCheck, _effects, nameof(EffectsViewModel.HardShadow),
+            () => _effects.HardShadow, v => _effects.HardShadow = v);
         shadowChecksGrid.AddRow("Hard Shadow:", hardShadowCheck);
 
         // --- Gradient ---
@@ -688,15 +750,20 @@ public class EffectsPanel : Panel
         gradientContent.Visible = false;
         expander.AddContent(gradientContent);
 
-        gradientCheck.Checked += (_, _) => { gradientContent.Visible = true; _effects.GradientEnabled = true; };
-        gradientCheck.Unchecked += (_, _) => { gradientContent.Visible = false; _effects.GradientEnabled = false; };
+        UiFactory.BindCheckBox(gradientCheck, _effects, nameof(EffectsViewModel.GradientEnabled),
+            () => _effects.GradientEnabled, v => _effects.GradientEnabled = v);
+        gradientContent.Visible = _effects.GradientEnabled;
+        _effects.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(EffectsViewModel.GradientEnabled)) gradientContent.Visible = _effects.GradientEnabled;
+        };
 
         UiFactory.AddColorRow(_graphicsDevice, gradientContent, "Start:",
-            _effects.GradientStartColor, hex => _effects.GradientStartColor = hex);
+            _effects, nameof(EffectsViewModel.GradientStartColor), () => _effects.GradientStartColor, hex => _effects.GradientStartColor = hex);
         UiFactory.AddColorRow(_graphicsDevice, gradientContent, "End:",
-            _effects.GradientEndColor, hex => _effects.GradientEndColor = hex);
-        UiFactory.AddSliderRow(gradientContent, "Angle:", 0, 360, 90,
-            val => _effects.GradientAngle = val);
+            _effects, nameof(EffectsViewModel.GradientEndColor), () => _effects.GradientEndColor, hex => _effects.GradientEndColor = hex);
+        UiFactory.AddSliderRow(gradientContent, "Angle:", 0, 360,
+            _effects, nameof(EffectsViewModel.GradientAngle), () => _effects.GradientAngle, val => _effects.GradientAngle = val);
         var gradientOffsetBox = UiFactory.AddFloatBoxRow(gradientContent, "Offset:",
             _effects, nameof(EffectsViewModel.GradientOffset),
             () => _effects.GradientOffset, val => _effects.GradientOffset = val);
@@ -711,9 +778,8 @@ public class EffectsPanel : Panel
 
         var gradientCyclicCheck = new CheckBox();
         gradientCyclicCheck.Text = "";
-        gradientCyclicCheck.IsChecked = _effects.GradientCyclic;
-        gradientCyclicCheck.Checked += (_, _) => _effects.GradientCyclic = true;
-        gradientCyclicCheck.Unchecked += (_, _) => _effects.GradientCyclic = false;
+        UiFactory.BindCheckBox(gradientCyclicCheck, _effects, nameof(EffectsViewModel.GradientCyclic),
+            () => _effects.GradientCyclic, v => _effects.GradientCyclic = v);
         gradientChecksGrid.AddRow("Cyclic:", gradientCyclicCheck);
         TooltipService.SetTooltip(gradientCyclicCheck, "Repeat the gradient instead of clamping at the ends.");
 
@@ -744,8 +810,14 @@ public class EffectsPanel : Panel
 
         var packingCheck = new CheckBox();
         packingCheck.Text = "";
-        packingCheck.Checked += (_, _) => _effects.ChannelPackingEnabled = true;
-        packingCheck.Unchecked += (_, _) => _effects.ChannelPackingEnabled = false;
+        UiFactory.BindCheckBox(packingCheck, _effects, nameof(EffectsViewModel.ChannelPackingEnabled),
+            () => _effects.ChannelPackingEnabled, v => _effects.ChannelPackingEnabled = v);
+        // Open the Channels section when packing is turned on from code (e.g. Load Project).
+        _effects.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(EffectsViewModel.ChannelPackingEnabled) && _effects.ChannelPackingEnabled)
+                channelsCheck.IsChecked = true;
+        };
         channelsChecksGrid.AddRow("Channel Packing:", packingCheck);
     }
 
@@ -759,6 +831,7 @@ public class EffectsPanel : Panel
 
         // Distance field mode: SDF needs SupportsSdf, MSDF/MTSDF need SupportsMsdf (Native only).
         var sdfCombo = new ComboBox();
+        sdfCombo.Visual.Name = nameof(EffectsViewModel.SdfMode);
         sdfCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
         sdfCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
         sdfCombo.Visual.Width = 0;
@@ -812,28 +885,24 @@ public class EffectsPanel : Panel
         sdfSpreadContent.StackSpacing = 4;
         expander.AddContent(sdfSpreadContent);
 
-        var sdfSpreadSlider = UiFactory.AddFloatSliderRow(sdfSpreadContent, "SDF Spread:", 2f, 32f, 8f, 1,
-            val => _effects.SdfSpread = val);
+        var sdfSpreadSlider = UiFactory.AddFloatSliderRow(sdfSpreadContent, "SDF Spread:", 2f, 32f, 1,
+            _effects, nameof(EffectsViewModel.SdfSpread), () => _effects.SdfSpread, val => _effects.SdfSpread = val);
         TooltipService.SetTooltip(sdfSpreadSlider, "How far the distance field reaches from each edge (pixels). 8 = default; larger = thicker SDF range.");
 
-        var sdfScaleSlider = UiFactory.AddSliderRow(sdfSpreadContent, "SDF Scale:", 1, 4, _effects.SdfScale,
-            val => _effects.SdfScale = val);
+        var sdfScaleSlider = UiFactory.AddSliderRow(sdfSpreadContent, "SDF Scale:", 1, 4,
+            _effects, nameof(EffectsViewModel.SdfScale), () => _effects.SdfScale, val => _effects.SdfScale = val);
         TooltipService.SetTooltip(sdfScaleSlider, "Distance-field supersampling: renders the field at 1-4x size for finer precision, then scales it down. 1 = default. Any backend with SDF; also saved to .hiero.");
-        _effects.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName is nameof(EffectsViewModel.SdfScale) && (int)sdfScaleSlider.Value != _effects.SdfScale)
-                sdfScaleSlider.Value = _effects.SdfScale;
-        };
 
         var colorCheck = new CheckBox();
         colorCheck.Text = "";
         colorCheck.IsEnabled = _effects.HasColorGlyphs && _effects.BackendSupportsColorFonts;
-        colorCheck.Checked += (_, _) => _effects.ColorFontEnabled = true;
-        colorCheck.Unchecked += (_, _) => _effects.ColorFontEnabled = false;
+        UiFactory.BindCheckBox(colorCheck, _effects, nameof(EffectsViewModel.ColorFontEnabled),
+            () => _effects.ColorFontEnabled, v => _effects.ColorFontEnabled = v);
         advancedGrid.AddRow("Color Font:", colorCheck);
         TooltipService.SetTooltip(colorCheck, "Render color glyphs. Needs a backend with color support and a font with color tables: FreeType renders COLR/CPAL and CBDT/CBLC (emoji); Native renders COLR v0/v1, CBDT/CBLC and sbix.");
 
         var paletteBox = new TextBox();
+        paletteBox.Visual.Name = nameof(EffectsViewModel.ColorPaletteIndex);
         paletteBox.Width = 36;
         paletteBox.Text = _effects.ColorPaletteIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
         paletteBox.IsEnabled = _effects.ColorFontEnabled;
@@ -862,12 +931,9 @@ public class EffectsPanel : Panel
         gammaContent.StackSpacing = 4;
         expander.AddContent(gammaContent);
 
-        var gammaSlider = UiFactory.AddFloatSliderRow(gammaContent, "Gamma:", 1.0f, 3.0f, 1.8f, 10,
-            val => _effects.Gamma = val);
+        var gammaSlider = UiFactory.AddFloatSliderRow(gammaContent, "Gamma:", 1.0f, 3.0f, 10,
+            _effects, nameof(EffectsViewModel.Gamma), () => _effects.Gamma, val => _effects.Gamma = val);
         TooltipService.SetTooltip(gammaSlider, "Lighten/darken glyph edges; 1.8 = default, higher = darker.");
-
-        // Track whether we are programmatically updating checkboxes to avoid recursive loops
-        bool updatingColorCheck = false;
 
         // Wire up validation, SDF auto-disable, color/gradient mutual exclusion, and backend capability gating
         _effects.PropertyChanged += (_, e) =>
@@ -933,12 +999,6 @@ public class EffectsPanel : Panel
             else if (e.PropertyName == nameof(EffectsViewModel.GradientEnabled) && _effects.GradientEnabled && _effects.ColorFontEnabled)
             {
                 _effects.ColorFontEnabled = false;
-                if (!updatingColorCheck)
-                {
-                    updatingColorCheck = true;
-                    colorCheck.IsChecked = false;
-                    updatingColorCheck = false;
-                }
                 colorGradientWarning.Text = "Color font disabled \u2014 mutually exclusive with gradient";
                 colorGradientWarning.Visible = true;
             }
@@ -976,6 +1036,7 @@ public class EffectsPanel : Panel
         var grid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
 
         var fallbackTextBox = new TextBox();
+        fallbackTextBox.Visual.Name = nameof(EffectsViewModel.FallbackCharacter);
         fallbackTextBox.Width = 60;
         fallbackTextBox.Text = _effects.FallbackCharacter;
         fallbackTextBox.TextChanged += (_, _) =>
@@ -1047,6 +1108,7 @@ public class EffectsPanel : Panel
                         axisGrid.AddChild(axisLabel, row: 0, column: 0);
 
                         var axisSlider = new Slider();
+                        axisSlider.Visual.Name = "VariationAxis-" + axis.Tag;
                         axisSlider.Minimum = axis.MinValue;
                         axisSlider.Maximum = axis.MaxValue;
                         var initialValue = _effects.VariationAxisValues.TryGetValue(axis.Tag, out var loadedValue)

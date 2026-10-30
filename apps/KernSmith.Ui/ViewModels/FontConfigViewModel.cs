@@ -121,8 +121,9 @@ public class FontConfigViewModel : ViewModel
         var fontData = File.ReadAllBytes(path);
         var faceCount = DetectFaceCount(fontData);
 
-        IsFontCollection = faceCount > 1;
+        // FaceCount first: the face combo lists FaceCount faces when IsFontCollection turns on.
         FaceCount = faceCount;
+        IsFontCollection = faceCount > 1;
         FaceIndex = 0;
 
         var fontInfo = BmFont.ReadFontInfo(fontData, FaceIndex);
