@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Text and XML `.fnt` files depended on the machine's culture.** Numbers were formatted with the current culture, so on sv-SE (and other cultures with U+2212 minus) every negative offset and kerning amount was written with a non-ASCII minus, and on de-DE fractional `kernsmith`-line values (`advanceAdjustY`, `outlineThickness`, `axis_*`) with a decimal comma — files that `BmFontReader` and other BMFont readers on another machine misread (offsets became 0). `BmFontReader` likewise parsed integers in the current culture, failing on `-` under fa-IR or ar-SA. Both now always use the invariant culture; output on invariant/English cultures is unchanged.
 - The MonoGame minimal sample drew its atlas as a solid white square: it uploaded straight-alpha `GetRgbaPixelData()` but drew with the premultiplied `BlendState.AlphaBlend`. It now uploads `GetPremultipliedRgbaPixelData()`.
 - The published Blazor WASM sample could not generate: trimming removed the StbTrueType assembly, so auto-discovery found no backend. The sample now registers its backends explicitly, and the README's Blazor snippet does the same.
 - The StbTrueType backend honours `SdfSpread`: its distance field falls from 128 on the glyph edge to 0 at the spread, with padding to hold it, as the FreeType backend's does, where it reached about 2 pixels whatever the spread. SDF glyphs from StbTrueType change: at the default spread of 8 the field is a quarter as steep and padded by 8 pixels. (#260)
