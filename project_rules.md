@@ -31,6 +31,7 @@ Git workflow, TDD, the regression harness, context management and security live 
 - A test that cannot fail is worse than no test: a soft-skip or a check that reports PASS without actually running is indistinguishable from real coverage.
 - Verify a gate FAILS, not just that it passes — reintroduce the condition, confirm the non-zero exit, then revert.
 - Run the full `dotnet test`, not a filtered subset, when touching TTF parsing, atlas packing, or a rasterizer backend; a whole class of input can break while the tests you happened to run stay green.
+- An output-preserving optimization proves itself against a frozen copy of the code it replaced, kept in the test project as the oracle (`Reference*` / `*EquivalenceTests`) over randomized and malformed inputs, plus a mutation that turns it red. Never "optimise" the oracle.
 - Assertions use Shouldly; never write `.Should()`. Two gotchas: string `ShouldContain`/`ShouldNotContain` default to **case-insensitive**, so pass `Case.Sensitive` explicitly on string receivers; and `ShouldBe(…, ignoreOrder: true)` compares with `Equals`, so reference types without value equality need `ShouldBeEquivalentTo`.
 
 ## Documentation
