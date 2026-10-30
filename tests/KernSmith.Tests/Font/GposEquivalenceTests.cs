@@ -284,7 +284,7 @@ public sealed class GposEquivalenceTests
     }
 
     /// <summary>The font with one table replaced (or added), rebuilt as a fresh sfnt.</summary>
-    private static byte[] WithTable(byte[] font, string replacedTag, byte[] replacement)
+    internal static byte[] WithTable(byte[] font, string replacedTag, byte[] replacement)
     {
         int numTables = BinaryPrimitives.ReadUInt16BigEndian(font.AsSpan(4));
         var tables = new List<(string Tag, byte[] Data)>();
