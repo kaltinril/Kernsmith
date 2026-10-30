@@ -279,8 +279,10 @@ public class FontConfigPanel : Panel
             _rasterizerCombo.ListBox.InnerPanel.UseFixedStackChildrenSize = true;
             _rasterizerCombo.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
             _rasterizerCombo.Visual.Width = 0;
+            // Plain backend names: "Native (experimental)" wrapped onto two lines in the combo.
+            // The tooltip says Native is experimental.
             foreach (var backend in _fontConfig.AvailableBackends)
-                _rasterizerCombo.Items!.Add(backend == RasterizerBackend.Native ? "Native (experimental)" : backend.ToString());
+                _rasterizerCombo.Items!.Add(backend.ToString());
             _rasterizerCombo.SelectedIndex = _fontConfig.AvailableBackends.ToList().IndexOf(_fontConfig.SelectedBackend);
             if (_rasterizerCombo.SelectedIndex < 0) _rasterizerCombo.SelectedIndex = 0;
             _rasterizerCombo.SelectionChanged += (_, _) => OnRasterizerComboSelectionChanged();

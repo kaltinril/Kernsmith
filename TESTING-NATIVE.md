@@ -11,7 +11,7 @@ anything. Run every command from the repository root after `dotnet build KernSmi
 dotnet run --project apps/KernSmith.Ui -f net10.0-windows   # net10.0 on Linux/macOS
 ```
 
-Pick **Native (experimental)** in the **Rasterizer** dropdown. Changing the rasterizer regenerates
+Pick **Native** in the **Rasterizer** dropdown. Changing the rasterizer regenerates
 when Auto-Regenerate is on. Native's options:
 
 | Option | Where |
