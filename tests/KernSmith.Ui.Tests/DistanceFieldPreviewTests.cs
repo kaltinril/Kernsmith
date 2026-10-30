@@ -13,12 +13,20 @@ public sealed class DistanceFieldPreviewTests
 {
     private static AtlasPage Gray(params byte[] pixels) => new()
     {
-        PageIndex = 0, Width = pixels.Length, Height = 1, PixelData = pixels, Format = PixelFormat.Grayscale8,
+        PageIndex = 0,
+        Width = pixels.Length,
+        Height = 1,
+        PixelData = pixels,
+        Format = PixelFormat.Grayscale8,
     };
 
     private static AtlasPage Rgba(params byte[] pixels) => new()
     {
-        PageIndex = 0, Width = pixels.Length / 4, Height = 1, PixelData = pixels, Format = PixelFormat.Rgba32,
+        PageIndex = 0,
+        Width = pixels.Length / 4,
+        Height = 1,
+        PixelData = pixels,
+        Format = PixelFormat.Rgba32,
     };
 
     private static byte[] Premultiplied(params byte[] coverage) =>

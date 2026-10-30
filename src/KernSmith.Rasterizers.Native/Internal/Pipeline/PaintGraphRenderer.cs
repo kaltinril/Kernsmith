@@ -143,39 +143,39 @@ internal sealed class PaintGraphRenderer
                     return Bounds(transform.Child, ctm * transform.Transform);
 
                 case LayersPaint layers:
-                {
-                    bool bounded = true;
-                    PixelRect? union = null;
-                    foreach (var layer in layers.Layers)
                     {
-                        var e = Bounds(layer, ctm);
-                        bounded &= e.Bounded;
-                        union = PixelRect.Union(union, e.Rect);
-                    }
+                        bool bounded = true;
+                        PixelRect? union = null;
+                        foreach (var layer in layers.Layers)
+                        {
+                            var e = Bounds(layer, ctm);
+                            bounded &= e.Bounded;
+                            union = PixelRect.Union(union, e.Rect);
+                        }
 
-                    return new Extent(bounded, union);
-                }
+                        return new Extent(bounded, union);
+                    }
 
                 case CompositePaint composite:
-                {
-                    var s = Bounds(composite.Source, ctm);
-                    var b = Bounds(composite.Backdrop, ctm);
-                    switch (composite.Mode)
                     {
-                        case CompositeMode.Clear:
-                            return Extent.Nothing;
-                        case CompositeMode.Source or CompositeMode.SourceOut:
-                            return s;
-                        case CompositeMode.Destination or CompositeMode.DestinationOut:
-                            return b;
-                        case CompositeMode.SourceIn or CompositeMode.DestinationIn:
-                            if (s.Bounded && b.Bounded)
-                                return new Extent(true, PixelRect.Intersect(s.Rect, b.Rect));
-                            return s.Bounded ? s : b;
-                        default:
-                            return new Extent(s.Bounded && b.Bounded, PixelRect.Union(s.Rect, b.Rect));
+                        var s = Bounds(composite.Source, ctm);
+                        var b = Bounds(composite.Backdrop, ctm);
+                        switch (composite.Mode)
+                        {
+                            case CompositeMode.Clear:
+                                return Extent.Nothing;
+                            case CompositeMode.Source or CompositeMode.SourceOut:
+                                return s;
+                            case CompositeMode.Destination or CompositeMode.DestinationOut:
+                                return b;
+                            case CompositeMode.SourceIn or CompositeMode.DestinationIn:
+                                if (s.Bounded && b.Bounded)
+                                    return new Extent(true, PixelRect.Intersect(s.Rect, b.Rect));
+                                return s.Bounded ? s : b;
+                            default:
+                                return new Extent(s.Bounded && b.Bounded, PixelRect.Union(s.Rect, b.Rect));
+                        }
                     }
-                }
 
                 default:
                     return Extent.Nothing;
@@ -249,13 +249,13 @@ internal sealed class PaintGraphRenderer
                     return Gradient(gradient, ctm);
 
                 case GlyphClipPaint glyph:
-                {
-                    var prepared = Prepare(glyph.GlyphIndex);
-                    if (prepared.IsBlank)
-                        return null;
-                    var outline = ctm == Affine2D.Identity ? prepared.Outline : TransformOutline(prepared, ctm);
-                    return Clip(Coverage(outline, prepared.ToPixels), glyph.Child, ctm);
-                }
+                    {
+                        var prepared = Prepare(glyph.GlyphIndex);
+                        if (prepared.IsBlank)
+                            return null;
+                        var outline = ctm == Affine2D.Identity ? prepared.Outline : TransformOutline(prepared, ctm);
+                        return Clip(Coverage(outline, prepared.ToPixels), glyph.Child, ctm);
+                    }
 
                 case RectClipPaint rect:
                     return Clip(Coverage(ClipRectangle(rect, ctm), _fontToPixels), rect.Child, ctm);
@@ -264,19 +264,19 @@ internal sealed class PaintGraphRenderer
                     return Paint(transform.Child, ctm * transform.Transform);
 
                 case LayersPaint layers:
-                {
-                    float[]? result = null;
-                    foreach (var layer in layers.Layers)
-                        result = Composite(CompositeMode.SourceOver, Paint(layer, ctm), result);
-                    return result;
-                }
+                    {
+                        float[]? result = null;
+                        foreach (var layer in layers.Layers)
+                            result = Composite(CompositeMode.SourceOver, Paint(layer, ctm), result);
+                        return result;
+                    }
 
                 case CompositePaint composite:
-                {
-                    var backdrop = Paint(composite.Backdrop, ctm);
-                    var source = Paint(composite.Source, ctm);
-                    return Composite(composite.Mode, source, backdrop);
-                }
+                    {
+                        var backdrop = Paint(composite.Backdrop, ctm);
+                        var source = Paint(composite.Source, ctm);
+                        return Composite(composite.Mode, source, backdrop);
+                    }
 
                 default:
                     return null;
@@ -554,8 +554,12 @@ internal sealed class PaintGraphRenderer
                     var (c2x, c2y) = m.Apply(c.Ctrl2X, c.Ctrl2Y);
                     commands[i] = c with
                     {
-                        EndX = (float)ex, EndY = (float)ey,
-                        Ctrl1X = (float)c1x, Ctrl1Y = (float)c1y, Ctrl2X = (float)c2x, Ctrl2Y = (float)c2y,
+                        EndX = (float)ex,
+                        EndY = (float)ey,
+                        Ctrl1X = (float)c1x,
+                        Ctrl1Y = (float)c1y,
+                        Ctrl2X = (float)c2x,
+                        Ctrl2Y = (float)c2y,
                     };
                 }
                 else

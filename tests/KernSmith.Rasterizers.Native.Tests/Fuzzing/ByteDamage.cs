@@ -34,62 +34,62 @@ internal static class ByteDamage
         switch (kind)
         {
             case MutationKind.BitFlips:
-            {
-                int flips = rng.Next(1, 9);
-                var positions = new List<int>(flips);
-                for (int i = 0; i < flips; i++)
                 {
-                    int pos = pick(1);
-                    data[pos] ^= (byte)(1 << rng.Next(8));
-                    positions.Add(pos);
-                }
+                    int flips = rng.Next(1, 9);
+                    var positions = new List<int>(flips);
+                    for (int i = 0; i < flips; i++)
+                    {
+                        int pos = pick(1);
+                        data[pos] ^= (byte)(1 << rng.Next(8));
+                        positions.Add(pos);
+                    }
 
-                return $"bit flips at {string.Join(',', positions)}";
-            }
+                    return $"bit flips at {string.Join(',', positions)}";
+                }
 
             case MutationKind.OffsetCorruption:
-            {
-                bool wide = rng.Next(2) == 0 && regionLength >= 4 && data.Length >= 4;
-                if (wide)
                 {
-                    int pos = Math.Min(pick(4) & ~1, data.Length - 4);
-                    uint[] values = [0, 1, 0x7FFFFFFF, 0x80000000, 0xFFFFFFFF, (uint)regionLength,
+                    bool wide = rng.Next(2) == 0 && regionLength >= 4 && data.Length >= 4;
+                    if (wide)
+                    {
+                        int pos = Math.Min(pick(4) & ~1, data.Length - 4);
+                        uint[] values = [0, 1, 0x7FFFFFFF, 0x80000000, 0xFFFFFFFF, (uint)regionLength,
                         (uint)regionLength - 1, (uint)regionLength + 1, (uint)rng.Next(), (uint)data.Length];
-                    uint value = values[rng.Next(values.Length)];
-                    BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(pos), value);
-                    return $"u32 at {pos} = 0x{value:X8}";
-                }
-                else
-                {
-                    int pos = Math.Min(pick(2) & ~1, data.Length - 2);
-                    ushort[] values = [0, 1, 0x7FFF, 0x8000, 0xFFFF, (ushort)regionLength,
+                        uint value = values[rng.Next(values.Length)];
+                        BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(pos), value);
+                        return $"u32 at {pos} = 0x{value:X8}";
+                    }
+                    else
+                    {
+                        int pos = Math.Min(pick(2) & ~1, data.Length - 2);
+                        ushort[] values = [0, 1, 0x7FFF, 0x8000, 0xFFFF, (ushort)regionLength,
                         (ushort)(regionLength - 1), (ushort)(regionLength + 1), (ushort)rng.Next(0x10000)];
-                    ushort value = values[rng.Next(values.Length)];
-                    BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(pos), value);
-                    return $"u16 at {pos} = 0x{value:X4}";
+                        ushort value = values[rng.Next(values.Length)];
+                        BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(pos), value);
+                        return $"u16 at {pos} = 0x{value:X4}";
+                    }
                 }
-            }
 
             case MutationKind.CountInflation:
-            {
-                int pos = Math.Min(pick(2) & ~1, data.Length - 2);
-                ushort old = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(pos));
-                ushort[] values = [(ushort)Math.Min(0xFFFF, (old * 2) + 1), (ushort)Math.Min(0xFFFF, old + 1),
+                {
+                    int pos = Math.Min(pick(2) & ~1, data.Length - 2);
+                    ushort old = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(pos));
+                    ushort[] values = [(ushort)Math.Min(0xFFFF, (old * 2) + 1), (ushort)Math.Min(0xFFFF, old + 1),
                     (ushort)Math.Min(0xFFFF, old + 16), 0x7FFF, 0xFFFF];
-                ushort value = values[rng.Next(values.Length)];
-                BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(pos), value);
-                return $"count at {pos}: {old} -> {value}";
-            }
+                    ushort value = values[rng.Next(values.Length)];
+                    BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(pos), value);
+                    return $"count at {pos}: {old} -> {value}";
+                }
 
             case MutationKind.ByteRun:
-            {
-                int run = rng.Next(4, 33);
-                int pos = pick(1);
-                int end = Math.Min(data.Length, Math.Min(pos + run, regionStart + regionLength));
-                for (int i = pos; i < end; i++)
-                    data[i] = (byte)rng.Next(256);
-                return $"random bytes [{pos}, {end})";
-            }
+                {
+                    int run = rng.Next(4, 33);
+                    int pos = pick(1);
+                    int end = Math.Min(data.Length, Math.Min(pos + run, regionStart + regionLength));
+                    for (int i = pos; i < end; i++)
+                        data[i] = (byte)rng.Next(256);
+                    return $"random bytes [{pos}, {end})";
+                }
 
             default:
                 throw new ArgumentOutOfRangeException(nameof(kind), kind, "Truncation is region-specific.");

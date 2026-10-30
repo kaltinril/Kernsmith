@@ -121,109 +121,109 @@ internal sealed class ColrPaintReader
         switch (format)
         {
             case 1:
-            {
-                int count = reader.ReadUInt8();
-                long first = reader.ReadUInt32();
-                if (first + count > _table.LayerCount)
-                    return null;
-
-                var layers = new List<ColrPaint>(count);
-                for (int i = 0; i < count; i++)
                 {
-                    if (ReadPaint(_table.GetLayerPaint(first + i), depth + 1) is { } layer)
-                        layers.Add(layer);
+                    int count = reader.ReadUInt8();
+                    long first = reader.ReadUInt32();
+                    if (first + count > _table.LayerCount)
+                        return null;
+
+                    var layers = new List<ColrPaint>(count);
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (ReadPaint(_table.GetLayerPaint(first + i), depth + 1) is { } layer)
+                            layers.Add(layer);
+                    }
+
+                    return new LayersPaint([.. layers]);
                 }
 
-                return new LayersPaint([.. layers]);
-            }
-
             case 2 or 3:
-            {
-                int paletteIndex = reader.ReadUInt16();
-                int alpha = reader.ReadInt16();
-                uint varBase = variable ? reader.ReadUInt32() : ColrV1Table.NoVariation;
-                return new SolidPaint(Resolve(paletteIndex, (alpha + Delta(varBase, 0)) / 16384f));
-            }
+                {
+                    int paletteIndex = reader.ReadUInt16();
+                    int alpha = reader.ReadInt16();
+                    uint varBase = variable ? reader.ReadUInt32() : ColrV1Table.NoVariation;
+                    return new SolidPaint(Resolve(paletteIndex, (alpha + Delta(varBase, 0)) / 16384f));
+                }
 
             case 4 or 5:
-            {
-                long line = at + ColrV1Table.ReadUInt24(ref reader);
-                int x0 = reader.ReadInt16(), y0 = reader.ReadInt16();
-                int x1 = reader.ReadInt16(), y1 = reader.ReadInt16();
-                int x2 = reader.ReadInt16(), y2 = reader.ReadInt16();
-                uint v = variable ? reader.ReadUInt32() : ColrV1Table.NoVariation;
-                var (stops, extend) = ReadColorLine(line, variable);
-                return new LinearGradientPaint(stops, extend,
-                    x0 + Delta(v, 0), y0 + Delta(v, 1), x1 + Delta(v, 2), y1 + Delta(v, 3), x2 + Delta(v, 4), y2 + Delta(v, 5));
-            }
+                {
+                    long line = at + ColrV1Table.ReadUInt24(ref reader);
+                    int x0 = reader.ReadInt16(), y0 = reader.ReadInt16();
+                    int x1 = reader.ReadInt16(), y1 = reader.ReadInt16();
+                    int x2 = reader.ReadInt16(), y2 = reader.ReadInt16();
+                    uint v = variable ? reader.ReadUInt32() : ColrV1Table.NoVariation;
+                    var (stops, extend) = ReadColorLine(line, variable);
+                    return new LinearGradientPaint(stops, extend,
+                        x0 + Delta(v, 0), y0 + Delta(v, 1), x1 + Delta(v, 2), y1 + Delta(v, 3), x2 + Delta(v, 4), y2 + Delta(v, 5));
+                }
 
             case 6 or 7:
-            {
-                long line = at + ColrV1Table.ReadUInt24(ref reader);
-                int x0 = reader.ReadInt16(), y0 = reader.ReadInt16(), r0 = reader.ReadUInt16();
-                int x1 = reader.ReadInt16(), y1 = reader.ReadInt16(), r1 = reader.ReadUInt16();
-                uint v = variable ? reader.ReadUInt32() : ColrV1Table.NoVariation;
-                var (stops, extend) = ReadColorLine(line, variable);
-                return new RadialGradientPaint(stops, extend,
-                    x0 + Delta(v, 0), y0 + Delta(v, 1), r0 + Delta(v, 2), x1 + Delta(v, 3), y1 + Delta(v, 4), r1 + Delta(v, 5));
-            }
+                {
+                    long line = at + ColrV1Table.ReadUInt24(ref reader);
+                    int x0 = reader.ReadInt16(), y0 = reader.ReadInt16(), r0 = reader.ReadUInt16();
+                    int x1 = reader.ReadInt16(), y1 = reader.ReadInt16(), r1 = reader.ReadUInt16();
+                    uint v = variable ? reader.ReadUInt32() : ColrV1Table.NoVariation;
+                    var (stops, extend) = ReadColorLine(line, variable);
+                    return new RadialGradientPaint(stops, extend,
+                        x0 + Delta(v, 0), y0 + Delta(v, 1), r0 + Delta(v, 2), x1 + Delta(v, 3), y1 + Delta(v, 4), r1 + Delta(v, 5));
+                }
 
             case 8 or 9:
-            {
-                long line = at + ColrV1Table.ReadUInt24(ref reader);
-                int cx = reader.ReadInt16(), cy = reader.ReadInt16();
-                int start = reader.ReadInt16(), end = reader.ReadInt16();
-                uint v = variable ? reader.ReadUInt32() : ColrV1Table.NoVariation;
-                var (stops, extend) = ReadColorLine(line, variable);
+                {
+                    long line = at + ColrV1Table.ReadUInt24(ref reader);
+                    int cx = reader.ReadInt16(), cy = reader.ReadInt16();
+                    int start = reader.ReadInt16(), end = reader.ReadInt16();
+                    uint v = variable ? reader.ReadUInt32() : ColrV1Table.NoVariation;
+                    var (stops, extend) = ReadColorLine(line, variable);
 
-                // Stored biased: degrees = (value + 1) * 180.
-                double startDegrees = (((start + Delta(v, 2)) / 16384.0) + 1) * 180;
-                double endDegrees = (((end + Delta(v, 3)) / 16384.0) + 1) * 180;
-                return new SweepGradientPaint(stops, extend, cx + Delta(v, 0), cy + Delta(v, 1), startDegrees, endDegrees);
-            }
+                    // Stored biased: degrees = (value + 1) * 180.
+                    double startDegrees = (((start + Delta(v, 2)) / 16384.0) + 1) * 180;
+                    double endDegrees = (((end + Delta(v, 3)) / 16384.0) + 1) * 180;
+                    return new SweepGradientPaint(stops, extend, cx + Delta(v, 0), cy + Delta(v, 1), startDegrees, endDegrees);
+                }
 
             case 10:
-            {
-                long child = at + ColrV1Table.ReadUInt24(ref reader);
-                int glyph = reader.ReadUInt16();
-                if (glyph >= _glyphCount)
-                    return null;
-                return ReadPaint(child, depth + 1) is { } paint ? new GlyphClipPaint(glyph, paint) : null;
-            }
+                {
+                    long child = at + ColrV1Table.ReadUInt24(ref reader);
+                    int glyph = reader.ReadUInt16();
+                    if (glyph >= _glyphCount)
+                        return null;
+                    return ReadPaint(child, depth + 1) is { } paint ? new GlyphClipPaint(glyph, paint) : null;
+                }
 
             case 11:
-            {
-                int glyph = reader.ReadUInt16();
-                if (!_table.TryGetBasePaint(glyph, out long root) || ReadPaint(root, depth + 1) is not { } paint)
-                    return null;
-                return ClipBox(glyph) is { } box ? new RectClipPaint(box.XMin, box.YMin, box.XMax, box.YMax, paint) : paint;
-            }
+                {
+                    int glyph = reader.ReadUInt16();
+                    if (!_table.TryGetBasePaint(glyph, out long root) || ReadPaint(root, depth + 1) is not { } paint)
+                        return null;
+                    return ClipBox(glyph) is { } box ? new RectClipPaint(box.XMin, box.YMin, box.XMax, box.YMax, paint) : paint;
+                }
 
             case 12 or 13:
-            {
-                long child = at + ColrV1Table.ReadUInt24(ref reader);
-                long affine = at + ColrV1Table.ReadUInt24(ref reader);
-                var matrix = ReadAffine(affine, format == 13);
-                return ReadPaint(child, depth + 1) is { } paint ? new TransformPaint(matrix, paint) : null;
-            }
+                {
+                    long child = at + ColrV1Table.ReadUInt24(ref reader);
+                    long affine = at + ColrV1Table.ReadUInt24(ref reader);
+                    var matrix = ReadAffine(affine, format == 13);
+                    return ReadPaint(child, depth + 1) is { } paint ? new TransformPaint(matrix, paint) : null;
+                }
 
             case >= 14 and <= 31:
-            {
-                long child = at + ColrV1Table.ReadUInt24(ref reader);
-                var matrix = ReadTransform(ref reader, format);
-                return ReadPaint(child, depth + 1) is { } paint ? new TransformPaint(matrix, paint) : null;
-            }
+                {
+                    long child = at + ColrV1Table.ReadUInt24(ref reader);
+                    var matrix = ReadTransform(ref reader, format);
+                    return ReadPaint(child, depth + 1) is { } paint ? new TransformPaint(matrix, paint) : null;
+                }
 
             case 32:
-            {
-                long source = at + ColrV1Table.ReadUInt24(ref reader);
-                int mode = reader.ReadUInt8();
-                long backdrop = at + ColrV1Table.ReadUInt24(ref reader);
+                {
+                    long source = at + ColrV1Table.ReadUInt24(ref reader);
+                    int mode = reader.ReadUInt8();
+                    long backdrop = at + ColrV1Table.ReadUInt24(ref reader);
 
-                // An unrecognized mode is COMPOSITE_CLEAR.
-                var composite = mode <= (int)CompositeMode.Luminosity ? (CompositeMode)mode : CompositeMode.Clear;
-                return new CompositePaint(composite, ReadPaint(source, depth + 1), ReadPaint(backdrop, depth + 1));
-            }
+                    // An unrecognized mode is COMPOSITE_CLEAR.
+                    var composite = mode <= (int)CompositeMode.Luminosity ? (CompositeMode)mode : CompositeMode.Clear;
+                    return new CompositePaint(composite, ReadPaint(source, depth + 1), ReadPaint(backdrop, depth + 1));
+                }
 
             default:
                 return null;

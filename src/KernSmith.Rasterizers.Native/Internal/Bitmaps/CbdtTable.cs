@@ -124,80 +124,80 @@ internal sealed class CbdtTable
         {
             case 1:
             case 3:
-            {
-                int size = indexFormat == 1 ? 4 : 2;
-                long entry = at + 8L + ((long)(glyph - first) * size);
-                if (!Fits(cblc, entry, size * 2))
-                    return false;
-                int e = (int)entry;
-                long o0 = size == 4 ? BinaryPrimitives.ReadUInt32BigEndian(cblc[e..]) : BinaryPrimitives.ReadUInt16BigEndian(cblc[e..]);
-                long o1 = size == 4 ? BinaryPrimitives.ReadUInt32BigEndian(cblc[(e + 4)..]) : BinaryPrimitives.ReadUInt16BigEndian(cblc[(e + 2)..]);
-                start = imageDataOffset + o0;
-                end = imageDataOffset + o1;
-                break;
-            }
+                {
+                    int size = indexFormat == 1 ? 4 : 2;
+                    long entry = at + 8L + ((long)(glyph - first) * size);
+                    if (!Fits(cblc, entry, size * 2))
+                        return false;
+                    int e = (int)entry;
+                    long o0 = size == 4 ? BinaryPrimitives.ReadUInt32BigEndian(cblc[e..]) : BinaryPrimitives.ReadUInt16BigEndian(cblc[e..]);
+                    long o1 = size == 4 ? BinaryPrimitives.ReadUInt32BigEndian(cblc[(e + 4)..]) : BinaryPrimitives.ReadUInt16BigEndian(cblc[(e + 2)..]);
+                    start = imageDataOffset + o0;
+                    end = imageDataOffset + o1;
+                    break;
+                }
 
             case 2:
-            {
-                if (!Fits(cblc, at, 20))
-                    return false;
-                long imageSize = BinaryPrimitives.ReadUInt32BigEndian(cblc[(at + 8)..]);
-                sharedMetrics = cblc.Slice(at + 12, 8);
-                start = imageDataOffset + (imageSize * (glyph - first));
-                end = start + imageSize;
-                break;
-            }
+                {
+                    if (!Fits(cblc, at, 20))
+                        return false;
+                    long imageSize = BinaryPrimitives.ReadUInt32BigEndian(cblc[(at + 8)..]);
+                    sharedMetrics = cblc.Slice(at + 12, 8);
+                    start = imageDataOffset + (imageSize * (glyph - first));
+                    end = start + imageSize;
+                    break;
+                }
 
             case 4:
-            {
-                if (!Fits(cblc, at, 12))
-                    return false;
-                long count = BinaryPrimitives.ReadUInt32BigEndian(cblc[(at + 8)..]);
-                if (!Fits(cblc, at + 12L, (count + 1) * 4))
-                    return false;
-                int pairs = at + 12;
-                int found = -1;
-                for (int i = 0; i < count; i++)
                 {
-                    if (BinaryPrimitives.ReadUInt16BigEndian(cblc[(pairs + (i * 4))..]) == glyph)
+                    if (!Fits(cblc, at, 12))
+                        return false;
+                    long count = BinaryPrimitives.ReadUInt32BigEndian(cblc[(at + 8)..]);
+                    if (!Fits(cblc, at + 12L, (count + 1) * 4))
+                        return false;
+                    int pairs = at + 12;
+                    int found = -1;
+                    for (int i = 0; i < count; i++)
                     {
-                        found = i;
-                        break;
+                        if (BinaryPrimitives.ReadUInt16BigEndian(cblc[(pairs + (i * 4))..]) == glyph)
+                        {
+                            found = i;
+                            break;
+                        }
                     }
-                }
 
-                if (found < 0)
-                    return false;
-                start = imageDataOffset + BinaryPrimitives.ReadUInt16BigEndian(cblc[(pairs + (found * 4) + 2)..]);
-                end = imageDataOffset + BinaryPrimitives.ReadUInt16BigEndian(cblc[(pairs + (found * 4) + 6)..]);
-                break;
-            }
+                    if (found < 0)
+                        return false;
+                    start = imageDataOffset + BinaryPrimitives.ReadUInt16BigEndian(cblc[(pairs + (found * 4) + 2)..]);
+                    end = imageDataOffset + BinaryPrimitives.ReadUInt16BigEndian(cblc[(pairs + (found * 4) + 6)..]);
+                    break;
+                }
 
             case 5:
-            {
-                if (!Fits(cblc, at, 24))
-                    return false;
-                long imageSize = BinaryPrimitives.ReadUInt32BigEndian(cblc[(at + 8)..]);
-                sharedMetrics = cblc.Slice(at + 12, 8);
-                long count = BinaryPrimitives.ReadUInt32BigEndian(cblc[(at + 20)..]);
-                if (!Fits(cblc, at + 24L, count * 2))
-                    return false;
-                int found = -1;
-                for (int i = 0; i < count; i++)
                 {
-                    if (BinaryPrimitives.ReadUInt16BigEndian(cblc[(at + 24 + (i * 2))..]) == glyph)
+                    if (!Fits(cblc, at, 24))
+                        return false;
+                    long imageSize = BinaryPrimitives.ReadUInt32BigEndian(cblc[(at + 8)..]);
+                    sharedMetrics = cblc.Slice(at + 12, 8);
+                    long count = BinaryPrimitives.ReadUInt32BigEndian(cblc[(at + 20)..]);
+                    if (!Fits(cblc, at + 24L, count * 2))
+                        return false;
+                    int found = -1;
+                    for (int i = 0; i < count; i++)
                     {
-                        found = i;
-                        break;
+                        if (BinaryPrimitives.ReadUInt16BigEndian(cblc[(at + 24 + (i * 2))..]) == glyph)
+                        {
+                            found = i;
+                            break;
+                        }
                     }
-                }
 
-                if (found < 0)
-                    return false;
-                start = imageDataOffset + (imageSize * found);
-                end = start + imageSize;
-                break;
-            }
+                    if (found < 0)
+                        return false;
+                    start = imageDataOffset + (imageSize * found);
+                    end = start + imageSize;
+                    break;
+                }
 
             default:
                 return false;

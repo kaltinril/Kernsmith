@@ -196,7 +196,12 @@ internal static class GoldenCatalog
 
         Add("roboto/lcd-vbgr-smooth/24px/bold-italic", Roboto, new RasterOptions
         {
-            Size = 24, AntiAlias = AntiAliasMode.Lcd, LcdFilter = LcdFilter.Smooth, LcdSubpixelOrder = LcdSubpixelOrder.VBgr, Bold = true, Italic = true,
+            Size = 24,
+            AntiAlias = AntiAliasMode.Lcd,
+            LcdFilter = LcdFilter.Smooth,
+            LcdSubpixelOrder = LcdSubpixelOrder.VBgr,
+            Bold = true,
+            Italic = true,
         });
         Add("sourceserif/lcd-vrgb/24px", SourceSerif, new RasterOptions { Size = 24, AntiAlias = AntiAliasMode.Lcd, LcdSubpixelOrder = LcdSubpixelOrder.VRgb });
         Add("notosans-cff/lcd-smooth/24px", NotoSansCff, new RasterOptions { Size = 24, AntiAlias = AntiAliasMode.Lcd, LcdFilter = LcdFilter.Smooth });

@@ -126,7 +126,7 @@ internal static class OutlineEmboldener
                 points.Add(new Point(command.EndX, command.EndY));
                 break;
 
-            // Close repeats the start point, which is already the first vertex.
+                // Close repeats the start point, which is already the first vertex.
         }
     }
 

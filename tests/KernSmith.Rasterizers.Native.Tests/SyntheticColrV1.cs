@@ -260,16 +260,16 @@ internal static class SyntheticColrV1
             switch (paint)
             {
                 case Layers layers:
-                {
-                    Reserve(6);
-                    Heap[at] = 1;
-                    var children = layers.Children.Select(Write).ToArray();
-                    int first = LayerList.Count;
-                    LayerList.AddRange(children);
-                    Heap[at + 1] = (byte)children.Length;
-                    Put32(at + 2, (uint)first);
-                    break;
-                }
+                    {
+                        Reserve(6);
+                        Heap[at] = 1;
+                        var children = layers.Children.Select(Write).ToArray();
+                        int first = LayerList.Count;
+                        LayerList.AddRange(children);
+                        Heap[at + 1] = (byte)children.Length;
+                        Put32(at + 2, (uint)first);
+                        break;
+                    }
 
                 case RawLayers raw:
                     Reserve(6);
@@ -328,20 +328,20 @@ internal static class SyntheticColrV1
                     break;
 
                 case Transform t:
-                {
-                    Reserve(7);
-                    Heap[at] = (byte)(t.Var is null ? 12 : 13);
-                    int affine = Heap.Count;
-                    Reserve(t.Var is null ? 24 : 28);
-                    double[] values = [t.Xx, t.Yx, t.Xy, t.Yy, t.Dx, t.Dy];
-                    for (int i = 0; i < 6; i++)
-                        Put32(affine + (i * 4), unchecked((uint)checked((int)Math.Round(values[i] * 65536))));
-                    if (t.Var is { } tv)
-                        Put32(affine + 24, tv);
-                    Put24(at + 4, affine - at);
-                    Put24(at + 1, Write(t.Child) - at);
-                    break;
-                }
+                    {
+                        Reserve(7);
+                        Heap[at] = (byte)(t.Var is null ? 12 : 13);
+                        int affine = Heap.Count;
+                        Reserve(t.Var is null ? 24 : 28);
+                        double[] values = [t.Xx, t.Yx, t.Xy, t.Yy, t.Dx, t.Dy];
+                        for (int i = 0; i < 6; i++)
+                            Put32(affine + (i * 4), unchecked((uint)checked((int)Math.Round(values[i] * 65536))));
+                        if (t.Var is { } tv)
+                            Put32(affine + 24, tv);
+                        Put24(at + 4, affine - at);
+                        Put24(at + 1, Write(t.Child) - at);
+                        break;
+                    }
 
                 case Translate t:
                     WriteTransform(at, 14, t.Child, t.Var, [t.Dx, t.Dy]);
