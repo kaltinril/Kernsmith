@@ -1,3 +1,4 @@
+using System.Buffers;
 using KernSmith.Font.Models;
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.Native.Internal.Outlines;
@@ -124,25 +125,35 @@ internal sealed class LcdRenderer : IGlyphRenderer
         var rgba = new byte[width * height * 4];
         int firstSubpixel = 3 * (first - frame.MinX);
 
-        for (int line = 0; line < lines; line++)
+        // Each line's filtered subpixels, in pooled scratch: renderers are shared singletons.
+        byte[] scratch = ArrayPool<byte>.Shared.Rent(Math.Max(3 * count, 1));
+        try
         {
-            var row = new ReadOnlySpan<byte>(subpixels, line * subpixelCount, subpixelCount);
-
-            for (int p = 0; p < count; p++)
+            var filtered = scratch.AsSpan(0, 3 * count);
+            bool vertical = _vertical, blueFirst = _blueFirst;
+            for (int line = 0; line < lines; line++)
             {
-                int s = firstSubpixel + (3 * p);
-                byte near = _filter.Sample(row, s);
-                byte middle = _filter.Sample(row, s + 1);
-                byte far = _filter.Sample(row, s + 2);
+                _filter.FilterRow(new ReadOnlySpan<byte>(subpixels, line * subpixelCount, subpixelCount), firstSubpixel, filtered);
 
-                int output = _vertical
-                    ? ((p * width) + line) * 4
-                    : ((line * width) + p) * 4;
-                rgba[output] = _blueFirst ? far : near;
-                rgba[output + 1] = middle;
-                rgba[output + 2] = _blueFirst ? near : far;
-                rgba[output + 3] = Math.Max(near, Math.Max(middle, far));
+                for (int p = 0; p < count; p++)
+                {
+                    byte near = filtered[3 * p];
+                    byte middle = filtered[(3 * p) + 1];
+                    byte far = filtered[(3 * p) + 2];
+
+                    int output = vertical
+                        ? ((p * width) + line) * 4
+                        : ((line * width) + p) * 4;
+                    rgba[output] = blueFirst ? far : near;
+                    rgba[output + 1] = middle;
+                    rgba[output + 2] = blueFirst ? near : far;
+                    rgba[output + 3] = Math.Max(near, Math.Max(middle, far));
+                }
             }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(scratch);
         }
 
         return new RasterizedGlyph
