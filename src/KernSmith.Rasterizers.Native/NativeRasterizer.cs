@@ -288,7 +288,9 @@ public sealed class NativeRasterizer : IRasterizer
         ArgumentNullException.ThrowIfNull(options);
         options = ValidateSize(options);
 
-        double scale = GlyphPipeline.PixelScale(options, _face!.Head.UnitsPerEm);
+        // In double, like the shared calculation, rather than GlyphPipeline.PixelScale's float:
+        // the line box should carry only the noise already in the float Size.
+        double scale = (double)options.Size * options.Dpi / 72.0 / _face!.Head.UnitsPerEm;
 
         // OS/2 usWinAscent/usWinDescent, not hhea: these are what GDI reports as
         // tmAscent/tmDescent and therefore what bmfont.exe writes as base/lineHeight. Using
@@ -297,7 +299,9 @@ public sealed class NativeRasterizer : IRasterizer
         // the rare face with no usable OS/2 metrics.
         //
         // Ceiling, not rounding: a line box a fraction of a pixel short clips the glyphs it is
-        // supposed to contain.
+        // supposed to contain. CeilingToPixels, not Math.Ceiling: with BMFont cell sizing the
+        // Size is a float ppem chosen so the win box is exactly the requested size, and a plain
+        // ceiling turns its float noise into size + 1 (issue #266).
         //
         // A variable font's MVAR moves usWinAscent/usWinDescent ('hcla'/'hcld') with the
         // instance; at the default instance both deltas are exactly zero.
@@ -308,18 +312,18 @@ public sealed class NativeRasterizer : IRasterizer
             double winDescent = os2.WinDescent + (double)MetricDelta("hcld");
             return new RasterizerFontMetrics
             {
-                Ascent = (int)Math.Ceiling(winAscent * scale),
-                Descent = (int)Math.Ceiling(winDescent * scale),
-                LineHeight = (int)Math.Ceiling((winAscent + winDescent) * scale)
+                Ascent = RasterizerFontMetrics.CeilingToPixels(winAscent * scale),
+                Descent = RasterizerFontMetrics.CeilingToPixels(winDescent * scale),
+                LineHeight = RasterizerFontMetrics.CeilingToPixels((winAscent + winDescent) * scale)
             };
         }
 
         var hhea = _face.Hhea;
         return new RasterizerFontMetrics
         {
-            Ascent = (int)Math.Ceiling(hhea.Ascender * scale),
-            Descent = (int)Math.Ceiling(Math.Abs((double)hhea.Descender) * scale),
-            LineHeight = (int)Math.Ceiling((hhea.Ascender - hhea.Descender + hhea.LineGap) * scale)
+            Ascent = RasterizerFontMetrics.CeilingToPixels(hhea.Ascender * scale),
+            Descent = RasterizerFontMetrics.CeilingToPixels(Math.Abs((double)hhea.Descender) * scale),
+            LineHeight = RasterizerFontMetrics.CeilingToPixels((hhea.Ascender - hhea.Descender + hhea.LineGap) * scale)
         };
     }
 

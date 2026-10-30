@@ -205,14 +205,18 @@ internal static class BmFontModelBuilder
             // what bmfont.exe uses for lineHeight and base. This produces consistent
             // line spacing across generators. Note: WinDescent is positive (unlike
             // hhea Descender which is negative).
+            //
+            // CeilingToPixels, not Math.Ceiling: with cell sizing metricSize is a float ppem chosen
+            // so the win box is exactly the requested size, and a plain ceiling turns its float
+            // noise into size + 1 (issue #266).
             return (
-                (int)Math.Ceiling((double)(os2.WinAscent + os2.WinDescent) * metricSize / fontInfo.UnitsPerEm),
-                (int)Math.Ceiling((double)os2.WinAscent * metricSize / fontInfo.UnitsPerEm));
+                RasterizerFontMetrics.CeilingToPixels((double)(os2.WinAscent + os2.WinDescent) * metricSize / fontInfo.UnitsPerEm),
+                RasterizerFontMetrics.CeilingToPixels((double)os2.WinAscent * metricSize / fontInfo.UnitsPerEm));
         }
 
         return (
-            (int)Math.Ceiling((double)fontInfo.LineHeight * metricSize / fontInfo.UnitsPerEm),
-            (int)Math.Ceiling((double)fontInfo.Ascender * metricSize / fontInfo.UnitsPerEm));
+            RasterizerFontMetrics.CeilingToPixels((double)fontInfo.LineHeight * metricSize / fontInfo.UnitsPerEm),
+            RasterizerFontMetrics.CeilingToPixels((double)fontInfo.Ascender * metricSize / fontInfo.UnitsPerEm));
     }
 
     /// <summary>
