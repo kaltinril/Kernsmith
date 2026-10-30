@@ -270,14 +270,7 @@ public class FontConfigPanel : Panel
         {
             var sizeGrid = new PropertyGridVisual { AlternatingRowColorsEnabled = false };
 
-            var sizeTextBox = new TextBox();
-            sizeTextBox.Width = 42;
-            sizeTextBox.Text = "32";
-            sizeTextBox.TextChanged += (_, _) =>
-            {
-                if (int.TryParse(sizeTextBox.Text, out var size))
-                    _fontConfig.FontSize = Math.Clamp(size, 4, 500);
-            };
+            var sizeTextBox = CreateFontSizeBox(_fontConfig);
             sizeGrid.AddRow("Size (pt):", sizeTextBox);
             TooltipService.SetTooltip(sizeTextBox, "Font size in points (4-500)");
 
@@ -719,6 +712,32 @@ public class FontConfigPanel : Panel
 
     //    return visual;
     //});
+
+    /// <summary>
+    /// Creates the font size text box, which writes typed sizes (clamped to 4-500) to
+    /// <see cref="FontConfigViewModel.FontSize"/> and shows sizes set from code (e.g. a loaded project).
+    /// </summary>
+    public static TextBox CreateFontSizeBox(FontConfigViewModel fontConfig)
+    {
+        var sizeTextBox = new TextBox();
+        sizeTextBox.Width = 42;
+        sizeTextBox.Text = fontConfig.FontSize.ToString();
+        sizeTextBox.TextChanged += (_, _) =>
+        {
+            if (int.TryParse(sizeTextBox.Text, out var size))
+                fontConfig.FontSize = Math.Clamp(size, 4, 500);
+        };
+        fontConfig.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(FontConfigViewModel.FontSize)) return;
+            // Leave text that already means this size alone, so typing "1" on the way to "12"
+            // (clamped to 4) or "1000" (clamped to 500) is not rewritten under the cursor.
+            if (int.TryParse(sizeTextBox.Text, out var shown) && Math.Clamp(shown, 4, 500) == fontConfig.FontSize)
+                return;
+            sizeTextBox.Text = fontConfig.FontSize.ToString();
+        };
+        return sizeTextBox;
+    }
 
     private static TextBox CreateSmallIntBox(int initialValue, Action<int> onChanged)
     {
