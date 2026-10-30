@@ -25,6 +25,32 @@ public class MonoDropoutTests
     }
 
     [Fact]
+    public void HairlineWithVerticesOnScanlineCentres_KeepsOnePixelPerRow()
+    {
+        // The same hairline built from one-pixel edges whose shared vertices sit exactly on the
+        // row scanlines (y = n + 0.5): each row's crossing comes from an edge that ends there
+        // and one that starts there, so a scanline range that misses an edge's exact endpoint
+        // loses that row's dropout pixel.
+        var edges = new List<EdgeSegment>();
+        float[] ys = [0f, 0.5f, 1.5f, 2.5f, 3.5f, 4.5f, 5.5f, 6f];
+        for (int i = 0; i + 1 < ys.Length; i++)
+        {
+            edges.Add(new EdgeSegment(2.4f, ys[i], 2.4f, ys[i + 1]));
+            edges.Add(new EdgeSegment(2.1f, ys[i + 1], 2.1f, ys[i]));
+        }
+
+        edges.Add(new EdgeSegment(2.1f, 0f, 2.4f, 0f));
+        edges.Add(new EdgeSegment(2.4f, 6f, 2.1f, 6f));
+        var bitmap = Mono(5, 6, [.. edges]);
+
+        for (int y = 0; y < 6; y++)
+        {
+            for (int x = 0; x < 5; x++)
+                bitmap[(y * 5) + x].ShouldBe((byte)(x == 2 ? 255 : 0), $"pixel ({x},{y})");
+        }
+    }
+
+    [Fact]
     public void HairlineHorizontalStroke_KeepsOnePixelPerColumn()
     {
         var bitmap = Mono(5, 6, Rect(0f, 3.2f, 5f, 3.5f));
