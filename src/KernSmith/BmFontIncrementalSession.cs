@@ -282,7 +282,8 @@ public sealed class BmFontIncrementalSession : IDisposable
         }
 
         _lineMetrics ??= BmFontModelBuilder.ComputeLineMetrics(
-            _prepared.FontInfo, _prepared.EffectiveSize, raster.RasterizerFontMetrics);
+            _prepared.FontInfo, (float)(_prepared.EffectiveSize * BmFontModelBuilder.DpiScale(_prepared.Options)),
+            raster.RasterizerFontMetrics);
 
         _kerningIndex ??= BuildKerningIndex(raster.RasterizerKerningPairs);
 
@@ -567,7 +568,7 @@ public sealed class BmFontIncrementalSession : IDisposable
                 if (!_kerningPreScaled)
                 {
                     amount = (int)Math.Round(
-                        (double)amount * _prepared.EffectiveSize / _prepared.FontInfo.UnitsPerEm * (_prepared.Options.WidthPercent / 100.0),
+                        (double)amount * _prepared.EffectiveSize * BmFontModelBuilder.DpiScale(_prepared.Options) / _prepared.FontInfo.UnitsPerEm * (_prepared.Options.WidthPercent / 100.0),
                         MidpointRounding.AwayFromZero);
                 }
                 if (amount == 0)

@@ -29,7 +29,8 @@ internal static class BmFontModelBuilder
         // The effective ppem used for rasterization. When cell-height scaling is
         // applied, this is smaller than options.Size. For metric calculations we
         // use the effective size; for the InfoBlock we record the original.
-        var metricSize = effectiveSize ?? options.Size;
+        // Backends render at size × Dpi / 72 pixels per em, so font-unit metrics scale by it too.
+        var metricSize = (float)((effectiveSize ?? options.Size) * DpiScale(options));
 
         var info = BuildInfo(fontInfo, options);
 
@@ -284,6 +285,13 @@ internal static class BmFontModelBuilder
             GreenChnl: greenChnl,
             BlueChnl: blueChnl);
     }
+
+    /// <summary>
+    /// Pixels per em per point of size: every backend renders at <c>Size × Dpi / 72</c> ppem
+    /// (<c>Dpi</c> 0 meaning 72, as on FreeType and Native).
+    /// </summary>
+    internal static double DpiScale(FontGeneratorOptions options) =>
+        options.Dpi > 0 ? options.Dpi / 72.0 : 1.0;
 
     /// <summary>Atlas page file extension for the configured texture format.</summary>
     internal static string TextureExtension(FontGeneratorOptions options) => options.TextureFormat switch
