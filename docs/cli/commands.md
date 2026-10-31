@@ -144,7 +144,7 @@ kernsmith generate -f font.ttf -s 48 --outline 2,000000 --gradient FFFFFF,888888
 | Flag | Description |
 |------|-------------|
 | `--axis <tag>=<value>` | Set a variation axis value (repeatable) |
-| `--instance <name>` | Use a named instance's axis values (`--axis` overrides single axes; an unknown name lists the font's instances) |
+| `--instance <name>` | Use a named instance's axis values (`--axis` overrides single axes; an unknown name exits with code 4, listing the font's instances) |
 
 ```bash
 kernsmith generate -f RobotoFlex.ttf -s 32 --axis wght=700 --axis wdth=90

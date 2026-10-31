@@ -371,8 +371,10 @@ internal sealed class GenerateCommand
             string.Equals(n.Name, options.InstanceName, StringComparison.OrdinalIgnoreCase));
         if (match == null)
         {
+            // The font's fvar decides which names exist, so this is the font rejecting an option
+            // (exit 4, like a --color-palette it lacks), not a malformed argument (exit 1).
             var names = instances.Select(n => n.Name).Where(n => !string.IsNullOrEmpty(n)).ToList();
-            throw new ArgumentException(names.Count == 0
+            throw new InvalidOperationException(names.Count == 0
                 ? $"--instance '{options.InstanceName}': the font has no named instances."
                 : $"Unknown --instance '{options.InstanceName}'. Named instances: {string.Join(", ", names)}.");
         }

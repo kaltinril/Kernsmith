@@ -35,11 +35,28 @@ internal static class GlyphCompositor
         if (sourceGlyph.Width == 0 || sourceGlyph.Height == 0 || sourceGlyph.BitmapData.Length == 0)
             return sourceGlyph;
 
-        // 1. Extract alpha from source (handle both grayscale and RGBA).
+        // 1. The alpha mask the effects read. Every reader indexes it as y * pitch + x for
+        // x < width, y < height and reads 0 at or past its length, so a grayscale glyph's own
+        // bytes at its own pitch read exactly as a width-pitch copy would; an RGBA glyph's
+        // alpha is extracted into a rented buffer (only its first width * height bytes are read).
         var srcW = sourceGlyph.Width;
         var srcH = sourceGlyph.Height;
-        var alphaData = ExtractAlpha(sourceGlyph);
-        var alphaPitch = srcW; // one byte per pixel in the extracted alpha
+        byte[]? rentedAlpha = null;
+        byte[]? rentedBody = null;
+        byte[] alphaData;
+        int alphaPitch;
+        if (sourceGlyph.Format == PixelFormat.Rgba32)
+        {
+            rentedAlpha = ArrayPool<byte>.Shared.Rent(srcW * srcH);
+            ExtractAlpha(sourceGlyph, rentedAlpha);
+            alphaData = rentedAlpha;
+            alphaPitch = srcW;
+        }
+        else
+        {
+            alphaData = sourceGlyph.BitmapData;
+            alphaPitch = sourceGlyph.Pitch;
+        }
 
         // 2. Generate layers with dependency awareness.
         // Shadow (Z=0) should use the outlined shape when outline (Z=1) is present,
@@ -145,7 +162,8 @@ internal static class GlyphCompositor
         // so the glyph itself is still visible.
         if (!hasBodyEffect)
         {
-            var bodyLayer = CreateDefaultBodyLayer(alphaData, srcW, srcH, alphaPitch, sourceGlyph, fillR, fillG, fillB, fillA);
+            rentedBody = ArrayPool<byte>.Shared.Rent(srcW * srcH * 4);
+            var bodyLayer = CreateDefaultBodyLayer(rentedBody, alphaData, srcW, srcH, alphaPitch, sourceGlyph, fillR, fillG, fillB, fillA);
             layers.Add(bodyLayer);
         }
 
@@ -179,42 +197,36 @@ internal static class GlyphCompositor
             var layerCanvasX = layer.OffsetX - minX;
             var layerCanvasY = layer.OffsetY - minY;
 
+            // A rented body layer is longer than its pixels; only Width * Height are read.
+            var data = layer.RgbaData;
+            var dataLength = Math.Min(data.Length, layer.Width * layer.Height * 4);
             for (var y = 0; y < layer.Height; y++)
             {
+                var dy = layerCanvasY + y;
+                if (dy < 0 || dy >= canvasH) continue;
+
                 for (var x = 0; x < layer.Width; x++)
                 {
                     var si = (y * layer.Width + x) * 4;
-                    if (si + 3 >= layer.RgbaData.Length) continue;
+                    if (si + 3 >= dataLength) continue;
 
-                    var srcR = layer.RgbaData[si];
-                    var srcG = layer.RgbaData[si + 1];
-                    var srcB = layer.RgbaData[si + 2];
-                    var srcA = layer.RgbaData[si + 3];
-
+                    var srcA = data[si + 3];
                     if (srcA == 0) continue;
 
                     var dx = layerCanvasX + x;
-                    var dy = layerCanvasY + y;
-                    if (dx < 0 || dx >= canvasW || dy < 0 || dy >= canvasH) continue;
+                    if (dx < 0 || dx >= canvasW) continue;
 
-                    var di = (dy * canvasW + dx) * 4;
-
-                    // Alpha-over blending.
-                    var dstA = dst[di + 3];
-                    var sA = srcA / 255f;
-                    var dA = dstA / 255f;
-                    var outA = sA + dA * (1f - sA);
-
-                    if (outA > 0)
-                    {
-                        dst[di + 0] = (byte)((srcR * sA + dst[di + 0] * dA * (1f - sA)) / outA);
-                        dst[di + 1] = (byte)((srcG * sA + dst[di + 1] * dA * (1f - sA)) / outA);
-                        dst[di + 2] = (byte)((srcB * sA + dst[di + 2] * dA * (1f - sA)) / outA);
-                        dst[di + 3] = (byte)Math.Min(255, (int)(outA * 255));
-                    }
+                    BlendOver(dst, (dy * canvasW + dx) * 4, data[si], data[si + 1], data[si + 2], srcA);
                 }
             }
         }
+
+        // Nothing refers to the rented buffers past this point. (An exception above just leaves
+        // them to the garbage collector.)
+        if (rentedAlpha != null)
+            ArrayPool<byte>.Shared.Return(rentedAlpha);
+        if (rentedBody != null)
+            ArrayPool<byte>.Shared.Return(rentedBody);
 
         // 6. Adjust metrics based on composite canvas offset.
         // minX/minY represent how much the canvas extended beyond the original origin.
@@ -240,39 +252,101 @@ internal static class GlyphCompositor
     }
 
     /// <summary>
-    /// Extracts the alpha channel from a glyph, handling both grayscale and RGBA formats.
-    /// Returns a byte array with one byte per pixel.
+    /// Alpha-over of one straight-alpha source pixel onto <paramref name="dst"/> at <paramref name="di"/>.
     /// </summary>
-    private static byte[] ExtractAlpha(RasterizedGlyph glyph)
+    /// <remarks>
+    /// The float expression below defines the result; the two shortcuts reproduce it exactly.
+    /// An opaque source has <c>sA = 1</c>, so <c>outA = 1 + dA * 0 = 1</c> and every channel is
+    /// <c>(src * 1 + d * dA * 0) / 1 = src</c>. An empty destination has <c>dA = 0</c>, so the
+    /// destination term is +0 whatever its color and the result depends on the source channel
+    /// and alpha alone: <see cref="OverEmpty"/> tabulates that same expression.
+    /// </remarks>
+    internal static void BlendOver(byte[] dst, int di, byte srcR, byte srcG, byte srcB, byte srcA)
+    {
+        if (srcA == 255)
+        {
+            dst[di + 0] = srcR;
+            dst[di + 1] = srcG;
+            dst[di + 2] = srcB;
+            dst[di + 3] = 255;
+            return;
+        }
+
+        var dstA = dst[di + 3];
+        if (dstA == 0)
+        {
+            var row = OverEmpty(srcA);
+            dst[di + 0] = row[srcR];
+            dst[di + 1] = row[srcG];
+            dst[di + 2] = row[srcB];
+            dst[di + 3] = row[256];
+            return;
+        }
+
+        BlendOverFloat(dst, di, srcR, srcG, srcB, srcA, dstA);
+    }
+
+    private static void BlendOverFloat(byte[] dst, int di, byte srcR, byte srcG, byte srcB, byte srcA, byte dstA)
+    {
+        var sA = srcA / 255f;
+        var dA = dstA / 255f;
+        var outA = sA + dA * (1f - sA);
+
+        if (outA > 0)
+        {
+            dst[di + 0] = (byte)((srcR * sA + dst[di + 0] * dA * (1f - sA)) / outA);
+            dst[di + 1] = (byte)((srcG * sA + dst[di + 1] * dA * (1f - sA)) / outA);
+            dst[di + 2] = (byte)((srcB * sA + dst[di + 2] * dA * (1f - sA)) / outA);
+            dst[di + 3] = (byte)Math.Min(255, (int)(outA * 255));
+        }
+    }
+
+    /// <summary>Per source alpha (1-254): <see cref="OverEmpty"/> rows, built on first use.</summary>
+    private static readonly byte[]?[] s_overEmpty = new byte[]?[256];
+
+    /// <summary>
+    /// <see cref="BlendOverFloat"/> of every source channel value (indices 0-255) and the alpha
+    /// (index 256) over a transparent black pixel at source alpha <paramref name="srcA"/>
+    /// (1-254). Rows are immutable once published; two threads building one at once build
+    /// identical bytes.
+    /// </summary>
+    private static byte[] OverEmpty(byte srcA)
+    {
+        var row = Volatile.Read(ref s_overEmpty[srcA]);
+        if (row != null)
+            return row;
+
+        row = new byte[257];
+        var pixel = new byte[4];
+        for (var c = 0; c < 256; c++)
+        {
+            pixel[0] = (byte)c;
+            pixel[3] = 0;
+            BlendOverFloat(pixel, 0, (byte)c, 0, 0, srcA, 0);
+            row[c] = pixel[0];
+            row[256] = pixel[3];
+        }
+
+        Volatile.Write(ref s_overEmpty[srcA], row);
+        return row;
+    }
+
+    /// <summary>
+    /// Extracts the alpha channel of an RGBA glyph into the first width * height bytes of
+    /// <paramref name="alpha"/>, one byte per pixel (0 where the glyph's data runs out).
+    /// </summary>
+    private static void ExtractAlpha(RasterizedGlyph glyph, byte[] alpha)
     {
         var w = glyph.Width;
         var h = glyph.Height;
-        var alpha = new byte[w * h];
-
-        if (glyph.Format == PixelFormat.Rgba32)
+        for (var y = 0; y < h; y++)
         {
-            for (var y = 0; y < h; y++)
+            for (var x = 0; x < w; x++)
             {
-                for (var x = 0; x < w; x++)
-                {
-                    var srcIdx = y * glyph.Pitch + x * 4 + 3;
-                    alpha[y * w + x] = srcIdx < glyph.BitmapData.Length ? glyph.BitmapData[srcIdx] : (byte)0;
-                }
+                var srcIdx = y * glyph.Pitch + x * 4 + 3;
+                alpha[y * w + x] = srcIdx < glyph.BitmapData.Length ? glyph.BitmapData[srcIdx] : (byte)0;
             }
         }
-        else
-        {
-            for (var y = 0; y < h; y++)
-            {
-                for (var x = 0; x < w; x++)
-                {
-                    var srcIdx = y * glyph.Pitch + x;
-                    alpha[y * w + x] = srcIdx < glyph.BitmapData.Length ? glyph.BitmapData[srcIdx] : (byte)0;
-                }
-            }
-        }
-
-        return alpha;
     }
 
     /// <summary>
@@ -282,7 +356,8 @@ internal static class GlyphCompositor
     /// <paramref name="fillB"/> become the body RGB and <paramref name="fillA"/> multiplies the glyph alpha.
     /// The default (255,255,255,255) reproduces the legacy opaque-white body exactly.
     /// </summary>
-    /// <param name="alphaData">Extracted per-pixel alpha mask (one byte per pixel) for the glyph.</param>
+    /// <param name="rgba">Receives the layer's pixels; at least width * height * 4 bytes (only those are written).</param>
+    /// <param name="alphaData">Per-pixel alpha mask (one byte per pixel) for the glyph.</param>
     /// <param name="width">Mask width in pixels.</param>
     /// <param name="height">Mask height in pixels.</param>
     /// <param name="pitch">Row stride of <paramref name="alphaData"/> in bytes.</param>
@@ -291,14 +366,14 @@ internal static class GlyphCompositor
     /// <param name="fillG">Body fill green channel.</param>
     /// <param name="fillB">Body fill blue channel.</param>
     /// <param name="fillA">Body fill alpha; multiplies the glyph mask alpha. <c>255</c> is a bit-exact pass-through of the original alpha.</param>
-    private static GlyphLayer CreateDefaultBodyLayer(byte[] alphaData, int width, int height, int pitch, RasterizedGlyph sourceGlyph,
+    private static GlyphLayer CreateDefaultBodyLayer(byte[] rgba, byte[] alphaData, int width, int height, int pitch, RasterizedGlyph sourceGlyph,
         byte fillR = 255, byte fillG = 255, byte fillB = 255, byte fillA = 255)
     {
-        var rgba = new byte[width * height * 4];
-
-        // If the source was RGBA (e.g., color font), preserve the original colors.
+        // If the source was RGBA (e.g., color font), preserve the original colors; pixels past
+        // the end of its data stay transparent.
         if (sourceGlyph.Format == PixelFormat.Rgba32)
         {
+            Array.Clear(rgba, 0, width * height * 4);
             for (var y = 0; y < height; y++)
             {
                 for (var x = 0; x < width; x++)

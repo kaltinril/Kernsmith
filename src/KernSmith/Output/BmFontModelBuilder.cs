@@ -83,7 +83,9 @@ internal static class BmFontModelBuilder
         }
 
         // Build kerning pairs, filtering to glyphs in the generated set.
-        var glyphCodepoints = new HashSet<int>(glyphs.Select(g => g.Codepoint));
+        var glyphCodepoints = new HashSet<int>(glyphs.Count);
+        foreach (var glyph in glyphs)
+            glyphCodepoints.Add(glyph.Codepoint);
         var kerningPairs = new List<KerningEntry>();
 
         if (options.Kerning && rasterizerKerningPairs is not null)

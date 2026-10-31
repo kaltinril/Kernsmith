@@ -107,6 +107,32 @@ public class LcdFilterTests
         LcdFilterKernel.PixelBox.Sample(row, -2).ShouldBe((byte)0);
     }
 
+    [Theory]
+    [MemberData(nameof(Filters))]
+    [InlineData("Unnormalized")]
+    public void FilterRow_EqualsSampleAtEveryIndex_InsideAndPastBothEnds(string name)
+    {
+        // A kernel whose weights do not sum to its denominator saturates at 255 and goes
+        // negative, so the row filter's level table must clamp exactly as Sample does.
+        var filter = name == "Unnormalized" ? new LcdFilterKernel([-1, 3, 4, 3, -1], 5) : ByName(name);
+        var random = new Random(177);
+        foreach (int length in new[] { 1, 2, 5, 17, 64 })
+        {
+            var row = new byte[length];
+            random.NextBytes(row);
+            row[0] = 255;
+            row[^1] = 0;
+            for (int first = -5; first <= 2; first++)
+            {
+                int count = length + 8 - first;
+                var filtered = new byte[count];
+                filter.FilterRow(row, first, filtered);
+                for (int j = 0; j < count; j++)
+                    filtered[j].ShouldBe(filter.Sample(row, first + j), $"length {length}, subpixel {first + j}");
+            }
+        }
+    }
+
     [Fact]
     public void Constructor_RejectsAnEvenKernelOrANonPositiveDenominator()
     {

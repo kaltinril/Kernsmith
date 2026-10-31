@@ -44,16 +44,27 @@ internal static class OutlineFlattener
         if (!(tolerance > 0f))
             tolerance = DefaultTolerance;
 
-        var edges = new EdgeBuffer(outline.Commands.Length * 4, includeHorizontal);
-        try
-        {
+        using var edges = FlattenPooled(outline, transform, tolerance, includeHorizontal);
+        return edges.Edges.ToArray();
+    }
+
+    /// <summary>
+    /// <see cref="Flatten"/>'s edges in pooled storage rather than an exact-size array: what the
+    /// renderers use, since they read the edges once and keep nothing of them. Dispose the
+    /// result to return its array.
+    /// </summary>
+    public static PooledEdges FlattenPooled(GlyphOutline outline, OutlineTransform transform, float tolerance = DefaultTolerance, bool includeHorizontal = false)
+    {
+        ArgumentNullException.ThrowIfNull(outline);
+
+        if (!(tolerance > 0f))
+            tolerance = DefaultTolerance;
+
+        var edges = new EdgeBuffer(outline.IsEmpty ? 0 : outline.Commands.Length * 4, includeHorizontal);
+        if (!outline.IsEmpty)
             AddOutline(ref edges, outline, transform, tolerance);
-            return edges.ToArray();
-        }
-        finally
-        {
-            edges.Dispose();
-        }
+
+        return edges.Detach();
     }
 
     private static void AddOutline(ref EdgeBuffer edges, GlyphOutline outline, OutlineTransform transform, float tolerance)
@@ -173,10 +184,33 @@ internal static class OutlineFlattener
     }
 
     /// <summary>
-    /// The edges collected so far, in a pooled array; the caller gets an exact-size copy, which
-    /// is the only per-glyph allocation flattening makes.
+    /// Flattened edges in a pooled array; <see cref="Edges"/> is valid until disposal, after which
+    /// the array belongs to the pool again.
     /// </summary>
-    private struct EdgeBuffer : IDisposable
+    internal struct PooledEdges : IDisposable
+    {
+        private EdgeSegment[] _items;
+        private readonly int _count;
+
+        internal PooledEdges(EdgeSegment[] items, int count)
+        {
+            _items = items;
+            _count = count;
+        }
+
+        /// <summary>The edges, in outline order. Writable, so a caller may remap them in place.</summary>
+        public readonly Span<EdgeSegment> Edges => _items.AsSpan(0, _count);
+
+        public void Dispose()
+        {
+            if (_items.Length > 0)
+                ArrayPool<EdgeSegment>.Shared.Return(_items);
+            _items = [];
+        }
+    }
+
+    /// <summary>The edges collected so far, in a pooled array, handed on by <see cref="Detach"/>.</summary>
+    private struct EdgeBuffer
     {
         private readonly bool _includeHorizontal;
         private EdgeSegment[] _items;
@@ -206,12 +240,13 @@ internal static class OutlineFlattener
             _items[_count++] = new EdgeSegment(x0, y0, x1, y1);
         }
 
-        public readonly EdgeSegment[] ToArray() => _count == 0 ? [] : _items.AsSpan(0, _count).ToArray();
-
-        public void Dispose()
+        /// <summary>Hands the pooled array, and the duty to return it, to the result.</summary>
+        public PooledEdges Detach()
         {
-            ArrayPool<EdgeSegment>.Shared.Return(_items);
+            var result = new PooledEdges(_items, _count);
             _items = [];
+            _count = 0;
+            return result;
         }
 
         private void Grow()

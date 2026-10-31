@@ -32,7 +32,8 @@ internal sealed class CoverageRenderer : IBoxMeasuringRenderer
         if (options.AntiAlias != AntiAliasMode.None)
             return MeasureBox(glyph.GlyphIndex, box, glyph.Advance, options);
 
-        var ink = ScanlineRasterizer.MeasureMono(Edges(glyph, options), box.Width, box.Height, box.MinX, box.MinY, box.BearingX, box.BearingY);
+        using var edges = Edges(glyph, options);
+        var ink = ScanlineRasterizer.MeasureMono(edges.Edges, box.Width, box.Height, box.MinX, box.MinY, box.BearingX, box.BearingY);
         return new(BearingX: ink.BearingX, BearingY: ink.BearingY, Advance: glyph.Advance, Width: ink.Width, Height: ink.Height);
     }
 
@@ -52,10 +53,10 @@ internal sealed class CoverageRenderer : IBoxMeasuringRenderer
     public RasterizedGlyph Render(int codepoint, int glyphIndex, PreparedGlyph glyph, RasterOptions options)
     {
         var box = glyph.Box;
-        var edges = Edges(glyph, options);
+        using var edges = Edges(glyph, options);
         var raster = options.AntiAlias == AntiAliasMode.None
-            ? ScanlineRasterizer.RasterizeMono(edges, box.Width, box.Height, box.MinX, box.MinY, box.BearingX, box.BearingY)
-            : ScanlineRasterizer.Rasterize(edges, box.Width, box.Height, box.MinX, box.MinY, options.AntiAlias, box.BearingX, box.BearingY);
+            ? ScanlineRasterizer.RasterizeMono(edges.Edges, box.Width, box.Height, box.MinX, box.MinY, box.BearingX, box.BearingY)
+            : ScanlineRasterizer.Rasterize(edges.Edges, box.Width, box.Height, box.MinX, box.MinY, options.AntiAlias, box.BearingX, box.BearingY);
 
         return new RasterizedGlyph
         {
@@ -75,6 +76,6 @@ internal sealed class CoverageRenderer : IBoxMeasuringRenderer
         };
     }
 
-    private static EdgeSegment[] Edges(PreparedGlyph glyph, RasterOptions options) =>
-        OutlineFlattener.Flatten(glyph.Outline, glyph.ToPixels, includeHorizontal: options.AntiAlias == AntiAliasMode.None);
+    private static OutlineFlattener.PooledEdges Edges(PreparedGlyph glyph, RasterOptions options) =>
+        OutlineFlattener.FlattenPooled(glyph.Outline, glyph.ToPixels, includeHorizontal: options.AntiAlias == AntiAliasMode.None);
 }

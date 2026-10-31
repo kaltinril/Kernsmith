@@ -32,6 +32,13 @@ internal static class MultiChannelDistanceField
     /// </summary>
     private const float ProbeMargin = 0.05f;
 
+    /// <summary>
+    /// A corner value at least this far from zero keeps every interpolated value of its channel
+    /// on its side (see <see cref="ProbedField.CertainMedianSign"/>): far above the subnormal
+    /// range, far below any distance that matters.
+    /// </summary>
+    private const float CertainMagnitude = 1e-30f;
+
     /// <summary>Probes per cell side: 0, ¼, ½, ¾ and 1 of a texel.</summary>
     private const int ProbeSteps = 5;
 
@@ -135,11 +142,26 @@ internal static class MultiChannelDistanceField
                     if (field.CannotDisagree(x, y))
                         continue;
 
+                    // Where every median's side is certain and the true field is on that side at
+                    // all four corners, no probe can be known to lie on the other.
+                    int side = field.CertainMedianSign(x, y);
+                    if (side != 0 && field.CornersOnSide(x, y, side))
+                        continue;
+
                     for (int probe = 0; probe < ProbesPerCell; probe++)
                     {
                         int sign = field.KnownSign(x, y, probe);
-                        if (sign != 0 && !field.Agrees(x, y, ProbeU(probe), ProbeV(probe), sign))
-                            flattened += Repair(field, x, y, ProbeU(probe), ProbeV(probe), sign);
+                        if (sign == 0)
+                            continue;
+
+                        bool agrees = side != 0 ? side == sign : field.Agrees(x, y, ProbeU(probe), ProbeV(probe), sign);
+                        if (agrees)
+                            continue;
+
+                        int repaired = Repair(field, x, y, ProbeU(probe), ProbeV(probe), sign);
+                        flattened += repaired;
+                        if (repaired > 0)
+                            side = field.CertainMedianSign(x, y);
                     }
                 }
             }
@@ -296,6 +318,59 @@ internal static class MultiChannelDistanceField
 
             return min > 0 || max < 0
                 || (IsFlat(t0) && IsFlat(t0 + 3) && IsFlat(t2) && IsFlat(t2 + 3));
+        }
+
+        /// <summary>
+        /// The sign every probe's interpolated median has, when the corner values alone decide
+        /// it — +1 when two channels are at least <see cref="CertainMagnitude"/> at all four
+        /// corners, −1 when two are at most its negative — else 0.
+        /// </summary>
+        /// <remarks>
+        /// Exact in float arithmetic, not just in the reals: every probe weight is a product of
+        /// quarters, so it is exact, non-negative, and at least one of the four is 1/4 or more.
+        /// Such a channel's interpolant is then a sum of same-signed products, one of them at
+        /// least a quarter of <see cref="CertainMagnitude"/> (no underflow), and rounding never
+        /// takes a sum of same-signed terms below the largest. Two channels of one sign fix the
+        /// median's sign whatever the third holds — unless it is NaN, which Math.Min and Math.Max
+        /// propagate, so a NaN anywhere answers 0.
+        /// </remarks>
+        public int CertainMedianSign(int x, int y)
+        {
+            int positive = 0, negative = 0;
+            for (int c = 0; c < 3; c++)
+            {
+                bool allPositive = true, allNegative = true;
+                for (int k = 0; k < 4; k++)
+                {
+                    float value = Values[Texel(x, y, k) + c];
+                    if (float.IsNaN(value))
+                        return 0;
+                    allPositive &= value >= CertainMagnitude;
+                    allNegative &= value <= -CertainMagnitude;
+                }
+
+                positive += allPositive ? 1 : 0;
+                negative += allNegative ? 1 : 0;
+            }
+
+            return positive >= 2 ? 1 : negative >= 2 ? -1 : 0;
+        }
+
+        /// <summary>
+        /// True when <see cref="KnownSign"/> can only answer 0 or <paramref name="side"/> in the
+        /// cell: it takes a probe's sign from a corner's true distance, +1 exactly when that is
+        /// above zero.
+        /// </summary>
+        public bool CornersOnSide(int x, int y, int side)
+        {
+            for (int k = 0; k < 4; k++)
+            {
+                float d = TrueDistance[((y + (k >> 1)) * Width) + x + (k & 1)];
+                if ((d > 0 ? 1 : -1) != side)
+                    return false;
+            }
+
+            return true;
         }
 
         // The NaN test keeps == semantics: float.Equals would call three NaN channels flat.

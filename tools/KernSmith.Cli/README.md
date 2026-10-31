@@ -183,7 +183,7 @@ See the [Effects](#effects) section below for detailed examples.
 | Flag | Description |
 |------|-------------|
 | `--axis <tag>=<value>` | Set a variation axis value (repeatable) |
-| `--instance <name>` | Use a named instance's axis values (`--axis` overrides single axes; an unknown name lists the font's instances) |
+| `--instance <name>` | Use a named instance's axis values (`--axis` overrides single axes; an unknown name exits with code 4, listing the font's instances) |
 
 ```
 # Set weight and width axes

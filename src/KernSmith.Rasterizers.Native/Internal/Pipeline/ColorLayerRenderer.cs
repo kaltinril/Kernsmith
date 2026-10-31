@@ -72,6 +72,67 @@ internal sealed class ColorLayerRenderer : IGlyphRenderer, IDrawsWithoutOutline
         return Metrics(box, glyph.Advance);
     }
 
+    /// <summary>
+    /// <see cref="Measure"/> for a version 0 layered glyph, decoding only what the box shortcut
+    /// cannot measure: the advance from the base glyph's <see cref="GlyphPipeline.TryPrepareBox"/>
+    /// (its outline is never drawn) and the box from the union of its layers', each equal to
+    /// what <see cref="GlyphPipeline.Prepare"/> gives it.
+    /// </summary>
+    /// <returns>False — measure the prepared glyph instead — for a glyph with a version 1 record
+    /// (checked without reading its graph, which <see cref="Measure"/> then reads once), a glyph
+    /// without layers, <see cref="AntiAliasMode.None"/> (its box comes from the pixels), or a
+    /// base glyph that cannot be measured from its box.</returns>
+    /// <exception cref="RasterizationException">If a layer's data is malformed.</exception>
+    /// <exception cref="FontFormatException">If the base glyph's data is malformed.</exception>
+    public bool TryMeasureFromBoxes(int glyphIndex, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms, out GlyphMetrics metrics)
+    {
+        metrics = default!;
+        if (options.AntiAlias == AntiAliasMode.None || !_colorGlyphs.HasLayers(glyphIndex) || _colorGlyphs.HasPaintGraphRecord(glyphIndex)
+            || !_pipeline.TryPrepareBox(glyphIndex, options, transforms, out _, out int advance))
+            return false;
+
+        var colorLayers = new List<ColorLayer>();
+        _colorGlyphs.GetLayers(glyphIndex, colorLayers);
+        int left = int.MaxValue, top = int.MaxValue, right = int.MinValue, bottom = int.MinValue;
+        foreach (var layer in colorLayers)
+        {
+            // A layer the shortcut cannot measure (a composite, say) is prepared in full; either
+            // way its box is the one Layout would union, and an empty box is a blank layer.
+            GlyphBox b;
+            try
+            {
+                if (!_pipeline.TryPrepareBox(layer.GlyphIndex, options, transforms, out b, out _))
+                {
+                    var prepared = _pipeline.Prepare(layer.GlyphIndex, options, transforms);
+                    b = prepared.IsBlank ? default : prepared.Box;
+                }
+            }
+            catch (Exception ex) when (ex is FontFormatException or ArgumentOutOfRangeException)
+            {
+                throw new RasterizationException($"Color layer glyph {layer.GlyphIndex} of glyph {glyphIndex} is malformed: {ex.Message}", ex);
+            }
+
+            if (b.IsEmpty)
+                continue;
+
+            left = Math.Min(left, b.MinX);
+            top = Math.Min(top, b.MinY);
+            right = Math.Max(right, b.MinX + b.Width);
+            bottom = Math.Max(bottom, b.MinY + b.Height);
+        }
+
+        if (right == int.MinValue)
+        {
+            metrics = Metrics(default, advance);
+            return true;
+        }
+
+        // The same limit Layout enforces on the same union.
+        GlyphLimits.EnsureGlyphBox(glyphIndex, (long)right - left, (long)bottom - top, options);
+        metrics = Metrics(new GlyphBox(left, top, right - left, bottom - top), advance);
+        return true;
+    }
+
     /// <inheritdoc />
     public RasterizedGlyph Render(int codepoint, int glyphIndex, PreparedGlyph glyph, RasterOptions options)
     {
@@ -206,8 +267,9 @@ internal sealed class ColorLayerRenderer : IGlyphRenderer, IDrawsWithoutOutline
         foreach (var (glyph, color) in layers)
         {
             var box = glyph.Box;
-            var edges = OutlineFlattener.Flatten(glyph.Outline, glyph.ToPixels, includeHorizontal: antiAlias == AntiAliasMode.None);
-            var coverage = ScanlineRasterizer.Rasterize(edges, box.Width, box.Height, box.MinX, box.MinY, antiAlias).Bitmap;
+            byte[] coverage;
+            using (var edges = OutlineFlattener.FlattenPooled(glyph.Outline, glyph.ToPixels, includeHorizontal: antiAlias == AntiAliasMode.None))
+                coverage = ScanlineRasterizer.Rasterize(edges.Edges, box.Width, box.Height, box.MinX, box.MinY, antiAlias).Bitmap;
 
             float alpha = color.A / 255f;
             float red = color.R / 255f * alpha;

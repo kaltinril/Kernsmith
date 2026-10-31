@@ -21,6 +21,34 @@ public class SdfRendererTests
     private static RasterOptions Sdf(float spread, float size = 32f) =>
         new() { Size = size, Sdf = true, SdfSpread = spread };
 
+    // ---- Vector path -----------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(9f, 2f)]
+    [InlineData(32f, 8f)]
+    [InlineData(71.5f, 13f)]
+    public void Compute_VectorColumns_AreBitIdenticalToScalarColumns(float size, float spread)
+    {
+        // Where vectors are hardware accelerated the default path runs them; it must give
+        // exactly what the scalar loop gives, or output would depend on the machine.
+        var face = Internal.NativeFontFace.Load(TestFonts.RobotoRegularBytes());
+        var pipeline = new GlyphPipeline(new TrueTypeOutlineDecoder(face), face.Head.UnitsPerEm);
+        var options = Sdf(spread, size);
+        int pad = SdfRenderer.SpreadPixels(options);
+        foreach (char c in "@ag%W0ji/")
+        {
+            var glyph = pipeline.Prepare(face.GetGlyphIndex(c), options, []);
+            var shape = Internal.Distance.DistanceShape.Build(glyph.Outline, glyph.ToPixels, glyph.Box.MinX - pad, glyph.Box.MinY - pad,
+                Internal.Distance.SignedDistanceField.ToleranceFor(pad));
+            int width = glyph.Box.Width + (2 * pad), height = glyph.Box.Height + (2 * pad);
+
+            var vector = Internal.Distance.SignedDistanceField.Compute(shape, width, height, pad);
+            var scalar = Internal.Distance.SignedDistanceField.Compute(shape, width, height, pad, allowVectors: false);
+            for (int i = 0; i < scalar.Length; i++)
+                BitConverter.SingleToInt32Bits(vector[i]).ShouldBe(BitConverter.SingleToInt32Bits(scalar[i]), $"'{c}' texel {i}");
+        }
+    }
+
     // ---- Dispatch and capability -----------------------------------------------------------
 
     [Fact]

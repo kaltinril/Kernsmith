@@ -55,10 +55,10 @@ All rows, worst font per size:
 | Case | vs | Sizes | Mean SSIM (worst font) by size | Worst glyph | Advance exact | Bearings ±1 | Box ±1 |
 |---|---|---|---|---:|---:|---:|---:|
 | none | FreeType | 8/12/16/24/48/96 | 0.459 · 0.657 · 0.750 · 0.866 · 0.947 · 0.969 | -0.57 (sourcecode 12px (=)) | 86% | 99% | 93% |
-| none | Stb | 8/12/16/24/48/96 | 0.154 · 0.453 · 0.661 · 0.853 · 0.948 · 0.975 | 0.00 (roboto 8px (")) | 100% | 98% | 35% |
+| none | Stb | 8/12/16/24/48/96 | 0.154 · 0.453 · 0.661 · 0.853 · 0.948 · 0.975 | 0.00 (roboto 8px (")) | 98% | 98% | 35% |
 | grayscale | FreeType | 8/12/16/24/48/96 | 0.988 · 0.992 · 0.993 · 0.993 · 0.996 · 0.997 | 0.83 (roboto 12px (%)) | 86% | 100% | 100% |
-| grayscale | Stb | 8/12/16/24/48/96 | 0.992 · 0.993 · 0.988 · 0.995 · 0.994 · 0.996 | 0.77 (robotoflex 16px (5)) | 100% | 100% | 100% |
-| light | FreeType | 8/12/16/24/48/96 | 0.483 · 0.674 · 0.724 · 0.822 · 0.872 · 0.897 | -0.81 (reemkufi 12px (=)) | 57% | 91% | 65% |
+| grayscale | Stb | 8/12/16/24/48/96 | 0.992 · 0.993 · 0.988 · 0.995 · 0.994 · 0.996 | 0.77 (robotoflex 16px (5)) | 98% | 100% | 100% |
+| light | FreeType | 8/12/16/24/48/96 | 0.487 · 0.680 · 0.728 · 0.819 · 0.894 · 0.901 | -0.81 (reemkufi 12px (=)) | 57% | 91% | 69% |
 | lcd | FreeType | 8/12/16/24/48/96 | 0.990 · 0.994 · 0.994 · 0.996 · 0.999 · 0.998 | 0.89 (sourcecode 8px (.)) | 86% | 100% | 99% |
 | sdf | FreeType | 16/32 | 0.999 · 0.994 | 0.93 (bungee 32px (y)) | 94% | 100% | 100% |
 | bold | FreeType | 16/48 | 0.993 · 0.993 | 0.82 (dancingscript 48px (ñ)) | 95% | 99% | 98% |
@@ -69,9 +69,9 @@ All rows, worst font per size:
 
 Known differences behind the low columns:
 
-- **Light** — FreeType runs the font's own hinting (TrueType bytecode, the CFF hinter) and moves advances; Native auto-hints y only and keeps unhinted advances.
+- **Light** — FreeType runs the font's own hinting (TrueType bytecode, the CFF hinter) and moves advances; Native auto-hints y only, keeps unhinted advances and moves no point more than a pixel, so the two can round an edge a pixel apart in opposite directions.
 - **None** — FreeType's mono renderer samples pixel centres; Native thresholds coverage at 50%; both apply dropout control, so one-pixel strokes land a row or column apart. stb has no dropout control (Dancing Script loses its hairlines). Native crops mono boxes to their ink, stb keeps the anti-aliased box (Box ±1 vs stb).
-- **Advances vs FreeType** — FreeType rounds a scaled advance to 26.6 before rounding to pixels: Roboto's digits at 8px (1151 units = 4.496 px) become 5 px there and 4 px in Native and stb. stb agrees exactly everywhere.
+- **Advances vs FreeType** — FreeType rounds a scaled advance to 26.6 before rounding to pixels: Roboto's digits at 8px (1151 units = 4.496 px) become 5 px there and 4 px in Native and stb. stb agrees exactly except at exact half-pixel ties (Roboto Flex `e` at 16px is 8.5 px), which the StbTrueType backend rounds to even and Native, like FreeType, rounds up.
 - **Italic boxes** — FreeType sizes a slanted glyph from its control box, Native from the tight outline (bearings/box at 48px).
 - **Lcd** — the FreeType backend returns its raw three-bytes-per-pixel buffer labelled `Grayscale8`; the matrix splits it into R/G/B planes and divides its width by three.
 

@@ -118,6 +118,27 @@ public class TtfParserHostileInputTests
     }
 
     [Fact]
+    public void Gpos_PairPosFormat2RecordOffsetPastInt32_IsSkipped()
+    {
+        // 65535 x 65535 classes of 64-byte record pairs: row 600's offset passes int.MaxValue.
+        // Computed in 32 bits it wrapped negative, slipped under the length check and threw.
+        var coverage = Concat(U16(1), U16(1), U16(5));
+        var classDef1 = Concat(U16(1), U16(5), U16(1), U16(600)); // glyph 5 -> class 600
+        var classDef2 = Concat(U16(2), U16(0));
+        const int CoverageAt = 16;
+        int classDef1At = CoverageAt + coverage.Length;
+        int classDef2At = classDef1At + classDef1.Length;
+        var subtable = Concat(
+            U16(2), U16(CoverageAt), U16(0xFFFF), U16(0xFFFF),
+            U16((ushort)classDef1At), U16((ushort)classDef2At), U16(0xFFFF), U16(0xFFFF),
+            coverage, classDef1, classDef2);
+
+        var parser = new TtfParser(RobotoWithGpos(Gpos(subtable)));
+
+        parser.GposPairs.ShouldBeEmpty();
+    }
+
+    [Fact]
     public void Gpos_OverlappingCoverageRanges_StayBounded()
     {
         // 1000 ranges each claiming every glyph: 65 million coverage entries if expanded,

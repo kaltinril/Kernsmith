@@ -1,3 +1,4 @@
+using System.Buffers;
 using KernSmith.Rasterizers.Native.Internal.Outlines;
 
 namespace KernSmith.Rasterizers.Native.Internal.Hinting;
@@ -28,6 +29,13 @@ namespace KernSmith.Rasterizers.Native.Internal.Hinting;
 /// cannot make an outline intersect itself, which per-contour interpolation cannot promise.
 /// X coordinates are never touched, so advances and horizontal positions are unchanged.
 /// </para>
+/// <para>
+/// INVARIANT: no placed edge moves more than <see cref="MaxShift"/> (one pixel). Every other
+/// point moves by a blend of two neighbouring edges' shifts, or with the nearest end, so no
+/// point moves further — light hinting snaps a glyph to the grid, it does not reshape it. A
+/// placement that would need more (a stroke stacked on a stroke that already moved, a zone
+/// or rounding that pulls a feature a pixel or more) is refused and the edge is interpolated.
+/// </para>
 /// </remarks>
 internal static class GridFitter
 {
@@ -39,6 +47,15 @@ internal static class GridFitter
 
     /// <summary>Adjacent horizontal runs closer than this in height are one edge.</summary>
     private const float MergeTolerance = 0.25f;
+
+    /// <summary>The furthest, in pixels, fitting may move an edge from its unhinted height.</summary>
+    private const float MaxShift = 1f;
+
+    /// <summary>
+    /// The furthest, in pixels, a stroke may be from the font's standard thickness and still be
+    /// fitted as one: past that it is a different stroke, and its own width is rounded.
+    /// </summary>
+    private const float MaxStandardStemDeviation = 0.5f;
 
     /// <summary>
     /// Fits an outline to the pixel grid.
@@ -153,11 +170,15 @@ internal static class GridFitter
 
     /// <summary>
     /// A stroke's fitted thickness: whole pixels, at least one, rounded from the font's standard
-    /// thickness when the stroke is close to it so equal strokes stay equal.
+    /// thickness when the stroke is close to it so equal strokes stay equal. Close is relative
+    /// to the standard, but never more than <see cref="MaxStandardStemDeviation"/>: at large
+    /// sizes a percentage of the standard spans pixels, and fitting a visibly thinner stroke
+    /// at the standard width moves its edges by a pixel or more.
     /// </summary>
     private static float StemWidth(float width, float standard)
     {
-        float basis = standard > 0f && MathF.Abs(width - standard) <= 0.1f + (0.15f * standard) ? standard : width;
+        float tolerance = MathF.Min(0.1f + (0.15f * standard), MaxStandardStemDeviation);
+        float basis = standard > 0f && MathF.Abs(width - standard) <= tolerance ? standard : width;
         return MathF.Max(1f, GridMath.Round(basis));
     }
 
@@ -228,8 +249,26 @@ internal static class GridFitter
     /// <summary>Moves every point: placed edges by their own shift, the rest through the map.</summary>
     private static GlyphOutline Apply(OutlineCommand[] commands, List<Edge> edges, List<(int Alias, int Canonical)> aliases, KeyMap keys)
     {
-        var y = new float[commands.Length * 3];
-        var placed = new bool[y.Length];
+        // Scratch is pooled; only the fitted commands are kept.
+        int slotCount = commands.Length * 3;
+        float[] yBuffer = ArrayPool<float>.Shared.Rent(slotCount);
+        bool[] placedBuffer = ArrayPool<bool>.Shared.Rent(slotCount);
+        try
+        {
+            return Apply(commands, edges, aliases, keys, yBuffer.AsSpan(0, slotCount), placedBuffer.AsSpan(0, slotCount));
+        }
+        finally
+        {
+            ArrayPool<float>.Shared.Return(yBuffer);
+            ArrayPool<bool>.Shared.Return(placedBuffer);
+        }
+    }
+
+    private static GlyphOutline Apply(
+        OutlineCommand[] commands, List<Edge> edges, List<(int Alias, int Canonical)> aliases, KeyMap keys, Span<float> y, Span<bool> placed)
+    {
+        // Every slot is written below before it is read; placed must start false.
+        placed.Clear();
 
         foreach (var edge in edges)
         {
@@ -674,45 +713,62 @@ internal static class GridFitter
         public bool TryAdd(float from1, float to1, float from2, float to2) => TryAdd([(from1, to1), (from2, to2)], zone: false);
 
         /// <summary>
-        /// Adds the keys together, or none of them when that would bring two fitted heights
-        /// closer than half their original distance (capped at half a pixel) or reorder them.
+        /// Adds the keys together, or none of them when one would move its height more than
+        /// <see cref="MaxShift"/>, or bring two fitted heights closer than half their original
+        /// distance (capped at half a pixel) or reorder them.
         /// </summary>
         private bool TryAdd(ReadOnlySpan<(float From, float To)> keys, bool zone)
         {
-            var from = new List<float>(_from);
-            var to = new List<float>(_to);
-            var zones = new List<bool>(_zone);
-
             foreach (var (f, t) in keys)
             {
-                int index = from.BinarySearch(f);
-                if (index >= 0)
-                {
-                    // The same height placed twice must agree.
-                    if (MathF.Abs(to[index] - t) > 1e-4f)
-                        return false;
-                    continue;
-                }
-
-                from.Insert(~index, f);
-                to.Insert(~index, t);
-                zones.Insert(~index, zone);
-            }
-
-            for (int i = 1; i < from.Count; i++)
-            {
-                float minimum = zones[i] && zones[i - 1] ? 0f : 0.5f * MathF.Min(from[i] - from[i - 1], 1f);
-                if (to[i] - to[i - 1] < minimum)
+                if (MathF.Abs(t - f) > MaxShift)
                     return false;
             }
 
-            _from.Clear();
-            _from.AddRange(from);
-            _to.Clear();
-            _to.AddRange(to);
-            _zone.Clear();
-            _zone.AddRange(zones);
-            return true;
+            // Inserted in place and taken out again on rejection, newest first, so a refused
+            // placement leaves the map exactly as it was.
+            Span<int> inserted = stackalloc int[keys.Length];
+            int insertedCount = 0;
+            bool accepted = true;
+            foreach (var (f, t) in keys)
+            {
+                int index = _from.BinarySearch(f);
+                if (index >= 0)
+                {
+                    // The same height placed twice must agree.
+                    if (MathF.Abs(_to[index] - t) > 1e-4f)
+                    {
+                        accepted = false;
+                        break;
+                    }
+
+                    continue;
+                }
+
+                _from.Insert(~index, f);
+                _to.Insert(~index, t);
+                _zone.Insert(~index, zone);
+                inserted[insertedCount++] = ~index;
+            }
+
+            for (int i = 1; accepted && i < _from.Count; i++)
+            {
+                float minimum = _zone[i] && _zone[i - 1] ? 0f : 0.5f * MathF.Min(_from[i] - _from[i - 1], 1f);
+                if (_to[i] - _to[i - 1] < minimum)
+                    accepted = false;
+            }
+
+            if (!accepted)
+            {
+                for (int k = insertedCount - 1; k >= 0; k--)
+                {
+                    _from.RemoveAt(inserted[k]);
+                    _to.RemoveAt(inserted[k]);
+                    _zone.RemoveAt(inserted[k]);
+                }
+            }
+
+            return accepted;
         }
     }
 }

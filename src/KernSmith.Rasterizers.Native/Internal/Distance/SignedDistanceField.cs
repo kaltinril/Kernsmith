@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace KernSmith.Rasterizers.Native.Internal.Distance;
 
 /// <summary>
@@ -18,8 +20,14 @@ internal static class SignedDistanceField
     /// visited — each piece updates the texels of its own capsule — so the cost scales with the
     /// outline's length times the range, not texels times segments.
     /// </summary>
+    /// <param name="shape">The boundary and winding to measure.</param>
+    /// <param name="width">Field width in texels.</param>
+    /// <param name="height">Field height in texels.</param>
+    /// <param name="range">Largest distance measured, in pixels.</param>
+    /// <param name="allowVectors">False keeps every column on the scalar path, for tests that
+    /// hold the vector path to it.</param>
     /// <returns>Row-major signed distances in pixels, clamped to ±<paramref name="range"/>.</returns>
-    public static float[] Compute(DistanceShape shape, int width, int height, float range)
+    public static float[] Compute(DistanceShape shape, int width, int height, float range, bool allowVectors = true)
     {
         ArgumentNullException.ThrowIfNull(shape);
 
@@ -27,7 +35,7 @@ internal static class SignedDistanceField
         Array.Fill(nearest, range * range);
 
         foreach (var segment in shape.Boundary)
-            Splat(segment, nearest, width, height, range);
+            Splat(segment, nearest, width, height, range, allowVectors && Vector.IsHardwareAccelerated);
 
         var field = new float[width * height];
         var inside = new bool[width];
@@ -50,7 +58,7 @@ internal static class SignedDistanceField
     /// Lowers <paramref name="nearest"/> (squared distances) for every texel whose centre lies
     /// within <paramref name="range"/> of the segment.
     /// </summary>
-    private static void Splat(BoundarySegment s, float[] nearest, int width, int height, float range)
+    private static void Splat(BoundarySegment s, float[] nearest, int width, int height, float range, bool vectors)
     {
         float dx = s.X1 - s.X0, dy = s.Y1 - s.Y0;
         float lengthSquared = (dx * dx) + (dy * dy);
@@ -82,7 +90,11 @@ internal static class SignedDistanceField
             int rowStart = row * width;
             float ay = cy - s.Y0;
 
-            for (int column = firstColumn; column <= lastColumn; column++)
+            int next = firstColumn;
+            if (vectors)
+                next = SplatColumns(nearest.AsSpan(rowStart), firstColumn, lastColumn, s.X0, ay, dx, dy, lengthSquared, rangeSquared);
+
+            for (int column = next; column <= lastColumn; column++)
             {
                 float ax = column + 0.5f - s.X0;
                 float t = ((ax * dx) + (ay * dy)) / lengthSquared;
@@ -93,6 +105,61 @@ internal static class SignedDistanceField
                     nearest[rowStart + column] = d;
             }
         }
+    }
+
+    /// <summary>Column lane offsets 0, 1, ... for <see cref="SplatColumns"/>.</summary>
+    private static readonly Vector<int> LaneOffsets = CreateLaneOffsets();
+
+    private static Vector<int> CreateLaneOffsets()
+    {
+        Span<int> offsets = stackalloc int[Vector<int>.Count];
+        for (int i = 0; i < offsets.Length; i++)
+            offsets[i] = i;
+        return new Vector<int>(offsets);
+    }
+
+    /// <summary>
+    /// The scalar column loop of <see cref="Splat"/> over whole vectors of columns, from
+    /// <paramref name="firstColumn"/> while a full vector fits before <paramref name="lastColumn"/>.
+    /// </summary>
+    /// <remarks>
+    /// INVARIANT: bit-identical to the scalar loop, whatever the vector width — each lane runs
+    /// the scalar expression's operations in the scalar order (separate multiplies and adds, no
+    /// fused multiply-add, no cross-lane arithmetic), and the clamp and the update use the same
+    /// strict comparisons. Columns are below 2^24, so converting them to float is exact.
+    /// </remarks>
+    /// <returns>The first column left for the scalar loop.</returns>
+    private static int SplatColumns(Span<float> row, int firstColumn, int lastColumn, float x0, float ay, float dx, float dy, float lengthSquared, float rangeSquared)
+    {
+        int count = Vector<float>.Count;
+        var half = new Vector<float>(0.5f);
+        var origin = new Vector<float>(x0);
+        var vdx = new Vector<float>(dx);
+        var vdy = new Vector<float>(dy);
+        var vay = new Vector<float>(ay);
+        var ayDy = new Vector<float>(ay * dy);
+        var length = new Vector<float>(lengthSquared);
+        var limit = new Vector<float>(rangeSquared);
+        var one = Vector<float>.One;
+
+        int column = firstColumn;
+        for (; column + count - 1 <= lastColumn; column += count)
+        {
+            var ax = Vector.ConvertToSingle(new Vector<int>(column) + LaneOffsets) + half - origin;
+            var t = ((ax * vdx) + ayDy) / length;
+            t = Vector.ConditionalSelect(Vector.LessThan(t, Vector<float>.Zero), Vector<float>.Zero,
+                Vector.ConditionalSelect(Vector.GreaterThan(t, one), one, t));
+            var ex = ax - (t * vdx);
+            var ey = vay - (t * vdy);
+            var d = (ex * ex) + (ey * ey);
+
+            var target = row.Slice(column, count);
+            var current = new Vector<float>(target);
+            var lower = Vector.LessThan(d, current) & Vector.LessThan(d, limit);
+            Vector.ConditionalSelect(lower, d, current).CopyTo(target);
+        }
+
+        return column;
     }
 
     /// <summary>

@@ -1,3 +1,4 @@
+using System.Buffers;
 using KernSmith.Imaging;
 using KernSmith.Rasterizers.Native.Internal.Raster;
 
@@ -34,6 +35,9 @@ internal static class BitmapResampler
     /// </summary>
     private const double EdgeTolerance = 1e-6;
 
+    /// <summary>Each alpha byte as a fraction, <c>alpha / 255f</c>, divided once instead of per pixel.</summary>
+    private static readonly float[] AlphaFractions = BuildAlphaFractions();
+
     /// <summary>The pixel grid covering the bitmap's rectangle once scaled.</summary>
     /// <exception cref="RasterizationException">If the scaled position is not a usable number.</exception>
     public static GlyphBox Box(int glyphIndex, BitmapGlyphImage image)
@@ -65,75 +69,107 @@ internal static class BitmapResampler
         var columns = Weights(image.Left, image.ScaleX, source.Width, box.MinX, box.Width);
         var rows = Weights(-image.Top, image.ScaleY, source.Height, box.MinY, box.Height);
 
-        // Premultiply once, in 0..255 floats.
-        var pixels = source.Pixels;
-        var premultiplied = new float[pixels.Length];
-        for (int i = 0; i < pixels.Length; i += 4)
+        // Only the source rows some output row draws from are filtered horizontally.
+        int firstRow = int.MaxValue, lastRow = -1;
+        foreach (var taps in rows)
         {
-            float a = pixels[i + 3] / 255f;
-            premultiplied[i] = pixels[i] * a;
-            premultiplied[i + 1] = pixels[i + 1] * a;
-            premultiplied[i + 2] = pixels[i + 2] * a;
-            premultiplied[i + 3] = pixels[i + 3];
-        }
-
-        // Horizontal pass: every source row, output columns.
-        var horizontal = new float[source.Height * box.Width * 4];
-        for (int y = 0; y < source.Height; y++)
-        {
-            int sourceRow = y * source.Width * 4;
-            int targetRow = y * box.Width * 4;
-            for (int x = 0; x < box.Width; x++)
+            foreach (var (index, _) in taps)
             {
-                var taps = columns[x];
-                float r = 0, g = 0, b = 0, a = 0;
-                foreach (var (index, weight) in taps)
-                {
-                    int s = sourceRow + (index * 4);
-                    r += premultiplied[s] * weight;
-                    g += premultiplied[s + 1] * weight;
-                    b += premultiplied[s + 2] * weight;
-                    a += premultiplied[s + 3] * weight;
-                }
-
-                int t = targetRow + (x * 4);
-                horizontal[t] = r;
-                horizontal[t + 1] = g;
-                horizontal[t + 2] = b;
-                horizontal[t + 3] = a;
+                firstRow = Math.Min(firstRow, index);
+                lastRow = Math.Max(lastRow, index);
             }
         }
 
-        // Vertical pass, then back to straight alpha.
         var output = new byte[box.Width * box.Height * 4];
-        for (int y = 0; y < box.Height; y++)
+        if (lastRow < 0)
+            return output;
+
+        // Scratch is pooled: one premultiplied source row, and the horizontally filtered rows.
+        int sourceStride = source.Width * 4, targetStride = box.Width * 4;
+        float[] premultiplied = ArrayPool<float>.Shared.Rent(sourceStride);
+        float[] horizontal = ArrayPool<float>.Shared.Rent((lastRow - firstRow + 1) * targetStride);
+        try
         {
-            var taps = rows[y];
-            for (int x = 0; x < box.Width; x++)
+            var pixels = source.Pixels;
+            for (int y = firstRow; y <= lastRow; y++)
             {
-                float r = 0, g = 0, b = 0, a = 0;
-                foreach (var (index, weight) in taps)
+                // Premultiply the row, in 0..255 floats.
+                int sourceRow = y * sourceStride;
+                for (int i = 0; i < sourceStride; i += 4)
                 {
-                    int s = ((index * box.Width) + x) * 4;
-                    r += horizontal[s] * weight;
-                    g += horizontal[s + 1] * weight;
-                    b += horizontal[s + 2] * weight;
-                    a += horizontal[s + 3] * weight;
+                    float alpha = AlphaFractions[pixels[sourceRow + i + 3]];
+                    premultiplied[i] = pixels[sourceRow + i] * alpha;
+                    premultiplied[i + 1] = pixels[sourceRow + i + 1] * alpha;
+                    premultiplied[i + 2] = pixels[sourceRow + i + 2] * alpha;
+                    premultiplied[i + 3] = pixels[sourceRow + i + 3];
                 }
 
-                int alpha = Math.Clamp((int)MathF.Round(a), 0, 255);
-                if (alpha == 0)
-                    continue;
+                // Horizontal pass: output columns of this source row.
+                int targetRow = (y - firstRow) * targetStride;
+                for (int x = 0; x < box.Width; x++)
+                {
+                    var taps = columns[x];
+                    float r = 0, g = 0, b = 0, a = 0;
+                    foreach (var (index, weight) in taps)
+                    {
+                        int s = index * 4;
+                        r += premultiplied[s] * weight;
+                        g += premultiplied[s + 1] * weight;
+                        b += premultiplied[s + 2] * weight;
+                        a += premultiplied[s + 3] * weight;
+                    }
 
-                int t = ((y * box.Width) + x) * 4;
-                output[t] = Unpremultiply(r, a);
-                output[t + 1] = Unpremultiply(g, a);
-                output[t + 2] = Unpremultiply(b, a);
-                output[t + 3] = (byte)alpha;
+                    int t = targetRow + (x * 4);
+                    horizontal[t] = r;
+                    horizontal[t + 1] = g;
+                    horizontal[t + 2] = b;
+                    horizontal[t + 3] = a;
+                }
             }
+
+            // Vertical pass, then back to straight alpha.
+            for (int y = 0; y < box.Height; y++)
+            {
+                var taps = rows[y];
+                for (int x = 0; x < box.Width; x++)
+                {
+                    float r = 0, g = 0, b = 0, a = 0;
+                    foreach (var (index, weight) in taps)
+                    {
+                        int s = (((index - firstRow) * box.Width) + x) * 4;
+                        r += horizontal[s] * weight;
+                        g += horizontal[s + 1] * weight;
+                        b += horizontal[s + 2] * weight;
+                        a += horizontal[s + 3] * weight;
+                    }
+
+                    int alpha = Math.Clamp((int)MathF.Round(a), 0, 255);
+                    if (alpha == 0)
+                        continue;
+
+                    int t = ((y * box.Width) + x) * 4;
+                    output[t] = Unpremultiply(r, a);
+                    output[t + 1] = Unpremultiply(g, a);
+                    output[t + 2] = Unpremultiply(b, a);
+                    output[t + 3] = (byte)alpha;
+                }
+            }
+        }
+        finally
+        {
+            ArrayPool<float>.Shared.Return(premultiplied);
+            ArrayPool<float>.Shared.Return(horizontal);
         }
 
         return output;
+    }
+
+    private static float[] BuildAlphaFractions()
+    {
+        var fractions = new float[256];
+        for (int alpha = 0; alpha < fractions.Length; alpha++)
+            fractions[alpha] = alpha / 255f;
+        return fractions;
     }
 
     private static byte Unpremultiply(float channel, float alpha) =>

@@ -27,6 +27,13 @@ internal sealed class FontHintMetrics
     /// <summary>How far outside a zone an edge may sit and still snap to it.</summary>
     private const float ZoneToleranceEm = 0.02f;
 
+    /// <summary>
+    /// The cap on <see cref="ZoneToleranceEm"/> in pixels. A fraction of the em grows with the
+    /// size — 1.4 px at 72 px — and would capture accents and other features that sit near a
+    /// zone but are not on it; an edge more than half a pixel outside a zone is not at its height.
+    /// </summary>
+    private const float MaxZoneTolerancePixels = 0.5f;
+
     /// <summary>How much a top zone's fractional pixel is pushed up before it is truncated.</summary>
     private const float TopZoneRoundUp = 2f / 3f;
 
@@ -137,7 +144,7 @@ internal sealed class FontHintMetrics
         return new ScaledHintMetrics(
             zones,
             StandardHorizontalStem * scale,
-            ZoneTolerance: unitsPerEm * ZoneToleranceEm * scale,
+            ZoneTolerance: MathF.Min(unitsPerEm * ZoneToleranceEm * scale, MaxZoneTolerancePixels),
             MaxStem: unitsPerEm * MaxStemEm * scale);
     }
 

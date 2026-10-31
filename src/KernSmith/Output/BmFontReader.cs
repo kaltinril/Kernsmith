@@ -289,7 +289,7 @@ public static class BmFontReader
 
     private static int GetInt(Dictionary<string, string> kvp, string key, int defaultValue = 0)
     {
-        if (kvp.TryGetValue(key, out var val) && int.TryParse(val, out var result))
+        if (kvp.TryGetValue(key, out var val) && int.TryParse(val, NumberStyles.Integer, CultureInfo.InvariantCulture, out var result))
             return result;
         return defaultValue;
     }
@@ -310,10 +310,10 @@ public static class BmFontReader
     {
         var parts = value.Split(',');
         if (parts.Length == 4 &&
-            int.TryParse(parts[0], out var up) &&
-            int.TryParse(parts[1], out var right) &&
-            int.TryParse(parts[2], out var down) &&
-            int.TryParse(parts[3], out var left))
+            int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var up) &&
+            int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var right) &&
+            int.TryParse(parts[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out var down) &&
+            int.TryParse(parts[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out var left))
         {
             return new Padding(up, right, down, left);
         }
@@ -324,8 +324,8 @@ public static class BmFontReader
     {
         var parts = value.Split(',');
         if (parts.Length == 2 &&
-            int.TryParse(parts[0], out var h) &&
-            int.TryParse(parts[1], out var v))
+            int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var h) &&
+            int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
         {
             return new Spacing(h, v);
         }
@@ -380,7 +380,7 @@ public static class BmFontReader
     private static int XmlAttrInt(XElement el, string name, int defaultValue = 0)
     {
         var attr = el.Attribute(name);
-        if (attr != null && int.TryParse(attr.Value, out var result))
+        if (attr != null && int.TryParse(attr.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var result))
             return result;
         return defaultValue;
     }

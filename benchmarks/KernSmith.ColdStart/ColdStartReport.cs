@@ -1,6 +1,8 @@
-using System.Text.Json.Serialization;
+using System.Buffers;
+using System.Text;
+using System.Text.Json;
 
-/// <summary>Everything one cold-start process measured, written as JSON for <c>run_coldstart.py</c>.</summary>
+/// <summary>Everything one cold-start process measured, written as JSON (<see cref="ToJson"/>) for <c>run_coldstart.py</c>.</summary>
 internal sealed class ColdStartReport
 {
     public bool Ok { get; set; }
@@ -40,6 +42,73 @@ internal sealed class ColdStartReport
     public JitSnapshot? JitAtMain { get; set; }
     public JitSnapshot? JitAfterFirstCall { get; set; }
     public JitSnapshot? JitAtEnd { get; set; }
+
+    /// <summary>
+    /// Writes the report as indented JSON with camelCase names, in declaration order. Written by
+    /// hand with <see cref="Utf8JsonWriter"/> so it works under NativeAOT (no reflection) without
+    /// a System.Text.Json source-generated context.
+    /// </summary>
+    public string ToJson()
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Indented = true }))
+        {
+            writer.WriteStartObject();
+            writer.WriteBoolean("ok", Ok);
+            writer.WriteString("error", Error);
+            writer.WriteString("mode", Mode);
+            writer.WriteString("backend", Backend);
+            writer.WriteString("registration", Registration);
+            writer.WriteString("font", Font);
+            writer.WriteNumber("size", Size);
+            writer.WriteString("charset", Charset);
+            writer.WriteNumber("repeat", Repeat);
+            writer.WriteString("framework", Framework);
+            writer.WriteString("runtimeIdentifier", RuntimeIdentifier);
+            writer.WriteBoolean("dynamicCodeSupported", DynamicCodeSupported);
+            WriteNullableNumber(writer, "processStartToMainMs", ProcessStartToMainMs);
+            writer.WriteNumber("fontReadMs", FontReadMs);
+            WriteNullableNumber(writer, "mainToFirstResultMs", MainToFirstResultMs);
+            writer.WriteNumber("mainToEndMs", MainToEndMs);
+            writer.WriteStartArray("callsMs");
+            foreach (var ms in CallsMs)
+                writer.WriteNumberValue(ms);
+            writer.WriteEndArray();
+            writer.WriteNumber("glyphs", Glyphs);
+            writer.WriteNumber("pages", Pages);
+            writer.WriteNumber("outputBytes", OutputBytes);
+            writer.WriteNumber("firstCallAllocatedBytes", FirstCallAllocatedBytes);
+            WriteJit(writer, "jitAtMain", JitAtMain);
+            WriteJit(writer, "jitAfterFirstCall", JitAfterFirstCall);
+            WriteJit(writer, "jitAtEnd", JitAtEnd);
+            writer.WriteEndObject();
+        }
+
+        return Encoding.UTF8.GetString(buffer.WrittenSpan);
+    }
+
+    private static void WriteNullableNumber(Utf8JsonWriter writer, string name, double? value)
+    {
+        if (value is { } number)
+            writer.WriteNumber(name, number);
+        else
+            writer.WriteNull(name);
+    }
+
+    private static void WriteJit(Utf8JsonWriter writer, string name, JitSnapshot? jit)
+    {
+        if (jit is null)
+        {
+            writer.WriteNull(name);
+            return;
+        }
+
+        writer.WriteStartObject(name);
+        writer.WriteNumber("methods", jit.Methods);
+        writer.WriteNumber("ilBytes", jit.IlBytes);
+        writer.WriteNumber("compileMs", jit.CompileMs);
+        writer.WriteEndObject();
+    }
 }
 
 /// <summary>Process-wide JIT counters from <see cref="System.Runtime.JitInfo"/> (all zero under NativeAOT).</summary>
@@ -50,8 +119,3 @@ internal sealed record JitSnapshot(long Methods, long IlBytes, double CompileMs)
         System.Runtime.JitInfo.GetCompiledILBytes(currentThread: false),
         System.Runtime.JitInfo.GetCompilationTime(currentThread: false).TotalMilliseconds);
 }
-
-// Source-generated so the report serializes under NativeAOT, where reflection-based JSON is off.
-[JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
-[JsonSerializable(typeof(ColdStartReport))]
-internal sealed partial class ColdStartJsonContext : JsonSerializerContext;
