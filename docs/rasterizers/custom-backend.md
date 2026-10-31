@@ -34,7 +34,7 @@ Your backend implements two interfaces from `KernSmith.Rasterizer`:
 |--------|---------|---------|
 | `LoadSystemFont(string)` | Throws `NotSupportedException` | Load a system font by family name |
 | `GetGlyphMetrics(int, RasterOptions)` | Returns `null` | Get metrics without rasterizing |
-| `GetFontMetrics(RasterOptions)` | Returns `null` | Provide native font-wide metrics (ascent, descent, line height) |
+| `GetFontMetrics(RasterOptions)` | Returns `null` | Provide native font-wide metrics (ascent, descent, line height). Round scaled metrics with `RasterizerFontMetrics.CeilingToPixels`, as the built-in backends do, so float noise does not add a pixel |
 | `GetKerningPairs(RasterOptions)` | Returns `null` | Provide pre-scaled kerning pairs |
 | `SetVariationAxes(IReadOnlyList<VariationAxis>, Dictionary<string, float>)` | No-op | Apply variable font axis values |
 | `SelectColorPalette(int)` | No-op | Select a CPAL color palette |
