@@ -463,4 +463,32 @@ public sealed class KernSmithReaderTests
         parsedVariant.Extended.ShouldNotBeNull();
         parsedVariant.Extended!.VariantOf.ShouldNotBeNullOrEmpty();
     }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(int.MaxValue)]
+    public void ReadBinary_BlockSizeOutOfRange_ThrowsFormatException(int blockSize)
+    {
+        // A negative size passed the end check; int.MaxValue overflowed it.
+        var data = new byte[16];
+        new byte[] { 66, 77, 70, 3, 1 }.CopyTo(data, 0);
+        BitConverter.GetBytes(blockSize).CopyTo(data, 5);
+
+        Should.Throw<FormatException>(() => BmFontReader.ReadBinary(data));
+    }
+
+    [Theory]
+    [InlineData("{{{")]
+    [InlineData("{\"sdfSpread\":\"x\"}")]
+    [InlineData("{\"colorFont\":1}")]
+    public void ReadBinary_MalformedExtendedJson_ThrowsFormatException(string json)
+    {
+        var block = System.Text.Encoding.UTF8.GetBytes(json + "\0");
+        var data = new byte[4 + 5 + block.Length];
+        new byte[] { 66, 77, 70, 3, 6 }.CopyTo(data, 0);
+        BitConverter.GetBytes(block.Length).CopyTo(data, 5);
+        block.CopyTo(data, 9);
+
+        Should.Throw<FormatException>(() => BmFontReader.ReadBinary(data));
+    }
 }

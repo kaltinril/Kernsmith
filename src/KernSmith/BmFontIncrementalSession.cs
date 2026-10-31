@@ -628,6 +628,6 @@ public sealed class BmFontIncrementalSession : IDisposable
                 return (match.Groups[1].Value, match.Groups[2].Value);
         }
 
-        return (_prepared.FontInfo.FamilyName, BmFontModelBuilder.TextureExtension(_options));
+        return (BmFontModelBuilder.PageStem(_prepared.FontInfo.FamilyName), BmFontModelBuilder.TextureExtension(_options));
     }
 }

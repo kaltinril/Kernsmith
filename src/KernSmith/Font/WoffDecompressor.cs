@@ -14,6 +14,9 @@ internal static class WoffDecompressor
     private const int WoffHeaderSize = 44;
     private const int WoffTableDirEntrySize = 20;
 
+    /// <summary>Deflate's largest possible expansion: a 258-byte match costs at least two bits.</summary>
+    private const long MaxDeflateRatio = 1032;
+
     /// <summary>
     /// Returns true if the data begins with the WOFF 1.0 signature ("wOFF").
     /// </summary>
@@ -62,12 +65,12 @@ internal static class WoffDecompressor
         // Parse WOFF header
         var flavor = BinaryPrimitives.ReadUInt32BigEndian(woffData.Slice(4));
         var numTables = BinaryPrimitives.ReadUInt16BigEndian(woffData.Slice(12));
-        var totalSfntSize = (int)BinaryPrimitives.ReadUInt32BigEndian(woffData.Slice(16));
+        var declaredSfntSize = BinaryPrimitives.ReadUInt32BigEndian(woffData.Slice(16));
 
         const int MaxSfntSize = 100 * 1024 * 1024; // 100 MB
-        if (totalSfntSize > MaxSfntSize)
+        if (declaredSfntSize > MaxSfntSize)
             throw new FontParsingException(
-                $"WOFF totalSfntSize ({totalSfntSize} bytes) exceeds the maximum allowed size ({MaxSfntSize} bytes).");
+                $"WOFF totalSfntSize ({declaredSfntSize} bytes) exceeds the maximum allowed size ({MaxSfntSize} bytes).");
 
         // Validate table directory fits
         var tableDirEnd = WoffHeaderSize + numTables * WoffTableDirEntrySize;
@@ -94,7 +97,29 @@ internal static class WoffDecompressor
         // Build the sfnt output
         // sfnt header: 12 bytes + numTables * 16 bytes for table records
         var sfntHeaderSize = 12 + numTables * 16;
-        var result = new byte[totalSfntSize];
+
+        // Every table is checked before the output is allocated. The output is the size the
+        // tables actually fill (directory, then each table 4-byte aligned): a larger
+        // totalSfntSize would only add zero padding, so it is never allocated, and a smaller
+        // one cannot hold the tables.
+        long requiredSize = sfntHeaderSize;
+        for (var i = 0; i < numTables; i++)
+        {
+            var entry = entries[i];
+            if ((long)entry.Offset + entry.CompLength > woffData.Length)
+                throw new FontParsingException(
+                    $"WOFF table at index {i} (tag 0x{entry.Tag:X8}) references data beyond file bounds.");
+            if (entry.CompLength < entry.OrigLength && entry.OrigLength > (long)entry.CompLength * MaxDeflateRatio + 1024)
+                throw new FontParsingException(
+                    $"WOFF table at index {i} (tag 0x{entry.Tag:X8}) cannot inflate from {entry.CompLength} to {entry.OrigLength} bytes.");
+            requiredSize = ((requiredSize + 3) & ~3L) + entry.OrigLength;
+        }
+
+        if (requiredSize > declaredSfntSize)
+            throw new FontParsingException(
+                $"WOFF tables need {requiredSize} bytes, more than the header's totalSfntSize ({declaredSfntSize} bytes).");
+
+        var result = new byte[Math.Min(declaredSfntSize, (requiredSize + 3) & ~3L)];
 
         // Write sfnt Offset Table header
         BinaryPrimitives.WriteUInt32BigEndian(result.AsSpan(0), flavor);
@@ -124,16 +149,6 @@ internal static class WoffDecompressor
 
             // Align data offset to 4-byte boundary
             dataOffset = (dataOffset + 3) & ~3;
-
-            // Validate source data bounds
-            if ((long)entry.Offset + entry.CompLength > woffData.Length)
-                throw new FontParsingException(
-                    $"WOFF table at index {i} (tag 0x{entry.Tag:X8}) references data beyond file bounds.");
-
-            // Validate destination bounds
-            if ((long)dataOffset + entry.OrigLength > result.Length)
-                throw new FontParsingException(
-                    $"WOFF table at index {i} overflows totalSfntSize ({result.Length} bytes).");
 
             // Decompress or copy table data
             var sourceData = woffData.Slice(entry.Offset, entry.CompLength);
@@ -172,12 +187,19 @@ internal static class WoffDecompressor
         var totalRead = 0;
         // ZLibStream does not support Span-based reads directly, use a temporary buffer
         var tempBuffer = new byte[destination.Length];
-        while (totalRead < destination.Length)
+        try
         {
-            var bytesRead = zlibStream.Read(tempBuffer, totalRead, destination.Length - totalRead);
-            if (bytesRead == 0)
-                break;
-            totalRead += bytesRead;
+            while (totalRead < destination.Length)
+            {
+                var bytesRead = zlibStream.Read(tempBuffer, totalRead, destination.Length - totalRead);
+                if (bytesRead == 0)
+                    break;
+                totalRead += bytesRead;
+            }
+        }
+        catch (InvalidDataException ex)
+        {
+            throw new FontParsingException($"WOFF zlib data is corrupt: {ex.Message}", ex);
         }
 
         if (totalRead != destination.Length)

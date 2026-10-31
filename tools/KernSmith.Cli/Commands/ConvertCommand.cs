@@ -146,10 +146,18 @@ internal sealed class ConvertCommand
                         ? Path.GetFileName(page.File)
                         : page.File;
 
-                    var srcPng = Path.Combine(inputDir, pageFileName);
+                    // page file= is untrusted: a relative path may nest (pages/font_0.png) but
+                    // must not climb out of the input or output directory.
+                    var srcPng = Path.GetFullPath(Path.Combine(inputDir, pageFileName));
+                    var dstPng = Path.GetFullPath(Path.Combine(outDir, pageFileName));
+                    if (!IsWithin(srcPng, inputDir) || !IsWithin(dstPng, outDir))
+                    {
+                        ConsoleOutput.WriteWarning($"Atlas page not copied, its path leaves the font's directory: {page.File}");
+                        continue;
+                    }
+
                     if (File.Exists(srcPng))
                     {
-                        var dstPng = Path.Combine(outDir, pageFileName);
 
                         // Ensure subdirectories exist for nested page paths.
                         var dstPngDir = Path.GetDirectoryName(dstPng);
@@ -184,6 +192,14 @@ internal sealed class ConvertCommand
             ConsoleOutput.WriteError(ex.Message);
             return ExitCodes.InvalidArguments;
         }
+    }
+
+    /// <summary>True when the full path <paramref name="path"/> lies inside <paramref name="directory"/>.</summary>
+    private static bool IsWithin(string path, string directory)
+    {
+        var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory)) + Path.DirectorySeparatorChar;
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        return path.StartsWith(root, comparison);
     }
 
     private static void ShowHelp()

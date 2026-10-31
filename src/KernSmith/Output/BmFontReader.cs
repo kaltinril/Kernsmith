@@ -202,7 +202,7 @@ public static class BmFontReader
             var blockSize = BitConverter.ToInt32(fntData, offset + 1);
             offset += 5;
 
-            if (offset + blockSize > fntData.Length)
+            if (blockSize < 0 || blockSize > fntData.Length - offset)
                 throw new FormatException($"BMFont binary: block type {blockType} exceeds data length.");
 
             var blockData = new ReadOnlySpan<byte>(fntData, offset, blockSize);
@@ -676,6 +676,19 @@ public static class BmFontReader
         var jsonSpan = end >= 0 ? data[..end] : data;
         var json = Encoding.UTF8.GetString(jsonSpan);
 
+        // Malformed JSON, or a field of the wrong kind, is a malformed file like any other.
+        try
+        {
+            return ParseExtendedJson(json);
+        }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException)
+        {
+            throw new FormatException($"BMFont binary: the extended metadata block is malformed: {ex.Message}", ex);
+        }
+    }
+
+    private static ExtendedMetadata? ParseExtendedJson(string json)
+    {
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
 

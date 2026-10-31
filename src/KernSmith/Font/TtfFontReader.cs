@@ -81,8 +81,8 @@ internal class TtfFontReader : IFontReader
 
         return new FontInfo
         {
-            FamilyName = parser.Names?.FontFamily ?? "Unknown",
-            StyleName = parser.Names?.FontSubfamily ?? "Regular",
+            FamilyName = SanitizeName(parser.Names?.FontFamily) ?? "Unknown",
+            StyleName = SanitizeName(parser.Names?.FontSubfamily) ?? "Regular",
             UnitsPerEm = parser.Head!.UnitsPerEm,
             Ascender = parser.Hhea?.Ascender ?? parser.Head!.YMax,
             Descender = parser.Hhea?.Descender ?? parser.Head!.YMin,
@@ -102,6 +102,30 @@ internal class TtfFontReader : IFontReader
             NamedInstances = parser.NamedInstances,
             HasColorGlyphs = parser.HasColorGlyphs,
         };
+    }
+
+    /// <summary>
+    /// A name-table string made safe to write into a descriptor: control characters are dropped
+    /// and double quotes become single quotes. The name comes from the font, and the text
+    /// <c>.fnt</c> format quotes it on one line with no escape mechanism, so a quote or newline
+    /// would end the value and start new, attacker-chosen lines (pages, chars); XML rejects
+    /// control characters outright.
+    /// </summary>
+    internal static string? SanitizeName(string? name)
+    {
+        if (name is null || !name.Any(c => c == '"' || char.IsControl(c)))
+            return name;
+
+        var sb = new System.Text.StringBuilder(name.Length);
+        foreach (var c in name)
+        {
+            if (c == '"')
+                sb.Append('\'');
+            else if (!char.IsControl(c))
+                sb.Append(c);
+        }
+
+        return sb.ToString();
     }
 
     /// <summary>
