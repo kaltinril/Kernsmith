@@ -290,9 +290,9 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
 
         return new RasterizerFontMetrics
         {
-            Ascent = (int)Math.Ceiling(ascent * scale / aa),
-            Descent = (int)Math.Ceiling(Math.Abs(descent) * scale / aa),
-            LineHeight = (int)Math.Ceiling((ascent - descent + lineGap) * scale / aa)
+            Ascent = RasterizerFontMetrics.CeilingToPixels(ascent * scale / aa),
+            Descent = RasterizerFontMetrics.CeilingToPixels(Math.Abs(descent) * scale / aa),
+            LineHeight = RasterizerFontMetrics.CeilingToPixels((ascent - descent + lineGap) * scale / aa)
         };
     }
 
