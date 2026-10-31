@@ -28,6 +28,7 @@
     <!-- Committed fixtures (licences next to the originals in KernSmith.Tests/Fixtures). -->
     <None Include="..\KernSmith.Tests\Fixtures\Roboto-Regular.ttf" Link="Fixtures\Roboto-Regular.ttf" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\KernSmith.Tests\Fixtures\Color\BungeeColor-Regular.ttf" Link="Fixtures\BungeeColor-Regular.ttf" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\KernSmith.Tests\Fixtures\RobotoFlex-Variable.ttf" Link="Fixtures\RobotoFlex-Variable.ttf" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

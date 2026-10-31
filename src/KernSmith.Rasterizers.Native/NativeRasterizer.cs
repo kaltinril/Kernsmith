@@ -265,6 +265,10 @@ public sealed class NativeRasterizer : IRasterizer
             }
         }
 
+        // COLR version 0 layers likewise measure from the layers' boxes where each has one.
+        if (renderer is ColorLayerRenderer layered && TryMeasureLayers(codepoint, glyphIndex, layered, options, transforms, out var layeredMetrics))
+            return layeredMetrics;
+
         var glyph = Prepare(codepoint, glyphIndex, options, transforms);
         if (glyph.IsBlank && !DrawsLayers(renderer, glyphIndex))
             return new GlyphMetrics(BearingX: 0, BearingY: 0, Advance: glyph.Advance, Width: 0, Height: 0);
@@ -434,6 +438,27 @@ public sealed class NativeRasterizer : IRasterizer
         try
         {
             return _pipeline!.TryPrepareBox(glyphIndex, options, transforms, out box, out advance);
+        }
+        catch (FontFormatException ex)
+        {
+            throw new RasterizationException(codepoint, ex.Message);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            throw new RasterizationException(codepoint, ex.Message);
+        }
+        catch (RasterizationException ex) when (ex.Codepoint is null)
+        {
+            throw new RasterizationException(codepoint, ex.Message);
+        }
+    }
+
+    /// <inheritdoc cref="ColorLayerRenderer.TryMeasureFromBoxes"/>
+    private static bool TryMeasureLayers(int codepoint, int glyphIndex, ColorLayerRenderer renderer, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms, out GlyphMetrics metrics)
+    {
+        try
+        {
+            return renderer.TryMeasureFromBoxes(glyphIndex, options, transforms, out metrics);
         }
         catch (FontFormatException ex)
         {

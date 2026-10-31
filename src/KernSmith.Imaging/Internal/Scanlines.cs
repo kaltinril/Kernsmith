@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace KernSmith.Imaging.Internal;
 
 /// <summary>
@@ -12,7 +14,7 @@ internal static class Scanlines
     /// <param name="format">The image's sample layout, palette and transparency.</param>
     /// <param name="rgba">The output, <c>Width × Height × 4</c> bytes.</param>
     /// <exception cref="PngFormatException">On an unknown filter type or an out-of-range palette index.</exception>
-    public static void Reconstruct(byte[] raw, PngHeader header, PixelFormat format, byte[] rgba)
+    public static void Reconstruct(Span<byte> raw, PngHeader header, PixelFormat format, byte[] rgba)
     {
         int stride = format.FilterStride;
         int offset = 0;
@@ -33,7 +35,7 @@ internal static class Scanlines
             for (int y = 0; y < height; y++)
             {
                 int filter = raw[offset];
-                var row = raw.AsSpan(offset + 1, rowBytes);
+                var row = raw.Slice(offset + 1, rowBytes);
                 Unfilter(filter, row, prior, stride);
                 Expand(row, format, header, rgba, pass.StartY + (y * pass.StepY), pass, width);
                 prior = row;
@@ -202,6 +204,24 @@ internal static class Scanlines
                 }
 
                 return;
+
+            case PngColorType.Indexed when depth == 8 && pass.StepX == 1:
+                {
+                    // A palette entry is four RGBA bytes, so each pixel is one 4-byte copy; reading
+                    // and writing both as uint keeps the byte order whatever the platform's.
+                    var entryWords = MemoryMarshal.Cast<byte, uint>(format.Palette!);
+                    var targetWords = MemoryMarshal.Cast<byte, uint>(rgba.AsSpan(target, count * 4));
+                    int paletteEntries = format.PaletteCount;
+                    for (int x = 0; x < count; x++)
+                    {
+                        int index = row[x];
+                        if (index >= paletteEntries)
+                            throw new PngFormatException($"The PNG uses palette index {index}, but its PLTE has only {paletteEntries} entries.");
+                        targetWords[x] = entryWords[index];
+                    }
+
+                    return;
+                }
 
             default: // Indexed
                 var palette = format.Palette!;

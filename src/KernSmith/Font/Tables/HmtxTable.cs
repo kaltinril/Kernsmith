@@ -14,48 +14,44 @@ namespace KernSmith.Font.Tables;
 /// </remarks>
 internal sealed class HmtxTable
 {
-    private readonly ushort[] _advanceWidths;
-    private readonly short[] _leftSideBearings;
+    private readonly ReadOnlyMemory<byte> _data;
+    private readonly int _numberOfHMetrics;
 
-    private HmtxTable(ushort[] advanceWidths, short[] leftSideBearings)
+    private HmtxTable(ReadOnlyMemory<byte> data, int numberOfHMetrics, int glyphCount)
     {
-        _advanceWidths = advanceWidths;
-        _leftSideBearings = leftSideBearings;
+        _data = data;
+        _numberOfHMetrics = numberOfHMetrics;
+        GlyphCount = glyphCount;
     }
 
-    /// <summary>Number of glyphs covered by this table.</summary>
-    public int GlyphCount => _leftSideBearings.Length;
+    public int GlyphCount { get; }
 
-    /// <summary>Returns the advance width, in font design units, for the given glyph index.</summary>
     public ushort GetAdvanceWidth(int glyphIndex)
     {
-        if ((uint)glyphIndex >= (uint)_leftSideBearings.Length)
+        if ((uint)glyphIndex >= (uint)GlyphCount)
             throw new ArgumentOutOfRangeException(nameof(glyphIndex));
 
         // Tail glyphs reuse the final stored advance width.
-        int advanceIndex = Math.Min(glyphIndex, _advanceWidths.Length - 1);
-        return _advanceWidths[advanceIndex];
+        int advanceIndex = Math.Min(glyphIndex, _numberOfHMetrics - 1);
+        return BinaryPrimitives.ReadUInt16BigEndian(_data.Span.Slice(advanceIndex * 4));
     }
 
-    /// <summary>Returns the left side bearing, in font design units, for the given glyph index.</summary>
     public short GetLeftSideBearing(int glyphIndex)
     {
-        if ((uint)glyphIndex >= (uint)_leftSideBearings.Length)
+        if ((uint)glyphIndex >= (uint)GlyphCount)
             throw new ArgumentOutOfRangeException(nameof(glyphIndex));
-        return _leftSideBearings[glyphIndex];
+
+        var offset = glyphIndex < _numberOfHMetrics
+            ? glyphIndex * 4 + 2
+            : _numberOfHMetrics * 4 + (glyphIndex - _numberOfHMetrics) * 2;
+        return BinaryPrimitives.ReadInt16BigEndian(_data.Span.Slice(offset));
     }
 
     /// <summary>
-    /// Parses the <c>hmtx</c> table.
+    /// Validates the table's size and keeps the bytes; entries are read on demand. The font
+    /// data must stay unchanged while the table is in use (the parser owns its copy).
     /// </summary>
-    /// <param name="data">The raw <c>hmtx</c> bytes.</param>
-    /// <param name="numberOfHMetrics">From <c>hhea</c>: count of full (advance, lsb) pairs.</param>
-    /// <remarks>
-    /// Unlike a <c>maxp</c>-aware parser, the total glyph count isn't known here, so the
-    /// number of trailing left-side-bearing-only entries is derived from the table's
-    /// remaining byte length: <c>(data.Length - numberOfHMetrics * 4) / 2</c>.
-    /// </remarks>
-    public static HmtxTable Parse(ReadOnlySpan<byte> data, int numberOfHMetrics)
+    public static HmtxTable Parse(ReadOnlyMemory<byte> data, int numberOfHMetrics)
     {
         if (numberOfHMetrics <= 0)
             throw new FontFormatException("hmtx", 0, $"numberOfHMetrics must be positive, got {numberOfHMetrics}.");
@@ -66,24 +62,6 @@ internal sealed class HmtxTable
                 $"Table is too small for {numberOfHMetrics} full metrics entries (needs {fullMetricsBytes} bytes, has {data.Length}).");
 
         var trailingLsbCount = (data.Length - fullMetricsBytes) / 2;
-
-        var advanceWidths = new ushort[numberOfHMetrics];
-        var leftSideBearings = new short[numberOfHMetrics + trailingLsbCount];
-
-        var offset = 0;
-        for (var i = 0; i < numberOfHMetrics; i++)
-        {
-            advanceWidths[i] = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(offset));
-            leftSideBearings[i] = BinaryPrimitives.ReadInt16BigEndian(data.Slice(offset + 2));
-            offset += 4;
-        }
-
-        for (var i = 0; i < trailingLsbCount; i++)
-        {
-            leftSideBearings[numberOfHMetrics + i] = BinaryPrimitives.ReadInt16BigEndian(data.Slice(offset));
-            offset += 2;
-        }
-
-        return new HmtxTable(advanceWidths, leftSideBearings);
+        return new HmtxTable(data, numberOfHMetrics, numberOfHMetrics + trailingLsbCount);
     }
 }

@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Threading.Tasks;
 using KernSmith.Font;
 using KernSmith.Font.Models;
@@ -777,7 +778,7 @@ internal sealed class PreparedRasterization : IDisposable
     /// alpha (color glyphs), or with every channel on its own when <paramref name="perChannel"/>
     /// is set (multi-channel distance fields), exactly as grayscale is.
     /// </summary>
-    private static RasterizedGlyph SuperSampleDownscale(RasterizedGlyph glyph, int level, bool perChannel = false)
+    internal static RasterizedGlyph SuperSampleDownscale(RasterizedGlyph glyph, int level, bool perChannel = false)
     {
         if (glyph.Width == 0 || glyph.Height == 0)
             return glyph;
@@ -792,76 +793,11 @@ internal sealed class PreparedRasterization : IDisposable
 
         var bpp = glyph.Format == PixelFormat.Rgba32 ? 4 : 1;
         var dst = new byte[dstW * dstH * bpp];
-        var srcPitch = glyph.Pitch;
-        var area = level * level;
 
-        for (var dy = 0; dy < dstH; dy++)
-        {
-            for (var dx = 0; dx < dstW; dx++)
-            {
-                if (perChannel && bpp == 4)
-                {
-                    for (var c = 0; c < 4; c++)
-                    {
-                        int sum = 0;
-                        for (var sy = 0; sy < level; sy++)
-                        {
-                            for (var sx = 0; sx < level; sx++)
-                            {
-                                var srcIdx = (dy * level + sy) * srcPitch + (dx * level + sx) * 4 + c;
-                                if (srcIdx < glyph.BitmapData.Length)
-                                    sum += glyph.BitmapData[srcIdx];
-                            }
-                        }
-                        dst[(dy * dstW + dx) * 4 + c] = (byte)(sum / area);
-                    }
-                }
-                else if (bpp == 1)
-                {
-                    int sum = 0;
-                    for (var sy = 0; sy < level; sy++)
-                    {
-                        for (var sx = 0; sx < level; sx++)
-                        {
-                            var srcIdx = (dy * level + sy) * srcPitch + (dx * level + sx);
-                            if (srcIdx < glyph.BitmapData.Length)
-                                sum += glyph.BitmapData[srcIdx];
-                        }
-                    }
-                    dst[dy * dstW + dx] = (byte)(sum / area);
-                }
-                else
-                {
-                    // Use premultiplied alpha for correct edge blending.
-                    // Without this, transparent pixels with gradient colors
-                    // bleed dark halos into the edges during downscale.
-                    float sumR = 0, sumG = 0, sumB = 0, sumA = 0;
-                    for (var sy = 0; sy < level; sy++)
-                    {
-                        for (var sx = 0; sx < level; sx++)
-                        {
-                            var srcIdx = (dy * level + sy) * srcPitch + (dx * level + sx) * 4;
-                            if (srcIdx + 3 < glyph.BitmapData.Length)
-                            {
-                                var a = glyph.BitmapData[srcIdx + 3] / 255f;
-                                sumR += glyph.BitmapData[srcIdx] * a;
-                                sumG += glyph.BitmapData[srcIdx + 1] * a;
-                                sumB += glyph.BitmapData[srcIdx + 2] * a;
-                                sumA += a;
-                            }
-                        }
-                    }
-                    var dstIdx = (dy * dstW + dx) * 4;
-                    if (sumA > 0)
-                    {
-                        dst[dstIdx] = (byte)Math.Min(255, sumR / sumA);
-                        dst[dstIdx + 1] = (byte)Math.Min(255, sumG / sumA);
-                        dst[dstIdx + 2] = (byte)Math.Min(255, sumB / sumA);
-                    }
-                    dst[dstIdx + 3] = (byte)Math.Min(255, sumA * 255 / area);
-                }
-            }
-        }
+        if (bpp == 1 || perChannel)
+            BoxSum(glyph.BitmapData, glyph.Pitch, level, dstW, dstH, bpp, dst);
+        else
+            BoxPremultiplied(glyph.BitmapData, glyph.Pitch, level, dstW, dstH, dst);
 
         var metrics = glyph.Metrics;
         var newMetrics = new GlyphMetrics(
@@ -882,6 +818,128 @@ internal sealed class PreparedRasterization : IDisposable
             Metrics = newMetrics,
             Format = glyph.Format
         };
+    }
+
+    /// <summary>
+    /// Each channel of each destination pixel is the integer mean (truncated) of its
+    /// <paramref name="level"/> x <paramref name="level"/> source block, a byte past the end of
+    /// <paramref name="src"/> counting as 0 (multi-channel distance fields average every channel
+    /// on its own; grayscale has one). Source rows are swept in order into per-pixel sums.
+    /// </summary>
+    private static void BoxSum(byte[] src, int srcPitch, int level, int dstW, int dstH, int bpp, byte[] dst)
+    {
+        var area = level * level;
+        var rowBytes = dstW * level * bpp;
+        var sums = ArrayPool<int>.Shared.Rent(dstW * bpp);
+        try
+        {
+            for (var dy = 0; dy < dstH; dy++)
+            {
+                var acc = sums.AsSpan(0, dstW * bpp);
+                acc.Clear();
+                for (var sy = 0; sy < level; sy++)
+                {
+                    var rowStart = (dy * level + sy) * srcPitch;
+                    if (rowStart + rowBytes <= src.Length)
+                    {
+                        var row = src.AsSpan(rowStart, rowBytes);
+                        var i = 0;
+                        for (var dx = 0; dx < dstW; dx++)
+                        {
+                            var k = dx * bpp;
+                            for (var sx = 0; sx < level; sx++)
+                            {
+                                for (var c = 0; c < bpp; c++)
+                                    acc[k + c] += row[i++];
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var i = rowStart;
+                        for (var dx = 0; dx < dstW; dx++)
+                        {
+                            var k = dx * bpp;
+                            for (var sx = 0; sx < level; sx++)
+                            {
+                                for (var c = 0; c < bpp; c++, i++)
+                                {
+                                    if (i < src.Length)
+                                        acc[k + c] += src[i];
+                                }
+                            }
+                        }
+                    }
+                }
+
+                var output = dst.AsSpan(dy * dstW * bpp, dstW * bpp);
+                for (var k = 0; k < output.Length; k++)
+                    output[k] = (byte)(acc[k] / area);
+            }
+        }
+        finally
+        {
+            ArrayPool<int>.Shared.Return(sums);
+        }
+    }
+
+    /// <summary>
+    /// Premultiplied-alpha box filter for RGBA: without premultiplying, transparent pixels with
+    /// gradient colors bleed dark halos into the edges during downscale. Each destination
+    /// pixel's float sums take their source pixels in block order (row by row, left to right)
+    /// — the order that fixes their rounding — and a pixel whose bytes run past the end of
+    /// <paramref name="src"/> is skipped.
+    /// </summary>
+    private static void BoxPremultiplied(byte[] src, int srcPitch, int level, int dstW, int dstH, byte[] dst)
+    {
+        var area = level * level;
+        var sums = ArrayPool<float>.Shared.Rent(dstW * 4);
+        try
+        {
+            for (var dy = 0; dy < dstH; dy++)
+            {
+                var acc = sums.AsSpan(0, dstW * 4);
+                acc.Clear();
+                for (var sy = 0; sy < level; sy++)
+                {
+                    var rowStart = (dy * level + sy) * srcPitch;
+                    for (var dx = 0; dx < dstW; dx++)
+                    {
+                        var k = dx * 4;
+                        for (var sx = 0; sx < level; sx++)
+                        {
+                            var srcIdx = rowStart + (dx * level + sx) * 4;
+                            if (srcIdx + 3 < src.Length)
+                            {
+                                var a = src[srcIdx + 3] / 255f;
+                                acc[k] += src[srcIdx] * a;
+                                acc[k + 1] += src[srcIdx + 1] * a;
+                                acc[k + 2] += src[srcIdx + 2] * a;
+                                acc[k + 3] += a;
+                            }
+                        }
+                    }
+                }
+
+                for (var dx = 0; dx < dstW; dx++)
+                {
+                    var k = dx * 4;
+                    float sumR = acc[k], sumG = acc[k + 1], sumB = acc[k + 2], sumA = acc[k + 3];
+                    var dstIdx = (dy * dstW + dx) * 4;
+                    if (sumA > 0)
+                    {
+                        dst[dstIdx] = (byte)Math.Min(255, sumR / sumA);
+                        dst[dstIdx + 1] = (byte)Math.Min(255, sumG / sumA);
+                        dst[dstIdx + 2] = (byte)Math.Min(255, sumB / sumA);
+                    }
+                    dst[dstIdx + 3] = (byte)Math.Min(255, sumA * 255 / area);
+                }
+            }
+        }
+        finally
+        {
+            ArrayPool<float>.Shared.Return(sums);
+        }
     }
 
     /// <summary>Pads a glyph bitmap to the target height for uniform cell sizes.</summary>

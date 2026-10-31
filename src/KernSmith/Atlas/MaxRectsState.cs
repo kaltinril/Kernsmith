@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace KernSmith.Atlas;
 
 /// <summary>
@@ -21,6 +23,9 @@ internal sealed class MaxRectsState
 
     /// <summary>Number of pages currently tracked.</summary>
     public int PageCount => _pages.Count;
+
+    /// <summary>The free-rectangle list of one page, in list order (test hook).</summary>
+    internal IReadOnlyList<Rect> GetFreeRects(int pageIndex) => _pages[pageIndex];
 
     public MaxRectsState(int pageWidth, int pageHeight, int initialPageCount)
     {
@@ -70,8 +75,8 @@ internal sealed class MaxRectsState
                 $"Occupied rect references page {r.PageIndex} but only {_pages.Count} page(s) exist.");
 
         var freeRects = _pages[r.PageIndex];
-        SplitFreeRects(freeRects, new Rect(r.X, r.Y, r.Width, r.Height));
-        PruneContainedRects(freeRects);
+        var firstNew = SplitFreeRects(freeRects, new Rect(r.X, r.Y, r.Width, r.Height));
+        PruneAfterSplit(freeRects, firstNew);
     }
 
     /// <summary>
@@ -155,9 +160,10 @@ internal sealed class MaxRectsState
         var bestLongSide = int.MaxValue;
         var bestIndex = -1;
 
-        for (var i = 0; i < freeRects.Count; i++)
+        var rects = CollectionsMarshal.AsSpan(freeRects);
+        for (var i = 0; i < rects.Length; i++)
         {
-            var fr = freeRects[i];
+            var fr = rects[i];
             if (width <= fr.Width && height <= fr.Height)
             {
                 var leftoverX = fr.Width - width;
@@ -176,19 +182,22 @@ internal sealed class MaxRectsState
         if (bestIndex < 0)
             return null;
 
-        var bestRect = freeRects[bestIndex];
+        var bestRect = rects[bestIndex];
         var placedRect = new Rect(bestRect.X, bestRect.Y, width, height);
 
-        // Split all overlapping free rects.
-        SplitFreeRects(freeRects, placedRect);
-
-        // Prune contained rects.
-        PruneContainedRects(freeRects);
+        // Split all overlapping free rects, then prune contained rects.
+        var firstNew = SplitFreeRects(freeRects, placedRect);
+        PruneAfterSplit(freeRects, firstNew);
 
         return (placedRect.X, placedRect.Y);
     }
 
-    internal static void SplitFreeRects(List<Rect> freeRects, Rect placed)
+    /// <summary>
+    /// Replaces every free rect overlapping <paramref name="placed"/> with its up-to-four
+    /// leftover strips. Non-overlapping rects keep their relative order at the front; the
+    /// strips follow. Returns the index of the first strip.
+    /// </summary>
+    internal static int SplitFreeRects(List<Rect> freeRects, Rect placed)
     {
         var originalCount = freeRects.Count;
         var writeIndex = 0;
@@ -230,6 +239,52 @@ internal sealed class MaxRectsState
             freeRects[writeIndex + i] = freeRects[originalCount + i];
 
         freeRects.RemoveRange(writeIndex + newCount, freeRects.Count - writeIndex - newCount);
+        return writeIndex;
+    }
+
+    /// <summary>
+    /// The result of <see cref="PruneContainedRects"/> on a list fresh from
+    /// <see cref="SplitFreeRects"/>, without testing pairs of old survivors against each other.
+    /// </summary>
+    /// <remarks>
+    /// Only strips (<c>[firstNew, count)</c>) can be removed, so only they are tested, against
+    /// every rect in the full prune's order and with its removal marks. That is exact because
+    /// no old survivor (<c>[0, firstNew)</c>) can be contained by anything: (1) before the
+    /// split the list was pruned — it starts as one rect and every mutation ends in a prune —
+    /// so no survivor contains or duplicates another; (2) every strip lies inside the rect it
+    /// was cut from, a member of that pruned list, which therefore contained no survivor.
+    /// Keep both true: a mutation that skips the prune, or a split that emits a strip
+    /// reaching outside its parent, breaks this and must use <see cref="PruneContainedRects"/>.
+    /// </remarks>
+    internal static void PruneAfterSplit(List<Rect> freeRects, int firstNew)
+    {
+        var count = freeRects.Count;
+        if (firstNew >= count)
+            return;
+
+        var rects = CollectionsMarshal.AsSpan(freeRects);
+        Span<bool> remove = count <= 256 ? stackalloc bool[count] : new bool[count];
+
+        for (var i = firstNew; i < count; i++)
+        {
+            for (var j = 0; j < count; j++)
+            {
+                if (i == j || remove[j]) continue;
+                if (Contains(rects[j], rects[i]))
+                {
+                    remove[i] = true;
+                    break;
+                }
+            }
+        }
+
+        var write = firstNew;
+        for (var read = firstNew; read < count; read++)
+        {
+            if (!remove[read])
+                rects[write++] = rects[read];
+        }
+        freeRects.RemoveRange(write, count - write);
     }
 
     internal static void PruneContainedRects(List<Rect> freeRects)

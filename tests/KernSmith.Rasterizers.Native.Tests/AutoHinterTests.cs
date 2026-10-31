@@ -178,7 +178,69 @@ public class AutoHinterTests
         GridFitter.Fit(diamond, ScaledHintMetrics.WithoutZones(maxStem: 4f)).ShouldBeNull();
     }
 
+    [Fact]
+    public void Fit_LeavesAnEdgeAPixelAboveAZone_OutOfIt_AtLargeSizes()
+    {
+        // 72px in a 1000-unit em with a 500-unit x-height: the zone's flat line is 36px. A top
+        // 0.9px above it (an accent, a ring) is not at the x-height, so it rounds to the nearest
+        // pixel line (37) rather than being pulled down into the zone (36).
+        var os2 = new Os2Table(Version: 2, TypoAscender: 800, TypoDescender: -200, WinAscent: 800, WinDescent: 200, XHeight: 500, CapHeight: 700);
+        var metrics = FontHintMetrics.Measure(_ => null, os2, unitsPerEm: 1000)!.Scale(72f / 1000f, 1000);
+        var tall = Rectangle(0f, 0f, 20f, 36.9f, counterClockwise: false);
+
+        var fitted = GridFitter.Fit(tall, metrics);
+
+        fitted.ShouldNotBeNull();
+        VerticalExtent(fitted!).Top.ShouldBe(37f, 1e-4f);
+    }
+
+    [Fact]
+    public void Fit_KeepsAStrokeAPixelOffTheStandardWidth_AtItsOwnWidth()
+    {
+        // A standard stroke of 9.94px (Source Code Black's at 72px). An 8.4px stroke is a
+        // different stroke, not a slightly-off standard one: it rounds to 8, not to 10.
+        var bar = Rectangle(0f, 10f, 20f, 18.4f, counterClockwise: false);
+        var metrics = new ScaledHintMetrics([], StandardStem: 9.94f, ZoneTolerance: 0f, MaxStem: 11.52f);
+
+        var fitted = GridFitter.Fit(bar, metrics);
+
+        fitted.ShouldNotBeNull();
+        var (bottom, top) = VerticalExtent(fitted!);
+        (top - bottom).ShouldBe(8f, 1e-4f);
+    }
+
+    [Fact]
+    public void Fit_MovesNoPointMoreThanOnePixel_WhenThinStrokesStack()
+    {
+        // Source Serif's 'Ã' at 8px: a letter whose top snaps up to the cap-height zone, and
+        // above it a tilde whose two humps are thin strokes side by side, each a half pixel
+        // thick, the left one higher. Each hump keeps at least a pixel and the fitted heights
+        // must stay in order, but no point may end up more than a pixel from where it was.
+        var shape = Concat(
+            Rectangle(2.4f, 0f, 2.9f, 5.4f, counterClockwise: true),
+            Rectangle(3.0f, 5.79f, 3.7f, 6.26f, counterClockwise: true),
+            Rectangle(1.6f, 6.44f, 2.3f, 6.91f, counterClockwise: true));
+        var metrics = new ScaledHintMetrics(
+            [
+                new PixelZone(IsTop: false, Flat: 0f, Overshoot: -0.12f, SnappedFlat: 0f, SnappedOvershoot: 0f),
+                new PixelZone(IsTop: true, Flat: 3.80f, Overshoot: 3.90f, SnappedFlat: 4f, SnappedOvershoot: 4f),
+                new PixelZone(IsTop: true, Flat: 5.36f, Overshoot: 5.48f, SnappedFlat: 6f, SnappedOvershoot: 6f),
+            ],
+            StandardStem: 0.37f,
+            ZoneTolerance: 0.16f,
+            MaxStem: 1.28f);
+
+        var fitted = GridFitter.Fit(shape, metrics);
+
+        fitted.ShouldNotBeNull();
+        for (int i = 0; i < shape.Commands.Length; i++)
+            MathF.Abs(fitted!.Commands[i].EndY - shape.Commands[i].EndY).ShouldBeLessThanOrEqualTo(1f, $"point {i} at y={shape.Commands[i].EndY}");
+    }
+
     // ---- Helpers ----------------------------------------------------------------------------
+
+    private static GlyphOutline Concat(params GlyphOutline[] outlines) =>
+        GlyphOutline.FromCommands([.. outlines.SelectMany(o => o.Commands)]);
 
     private static FontHintMetrics? MeasureRoboto(NativeFontFace face)
     {

@@ -34,7 +34,7 @@ internal sealed record GoldenResult(GoldenEntry Entry, IReadOnlyList<GoldenGlyph
 internal sealed record GenerateGoldenResult(GoldenEntry Entry, string Fnt, IReadOnlyList<GoldenImage> Pages);
 
 /// <summary>Renders golden cases and hashes them.</summary>
-internal static partial class GoldenRenderer
+internal static class GoldenRenderer
 {
     /// <summary>Rasterizes every codepoint of <paramref name="goldenCase"/> through a fresh
     /// <see cref="NativeRasterizer"/> and fingerprints each glyph's bytes and metrics.</summary>
@@ -111,7 +111,7 @@ internal static partial class GoldenRenderer
     /// version bump or a Windows newline does not count as drift.
     /// </summary>
     public static string NormalizeFnt(string fnt) =>
-        GeneratorVersion().Replace(fnt.Replace("\r\n", "\n", StringComparison.Ordinal), "kernsmith version=\"*\"");
+        GeneratorVersion.Replace(fnt.Replace("\r\n", "\n", StringComparison.Ordinal), "kernsmith version=\"*\"");
 
     private static byte[] Serialize(int codepoint, RasterizedGlyph? glyph, GlyphMetrics? measured)
     {
@@ -154,6 +154,7 @@ internal static partial class GoldenRenderer
     private static string Fingerprint(byte[] record) =>
         Convert.ToHexString(SHA256.HashData(record), 0, 4).ToLowerInvariant();
 
-    [GeneratedRegex("kernsmith version=\"[^\"]*\"")]
-    private static partial Regex GeneratorVersion();
+    // A runtime Regex, not [GeneratedRegex]: the regex source generator's output trips CodeQL
+    // quality queries (see project_decisions.md, CodeQL Configuration).
+    private static readonly Regex GeneratorVersion = new("kernsmith version=\"[^\"]*\"");
 }

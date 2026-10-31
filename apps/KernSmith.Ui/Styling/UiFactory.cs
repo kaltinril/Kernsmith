@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using global::Gum.DataTypes;
 using global::Gum.Forms.Controls;
 using KernSmith.Ui.Layout;
@@ -10,6 +11,8 @@ namespace KernSmith.Ui.Styling;
 
 /// <summary>
 /// Shared UI factory methods for creating consistent controls across all panels.
+/// Helpers that bind a control to a view-model property name the control's visual after that
+/// property, so tests and Gum layout exports can find it.
 /// </summary>
 public static class UiFactory
 {
@@ -44,12 +47,17 @@ public static class UiFactory
     }
 
     /// <summary>
-    /// Creates a grid row with label | slider | value display for integer ranges.
+    /// Creates a grid row with label | slider | value display for integer ranges, bound to a
+    /// view-model property: it shows <paramref name="getValue"/> now and whenever
+    /// <paramref name="source"/> raises <paramref name="propertyName"/> (e.g. after Load Project),
+    /// and writes the user's changes to <paramref name="setValue"/>. Showing a value never writes
+    /// it back, and a value the slider already shows (mid-drag) is left alone.
     /// </summary>
     public static Slider AddSliderRow(
         global::Gum.Wireframe.GraphicalUiElement parent,
-        string label, int min, int max, int defaultVal,
-        Action<int> onChanged)
+        string label, int min, int max,
+        INotifyPropertyChanged source, string propertyName,
+        Func<int> getValue, Action<int> setValue)
     {
         var grid = new Grid();
         grid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -67,24 +75,40 @@ public static class UiFactory
         grid.AddChild(lbl, row: 0, column: 0);
 
         var slider = new Slider();
+        slider.Visual.Name = propertyName;
         slider.Minimum = min;
         slider.Maximum = max;
-        slider.Value = defaultVal;
         slider.Width = 100;
         slider.TicksFrequency = 1;
         slider.IsSnapToTickEnabled = true;
         grid.AddChild(slider, row: 0, column: 1);
 
         var valueLabel = new Label();
-        valueLabel.Text = defaultVal.ToString();
         grid.AddChild(valueLabel, row: 0, column: 2);
+
+        var showing = false;
+        void Show()
+        {
+            var value = getValue();
+            valueLabel.Text = value.ToString();
+            if ((int)slider.Value == value) return;
+            showing = true;
+            try { slider.Value = value; }
+            finally { showing = false; }
+        }
 
         slider.ValueChanged += (_, _) =>
         {
+            if (showing) return;
             var val = (int)slider.Value;
             valueLabel.Text = val.ToString();
-            onChanged(val);
+            setValue(val);
         };
+        source.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == propertyName) Show();
+        };
+        Show();
 
         return slider;
     }
@@ -94,11 +118,14 @@ public static class UiFactory
     /// The underlying Gum slider is integer-snapped; values are mapped to floats by dividing the
     /// raw slider value by <paramref name="steps"/> (e.g. min=1, max=3, steps=10 yields 1.0..3.0
     /// in 0.1 increments). Use this for discoverable, bounded float params (Gamma, SdfSpread).
+    /// Bound to a view-model property like <see cref="AddSliderRow"/>; the label shows the
+    /// property's exact value even where the slider can only show the nearest step.
     /// </summary>
     public static Slider AddFloatSliderRow(
         global::Gum.Wireframe.GraphicalUiElement parent,
-        string label, float min, float max, float defaultVal, int steps,
-        Action<float> onChanged)
+        string label, float min, float max, int steps,
+        INotifyPropertyChanged source, string propertyName,
+        Func<float> getValue, Action<float> setValue)
     {
         var grid = new Grid();
         grid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -116,24 +143,41 @@ public static class UiFactory
         grid.AddChild(lbl, row: 0, column: 0);
 
         var slider = new Slider();
+        slider.Visual.Name = propertyName;
         slider.Minimum = min * steps;
         slider.Maximum = max * steps;
-        slider.Value = defaultVal * steps;
         slider.Width = 100;
         slider.TicksFrequency = 1;
         slider.IsSnapToTickEnabled = true;
         grid.AddChild(slider, row: 0, column: 1);
 
         var valueLabel = new Label();
-        valueLabel.Text = defaultVal.ToString("0.0#");
         grid.AddChild(valueLabel, row: 0, column: 2);
+
+        var showing = false;
+        void Show()
+        {
+            var value = getValue();
+            valueLabel.Text = value.ToString("0.0#");
+            var tick = Math.Round(value * steps);
+            if (Math.Round(slider.Value).Equals(tick)) return;
+            showing = true;
+            try { slider.Value = tick; }
+            finally { showing = false; }
+        }
 
         slider.ValueChanged += (_, _) =>
         {
+            if (showing) return;
             var val = (float)(slider.Value / steps);
             valueLabel.Text = val.ToString("0.0#");
-            onChanged(val);
+            setValue(val);
         };
+        source.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == propertyName) Show();
+        };
+        Show();
 
         return slider;
     }
@@ -141,11 +185,13 @@ public static class UiFactory
     /// <summary>
     /// Creates a label : float-text-box row for a precise/unbounded float value.
     /// Mirrors the two-column rhythm of <see cref="AddSliderRow"/> using a fixed-width label.
+    /// See <see cref="CreateSmallFloatBox"/> for the binding parameters.
     /// </summary>
     public static TextBox AddFloatBoxRow(
         global::Gum.Wireframe.GraphicalUiElement parent,
-        string label, float initialValue,
-        Action<float> onChanged)
+        string label,
+        INotifyPropertyChanged source, string propertyName,
+        Func<float> getValue, Action<float> setValue)
     {
         var grid = new Grid();
         grid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -161,7 +207,7 @@ public static class UiFactory
         lbl.Text = label;
         grid.AddChild(lbl, row: 0, column: 0);
 
-        var box = CreateSmallFloatBox(initialValue, onChanged);
+        var box = CreateSmallFloatBox(source, propertyName, getValue, setValue);
         grid.AddChild(box, row: 0, column: 1);
 
         return box;
@@ -170,33 +216,87 @@ public static class UiFactory
     /// <summary>
     /// Creates a small text box for a precise/unbounded float value, parsing on edit.
     /// Use this for params that benefit from exact entry (advance adjust, gradient offset/scale).
+    /// The box shows <paramref name="getValue"/> and writes parsed edits to <paramref name="setValue"/>.
     /// </summary>
-    public static TextBox CreateSmallFloatBox(float initialValue, Action<float> onChanged)
+    /// <param name="source">The view model that owns the value.</param>
+    /// <param name="propertyName">The property <paramref name="source"/> raises when the value changes.</param>
+    /// <param name="getValue">Reads the value.</param>
+    /// <param name="setValue">Writes a parsed edit.</param>
+    public static TextBox CreateSmallFloatBox(
+        INotifyPropertyChanged source, string propertyName,
+        Func<float> getValue, Action<float> setValue)
     {
         var box = new TextBox();
+        box.Visual.Name = propertyName;
         box.Width = 56;
         box.Height = 24;
-        box.Text = initialValue.ToString("0.0###");
+        box.Text = getValue().ToString("0.0###");
         box.TextChanged += (_, _) =>
         {
             if (float.TryParse(box.Text, System.Globalization.NumberStyles.Float,
                     System.Globalization.CultureInfo.CurrentCulture, out var val))
-                onChanged(val);
+                setValue(val);
+        };
+        // Show values set from code (e.g. a loaded project). Text that already parses to the value
+        // is left alone, so "0.50" or "1." being typed is not rewritten under the cursor.
+        source.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != propertyName) return;
+            if (float.TryParse(box.Text, System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.CurrentCulture, out var shown) && shown.Equals(getValue()))
+                return;
+            box.Text = getValue().ToString("0.0###");
         };
         return box;
     }
 
     /// <summary>
-    /// Creates a grid row with label | color swatch | hex input for color selection.
+    /// Binds <paramref name="checkBox"/> to a bool view-model property: it shows
+    /// <paramref name="getValue"/> now and whenever <paramref name="source"/> raises
+    /// <paramref name="propertyName"/>, and writes the user's clicks to <paramref name="setValue"/>.
+    /// Showing a value does not write it back. Other <c>Checked</c>/<c>Unchecked</c> handlers still
+    /// run, so a panel can hang UI-only reactions (such as showing a section) on them.
     /// </summary>
-    public static void AddColorRow(
+    public static void BindCheckBox(CheckBox checkBox,
+        INotifyPropertyChanged source, string propertyName,
+        Func<bool> getValue, Action<bool> setValue)
+    {
+        checkBox.Visual.Name = propertyName;
+        var showing = false;
+        void Show()
+        {
+            if (checkBox.IsChecked == getValue()) return;
+            showing = true;
+            try { checkBox.IsChecked = getValue(); }
+            finally { showing = false; }
+        }
+
+        checkBox.Checked += (_, _) => { if (!showing) setValue(true); };
+        checkBox.Unchecked += (_, _) => { if (!showing) setValue(false); };
+        source.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == propertyName) Show();
+        };
+        Show();
+    }
+
+    /// <summary>
+    /// Creates a grid row with label | color swatch | hex input for color selection, bound to a
+    /// <c>#RRGGBB</c> view-model property: it shows <paramref name="getHex"/> now and whenever
+    /// <paramref name="source"/> raises <paramref name="propertyName"/>, and writes complete colors
+    /// typed or picked by the user to <paramref name="setHex"/>. Text that already means the
+    /// shown color, or is still being typed, is left alone.
+    /// </summary>
+    /// <returns>The hex text box.</returns>
+    public static TextBox AddColorRow(
         GraphicsDevice graphicsDevice,
         global::Gum.Wireframe.GraphicalUiElement parent,
-        string label, string initialHex,
-        Action<string> onColorChanged,
+        string label,
+        INotifyPropertyChanged source, string propertyName,
+        Func<string> getHex, Action<string> setHex,
         string? tooltip = null)
     {
-        var (defaultR, defaultG, defaultB) = EffectsViewModel.ParseHex(initialHex);
+        var (defaultR, defaultG, defaultB) = EffectsViewModel.ParseHex(getHex());
 
         var grid = new Grid();
         grid.Visual.WidthUnits = DimensionUnitType.RelativeToParent;
@@ -239,14 +339,14 @@ public static class UiFactory
         swatchContainer.Children.Insert(0, swatchBorder);
 
         var hexBox = new TextBox();
+        hexBox.Visual.Name = propertyName;
         hexBox.Width = 80;
         hexBox.Text = $"#{defaultR:X2}{defaultG:X2}{defaultB:X2}";
         TooltipService.SetTooltip(hexBox, "Hex color (e.g., #FF0000)");
         var suppressHexSync = false;
 
-        hexBox.TextChanged += (_, _) =>
+        bool TryParseBox(out Color color)
         {
-            if (suppressHexSync) return;
             var hex = hexBox.Text?.Trim() ?? "";
             if (hex.StartsWith('#')) hex = hex[1..];
             if (hex.Length == 6 &&
@@ -254,9 +354,29 @@ public static class UiFactory
                 byte.TryParse(hex[2..4], System.Globalization.NumberStyles.HexNumber, null, out var g) &&
                 byte.TryParse(hex[4..6], System.Globalization.NumberStyles.HexNumber, null, out var b))
             {
-                swatch.FillColor = new Color(r, g, b);
-                onColorChanged($"#{r:X2}{g:X2}{b:X2}");
+                color = new Color(r, g, b);
+                return true;
             }
+            color = default;
+            return false;
+        }
+
+        hexBox.TextChanged += (_, _) =>
+        {
+            if (suppressHexSync || !TryParseBox(out var color)) return;
+            swatch.FillColor = color;
+            setHex($"#{color.R:X2}{color.G:X2}{color.B:X2}");
+        };
+        source.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != propertyName) return;
+            var (r, g, b) = EffectsViewModel.ParseHex(getHex());
+            var color = new Color(r, g, b);
+            swatch.FillColor = color;
+            if (TryParseBox(out var shown) && shown == color) return;
+            suppressHexSync = true;
+            try { hexBox.Text = $"#{r:X2}{g:X2}{b:X2}"; }
+            finally { suppressHexSync = false; }
         };
         grid.AddChild(hexBox, row: 0, column: 2);
 
@@ -270,9 +390,11 @@ public static class UiFactory
                 suppressHexSync = true;
                 hexBox.Text = hex;
                 suppressHexSync = false;
-                onColorChanged(hex);
+                setHex(hex);
             });
         };
+
+        return hexBox;
     }
 
     /// <summary>

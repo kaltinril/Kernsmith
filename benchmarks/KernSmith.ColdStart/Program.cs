@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text.Json;
 using KernSmith;
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.FreeType;
@@ -104,7 +103,7 @@ catch (Exception ex)
 report.JitAtEnd = JitSnapshot.Take();
 report.MainToEndMs = Stopwatch.GetElapsedTime(mainEntered).TotalMilliseconds;
 
-string json = JsonSerializer.Serialize(report, ColdStartJsonContext.Default.ColdStartReport);
+string json = report.ToJson();
 if (settings.TryGetValue("out", out var outPath))
     File.WriteAllText(outPath, json);
 else

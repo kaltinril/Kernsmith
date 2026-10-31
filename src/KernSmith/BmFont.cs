@@ -421,14 +421,27 @@ public static class BmFont
         metrics?.Begin("AtlasSizeEstimation");
         // Estimate + constraints + (with AutofitTexture) a one-page verification pack
         // and one-step bump — the same sequence a session's first add runs.
+        PackResult? verificationPack = null;
+        int verifiedWidth = 0, verifiedHeight = 0;
         (pageWidth, pageHeight) = AtlasSizeEstimator.ComputeInitialPageSize(
             glyphRects, options, sizingOptions,
-            (w, h) => packer.Pack(glyphRects, w, h).PageCount == 1);
+            (w, h) =>
+            {
+                verificationPack = packer.Pack(glyphRects, w, h);
+                (verifiedWidth, verifiedHeight) = (w, h);
+                return verificationPack.PageCount == 1;
+            });
         metrics?.End();
 
         metrics?.Begin("AtlasPacking");
         {
-            var packResult = packer.Pack(glyphRects, pageWidth, pageHeight);
+            // The built-in packers are deterministic and leave their input alone, so a
+            // verification pack at the final size already is the real pack. A caller's packer
+            // promises neither and is asked again.
+            var packResult = options.Packer == null && verificationPack != null
+                && verifiedWidth == pageWidth && verifiedHeight == pageHeight
+                ? verificationPack
+                : packer.Pack(glyphRects, pageWidth, pageHeight);
             metrics?.End();
 
             // 6. Build atlas pages

@@ -167,39 +167,7 @@ internal sealed class ShadowEffect : IGlyphEffect
         var temp = ArrayPool<float>.Shared.Rent(size);
         try
         {
-            var kernelSize = radius * 2 + 1;
-            var invKernel = 1f / kernelSize;
-
-            // Horizontal pass.
-            for (var y = 0; y < height; y++)
-            {
-                for (var x = 0; x < width; x++)
-                {
-                    float sum = 0;
-                    for (var k = -radius; k <= radius; k++)
-                    {
-                        var sx = Math.Clamp(x + k, 0, width - 1);
-                        sum += src[y * width + sx];
-                    }
-                    temp[y * width + x] = sum * invKernel;
-                }
-            }
-
-            // Vertical pass.
-            for (var y = 0; y < height; y++)
-            {
-                for (var x = 0; x < width; x++)
-                {
-                    float sum = 0;
-                    for (var k = -radius; k <= radius; k++)
-                    {
-                        var sy = Math.Clamp(y + k, 0, height - 1);
-                        sum += temp[sy * width + x];
-                    }
-                    dst[y * width + x] = sum * invKernel;
-                }
-            }
-
+            BoxBlurFilter.Blur(src.AsSpan(0, size), temp.AsSpan(0, size), dst, width, height, radius);
             return dst;
         }
         finally

@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.ObjectModel;
 using System.Text;
@@ -101,6 +102,9 @@ internal class TtfParser
             _tables.ContainsKey(Tag('s', 'b', 'i', 'x')) ||
             _tables.ContainsKey(Tag('C', 'B', 'D', 'T'));
     }
+
+    private ReadOnlyMemory<byte> GetTableMemory(uint tag) =>
+        _tables.TryGetValue(tag, out var entry) ? _data.Slice(entry.offset, entry.length) : ReadOnlyMemory<byte>.Empty;
 
     private ReadOnlySpan<byte> GetTable(uint tag)
     {
@@ -221,7 +225,7 @@ internal class TtfParser
 
         try
         {
-            Hmtx = HmtxTable.Parse(table, Hhea.NumberOfHMetrics);
+            Hmtx = HmtxTable.Parse(GetTableMemory(Tag('h', 'm', 't', 'x')), Hhea.NumberOfHMetrics);
         }
         catch (FontFormatException)
         {
@@ -295,10 +299,11 @@ internal class TtfParser
         // Target nameIDs: 0=copyright, 1=family, 2=subfamily, 3=uniqueId, 4=fullName,
         // 5=version, 6=postScript, 7=trademark, 8=manufacturer, 9=designer,
         // 10=description, 13=license, 14=licenseUrl
-        var targetIds = new HashSet<int> { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14 };
-        // Store best match: nameID -> (priority, string)
-        // Priority: Windows English=3, Windows other=2, Mac=1
-        var results = new Dictionary<int, (int priority, string value)>();
+        const int targetIds = 0b110_0111_1111_1111;
+        // Best match per nameID: the first record of the highest priority (Windows English=3,
+        // Windows other=2, Mac=1); only the winners are decoded.
+        Span<NameRecord> best = stackalloc NameRecord[15];
+        best.Clear();
 
         for (var i = 0; i < count; i++)
         {
@@ -313,55 +318,52 @@ internal class TtfParser
             var length = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(recOffset + 8));
             var offset = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(recOffset + 10));
 
-            if (!targetIds.Contains(nameID))
+            if (nameID > 14 || (targetIds & (1 << nameID)) == 0)
                 continue;
 
             var strStart = stringOffset + offset;
             if (strStart + length > table.Length)
                 continue;
 
-            var strData = table.Slice(strStart, length);
-            string value;
             int priority;
-
             if (platformID == 3 && encodingID == 1)
-            {
-                // Windows Unicode BMP - UTF-16 big-endian
-                value = DecodeUtf16BigEndian(strData);
-                priority = languageID == 0x0409 ? 3 : 2;
-            }
+                priority = languageID == 0x0409 ? 3 : 2; // Windows Unicode BMP - UTF-16 big-endian
             else if (platformID == 1 && encodingID == 0)
-            {
-                // Mac Roman - ASCII/Latin-1
-                value = DecodeLatin1(strData);
-                priority = 1;
-            }
+                priority = 1;                            // Mac Roman - ASCII/Latin-1
             else
-            {
                 continue;
-            }
 
-            if (!results.TryGetValue(nameID, out var existing) || priority > existing.priority)
-            {
-                results[nameID] = (priority, value);
-            }
+            if (priority > best[nameID].Priority)
+                best[nameID] = new NameRecord(priority, strStart, length);
+        }
+
+        string? Decode(ReadOnlySpan<byte> names, ReadOnlySpan<NameRecord> winners, int nameID)
+        {
+            var record = winners[nameID];
+            if (record.Priority == 0)
+                return null;
+            var strData = names.Slice(record.Start, record.Length);
+            return record.Priority == 1 ? DecodeLatin1(strData) : DecodeUtf16BigEndian(strData);
         }
 
         Names = new NameInfo(
-            FontFamily: results.TryGetValue(1, out var family) ? family.value : null,
-            FontSubfamily: results.TryGetValue(2, out var subfamily) ? subfamily.value : null,
-            FullName: results.TryGetValue(4, out var fullName) ? fullName.value : null,
-            PostScriptName: results.TryGetValue(6, out var psName) ? psName.value : null,
-            Copyright: results.TryGetValue(0, out var copyright) ? copyright.value : null,
-            Trademark: results.TryGetValue(7, out var trademark) ? trademark.value : null,
-            UniqueId: results.TryGetValue(3, out var uniqueId) ? uniqueId.value : null,
-            Version: results.TryGetValue(5, out var version) ? version.value : null,
-            Manufacturer: results.TryGetValue(8, out var manufacturer) ? manufacturer.value : null,
-            Designer: results.TryGetValue(9, out var designer) ? designer.value : null,
-            Description: results.TryGetValue(10, out var description) ? description.value : null,
-            License: results.TryGetValue(13, out var license) ? license.value : null,
-            LicenseUrl: results.TryGetValue(14, out var licenseUrl) ? licenseUrl.value : null);
+            FontFamily: Decode(table, best, 1),
+            FontSubfamily: Decode(table, best, 2),
+            FullName: Decode(table, best, 4),
+            PostScriptName: Decode(table, best, 6),
+            Copyright: Decode(table, best, 0),
+            Trademark: Decode(table, best, 7),
+            UniqueId: Decode(table, best, 3),
+            Version: Decode(table, best, 5),
+            Manufacturer: Decode(table, best, 8),
+            Designer: Decode(table, best, 9),
+            Description: Decode(table, best, 10),
+            License: Decode(table, best, 13),
+            LicenseUrl: Decode(table, best, 14));
     }
+
+    /// <summary>A name record's priority (0 = none yet) and string bytes within the name table.</summary>
+    private readonly record struct NameRecord(int Priority, int Start, int Length);
 
     /// <summary>
     /// Resolves a name ID from the name table, returning the best available string.
@@ -587,7 +589,8 @@ internal class TtfParser
         var subtable = table.Slice(bestOffset);
         var format = BinaryPrimitives.ReadUInt16BigEndian(subtable);
 
-        var cmap = new Dictionary<int, int>();
+        // A subset bounds the entry count; entries are only ever added or overwritten.
+        var cmap = new Dictionary<int, int>(_requestedCodepoints?.Count ?? 0);
 
         if (format == 12)
             ParseCmapFormat12(subtable, cmap);
@@ -943,13 +946,49 @@ internal class TtfParser
         if (subtable.Length < 10)
             return;
 
-        var pairSetCount = BinaryPrimitives.ReadUInt16BigEndian(subtable.Slice(8));
-        var coverage = ParseCoverage(From(subtable, coverageOffset));
+        // Pair sets whose offset fits in the subtable; the offset array ends the walk there.
+        var pairSetCount = Math.Min(
+            (int)BinaryPrimitives.ReadUInt16BigEndian(subtable.Slice(8)),
+            (subtable.Length - 10) / 2);
+        if (pairSetCount == 0)
+            return;
 
+        // The first glyph of pair set i is the first coverage entry (in table order) whose
+        // coverage index is i; a set no entry points at has none and is skipped.
+        var firstGlyphPool = ArrayPool<int>.Shared.Rent(pairSetCount);
+        try
+        {
+            var firstGlyphOf = firstGlyphPool.AsSpan(0, pairSetCount);
+            firstGlyphOf.Fill(-1);
+            foreach (var (glyph, index) in ParseCoverage(From(subtable, coverageOffset)))
+            {
+                if ((uint)index < (uint)pairSetCount && firstGlyphOf[index] < 0)
+                    firstGlyphOf[index] = glyph;
+            }
+
+            // Each record: secondGlyph (uint16) + value1 + value2
+            ReadPairSets(subtable, firstGlyphOf, valueFormat1, 2 + valueRecord1Size + valueRecord2Size, pairs);
+        }
+        finally
+        {
+            ArrayPool<int>.Shared.Return(firstGlyphPool);
+        }
+    }
+
+    private void ReadPairSets(
+        ReadOnlySpan<byte> subtable, ReadOnlySpan<int> firstGlyphOf, int valueFormat1, int recordSize,
+        List<KerningPair> pairs)
+    {
+        var pairSetCount = firstGlyphOf.Length;
         for (var i = 0; i < pairSetCount; i++)
         {
-            if (10 + (i + 1) * 2 > subtable.Length)
-                break;
+            var firstGlyph = firstGlyphOf[i];
+            if (firstGlyph < 0)
+                continue;
+
+            // A first glyph outside the subset filters out every pair in the set.
+            if (_relevantGlyphIndices != null && !_relevantGlyphIndices.Contains(firstGlyph))
+                continue;
 
             var pairSetOffset = BinaryPrimitives.ReadUInt16BigEndian(subtable.Slice(10 + i * 2));
             var pairSet = From(subtable, pairSetOffset);
@@ -957,22 +996,6 @@ internal class TtfParser
                 continue;
 
             var pairValueCount = BinaryPrimitives.ReadUInt16BigEndian(pairSet);
-            // Each record: secondGlyph (uint16) + value1 + value2
-            var recordSize = 2 + valueRecord1Size + valueRecord2Size;
-
-            // Find the first glyph index from coverage that maps to this pair set index
-            int firstGlyph = -1;
-            foreach (var (glyph, index) in coverage)
-            {
-                if (index == i)
-                {
-                    firstGlyph = glyph;
-                    break;
-                }
-            }
-
-            if (firstGlyph < 0)
-                continue;
 
             for (var p = 0; p < pairValueCount; p++)
             {
@@ -980,16 +1003,14 @@ internal class TtfParser
                 if (recOffset + recordSize > pairSet.Length)
                     break;
 
-                var secondGlyph = BinaryPrimitives.ReadUInt16BigEndian(pairSet.Slice(recOffset));
                 var xAdvance = ReadXAdvanceFromValueRecord(pairSet.Slice(recOffset + 2), valueFormat1);
+                if (xAdvance == 0)
+                    continue;
 
-                if (xAdvance != 0)
-                {
-                    if (_relevantGlyphIndices != null &&
-                        (!_relevantGlyphIndices.Contains(firstGlyph) || !_relevantGlyphIndices.Contains(secondGlyph)))
-                        continue;
-                    pairs.Add(new KerningPair(firstGlyph, secondGlyph, xAdvance));
-                }
+                var secondGlyph = BinaryPrimitives.ReadUInt16BigEndian(pairSet.Slice(recOffset));
+                if (_relevantGlyphIndices != null && !_relevantGlyphIndices.Contains(secondGlyph))
+                    continue;
+                pairs.Add(new KerningPair(firstGlyph, secondGlyph, xAdvance));
             }
         }
     }
@@ -1008,90 +1029,220 @@ internal class TtfParser
         var classDef2Offset = BinaryPrimitives.ReadUInt16BigEndian(subtable.Slice(10));
         var class1Count = BinaryPrimitives.ReadUInt16BigEndian(subtable.Slice(12));
         var class2Count = BinaryPrimitives.ReadUInt16BigEndian(subtable.Slice(14));
+        if (class1Count == 0 || class2Count == 0)
+            return;
 
-        var coverage = ParseCoverage(From(subtable, coverageOffset));
-        var classDef1 = ParseClassDef(From(subtable, classDef1Offset));
-        var classDef2 = ParseClassDef(From(subtable, classDef2Offset));
+        var relevant = _relevantGlyphIndices;
 
-        // Build reverse map: class1 -> list of glyph indices
-        var class1ToGlyphs = new Dictionary<int, List<int>>();
-        // Coverage defines which glyphs are the "first" glyphs
-        foreach (var (glyph, _) in coverage)
+        // First glyphs by class: the coverage glyphs in coverage order (duplicates kept), each
+        // in its classDef1 class (unlisted = class 0), filtered to the subset up front rather
+        // than per pair.
+        var leftByClass = new List<int>?[class1Count];
+        var anyLeft = false;
+        var classDef1 = From(subtable, classDef1Offset);
+        var class1 = RentClassTable(classDef1, out var class1Length);
+        try
         {
-            var cls = classDef1.TryGetValue(glyph, out var c) ? c : 0;
-            if (!class1ToGlyphs.TryGetValue(cls, out var list))
+            foreach (var (glyph, _) in ParseCoverage(From(subtable, coverageOffset)))
             {
-                list = new List<int>();
-                class1ToGlyphs[cls] = list;
+                if (relevant != null && !relevant.Contains(glyph))
+                    continue;
+                var cls = glyph < class1Length && class1[glyph] != UnclassifiedGlyph ? class1[glyph] : 0;
+                if (cls < class1Count)
+                {
+                    (leftByClass[cls] ??= new List<int>()).Add(glyph);
+                    anyLeft = true;
+                }
             }
-            list.Add(glyph);
+        }
+        finally
+        {
+            ArrayPool<int>.Shared.Return(class1);
         }
 
-        // Build reverse map: class2 -> list of glyph indices
-        // For class2, we need all glyphs that could be the second glyph.
-        // Glyphs not in classDef2 belong to class 0.
-        var class2ToGlyphs = new Dictionary<int, List<int>>();
-        var class2AssignedGlyphs = new HashSet<int>();
-        foreach (var (glyph, cls) in classDef2)
-        {
-            if (!class2ToGlyphs.TryGetValue(cls, out var list))
-            {
-                list = new List<int>();
-                class2ToGlyphs[cls] = list;
-            }
-            list.Add(glyph);
-            class2AssignedGlyphs.Add(glyph);
-        }
+        if (!anyLeft)
+            return;
 
-        // Populate class 0 with all relevant glyphs not explicitly assigned to any class.
-        // Per the OpenType spec, glyphs not listed in a ClassDef table belong to class 0.
-        if (_relevantGlyphIndices != null && class2Count > 0)
+        // Second glyphs by class, in the order a glyph -> class dictionary built from classDef2
+        // would enumerate them (position of the first assignment, class of the last), filtered
+        // to the subset; then class 0 gains every requested glyph classDef2 does not list, in
+        // the subset's own enumeration order.
+        var rightByClass = new List<int>?[class2Count];
+        var classDef2 = From(subtable, classDef2Offset);
+        var class2 = RentClassTable(classDef2, out var class2Length);
+        try
         {
-            if (!class2ToGlyphs.TryGetValue(0, out var class0List))
+            VisitClassDef(classDef2, class2, rightByClass, relevant);
+            if (relevant != null)
             {
-                class0List = new List<int>();
-                class2ToGlyphs[0] = class0List;
+                foreach (var glyph in relevant)
+                {
+                    if ((uint)glyph >= (uint)class2Length || class2[glyph] == UnclassifiedGlyph)
+                        (rightByClass[0] ??= new List<int>()).Add(glyph);
+                }
             }
-            foreach (var glyph in _relevantGlyphIndices)
-            {
-                if (!class2AssignedGlyphs.Contains(glyph))
-                    class0List.Add(glyph);
-            }
+        }
+        finally
+        {
+            ArrayPool<int>.Shared.Return(class2);
         }
 
         var recordPairSize = valueRecord1Size + valueRecord2Size;
-        var arrayStart = 16;
+        const int arrayStart = 16;
 
         for (var c1 = 0; c1 < class1Count; c1++)
         {
-            if (!class1ToGlyphs.TryGetValue(c1, out var leftGlyphs))
+            var leftGlyphs = leftByClass[c1];
+            if (leftGlyphs == null)
                 continue;
 
             for (var c2 = 0; c2 < class2Count; c2++)
             {
-                var recordOffset = arrayStart + (c1 * class2Count + c2) * recordPairSize;
+                // 64-bit: 65535 x 65535 classes overflow an int offset.
+                var recordOffset = arrayStart + ((long)c1 * class2Count + c2) * recordPairSize;
                 if (recordOffset + recordPairSize > subtable.Length)
                     break;
 
-                var xAdvance = ReadXAdvanceFromValueRecord(subtable.Slice(recordOffset), valueFormat1);
-                if (xAdvance == 0)
+                var rightGlyphs = rightByClass[c2];
+                if (rightGlyphs == null)
                     continue;
 
-                if (!class2ToGlyphs.TryGetValue(c2, out var rightGlyphs))
+                var xAdvance = ReadXAdvanceFromValueRecord(subtable.Slice((int)recordOffset), valueFormat1);
+                if (xAdvance == 0)
                     continue;
 
                 foreach (var left in leftGlyphs)
                 {
-                    if (_relevantGlyphIndices != null && !_relevantGlyphIndices.Contains(left))
-                        continue;
                     foreach (var right in rightGlyphs)
-                    {
-                        if (_relevantGlyphIndices != null && !_relevantGlyphIndices.Contains(right))
-                            continue;
                         pairs.Add(new KerningPair(left, right, xAdvance));
-                    }
                 }
             }
+        }
+    }
+
+    /// <summary>Marks a glyph a ClassDef does not list, in a <see cref="RentClassTable"/> table.</summary>
+    private const int UnclassifiedGlyph = -1;
+
+    /// <summary>Added to a class in a class table once <see cref="VisitClassDef"/> has listed its glyph.</summary>
+    private const int ClassListed = 0x10000;
+
+    /// <summary>
+    /// A pooled glyph -> class table for a ClassDef: entry <c>g</c>, for <c>g</c> below
+    /// <paramref name="length"/>, is the class of the ClassDef's last assignment to <c>g</c>, or
+    /// <see cref="UnclassifiedGlyph"/>; glyphs at or past <paramref name="length"/> are
+    /// unclassified. Return it to <see cref="ArrayPool{T}.Shared"/>.
+    /// </summary>
+    private static int[] RentClassTable(ReadOnlySpan<byte> classDef, out int length)
+    {
+        length = ClassDefGlyphLimit(classDef);
+        var table = ArrayPool<int>.Shared.Rent(Math.Max(length, 1));
+        table.AsSpan(0, length).Fill(UnclassifiedGlyph);
+        VisitClassDef(classDef, table, null, null);
+        return table;
+    }
+
+    /// <summary>One past the highest glyph id a ClassDef can assign a class to (0 when none).</summary>
+    private static int ClassDefGlyphLimit(ReadOnlySpan<byte> data)
+    {
+        if (data.Length < 4)
+            return 0;
+
+        var format = BinaryPrimitives.ReadUInt16BigEndian(data);
+        if (format == 1)
+        {
+            if (data.Length < 6)
+                return 0;
+            var startGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2));
+            var glyphCount = Math.Min((int)BinaryPrimitives.ReadUInt16BigEndian(data.Slice(4)), (data.Length - 6) / 2);
+            return glyphCount > 0 ? startGlyph + glyphCount : 0;
+        }
+
+        if (format == 2)
+        {
+            var limit = 0;
+            var classRangeCount = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2));
+            for (var i = 0; i < classRangeCount; i++)
+            {
+                var recOffset = 4 + i * 6;
+                if (recOffset + 6 > data.Length)
+                    break;
+                int startGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset));
+                int endGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset + 2));
+                if (endGlyph >= startGlyph)
+                    limit = Math.Max(limit, endGlyph + 1);
+            }
+            return limit;
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Walks a ClassDef's (glyph, class) assignments in table order, bounded as a ClassDef must
+    /// be (format 2 visits at most <see cref="MaxGlyphIds"/> glyphs). With <paramref name="byClass"/>
+    /// null it records each assignment in <paramref name="classes"/> (later ones win). Otherwise
+    /// <paramref name="classes"/> is that finished table, and each glyph is listed once, at its
+    /// first assignment, under its final class — skipping classes past the end of
+    /// <paramref name="byClass"/> and glyphs outside <paramref name="relevant"/>; afterwards an
+    /// entry is <see cref="UnclassifiedGlyph"/> exactly when it was before.
+    /// </summary>
+    private static void VisitClassDef(
+        ReadOnlySpan<byte> data, int[] classes, List<int>?[]? byClass, HashSet<int>? relevant)
+    {
+        if (data.Length < 4)
+            return;
+
+        var format = BinaryPrimitives.ReadUInt16BigEndian(data);
+
+        if (format == 1)
+        {
+            if (data.Length < 6)
+                return;
+            var startGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2));
+            var glyphCount = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(4));
+            for (var i = 0; i < glyphCount; i++)
+            {
+                if (6 + (i + 1) * 2 > data.Length)
+                    break;
+                var classValue = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(6 + i * 2));
+                Visit(startGlyph + i, classValue, classes, byClass, relevant);
+            }
+        }
+        else if (format == 2)
+        {
+            var visited = 0;
+            var classRangeCount = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2));
+            for (var i = 0; i < classRangeCount; i++)
+            {
+                var recOffset = 4 + i * 6;
+                if (recOffset + 6 > data.Length)
+                    break;
+
+                int startGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset));
+                int endGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset + 2));
+                var classValue = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset + 4));
+
+                // An int counter, so a range ending at glyph 65535 terminates; overlapping ranges
+                // are bounded by the visit budget rather than re-walking every glyph id each time.
+                for (var g = startGlyph; g <= endGlyph && visited < MaxGlyphIds; g++, visited++)
+                    Visit(g, classValue, classes, byClass, relevant);
+            }
+        }
+
+        static void Visit(int glyph, int classValue, int[] classes, List<int>?[]? byClass, HashSet<int>? relevant)
+        {
+            if (byClass == null)
+            {
+                classes[glyph] = classValue;
+                return;
+            }
+
+            var cls = classes[glyph];
+            if (cls >= ClassListed)
+                return;
+            classes[glyph] = cls + ClassListed;
+            if (cls < byClass.Length && (relevant == null || relevant.Contains(glyph)))
+                (byClass[cls] ??= new List<int>()).Add(glyph);
         }
     }
 
@@ -1141,52 +1292,6 @@ internal class TtfParser
                 // overlap, so more entries than there are glyph ids means the table is malformed.
                 for (var g = startGlyph; g <= endGlyph && result.Count < MaxGlyphIds; g++)
                     result.Add((g, startIndex + (g - startGlyph)));
-            }
-        }
-
-        return result;
-    }
-
-    private static Dictionary<int, int> ParseClassDef(ReadOnlySpan<byte> data)
-    {
-        var result = new Dictionary<int, int>();
-        if (data.Length < 4)
-            return result;
-
-        var format = BinaryPrimitives.ReadUInt16BigEndian(data);
-
-        if (format == 1)
-        {
-            if (data.Length < 6)
-                return result;
-            var startGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2));
-            var glyphCount = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(4));
-            for (var i = 0; i < glyphCount; i++)
-            {
-                if (6 + (i + 1) * 2 > data.Length)
-                    break;
-                var classValue = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(6 + i * 2));
-                result[startGlyph + i] = classValue;
-            }
-        }
-        else if (format == 2)
-        {
-            var visited = 0;
-            var classRangeCount = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2));
-            for (var i = 0; i < classRangeCount; i++)
-            {
-                var recOffset = 4 + i * 6;
-                if (recOffset + 6 > data.Length)
-                    break;
-
-                int startGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset));
-                int endGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset + 2));
-                var classValue = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(recOffset + 4));
-
-                // An int counter, so a range ending at glyph 65535 terminates; overlapping ranges
-                // are bounded by the visit budget rather than re-walking every glyph id each time.
-                for (var g = startGlyph; g <= endGlyph && visited < MaxGlyphIds; g++, visited++)
-                    result[g] = classValue;
             }
         }
 

@@ -325,7 +325,9 @@ public class NativeSimilarityMatrixTests
     /// score near or below zero on their own, so a worst-glyph floor would measure noise.
     /// </summary>
     /// <remarks>
-    /// Advances: stb agrees exactly everywhere. FreeType rounds a scaled advance to 26.6 fixed
+    /// Advances: stb agrees exactly except at exact half-pixel ties, which the StbTrueType
+    /// backend rounds to even and Native, like FreeType, rounds up (Roboto Flex 'e' at 16px is
+    /// 8.5 px; two such glyphs in a row of 100). FreeType rounds a scaled advance to 26.6 fixed
     /// point before rounding to whole pixels, so an advance a hair under half a pixel (Roboto's
     /// digits at 8px: 1151 units = 4.496 px) rounds up there and down in Native and stb — hence
     /// 86% at 8px. Hinted Light FreeType also moves advances (Native keeps them unhinted).
@@ -340,9 +342,9 @@ public class NativeSimilarityMatrixTests
         return (row.Case, row.Reference) switch
         {
             ("none", Backend.FreeType) => new(MeanBySize(s, 0.40, 0.60, 0.70, 0.82, 0.92, 0.94), -1, advance, 0.97, 0.90),
-            ("none", Backend.Stb) => new(MeanBySize(s, 0.10, 0.40, 0.60, 0.80, 0.92, 0.95), -1, 0.98, 0.95, 0.30),
+            ("none", Backend.Stb) => new(MeanBySize(s, 0.10, 0.40, 0.60, 0.80, 0.92, 0.95), -1, 0.95, 0.95, 0.30),
             ("light", _) => new(MeanBySize(s, 0.40, 0.60, 0.65, 0.75, 0.80, 0.85), -1, 0.50, 0.88, 0.60),
-            ("grayscale", Backend.Stb) => new(0.98, 0.70, 0.98, 0.98, 0.98),
+            ("grayscale", Backend.Stb) => new(0.98, 0.70, 0.95, 0.98, 0.98),
             ("grayscale", _) or ("lcd", _) => new(0.98, 0.80, advance, 0.98, 0.98),
             ("sdf", _) => new(0.98, 0.90, 0.85, 0.98, 0.98),
             ("bold" or "italic" or "bold-italic", _) => new(0.98, 0.70, 0.90, 0.80, 0.70),

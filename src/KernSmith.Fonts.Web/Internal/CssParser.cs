@@ -21,7 +21,7 @@ namespace KernSmith.Fonts.Web.Internal;
 /// URL's file extension. WOFF2 is preferred (smaller download); WOFF is the fallback. Other
 /// formats (TrueType, OpenType, EOT, SVG) are ignored.
 /// </remarks>
-internal static partial class CssParser
+internal static class CssParser
 {
     /// <summary>
     /// Extracts the font URL for the requested subset from a CSS response.
@@ -65,7 +65,7 @@ internal static partial class CssParser
     /// </summary>
     private static IEnumerable<(string? Subset, string Body)> EnumerateFontFaceBlocks(string css)
     {
-        foreach (Match m in FontFaceRegex().Matches(css))
+        foreach (Match m in FontFaceRegex.Matches(css))
         {
             var subset = m.Groups["subset"].Success
                 ? m.Groups["subset"].Value.Trim()
@@ -81,7 +81,7 @@ internal static partial class CssParser
     {
         string? woff = null;
 
-        foreach (Match m in SourceRegex().Matches(body))
+        foreach (Match m in SourceRegex.Matches(body))
         {
             var url = m.Groups["url"].Value.Trim();
             var format = m.Groups["format"].Success
@@ -123,15 +123,23 @@ internal static partial class CssParser
         return SourceFormat.Other;
     }
 
+    // The CSS is fetched from a remote CDN, so it is untrusted input. Both patterns run on the
+    // NonBacktracking engine: matching is linear in the input, so hostile CSS cannot trigger
+    // catastrophic backtracking ("url(" followed by 20,000 spaces did not finish in 30 s on
+    // the backtracking engine). Neither pattern uses backreferences, lookarounds or atomic groups,
+    // and the matches are the same as the backtracking engine's. Where a lazy group meets a
+    // \s*, the two engines can split the whitespace differently, so every group value is
+    // trimmed before use. These are plain runtime Regex instances rather than [GeneratedRegex]:
+    // the source generator does not support NonBacktracking, and runtime Regex is
+    // trim/NativeAOT/WASM safe.
+
     // Optional "/* latin */" comment immediately before an @font-face rule, then the rule body.
-    [GeneratedRegex(
+    private static readonly Regex FontFaceRegex = new(
         @"(?:/\*\s*(?<subset>[^*]+?)\s*\*/\s*)?@font-face\s*\{(?<body>[^}]*)\}",
-        RegexOptions.IgnoreCase | RegexOptions.Singleline)]
-    private static partial Regex FontFaceRegex();
+        RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.NonBacktracking);
 
     // url(...) with optional single/double quotes, then an optional format(...) hint.
-    [GeneratedRegex(
+    private static readonly Regex SourceRegex = new(
         @"url\(\s*['""]?(?<url>[^'""\)]+?)['""]?\s*\)(?:\s*format\(\s*['""]?(?<format>[^'""\)]+?)['""]?\s*\))?",
-        RegexOptions.IgnoreCase)]
-    private static partial Regex SourceRegex();
+        RegexOptions.IgnoreCase | RegexOptions.NonBacktracking);
 }
