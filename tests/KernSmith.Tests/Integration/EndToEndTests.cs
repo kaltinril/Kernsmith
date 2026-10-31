@@ -609,6 +609,53 @@ public class EndToEndTests
     }
 
     [Fact]
+    public void Generate_WithRoutedShadowChannel_GlyphChannelHoldsOnlyTheGlyph()
+    {
+        // A routed shadow lives in its own channel; the Glyph channel must carry the same ink as
+        // with no shadow at all (not the glyph with the shadow baked under it), and the shadow
+        // channel must sit at the requested offset (not twice it).
+        var fontData = LoadTestFont();
+        FontGeneratorOptions Options(int offset) => new()
+        {
+            Size = 48,
+            Characters = CharacterSet.FromChars("l"),
+            Padding = new Padding(0),
+            ShadowOffsetX = offset,
+            ShadowOffsetY = offset,
+            ShadowR = 0, ShadowG = 0, ShadowB = 0,
+            Channels = offset == 0
+                ? new ChannelConfig(Alpha: ChannelContent.Glyph, Red: ChannelContent.Zero,
+                    Green: ChannelContent.Zero, Blue: ChannelContent.Zero)
+                : new ChannelConfig(Alpha: ChannelContent.Glyph, Red: ChannelContent.Shadow,
+                    Green: ChannelContent.Zero, Blue: ChannelContent.Zero),
+        };
+
+        static (int Count, int MinX) Ink(KernSmith.Output.BmFontResult r, int channel)
+        {
+            var page = r.Pages[0];
+            var ch = r.Model.Characters.Single(c => c.Id == 'l');
+            int count = 0, minX = int.MaxValue;
+            for (var y = ch.Y; y < ch.Y + ch.Height; y++)
+                for (var x = ch.X; x < ch.X + ch.Width; x++)
+                    if (page.PixelData[(y * page.Width + x) * 4 + channel] > 127)
+                    {
+                        count++;
+                        minX = Math.Min(minX, x - ch.X);
+                    }
+            return (count, minX);
+        }
+
+        var plain = Ink(BmFont.Generate(fontData, Options(0)), 3);
+        var shadowed = BmFont.Generate(fontData, Options(6));
+        var glyph = Ink(shadowed, 3);
+        var shadow = Ink(shadowed, 0);
+
+        glyph.Count.ShouldBe(plain.Count);
+        shadow.Count.ShouldBeInRange(plain.Count * 9 / 10, plain.Count * 11 / 10);
+        (shadow.MinX - glyph.MinX).ShouldBe(6);
+    }
+
+    [Fact]
     public void Generate_WithShadowAndCustomChannels_SameColorAsGlyph_ShadowChannelStillRoutesIndependently()
     {
         // Regression for issue #169: ShouldApplyChannelConfig's gate silently skipped

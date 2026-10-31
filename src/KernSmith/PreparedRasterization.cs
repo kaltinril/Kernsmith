@@ -703,12 +703,18 @@ internal sealed class PreparedRasterization : IDisposable
         var effects = new List<IGlyphEffect>();
 
         // Detect shadow: from options properties or from a ShadowPostProcessor in the list.
+        // A shadow routed into its own channel is drawn there, from these glyphs (BmFont's
+        // channel shadow glyphs); baking it here too would put it in the Glyph channels and
+        // shadow the shadow.
         if (options.HasShadow)
         {
-            effects.Add(new ShadowEffect(
-                options.ShadowOffsetX, options.ShadowOffsetY, options.ShadowBlur,
-                options.ShadowR, options.ShadowG, options.ShadowB, options.ShadowOpacity,
-                options.HardShadow, options.ShadowBlurPasses, options.ShadowBlurKernelSize));
+            if (!BmFont.RoutesShadow(options))
+            {
+                effects.Add(new ShadowEffect(
+                    options.ShadowOffsetX, options.ShadowOffsetY, options.ShadowBlur,
+                    options.ShadowR, options.ShadowG, options.ShadowB, options.ShadowOpacity,
+                    options.HardShadow, options.ShadowBlurPasses, options.ShadowBlurKernelSize));
+            }
         }
         else if (options.PostProcessors != null)
         {

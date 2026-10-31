@@ -1070,6 +1070,14 @@ public static class BmFont
         || channels.Green is ChannelContent.Outline or ChannelContent.GlyphAndOutline
         || channels.Blue is ChannelContent.Outline or ChannelContent.GlyphAndOutline;
 
+    /// <summary>True when a honored channel layout routes shadow content into a channel.</summary>
+    internal static bool RoutesShadow(FontGeneratorOptions options) =>
+        options.Channels is { IsDefault: false } channels
+        && (channels.Alpha == ChannelContent.Shadow
+            || channels.Red == ChannelContent.Shadow
+            || channels.Green == ChannelContent.Shadow
+            || channels.Blue == ChannelContent.Shadow);
+
     /// <summary>Generates multiple BMFonts in batch, with optional parallelism and font caching.</summary>
     /// <param name="jobs">The batch jobs to run.</param>
     /// <param name="options">Batch options, or null for sequential execution.</param>
