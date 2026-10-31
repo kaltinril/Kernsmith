@@ -428,6 +428,31 @@ public class EdgeCaseTests
         }
     }
 
+    [Theory]
+    [InlineData(RasterizerBackend.FreeType, 2)]
+    [InlineData(RasterizerBackend.FreeType, 4)]
+    [InlineData(RasterizerBackend.StbTrueType, 2)]
+    public void Generate_WithSuperSampling_BlankGlyphAdvanceIsAtFinalSize(RasterizerBackend backend, int level)
+    {
+        // A space has no bitmap, but its advance was measured at the super-sampled size and must
+        // come back down with the inked glyphs'.
+        var fontData = LoadTestFont();
+        FontGeneratorOptions Options(int ss) => new()
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars(" A"),
+            SuperSampleLevel = ss,
+            Backend = backend,
+        };
+
+        var plain = BmFont.Generate(fontData, Options(1)).Model.Characters.Single(c => c.Id == ' ');
+        var sampled = BmFont.Generate(fontData, Options(level)).Model.Characters.Single(c => c.Id == ' ');
+
+        sampled.XAdvance.ShouldBeInRange(plain.XAdvance - 1, plain.XAdvance + 1);
+        sampled.XOffset.ShouldBeInRange(plain.XOffset - 1, plain.XOffset + 1);
+        sampled.YOffset.ShouldBeInRange(plain.YOffset - 1, plain.YOffset + 1);
+    }
+
     #endregion
 
     #region B4.6 — Phase 78F: Space glyph outline sizing

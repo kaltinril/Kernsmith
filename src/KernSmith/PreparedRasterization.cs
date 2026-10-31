@@ -780,8 +780,28 @@ internal sealed class PreparedRasterization : IDisposable
     /// </summary>
     internal static RasterizedGlyph SuperSampleDownscale(RasterizedGlyph glyph, int level, bool perChannel = false)
     {
+        // A blank glyph (space) has no pixels, but its metrics were measured at the
+        // super-sampled size like every other glyph's.
         if (glyph.Width == 0 || glyph.Height == 0)
-            return glyph;
+        {
+            var m = glyph.Metrics;
+            return new RasterizedGlyph
+            {
+                Codepoint = glyph.Codepoint,
+                GlyphIndex = glyph.GlyphIndex,
+                BitmapData = glyph.BitmapData,
+                Width = glyph.Width,
+                Height = glyph.Height,
+                Pitch = glyph.Pitch,
+                Metrics = m with
+                {
+                    BearingX = m.BearingX / level,
+                    BearingY = m.BearingY / level,
+                    Advance = m.Advance / level,
+                },
+                Format = glyph.Format,
+            };
+        }
 
         var srcW = glyph.Width;
         var srcH = glyph.Height;
