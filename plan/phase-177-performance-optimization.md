@@ -154,7 +154,7 @@ Remaining, with the profile behind each: composite and varied `glyf` glyphs stil
 
 ## Measured results
 
-BenchmarkDotNet default job, `net10.0-windows`, the reference machine idle. Before is `1e028fc` (after the pooling and Brotli pass); after is `81add73`, with the feature-path and core-pipeline passes (the core pass — packing, GPOS kerning, parsing, effects and compositing — is in the CHANGELOG). Rows not listed moved within ±6% in one run; `LoadFont` and FreeType 12 px `None`, which showed 6-21% there, measured 0.99-1.00× over five alternating rounds. This run caught one regression, fixed since: the `COLR` v0 metrics shortcut read each v1 glyph's paint graph only to decline it (+14%, 1,696 → 2,120 B); it now checks for a v1 record instead, and that row is the mean of three alternating runs.
+BenchmarkDotNet default job, `net10.0-windows`, the reference machine idle. Before is `1e028fc` (after the pooling and Brotli pass); after is `81add73`, with the feature-path and core-pipeline passes (the core pass — packing, GPOS kerning, parsing, effects and compositing — is in the CHANGELOG). Rows not listed moved within ±6% in one run; the rows that looked slower there (`LoadFont` on every backend, FreeType 12 px `None`, and Native gvar, italic 30° and LCD metrics, 5-21%) measured 0.97-1.00× over five alternating rounds. This run caught one regression, fixed since: the `COLR` v0 metrics shortcut read each v1 glyph's paint graph only to decline it (+14%, 1,696 → 2,120 B); it now checks for a v1 record instead, and that row is the mean of three alternating runs.
 
 `BmFont.Generate`, Roboto 32 px:
 
