@@ -16,7 +16,7 @@
 
 ## Harness (Wave 0)
 
-`benchmarks/KernSmith.Benchmarks/NativeComparisonBenchmarks.cs`, every class parameterized by backend (Native, StbTrueType, FreeType), Roboto-Regular, `[MemoryDiagnoser]`:
+`benchmarks/KernSmith.Benchmarks/NativeComparisonBenchmarks.cs`, every class parameterized by backend (Native, StbTrueType, FreeType, plus GDI and DirectWrite in the `net10.0-windows` build), Roboto-Regular, `[MemoryDiagnoser]`:
 
 - `NativeComparisonLoadFontBenchmarks` — create + `LoadFont` + dispose.
 - `NativeComparisonRasterizeBenchmarks` — `IRasterizer.RasterizeAll` over ASCII (95) at 12/32/72px × Grayscale/None; `OperationsPerInvoke = 95`, so Mean and Allocated are per glyph.
@@ -24,6 +24,8 @@
 - `NativeComparisonEndToEndBenchmarks` — full `BmFont.Generate`, ASCII + Latin-1 (224) at 32px, so pipeline cost is visible next to backend cost.
 
 Run (about 4 minutes): `dotnet run -c Release -f net10.0 --project benchmarks/KernSmith.Benchmarks -- --filter *NativeComparison* --job short`
+
+The `NativeFeature*` classes time each Native feature path next to FreeType and StbTrueType, and `benchmarks/KernSmith.ColdStart` measures a fresh process's first and steady-state calls under JIT, ReadyToRun and NativeAOT; both are described in the [benchmarks README](../benchmarks/KernSmith.Benchmarks/README.md).
 
 Not covered: a CJK-scale glyph set (no committed CJK fixture).
 

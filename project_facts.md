@@ -92,7 +92,7 @@ Source of truth for statements about the project. One short fact per line. Updat
 
 ## CodeQL
 
-- The deliberate exact float comparisons (rasterizer horizontal-edge tests and the `OutlineFlattenerTests` assertions that pin them) use `float.Equals`, which `cs/equality-on-floats` does not flag — see Float Equality in `project_decisions.md`. Everything else is fixed or dismissed.
+- The deliberate exact float comparisons (rasterizer horizontal-edge tests and the `OutlineFlattenerTests` assertions that pin them, `OutlineEffect`'s ring-table lookup at whole squared distances, and the UI slider/float-box checks for an already-shown value) use `.Equals`, which `cs/equality-on-floats` does not flag — see Float Equality in `project_decisions.md`. Everything else is fixed or dismissed.
 - `paths` / `paths-ignore` do **nothing** for C# here: they apply only when CodeQL analyses *without building*, and `codeql.yml` builds the solution explicitly.
 - Code-scanning dismissal comments are capped at **280 characters**; longer ones return HTTP 422, which looks like a generic failure if stderr is swallowed.
 - A dismissal comment **cannot be edited in place** ("Alert is already dismissed", HTTP 400) — PATCH `state=open` first, then re-dismiss.

@@ -14,7 +14,7 @@ Side-by-side comparison of KernSmith vs BMFont output (same font, same sizes, re
 2. **Bold/outline variants appear slightly thicker** at larger sizes
 3. **Overall glyph shapes are close** but metrics (spacing, positioning) don't match BMFont exactly
 
-Reference images saved in `plan/phase76/`.
+Reference images saved in `plan/done/phase76/`.
 
 ## Root Cause (Confirmed)
 
@@ -76,8 +76,8 @@ Re-run the comparison diff script after changes. Target:
 
 ## Reference Files
 
-- `plan/phase76/side-by-side.png` — side-by-side at 100%
-- `plan/phase76/zoomed.png` — zoomed comparison
+- `plan/done/phase76/side-by-side.png` — side-by-side at 100%
+- `plan/done/phase76/zoomed.png` — zoomed comparison
 - `tests/bmfont-compare/` — comparison configs, generated .fnt files, diff script
 - `reference/REF-09-font-metrics-and-sizing.md` — comprehensive font metrics reference
 

@@ -1,5 +1,7 @@
 # UI Cleanup Progress Snapshot
 
+> **Archived snapshot.** Its open items were folded into [Phase 250](../phase-250-ui-cleanup.md), which holds the current status; nothing below is maintained.
+
 **Date:** 2026-04-02 (original snapshot) — **corrected against the code 2026-07-28**
 **Branch:** `feature/ui-cleanup` (deleted after merge) — this work **merged via PR #58 on 2026-04-05 and shipped in v0.12.3**. The first-pass commit is `6db981c` "First pass UI cleanup." (2026-04-02). Note: the stale `origin/UiCleanup` branch pointer is *not* this work — it points at the v0.12.0 release commit and does not contain `UiFactory.cs`.
 **Status (as of 2026-04-02):** In progress — Phase 2 BLOCKED on the Generate-bar overlap issue (FontConfigPanel); Ratio/TopToBottomStack sizing not respecting sibling hierarchy. Paused to add Gum layout debug tooling.

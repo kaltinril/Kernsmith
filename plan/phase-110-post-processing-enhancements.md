@@ -32,7 +32,7 @@ This is the "plugin-like" architecture this phase envisioned. Each processor tak
 
 The items below are **not started** and remain design exploration:
 
-- **PNG / image import pipeline** — *partially available already*: `StbPngDecoder.DecodePng` (`src/KernSmith/Atlas/StbPngDecoder.cs:15`, internal) decodes a PNG to RGBA today, and `BmFont` already loads + validates an existing PNG for the `AtlasTargetRegion` render-into-existing-image path (`BmFont.cs:532`). `BmFontReader` already recovers the glyph regions from a `.fnt`. The genuinely missing piece is the **glyph-region extraction and round-trip layer** — slicing the decoded atlas into per-glyph `RasterizedGlyph`s the post-processors can consume, then re-packing and re-emitting — not "load a PNG"
+- **PNG / image import pipeline** — *partially available already*: `StbPngDecoder.DecodePng` (`src/KernSmith/Atlas/StbPngDecoder.cs:15`, internal) decodes a PNG to RGBA today, and `BmFont` already loads + validates an existing PNG for the `AtlasTargetRegion` render-into-existing-image path (`BmFont.cs:338`). `BmFontReader` already recovers the glyph regions from a `.fnt`. The genuinely missing piece is the **glyph-region extraction and round-trip layer** — slicing the decoded atlas into per-glyph `RasterizedGlyph`s the post-processors can consume, then re-packing and re-emitting — not "load a PNG"
 - **Advanced / shader-like effects** — blur, sharpen, glow, emboss, edge detect, noise, chromatic aberration
 - **Colorization** beyond `GradientPostProcessor` (hue shift, channel remap, color ramp, flat tint)
 - **Compositing operations** — layer blending, masks, multi-pass chaining
@@ -111,15 +111,15 @@ Modify glyph shapes in the pixel domain.
 
 ### Stacking & Composability
 
-Post-processors can be stacked and composed — but **only the ones the pipeline actually forwards**. `BmFont` filters `FontGeneratorOptions.PostProcessors` before running the chain (`src/KernSmith/BmFont.cs:281-295`):
+Post-processors can be stacked and composed — but **only the ones the pipeline actually forwards**. `PreparedRasterization.Prepare` filters `FontGeneratorOptions.PostProcessors` before running the chain (`src/KernSmith/PreparedRasterization.cs:303-324`):
 
-- `OutlinePostProcessor`, `GradientPostProcessor`, and `ShadowPostProcessor` are **skipped from the chain entirely** (`BmFont.cs:285-286`). Those looks are re-expressed as layered `IGlyphEffect`s (`OutlineEffect`/`GradientEffect`/`ShadowEffect`) and applied by `GlyphCompositor` instead, so they participate in back-to-front compositing rather than a linear chain.
-- `BoldPostProcessor` is skipped when `options.Bold` is set, and `ItalicPostProcessor` when `options.Italic` is set (`BmFont.cs:287-290`) — the outline-level transform wins, avoiding a double application.
-- Only what survives that filter is chained, in order, per glyph (`BmFont.cs:316-320`).
+- `OutlinePostProcessor`, `GradientPostProcessor`, and `ShadowPostProcessor` are **skipped from the chain entirely** (`PreparedRasterization.cs:308-309`). Those looks are re-expressed as layered `IGlyphEffect`s (`OutlineEffect`/`GradientEffect`/`ShadowEffect`) and applied by `GlyphCompositor` instead, so they participate in back-to-front compositing rather than a linear chain.
+- `BoldPostProcessor` is skipped when `options.Bold` is set and the backend reports `SupportsSyntheticBold`, and `ItalicPostProcessor` when `options.Italic` is set and it reports `SupportsSyntheticItalic` (`PreparedRasterization.cs:315-320`) — the outline-level transform wins, avoiding a double application; a backend without the capability keeps the caller's post-processor.
+- Only what survives that filter is chained, in order, per glyph (`PreparedRasterization.cs:473-476`).
 
 So "chains naturally in sequence" is true of the *interface*, and true of the surviving processors, but it is not true of every processor you hand to `FontGeneratorOptions.PostProcessors`. Standalone use of a post-processor (calling `Process` directly) is of course unfiltered.
 
-- **Stacking**: Multiple instances of the same post-processor chain naturally — pass several into `FontGeneratorOptions.PostProcessors` (`src/KernSmith/Config/FontGeneratorOptions.cs:315`), e.g. three `BoldPostProcessor` instances for progressively bolder glyphs. Each operates on the output of the previous one. Note the fluent `BmFontBuilder` (`src/KernSmith/BmFontBuilder.cs:11`) does **not** expose per-processor chaining methods — it has `WithBold(bool)` (`:103`), a flag, not a repeatable `.Bold()` step; stacking is a `PostProcessors` list concern:
+- **Stacking**: Multiple instances of the same post-processor chain naturally — pass several into `FontGeneratorOptions.PostProcessors` (`src/KernSmith/Config/FontGeneratorOptions.cs:382`), e.g. three `BoldPostProcessor` instances for progressively bolder glyphs. Each operates on the output of the previous one. Note the fluent `BmFontBuilder` (`src/KernSmith/BmFontBuilder.cs:11`) does **not** expose per-processor chaining methods — it has `WithBold(bool)` (`:103`), a flag, not a repeatable `.Bold()` step; stacking is a `PostProcessors` list concern:
 
   ```csharp
   var options = new FontGeneratorOptions

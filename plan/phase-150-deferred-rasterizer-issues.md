@@ -1,6 +1,6 @@
 # Phase 150 -- Deferred Rasterizer Issues
 
-> **Status**: Planning
+> **Status**: Planning — issues 1-4 open; issue 5 (core synthetic-style gate) fixed
 > **Size**: Medium
 > **Created**: 2026-03-30
 > **Updated**: 2026-08-02
@@ -65,12 +65,12 @@ GDI with `HandlesOwnSizing=true` produces wrong metrics when `MatchCharHeight=tr
 **Confirmed still reproducing (2026-07-28).** Root-cause chain, end to end:
 
 1. `src/KernSmith/Config/BmfcConfigReader.cs:102-113` — a negative `fontSize` is immediately absolutized: `options.Size = Math.Abs(sizeVal); options.MatchCharHeight = true;`. The sign itself is discarded here.
-2. `src/KernSmith/Rasterizer/RasterOptions.cs:76-97` — `FromGeneratorOptions` copies 15 fields but **not** `MatchCharHeight`; `RasterOptions` has no such member, so the flag can never reach *any* backend.
+2. `src/KernSmith/Rasterizer/RasterOptions.cs:125-150` — `FromGeneratorOptions` copies the rendering fields but **not** `MatchCharHeight`; `RasterOptions` has no such member, so the flag can never reach *any* backend.
 3. `src/KernSmith/PreparedRasterization.cs` (`Prepare`, the cell-height→ppem block) — the sole consumer of `MatchCharHeight`. It only decides whether to run the cell-height→ppem conversion, and the entire block is **skipped** when `Capabilities.HandlesOwnSizing` is true.
-4. `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs:733` — `HandlesOwnSizing => true` (the interface default is `false`, `src/KernSmith/Rasterizer/IRasterizerCapabilities.cs:27`). GDI is therefore handed `Size=12` with no knowledge that an em-height match was requested.
+4. `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs:733` — `HandlesOwnSizing => true` (the interface default is `false`, `src/KernSmith/Rasterizer/IRasterizerCapabilities.cs:36`). GDI is therefore handed `Size=12` with no knowledge that an em-height match was requested.
 5. `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs:345` — `LfHeight` is **always positive**, i.e. GDI cell-height mode. GDI's em-height mode requires a **negative** `lfHeight`, and nothing in the file ever produces one.
-6. `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs:260-268` — `GetFontMetrics` returns `LineHeight = ceil(tm.TmHeight / aa) = 12` and `Ascent = 10`.
-7. `src/KernSmith/Output/BmFontModelBuilder.cs:52-56` — rasterizer-supplied metrics are used verbatim, so the `.fnt` gets `common lineHeight=12 base=10`.
+6. `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs:263-268` — `GetFontMetrics` returns `LineHeight = ceil(tm.TmHeight / aa) = 12` and `Ascent = 10`.
+7. `src/KernSmith/Output/BmFontModelBuilder.cs:194-200` — `ComputeLineMetrics` uses rasterizer-supplied metrics verbatim, so the `.fnt` gets `common lineHeight=12 base=10`.
 
 Corroborating generated artifacts (local; `tests/bmfont-compare/` is gitignored):
 
@@ -111,9 +111,9 @@ Native has since gained its own synthetic styling ([Phase 167](done/phase-167-sy
 |------|-----------|
 | `src/KernSmith.Rasterizers.DirectWrite.TerraFX/DirectWriteRasterizer.cs` | Issues 1-3 |
 | `src/KernSmith.Rasterizers.DirectWrite.TerraFX/DirectWriteCapabilities.cs` | Issues 1-2 — `:12-13` is where `SupportsColorFonts`/`SupportsVariableFonts` actually live |
-| `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs` | Issue 4 — `HandlesOwnSizing` (`:733`), `LfHeight` (`:345`), `GetFontMetrics` (`:260-268`) |
+| `src/KernSmith.Rasterizers.Gdi/GdiRasterizer.cs` | Issue 4 — `HandlesOwnSizing` (`:733`), `LfHeight` (`:345`), `GetFontMetrics` (`:263-268`) |
 | `src/KernSmith/Config/BmfcConfigReader.cs` | Issue 4 — `:102-113`, where the negative-size sign is discarded |
-| `src/KernSmith/Rasterizer/RasterOptions.cs` | Issue 4 — `:76-97`, `MatchCharHeight` is never copied to the backend options |
+| `src/KernSmith/Rasterizer/RasterOptions.cs` | Issue 4 — `:125-150`, `MatchCharHeight` is never copied to the backend options |
 | `src/KernSmith/PreparedRasterization.cs` | Issue 4 — the sizing decision point in `Prepare`; also the capability gates for issues 1-2. Issue 5 — the capability-gated bold/italic post-processor skip |
 | `src/KernSmith/Rasterizer/IRasterizerCapabilities.cs` | Issue 5 — `SupportsSyntheticBold` / `SupportsSyntheticItalic`, the flags the gate consults |
 | `src/KernSmith.Rasterizers.Native/NativeCapabilities.cs` | Issue 5 — the first backend to report `false`, which is what exposed the bug |

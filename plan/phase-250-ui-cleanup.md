@@ -1,19 +1,18 @@
 # Phase 250: UI Cleanup & Polish
 
-> **Live progress snapshot**: see [`ui-cleanup-progress.md`](ui-cleanup-progress.md) for the dated, day-to-day status of this work.
-
 ## Status At A Glance
 
-> Verified against the code on 2026-07-28. Where the plan below and the shipped code disagree, the code wins and the plan text has been corrected.
+> Where the plan below and the shipped code disagree, the code wins and the plan text has been corrected. The first pass merged in PR #58; the original progress snapshot is archived as [done/ui-cleanup-progress.md](done/ui-cleanup-progress.md).
 
 - **Phase 1 (UiFactory extraction + Theme constants)** — **MOSTLY COMPLETE, scope changed**. `apps/KernSmith.Ui/Styling/UiFactory.cs` and the `Theme` layout constants both exist, but the planned collapsible/divider/labeled-row helpers were never built as specified: `AddCollapsibleSection`, `AddCollapsibleHeader`, `AddDivider`, and `CreateLabeledRow` do not exist anywhere in `apps/`. Collapsing is now handled by Gum's built-in `Expander` Forms control via `UiFactory.CreateExpander` — see [Root cause](#root-cause-hand-rolled-collapsibles-replaced-by-gums-expander).
-- **Phase 2 (collapsible section headers)** — **DELIVERED via `Expander`; the Generate-bar layout issue NEEDS RE-VALIDATION WITH JEREMY**. Collapsible sections exist in FontConfigPanel, EffectsPanel, and CharacterSelectionPanel. The originally-reported Generate-bar overlap cannot be confirmed or refuted by reading the code: none of the four failed approaches recorded in `ui-cleanup-progress.md` match the current shape, which is `FontConfigPanel.cs:50` `scrollArea.HeightUnits = DimensionUnitType.Ratio` plus `BuildGenerateBar` (`:318`) using `RelativeToChildren`. Someone needs to run the app and report whether the overlap still happens before this is called fixed or still blocked.
-- **Phases 3-5 (grid layout consistency, spacing/polish)** — **largely done**. Phase 3's grid rows all exist (`FontConfigPanel.cs:280` `sizeGrid.AddRow("Size (pt):", …)`, `:293` `AddRow("Rasterizer:", …)`, `:474` `AddRow("Packing:", …)`, and `:239` `fontGrid.AddRow("Glyphs:", glyphCount)` — the "Glyphs in font" item). Phase 4's Super Sample labeled row exists at `EffectsPanel.cs:315`. Remaining: the padding/spacing cross-layout cleanup and the Phase 5 spacing sweep.
+- **Phase 2 (collapsible section headers)** — **DELIVERED via `Expander`; the Generate-bar layout issue NEEDS RE-VALIDATION WITH JEREMY**. Collapsible sections exist in FontConfigPanel, EffectsPanel, and CharacterSelectionPanel. The originally-reported Generate-bar overlap cannot be confirmed or refuted by reading the code: none of the four failed approaches (listed under [Phase 2](#fontconfigpanelcs)) match the current shape, which is `FontConfigPanel.cs:51` `scrollArea.HeightUnits = DimensionUnitType.Ratio` plus `BuildGenerateBar` (`:352`) using `RelativeToChildren`. Someone needs to run the app and report whether the overlap still happens before this is called fixed or still blocked.
+- **Phases 3-5 (grid layout consistency, spacing/polish)** — **largely done**. Phase 3's grid rows all exist (`FontConfigPanel.cs:302` `sizeGrid.AddRow("Size (pt):", …)`, `:326` `AddRow("Rasterizer:", …)`, `:512` `AddRow("Packing:", …)`, and `:267` `fontGrid.AddRow("Glyphs:", glyphCount)` — the "Glyphs in font" item). Phase 4 is done: the Super Sample labeled row exists at `EffectsPanel.cs:354`, and the Font Style checkbox columns stack at 8. Remaining: the padding/spacing cross-layout cleanup and the Phase 5 spacing sweep.
 - **Phase 6 (egui-inspired visual polish)** — not started.
+- **Phase 7 (MVVM binding)** — partly there: every view model already derives from Gum's `ViewModel`, and the `UiFactory` row helpers bind each control to a view-model property; the rest of the imperative `PropertyChanged` wiring and visibility toggling remains.
 
 ### Root cause: hand-rolled collapsibles replaced by Gum's `Expander`
 
-The original plan (and the progress snapshot) described a hand-rolled collapsible header — a clickable bar with an ASCII `v`/`>` chevron, a header background, and an indented content area. That code no longer exists. During the Gum bump in 0.17.0 (commit `f5b818a`, `chore/gum-integration-migration`) it was replaced by Gum's built-in `Expander` Forms control, wrapped by `UiFactory.CreateExpander` (`UiFactory.cs:19-33`), which applies `Theme.ExpanderContentIndent` to the expander's `ContentContainer`. Chevron glyphs, chevron colors, and header-bar backgrounds are now the `Expander` template's business, not ours.
+The original plan described a hand-rolled collapsible header — a clickable bar with an ASCII `v`/`>` chevron, a header background, and an indented content area. That code no longer exists. During the Gum bump in 0.17.0 (commit `f5b818a`, `chore/gum-integration-migration`) it was replaced by Gum's built-in `Expander` Forms control, wrapped by `UiFactory.CreateExpander` (`UiFactory.cs:22-36`), which applies `Theme.ExpanderContentIndent` to the expander's `ContentContainer`. Chevron glyphs, chevron colors, and header-bar backgrounds are now the `Expander` template's business, not ours.
 
 ## Context
 
@@ -27,24 +26,25 @@ The KernSmith UI (Gum/MonoGame) works but looks cramped and inconsistent compare
 
 Extract duplicated helpers from FontConfigPanel, EffectsPanel, CharacterSelectionPanel, FontInspectorDialog:
 
-Actual public surface as shipped (`UiFactory.cs`, verified 2026-07-28):
+Actual public surface as shipped (`UiFactory.cs`):
 
 | Method | Line | Purpose |
 |--------|------|---------|
-| `CreateExpander(header, isExpanded = true)` | `:19` | Gum `Expander` with `Theme.ExpanderContentIndent` applied to its `ContentContainer` — this is what replaced the planned collapsible helpers |
-| `AddSectionHeader(parent, text)` | `:38` | Bare `TextRuntime` colored `Theme.SectionHeaderText`. No container, no background, not accent-colored (the plan's "24px container + bg + accent text" was never built) |
-| `AddSliderRow(parent, label, min, max, ...)` | `:49` | Grid: label \| slider \| value (int) |
-| `AddFloatSliderRow(...)` | `:98` | Grid: label \| slider \| value (float) |
-| `AddFloatBoxRow(...)` | `:145` | Grid: label \| float text box |
-| `CreateSmallFloatBox(initialValue, onChanged)` | `:174` | Compact float text box for cross/compass layouts |
-| `AddColorRow(device, parent, label, ...)` | `:192` | Grid: label \| swatch \| hex input |
-| `CreateScrollablePanel(panel)` | `:282` | ScrollViewer + inner stack + padding pattern |
+| `CreateExpander(header, isExpanded = true)` | `:22` | Gum `Expander` with `Theme.ExpanderContentIndent` applied to its `ContentContainer` — this is what replaced the planned collapsible helpers |
+| `AddSectionHeader(parent, text)` | `:41` | Bare `TextRuntime` colored `Theme.SectionHeaderText`. No container, no background, not accent-colored (the plan's "24px container + bg + accent text" was never built) |
+| `AddSliderRow(parent, label, min, max, ...)` | `:56` | Grid: label \| slider \| value (int) |
+| `AddFloatSliderRow(...)` | `:124` | Grid: label \| slider \| value (float) |
+| `AddFloatBoxRow(...)` | `:190` | Grid: label \| float text box |
+| `CreateSmallFloatBox(source, propertyName, getValue, setValue)` | `:225` | Compact float text box for cross/compass layouts |
+| `BindCheckBox(checkBox, source, propertyName, getValue, setValue)` | `:260` | Shows a view-model bool and writes the user's clicks back |
+| `AddColorRow(device, parent, label, ...)` | `:291` | Grid: label \| swatch \| hex input |
+| `CreateScrollablePanel(panel)` | `:404` | ScrollViewer + inner stack + padding pattern |
 
 **Planned but never built** (do not cite these as existing): `AddCollapsibleSection`, `AddCollapsibleHeader`, `AddDivider`, `CreateLabeledRow`.
 
 ### Expand: `apps/KernSmith.Ui/Styling/Theme.cs`
 
-Constants as shipped (`Theme.cs:36-54`, verified 2026-07-28 — the two colors landed darker than planned):
+Constants as shipped (`Theme.cs:36-54` — the two colors landed darker than planned):
 
 - `SectionHeaderText` = `new Color(200, 200, 200)` (`:38`) — added during implementation, not in the original plan
 - `SectionHeaderBg` = `new Color(42, 42, 46)` (`:40`) — plan said `(50, 50, 55)`
@@ -81,17 +81,19 @@ Convert sections to collapsible (all start expanded):
 - **OUTPUT** — collapsible
 - **Generate button + Auto-regenerate** — stay *outside* any section (always visible)
 
-> **NEEDS RE-VALIDATION WITH JEREMY**: the Generate-bar overlap that blocked this phase cannot be confirmed or refuted from the source. The current layout is `FontConfigPanel.cs:50` `scrollArea.HeightUnits = DimensionUnitType.Ratio` with `BuildGenerateBar` (`:318-327`) sizing `RelativeToChildren` — none of the four approaches recorded as failed in `ui-cleanup-progress.md` are what's in the file today. Run the app and report what you see before marking this fixed or still blocked.
+> **NEEDS RE-VALIDATION WITH JEREMY**: the Generate-bar overlap that blocked this phase cannot be confirmed or refuted from the source. The current layout is `FontConfigPanel.cs:51` `scrollArea.HeightUnits = DimensionUnitType.Ratio` with `BuildGenerateBar` (`:352-406`) sizing `RelativeToChildren`. Run the app and report what you see before marking this fixed or still blocked.
+>
+> As originally reported, the fixed bottom bar (Generate + Auto-regenerate, outside the scroll area) overlapped the scroll content because the scroll area did not shrink to make room. Approaches tried then, none of which is the current code: (1) `scrollViewer.Visual.Height = -60` relative to the parent — the left panel's content disappeared; (2) `this.Visual.ChildrenLayout = TopToBottomStack` — broke `MainLayout`'s positioning of the panel; (3) an intermediate `root` `ContainerRuntime` with `TopToBottomStack` and a `Ratio`-height `ScrollViewer` — still overlapped; (4) a wrapper `ContainerRuntime` with `ClipsChildren` around the `ScrollViewer` — same overlap. Gum's `Dock.Fill` does not respect siblings; use `Ratio` height units for remaining-space layouts. If the overlap still reproduces, diagnose with a Gum layout debug dump, or drop the fixed bar and put Generate at the top of the panel or the end of the scroll content.
 
 ### EffectsPanel.cs
 
 As shipped, every section is a `UiFactory.CreateExpander(...)`:
 
 - **Font Style** — `EffectsPanel.cs:58`, expanded
-- **Effects** — `:321`. OUTLINE/SHADOW/GRADIENT/CHANNELS did *not* stay as four separate checkbox-toggle sections with chevrons; they are now rows inside this one expander (e.g. the outline checkbox at `:342-344`)
-- **Advanced** — `:495`, expanded
-- **Fallback Character** — `:645`, expanded
-- **Variable Font** — `:666`, `isExpanded: false` (it was *not* left as-is; it became an expander like the rest)
+- **Effects** — `:541`. OUTLINE/SHADOW/GRADIENT/CHANNELS did *not* stay as four separate checkbox-toggle sections with chevrons; they are now rows inside this one expander (e.g. the outline checkbox at `:562-564`)
+- **Advanced** — `:826`, expanded
+- **Fallback Character** — `:1033`, expanded
+- **Variable Font** — `:1055`, `isExpanded: false` (it was *not* left as-is; it became an expander like the rest)
 
 ### CharacterSelectionPanel.cs
 
@@ -105,11 +107,11 @@ As shipped, every section is a `UiFactory.CreateExpander(...)`:
 
 | Current | Change | Status |
 |---------|--------|--------|
-| Font Size: stacked label + text box | Grid row: `[Font Size:  ] [42] [pt]` | Done — `FontConfigPanel.cs:280` `sizeGrid.AddRow("Size (pt):", sizeTextBox)` |
-| Rasterizer: stacked label + combo | Grid row: `[Rasterizer: ] [ComboBox]` | Done — `:293` `AddRow("Rasterizer:", _rasterizerCombo)` |
-| Packing Algorithm: stacked | Grid row: `[Algorithm:  ] [ComboBox]` | Done — `:474` `atlasGrid.AddRow("Packing:", packAlgoCombo)` |
+| Font Size: stacked label + text box | Grid row: `[Font Size:  ] [42] [pt]` | Done — `FontConfigPanel.cs:302` `sizeGrid.AddRow("Size (pt):", sizeTextBox)` |
+| Rasterizer: stacked label + combo | Grid row: `[Rasterizer: ] [ComboBox]` | Done — `:326` `AddRow("Rasterizer:", _rasterizerCombo)` |
+| Packing Algorithm: stacked | Grid row: `[Algorithm:  ] [ComboBox]` | Done — `:512` `atlasGrid.AddRow("Packing:", packAlgoCombo)` |
 | Padding/Spacing: confusing 5-box cross layout | Keep cross layout but clean up: add T/R/B/L labels, improve alignment, better visual grouping | Not done |
-| "Glyphs in font: 0" floating | Move inside FONT FILE section as labeled row | Done — `:239` `fontGrid.AddRow("Glyphs:", glyphCount)` |
+| "Glyphs in font: 0" floating | Move inside FONT FILE section as labeled row | Done — `:267` `fontGrid.AddRow("Glyphs:", glyphCount)` |
 
 ---
 
@@ -117,8 +119,8 @@ As shipped, every section is a `UiFactory.CreateExpander(...)`:
 
 **Standardize EffectsPanel rows.**
 
-- Font Style checkboxes: increase spacing from 4 to 8 in the 2-column layout
-- ~~Super Sample: convert to labeled row~~ — **done**, `EffectsPanel.cs:315` `ssGrid.AddRow("Super Sample:", ssCombo)`
+- Font Style checkboxes: spacing 8 in the 2-column layout — **done** (`leftCol`/`rightCol` `StackSpacing = 8` in the Font Style expander)
+- Super Sample: labeled row — **done**, `EffectsPanel.cs:354` `ssGrid.AddRow("Super Sample:", ssCombo)`
 - All slider/color rows already use 70px label column via helpers — just route through UiFactory
 
 ---
@@ -132,6 +134,26 @@ As shipped, every section is a `UiFactory.CreateExpander(...)`:
 - Apply ScrollViewer background transparency fix to all panels via UiFactory
 - Bump section header height from 22 to 24, improve text vertical centering
 - ~~Chevron uses `Theme.TextMuted`, title uses `Theme.Accent`~~ — obsolete. There is no hand-rolled chevron any more; chevron glyph and colors come from Gum's `Expander` template (see [Root cause](#root-cause-hand-rolled-collapsibles-replaced-by-gums-expander)). Plain section-header text uses `Theme.SectionHeaderText`, not `Theme.Accent`.
+
+---
+
+## Phase 6: Visual Refinement (egui-inspired)
+
+- Reduce font size for a denser, more professional feel
+- Tone down section header colors (muted gray/white rather than a bright accent)
+- Reduce or remove section header background bars
+- Mute checkbox/radio accent colors
+- Reduce overall contrast: fewer distinct background shades
+- Goal: a quiet, professional UI that lets content speak (reference: egui's default style)
+
+## Phase 7: MVVM Binding
+
+Every view model already derives from Gum's `ViewModel` (`Get<T>()`/`Set(value)`), and the `UiFactory` row helpers and `BindCheckBox` bind each control to a view-model property: they show it now and on `PropertyChanged`, and write user edits back. What remains:
+
+- Move the rest of the imperative `PropertyChanged` wiring and manual visibility toggling to `SetBinding` + `BindingContext` propagation
+- Computed properties with `[DependsOn]` (e.g. `IsBrowseMode` / `IsSystemFontMode`); `IsVisible` is bindable on every Forms control, so mode-switching visibility can bind too
+- Start with FontConfigPanel, then EffectsPanel and the other panels
+- Reference: https://docs.flatredball.com/gum/code/binding-viewmodels
 
 ---
 
