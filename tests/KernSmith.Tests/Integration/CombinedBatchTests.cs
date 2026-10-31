@@ -1,4 +1,5 @@
 using KernSmith.Output;
+using KernSmith.Atlas;
 using KernSmith.Rasterizer;
 using Shouldly;
 
@@ -315,5 +316,43 @@ public class CombinedBatchTests
                     $"char {c0.Id} from font 0 and char {c1.Id} from font 1 should not share the exact same rectangle ({c0.X},{c0.Y} {c0.Width}x{c0.Height})");
             }
         }
+    }
+
+    [Fact]
+    public void GenerateBatch_CombinedMode_DifferentPadding_EveryCharRectHoldsItsWholeGlyph()
+    {
+        // The shared atlas is blitted with the largest padding of any job, so each job's char
+        // rects must describe that, or a job with less padding points its quads 4 px up-left
+        // of its ink and crops the far edges.
+        var fontData = LoadTestFont();
+        FontGeneratorOptions Options(int padding) => new()
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars("HOW"),
+            Padding = new Padding(padding),
+        };
+        var batch = BmFont.GenerateBatch(new[]
+        {
+            new BatchJob { FontData = fontData, Options = Options(0) },
+            new BatchJob { FontData = fontData, Options = Options(4) },
+        }, new BatchOptions { AtlasMode = BatchAtlasMode.Combined });
+        var alone = BmFont.Generate(fontData, Options(0));
+
+        foreach (var id in new[] { 'H', 'O', 'W' })
+        {
+            InkInRect(batch.Results[0].Result!, id).ShouldBe(InkInRect(alone, id), $"char {id}");
+        }
+    }
+
+    private static long InkInRect(BmFontResult result, int id)
+    {
+        var ch = result.Model.Characters.Single(c => c.Id == id);
+        var page = result.Pages[ch.Page];
+        var bpp = page.Format == PixelFormat.Rgba32 ? 4 : 1;
+        long sum = 0;
+        for (var y = ch.Y; y < ch.Y + ch.Height; y++)
+            for (var x = ch.X; x < ch.X + ch.Width; x++)
+                sum += page.PixelData[(y * page.Width + x) * bpp + (bpp - 1)];
+        return sum;
     }
 }

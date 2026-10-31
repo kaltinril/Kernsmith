@@ -1245,7 +1245,21 @@ public static class BmFont
             TextureFormat.Dds => new DdsEncoder(),
             _ => new PngEncoder()
         });
-        var sharedPages = AtlasBuilder.Build(allGlyphs, packResult, maxPadding, encoder);
+        // Each glyph is drawn inside its max-padding rect at its own job's padding, because
+        // that job's .fnt describes the glyph with its own padding (BuildCharEntry).
+        var blitPlacements = packResult.Placements.Select(p =>
+        {
+            var own = jobs[DecodeCombinedId(p.Id).FontIndex].Options.Padding;
+            return new GlyphPlacement(p.Id, p.PageIndex, p.X + own.Left, p.Y + own.Up);
+        }).ToList();
+        var blitPack = new PackResult
+        {
+            Placements = blitPlacements,
+            PageCount = packResult.PageCount,
+            PageWidth = packResult.PageWidth,
+            PageHeight = packResult.PageHeight,
+        };
+        var sharedPages = AtlasBuilder.Build(allGlyphs, blitPack, new Padding(0, 0, 0, 0), encoder);
 
         // 6. For each font, extract placements and build BmFontModel.
         var results = new BatchJobResult[jobs.Count];
