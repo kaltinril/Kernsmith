@@ -812,14 +812,11 @@ public class StbTrueTypeRasterizerTests : IDisposable
 
         // Advance should match exactly.
         metrics.Value.Advance.ShouldBe(glyph.Metrics.Advance);
-        // SDF pads each side by the spread (8 by default, 16 total), plus bold expansion and
-        // rounding. Use a tolerance of 18 to account for all these combined effects.
-        const int sdfTolerance = 18;
-        Math.Abs(metrics.Value.Width - glyph.Metrics.Width).ShouldBeLessThanOrEqualTo(sdfTolerance);
-        Math.Abs(metrics.Value.Height - glyph.Metrics.Height).ShouldBeLessThanOrEqualTo(sdfTolerance);
-        // BearingX and BearingY also affected by SDF padding.
-        Math.Abs(metrics.Value.BearingX - glyph.Metrics.BearingX).ShouldBeLessThanOrEqualTo(sdfTolerance);
-        Math.Abs(metrics.Value.BearingY - glyph.Metrics.BearingY).ShouldBeLessThanOrEqualTo(sdfTolerance);
+        // The metrics include the SDF padding (#262), so only rounding separates them.
+        Math.Abs(metrics.Value.Width - glyph.Metrics.Width).ShouldBeLessThanOrEqualTo(1);
+        Math.Abs(metrics.Value.Height - glyph.Metrics.Height).ShouldBeLessThanOrEqualTo(1);
+        Math.Abs(metrics.Value.BearingX - glyph.Metrics.BearingX).ShouldBeLessThanOrEqualTo(1);
+        Math.Abs(metrics.Value.BearingY - glyph.Metrics.BearingY).ShouldBeLessThanOrEqualTo(1);
     }
 
     // -- Helpers ----------------------------------------------------------
