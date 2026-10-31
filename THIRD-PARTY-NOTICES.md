@@ -53,7 +53,6 @@ component's upstream `LICENSE`/`COPYING` file. Nothing here is paraphrased.
 | FreeTypeSharp | 3.1.0 | `MIT` | NuGet (FreeType backend) |
 | FreeType-derived embolden port (`OutlineTransforms.cs`) | n/a (source) | `FTL` (covered by FreeType) | Source in StbTrueType backend |
 | StbImageSharp | 2.30.16 | Public Domain (`Unlicense`-equivalent) | NuGet (core) |
-| StbImageWriteSharp | 1.16.7 | Public Domain (`Unlicense`-equivalent) | NuGet (core) |
 | StbTrueTypeSharp | 1.26.13 | Public Domain (`Unlicense`-equivalent) | NuGet (StbTrueType backend) |
 | stb_truetype SDF (`StbTrueTypeSdfVendored.cs`) | n/a (source) | Public Domain / `MIT` | Source in StbTrueType backend |
 | TerraFX.Interop.Windows | 10.0.26100.6 | `MIT` | NuGet (DirectWrite backend) |
@@ -144,14 +143,13 @@ Applies to **Gum.MonoGame 2026.10.1.1** and **Gum.Themes.Editor.MonoGame 2026.10
 
 ## 4. Public-Domain components (stb / StbSharp)
 
-**StbImageSharp 2.30.16**, **StbImageWriteSharp 1.16.7**, and
+**StbImageSharp 2.30.16** and
 **StbTrueTypeSharp 1.26.13** are C# ports maintained by the **StbSharp**
 organization (Roman Shapiro). Each project declares its license simply as
 **"Public Domain"** and ships no copyright notice or license-text file.
 
 - **Project URLs:**
   - https://github.com/StbSharp/StbImageSharp
-  - https://github.com/StbSharp/StbImageWriteSharp
   - https://github.com/StbSharp/StbTrueTypeSharp
 - **SPDX:** Public Domain (no embedded license; `Unlicense`-equivalent)
 

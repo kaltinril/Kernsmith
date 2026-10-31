@@ -36,7 +36,6 @@
 
   <ItemGroup>
     <PackageReference Include="StbImageSharp" />
-    <PackageReference Include="StbImageWriteSharp" />
   </ItemGroup>
 
   <!-- Phase 90 (AOT): emit the package version as a compile-time constant so

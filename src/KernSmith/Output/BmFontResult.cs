@@ -124,7 +124,7 @@ public sealed class BmFontResult
     /// <returns>An array of PNG-encoded byte arrays, one per page.</returns>
     public byte[][] GetPngData()
     {
-        var encoder = new StbPngEncoder();
+        var encoder = new PngEncoder();
         return EncodeAllPages(encoder);
     }
 
@@ -135,7 +135,7 @@ public sealed class BmFontResult
     /// <returns>PNG-encoded byte array for the specified page.</returns>
     public byte[] GetPngData(int pageIndex)
     {
-        var encoder = new StbPngEncoder();
+        var encoder = new PngEncoder();
         return EncodePage(encoder, pageIndex);
     }
 
@@ -237,7 +237,7 @@ public sealed class BmFontResult
     public void ToFile(string outputPath, OutputFormat format = OutputFormat.Text)
     {
         var textFormatter = new TextFormatter();
-        var encoder = new StbPngEncoder();
+        var encoder = new PngEncoder();
 
         // Rebuild page entries to match the output base name
         var baseName = Path.GetFileNameWithoutExtension(outputPath);

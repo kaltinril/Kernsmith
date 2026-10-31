@@ -14,6 +14,7 @@ Decisions made, with the why — consult before re-litigating anything. One per 
 - Errors use a custom exception hierarchy rooted at `BmFontException`, so a consumer can catch everything this library throws with one clause.
 - The desktop UI is MonoGame (DesktopGL) + GUM, code-only (no XAML, no GUM editor). Avalonia, WPF and MAUI were evaluated and rejected because MonoGame+GUM aligns with the game-developer audience. The original rationale also counted on KNI (an API-compatible MonoGame fork) for a cheap Blazor WebGL path later; re-check that assumption before relying on it, since the Gum integrations now live in Vic's repo.
 - Cross-platform reach comes from the managed backends (StbTrueType, Native), not FreeType: they run wherever .NET runs, including browser-wasm, Linux arm64, iOS and Mac Catalyst.
+- Atlas PNGs are encoded by core's `PngEncoder` (filter type 0 on every row, one IDAT, BCL `ZLibStream` at `Optimal`), not StbImageWriteSharp: on atlas pages stb's per-row adaptive filters and own deflate were 3-6x slower and 16-42% larger (Roboto 32px ASCII page 1.85 ms → 0.50 ms; emoji and gradient pages included), and PNG encoding was most of a `ToFile` call. Adaptive filtering was measured and rejected — it compressed atlas pages worse than no filter. The cost: PNG bytes follow the runtime's zlib (.NET 9 moved to zlib-ng), so identical pixels can encode to different files on .NET 8 and 10; decoded pixels never differ.
 
 ## Native Rasterizer
 
