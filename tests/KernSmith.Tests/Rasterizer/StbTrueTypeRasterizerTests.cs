@@ -361,6 +361,49 @@ public class StbTrueTypeRasterizerTests : IDisposable
         streaks.ShouldBeEmpty();
     }
 
+    [Fact]
+    public void RasterizeGlyph_SdfItalic_OverlappingContoursReadAsInside()
+    {
+        // Regression for #263: the styled SDF path took the ray-crossing parity (even-odd), so
+        // where two contours overlap the solid ink read as outside. Roboto Flex ships its
+        // contours unmerged. Every pixel the non-zero-filled bitmap covers fully must be inside
+        // (>= 128) in the distance field of the same italic outline.
+        using var rasterizer = new StbTrueTypeRasterizer();
+        rasterizer.LoadFont(File.ReadAllBytes(Path.Combine(FixturesDir, "RobotoFlex-Variable.ttf")));
+        var bitmapOptions = new RasterOptions { Size = 48, AntiAlias = AntiAliasMode.Grayscale, Italic = true };
+        var sdfOptions = bitmapOptions with { Sdf = true };
+
+        var holes = new List<string>();
+        for (int cp = 33; cp <= 126; cp++)
+        {
+            var bitmap = rasterizer.RasterizeGlyph(cp, bitmapOptions);
+            var sdf = rasterizer.RasterizeGlyph(cp, sdfOptions);
+            if (bitmap is null || sdf is null || bitmap.Width == 0)
+                continue;
+
+            int dx = bitmap.Metrics.BearingX - sdf.Metrics.BearingX;
+            int dy = sdf.Metrics.BearingY - bitmap.Metrics.BearingY;
+            int count = 0;
+            for (int y = 0; y < bitmap.Height; y++)
+            {
+                for (int x = 0; x < bitmap.Width; x++)
+                {
+                    if (bitmap.BitmapData[y * bitmap.Pitch + x] != 255)
+                        continue;
+                    int sx = x + dx, sy = y + dy;
+                    if (sx < 0 || sy < 0 || sx >= sdf.Width || sy >= sdf.Height
+                        || sdf.BitmapData[sy * sdf.Pitch + sx] < 128)
+                        count++;
+                }
+            }
+
+            if (count > 0)
+                holes.Add($"'{(char)cp}': {count} covered pixels outside");
+        }
+
+        holes.ShouldBeEmpty();
+    }
+
     // -- 16. LoadSystemFont throws NotSupportedException ------------------
 
     [Fact]
