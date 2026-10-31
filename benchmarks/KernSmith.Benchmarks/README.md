@@ -58,6 +58,8 @@ python benchmarks/KernSmith.ColdStart/run_coldstart.py --skip-publish --modes ao
 
 The repo's decision not to ship ReadyToRun (`project_decisions.md`, Tooling) is about how KernSmith's own packages are built. This tool measures something else: what a consumer app gets when it publishes itself as ReadyToRun or NativeAOT, which precompiles KernSmith along with the app whatever the packages ship.
 
+What it found (Roboto ASCII 32px, K=20, full table in [phase 177](../../plan/phase-177-performance-optimization.md#measured-results)): under JIT the first `Generate` takes 89-111 ms depending on the backend, 10-15x its steady state, most of it compiling 830-1,170 methods. ReadyToRun halves that (38-51 ms) and NativeAOT removes it (3.7-6.9 ms, 1-2x steady). Process start to first result is 146-169 ms (JIT), 93-104 ms (ReadyToRun) and 17-20 ms (NativeAOT). An app that cares about first-call latency — a CLI, a serverless function, anything that generates one font per process — should publish with ReadyToRun or NativeAOT; a long-running app pays the JIT cost once.
+
 ### WOFF2 decoding
 
 `Woff2DecodeBenchmarks` times KernSmith's managed Brotli decoder against the BCL's native one on the same stream (Roboto-Regular.woff2), and `BmFont.ReadFontInfo` on the WOFF2 against the plain TTF. Results are in [phase 177](../../plan/phase-177-performance-optimization.md).
