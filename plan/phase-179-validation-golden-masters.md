@@ -30,7 +30,7 @@ Regenerate after a deliberate output change, then review the manifest and PNG di
 KERNSMITH_UPDATE_GOLDENS=1 dotnet test --project tests/KernSmith.Rasterizers.Native.Tests -- --filter-class "*NativeGolden*"
 ```
 
-Determinism: identical on net8.0 and net10.0 (x64). Native's arithmetic is scalar float with no SIMD-width-dependent reductions; its only libm calls (`Math.Pow`/`Sin`/`Cos`/`Tan`/`Atan2`, in double, for COLR v1 sRGB transfer and transforms and the italic shear) are rounded to float or bytes, so a last-ulp libm difference between Windows, glibc and Apple can flip a value only at an exact rounding boundary. arm64 is unverified locally; CI's macOS leg (arm64) is the first check.
+Determinism: identical on net8.0 and net10.0 (x64). Native's arithmetic is float with no SIMD-width-dependent reductions (the SDF splat's lane-wise `Vector<float>` path is held bit-identical to its scalar fallback by test); its only libm calls (`Math.Pow`/`Sin`/`Cos`/`Tan`/`Atan2`, in double, for COLR v1's sRGB tables, transforms and sweep angles, vector-outline round joins and the italic shear) are rounded to float or bytes, so a last-ulp libm difference between Windows, glibc and Apple can flip a value only at an exact rounding boundary. arm64 is unverified locally; CI's macOS leg (arm64) is the first check.
 
 ### Similarity matrix (done)
 

@@ -1,6 +1,6 @@
 # Phase 100b — Deferred Advanced Effect Features
 
-> **Status**: P2/P3 core items (SdfScale render path + AdvanceAdjustY metadata) landed 2026-06-07 and are verified (regression + unit tests). P5 (native render mode) is RESOLVED — superseded by the Gdi/DirectWrite rasterizer backends. P4 (outline wobble/zigzag) is the only item still intentionally DEFERRED, as low-priority decorative work — not abandoned.
+> **Status**: Partial — P2/P3 (SdfScale render path, AdvanceAdjustY metadata) done; P5 (native render mode) resolved by the GDI/DirectWrite backends; P4 (outline wobble/zigzag) deferred as low-priority decorative work, not abandoned
 > **Created**: 2026-06-05
 > **Depends on**: Phase 100
 > **Goal**: Land the advanced-effect items that were deferred when Phase 100 shipped its core.
@@ -17,7 +17,7 @@ Phase 100 (Hiero Advanced Feature Support) shipped its core set of new effect pr
 
 ### 1. `SdfScale` — render-at-larger-ppem SDF path (P3) — ✅ DONE (2026-06-07)
 
-`SdfScale` was plumbed through `RasterOptions` but not applied — a no-op at its default value of `1`. Now implemented at the BmFont pipeline level (`BmFont.cs`, `RasterizeFont`), mirroring the existing SuperSample path: when `Sdf` and `SdfScale > 1`, glyphs are rasterized at `Size × SdfScale` and downscaled via `SuperSampleDownscale`. The factor is clamped — `Math.Clamp(options.SdfScale, 1, 4)` (`BmFont.cs:251`), the same 1–4 ceiling `SuperSampleLevel` uses (`:242`) — so values above 4 are silently capped rather than rejected. For a single-channel SDF, box-averaging the 8-bit distance values is the correct, SDF-aware downscale — the field is locally linear and the `128 = edge` zero-crossing is preserved, so this is the standard "render SDF at high res, then downsample" technique. The non-SDF supersample path is untouched, and the `SuperSampleLevel + SDF` guard remains in force (`SdfScale` is the separate SDF-specific knob).
+`SdfScale` was plumbed through `RasterOptions` but not applied — a no-op at its default value of `1`. Now implemented at the pipeline level (`PreparedRasterization.Prepare`, which `BmFont.RasterizeFont` drives), mirroring the existing SuperSample path: when `Sdf` and `SdfScale > 1`, glyphs are rasterized at `Size × SdfScale` and downscaled via `SuperSampleDownscale`. The factor is clamped — `Math.Clamp(options.SdfScale, 1, 4)` in `PreparedRasterization.Prepare`, the same 1–4 ceiling `SuperSampleLevel` uses — so values above 4 are silently capped rather than rejected. For a single-channel SDF, box-averaging the 8-bit distance values is the correct, SDF-aware downscale — the field is locally linear and the `128 = edge` zero-crossing is preserved, so this is the standard "render SDF at high res, then downsample" technique. The non-SDF supersample path is untouched, and the `SuperSampleLevel + SDF` guard remains in force (`SdfScale` is the separate SDF-specific knob).
 
 **Result**: Default (`SdfScale = 1`) is byte-identical — confirmed by the bmfont-compare regression (150/150 FNT + 24/24 images identical, including the SDF configs) and a byte-identical unit test. New tests cover non-throw, downscale-back-to-target dimensions, and valid-SDF (inside > 128, outside < 128).
 

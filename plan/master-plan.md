@@ -4,9 +4,9 @@
 >
 > **Complete** (all archived in `done/`): Phases 1-18 (there is no Phase 19), 20, 21 + 21R, 30-34 (including 32b, 32c, 32d and 33b), 37, 55, 60-86 (including 74b, 75L, 76b, 77b, the full 78 series, and 81-85), 90, 95, 96, 97, 100, 105, 161-174, 178, 181, 182, 183, 185. Phase 34 is Complete (Superseded) by the 160-180 native rasterizer series; Phase 35 rejected (FontStashSharp is just a stbTrueTypeSharp wrapper); Phase 36 superseded by Phase 110; Phase 98 rejected (invalid bug report); Phase 181 superseded by Phase 182.
 >
-> **In flight**: Phase 160 (design record for the Native rasterizer); Phases 177 and 179 (Native rasterizer completion -- see their rows); Phase 186 (Mac Catalyst and iOS simulator verified in CI; real-iPhone run pending); Phase 250 (UI cleanup -- Phase 1 landed with changed scope, Phase 2's Generate-bar issue needs re-validation, Phases 3-5 largely done); Phase 100b (P2/P3 landed, P4/P5 deferred); Phases 99 and 150 (planning).
+> **In flight**: Phase 160 (design record for the Native rasterizer); Phases 177 and 179 (Native rasterizer completion -- see their rows); Phase 186 (Mac Catalyst and iOS simulator verified in CI; real-iPhone run pending); Phase 250 (UI cleanup -- Phase 1 landed with changed scope, Phase 2's Generate-bar issue needs re-validation, Phases 3-5 largely done); Phases 99 and 150 (planning).
 >
-> **Future / deferred**: Phase 50 (in-memory layer retention); Phase 110 (partially done -- the core post-processor architecture is complete, the remainder is future); Phases 111 and 112 (deferred / not started); Phases 175 and 176 (Native rasterizer; awaiting Jeremy's later decision); Phase 180 (ongoing research); Phase 200 (FontCrafter -- not started); Phase 300 (Perf 6 B/C carried from Phase 95).
+> **Future / deferred**: Phase 50 (in-memory layer retention); Phase 100b (P2/P3 landed and P5 resolved; only P4, outline wobble/zigzag, remains and is deferred); Phase 110 (partially done -- the core post-processor architecture is complete, the remainder is future); Phases 111 and 112 (deferred / not started); Phases 175 and 176 (Native rasterizer; awaiting Jeremy's later decision); Phase 180 (ongoing research); Phase 200 (FontCrafter -- not started); Phase 300 (Perf 6 B/C carried from Phase 95).
 
 ---
 
@@ -85,14 +85,14 @@ Output Layer
 |---|----------|-------------|--------|
 | 50 | [In-Memory Layer Retention](phase-50-layer-retention.md) | Optionally retain per-glyph effect layer bitmaps in memory for engine-side compositing | Future |
 | 99 | [BMFont Parity Remaining Gaps](phase-99-bmfont-parity-gaps.md) | Investigate and close remaining metrics differences from Phase 78BB | Planning |
-| 100b | [Deferred Advanced Features](phase-100b-deferred-advanced-features.md) | Deferred advanced effects (SdfScale/AdvanceAdjustY done; outline wobble + native render mode deferred) | Partial |
+| 100b | [Deferred Advanced Features](phase-100b-deferred-advanced-features.md) | Deferred advanced effects (SdfScale/AdvanceAdjustY done; native render mode resolved by the GDI/DirectWrite backends; outline wobble/zigzag deferred) | Partial (only P4 deferred) |
 | 110 | [Post-Processing Enhancements](phase-110-post-processing-enhancements.md) | Post-processing pipeline enhancements; the core post-processor architecture landed in Phase 32d | Partially done (core architecture complete; remainder future) |
 | 111 | [Texture Fill for Glyphs](phase-111-texture-fill.md) | Design for texture/pattern fill effects on glyphs; no `TextureFillEffect` exists yet | Deferred / not started |
 | 112 | [Shader Fill for Glyphs](phase-112-shader-fill.md) | Design for shader-computed (per-pixel) fill effects on glyphs; no `ShaderFillEffect` exists yet | Deferred / not started |
 | 150 | [Deferred Rasterizer Issues](phase-150-deferred-rasterizer-issues.md) | Color fonts, variable fonts, native DW kerning, GDI MatchCharHeight bug (deferred from Phase 78G) | Planning |
 | 186 | [Apple Platform Verification](phase-186-apple-platform-verification.md) | Run the platform smoke test on macOS, iOS simulator, Mac Catalyst and a real iPhone | Mac Catalyst + iOS simulator verified in CI; real iPhone pending (needs a Mac -- Vic) |
 | 200 | [FontCrafter & Platform Rasterizers](phase-200-fontcrafter-and-platform-rasterizers.md) | FontCrafter product concept and platform-specific rasterizer distribution | Not started / Future |
-| 250 | [UI Cleanup & Polish](phase-250-ui-cleanup.md) | Collapsible sections, consistent grids, shared UI helpers, spacing polish. Day-to-day snapshot: [ui-cleanup-progress.md](ui-cleanup-progress.md) | In progress (Phase 1 landed with changed scope, Phases 3-5 largely done; Phase 2's Generate-bar issue needs re-validation) |
+| 250 | [UI Cleanup & Polish](phase-250-ui-cleanup.md) | Collapsible sections, consistent grids, shared UI helpers, spacing polish, then visual refinement and MVVM binding | In progress (Phase 1 landed with changed scope, Phases 3-5 largely done; Phase 2's Generate-bar issue needs re-validation) |
 | 300 | [Deferred Performance Work](phase-300-deferred-performance.md) | Perf 6 Phases B/C carried from Phase 95 -- pool atlas page & per-glyph buffers; needs IDisposable/ownership redesign (Perf 10 excluded -- proven impossible) | Deferred / Future |
 
 ### Native Rasterizer Series (Phases 160-180)
@@ -106,7 +106,7 @@ Waves 0-2 have landed; what remains is the Wave 3 work and the decisions below. 
 - **Wave 0** (done): staged-pipeline refactor behind `IOutlineDecoder` ([166 Part 1](done/phase-166-cff-charstring-interpreter.md#part-1--staged-pipeline-refactor-wave-0)); [178](done/phase-178-woff-decompression.md) WOFF2 in core with our own Brotli decoder; the [177](phase-177-performance-optimization.md) benchmark harness.
 - **Wave 1** (done): [166](done/phase-166-cff-charstring-interpreter.md) CFF; [167](done/phase-167-synthetic-bold-italic.md) -> [168](done/phase-168-synthetic-outline-stroke.md) synthetic styles, then vector outlines and synthetic width/slant; [169](done/phase-169-sdf-generation.md) -> [170](done/phase-170-msdf-generation.md) SDF then MSDF; [171](done/phase-171-variable-font-support.md) TrueType variations; [172](done/phase-172-color-font-support.md) COLRv0 + CPAL.
 - **Wave 2** (done): [174](done/phase-174-auto-hinting.md) y-only auto-hinting for `Light` and mono dropout control; 171 CFF2 `blend`; 172 COLRv1 and CBDT/sbix bitmaps; [173](done/phase-173-lcd-subpixel-rendering.md) LCD (public filter and subpixel-order options) and core anti-alias-mode negotiation.
-- **Wave 3** (in progress): 177 optimisation (fill, dropout, metrics, pooling, Brotli and feature paths done); [179](phase-179-validation-golden-masters.md) validation (robustness, golden masters, similarity matrix and docs sweep done) and the release decision.
+- **Wave 3** (in progress): 177 optimisation (fill, dropout, metrics, pooling, Brotli, the feature-path and core-pipeline passes and their measured results done; composite/varied `glyf` scratch and parallelism remain); [179](phase-179-validation-golden-masters.md) validation (robustness, golden masters, similarity matrix and docs sweep done) and the release decision.
 - **Awaiting Jeremy's later decision**: [175](phase-175-gsub-layout.md) GSUB; [176](phase-176-supersampling-height-stretch.md) in-rasterizer supersample/height stretch; publishing Native (with `KernSmith.Imaging`) to NuGet (179).
 
 Every phase that changes Native pixel output runs `regression_check.py` with a `.bmfc` config that exercises its path (named in each doc). The harness tolerates a (config, backend) pair that fails on both sides and reports a brand-new config as `NEW` without comparing it, so a phase's own test must assert that Native actually produced output for its config.
@@ -116,7 +116,7 @@ Every phase that changes Native pixel output runs `regression_check.py` with a `
 | 160 | [Rasterizer Design Decisions](phase-160-rasterizer-design-decisions.md) | Decision record for the Native rasterizer | Active |
 | 175 | [GSUB Layout](phase-175-gsub-layout.md) | GSUB substitutions | Deferred -- awaiting Jeremy's decision |
 | 176 | [Supersampling + Height Stretch](phase-176-supersampling-height-stretch.md) | In-rasterizer supersample / height stretch | Deferred -- awaiting Jeremy's decision |
-| 177 | [Performance Optimization](phase-177-performance-optimization.md) | Benchmark harness, then optimisation | In progress -- harness, baseline, scanline fill, dropout control, metrics shortcut, pooling, Brotli and feature paths done; remaining quiet-machine timings, composite/varied glyf scratch and parallelism |
+| 177 | [Performance Optimization](phase-177-performance-optimization.md) | Benchmark harness, then optimisation | In progress -- harness, baseline, scanline fill, dropout control, metrics shortcut, pooling, Brotli, the feature-path and core-pipeline passes and their measured results done; remaining: composite/varied `glyf` scratch, parallelism |
 | 179 | [Validation / Golden Masters](phase-179-validation-golden-masters.md) | Validation, golden masters, release | In progress -- Wave 3 (robustness, golden masters, similarity matrix and docs sweep done; performance validation, the AOT Blazor WASM run, a library sample and the release decision remain) |
 | 180 | [Innovation Research](phase-180-innovation-research.md) | Innovation research (ongoing experiments) | Future (Ongoing Research) |
 
@@ -251,6 +251,7 @@ These detailed docs were used during implementation and remain as reference mate
 | [Font Subsetting](done/plan-font-subsetting.md) | Logical subsetting -- filter cmap/kern/GPOS |
 | [Extended Metadata](done/plan-extended-metadata.md) | SDF spread, gradient, shadow metadata in .fnt |
 | [Bug Fixes](done/plan-bug-fixes.md) | All applied bug fixes |
+| [UI Cleanup Progress Snapshot](done/ui-cleanup-progress.md) | First-pass progress notes for Phase 250 (open items folded into the phase doc) |
 
 
 ---
