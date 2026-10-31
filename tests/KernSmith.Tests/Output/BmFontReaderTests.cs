@@ -117,6 +117,22 @@ public sealed class KernSmithReaderTests
         parsed.Characters.Count.ShouldBe(original.Model.Characters.Count);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Read_AutoDetects_FormatBehindUtf8ByteOrderMark(bool xml)
+    {
+        // Editors and XmlWriter-over-a-stream save UTF-8 with a BOM.
+        var original = GenerateTestFont();
+        var body = System.Text.Encoding.UTF8.GetBytes(xml ? original.ToXml() : original.ToString());
+        var bytes = new byte[] { 0xEF, 0xBB, 0xBF }.Concat(body).ToArray();
+
+        var parsed = BmFontReader.Read(bytes);
+
+        parsed.Info.Face.ShouldBe("Roboto");
+        parsed.Characters.Count.ShouldBe(original.Model.Characters.Count);
+    }
+
     [Fact]
     public void Read_AutoDetects_BinaryFormat()
     {

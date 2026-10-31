@@ -237,15 +237,15 @@ public sealed class BmFontResult
     public void ToFile(string outputPath, OutputFormat format = OutputFormat.Text)
     {
         var textFormatter = new TextFormatter();
-        var encoder = new PngEncoder();
+        var encoder = ResolveAtlasEncoder();
 
-        // Rebuild page entries to match the output base name
+        // Rebuild page entries to match the output base name. The extension comes from the
+        // encoder, because FileWriter names the image files it writes by encoder.FileExtension.
         var baseName = Path.GetFileNameWithoutExtension(outputPath);
         var fixedPages = new List<PageEntry>();
         for (int i = 0; i < Model.Pages.Count; i++)
         {
-            var ext = Path.GetExtension(Model.Pages[i].File);
-            fixedPages.Add(new PageEntry(Model.Pages[i].Id, $"{baseName}_{i}{ext}"));
+            fixedPages.Add(new PageEntry(Model.Pages[i].Id, $"{baseName}_{i}{encoder.FileExtension}"));
         }
         var fixedModel = new BmFontModel
         {
@@ -283,8 +283,7 @@ public sealed class BmFontResult
                 variantFixedPages = new List<PageEntry>();
                 for (int i = 0; i < variantModel.Pages.Count; i++)
                 {
-                    var ext = Path.GetExtension(variantModel.Pages[i].File);
-                    variantFixedPages.Add(new PageEntry(variantModel.Pages[i].Id, $"{variantBaseName}_{i}{ext}"));
+                    variantFixedPages.Add(new PageEntry(variantModel.Pages[i].Id, $"{variantBaseName}_{i}{encoder.FileExtension}"));
                 }
             }
 
@@ -318,6 +317,34 @@ public sealed class BmFontResult
             };
             BmfcConfigWriter.WriteToFile(config, bmfcPath);
         }
+    }
+
+    /// <summary>
+    /// The encoder <see cref="ToFile"/> writes pages with: the generation's
+    /// <see cref="FontGeneratorOptions.AtlasEncoder"/> or <see cref="FontGeneratorOptions.TextureFormat"/>,
+    /// else the format the model's page file names declare.
+    /// </summary>
+    private IAtlasEncoder ResolveAtlasEncoder()
+    {
+        if (SourceOptions?.AtlasEncoder is { } custom)
+            return custom;
+
+        var format = SourceOptions?.TextureFormat
+            ?? (Model.Pages.Count > 0
+                ? Path.GetExtension(Model.Pages[0].File).ToLowerInvariant() switch
+                {
+                    ".tga" => TextureFormat.Tga,
+                    ".dds" => TextureFormat.Dds,
+                    _ => TextureFormat.Png
+                }
+                : TextureFormat.Png);
+
+        return format switch
+        {
+            TextureFormat.Tga => new TgaEncoder(),
+            TextureFormat.Dds => new DdsEncoder(),
+            _ => new PngEncoder()
+        };
     }
 
     private byte[][] EncodeAllPages(IAtlasEncoder encoder)

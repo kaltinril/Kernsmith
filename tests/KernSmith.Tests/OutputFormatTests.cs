@@ -444,4 +444,70 @@ public sealed class OutputFormatTests
                 Directory.Delete(tempDir, recursive: true);
         }
     }
+
+    [Fact]
+    public void ToFile_Xml_DeclaresTheEncodingTheFileIsWrittenIn()
+    {
+        var result = BmFont.Generate(LoadTestFont(), new FontGeneratorOptions
+        {
+            Size = 24,
+            Characters = CharacterSet.FromChars("AB"),
+        });
+
+        result.ToXml().ShouldStartWith("<?xml version=\"1.0\" encoding=\"utf-8\"?>", Case.Sensitive);
+
+        var tempDir = Path.Combine(Path.GetTempPath(), $"KernSmith_ToFileXmlEnc_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var outputPath = Path.Combine(tempDir, "testfont");
+            result.ToFile(outputPath, OutputFormat.Xml);
+
+            // A loader that honours the declaration (XmlDocument.Load on a path) rejects a
+            // UTF-8 file that claims utf-16.
+            var doc = new System.Xml.XmlDocument();
+            Should.NotThrow(() => doc.Load(outputPath + ".fnt"));
+            doc.DocumentElement!.Name.ShouldBe("font");
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(TextureFormat.Tga, ".tga")]
+    [InlineData(TextureFormat.Dds, ".dds")]
+    public void ToFile_NonPngTextureFormat_WritesPagesInThatFormatUnderTheNameTheFntReferences(
+        TextureFormat textureFormat, string extension)
+    {
+        var result = BmFont.Generate(LoadTestFont(), new FontGeneratorOptions
+        {
+            Size = 24,
+            Characters = CharacterSet.FromChars("AB"),
+            TextureFormat = textureFormat,
+        });
+
+        var tempDir = Path.Combine(Path.GetTempPath(), $"KernSmith_ToFileFmt_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var outputPath = Path.Combine(tempDir, "testfont");
+            result.ToFile(outputPath);
+
+            File.ReadAllText(outputPath + ".fnt").ShouldContain($"file=\"testfont_0{extension}\"", Case.Sensitive);
+            var pagePath = Path.Combine(tempDir, "testfont_0" + extension);
+            File.Exists(pagePath).ShouldBeTrue();
+            File.ReadAllBytes(pagePath).ShouldBe(textureFormat == TextureFormat.Tga
+                ? result.GetTgaData(0)
+                : result.GetDdsData(0));
+            Directory.GetFiles(tempDir, "*.png").ShouldBeEmpty();
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
 }

@@ -257,6 +257,9 @@ public static class BmFontReader
             return ReadBinary(fntData);
 
         var text = Encoding.UTF8.GetString(fntData);
+        // A UTF-8 BOM decodes to U+FEFF, which TrimStart does not remove.
+        if (text.Length > 0 && text[0] == '\uFEFF')
+            text = text.Substring(1);
         var trimmed = text.TrimStart();
 
         if (trimmed.StartsWith("<?xml", StringComparison.OrdinalIgnoreCase) ||

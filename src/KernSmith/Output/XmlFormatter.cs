@@ -14,7 +14,9 @@ internal sealed class XmlFormatter : IBmFontTextFormatter
 
     public string FormatText(BmFontModel model)
     {
-        var sb = new StringBuilder();
+        // FileWriter saves this text as UTF-8, so the declaration must say utf-8; a writer over a
+        // plain StringBuilder would declare utf-16.
+        using var sw = new Utf8StringWriter();
         var settings = new XmlWriterSettings
         {
             Indent = true,
@@ -23,7 +25,7 @@ internal sealed class XmlFormatter : IBmFontTextFormatter
             NewLineOnAttributes = false,
         };
 
-        using var writer = XmlWriter.Create(sb, settings);
+        using var writer = XmlWriter.Create(sw, settings);
 
         writer.WriteStartDocument();
         writer.WriteStartElement("font");
@@ -39,7 +41,12 @@ internal sealed class XmlFormatter : IBmFontTextFormatter
         writer.WriteEndDocument();
         writer.Flush();
 
-        return sb.ToString();
+        return sw.ToString();
+    }
+
+    private sealed class Utf8StringWriter() : StringWriter(CultureInfo.InvariantCulture)
+    {
+        public override Encoding Encoding => new UTF8Encoding(false);
     }
 
     private static void WriteInfo(XmlWriter writer, InfoBlock info)
