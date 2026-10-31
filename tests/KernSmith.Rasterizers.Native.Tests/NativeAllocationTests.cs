@@ -135,6 +135,31 @@ public class NativeAllocationTests
         perGlyph.ShouldBeLessThan(2048, $"{allocated} B over {codepoints.Length} glyphs");
     }
 
+    [Fact]
+    public void GetGlyphMetrics_ColrV1PaintGraph_ReadsTheGraphOnce()
+    {
+        // Reem Kufi Ink's Arabic-Indic digits are version 1 paint graphs. Measuring one reads its
+        // graph once; the version 0 layer shortcut must not read it a second time just to find
+        // out that the glyph is not its business.
+        using var native = new NativeRasterizer();
+        native.LoadFont(TestFonts.ReemKufiInkBytes());
+        var options = new RasterOptions { Size = 32, ColorFont = true };
+        int[] digits = Enumerable.Range(0x0660, 10).ToArray();
+
+        foreach (int codepoint in digits)
+            native.GetGlyphMetrics(codepoint, options); // warm caches and JIT
+
+        long allocated = AllocationMeter.BytesAllocatedBy(() =>
+        {
+            foreach (int codepoint in digits)
+                native.GetGlyphMetrics(codepoint, options);
+        });
+
+        // About 1.7 KB per glyph is the graph read and its measurement; a second read adds ~0.4 KB.
+        long perGlyph = allocated / digits.Length;
+        perGlyph.ShouldBeLessThanOrEqualTo(1700, $"{allocated} B over {digits.Length} glyphs");
+    }
+
     /// <summary>Printable ASCII glyphs Roboto stores as simple (non-composite) outlines.</summary>
     private static int[] SimpleAsciiGlyphs(NativeRasterizer native)
     {

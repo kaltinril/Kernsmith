@@ -78,15 +78,16 @@ internal sealed class ColorLayerRenderer : IGlyphRenderer, IDrawsWithoutOutline
     /// (its outline is never drawn) and the box from the union of its layers', each equal to
     /// what <see cref="GlyphPipeline.Prepare"/> gives it.
     /// </summary>
-    /// <returns>False — measure the prepared glyph instead — for a paint graph, a glyph without
-    /// layers, <see cref="AntiAliasMode.None"/> (its box comes from the pixels), or a base glyph
-    /// that cannot be measured from its box.</returns>
+    /// <returns>False — measure the prepared glyph instead — for a glyph with a version 1 record
+    /// (checked without reading its graph, which <see cref="Measure"/> then reads once), a glyph
+    /// without layers, <see cref="AntiAliasMode.None"/> (its box comes from the pixels), or a
+    /// base glyph that cannot be measured from its box.</returns>
     /// <exception cref="RasterizationException">If a layer's data is malformed.</exception>
     /// <exception cref="FontFormatException">If the base glyph's data is malformed.</exception>
     public bool TryMeasureFromBoxes(int glyphIndex, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms, out GlyphMetrics metrics)
     {
         metrics = default!;
-        if (options.AntiAlias == AntiAliasMode.None || _colorGlyphs.HasPaintGraph(glyphIndex) || !_colorGlyphs.HasLayers(glyphIndex)
+        if (options.AntiAlias == AntiAliasMode.None || !_colorGlyphs.HasLayers(glyphIndex) || _colorGlyphs.HasPaintGraphRecord(glyphIndex)
             || !_pipeline.TryPrepareBox(glyphIndex, options, transforms, out _, out int advance))
             return false;
 

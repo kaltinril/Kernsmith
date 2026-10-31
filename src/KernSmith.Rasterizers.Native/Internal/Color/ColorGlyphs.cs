@@ -137,6 +137,12 @@ internal sealed class ColorGlyphs
     /// <summary>True when the glyph renders from a version 1 paint graph.</summary>
     public bool HasPaintGraph(int glyphIndex) => TryGetPaintGraph(glyphIndex, out _);
 
+    /// <summary>
+    /// True when the glyph has a version 1 base glyph record — a lookup, without reading the
+    /// graph. A superset of <see cref="HasPaintGraph"/>: a graph past the reader's limits counts.
+    /// </summary>
+    public bool HasPaintGraphRecord(int glyphIndex) => _colrV1 is not null && _colrV1.TryGetBasePaint(glyphIndex, out _);
+
     /// <summary>True when the glyph has at least one valid version 0 color layer.</summary>
     public bool HasLayers(int glyphIndex) =>
         _colr is not null
