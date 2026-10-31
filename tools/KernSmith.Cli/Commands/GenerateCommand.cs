@@ -226,9 +226,9 @@ internal sealed class GenerateCommand
             AntiAlias = options.AntiAlias,
             LcdFilter = options.LcdFilter ?? KernSmith.LcdFilter.Default,
             LcdSubpixelOrder = options.LcdSubpixelOrder ?? KernSmith.LcdSubpixelOrder.Rgb,
-            MaxTextureSize = options.MaxTextureSize,
-            Padding = options.Padding,
-            Spacing = options.Spacing,
+            MaxTextureSize = options.MaxTextureSize ?? 1024,
+            Padding = options.Padding ?? new Padding(0),
+            Spacing = options.Spacing ?? new Spacing(1),
             PackingAlgorithm = options.PackingAlgorithm,
             Kerning = options.Kerning ?? true,
             Outline = options.Outline,
@@ -640,7 +640,7 @@ internal sealed class GenerateCommand
                     }
                     break;
                 case "--gradient-angle":
-                    options.GradientAngle = float.Parse(NextArg(args, ref i, "--gradient-angle"));
+                    options.GradientAngle = float.Parse(NextArg(args, ref i, "--gradient-angle"), CultureInfo.InvariantCulture);
                     break;
                 case "--gradient-midpoint":
                     options.GradientMidpoint = float.Parse(NextArg(args, ref i, "--gradient-midpoint"), CultureInfo.InvariantCulture);
@@ -669,7 +669,7 @@ internal sealed class GenerateCommand
                     if (eqIdx < 0)
                         throw new ArgumentException($"Invalid axis: {axisStr}. Expected format: tag=value (e.g., wght=700)");
                     var tag = axisStr[..eqIdx];
-                    var val = float.Parse(axisStr[(eqIdx + 1)..]);
+                    var val = float.Parse(axisStr[(eqIdx + 1)..], CultureInfo.InvariantCulture);
                     options.VariationAxes[tag] = val;
                     break;
                 case "--shadow":
@@ -825,7 +825,16 @@ internal sealed class GenerateCommand
         if (cli.AntiAlias != AntiAliasMode.Grayscale) config.AntiAlias = cli.AntiAlias;
         if (cli.LcdFilter.HasValue) config.LcdFilter = cli.LcdFilter;
         if (cli.LcdSubpixelOrder.HasValue) config.LcdSubpixelOrder = cli.LcdSubpixelOrder;
-        if (cli.MaxTextureSize != 1024) config.MaxTextureSize = cli.MaxTextureSize;
+        if (cli.MaxTextureSize.HasValue)
+        {
+            // --max-texture sets both sides, so it replaces the config's outWidth/outHeight
+            // (an explicit --max-texture-width/-height below still wins).
+            config.MaxTextureSize = cli.MaxTextureSize;
+            config.MaxTextureWidth = null;
+            config.MaxTextureHeight = null;
+        }
+        if (cli.Padding.HasValue) config.Padding = cli.Padding;
+        if (cli.Spacing.HasValue) config.Spacing = cli.Spacing;
         if (cli.Outline > 0) { config.Outline = cli.Outline; config.OutlineColor = cli.OutlineColor ?? config.OutlineColor; }
         if (cli.OutlineShape.HasValue) config.OutlineShape = cli.OutlineShape;
         if (cli.OutlineMode.HasValue) config.OutlineMode = cli.OutlineMode;
@@ -944,7 +953,7 @@ internal sealed class GenerateCommand
         Console.WriteLine($"[dry-run] Font:      {fontSource}");
         Console.WriteLine($"[dry-run] Size:      {options.Size}px");
         Console.WriteLine($"[dry-run] Charset:   {options.CharsetPreset ?? "custom"} ({characters.Count} codepoints)");
-        Console.WriteLine($"[dry-run] Atlas:     max {options.MaxTextureSize}x{options.MaxTextureSize}, {(options.PackingAlgorithm == PackingAlgorithm.MaxRects ? "maxrects" : "skyline")} packer");
+        Console.WriteLine($"[dry-run] Atlas:     max {options.MaxTextureWidth ?? options.MaxTextureSize ?? 1024}x{options.MaxTextureHeight ?? options.MaxTextureSize ?? 1024}, {(options.PackingAlgorithm == PackingAlgorithm.MaxRects ? "maxrects" : "skyline")} packer");
 
         var effects = new List<string>();
         if (options.ForceSyntheticBold) effects.Add("synthetic-bold");

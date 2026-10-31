@@ -56,8 +56,8 @@ internal static class BmfcWriter
             AntiAlias = options.AntiAlias,
             LcdFilter = options.LcdFilter ?? KernSmith.LcdFilter.Default,
             LcdSubpixelOrder = options.LcdSubpixelOrder ?? KernSmith.LcdSubpixelOrder.Rgb,
-            Padding = options.Padding,
-            Spacing = options.Spacing,
+            Padding = options.Padding ?? new Padding(0),
+            Spacing = options.Spacing ?? new Spacing(1),
             PackingAlgorithm = options.PackingAlgorithm,
             Kerning = options.Kerning ?? true,
             Outline = options.Outline,
@@ -102,7 +102,7 @@ internal static class BmfcWriter
             genOptions.Gamma = options.Gamma.Value;
 
         // Set MaxTextureSize (sets both width and height)
-        genOptions.MaxTextureSize = options.MaxTextureSize;
+        genOptions.MaxTextureSize = options.MaxTextureSize ?? 1024;
         // Then override individually if explicitly set
         if (options.MaxTextureWidth.HasValue)
             genOptions.MaxTextureWidth = options.MaxTextureWidth.Value;

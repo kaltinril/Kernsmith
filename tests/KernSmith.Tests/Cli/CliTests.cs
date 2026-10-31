@@ -1195,6 +1195,89 @@ public class CliTests : IDisposable
         stdout.ShouldContain("2 succeeded, 0 failed");
     }
 
+    [Theory]
+    [InlineData("de-DE")]
+    [InlineData("sv-SE")]
+    public void ParseArgs_DecimalFlags_ReadTheSameUnderAnyCulture(string culture)
+    {
+        // The parser runs in the user's culture; a decimal point must still mean one under
+        // de-DE (where "22.5" would otherwise read as 225). ParseArgs is internal to the CLI,
+        // so it is reached through the same build the other tests run.
+        var parseArgs = System.Reflection.Assembly.LoadFrom(CliDllPath)
+            .GetType("KernSmith.Cli.Commands.GenerateCommand", throwOnError: true)!
+            .GetMethod("ParseArgs", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!;
+
+        var saved = System.Globalization.CultureInfo.CurrentCulture;
+        System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo(culture);
+        object parsed;
+        try
+        {
+            parsed = parseArgs.Invoke(null, new object[]
+            {
+                new[] { "-f", FontPath, "--gradient-angle", "22.5", "--axis", "wght=87.5" },
+            })!;
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = saved;
+        }
+
+        var type = parsed.GetType();
+        ((float)type.GetProperty("GradientAngle")!.GetValue(parsed)!).ShouldBe(22.5f);
+        ((Dictionary<string, float>)type.GetProperty("VariationAxes")!.GetValue(parsed)!)["wght"].ShouldBe(87.5f);
+    }
+
+    private string WriteBmfc(string name, params string[] lines)
+    {
+        var path = Path.Combine(_tempDir, name);
+        File.WriteAllLines(path, new[]
+        {
+            $"fontFile={FontPath}",
+            "fontSize=32",
+            "chars=65-90,97-122",
+        }.Concat(lines));
+        return path;
+    }
+
+    private static string InfoAndCommon(string fntPath) =>
+        string.Join('\n', File.ReadLines(fntPath).Where(l => l.StartsWith("common ") || l.StartsWith("kernings ")));
+
+    [Fact]
+    public void Generate_Config_KeepsTheConfigsKerningAndPowerOfTwoSettings()
+    {
+        // Without a --kerning/--pot flag on the command line, the config decides, exactly as
+        // `batch` on the same file does.
+        var config = WriteBmfc("nokern.bmfc", "dontIncludeKerningPairs=1", "powerOfTwo=0",
+            $"outputPath={Path.Combine(_tempDir, "from-batch")}");
+
+        var (genExit, _, genErr) = RunCli("generate", "--config", config, "-o", Path.Combine(_tempDir, "from-generate"));
+        genExit.ShouldBe(0, $"stderr: {genErr}");
+        var (batchExit, _, batchErr) = RunCli("batch", config);
+        batchExit.ShouldBe(0, $"stderr: {batchErr}");
+
+        var generated = File.ReadAllText(Path.Combine(_tempDir, "from-generate.fnt"));
+        generated.ShouldNotContain("kerning first=", Case.Sensitive);
+        InfoAndCommon(Path.Combine(_tempDir, "from-generate.fnt"))
+            .ShouldBe(InfoAndCommon(Path.Combine(_tempDir, "from-batch.fnt")));
+    }
+
+    [Fact]
+    public void Generate_Config_CliPaddingSpacingAndMaxTextureOverrideTheConfig()
+    {
+        var config = WriteBmfc("small.bmfc", "paddingUp=0", "paddingRight=0", "paddingDown=0", "paddingLeft=0",
+            "spacingHoriz=1", "spacingVert=1", "outWidth=64", "outHeight=64");
+        var output = Path.Combine(_tempDir, "overridden");
+
+        var (exit, _, err) = RunCli("generate", "--config", config, "-o", output,
+            "--padding", "3", "--spacing", "2", "--max-texture", "1024");
+
+        exit.ShouldBe(0, $"stderr: {err}");
+        var fnt = File.ReadAllText(output + ".fnt");
+        fnt.ShouldContain("padding=3,3,3,3", Case.Sensitive);
+        fnt.ShouldContain("spacing=2,2", Case.Sensitive);
+        fnt.ShouldContain("pages=1 ", Case.Sensitive);
+    }
+
     [Fact]
     public void Batch_NoConfigs_ReportsBmfcOrHieroMessage()
     {
