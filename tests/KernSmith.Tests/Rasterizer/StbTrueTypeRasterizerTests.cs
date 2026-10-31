@@ -323,6 +323,44 @@ public class StbTrueTypeRasterizerTests : IDisposable
         values[^1].ShouldBeLessThan(128);
     }
 
+    [Theory]
+    [InlineData(32, false)]
+    [InlineData(48, false)]
+    [InlineData(32, true)]
+    public void RasterizeGlyph_SdfBold_EdgeColumnsAreOutsideOnEveryRow(int size, bool italic)
+    {
+        // Regression for #264: emboldening shifted a contour's start point and its duplicate
+        // closing vertex by different amounts, leaving a gap that made the inside test class
+        // whole rows left of the glyph as inside (1-px horizontal streaks).
+        _rasterizer = CreateAndLoadRasterizer();
+        var options = new RasterOptions
+        {
+            Size = size,
+            AntiAlias = AntiAliasMode.Grayscale,
+            Sdf = true,
+            Bold = true,
+            Italic = italic
+        };
+
+        var streaks = new List<string>();
+        for (int cp = 33; cp <= 126; cp++)
+        {
+            var glyph = _rasterizer.RasterizeGlyph(cp, options);
+            if (glyph is null || glyph.Width == 0)
+                continue;
+
+            for (int y = 0; y < glyph.Height; y++)
+            {
+                int left = glyph.BitmapData[y * glyph.Pitch];
+                int right = glyph.BitmapData[y * glyph.Pitch + glyph.Width - 1];
+                if (left >= 128 || right >= 128)
+                    streaks.Add($"'{(char)cp}' row {y}: left {left}, right {right}");
+            }
+        }
+
+        streaks.ShouldBeEmpty();
+    }
+
     // -- 16. LoadSystemFont throws NotSupportedException ------------------
 
     [Fact]
