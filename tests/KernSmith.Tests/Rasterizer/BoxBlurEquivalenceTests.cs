@@ -138,7 +138,7 @@ public sealed class BoxBlurEquivalenceTests
     {
         var temp = new float[width * height];
         var dst = new float[width * height];
-        var invKernel = 1f / (radius * 2 + 1);
+        var invKernel = 1f / (2f * radius + 1f);
         for (var y = 0; y < height; y++)
         {
             for (var x = 0; x < width; x++)

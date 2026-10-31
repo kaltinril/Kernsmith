@@ -160,7 +160,7 @@ public static class UiFactory
             var value = getValue();
             valueLabel.Text = value.ToString("0.0#");
             var tick = Math.Round(value * steps);
-            if (Math.Round(slider.Value) == tick) return;
+            if (Math.Round(slider.Value).Equals(tick)) return;
             showing = true;
             try { slider.Value = tick; }
             finally { showing = false; }
@@ -243,7 +243,7 @@ public static class UiFactory
         {
             if (e.PropertyName != propertyName) return;
             if (float.TryParse(box.Text, System.Globalization.NumberStyles.Float,
-                    System.Globalization.CultureInfo.CurrentCulture, out var shown) && shown == getValue())
+                    System.Globalization.CultureInfo.CurrentCulture, out var shown) && shown.Equals(getValue()))
                 return;
             box.Text = getValue().ToString("0.0###");
         };

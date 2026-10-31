@@ -29,7 +29,7 @@ internal static class BoxBlurFilter
     /// <summary><see cref="Blur(ReadOnlySpan{float}, Span{float}, Span{float}, int, int, int)"/> with the path chosen (tests run both).</summary>
     internal static void Blur(ReadOnlySpan<float> src, Span<float> temp, Span<float> dst, int width, int height, int radius, bool vector)
     {
-        var invKernel = 1f / (radius * 2 + 1);
+        var invKernel = 1f / (2f * radius + 1f);
         var lanes = Vector128<float>.Count;
 
         // Horizontal pass.

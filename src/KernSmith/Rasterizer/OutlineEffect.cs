@@ -102,7 +102,7 @@ internal sealed class OutlineEffect : IGlyphEffect
                     if (sq >= ring.Length)
                         continue; // at or past ow + 0.75 pixels: transparent
                     var k = (int)sq;
-                    outlineAlpha = k == sq ? ring[k] : SmoothAlpha(ow, sq);
+                    outlineAlpha = ((float)k).Equals(sq) ? ring[k] : SmoothAlpha(ow, sq);
                 }
                 else
                 {
