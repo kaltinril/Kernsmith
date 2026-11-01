@@ -341,10 +341,9 @@ internal sealed class PreparedRasterization : IDisposable
                 if (!routed || BmFont.RoutesOutline(options.Channels!))
                 {
                     vectorOutline = new VectorOutlineRequest(
-                        // Same thickness definition as each mode's bitmap outline: the effect grows
-                        // the glyph at the render (supersampled) size, the routed outline at the
-                        // output size.
-                        LayerWidth: routed ? options.Outline * renderScale : options.Outline,
+                        // Drawn at the render (super-sampled) size and downscaled with the glyph,
+                        // so it is Outline output pixels wide, like the bitmap outline in both modes.
+                        LayerWidth: options.Outline * renderScale,
                         options.OutlineShape,
                         HeightScale: Math.Max(10, options.HeightPercent) / 100f,
                         Routed: routed);
@@ -452,8 +451,7 @@ internal sealed class PreparedRasterization : IDisposable
 
         // Atlas variants (e.g. a shadow silhouette) need the glyph's own bare coverage —
         // not a copy that may already have a baked outline/gradient/shadow composited into
-        // its RGBA below — so snapshot the pre-effects glyph here (still applying the same
-        // super-sample downscale as the primary, so scale matches).
+        // its RGBA below — so snapshot the downscaled glyph before the effects.
         List<RasterizedGlyph>? rawGlyphsForVariants = options.Variants is { Count: > 0 }
             ? new List<RasterizedGlyph>(new RasterizedGlyph[glyphs.Count])
             : null;
@@ -467,8 +465,15 @@ internal sealed class PreparedRasterization : IDisposable
                 var g = glyphs[i];
                 OutlineMask? mask = null;
                 masks?.TryGetValue(g.Codepoint, out mask);
+                // Downscale first: effect and post-processor sizes (outline width, shadow offset
+                // and blur) are output pixels at every super-sample level, as BMFont's outline is.
+                if (needsDownscale)
+                {
+                    g = SuperSampleDownscale(g, _renderScale, perChannel);
+                    mask = mask?.Downscale(_renderScale);
+                }
                 if (rawGlyphsForVariants != null)
-                    rawGlyphsForVariants[i] = needsDownscale ? SuperSampleDownscale(g, _renderScale, perChannel) : g;
+                    rawGlyphsForVariants[i] = g;
                 if (_hasEffects)
                 {
                     var effects = mask is not null && !vector!.Routed ? WithVectorOutline(mask) : _effects;
@@ -481,12 +486,6 @@ internal sealed class PreparedRasterization : IDisposable
                 {
                     foreach (var processor in _activePostProcessors)
                         g = processor.Process(g);
-                }
-                if (needsDownscale)
-                {
-                    g = SuperSampleDownscale(g, _renderScale, perChannel);
-                    if (routedMasks != null)
-                        mask = mask?.Downscale(_renderScale);
                 }
                 if (routedMasks != null)
                     routedMasks[i] = mask;
