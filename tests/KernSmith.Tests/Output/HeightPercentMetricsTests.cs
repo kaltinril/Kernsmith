@@ -31,8 +31,8 @@ public sealed class HeightPercentMetricsTests
         var plain = Generate(100).Common;
         var stretched = Generate(heightPercent).Common;
 
-        stretched.LineHeight.ShouldBe((int)Math.Ceiling(plain.LineHeight * heightPercent / 100.0));
-        stretched.Base.ShouldBe((int)Math.Ceiling(plain.Base * heightPercent / 100.0));
+        stretched.LineHeight.ShouldBe((int)Math.Ceiling((double)plain.LineHeight * heightPercent / 100.0));
+        stretched.Base.ShouldBe((int)Math.Ceiling((double)plain.Base * heightPercent / 100.0));
     }
 
     [Fact]
