@@ -457,347 +457,357 @@ internal sealed class GenerateCommand
     {
         var options = new CliOptions();
 
-        for (int i = 0; i < args.Length; i++)
+        var flag = "";
+        try
         {
-            switch (args[i])
+            for (int i = 0; i < args.Length; i++)
             {
-                case "-f":
-                case "--font":
-                    options.FontPath = NextArg(args, ref i, args[i]);
-                    break;
-                case "--system-font":
-                    options.SystemFontName = NextArg(args, ref i, args[i]);
-                    break;
-                case "-s":
-                case "--size":
-                    options.Size = float.Parse(NextArg(args, ref i, args[i]), CultureInfo.InvariantCulture);
-                    break;
-                case "-o":
-                case "--output":
-                    options.OutputPath = NextArg(args, ref i, args[i]);
-                    break;
-                case "--format":
-                    options.OutputFormat = NextArg(args, ref i, args[i]).ToLowerInvariant() switch
-                    {
-                        "text" => OutputFormat.Text,
-                        "xml" => OutputFormat.Xml,
-                        "binary" => OutputFormat.Binary,
-                        var f => throw new ArgumentException($"Unknown format: {f}. Use text, xml, or binary.")
-                    };
-                    break;
-                case "-c":
-                case "--charset":
-                    options.CharsetPreset = NextArg(args, ref i, args[i]);
-                    break;
-                case "--chars":
-                    options.ExplicitChars = NextArg(args, ref i, args[i]);
-                    break;
-                case "--chars-file":
-                    options.CharsFilePath = NextArg(args, ref i, args[i]);
-                    break;
-                case "--range":
-                    var rangeStr = NextArg(args, ref i, args[i]);
-                    var parts = rangeStr.Split('-', 2);
-                    if (parts.Length != 2)
-                        throw new ArgumentException($"Invalid range: {rangeStr}. Expected format: 0020-007E");
-                    options.UnicodeRanges.Add((Convert.ToInt32(parts[0], 16), Convert.ToInt32(parts[1], 16)));
-                    break;
-                case "--padding":
-                    var padStr = NextArg(args, ref i, args[i]);
-                    options.Padding = ParsePaddingArg(padStr);
-                    break;
-                case "--spacing":
-                    var spcStr = NextArg(args, ref i, args[i]);
-                    options.Spacing = ParseSpacingArg(spcStr);
-                    break;
-                case "--max-texture":
-                case "--max-texture-size":
-                    options.MaxTextureSize = int.Parse(NextArg(args, ref i, args[i]));
-                    break;
-                case "--packer":
-                    options.PackingAlgorithm = NextArg(args, ref i, args[i]).ToLowerInvariant() switch
-                    {
-                        "maxrects" => PackingAlgorithm.MaxRects,
-                        "skyline" => PackingAlgorithm.Skyline,
-                        var p => throw new ArgumentException($"Unknown packer: {p}. Use maxrects or skyline.")
-                    };
-                    break;
-                case "--pot":
-                    options.PowerOfTwo = true;
-                    break;
-                case "--no-pot":
-                    options.PowerOfTwo = false;
-                    break;
-                case "--channel-pack":
-                    options.ChannelPacking = true;
-                    break;
-                case "--sdf":
-                    options.Sdf = true;
-                    break;
-                case "--sdf-mode":
-                    options.SdfMode = NextArg(args, ref i, "--sdf-mode").ToLowerInvariant() switch
-                    {
-                        "none" => SdfMode.None,
-                        "sdf" => SdfMode.Sdf,
-                        "msdf" => SdfMode.Msdf,
-                        "mtsdf" => SdfMode.Mtsdf,
-                        var m => throw new ArgumentException($"Unknown --sdf-mode: {m}. Use none, sdf, msdf or mtsdf.")
-                    };
-                    break;
-                case "--mono":
-                    options.AntiAlias = AntiAliasMode.None;
-                    break;
-                case "--aa":
-                    options.AntiAlias = NextArg(args, ref i, args[i]).ToLowerInvariant() switch
-                    {
-                        "none" => AntiAliasMode.None,
-                        "grayscale" => AntiAliasMode.Grayscale,
-                        "light" => AntiAliasMode.Light,
-                        "lcd" => AntiAliasMode.Lcd,
-                        var a => throw new ArgumentException($"Unknown anti-alias mode: {a}")
-                    };
-                    break;
-                case "--lcd-filter":
-                    options.LcdFilter = NextArg(args, ref i, "--lcd-filter").ToLowerInvariant() switch
-                    {
-                        "default" => LcdFilter.Default,
-                        "light" => LcdFilter.Light,
-                        "smooth" => LcdFilter.Smooth,
-                        "none" => LcdFilter.None,
-                        var f => throw new ArgumentException($"Unknown --lcd-filter: {f}. Use default, light, smooth or none.")
-                    };
-                    break;
-                case "--lcd-order":
-                    options.LcdSubpixelOrder = NextArg(args, ref i, "--lcd-order").ToLowerInvariant() switch
-                    {
-                        "rgb" => LcdSubpixelOrder.Rgb,
-                        "bgr" => LcdSubpixelOrder.Bgr,
-                        "vrgb" => LcdSubpixelOrder.VRgb,
-                        "vbgr" => LcdSubpixelOrder.VBgr,
-                        var o => throw new ArgumentException($"Unknown --lcd-order: {o}. Use rgb, bgr, vrgb or vbgr.")
-                    };
-                    break;
-                case "--dpi":
-                    options.Dpi = int.Parse(NextArg(args, ref i, args[i]));
-                    break;
-                case "-b":
-                case "--bold":
-                    options.Bold = true;
-                    break;
-                case "-i":
-                case "--italic":
-                    options.Italic = true;
-                    break;
-                case "--synthetic-bold":
-                    options.ForceSyntheticBold = true;
-                    break;
-                case "--synthetic-italic":
-                    options.ForceSyntheticItalic = true;
-                    break;
-                case "--outline":
-                    var outlineArg = NextArg(args, ref i, args[i]);
-                    if (outlineArg.Contains(','))
-                    {
-                        var outlineParts = outlineArg.Split(',', 2);
-                        options.Outline = int.Parse(outlineParts[0]);
-                        options.OutlineColor = outlineParts[1];
-                    }
-                    else
-                    {
-                        options.Outline = int.Parse(outlineArg);
-                    }
-                    break;
-                case "--outline-shape":
-                    options.OutlineShape = NextArg(args, ref i, args[i]).ToLowerInvariant() switch
-                    {
-                        "round" => OutlineShape.Round,
-                        "square" => OutlineShape.Square,
-                        "plus" => OutlineShape.Plus,
-                        var s => throw new ArgumentException($"Unknown outline shape: {s}. Use round, square, or plus.")
-                    };
-                    break;
-                case "--outline-mode":
-                    options.OutlineMode = NextArg(args, ref i, args[i]).ToLowerInvariant() switch
-                    {
-                        "effect" => OutlineMode.Effect,
-                        "vector" => OutlineMode.Vector,
-                        var m => throw new ArgumentException($"Unknown outline mode: {m}. Use effect or vector.")
-                    };
-                    break;
-                case "--gradient":
-                    var gradientArg = NextArg(args, ref i, "--gradient");
-                    if (gradientArg.Contains(','))
-                    {
-                        var gradientParts = gradientArg.Split(',', 2);
-                        options.GradientTop = gradientParts[0];
-                        options.GradientBottom = gradientParts[1];
-                    }
-                    else
-                    {
-                        options.GradientTop = gradientArg;
-                        var bottomArg = NextArg(args, ref i, "--gradient");
-                        if (bottomArg.StartsWith('-') && !bottomArg.StartsWith('#'))
-                            throw new ArgumentException(
-                                $"Invalid gradient bottom color '{bottomArg}'. " +
-                                "Use --gradient <top>,<bottom> or --gradient <top> <bottom> with valid hex colors.");
-                        options.GradientBottom = bottomArg;
-                    }
-                    break;
-                case "--gradient-angle":
-                    options.GradientAngle = float.Parse(NextArg(args, ref i, "--gradient-angle"), CultureInfo.InvariantCulture);
-                    break;
-                case "--gradient-midpoint":
-                    options.GradientMidpoint = float.Parse(NextArg(args, ref i, "--gradient-midpoint"), CultureInfo.InvariantCulture);
-                    break;
-                case "--gradient-offset":
-                    options.GradientOffset = float.Parse(NextArg(args, ref i, "--gradient-offset"), CultureInfo.InvariantCulture);
-                    break;
-                case "--gradient-scale":
-                    options.GradientScale = float.Parse(NextArg(args, ref i, "--gradient-scale"), CultureInfo.InvariantCulture);
-                    break;
-                case "--gradient-cyclic":
-                    options.GradientCyclic = true;
-                    break;
-                case "--fill-color":
-                    options.FillColor = NextArg(args, ref i, "--fill-color");
-                    break;
-                case "--kerning":
-                    options.Kerning = true;
-                    break;
-                case "--no-kerning":
-                    options.Kerning = false;
-                    break;
-                case "--axis":
-                    var axisStr = NextArg(args, ref i, args[i]);
-                    var eqIdx = axisStr.IndexOf('=');
-                    if (eqIdx < 0)
-                        throw new ArgumentException($"Invalid axis: {axisStr}. Expected format: tag=value (e.g., wght=700)");
-                    var tag = axisStr[..eqIdx];
-                    var val = float.Parse(axisStr[(eqIdx + 1)..], CultureInfo.InvariantCulture);
-                    options.VariationAxes[tag] = val;
-                    break;
-                case "--shadow":
-                    var shadowArg = NextArg(args, ref i, "--shadow");
-                    ParseShadowArg(options, shadowArg);
-                    break;
-                case "--shadow-blur-kernel":
-                    options.ShadowBlurKernelSize = int.Parse(NextArg(args, ref i, "--shadow-blur-kernel"));
-                    break;
-                case "--shadow-blur-passes":
-                    options.ShadowBlurPasses = int.Parse(NextArg(args, ref i, "--shadow-blur-passes"));
-                    break;
-                case "--hard-shadow":
-                    options.HardShadow = true;
-                    break;
-                case "--shadow-variant":
-                    options.ShadowVariant = true;
-                    break;
-                case "--instance":
-                    options.InstanceName = NextArg(args, ref i, args[i]);
-                    break;
-                case "--face":
-                    options.FaceIndex = int.Parse(NextArg(args, ref i, args[i]));
-                    break;
-                case "--super-sample":
-                    options.SuperSampleLevel = int.Parse(NextArg(args, ref i, args[i]));
-                    break;
-                case "--sdf-spread":
-                    options.SdfSpread = float.Parse(NextArg(args, ref i, "--sdf-spread"), CultureInfo.InvariantCulture);
-                    break;
-                case "--gamma":
-                    options.Gamma = float.Parse(NextArg(args, ref i, "--gamma"), CultureInfo.InvariantCulture);
-                    break;
-                case "--advance-x":
-                case "--advance-adjust-x":
-                    options.AdvanceAdjustX = float.Parse(NextArg(args, ref i, args[i]), CultureInfo.InvariantCulture);
-                    break;
-                case "--rasterizer":
-                    var backendStr = NextArg(args, ref i, args[i]);
-                    options.Backend = backendStr.ToLowerInvariant() switch
-                    {
-                        "freetype" => RasterizerBackend.FreeType,
-                        "stbtruetype" => RasterizerBackend.StbTrueType,
-                        "gdi" => RasterizerBackend.Gdi,
-                        "directwrite" => RasterizerBackend.DirectWrite,
-                        "native" => RasterizerBackend.Native,
-                        _ => throw new ArgumentException($"Unknown rasterizer backend: '{backendStr}'. Valid: freetype, stbtruetype, gdi, directwrite, native")
-                    };
-                    break;
-                case "--fallback-char":
-                    var fbArg = NextArg(args, ref i, args[i]);
-                    options.FallbackCharacter = fbArg.Length == 1 ? fbArg[0] : (char)int.Parse(fbArg);
-                    break;
-                case "--texture-format":
-                    options.TextureFormat = NextArg(args, ref i, args[i]).ToLowerInvariant();
-                    break;
-                case "--hinting":
-                    options.EnableHinting = true;
-                    break;
-                case "--no-hinting":
-                    options.EnableHinting = false;
-                    break;
-                case "--autofit":
-                    options.AutofitTexture = true;
-                    break;
-                case "--equalize-heights":
-                    options.EqualizeCellHeights = true;
-                    break;
-                case "--force-offsets-zero":
-                    options.ForceOffsetsToZero = true;
-                    break;
-                case "--height-percent":
-                    options.HeightPercent = int.Parse(NextArg(args, ref i, args[i]));
-                    break;
-                case "--width-percent":
-                    options.WidthPercent = int.Parse(NextArg(args, ref i, args[i]));
-                    break;
-                case "--italic-angle":
-                    options.ItalicAngle = float.Parse(NextArg(args, ref i, args[i]), CultureInfo.InvariantCulture);
-                    break;
-                case "--match-char-height":
-                    options.MatchCharHeight = true;
-                    break;
-                case "--color-font":
-                    options.ColorFont = true;
-                    break;
-                case "--color-palette":
-                    options.ColorPaletteIndex = int.Parse(NextArg(args, ref i, args[i]));
-                    break;
-                case "--max-texture-width":
-                    options.MaxTextureWidth = int.Parse(NextArg(args, ref i, args[i]));
-                    break;
-                case "--max-texture-height":
-                    options.MaxTextureHeight = int.Parse(NextArg(args, ref i, args[i]));
-                    break;
-                case "--config":
-                    options.ConfigPath = NextArg(args, ref i, args[i]);
-                    break;
-                case "--save-config":
-                    options.SaveConfigPath = NextArg(args, ref i, args[i]);
-                    break;
-                case "--dry-run":
-                    options.DryRun = true;
-                    break;
-                case "--time":
-                    options.ShowTime = true;
-                    break;
-                case "--profile":
-                    options.ShowProfile = true;
-                    break;
-                case "-v":
-                case "--verbose":
-                    options.Verbose = true;
-                    break;
-                case "-q":
-                case "--quiet":
-                    options.Quiet = true;
-                    break;
-                case "--no-color":
-                    ConsoleOutput.SetNoColor(true);
-                    break;
-                default:
-                    throw new ArgumentException($"Unknown option: {args[i]}");
+                flag = args[i];
+                switch (args[i])
+                {
+                    case "-f":
+                    case "--font":
+                        options.FontPath = NextArg(args, ref i, args[i]);
+                        break;
+                    case "--system-font":
+                        options.SystemFontName = NextArg(args, ref i, args[i]);
+                        break;
+                    case "-s":
+                    case "--size":
+                        options.Size = float.Parse(NextArg(args, ref i, args[i]), CultureInfo.InvariantCulture);
+                        break;
+                    case "-o":
+                    case "--output":
+                        options.OutputPath = NextArg(args, ref i, args[i]);
+                        break;
+                    case "--format":
+                        options.OutputFormat = NextArg(args, ref i, args[i]).ToLowerInvariant() switch
+                        {
+                            "text" => OutputFormat.Text,
+                            "xml" => OutputFormat.Xml,
+                            "binary" => OutputFormat.Binary,
+                            var f => throw new ArgumentException($"Unknown format: {f}. Use text, xml, or binary.")
+                        };
+                        break;
+                    case "-c":
+                    case "--charset":
+                        options.CharsetPreset = NextArg(args, ref i, args[i]);
+                        break;
+                    case "--chars":
+                        options.ExplicitChars = NextArg(args, ref i, args[i]);
+                        break;
+                    case "--chars-file":
+                        options.CharsFilePath = NextArg(args, ref i, args[i]);
+                        break;
+                    case "--range":
+                        var rangeStr = NextArg(args, ref i, args[i]);
+                        var parts = rangeStr.Split('-', 2);
+                        if (parts.Length != 2)
+                            throw new ArgumentException($"Invalid range: {rangeStr}. Expected format: 0020-007E");
+                        options.UnicodeRanges.Add((Convert.ToInt32(parts[0], 16), Convert.ToInt32(parts[1], 16)));
+                        break;
+                    case "--padding":
+                        var padStr = NextArg(args, ref i, args[i]);
+                        options.Padding = ParsePaddingArg(padStr);
+                        break;
+                    case "--spacing":
+                        var spcStr = NextArg(args, ref i, args[i]);
+                        options.Spacing = ParseSpacingArg(spcStr);
+                        break;
+                    case "--max-texture":
+                    case "--max-texture-size":
+                        options.MaxTextureSize = int.Parse(NextArg(args, ref i, args[i]));
+                        break;
+                    case "--packer":
+                        options.PackingAlgorithm = NextArg(args, ref i, args[i]).ToLowerInvariant() switch
+                        {
+                            "maxrects" => PackingAlgorithm.MaxRects,
+                            "skyline" => PackingAlgorithm.Skyline,
+                            var p => throw new ArgumentException($"Unknown packer: {p}. Use maxrects or skyline.")
+                        };
+                        break;
+                    case "--pot":
+                        options.PowerOfTwo = true;
+                        break;
+                    case "--no-pot":
+                        options.PowerOfTwo = false;
+                        break;
+                    case "--channel-pack":
+                        options.ChannelPacking = true;
+                        break;
+                    case "--sdf":
+                        options.Sdf = true;
+                        break;
+                    case "--sdf-mode":
+                        options.SdfMode = NextArg(args, ref i, "--sdf-mode").ToLowerInvariant() switch
+                        {
+                            "none" => SdfMode.None,
+                            "sdf" => SdfMode.Sdf,
+                            "msdf" => SdfMode.Msdf,
+                            "mtsdf" => SdfMode.Mtsdf,
+                            var m => throw new ArgumentException($"Unknown --sdf-mode: {m}. Use none, sdf, msdf or mtsdf.")
+                        };
+                        break;
+                    case "--mono":
+                        options.AntiAlias = AntiAliasMode.None;
+                        break;
+                    case "--aa":
+                        options.AntiAlias = NextArg(args, ref i, args[i]).ToLowerInvariant() switch
+                        {
+                            "none" => AntiAliasMode.None,
+                            "grayscale" => AntiAliasMode.Grayscale,
+                            "light" => AntiAliasMode.Light,
+                            "lcd" => AntiAliasMode.Lcd,
+                            var a => throw new ArgumentException($"Unknown anti-alias mode: {a}")
+                        };
+                        break;
+                    case "--lcd-filter":
+                        options.LcdFilter = NextArg(args, ref i, "--lcd-filter").ToLowerInvariant() switch
+                        {
+                            "default" => LcdFilter.Default,
+                            "light" => LcdFilter.Light,
+                            "smooth" => LcdFilter.Smooth,
+                            "none" => LcdFilter.None,
+                            var f => throw new ArgumentException($"Unknown --lcd-filter: {f}. Use default, light, smooth or none.")
+                        };
+                        break;
+                    case "--lcd-order":
+                        options.LcdSubpixelOrder = NextArg(args, ref i, "--lcd-order").ToLowerInvariant() switch
+                        {
+                            "rgb" => LcdSubpixelOrder.Rgb,
+                            "bgr" => LcdSubpixelOrder.Bgr,
+                            "vrgb" => LcdSubpixelOrder.VRgb,
+                            "vbgr" => LcdSubpixelOrder.VBgr,
+                            var o => throw new ArgumentException($"Unknown --lcd-order: {o}. Use rgb, bgr, vrgb or vbgr.")
+                        };
+                        break;
+                    case "--dpi":
+                        options.Dpi = int.Parse(NextArg(args, ref i, args[i]));
+                        break;
+                    case "-b":
+                    case "--bold":
+                        options.Bold = true;
+                        break;
+                    case "-i":
+                    case "--italic":
+                        options.Italic = true;
+                        break;
+                    case "--synthetic-bold":
+                        options.ForceSyntheticBold = true;
+                        break;
+                    case "--synthetic-italic":
+                        options.ForceSyntheticItalic = true;
+                        break;
+                    case "--outline":
+                        var outlineArg = NextArg(args, ref i, args[i]);
+                        if (outlineArg.Contains(','))
+                        {
+                            var outlineParts = outlineArg.Split(',', 2);
+                            options.Outline = int.Parse(outlineParts[0]);
+                            options.OutlineColor = outlineParts[1];
+                        }
+                        else
+                        {
+                            options.Outline = int.Parse(outlineArg);
+                        }
+                        break;
+                    case "--outline-shape":
+                        options.OutlineShape = NextArg(args, ref i, args[i]).ToLowerInvariant() switch
+                        {
+                            "round" => OutlineShape.Round,
+                            "square" => OutlineShape.Square,
+                            "plus" => OutlineShape.Plus,
+                            var s => throw new ArgumentException($"Unknown outline shape: {s}. Use round, square, or plus.")
+                        };
+                        break;
+                    case "--outline-mode":
+                        options.OutlineMode = NextArg(args, ref i, args[i]).ToLowerInvariant() switch
+                        {
+                            "effect" => OutlineMode.Effect,
+                            "vector" => OutlineMode.Vector,
+                            var m => throw new ArgumentException($"Unknown outline mode: {m}. Use effect or vector.")
+                        };
+                        break;
+                    case "--gradient":
+                        var gradientArg = NextArg(args, ref i, "--gradient");
+                        if (gradientArg.Contains(','))
+                        {
+                            var gradientParts = gradientArg.Split(',', 2);
+                            options.GradientTop = gradientParts[0];
+                            options.GradientBottom = gradientParts[1];
+                        }
+                        else
+                        {
+                            options.GradientTop = gradientArg;
+                            var bottomArg = NextArg(args, ref i, "--gradient");
+                            if (bottomArg.StartsWith('-') && !bottomArg.StartsWith('#'))
+                                throw new ArgumentException(
+                                    $"Invalid gradient bottom color '{bottomArg}'. " +
+                                    "Use --gradient <top>,<bottom> or --gradient <top> <bottom> with valid hex colors.");
+                            options.GradientBottom = bottomArg;
+                        }
+                        break;
+                    case "--gradient-angle":
+                        options.GradientAngle = float.Parse(NextArg(args, ref i, "--gradient-angle"), CultureInfo.InvariantCulture);
+                        break;
+                    case "--gradient-midpoint":
+                        options.GradientMidpoint = float.Parse(NextArg(args, ref i, "--gradient-midpoint"), CultureInfo.InvariantCulture);
+                        break;
+                    case "--gradient-offset":
+                        options.GradientOffset = float.Parse(NextArg(args, ref i, "--gradient-offset"), CultureInfo.InvariantCulture);
+                        break;
+                    case "--gradient-scale":
+                        options.GradientScale = float.Parse(NextArg(args, ref i, "--gradient-scale"), CultureInfo.InvariantCulture);
+                        break;
+                    case "--gradient-cyclic":
+                        options.GradientCyclic = true;
+                        break;
+                    case "--fill-color":
+                        options.FillColor = NextArg(args, ref i, "--fill-color");
+                        break;
+                    case "--kerning":
+                        options.Kerning = true;
+                        break;
+                    case "--no-kerning":
+                        options.Kerning = false;
+                        break;
+                    case "--axis":
+                        var axisStr = NextArg(args, ref i, args[i]);
+                        var eqIdx = axisStr.IndexOf('=');
+                        if (eqIdx < 0)
+                            throw new ArgumentException($"Invalid axis: {axisStr}. Expected format: tag=value (e.g., wght=700)");
+                        var tag = axisStr[..eqIdx];
+                        var val = float.Parse(axisStr[(eqIdx + 1)..], CultureInfo.InvariantCulture);
+                        options.VariationAxes[tag] = val;
+                        break;
+                    case "--shadow":
+                        var shadowArg = NextArg(args, ref i, "--shadow");
+                        ParseShadowArg(options, shadowArg);
+                        break;
+                    case "--shadow-blur-kernel":
+                        options.ShadowBlurKernelSize = int.Parse(NextArg(args, ref i, "--shadow-blur-kernel"));
+                        break;
+                    case "--shadow-blur-passes":
+                        options.ShadowBlurPasses = int.Parse(NextArg(args, ref i, "--shadow-blur-passes"));
+                        break;
+                    case "--hard-shadow":
+                        options.HardShadow = true;
+                        break;
+                    case "--shadow-variant":
+                        options.ShadowVariant = true;
+                        break;
+                    case "--instance":
+                        options.InstanceName = NextArg(args, ref i, args[i]);
+                        break;
+                    case "--face":
+                        options.FaceIndex = int.Parse(NextArg(args, ref i, args[i]));
+                        break;
+                    case "--super-sample":
+                        options.SuperSampleLevel = int.Parse(NextArg(args, ref i, args[i]));
+                        break;
+                    case "--sdf-spread":
+                        options.SdfSpread = float.Parse(NextArg(args, ref i, "--sdf-spread"), CultureInfo.InvariantCulture);
+                        break;
+                    case "--gamma":
+                        options.Gamma = float.Parse(NextArg(args, ref i, "--gamma"), CultureInfo.InvariantCulture);
+                        break;
+                    case "--advance-x":
+                    case "--advance-adjust-x":
+                        options.AdvanceAdjustX = float.Parse(NextArg(args, ref i, args[i]), CultureInfo.InvariantCulture);
+                        break;
+                    case "--rasterizer":
+                        var backendStr = NextArg(args, ref i, args[i]);
+                        options.Backend = backendStr.ToLowerInvariant() switch
+                        {
+                            "freetype" => RasterizerBackend.FreeType,
+                            "stbtruetype" => RasterizerBackend.StbTrueType,
+                            "gdi" => RasterizerBackend.Gdi,
+                            "directwrite" => RasterizerBackend.DirectWrite,
+                            "native" => RasterizerBackend.Native,
+                            _ => throw new ArgumentException($"Unknown rasterizer backend: '{backendStr}'. Valid: freetype, stbtruetype, gdi, directwrite, native")
+                        };
+                        break;
+                    case "--fallback-char":
+                        var fbArg = NextArg(args, ref i, args[i]);
+                        options.FallbackCharacter = fbArg.Length == 1 ? fbArg[0] : (char)int.Parse(fbArg);
+                        break;
+                    case "--texture-format":
+                        options.TextureFormat = NextArg(args, ref i, args[i]).ToLowerInvariant();
+                        break;
+                    case "--hinting":
+                        options.EnableHinting = true;
+                        break;
+                    case "--no-hinting":
+                        options.EnableHinting = false;
+                        break;
+                    case "--autofit":
+                        options.AutofitTexture = true;
+                        break;
+                    case "--equalize-heights":
+                        options.EqualizeCellHeights = true;
+                        break;
+                    case "--force-offsets-zero":
+                        options.ForceOffsetsToZero = true;
+                        break;
+                    case "--height-percent":
+                        options.HeightPercent = int.Parse(NextArg(args, ref i, args[i]));
+                        break;
+                    case "--width-percent":
+                        options.WidthPercent = int.Parse(NextArg(args, ref i, args[i]));
+                        break;
+                    case "--italic-angle":
+                        options.ItalicAngle = float.Parse(NextArg(args, ref i, args[i]), CultureInfo.InvariantCulture);
+                        break;
+                    case "--match-char-height":
+                        options.MatchCharHeight = true;
+                        break;
+                    case "--color-font":
+                        options.ColorFont = true;
+                        break;
+                    case "--color-palette":
+                        options.ColorPaletteIndex = int.Parse(NextArg(args, ref i, args[i]));
+                        break;
+                    case "--max-texture-width":
+                        options.MaxTextureWidth = int.Parse(NextArg(args, ref i, args[i]));
+                        break;
+                    case "--max-texture-height":
+                        options.MaxTextureHeight = int.Parse(NextArg(args, ref i, args[i]));
+                        break;
+                    case "--config":
+                        options.ConfigPath = NextArg(args, ref i, args[i]);
+                        break;
+                    case "--save-config":
+                        options.SaveConfigPath = NextArg(args, ref i, args[i]);
+                        break;
+                    case "--dry-run":
+                        options.DryRun = true;
+                        break;
+                    case "--time":
+                        options.ShowTime = true;
+                        break;
+                    case "--profile":
+                        options.ShowProfile = true;
+                        break;
+                    case "-v":
+                    case "--verbose":
+                        options.Verbose = true;
+                        break;
+                    case "-q":
+                    case "--quiet":
+                        options.Quiet = true;
+                        break;
+                    case "--no-color":
+                        ConsoleOutput.SetNoColor(true);
+                        break;
+                    default:
+                        throw new ArgumentException($"Unknown option: {args[i]}");
+                }
             }
+        }
+        // A malformed or out-of-range number is a bad argument (exit 1), not a config error.
+        catch (Exception ex) when (ex is FormatException or OverflowException)
+        {
+            throw new ArgumentException($"Invalid value for {flag}: {ex.Message}", ex);
         }
 
         return options;

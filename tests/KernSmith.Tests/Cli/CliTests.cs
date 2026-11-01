@@ -1369,6 +1369,55 @@ public class CliTests : IDisposable
         File.ReadAllLines(saved).ShouldContain("chars=48-51,65-67");
     }
 
+    [Theory]
+    [InlineData("fontName=|fontFile=")]
+    [InlineData("fontFile=does-not-exist.ttf")]
+    [InlineData("fontName=No Such Font Family 1f6c")]
+    public void Batch_ConfigWithoutAUsableFont_FailsOnlyThatJob(string fontKeys)
+    {
+        var good = WriteBmfc("good.bmfc", $"outputPath={Path.Combine(_tempDir, "good")}");
+        var noFont = Path.Combine(_tempDir, "nofont.bmfc");
+        File.WriteAllLines(noFont, [.. fontKeys.Split('|'), "fontSize=32"]);
+
+        var (exit, stdout, stderr) = RunCli("batch", good, noFont);
+
+        exit.ShouldBe(1, $"stdout: {stdout}\nstderr: {stderr}");
+        stderr.ShouldNotContain("Unhandled exception", Case.Sensitive);
+        stdout.ShouldContain("1 succeeded, 1 failed", Case.Sensitive);
+        File.Exists(Path.Combine(_tempDir, "good.fnt")).ShouldBeTrue();
+    }
+
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("99999999999")]
+    [InlineData("-2")]
+    public void Batch_InvalidParallel_IsAnInvalidArgument(string value)
+    {
+        var (exit, _, stderr) = RunCli("batch", WriteBmfc("p.bmfc"), "--parallel", value);
+
+        exit.ShouldBe(1, $"stderr: {stderr}");
+        stderr.ShouldNotContain("Unhandled exception", Case.Sensitive);
+        stderr.ShouldContain("--parallel", Case.Sensitive);
+    }
+
+    [Theory]
+    [InlineData("-s", "abc")]
+    [InlineData("--padding", "99999999999")]
+    [InlineData("--dpi", "x")]
+    public void Generate_MalformedNumber_IsAnInvalidArgument(string flag, string value)
+    {
+        var args = new List<string> { "generate", "-f", FontPath, "-o", Path.Combine(_tempDir, "bad") };
+        if (flag != "-s")
+            args.AddRange(["-s", "32"]);
+        args.AddRange([flag, value]);
+
+        var (exit, _, stderr) = RunCli(args.ToArray());
+
+        exit.ShouldBe(1, $"stderr: {stderr}");
+        stderr.ShouldNotContain("Unhandled exception", Case.Sensitive);
+        stderr.ShouldContain(flag, Case.Sensitive);
+    }
+
     [Fact]
     public void Batch_NoConfigs_ReportsBmfcOrHieroMessage()
     {
