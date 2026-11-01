@@ -436,6 +436,29 @@ public class IncrementalSessionTests
     }
 
     [Fact]
+    public void BeginIncremental_WithCustomChannels_ThrowsNotSupported()
+    {
+        // A session never runs the channel compositor: a routed outline was silently dropped
+        // (Roboto 'I', Outline 3: 3x18 cells where Generate gives 9x24).
+        var options = Options();
+        options.Outline = 3;
+        options.Channels = new ChannelConfig(Alpha: ChannelContent.Outline);
+        var ex = Should.Throw<NotSupportedException>(() => BmFont.BeginIncremental(LoadTestFont(), options));
+        ex.Message.ShouldContain("Channels", Case.Sensitive);
+
+        Should.Throw<NotSupportedException>(() =>
+            BmFont.ResumeIncremental(LoadTestFont(), options, BmFont.Generate(LoadTestFont(), Options()).Model));
+    }
+
+    [Fact]
+    public void BeginIncremental_WithDefaultChannels_IsAccepted()
+    {
+        var options = Options();
+        options.Channels = new ChannelConfig();
+        using var session = BmFont.BeginIncremental(LoadTestFont(), options);
+    }
+
+    [Fact]
     public void BeginIncremental_WithTargetRegion_ThrowsNotSupported()
     {
         var options = Options();

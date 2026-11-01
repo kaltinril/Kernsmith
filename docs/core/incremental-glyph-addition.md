@@ -190,7 +190,7 @@ reallocate the texture and copy the old contents to `(0, 0)` — old pixels neve
 - **One session = one set of settings.** Every add uses the options the session was started
   with; mixing sizes or styles in one atlas means one session (and one atlas) per style.
 - Not supported in a session (throws at `BeginIncremental`/`ResumeIncremental`): `Variants`,
-  `ChannelPacking`, `TargetRegion`, `CustomGlyphs`.
+  `ChannelPacking`, `TargetRegion`, `CustomGlyphs`, and a non-default `Channels` configuration.
 - **Placements differ from a full regenerate — by design.** Stable packing never moves an
   existing glyph, so a glyph added later lands wherever free space remains, not where a full
   repack of the combined set would put it. Packing efficiency degrades accordingly; regenerate

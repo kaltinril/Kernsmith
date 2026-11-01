@@ -121,7 +121,8 @@ public static class BmFont
     /// <remarks>
     /// Not supported in a session (throws <see cref="NotSupportedException"/>):
     /// <see cref="FontGeneratorOptions.Variants"/>, <see cref="FontGeneratorOptions.ChannelPacking"/>,
-    /// <see cref="FontGeneratorOptions.TargetRegion"/>, <see cref="FontGeneratorOptions.CustomGlyphs"/>.
+    /// <see cref="FontGeneratorOptions.TargetRegion"/>, <see cref="FontGeneratorOptions.CustomGlyphs"/>,
+    /// and a non-default <see cref="FontGeneratorOptions.Channels"/> configuration.
     /// A <see cref="PackingAlgorithm.Skyline"/> configuration — or a custom
     /// <see cref="FontGeneratorOptions.Packer"/> — silently uses MaxRects for
     /// additions (arbitrary packer state cannot be reconstructed incrementally).
@@ -182,6 +183,8 @@ public static class BmFont
             throw new NotSupportedException("FontGeneratorOptions.Variants is not supported in an incremental session.");
         if (options.ChannelPacking)
             throw new NotSupportedException("FontGeneratorOptions.ChannelPacking is not supported in an incremental session.");
+        if (ShouldApplyChannelConfig(options))
+            throw new NotSupportedException("A custom FontGeneratorOptions.Channels configuration is not supported in an incremental session.");
         if (options.TargetRegion is not null)
             throw new NotSupportedException("FontGeneratorOptions.TargetRegion is not supported in an incremental session.");
         if (options.CustomGlyphs is { Count: > 0 })
@@ -238,6 +241,8 @@ public static class BmFont
             throw new NotSupportedException("FontGeneratorOptions.Variants is not supported together with ChannelPacking.");
         if (options.Variants is { Count: > 0 } && ShouldApplyChannelConfig(options))
             throw new NotSupportedException("FontGeneratorOptions.Variants is not supported together with a custom Channels configuration.");
+        if (options.TargetRegion is not null && ShouldApplyChannelConfig(options))
+            throw new NotSupportedException("FontGeneratorOptions.TargetRegion is not supported together with a custom Channels configuration.");
 
         var metrics = options.CollectMetrics ? new PipelineMetrics() : null;
 

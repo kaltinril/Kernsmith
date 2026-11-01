@@ -387,7 +387,10 @@ public class FontGeneratorOptions
     /// <summary>Atlas size constraints (force square, force power-of-two, fixed width).</summary>
     public AtlasSizeConstraints? SizeConstraints { get; set; }
 
-    /// <summary>When set, renders glyphs into a region of an existing PNG image.</summary>
+    /// <summary>
+    /// When set, renders glyphs into a region of an existing PNG image. Not supported together
+    /// with <see cref="Variants"/> or a non-default <see cref="Channels"/> configuration.
+    /// </summary>
     public AtlasTargetRegion? TargetRegion { get; set; }
 
     /// <summary>
