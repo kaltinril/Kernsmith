@@ -200,9 +200,10 @@ internal static class BmFontModelBuilder
             Unicode: true,
             Smooth: options.AntiAlias != AntiAliasMode.None,
             FixedHeight: false,
-            StretchH: 100,
+            // BMFont writes its height percent and super-sample level here (the stretch clamps to 10%).
+            StretchH: Math.Max(10, options.HeightPercent),
             Charset: "",
-            Aa: 1,
+            Aa: Math.Clamp(options.SuperSampleLevel, 1, 4),
             Padding: options.Padding,
             Spacing: options.Spacing,
             Outline: options.Outline);
