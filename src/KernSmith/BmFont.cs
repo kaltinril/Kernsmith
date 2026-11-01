@@ -302,19 +302,12 @@ public static class BmFont
             }
         }
 
-        // Use the larger of the outline/shadow-expanded glyphs (when present) for atlas
-        // sizing/packing so the packed rectangles match the glyphs that actually get
-        // composited. When both outline and shadow channels are configured together, size
-        // against whichever expands each glyph further so neither overlay is clipped.
-        var rectGlyphs = (channelOutlineGlyphs, channelShadowGlyphs) switch
-        {
-            (not null, not null) => channelOutlineGlyphs
-                .Zip(channelShadowGlyphs, (o, s) => o.Width * o.Height >= s.Width * s.Height ? o : s)
-                .ToList(),
-            (not null, null) => channelOutlineGlyphs,
-            (null, not null) => channelShadowGlyphs,
-            _ => glyphs
-        };
+        // Size each packed cell (and, below, its .fnt entry) as the box ChannelCompositor draws:
+        // the union of the glyph and its outline/shadow layers, so neither overlay is clipped or
+        // spills out of the cell, and the offsets put the glyph where it is drawn.
+        IReadOnlyList<RasterizedGlyph> rectGlyphs = channelOutlineGlyphs is null && channelShadowGlyphs is null
+            ? glyphs
+            : glyphs.Select((g, i) => ChannelCompositor.Cell(g, channelOutlineGlyphs?[i], channelShadowGlyphs?[i])).ToList();
         var glyphRects = rectGlyphs.Select(g => new GlyphRect(
             g.Codepoint,
             g.Width + padding.Left + padding.Right + spacing.Horizontal,
@@ -483,10 +476,8 @@ public static class BmFont
 
                 if (outlineGlyphs != null || shadowGlyphs != null)
                 {
-                    // Use the per-glyph larger of outline/shadow (rectGlyphs, computed above)
-                    // for the model so .fnt metrics (width, height, xoffset, yoffset, xadvance)
-                    // reflect whichever expansion the packed cell was actually sized for —
-                    // otherwise the unused overlay's pixels would be cropped by the quad.
+                    // The model takes the union cells (rectGlyphs, computed above), so .fnt
+                    // width, height, xoffset and yoffset describe exactly what was drawn.
                     glyphs = rectGlyphs.ToList();
                 }
             }
