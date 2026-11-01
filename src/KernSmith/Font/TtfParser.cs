@@ -28,7 +28,9 @@ internal class TtfParser
     /// <summary>
     /// Every non-zero PairPos record of the 'kern' feature's lookups, in feature-list, subtable
     /// and table order, duplicates and shadowed records included (the raw extraction that
-    /// <c>GposEquivalenceTests</c> pins). Kerning uses <see cref="GposKerningPairs"/>.
+    /// <c>GposEquivalenceTests</c> pins). Without a codepoint subset it leaves out format 2
+    /// second glyphs in class 0 that ClassDef2 does not list, as the frozen oracle does.
+    /// Kerning uses <see cref="GposKerningPairs"/>, which includes them.
     /// </summary>
     public IReadOnlyList<KerningPair> GposPairs { get; private set; } = Array.Empty<KerningPair>();
 
@@ -1220,8 +1222,11 @@ internal class TtfParser
         // Second glyphs by class, in the order a glyph -> class dictionary built from classDef2
         // would enumerate them (position of the first assignment, class of the last), filtered
         // to the subset; then class 0 gains every requested glyph classDef2 does not list, in
-        // the subset's own enumeration order.
+        // the subset's own enumeration order. Without a subset, those unlisted class-0 glyphs
+        // (every mapped glyph classDef2 does not list, ascending) are kept apart: they go to the
+        // resolver, so kerning has them, but not to the raw pairs.
         var rightByClass = new List<int>?[class2Count];
+        List<int>? unlistedClassZero = null;
         var classDef2 = From(subtable, classDef2Offset);
         var class2 = RentClassTable(classDef2, out var class2Length);
         try
@@ -1235,6 +1240,18 @@ internal class TtfParser
                 {
                     if ((uint)glyph >= (uint)class2Length || class2[glyph] == UnclassifiedGlyph)
                         (rightByClass[0] ??= new List<int>()).Add(glyph);
+                }
+            }
+            else if (resolver != null && HasNonZeroClassZeroValue(subtable, class1Count, class2Count, valueFormat1, valueRecord1Size + valueRecord2Size))
+            {
+                var mapped = MappedGlyphs;
+                if (!SpendGposWork(mapped.Length))
+                    return;
+                unlistedClassZero = new List<int>();
+                foreach (var glyph in mapped)
+                {
+                    if ((uint)glyph >= (uint)class2Length || class2[glyph] == UnclassifiedGlyph)
+                        unlistedClassZero.Add(glyph);
                 }
             }
         }
@@ -1260,23 +1277,33 @@ internal class TtfParser
                     break;
 
                 var rightGlyphs = rightByClass[c2];
-                if (rightGlyphs == null)
+                var unlisted = c2 == 0 ? unlistedClassZero : null;
+                if (rightGlyphs == null && unlisted == null)
                     continue;
 
                 var xAdvance = ReadXAdvanceFromValueRecord(subtable.Slice((int)recordOffset), valueFormat1);
                 if (xAdvance == 0)
                     continue;
 
-                var produced = (long)leftGlyphs.Count * rightGlyphs.Count;
+                var produced = (long)leftGlyphs.Count * ((rightGlyphs?.Count ?? 0) + (unlisted?.Count ?? 0));
                 if (!SpendGposWork(produced, produced))
                     return;
 
                 foreach (var left in leftGlyphs)
                 {
-                    foreach (var right in rightGlyphs)
+                    if (rightGlyphs != null)
                     {
-                        pairs.Add(new KerningPair(left, right, xAdvance));
-                        resolver?.Offer(left, right, xAdvance);
+                        foreach (var right in rightGlyphs)
+                        {
+                            pairs.Add(new KerningPair(left, right, xAdvance));
+                            resolver?.Offer(left, right, xAdvance);
+                        }
+                    }
+
+                    if (unlisted != null)
+                    {
+                        foreach (var right in unlisted)
+                            resolver!.Offer(left, right, xAdvance);
                     }
                 }
             }
@@ -1284,6 +1311,38 @@ internal class TtfParser
 
         resolver?.ClaimLefts(leftByClass);
     }
+
+    /// <summary>Whether any first-glyph class kerns second-glyph class 0 by a non-zero XAdvance.</summary>
+    private static bool HasNonZeroClassZeroValue(
+        ReadOnlySpan<byte> subtable, int class1Count, int class2Count, int valueFormat1, int recordPairSize)
+    {
+        for (var c1 = 0; c1 < class1Count; c1++)
+        {
+            var recordOffset = 16 + (long)c1 * class2Count * recordPairSize;
+            if (recordOffset + recordPairSize > subtable.Length)
+                break;
+            if (ReadXAdvanceFromValueRecord(subtable.Slice((int)recordOffset), valueFormat1) != 0)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>The distinct glyphs the cmap maps a codepoint to, ascending (built once).</summary>
+    private int[] MappedGlyphs
+    {
+        get
+        {
+            if (_mappedGlyphs == null)
+            {
+                var glyphs = new HashSet<int>(CmapTable.Values).ToArray();
+                Array.Sort(glyphs);
+                _mappedGlyphs = glyphs;
+            }
+            return _mappedGlyphs;
+        }
+    }
+
+    private int[]? _mappedGlyphs;
 
     /// <summary>Marks a glyph a ClassDef does not list, in a <see cref="RentClassTable"/> table.</summary>
     private const int UnclassifiedGlyph = -1;
