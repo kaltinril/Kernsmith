@@ -504,7 +504,8 @@ public static class BmFontReader
         var scaleH = BitConverter.ToUInt16(data[6..]);
         var pageCount = BitConverter.ToUInt16(data[8..]);
         var bitField = data[10];
-        var packed = (bitField & (1 << 7)) != 0;
+        // Packed is 0x01 (BMFont); 0x80 is also accepted, as KernSmith wrote it before.
+        var packed = (bitField & 0x81) != 0;
         var alphaChnl = data[11];
         var redChnl = data[12];
         var greenChnl = data[13];

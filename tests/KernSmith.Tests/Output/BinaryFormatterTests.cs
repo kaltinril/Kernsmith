@@ -91,4 +91,56 @@ public sealed class BinaryFormatterTests
         // Assert
         output.Length.ShouldBeGreaterThan(20);
     }
+
+    /// <summary>The payload of the first block of <paramref name="type"/> in a binary .fnt.</summary>
+    private static byte[] Block(byte[] fnt, byte type)
+    {
+        var pos = 4;
+        while (pos < fnt.Length)
+        {
+            var size = BitConverter.ToInt32(fnt, pos + 1);
+            if (fnt[pos] == type)
+                return fnt[(pos + 5)..(pos + 5 + size)];
+            pos += 5 + size;
+        }
+        throw new InvalidOperationException($"No block {type}.");
+    }
+
+    // BMFont numbers bitField bits from the most significant end: info's bit 0 (smooth) is 0x80,
+    // and common's bit 7 (packed) is 0x01. BMFont64 with fourChnlPacked=1 writes common 0x01 and
+    // info 0xC0 (smooth + unicode).
+    [Theory]
+    [InlineData(true, 0x01)]
+    [InlineData(false, 0x00)]
+    public void FormatBinary_CommonPackedBit_MatchesBmFont(bool packed, byte expected)
+    {
+        var model = CreateTestModel();
+        model = new BmFontModel
+        {
+            Info = model.Info,
+            Common = model.Common with { Packed = packed },
+            Pages = model.Pages,
+            Characters = model.Characters,
+            KerningPairs = model.KerningPairs,
+        };
+
+        var bytes = _formatter.FormatBinary(model);
+
+        Block(bytes, 2)[10].ShouldBe(expected);
+        Block(bytes, 1)[2].ShouldBe((byte)0xC0);
+        BmFontReader.Read(bytes).Common.Packed.ShouldBe(packed);
+    }
+
+    [Fact]
+    public void Read_CommonPackedHighBit_IsStillPacked()
+    {
+        // Binary files written before the packed bit was corrected carry it as 0x80.
+        var bytes = _formatter.FormatBinary(CreateTestModel());
+        var pos = 4;
+        while (bytes[pos] != 2)
+            pos += 5 + BitConverter.ToInt32(bytes, pos + 1);
+        bytes[pos + 5 + 10] = 0x80;
+
+        BmFontReader.Read(bytes).Common.Packed.ShouldBeTrue();
+    }
 }

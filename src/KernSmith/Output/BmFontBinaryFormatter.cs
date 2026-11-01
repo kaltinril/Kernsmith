@@ -90,8 +90,10 @@ internal sealed class BmFontBinaryFormatter : IBmFontBinaryFormatter
         bw.Write((ushort)common.ScaleH);
         bw.Write((ushort)common.Pages);
 
+        // BMFont numbers bits from the most significant end, so its "bit 7: packed" is 0x01
+        // (what BMFont64 writes), while info's "bit 0: smooth" above is 0x80.
         byte bitField = 0;
-        if (common.Packed) bitField |= 1 << 7;
+        if (common.Packed) bitField |= 1;
         bw.Write(bitField);
 
         bw.Write((byte)common.AlphaChnl);
