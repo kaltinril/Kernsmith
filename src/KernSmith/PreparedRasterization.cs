@@ -289,9 +289,16 @@ internal sealed class PreparedRasterization : IDisposable
             // renderScale collapses to a single upscale factor for both paths.
             var sdfScale = sdfMode != SdfMode.None ? Math.Clamp(options.SdfScale, 1, 4) : 1;
             var renderScale = sdfScale > 1 ? sdfScale : ssLevel;
-            var effectiveRasterOptions = renderScale > 1
-                ? rasterOptions with { Size = rasterOptions.Size * renderScale }
-                : rasterOptions;
+            // Glyphs render once at Size x renderScale and core box-filters them down, so the
+            // backend is told SuperSample = 1: one that honors it (StbTrueType, GDI, DirectWrite)
+            // would otherwise render at the level squared and round the bearings twice. The font
+            // metrics query keeps the level, so GDI measures lineHeight/base at the super-sampled
+            // size and rounds them up, as BMFont does.
+            var effectiveRasterOptions = rasterOptions with
+            {
+                Size = rasterOptions.Size * renderScale,
+                SuperSample = 1,
+            };
 
             // Pre-compute transform parameters once
             var effects = BuildEffects(options);

@@ -98,8 +98,11 @@ public sealed record RasterOptions
     /// <summary>
     /// Supersampling factor for higher quality rendering. The rasterizer renders at
     /// Size * SuperSample internally and downscales. Default is 1 (no supersampling).
-    /// BMFont's "aa" setting maps to this value. KernSmith core hands a backend 1 whenever the
-    /// effective mode is <see cref="AntiAliasMode.Lcd"/>: LCD renders at the final size.
+    /// BMFont's "aa" setting maps to this value. KernSmith core super samples glyphs itself (it
+    /// asks for them at Size x level and box-filters them down), so its glyph requests always
+    /// carry 1; only <see cref="IRasterizer.GetFontMetrics"/> and
+    /// <see cref="IRasterizer.GetKerningPairs"/> see the level, at the final Size. With
+    /// <see cref="AntiAliasMode.Lcd"/> nothing is super sampled: LCD renders at the final size.
     /// </summary>
     public int SuperSample { get; init; } = 1;
 
