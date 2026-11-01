@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
+using KernSmith.Font;
 using KernSmith.Font.Models;
 using KernSmith.Rasterizer;
 using static KernSmith.Rasterizers.Gdi.NativeMethods;
@@ -33,6 +34,7 @@ public sealed class GdiRasterizer : IRasterizer
     private string? _familyName;
     private int _fontWeight; // OS/2 usWeightClass (400=normal, 700=bold) from loaded font data
     private bool _fontIsItalic; // Detected from OS/2 fsSelection or name table
+    private bool _symbolFont; // Only a Windows symbol cmap (3,0): glyphs at U+F0xx
     private bool _disposed;
 
     /// <summary>
@@ -80,6 +82,7 @@ public sealed class GdiRasterizer : IRasterizer
             if (_fontResourceHandle == IntPtr.Zero)
                 throw new InvalidOperationException("AddFontMemResourceEx failed to register the font.");
 
+            _symbolFont = SymbolEncoding.IsSymbolFont(fontBytes);
             var parsed = ParseFontIdentity(fontBytes);
             _familyName = parsed.FamilyName;
             _fontWeight = parsed.Weight;
@@ -124,7 +127,7 @@ public sealed class GdiRasterizer : IRasterizer
 
             try
             {
-                var result = RasterizeGlyphCore(hdc, codepoint, options, aa);
+                var result = RasterizeGlyphCore(hdc, codepoint, CharCode(codepoint), options, aa);
                 return result;
             }
             finally
@@ -162,7 +165,7 @@ public sealed class GdiRasterizer : IRasterizer
             {
                 foreach (var codepoint in codepoints)
                 {
-                    var glyph = RasterizeGlyphCore(hdc, codepoint, options, aa);
+                    var glyph = RasterizeGlyphCore(hdc, codepoint, CharCode(codepoint), options, aa);
                     if (glyph is not null)
                         results.Add(glyph);
                 }
@@ -204,7 +207,7 @@ public sealed class GdiRasterizer : IRasterizer
                 var mat2 = GetMat2(options);
                 var size = GetGlyphOutlineW(
                     hdc,
-                    (uint)codepoint,
+                    CharCode(codepoint),
                     GGO_METRICS,
                     out var gm,
                     0,
@@ -386,7 +389,7 @@ public sealed class GdiRasterizer : IRasterizer
         return mat2;
     }
 
-    private static RasterizedGlyph? RasterizeGlyphCore(IntPtr hdc, int codepoint, RasterOptions options, int aa)
+    private static RasterizedGlyph? RasterizeGlyphCore(IntPtr hdc, int codepoint, uint charCode, RasterOptions options, int aa)
     {
         var mat2 = GetMat2(options);
 
@@ -398,7 +401,7 @@ public sealed class GdiRasterizer : IRasterizer
         // First call: get the required buffer size.
         var bufferSize = GetGlyphOutlineW(
             hdc,
-            (uint)codepoint,
+            charCode,
             format,
             out var gm,
             0,
@@ -409,7 +412,7 @@ public sealed class GdiRasterizer : IRasterizer
             return null;
 
         // Resolve the glyph index for this codepoint.
-        var glyphIndex = GetGlyphIndex(hdc, codepoint);
+        var glyphIndex = GetGlyphIndex(hdc, (int)charCode);
 
         int bearingX = gm.GmptGlyphOrigin.X / aa;
         int bearingY = gm.GmptGlyphOrigin.Y / aa;
@@ -445,7 +448,7 @@ public sealed class GdiRasterizer : IRasterizer
         {
             var result = GetGlyphOutlineW(
                 hdc,
-                (uint)codepoint,
+                charCode,
                 format,
                 out gm,
                 bufferSize,
@@ -553,6 +556,13 @@ public sealed class GdiRasterizer : IRasterizer
     }
 
     /// <summary>
+    /// The character GDI is asked for: the codepoint, or for a symbol font its U+F0xx code
+    /// (<see cref="SymbolEncoding.ToSymbolCode"/>, BMFont's SYMBOL charset), where its glyph is.
+    /// </summary>
+    private uint CharCode(int codepoint) =>
+        (uint)(_symbolFont && SymbolEncoding.ToSymbolCode(codepoint) is { } symbolCode ? symbolCode : codepoint);
+
+    /// <summary>
     /// Resolves the internal glyph index for a codepoint using GetGlyphIndicesW.
     /// Falls back to the codepoint itself if the call fails.
     /// </summary>
@@ -571,7 +581,8 @@ public sealed class GdiRasterizer : IRasterizer
 
     /// <summary>
     /// Parses the font family name (nameID=1) from the TTF name table.
-    /// Looks for platformID=3 (Windows), encodingID=1 (Unicode BMP), decoded as UTF-16BE.
+    /// Looks for platformID=3 (Windows), encodingID=1 (Unicode BMP), else encodingID=0 (the
+    /// symbol encoding Wingdings and Symbol name themselves in), both decoded as UTF-16BE.
     /// </summary>
     private static string? ParseFamilyName(byte[] fontData, int faceIndex = 0)
     {
@@ -624,6 +635,7 @@ public sealed class GdiRasterizer : IRasterizer
         if (storageOffsetLong > fontData.Length)
             return null;
         int storageOffset = (int)storageOffsetLong;
+        string? symbolName = null;
 
         for (int i = 0; i < nameCount; i++)
         {
@@ -637,19 +649,23 @@ public sealed class GdiRasterizer : IRasterizer
             int length = ReadUInt16BE(fontData, recordOffset + 8);
             int stringOffset = ReadUInt16BE(fontData, recordOffset + 10);
 
-            // nameID=1 is "Font Family", platformID=3 is Windows, encodingID=1 is Unicode BMP.
-            if (nameId == 1 && platformId == 3 && encodingId == 1)
+            // nameID=1 is "Font Family", platformID=3 is Windows, encodingID=1 is Unicode BMP
+            // (encodingID=0, symbol, is the fallback).
+            if (nameId == 1 && platformId == 3 && encodingId is 0 or 1)
             {
                 long dataOffsetLong = (long)storageOffset + stringOffset;
                 if (dataOffsetLong < 0 || dataOffsetLong + length > fontData.Length)
                     continue;
                 int dataOffset = (int)dataOffsetLong;
 
-                return Encoding.BigEndianUnicode.GetString(fontData, dataOffset, length);
+                var name = Encoding.BigEndianUnicode.GetString(fontData, dataOffset, length);
+                if (encodingId == 1)
+                    return name;
+                symbolName ??= name;
             }
         }
 
-        return null;
+        return symbolName;
     }
 
     /// <summary>

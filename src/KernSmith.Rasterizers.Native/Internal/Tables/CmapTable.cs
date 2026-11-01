@@ -1,8 +1,10 @@
+using KernSmith.Font;
+
 namespace KernSmith.Rasterizers.Native.Internal.Tables;
 
 /// <summary>
 /// The parsed <c>cmap</c> (character-to-glyph mapping) table. Selects the best available
-/// Unicode subtable and maps codepoints to glyph indices.
+/// Unicode subtable (else a Windows symbol one) and maps codepoints to glyph indices.
 /// </summary>
 /// <remarks>
 /// Supports format 4 (segmented BMP coverage) and format 12 (segmented full-Unicode
@@ -24,6 +26,13 @@ internal sealed class CmapTable
     private readonly uint[]? _groupStartGlyph;
 
     private readonly bool _isFormat12;
+
+    /// <summary>
+    /// True when the selected subtable is a Windows symbol one (3,0): its glyphs sit at
+    /// U+F020-U+F0FF, and their Windows-1252 characters reach them too
+    /// (<see cref="SymbolEncoding.ToSymbolCode"/>, BMFont's SYMBOL charset).
+    /// </summary>
+    public bool IsSymbol { get; private init; }
 
     private CmapTable(
         ushort[] endCodes, ushort[] startCodes, short[] idDeltas,
@@ -56,8 +65,13 @@ internal sealed class CmapTable
     {
         if (codepoint < 0)
             return 0;
-        return _isFormat12 ? LookupFormat12((uint)codepoint) : LookupFormat4((uint)codepoint);
+        int glyph = Lookup((uint)codepoint);
+        if (glyph == 0 && IsSymbol && SymbolEncoding.ToSymbolCode(codepoint) is { } symbolCode)
+            glyph = Lookup((uint)symbolCode);
+        return glyph;
     }
+
+    private int Lookup(uint codepoint) => _isFormat12 ? LookupFormat12(codepoint) : LookupFormat4(codepoint);
 
     private int LookupFormat4(uint codepoint)
     {
@@ -132,6 +146,8 @@ internal sealed class CmapTable
 
         uint bestFormat4Offset = 0;
         uint bestFormat12Offset = 0;
+        uint symbolOffset = 0;
+        ushort symbolFormat = 0;
 
         for (int i = 0; i < numTables; i++)
         {
@@ -139,10 +155,17 @@ internal sealed class CmapTable
             ushort encodingId = reader.ReadUInt16();
             uint subtableOffset = reader.ReadUInt32();
 
-            if (!IsUnicodeEncoding(platformId, encodingId))
+            if ((int)subtableOffset + 2 > data.Length)
                 continue;
 
-            if ((int)subtableOffset + 2 > data.Length)
+            if (platformId == 3 && encodingId == 0)
+            {
+                // Windows symbol: used only when the font has no Unicode subtable (as core does).
+                (symbolOffset, symbolFormat) = (subtableOffset, ReadFormatAt(data, subtableOffset));
+                continue;
+            }
+
+            if (!IsUnicodeEncoding(platformId, encodingId))
                 continue;
 
             ushort format = ReadFormatAt(data, subtableOffset);
@@ -157,8 +180,18 @@ internal sealed class CmapTable
         if (bestFormat4Offset != 0)
             return ParseFormat4(data, bestFormat4Offset);
 
-        throw new FontFormatException("cmap", 0, "no supported Unicode subtable (format 4 or 12) found.");
+        if (symbolOffset != 0 && symbolFormat is 4 or 12)
+        {
+            var symbol = symbolFormat == 12 ? ParseFormat12(data, symbolOffset) : ParseFormat4(data, symbolOffset);
+            return symbol.AsSymbol();
+        }
+
+        throw new FontFormatException("cmap", 0, "no supported Unicode or symbol subtable (format 4 or 12) found.");
     }
+
+    private CmapTable AsSymbol() => _isFormat12
+        ? new CmapTable(_groupStartChar!, _groupEndChar!, _groupStartGlyph!) { IsSymbol = true }
+        : new CmapTable(_endCodes!, _startCodes!, _idDeltas!, _idRangeOffsets!, _glyphIdArray!) { IsSymbol = true };
 
     private static bool IsUnicodeEncoding(ushort platformId, ushort encodingId) =>
         platformId switch
