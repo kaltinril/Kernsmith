@@ -388,6 +388,45 @@ public sealed class KernSmithReaderTests
         parsed.Extended!.AdvanceAdjustY.ShouldBe(3.5f);
     }
 
+    [Theory]
+    [InlineData("text")]
+    [InlineData("xml")]
+    [InlineData("binary")]
+    public void RoundTrip_FallbackCharacter(string format)
+    {
+        var original = BmFont.Generate(LoadTestFont(), new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars("AB?"),
+            FallbackCharacter = '?',
+        });
+        original.Model.Extended!.FallbackCharacter.ShouldBe('?');
+
+        var parsed = format switch
+        {
+            "text" => BmFontReader.ReadText(original.ToString()),
+            "xml" => BmFontReader.ReadXml(original.ToXml()),
+            _ => BmFontReader.ReadBinary(original.ToBinary()),
+        };
+
+        parsed.Extended.ShouldNotBeNull();
+        parsed.Extended!.FallbackCharacter.ShouldBe('?');
+    }
+
+    [Fact]
+    public void Text_FallbackCharacter_IsWrittenAsItsCodepoint()
+    {
+        var result = BmFont.Generate(LoadTestFont(), new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars("AB?"),
+            FallbackCharacter = '?',
+        });
+
+        result.ToString().Split('\n').Single(l => l.StartsWith("kernsmith ", StringComparison.Ordinal))
+            .ShouldContain(" fallbackChar=63", Case.Sensitive);
+    }
+
     [Fact]
     public void StandardFnt_WithoutAdvanceAdjustY_ReadsBackNull()
     {

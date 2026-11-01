@@ -41,12 +41,19 @@ internal sealed class InitCommand
             if (!Path.HasExtension(outputPath))
                 outputPath = outputPath.TrimEnd('.') + ".bmfc";
 
-            // Write the config file
+            // -o names the config file; the font it generates is named after it, without the
+            // config's extension (else generate would write "<name>.bmfc.fnt").
+            options.OutputPath = Path.ChangeExtension(outputPath, null);
             BmfcWriter.Write(options, outputPath);
 
             ConsoleOutput.WriteStdout($"Config written to {outputPath}");
 
             return ExitCodes.Success;
+        }
+        catch (FileNotFoundException ex)
+        {
+            ConsoleOutput.WriteError($"File not found: {ex.FileName ?? ex.Message}");
+            return ExitCodes.FileNotFound;
         }
         catch (IOException ex)
         {

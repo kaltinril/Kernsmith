@@ -90,8 +90,10 @@ internal sealed class BmFontBinaryFormatter : IBmFontBinaryFormatter
         bw.Write((ushort)common.ScaleH);
         bw.Write((ushort)common.Pages);
 
+        // BMFont numbers bits from the most significant end, so its "bit 7: packed" is 0x01
+        // (what BMFont64 writes), while info's "bit 0: smooth" above is 0x80.
         byte bitField = 0;
-        if (common.Packed) bitField |= 1 << 7;
+        if (common.Packed) bitField |= 1;
         bw.Write(bitField);
 
         bw.Write((byte)common.AlphaChnl);
@@ -191,6 +193,7 @@ internal sealed class BmFontBinaryFormatter : IBmFontBinaryFormatter
         if (extended.SuperSampleLevel.HasValue) dict["superSampleLevel"] = extended.SuperSampleLevel.Value;
         if (extended.AdvanceAdjustY.HasValue) dict["advanceAdjustY"] = extended.AdvanceAdjustY.Value;
         if (extended.ColorFont is true) dict["colorFont"] = true;
+        if (extended.FallbackCharacter.HasValue) dict["fallbackChar"] = extended.FallbackCharacter.Value;
         if (extended.VariationAxes is { Count: > 0 }) dict["variationAxes"] = extended.VariationAxes;
         if (extended.VariantOf != null) dict["variantOf"] = extended.VariantOf;
         if (extended.Variants is { Count: > 0 }) dict["variants"] = extended.Variants;

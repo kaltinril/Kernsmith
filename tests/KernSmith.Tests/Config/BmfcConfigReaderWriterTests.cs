@@ -657,6 +657,87 @@ public sealed class BmfcConfigReaderWriterTests
         }
     }
 
+    private static readonly (string Key, Func<FontGeneratorOptions, bool> Read)[] BooleanKeys =
+    [
+        ("isBold", o => o.Bold),
+        ("isItalic", o => o.Italic),
+        ("forceSyntheticBold", o => o.ForceSyntheticBold),
+        ("forceSyntheticItalic", o => o.ForceSyntheticItalic),
+        ("useSmoothing", o => o.AntiAlias != AntiAliasMode.None),
+        ("useHinting", o => o.EnableHinting),
+        ("dontIncludeKerningPairs", o => !o.Kerning),
+        ("useFixedHeight", o => o.EqualizeCellHeights),
+        ("forceZero", o => o.ForceOffsetsToZero),
+        ("fourChnlPacked", o => o.ChannelPacking),
+        ("invA", o => o.Channels is { InvertAlpha: true }),
+        ("invR", o => o.Channels is { InvertRed: true }),
+        ("invG", o => o.Channels is { InvertGreen: true }),
+        ("invB", o => o.Channels is { InvertBlue: true }),
+        ("variantShadow", o => o.Variants is { Count: > 0 }),
+        ("gradientCyclic", o => o.GradientCyclic),
+        ("useSdf", o => o.Sdf),
+        ("hardShadow", o => o.HardShadow),
+        ("colorFont", o => o.ColorFont),
+        ("powerOfTwo", o => o.PowerOfTwo),
+        ("autofit", o => o.AutofitTexture),
+    ];
+
+    [Theory]
+    [InlineData("1", true)]
+    [InlineData("true", true)]
+    [InlineData("True", true)]
+    [InlineData("YES", true)]
+    [InlineData("0", false)]
+    [InlineData("false", false)]
+    [InlineData("FALSE", false)]
+    [InlineData("no", false)]
+    public void Parse_BooleanKeys_AcceptOneZeroTrueFalseYesNo(string value, bool expected)
+    {
+        // Each key is read after its opposite value, so a value the reader ignores fails. The
+        // exception is useSmoothing=1, which keeps whatever anti-aliasing mode is set (it only
+        // ever switches anti-aliasing off), so it is read alone.
+        foreach (var (key, read) in BooleanKeys)
+        {
+            var opposite = expected ? "0" : "1";
+            var text = key == "useSmoothing" && expected ? $"{key}={value}\n" : $"{key}={opposite}\n{key}={value}\n";
+            var config = BmfcConfigReader.Parse(text);
+            read(config.Options).ShouldBe(expected, $"{key}={value}");
+        }
+    }
+
+    [Fact]
+    public void Parse_LeadingBom_IsIgnored()
+    {
+        var config = BmfcConfigReader.Parse("\uFEFFfontSize=48\n");
+
+        config.Options.Size.ShouldBe(48f);
+    }
+
+    [Theory]
+    [InlineData(0x01)]
+    [InlineData(0x05)]
+    [InlineData(0x09)]
+    [InlineData('0')]
+    [InlineData('?')]
+    [InlineData(0xFFFD)]
+    public void FallbackCharacter_RoundTrips(int codepoint)
+    {
+        var options = new FontGeneratorOptions { FallbackCharacter = (char)codepoint };
+
+        var text = BmfcConfigWriter.Write(new BmfcConfig { Options = options });
+
+        BmfcConfigReader.Parse(text).Options.FallbackCharacter.ShouldBe((char)codepoint);
+    }
+
+    [Theory]
+    [InlineData("5", '5')]   // a single character is that character
+    [InlineData("?", '?')]
+    [InlineData("63", '?')]  // anything longer is a decimal codepoint
+    public void Parse_FallbackChar_ReadsACharacterOrACodepoint(string value, char expected)
+    {
+        BmfcConfigReader.Parse($"fallbackChar={value}\n").Options.FallbackCharacter.ShouldBe(expected);
+    }
+
     [Fact]
     public void Parse_CharsRangePastUnicode_IsClampedToTheCodepointSpace()
     {

@@ -286,7 +286,7 @@ Blocks appear in order (1, 2, 3, 4, 5), but a robust parser should handle them b
 | Offset | Size | Type | Field |
 |--------|------|------|-------|
 | 0 | 2 | int16 | fontSize (negative value = absolute pixel height, positive = point size) |
-| 2 | 1 | uint8 | bitField (bit 0: smooth, bit 1: unicode, bit 2: italic, bit 3: bold, bit 4: fixedHeight -- set when cell height equalization is enabled, bits 5-7: reserved). Extract as: `smooth = bits & 1`, `unicode = (bits >> 1) & 1`, `italic = (bits >> 2) & 1`, `bold = (bits >> 3) & 1`, `fixedHeight = (bits >> 4) & 1` |
+| 2 | 1 | uint8 | bitField (bit 0: smooth, bit 1: unicode, bit 2: italic, bit 3: bold, bit 4: fixedHeight -- set when cell height equalization is enabled, bits 5-7: reserved). AngelCode numbers these bits from the most significant end, so extract as: `smooth = (bits >> 7) & 1`, `unicode = (bits >> 6) & 1`, `italic = (bits >> 5) & 1`, `bold = (bits >> 4) & 1`, `fixedHeight = (bits >> 3) & 1` (BMFont64 writes `0xC0` for smooth + unicode) |
 | 3 | 1 | uint8 | charSet |
 | 4 | 2 | uint16 | stretchH |
 | 6 | 1 | uint8 | aa |
@@ -308,7 +308,7 @@ Blocks appear in order (1, 2, 3, 4, 5), but a robust parser should handle them b
 | 4 | 2 | uint16 | scaleW |
 | 6 | 2 | uint16 | scaleH |
 | 8 | 2 | uint16 | pages |
-| 10 | 1 | uint8 | bitField (bits 0-6: reserved, bit 7: packed). To extract: `packed = (bitField >> 7) & 1` |
+| 10 | 1 | uint8 | bitField (bits 0-6: reserved, bit 7: packed). Bits are numbered from the most significant end, as in the info block, so bit 7 is the least significant: `packed = bitField & 1` (BMFont64 writes `0x01` with `fourChnlPacked=1`). `BmFontReader` also accepts `0x80`, which KernSmith wrote before. |
 | 11 | 1 | uint8 | alphaChnl |
 | 12 | 1 | uint8 | redChnl |
 | 13 | 1 | uint8 | greenChnl |
@@ -381,6 +381,7 @@ KernSmith records the generation settings that produced a font in an **extended 
 | `superSampleLevel` | int | Super-sampling level, if super sampling was used. |
 | `advanceAdjustY` | float | Global vertical advance adjustment (Hiero `pad.advance.y`), surfaced here because BMFont has no per-glyph yadvance field. |
 | `colorFont` | bool (`1`) | Present (value 1 / `true`) if color-font rendering (COLR/CPAL) was enabled. |
+| `fallbackChar` | int | Codepoint of the fallback character substituted for missing glyphs (`FallbackCodepoint`, else `FallbackCharacter`), if one was set. |
 | `axis_<tag>` | float | One entry per variable-font axis used at generation time, keyed by the 4-char axis tag (e.g. `axis_wght=700`). In the binary JSON these are nested under a `variationAxes` object instead of flattened into `axis_` keys. |
 
 #### Compatibility

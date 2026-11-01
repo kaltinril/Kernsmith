@@ -341,6 +341,34 @@ public sealed class OutputFormatTests
     }
 
     [Fact]
+    public void ToFile_DottedBaseName_PagesKeepTheWholeName()
+    {
+        var result = BmFont.Generate(LoadTestFont(), new FontGeneratorOptions
+        {
+            Size = 16,
+            Characters = CharacterSet.FromChars("AB")
+        });
+
+        var tempDir = Path.Combine(Path.GetTempPath(), $"KernSmith_ToFileDot_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            // Two outputs whose names differ only after a dot must not share page files.
+            result.ToFile(Path.Combine(tempDir, "Roboto.Condensed"));
+            result.ToFile(Path.Combine(tempDir, "Roboto.Mono"));
+
+            Directory.GetFiles(tempDir, "*.png").Select(Path.GetFileName).OrderBy(n => n, StringComparer.Ordinal)
+                .ShouldBe(new[] { "Roboto.Condensed_0.png", "Roboto.Mono_0.png" });
+            File.ReadAllText(Path.Combine(tempDir, "Roboto.Mono.fnt"))
+                .ShouldContain("file=\"Roboto.Mono_0.png\"", Case.Sensitive);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ToFile_Xml_WritesXmlFntFile()
     {
         // Arrange

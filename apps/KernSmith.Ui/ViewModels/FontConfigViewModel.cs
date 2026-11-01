@@ -137,6 +137,30 @@ public class FontConfigViewModel : ViewModel
     }
 
     /// <summary>
+    /// Returns to the no-font state, so nothing generates from or reports a font that is gone.
+    /// </summary>
+    public void Unload()
+    {
+        IsFontLoaded = false;
+        FontData = null;
+        FontFilePath = null;
+        FontSourceDescription = "No font loaded";
+        FontSourceKind = FontSourceKind.None;
+        FamilyName = "";
+        StyleName = "";
+        NumGlyphs = 0;
+        HasColorGlyphs = false;
+        HasVariationAxes = false;
+        VariationAxesSummary = "";
+        LoadedVariationAxes = null;
+        IsFontCollection = false;
+        FaceCount = 0;
+        FaceIndex = 0;
+        LoadedAsBold = false;
+        LoadedAsItalic = false;
+    }
+
+    /// <summary>
     /// Reloads font metadata for a different face index within a TTC font collection.
     /// </summary>
     public void ReloadWithFaceIndex(int faceIndex)
@@ -168,6 +192,12 @@ public class FontConfigViewModel : ViewModel
         }
 
         var fontInfo = BmFont.ReadFontInfo(fontData, systemFont.FaceIndex);
+
+        // FaceCount first: the face combo lists FaceCount faces when IsFontCollection turns on.
+        var faceCount = DetectFaceCount(fontData);
+        FaceCount = faceCount;
+        IsFontCollection = faceCount > 1;
+        FaceIndex = systemFont.FaceIndex;
 
         PopulateFromFontInfo(fontInfo);
         FontData = fontData;

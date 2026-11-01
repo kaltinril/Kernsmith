@@ -172,6 +172,8 @@ internal sealed class XmlFormatter : IBmFontTextFormatter
             writer.WriteAttributeString("advanceAdjustY", extended.AdvanceAdjustY.Value.ToString(CultureInfo.InvariantCulture));
         if (extended.ColorFont is true)
             writer.WriteAttributeString("colorFont", "1");
+        if (extended.FallbackCharacter.HasValue)
+            writer.WriteAttributeString("fallbackChar", extended.FallbackCharacter.Value.ToString(CultureInfo.InvariantCulture));
         if (extended.VariationAxes is { Count: > 0 })
         {
             foreach (var (tag, value) in extended.VariationAxes)

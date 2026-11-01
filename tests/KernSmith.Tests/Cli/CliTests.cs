@@ -1279,6 +1279,146 @@ public class CliTests : IDisposable
     }
 
     [Fact]
+    public void Generate_Config_SaveConfigKeepsEveryKernSmithField()
+    {
+        var config = WriteBmfc("fields.bmfc",
+            "shadowOffsetX=2", "shadowOffsetY=2", "shadowBlur=1", "shadowOpacity=0.5", "hardShadow=1",
+            "variantShadow=1", "advanceAdjustY=1.5", "fallbackChar=128512",
+            "forceSyntheticBold=1", "forceSyntheticItalic=1");
+        var saved = Path.Combine(_tempDir, "saved.bmfc");
+
+        var (exit, _, err) = RunCli("generate", "--config", config, "-o", Path.Combine(_tempDir, "fields"),
+            "--save-config", saved);
+
+        exit.ShouldBe(0, $"stderr: {err}");
+        var lines = File.ReadAllLines(saved);
+        foreach (var expected in new[]
+                 {
+                     "shadowOpacity=0.5", "hardShadow=1", "variantShadow=1", "advanceAdjustY=1.5",
+                     "fallbackChar=128512", "forceSyntheticBold=1", "forceSyntheticItalic=1",
+                 })
+            lines.ShouldContain(expected);
+        File.Exists(Path.Combine(_tempDir, "fields-shadow.fnt")).ShouldBeTrue("variantShadow=1 should emit the shadow variant");
+    }
+
+    [Fact]
+    public void Generate_Config_SdfScaleIsKept()
+    {
+        var config = WriteBmfc("sdfscale.bmfc", "useSdf=1", "sdfScale=2");
+        var saved = Path.Combine(_tempDir, "saved-sdf.bmfc");
+
+        var (exit, _, err) = RunCli("generate", "--config", config, "-o", Path.Combine(_tempDir, "sdfscale"),
+            "--save-config", saved);
+
+        exit.ShouldBe(0, $"stderr: {err}");
+        File.ReadAllLines(saved).ShouldContain("sdfScale=2");
+        var (baseExit, _, baseErr) = RunCli("generate", "--config", WriteBmfc("sdf.bmfc", "useSdf=1"),
+            "-o", Path.Combine(_tempDir, "sdf"));
+        baseExit.ShouldBe(0, $"stderr: {baseErr}");
+        File.ReadAllBytes(Path.Combine(_tempDir, "sdfscale_0.png"))
+            .ShouldNotBe(File.ReadAllBytes(Path.Combine(_tempDir, "sdf_0.png")), "sdfScale=2 should change the rendered field");
+    }
+
+    [Theory]
+    [InlineData("shadowBlur=2")]                                            // a blur-only shadow
+    [InlineData("shadowOffsetX=2|shadowOffsetY=2|shadowOpacity=0.4")]
+    [InlineData("shadowOffsetX=2|shadowOffsetY=2|shadowBlur=2|hardShadow=1")]
+    [InlineData("forceSyntheticBold=1")]
+    [InlineData("advanceAdjustY=3")]
+    public void Generate_Config_FieldChangesTheOutput(string fields)
+    {
+        // The last key is the field under test and the baseline is the config without it, so
+        // identical output means the CLI dropped the field.
+        var keys = fields.Split('|');
+        var baseline = keys[..^1];
+
+        var (exitA, _, errA) = RunCli("generate", "--config", WriteBmfc("with.bmfc", keys), "-o", Path.Combine(_tempDir, "with"));
+        var (exitB, _, errB) = RunCli("generate", "--config", WriteBmfc("without.bmfc", baseline), "-o", Path.Combine(_tempDir, "without"));
+
+        exitA.ShouldBe(0, $"stderr: {errA}");
+        exitB.ShouldBe(0, $"stderr: {errB}");
+        var same = File.ReadAllText(Path.Combine(_tempDir, "with.fnt")).Replace("with_0", "without_0", StringComparison.Ordinal)
+                       == File.ReadAllText(Path.Combine(_tempDir, "without.fnt"))
+                   && File.ReadAllBytes(Path.Combine(_tempDir, "with_0.png")).AsSpan()
+                       .SequenceEqual(File.ReadAllBytes(Path.Combine(_tempDir, "without_0.png")));
+        same.ShouldBeFalse($"{fields} made no difference to the output");
+    }
+
+    [Fact]
+    public void Init_KeepsTheCharsetAndNamesTheOutputWithoutTheConfigExtension()
+    {
+        var configPath = Path.Combine(_tempDir, "charset.bmfc");
+
+        var (exit, _, err) = RunCli("init", "-f", FontPath, "-s", "24", "-c", "extended", "--chars", "€", "-o", configPath);
+
+        exit.ShouldBe(0, $"stderr: {err}");
+        var lines = File.ReadAllLines(configPath);
+        lines.ShouldContain("chars=32-255,8364");
+        lines.ShouldContain("outputPath=charset");
+    }
+
+    [Fact]
+    public void Generate_SaveConfig_KeepsTheCharsetFlags()
+    {
+        var saved = Path.Combine(_tempDir, "chars-saved.bmfc");
+
+        var (exit, _, err) = RunCli("generate", "-f", FontPath, "-s", "24", "--chars", "ABC",
+            "-c", "0123", "-o", Path.Combine(_tempDir, "chars"), "--save-config", saved);
+
+        exit.ShouldBe(0, $"stderr: {err}");
+        File.ReadAllLines(saved).ShouldContain("chars=48-51,65-67");
+    }
+
+    [Theory]
+    [InlineData("fontName=|fontFile=")]
+    [InlineData("fontFile=does-not-exist.ttf")]
+    [InlineData("fontName=No Such Font Family 1f6c")]
+    public void Batch_ConfigWithoutAUsableFont_FailsOnlyThatJob(string fontKeys)
+    {
+        var good = WriteBmfc("good.bmfc", $"outputPath={Path.Combine(_tempDir, "good")}");
+        var noFont = Path.Combine(_tempDir, "nofont.bmfc");
+        File.WriteAllLines(noFont, [.. fontKeys.Split('|'), "fontSize=32"]);
+
+        var (exit, stdout, stderr) = RunCli("batch", good, noFont);
+
+        exit.ShouldBe(1, $"stdout: {stdout}\nstderr: {stderr}");
+        stderr.ShouldNotContain("Unhandled exception", Case.Sensitive);
+        stdout.ShouldContain("1 succeeded, 1 failed", Case.Sensitive);
+        File.Exists(Path.Combine(_tempDir, "good.fnt")).ShouldBeTrue();
+    }
+
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("99999999999")]
+    [InlineData("-2")]
+    public void Batch_InvalidParallel_IsAnInvalidArgument(string value)
+    {
+        var (exit, _, stderr) = RunCli("batch", WriteBmfc("p.bmfc"), "--parallel", value);
+
+        exit.ShouldBe(1, $"stderr: {stderr}");
+        stderr.ShouldNotContain("Unhandled exception", Case.Sensitive);
+        stderr.ShouldContain("--parallel", Case.Sensitive);
+    }
+
+    [Theory]
+    [InlineData("-s", "abc")]
+    [InlineData("--padding", "99999999999")]
+    [InlineData("--dpi", "x")]
+    public void Generate_MalformedNumber_IsAnInvalidArgument(string flag, string value)
+    {
+        var args = new List<string> { "generate", "-f", FontPath, "-o", Path.Combine(_tempDir, "bad") };
+        if (flag != "-s")
+            args.AddRange(["-s", "32"]);
+        args.AddRange([flag, value]);
+
+        var (exit, _, stderr) = RunCli(args.ToArray());
+
+        exit.ShouldBe(1, $"stderr: {stderr}");
+        stderr.ShouldNotContain("Unhandled exception", Case.Sensitive);
+        stderr.ShouldContain(flag, Case.Sensitive);
+    }
+
+    [Fact]
     public void Batch_NoConfigs_ReportsBmfcOrHieroMessage()
     {
         // Act: glob that matches nothing

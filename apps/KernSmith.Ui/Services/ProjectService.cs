@@ -14,6 +14,11 @@ public class ProjectService
     public string? CurrentProjectPath { get; private set; }
 
     /// <summary>
+    /// The font file the last loaded project names but that does not exist, or null.
+    /// </summary>
+    public string? MissingFontFile { get; private set; }
+
+    /// <summary>
     /// Saves the current UI state to a .bmfc or .hiero file at the specified path.
     /// The output format is auto-detected from the file extension.
     /// </summary>
@@ -53,10 +58,20 @@ public class ProjectService
         var config = ConfigFormatFactory.ReadConfig(path);
         var options = config.Options;
 
-        // Load font source
-        if (!string.IsNullOrEmpty(config.FontFile) && File.Exists(config.FontFile))
+        // Load font source. A font file that is gone unloads the current font: keeping it would
+        // generate (and re-save) the project with a font it does not name.
+        MissingFontFile = null;
+        if (!string.IsNullOrEmpty(config.FontFile))
         {
-            fontConfig.LoadFromFile(config.FontFile);
+            if (File.Exists(config.FontFile))
+            {
+                fontConfig.LoadFromFile(config.FontFile);
+            }
+            else
+            {
+                MissingFontFile = config.FontFile;
+                fontConfig.Unload();
+            }
         }
 
         // Font settings

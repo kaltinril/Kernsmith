@@ -49,7 +49,11 @@ internal sealed class BatchCommand
                         ConsoleOutput.WriteError("Missing value for --parallel");
                         return ExitCodes.InvalidArguments;
                     }
-                    parallel = int.Parse(args[i]);
+                    if (!int.TryParse(args[i], out parallel) || parallel < 0)
+                    {
+                        ConsoleOutput.WriteError($"Invalid value for --parallel: {args[i]} (expected a whole number >= 0)");
+                        return ExitCodes.InvalidArguments;
+                    }
                     if (parallel == 0)
                         parallel = Environment.ProcessorCount;
                     break;
@@ -119,11 +123,27 @@ internal sealed class BatchCommand
         var jobs = new List<(string ConfigPath, CliOptions Options)>();
         var parseFailures = new List<(string ConfigPath, string Error)>();
 
+        // Font bytes are loaded here, per job, so one missing or unreadable font fails only its
+        // own job; GenerateBatch would otherwise throw out of its shared preload.
+        var fontCache = new FontCache();
+
         foreach (var configPath in expandedPaths)
         {
             try
             {
                 var options = BmfcParser.Parse(configPath);
+                if (options.FontPath == null && options.SystemFontName == null)
+                    throw new ArgumentException("no font: set fontFile or fontName.");
+                if (options.FontPath != null)
+                {
+                    if (!File.Exists(options.FontPath))
+                        throw new FileNotFoundException($"Font file not found: {options.FontPath}", options.FontPath);
+                    fontCache.LoadFile(options.FontPath);
+                }
+                else
+                {
+                    fontCache.LoadSystemFont(options.SystemFontName!);
+                }
                 jobs.Add((configPath, options));
             }
             catch (Exception ex)
@@ -146,7 +166,7 @@ internal sealed class BatchCommand
 
         // Output collision detection
         var outputMap = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (configPath, options) in jobs)
+        foreach (var (configPath, options) in jobs.ToList())
         {
             try
             {
@@ -162,6 +182,7 @@ internal sealed class BatchCommand
             {
                 // If output path resolution fails, treat as a parse failure
                 parseFailures.Add((configPath, $"Cannot resolve output path: {ex.Message}"));
+                jobs.RemoveAll(j => j.ConfigPath == configPath);
             }
         }
 
@@ -180,23 +201,32 @@ internal sealed class BatchCommand
 
         // Build BatchJob list from parsed CliOptions
         var batchJobs = new List<BatchJob>();
-        foreach (var (configPath, options) in jobs)
+        foreach (var (configPath, options) in jobs.ToList())
         {
-            var characters = GenerateCommand.BuildCharacterSet(options);
-            var genOptions = GenerateCommand.BuildGenOptions(options, characters);
-
-            batchJobs.Add(new BatchJob
+            try
             {
-                FontPath = options.FontPath,
-                SystemFont = options.SystemFontName,
-                Options = genOptions,
-            });
+                var characters = GenerateCommand.BuildCharacterSet(options);
+                var genOptions = GenerateCommand.BuildGenOptions(options, characters);
+
+                batchJobs.Add(new BatchJob
+                {
+                    FontPath = options.FontPath,
+                    SystemFont = options.SystemFontName,
+                    Options = genOptions,
+                });
+            }
+            catch (Exception ex)
+            {
+                parseFailures.Add((configPath, ex.Message));
+                jobs.RemoveAll(j => j.ConfigPath == configPath);
+            }
         }
 
         // Call library batch API
         var batchOptions = new BatchOptions
         {
             MaxParallelism = parallel,
+            FontCache = fontCache,
         };
 
         int total = jobs.Count + parseFailures.Count;

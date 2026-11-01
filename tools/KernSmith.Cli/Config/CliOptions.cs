@@ -63,6 +63,7 @@ internal sealed class CliOptions
     public int ShadowBlurKernelSize { get; set; }
     public int ShadowBlurPasses { get; set; } = 1;
     public bool HardShadow { get; set; }
+    public float ShadowOpacity { get; set; } = 1f;
     public bool ShadowVariant { get; set; }
 
     // Kerning
@@ -71,6 +72,7 @@ internal sealed class CliOptions
     // Rendering extras
     public int SuperSampleLevel { get; set; } = 1;
     public char? FallbackCharacter { get; set; }
+    public int? FallbackCodepoint { get; set; }
     public bool? EnableHinting { get; set; }
     public bool EqualizeCellHeights { get; set; }
     public bool ForceOffsetsToZero { get; set; }
@@ -81,8 +83,10 @@ internal sealed class CliOptions
     public bool ColorFont { get; set; }
     public int ColorPaletteIndex { get; set; }
     public float? SdfSpread { get; set; }
+    public int SdfScale { get; set; } = 1;
     public float? Gamma { get; set; }
     public float AdvanceAdjustX { get; set; }
+    public float AdvanceAdjustY { get; set; }
 
     // Rasterizer
     public RasterizerBackend Backend { get; set; } = RasterizerBackend.FreeType;

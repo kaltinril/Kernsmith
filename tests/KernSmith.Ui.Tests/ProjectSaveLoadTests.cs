@@ -1,3 +1,4 @@
+using KernSmith.Font.Models;
 using KernSmith.Ui.Services;
 using KernSmith.Ui.ViewModels;
 using Shouldly;
@@ -49,6 +50,45 @@ public sealed class ProjectSaveLoadTests : IDisposable
         var (_, effects) = SaveAndReload((_, e) => e.FallbackCharacter = "#");
 
         effects.FallbackCharacter.ShouldBe("#");
+    }
+
+    private static readonly string RobotoPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "Roboto-Regular.ttf");
+
+    [Fact]
+    public void Load_ProjectWhoseFontFileIsMissing_UnloadsThePreviousFont()
+    {
+        var (fontConfig, atlasConfig, effects, characterGrid) = NewViewModels();
+        fontConfig.LoadFromFile(RobotoPath);
+        var missing = Path.Combine(_dir, "gone.ttf");
+        var path = Path.Combine(_dir, "missing-font.bmfc");
+        File.WriteAllLines(path, [$"fontFile={missing}", "fontSize=24"]);
+
+        var service = new ProjectService();
+        service.LoadProject(path, fontConfig, atlasConfig, effects, characterGrid);
+
+        fontConfig.IsFontLoaded.ShouldBeFalse();
+        fontConfig.FontData.ShouldBeNull();
+        fontConfig.FontFilePath.ShouldBeNull();
+        fontConfig.FamilyName.ShouldBe("");
+        service.MissingFontFile.ShouldBe(missing);
+    }
+
+    [Fact]
+    public void LoadFromSystem_TakesTheSystemFontsFaceIndex()
+    {
+        var fontConfig = new FontConfigViewModel();
+        fontConfig.FaceIndex = 2; // left over from a collection loaded before
+        fontConfig.FaceCount = 3;
+        fontConfig.IsFontCollection = true;
+
+        fontConfig.LoadFromSystem(new SystemFontInfo
+        {
+            FamilyName = "Roboto", StyleName = "Regular", FilePath = RobotoPath, FaceIndex = 0,
+        });
+
+        fontConfig.FaceIndex.ShouldBe(0);
+        fontConfig.FaceCount.ShouldBe(1);
+        fontConfig.IsFontCollection.ShouldBeFalse();
     }
 
     [Theory]
