@@ -85,8 +85,7 @@ public class SdfAtlasSizeQueryTests
             Characters = CharacterSet.Ascii,
             Sdf = true,
             Backend = backend,
-            // Em-square sizing: the query does not apply the cell-height ppem conversion
-            // generation uses, a separate gap this test keeps out of the comparison.
+            // Em-square sizing (QueryAtlasSizeAccuracyTests covers the default cell-height sizing).
             MatchCharHeight = true,
         };
 

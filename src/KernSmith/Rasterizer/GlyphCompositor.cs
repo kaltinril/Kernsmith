@@ -10,6 +10,25 @@ namespace KernSmith.Rasterizer;
 internal static class GlyphCompositor
 {
     /// <summary>
+    /// How far <see cref="Composite"/>'s canvas reaches past a non-empty source glyph on each
+    /// side: the outline's margins, plus the shadow's around the outlined silhouette it is drawn
+    /// from (body layers keep the glyph's box).
+    /// </summary>
+    public static (int Left, int Top, int Right, int Bottom) Margins(IReadOnlyList<IGlyphEffect> effects)
+    {
+        IGlyphEffect? outline = null, shadow = null;
+        foreach (var effect in effects)
+        {
+            if (effect.ZOrder == 0) shadow = effect;
+            else if (effect.ZOrder == 1) outline = effect;
+        }
+
+        var o = outline?.Margins ?? default;
+        var s = shadow?.Margins ?? default;
+        return (o.Left + s.Left, o.Top + s.Top, o.Right + s.Right, o.Bottom + s.Bottom);
+    }
+
+    /// <summary>
     /// Applies all effects to a source glyph and composites the resulting layers into a single RGBA bitmap.
     /// </summary>
     /// <param name="sourceGlyph">The rasterized source glyph (grayscale or RGBA) to composite.</param>
@@ -28,6 +47,7 @@ internal static class GlyphCompositor
     {
         // A non-white/non-opaque fill color must still tint the default body layer
         // even when no other effects are present, so don't early-out in that case.
+        // (Keep the layering below in sync with Margins.)
         var hasFillTint = fillR != 255 || fillG != 255 || fillB != 255 || fillA != 255;
         if (effects.Count == 0 && !hasFillTint)
             return sourceGlyph;

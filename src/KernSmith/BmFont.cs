@@ -851,112 +851,65 @@ public static class BmFont
     {
         options ??= new FontGeneratorOptions();
 
-        if (options.Size <= 0 || options.Size > 10000)
-            throw new ArgumentOutOfRangeException(nameof(options), $"Size must be between 1 and 10000, was {options.Size}.");
+        // 1. Parse the font and set up the backend exactly as generation does (cell-height ppem,
+        // synthetic-style guards, anti-alias negotiation, render scale, effects).
+        using var prepared = PreparedRasterization.Prepare(
+            fontData, options, systemFontName: null, subsetToCharacterSet: true);
 
-        // Auto-detect and decompress WOFF/WOFF2
-        if (WoffDecompressor.IsWoff(fontData) || WoffDecompressor.IsWoff2(fontData))
-            fontData = WoffDecompressor.Decompress(fontData);
+        // 2. Resolve character set (fallback included)
+        var codepoints = prepared.ResolveCodepoints();
 
-        // 1. Parse font
-        var fontReader = options.FontReader ?? new TtfFontReader();
-        if (fontReader is TtfFontReader ttfReader)
+        // 3. Size each glyph from its metrics, without rasterizing
+        var padding = options.Padding;
+        var spacing = options.Spacing;
+
+        var glyphRects = new List<GlyphRect>();
+        foreach (var cp in codepoints)
         {
-            ttfReader.RequestedCodepoints = options.Characters.GetCodepointsHashSet();
-            ttfReader.SharedFontBytes = fontData;
-        }
-
-        var fontInfo = fontReader.ReadFont(fontData, options.FaceIndex);
-
-        // 2. Resolve character set
-        var codepoints = options.Characters.Resolve(fontInfo.AvailableCodepoints).ToList();
-        // FallbackCodepoint takes precedence over FallbackCharacter
-        var resolvedFallback = options.FallbackCodepoint
-            ?? (options.FallbackCharacter.HasValue ? (int)options.FallbackCharacter.Value : (int?)null);
-        if (resolvedFallback.HasValue)
-        {
-            if (!codepoints.Contains(resolvedFallback.Value))
-                codepoints.Add(resolvedFallback.Value);
-        }
-
-        // 3. Get metrics without rasterizing
-        var rasterizer = options.Rasterizer
-            ?? RasterizerFactory.Create(options.Backend);
-        try
-        {
-            rasterizer.LoadFont(fontData, options.FaceIndex);
-
-            // Apply variable font axes if specified.
-            if (rasterizer.Capabilities.SupportsVariableFonts
-                && options.VariationAxes is { Count: > 0 }
-                && fontInfo.VariationAxes is { Count: > 0 })
+            if (prepared.MeasureGlyph(cp) is { } size)
             {
-                rasterizer.SetVariationAxes(fontInfo.VariationAxes, options.VariationAxes);
+                glyphRects.Add(new GlyphRect(
+                    cp,
+                    size.Width + padding.Left + padding.Right + spacing.Horizontal,
+                    size.Height + padding.Up + padding.Down + spacing.Vertical));
             }
-
-            var rasterOptions = RasterOptions.FromGeneratorOptions(options) with
-            {
-                AntiAlias = AntiAliasNegotiation.Resolve(
-                    options.AntiAlias, rasterizer.Capabilities.SupportedAntiAliasModes)
-            };
-            var padding = options.Padding;
-            var spacing = options.Spacing;
-
-            var glyphRects = new List<GlyphRect>();
-            foreach (var cp in codepoints)
-            {
-                var m = rasterizer.GetGlyphMetrics(cp, rasterOptions);
-                if (m.HasValue)
-                {
-                    var gm = m.Value;
-                    glyphRects.Add(new GlyphRect(
-                        cp,
-                        gm.Width + padding.Left + padding.Right + spacing.Horizontal,
-                        gm.Height + padding.Up + padding.Down + spacing.Vertical));
-                }
-            }
-
-            // 4. Estimate atlas size
-            var sizingOptions = AtlasSizeEstimator.BuildSizingOptions(options);
-
-            var (estWidth, estHeight) = AtlasSizeEstimator.Estimate(glyphRects, sizingOptions);
-
-            // 5. Apply size constraints if specified.
-            if (options.SizeConstraints is { } sizeConstraints)
-            {
-                var (cw, ch) = AtlasSizeEstimator.ApplyConstraints(
-                    estWidth, estHeight, sizeConstraints, sizingOptions, glyphRects);
-                estWidth = cw;
-                estHeight = ch;
-            }
-
-            // 6. Calculate estimated efficiency
-            long totalGlyphArea = 0;
-            foreach (var r in glyphRects)
-                totalGlyphArea += (long)r.Width * r.Height;
-
-            long atlasArea = (long)estWidth * estHeight;
-            var efficiency = atlasArea > 0 ? (float)totalGlyphArea / atlasArea : 0f;
-
-            // Determine page count estimate (simple: how many full pages worth of glyph area).
-            var pageCount = atlasArea > 0
-                ? Math.Max(1, (int)Math.Ceiling((double)totalGlyphArea / (atlasArea * options.PackingEfficiencyHint)))
-                : 1;
-
-            return new AtlasSizeInfo
-            {
-                Width = estWidth,
-                Height = estHeight,
-                PageCount = pageCount,
-                GlyphCount = glyphRects.Count,
-                EstimatedEfficiency = efficiency
-            };
         }
-        finally
+
+        // 4. Estimate atlas size
+        var sizingOptions = AtlasSizeEstimator.BuildSizingOptions(options);
+
+        var (estWidth, estHeight) = AtlasSizeEstimator.Estimate(glyphRects, sizingOptions);
+
+        // 5. Apply size constraints if specified.
+        if (options.SizeConstraints is { } sizeConstraints)
         {
-            if (options.Rasterizer == null)
-                rasterizer.Dispose();
+            var (cw, ch) = AtlasSizeEstimator.ApplyConstraints(
+                estWidth, estHeight, sizeConstraints, sizingOptions, glyphRects);
+            estWidth = cw;
+            estHeight = ch;
         }
+
+        // 6. Calculate estimated efficiency
+        long totalGlyphArea = 0;
+        foreach (var r in glyphRects)
+            totalGlyphArea += (long)r.Width * r.Height;
+
+        long atlasArea = (long)estWidth * estHeight;
+        var efficiency = atlasArea > 0 ? (float)totalGlyphArea / atlasArea : 0f;
+
+        // Determine page count estimate (simple: how many full pages worth of glyph area).
+        var pageCount = atlasArea > 0
+            ? Math.Max(1, (int)Math.Ceiling((double)totalGlyphArea / (atlasArea * options.PackingEfficiencyHint)))
+            : 1;
+
+        return new AtlasSizeInfo
+        {
+            Width = estWidth,
+            Height = estHeight,
+            PageCount = pageCount,
+            GlyphCount = glyphRects.Count,
+            EstimatedEfficiency = efficiency
+        };
     }
 
     /// <summary>Generates a bitmap font from a config file, auto-detecting .bmfc or .hiero format.</summary>

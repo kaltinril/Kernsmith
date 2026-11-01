@@ -395,6 +395,48 @@ internal sealed class PreparedRasterization : IDisposable
     }
 
     /// <summary>
+    /// The size <see cref="RasterizeAndProcess"/> would give a glyph, from the backend's
+    /// metrics alone (no rasterization), or null when the backend has no glyph for it: measured
+    /// at the render size, height-stretched, grown by the baked effects, downscaled from the
+    /// render scale, and a blank glyph given its outline cell. Keep in sync with
+    /// <see cref="RasterizeAndProcess"/>; custom glyphs, post-processors, channel-routed
+    /// effects and cell-height equalization are not modelled.
+    /// </summary>
+    internal (int Width, int Height)? MeasureGlyph(int codepoint)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (_rasterizer.GetGlyphMetrics(codepoint, _effectiveRasterOptions) is not { } metrics)
+            return null;
+
+        int width = metrics.Width, height = metrics.Height;
+        if (width > 0 && height > 0)
+        {
+            if (Options.HeightPercent != 100)
+                height = Math.Max(1, height * Options.HeightPercent / 100);
+
+            if (_effects.Count > 0)
+            {
+                var (left, top, right, bottom) = GlyphCompositor.Margins(_effects);
+                width += left + right;
+                height += top + bottom;
+            }
+
+            if (_renderScale > 1)
+            {
+                width = Math.Max(1, width / _renderScale);
+                height = Math.Max(1, height / _renderScale);
+            }
+        }
+        else if (Options.Outline > 0 && metrics.Advance > 0)
+        {
+            width = height = 1 + Options.Outline * 2;
+        }
+
+        return (width, height);
+    }
+
+    /// <summary>
     /// Rasterizes and processes the given codepoints through the prepared pipeline: rasterize,
     /// height-stretch, custom-glyph substitution, effects/post-processor/downscale pass, and
     /// cell-height equalization. Callable repeatedly on one prepared instance.

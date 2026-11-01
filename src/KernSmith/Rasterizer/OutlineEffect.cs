@@ -39,6 +39,9 @@ internal sealed class OutlineEffect : IGlyphEffect
         _shape = shape;
     }
 
+    public (int Left, int Top, int Right, int Bottom) Margins =>
+        (_outlineWidth, _outlineWidth, _outlineWidth, _outlineWidth);
+
     public GlyphLayer Generate(byte[] alphaData, int width, int height, int pitch, GlyphMetrics metrics)
     {
         var ow = _outlineWidth;
