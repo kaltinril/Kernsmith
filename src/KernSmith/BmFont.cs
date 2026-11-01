@@ -198,7 +198,20 @@ public static class BmFont
         using var prepared = PreparedRasterization.Prepare(
             fontData, options, systemFontName, subsetToCharacterSet: true);
         var codepoints = prepared.ResolveCodepoints();
-        return prepared.RasterizeAndProcess(codepoints, equalizeTargetHeight: null);
+        var result = prepared.RasterizeAndProcess(codepoints, equalizeTargetHeight: null);
+
+        // Resolving drops requested characters the font has no glyph for; they failed too, as an
+        // incremental session reports them.
+        var available = prepared.FontInfo.AvailableCodepoints.ToHashSet();
+        var failed = result.FailedCodepoints;
+        var reported = failed.ToHashSet();
+        foreach (var cp in options.Characters.GetCodepoints())
+        {
+            if (!available.Contains(cp) && reported.Add(cp))
+                failed.Add(cp);
+        }
+        failed.Sort();
+        return result;
     }
 
     internal static int EncodeCombinedId(int fontIndex, int codepoint)

@@ -91,6 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`CustomGlyphs` were shrunk by `SuperSampleLevel` or `SdfScale`**: the supplied image went through the super-sample downscale with the rendered glyphs, so a 32x32 image came out 16x16 at level 2 (and its advance halved). Custom glyphs now keep the size, pixels and advance they were given (#301).
 - The `.fnt` `info` line always wrote `aa=1` and `stretchH=100`. It now writes the super-sample level (`SuperSampleLevel`) and the height percent (`HeightPercent`), as BMFont does; fonts generated at the defaults are unchanged (#298).
 - **`HeightPercent` stretched the glyphs but not `lineHeight` or `base`**, so at 150% tall glyphs rose above the line (negative `yoffset`) and lines overlapped. Both now stretch with the glyphs and round up, as BMFont's `scaleH` does (Arial 32 at 150%: `lineHeight` 48 and `base` 39 instead of 32 and 26), which also moves every glyph's `yoffset` down by the base's growth; output at 100% is unchanged (#299).
+- **`BmFontResult.FailedCodepoints` never listed characters missing from the font** — only ones a backend failed to render — although it is documented to, and an incremental session already reports them. `Generate` (and each combined-batch job) now lists every requested character the font has no glyph for, so a character set wider than the font (e.g. 0-255 with control characters) reports those, and the desktop UI's "N failed" count includes them (#290).
 
 ## [0.24.0] - 2026-10-18
 
