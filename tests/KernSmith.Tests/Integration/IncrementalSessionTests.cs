@@ -748,6 +748,28 @@ public class IncrementalSessionTests
             .ShouldBe(generated.Model.Characters.Select(c => c.Id), ignoreOrder: true);
     }
 
+    [Fact]
+    public void Generate_FallbackCharacter_KeepsItsKerningPairs()
+    {
+        // The fallback is added after the font is parsed; a parse subset to Characters alone
+        // dropped its pairs in Generate, while a session (unfiltered parse) kept them (#303).
+        var fontData = LoadTestFont();
+        var genOptions = Options();
+        genOptions.FallbackCharacter = 'V';
+        genOptions.Characters = CharacterSet.FromChars("AT");
+        var generated = BmFont.Generate(fontData, genOptions);
+
+        var options = Options();
+        options.FallbackCharacter = 'V';
+        using var session = BmFont.BeginIncremental(fontData, options);
+        session.AddGlyphs("AT");
+        var sessionPairs = session.CurrentModel.KerningPairs.Select(k => (k.First, k.Second, k.Amount)).ToList();
+        sessionPairs.ShouldContain(k => k.First == 'A' && k.Second == 'V');
+
+        generated.Model.KerningPairs.Select(k => (k.First, k.Second, k.Amount))
+            .ShouldBe(sessionPairs, ignoreOrder: true);
+    }
+
     // ---------------------------------------------------------------
     // 14. Overflow pages on a resumed session keep the existing name stem.
     // ---------------------------------------------------------------

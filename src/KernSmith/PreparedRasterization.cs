@@ -141,7 +141,7 @@ internal sealed class PreparedRasterization : IDisposable
         if (fontReader is TtfFontReader ttfReader)
         {
             ttfReader.RequestedCodepoints = subsetToCharacterSet
-                ? options.Characters.GetCodepointsHashSet()
+                ? SubsetWithFallback(options)
                 : null;
             ttfReader.SharedFontBytes = fontData;
         }
@@ -373,6 +373,22 @@ internal sealed class PreparedRasterization : IDisposable
     }
 
     /// <summary>
+    /// The codepoints a subset parse keeps: the character set plus the fallback that
+    /// <see cref="ResolveCodepoints"/> appends, so the fallback keeps its kerning pairs.
+    /// </summary>
+    private static HashSet<int> SubsetWithFallback(FontGeneratorOptions options)
+    {
+        var codepoints = options.Characters.GetCodepointsHashSet();
+        var fallback = options.FallbackCodepoint
+            ?? (options.FallbackCharacter.HasValue ? (int)options.FallbackCharacter.Value : (int?)null);
+        if (fallback is not { } cp || codepoints.Contains(cp))
+            return codepoints;
+
+        // A copy: the character set owns its set.
+        return new HashSet<int>(codepoints) { cp };
+    }
+
+    /// <summary>
     /// Resolves the codepoints to rasterize from <see cref="Options"/>.Characters against the
     /// parsed font's available codepoints, appending the fallback character/codepoint when
     /// configured (FallbackCodepoint takes precedence over FallbackCharacter).
@@ -391,6 +407,48 @@ internal sealed class PreparedRasterization : IDisposable
         }
 
         return codepoints;
+    }
+
+    /// <summary>
+    /// The size <see cref="RasterizeAndProcess"/> would give a glyph, from the backend's
+    /// metrics alone (no rasterization), or null when the backend has no glyph for it: measured
+    /// at the render size, height-stretched, grown by the baked effects, downscaled from the
+    /// render scale, and a blank glyph given its outline cell. Keep in sync with
+    /// <see cref="RasterizeAndProcess"/>; custom glyphs, post-processors, channel-routed
+    /// effects and cell-height equalization are not modelled.
+    /// </summary>
+    internal (int Width, int Height)? MeasureGlyph(int codepoint)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (_rasterizer.GetGlyphMetrics(codepoint, _effectiveRasterOptions) is not { } metrics)
+            return null;
+
+        int width = metrics.Width, height = metrics.Height;
+        if (width > 0 && height > 0)
+        {
+            if (Options.HeightPercent != 100)
+                height = Math.Max(1, height * Options.HeightPercent / 100);
+
+            if (_effects.Count > 0)
+            {
+                var (left, top, right, bottom) = GlyphCompositor.Margins(_effects);
+                width += left + right;
+                height += top + bottom;
+            }
+
+            if (_renderScale > 1)
+            {
+                width = Math.Max(1, width / _renderScale);
+                height = Math.Max(1, height / _renderScale);
+            }
+        }
+        else if (Options.Outline > 0 && metrics.Advance > 0)
+        {
+            width = height = 1 + Options.Outline * 2;
+        }
+
+        return (width, height);
     }
 
     /// <summary>

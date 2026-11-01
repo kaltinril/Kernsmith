@@ -100,6 +100,17 @@ internal static unsafe class FreeTypeNative
     [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
     public static extern FT_Error FT_Outline_Embolden(FT_Outline_* outline, int strength);
 
+    /// <summary>An outline's control box in 26.6 fixed point (FT_BBox; FT_Pos is pointer-sized here).</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FT_BBox
+    {
+        public nint xMin, yMin, xMax, yMax;
+    }
+
+    /// <summary>Computes the control box of an outline (the box FreeType presets a bitmap from).</summary>
+    [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void FT_Outline_Get_CBox(FT_Outline_* outline, FT_BBox* cbox);
+
     /// <summary>
     /// Sets a driver/module property by name. Used to configure the SDF renderer's
     /// <c>spread</c> (search radius) on the built-in "sdf" module.

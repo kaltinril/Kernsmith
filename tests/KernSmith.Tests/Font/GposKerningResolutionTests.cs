@@ -75,6 +75,23 @@ public sealed class GposKerningResolutionTests
         Kerning(new TtfFontReader().ReadFont(font), 'A', 'V').ShouldBe(-50);
     }
 
+    [Fact]
+    public void ClassZeroSecondGlyphsAreKernedWithAndWithoutASubset()
+    {
+        // ClassDef2 lists only V (class 1); every other second glyph is in class 0, kerned -30
+        // after A. Without a subset the parser used to drop class 0 (#277).
+        var (font, _, _) = RobotoWithGpos((a, v) => Gpos([0], new[] { Format2(a, v, -50, classZeroValue: -30) }));
+
+        foreach (var requested in new HashSet<int>?[] { null, new() { 'A', 'V', 'B', 'o' } })
+        {
+            var info = new TtfFontReader { RequestedCodepoints = requested }.ReadFont(font);
+            Kerning(info, 'A', 'V').ShouldBe(-50, $"subset={requested?.Count}");
+            Kerning(info, 'A', 'B').ShouldBe(-30, $"subset={requested?.Count}");
+            Kerning(info, 'A', 'o').ShouldBe(-30, $"subset={requested?.Count}");
+            Kerning(info, 'V', 'A').ShouldBe(0, $"subset={requested?.Count}");
+        }
+    }
+
     // ------------------------------------------------------------ helpers
 
     private static int Kerning(KernSmith.Font.Models.FontInfo info, char left, char right) =>
@@ -138,16 +155,16 @@ public sealed class GposKerningResolutionTests
 
     /// <summary>
     /// PairPos format 2 covering <paramref name="first"/> (class 0), with <paramref name="second"/>
-    /// in class 1 kerned by <paramref name="value"/> and class 0 by zero.
+    /// in class 1 kerned by <paramref name="value"/> and class 0 by <paramref name="classZeroValue"/>.
     /// </summary>
-    private static byte[] Format2(int first, int second, int value)
+    private static byte[] Format2(int first, int second, int value, int classZeroValue = 0)
     {
         const int coverageAt = 16 + 4;
         const int classDef1At = coverageAt + 6;
         const int classDef2At = classDef1At + 4;
         return Concat(U16(2), U16(coverageAt), U16(0x0004), U16(0),
             U16(classDef1At), U16(classDef2At), U16(1), U16(2),
-            I16(0), I16(value),
+            I16(classZeroValue), I16(value),
             U16(1), U16(1), U16(first),
             U16(2), U16(0),
             U16(1), U16(second), U16(1), U16(1));
