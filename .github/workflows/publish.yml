@@ -200,13 +200,21 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      id-token: write  # GitHub OIDC token for NuGet Trusted Publishing
     steps:
       - uses: actions/download-artifact@v8
         with:
           path: nupkg
           pattern: nupkg-*
           merge-multiple: true
-      - run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      # Trusted Publishing: trade the job's OIDC token for a NuGet API key valid for one hour.
+      # Requires the nuget.org Trusted Publishing policy for kaltinril/Kernsmith, workflow publish.yml.
+      - name: NuGet login (OIDC -> temporary API key)
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: kaltinril
+      - run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
   create-release:
     needs: [validate, build-binaries, publish-nuget]

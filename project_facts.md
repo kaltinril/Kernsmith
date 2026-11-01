@@ -9,6 +9,7 @@ Source of truth for statements about the project. One short fact per line. Updat
 - Jeremy's GitHub username: `kaltinril`. Vic = `vchelaru` (Gum author).
 - Version source of truth is `Directory.Build.props` `<Version>`; all projects inherit it, and no csproj carries its own `PackageVersion`.
 - `publish.yml` fires on a pushed `v*` tag **and** on `workflow_dispatch` — unlike some sibling repos, tagging here really does publish.
+- NuGet publishing uses Trusted Publishing (OIDC via `NuGet/login`, user `kaltinril`), not a stored API key: the nuget.org policy is tied to repository `kaltinril/Kernsmith` and workflow file `publish.yml` with no environment, so renaming that workflow breaks publishing until the policy is updated.
 - License: MIT (see `LICENSE`).
 
 ## Stack & Conventions

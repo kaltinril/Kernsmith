@@ -97,6 +97,22 @@ dotnet pack src/KernSmith.Rasterizers.FreeType -c Release --output ./nupkg
    - Creates a git tag (manual dispatch only — tag push already has one)
    - Creates a GitHub Release page with downloadable binaries (.zip for Windows, .tar.gz for Linux/macOS)
 
+## Publishing credentials
+
+NuGet packages are pushed with [NuGet Trusted Publishing](https://learn.microsoft.com/nuget/nuget-org/trusted-publishing): the `publish-nuget` job asks GitHub for a short-lived OIDC token (`id-token: write`), and `NuGet/login` exchanges it for a NuGet API key that is valid for one hour. There is no stored API key.
+
+This needs a Trusted Publishing policy on nuget.org (your username → **Trusted Publishing**):
+
+| Field | Value |
+|---|---|
+| Package Owner | `kaltinril` |
+| Repository Owner | `kaltinril` |
+| Repository | `Kernsmith` |
+| Workflow File | `publish.yml` (file name only) |
+| Environment | *(empty)* |
+
+Renaming `publish.yml`, moving the repository, or changing the owner breaks the policy until it is updated to match.
+
 ## Version Scheme
 
 [Semantic Versioning](https://semver.org/):
