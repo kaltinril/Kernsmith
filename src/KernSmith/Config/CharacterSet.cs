@@ -7,6 +7,9 @@ public class CharacterSet
 {
     private readonly HashSet<int> _codepoints;
 
+    /// <summary>The last Unicode codepoint.</summary>
+    private const int MaxCodepoint = 0x10FFFF;
+
     private CharacterSet(IEnumerable<int> codepoints)
     {
         _codepoints = new HashSet<int>(codepoints);
@@ -28,13 +31,16 @@ public class CharacterSet
     /// Creates a character set from one or more (start, end) character code ranges.
     /// For example, <c>(0x0020, 0x007E)</c> covers printable ASCII.
     /// </summary>
-    /// <param name="ranges">One or more (start, end) ranges, both ends included.</param>
+    /// <param name="ranges">One or more (start, end) ranges, both ends included. Each is clamped
+    /// to the codepoint space, U+0000 to U+10FFFF.</param>
     public static CharacterSet FromRanges(params (int start, int end)[] ranges)
     {
         var codepoints = new HashSet<int>();
         foreach (var (start, end) in ranges)
         {
-            for (int cp = start; cp <= end; cp++)
+            // Clamped, so a range read from an untrusted config (chars=0-2147483647) cannot
+            // overflow the loop counter or grow the set without bound.
+            for (int cp = Math.Max(start, 0), last = Math.Min(end, MaxCodepoint); cp <= last; cp++)
             {
                 codepoints.Add(cp);
             }

@@ -656,4 +656,14 @@ public sealed class BmfcConfigReaderWriterTests
             Directory.Delete(dir, recursive: true);
         }
     }
+
+    [Fact]
+    public void Parse_CharsRangePastUnicode_IsClampedToTheCodepointSpace()
+    {
+        // A shared .bmfc whose chars= range ran to int.MaxValue looped without end, filling
+        // memory (41 GB after 25 s); ranges now stop at U+10FFFF.
+        var config = BmfcConfigReader.Parse("chars=1114110-6114111\n");
+
+        config.Options.Characters.GetCodepoints().ShouldBe(new[] { 0x10FFFE, 0x10FFFF });
+    }
 }

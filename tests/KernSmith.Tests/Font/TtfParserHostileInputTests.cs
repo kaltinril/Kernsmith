@@ -237,6 +237,137 @@ public class TtfParserHostileInputTests
         parser.NamedInstances.ShouldBeEmpty();
     }
 
+    // ------------------------------------------------------------ work amplification
+
+    [Fact]
+    public void CmapFormat12_OverlappingGroups_WithoutASubset_AreRejectedQuickly()
+    {
+        // 20000 groups each re-covering U+0000..U+249EF, under the 200,000-entry cap: groups may
+        // not overlap, so a valid format 12 visits at most 0x110000 codes; this one would make
+        // three billion dictionary writes.
+        var cmap = CmapFormat12(Enumerable.Repeat((0u, 149_999u, 1u), 20_000).ToArray());
+
+        RunWithin(TimeSpan.FromSeconds(10), () =>
+            Should.Throw<FontParsingException>(() => new TtfParser(RobotoWithTable("cmap", cmap))));
+    }
+
+    [Fact]
+    public void Fvar_ManyAxesNamedByALongNameTable_ParseQuickly()
+    {
+        // 65535 axes sharing one record (axisSize 0), each naming nameID 256, which 5000 name
+        // records carry as 1000-character strings: resolving each axis name by rescanning and
+        // decoding the whole name table is 327 million string decodes.
+        const int Records = 5000;
+        var text = System.Text.Encoding.BigEndianUnicode.GetBytes(new string('W', 1000));
+        var record = Concat(U16(3), U16(1), U16(0x409), U16(256), U16(text.Length), U16(0));
+        var name = Concat([U16(0), U16(Records), U16(6 + (Records * 12)), .. Enumerable.Repeat(record, Records), text]);
+        var fvar = Concat(
+            U16(1), U16(0), U16(16), U16(2), U16(0xFFFF), U16(0), U16(0), U16(0),
+            Tag("wght"), U32(100u << 16), U32(400u << 16), U32(900u << 16), U16(0), U16(256));
+        var font = RobotoWithTables(("name", name), ("fvar", fvar));
+
+        var parser = RunWithin(TimeSpan.FromSeconds(10), () => new TtfParser(font));
+
+        parser.VariationAxes!.Count.ShouldBe(0xFFFF);
+        parser.VariationAxes[0].Name.ShouldBe(new string('W', 1000));
+    }
+
+    [Fact]
+    public void Fvar_InstanceRecordsShorterThanTheirCoordinates_AreSkippedQuickly()
+    {
+        // 65535 axes (one shared record) and 65535 one-byte instance records, each reading 65535
+        // coordinates from the bytes after it: 4.3 billion reads. A record shorter than its own
+        // coordinates overlaps the next one.
+        var fvar = new byte[16 + 0xFFFF + 4 + (0xFFFF * 4)];
+        Concat(
+            U16(1), U16(0), U16(16), U16(2), U16(0xFFFF), U16(0), U16(0xFFFF), U16(1),
+            Tag("wght"), U32(100u << 16), U32(400u << 16), U32(900u << 16), U16(0), U16(256)).CopyTo(fvar, 0);
+
+        var parser = RunWithin(TimeSpan.FromSeconds(10), () => new TtfParser(RobotoWithTable("fvar", fvar)));
+
+        parser.VariationAxes!.Count.ShouldBe(0xFFFF);
+        parser.NamedInstances.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Gpos_KernLookupListedHundredsOfMillionsOfTimes_ParsesQuickly()
+    {
+        // 10000 'kern' feature records share one feature listing lookup 0 30000 times: the
+        // one-subtable lookup is parsed 300 million times from a 120 KB table. Its only first
+        // glyph (0xFFF0) is outside the subset, so the cost is all parsing, no pairs.
+        var subtable = PairPosFormat1(coverage: Concat(U16(1), U16(1), U16(0xFFF0)));
+        var gpos = GposWithRepeatedKernLookup(subtable, features: 10_000, lookupRepeats: 30_000);
+
+        var parser = RunWithin(TimeSpan.FromSeconds(10), () => new TtfParser(RobotoWithGpos(gpos), 0, [0x41]));
+
+        parser.GposPairs.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Gpos_ClassPairExpandingToTensOfMillionsOfPairs_IsCapped()
+    {
+        // One class pair (5000 coverage glyphs in class 0 x 5000 glyphs in classDef2 class 1)
+        // from a 60-byte subtable: 25 million pairs without a subset, 4.3 billion at 65535.
+        var records = Concat(I16(0), I16(-40));
+        var coverage = Concat(U16(2), U16(1), U16(0), U16(4999), U16(0));
+        var classDef1 = Concat(U16(2), U16(0));
+        var classDef2 = Concat(U16(2), U16(1), U16(0), U16(4999), U16(1));
+        int coverageAt = 16 + records.Length;
+        int classDef1At = coverageAt + coverage.Length;
+        int classDef2At = classDef1At + classDef1.Length;
+        var subtable = Concat(
+            U16(2), U16((ushort)coverageAt), U16(4), U16(0),
+            U16((ushort)classDef1At), U16((ushort)classDef2At), U16(1), U16(2),
+            records, coverage, classDef1, classDef2);
+
+        var parser = new TtfParser(RobotoWithGpos(Gpos(subtable)));
+
+        parser.GposPairs.Count.ShouldBeLessThanOrEqualTo((int)TtfParser.MaxGposPairs);
+    }
+
+    // ------------------------------------------------------------ name strings in output
+
+    [Fact]
+    public void FamilyNameWithQuotesNewlinesAndPathSeparators_CannotRestructureTheFntOrItsPageNames()
+    {
+        // The family name goes into info face="..." and the default page name {family}_0.png.
+        // Unescaped, this one ended the face string, started a new line and declared a second
+        // page pointing outside the output directory.
+        const string Family = "Evil\"\npage id=1 file=\"../../../pwn.png\"\ninfo face=\"x/..\\\\y\u0001";
+        var text = System.Text.Encoding.BigEndianUnicode.GetBytes(Family);
+        var name = Concat(U16(0), U16(1), U16(18), U16(3), U16(1), U16(0x409), U16(1), U16(text.Length), U16(0), text);
+        var font = RobotoWithTable("name", name);
+
+        var result = BmFont.Generate(font, new FontGeneratorOptions { Size = 16, Characters = CharacterSet.FromChars("A") });
+
+        var reparsed = KernSmith.Output.BmFontReader.ReadText(result.FntText);
+        reparsed.Pages.Count.ShouldBe(1);
+        reparsed.Pages[0].File.ShouldNotContain("/");
+        reparsed.Pages[0].File.ShouldNotContain("\\");
+        reparsed.Info.Face.ShouldNotContain("\"");
+        result.FntText.Split('\n').Count(l => l.StartsWith("info ", StringComparison.Ordinal)).ShouldBe(1);
+        Should.NotThrow(() => result.FntXml);
+    }
+
+    /// <summary>
+    /// A GPOS whose lookup 0 holds <paramref name="subtable"/> (PairPos), with
+    /// <paramref name="features"/> 'kern' feature records all pointing at one feature that lists
+    /// lookup 0 <paramref name="lookupRepeats"/> times.
+    /// </summary>
+    private static byte[] GposWithRepeatedKernLookup(byte[] subtable, int features, int lookupRepeats)
+    {
+        int featureListAt = 22 + subtable.Length;
+        int featureAt = 2 + (6 * features);
+        var records = Concat([.. Enumerable.Repeat(Concat(Tag("kern"), U16((ushort)featureAt)), features)]);
+        return Concat(
+            U16(1), U16(0), U16(0), U16((ushort)featureListAt), U16(10), // header
+            U16(1), U16(4),                                              // LookupList @10
+            U16(2), U16(0), U16(1), U16(8),                              // Lookup @14
+            subtable,                                                    // subtable @22
+            U16(features), records,                                      // FeatureList
+            U16(0), U16(lookupRepeats), new byte[2 * lookupRepeats]);   // Feature: lookup 0, repeated
+    }
+
     /// <summary>A cmap with one (3, 10) format 12 subtable.</summary>
     private static byte[] CmapFormat12(params (uint Start, uint End, uint Glyph)[] groups)
     {
@@ -311,7 +442,11 @@ public class TtfParserHostileInputTests
     private static byte[] RobotoWithGpos(byte[] gpos) => RobotoWithTable("GPOS", gpos);
 
     /// <summary>Roboto with one table replaced (or added), rebuilt as a fresh sfnt.</summary>
-    private static byte[] RobotoWithTable(string replacedTag, byte[] replacement)
+    private static byte[] RobotoWithTable(string replacedTag, byte[] replacement) =>
+        RobotoWithTables((replacedTag, replacement));
+
+    /// <summary>Roboto with each given table replaced (or added), rebuilt as a fresh sfnt.</summary>
+    private static byte[] RobotoWithTables(params (string Tag, byte[] Data)[] replacements)
     {
         var font = Roboto();
         int numTables = BinaryPrimitives.ReadUInt16BigEndian(font.AsSpan(4));
@@ -322,11 +457,15 @@ public class TtfParserHostileInputTests
             string tag = System.Text.Encoding.ASCII.GetString(font, record, 4);
             int offset = (int)BinaryPrimitives.ReadUInt32BigEndian(font.AsSpan(record + 8));
             int length = (int)BinaryPrimitives.ReadUInt32BigEndian(font.AsSpan(record + 12));
-            tables.Add((tag, tag == replacedTag ? replacement : font[offset..(offset + length)]));
+            var replaced = replacements.FirstOrDefault(r => r.Tag == tag);
+            tables.Add((tag, replaced.Data ?? font[offset..(offset + length)]));
         }
 
-        if (!tables.Any(t => t.Tag == replacedTag))
-            tables.Add((replacedTag, replacement));
+        foreach (var (tag, data) in replacements)
+        {
+            if (!tables.Any(t => t.Tag == tag))
+                tables.Add((tag, data));
+        }
 
         int dataOffset = 12 + (tables.Count * 16);
         var result = new byte[dataOffset + tables.Sum(t => (t.Data.Length + 3) & ~3)];

@@ -102,4 +102,14 @@ public class CharacterSetTests
         resolved.Count.ShouldBe(4);
         resolved.ShouldBe(new[] { 65, 66, 67, 68 });
     }
+
+    [Fact]
+    public void FromRanges_RangesPastUnicode_AreClampedToTheCodepointSpace()
+    {
+        // Ranges were taken as given: an end of int.MaxValue wrapped the int loop counter and
+        // never finished, filling the set without bound. Codepoints run from 0 to U+10FFFF.
+        var set = CharacterSet.FromRanges((-5, -1), (0x10FFFE, 0x10FFFF + 5_000_000));
+
+        set.GetCodepoints().ShouldBe(new[] { 0x10FFFE, 0x10FFFF });
+    }
 }

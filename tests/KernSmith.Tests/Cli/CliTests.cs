@@ -273,6 +273,48 @@ public class CliTests : IDisposable
         fntContent.ShouldContain("char id=");
     }
 
+    // -- convert --
+
+    private const string MinimalFntHead =
+        "info face=\"X\" size=16 bold=0 italic=0 charset=\"\" unicode=1 stretchH=100 smooth=1 aa=1 padding=0,0,0,0 spacing=1,1\n" +
+        "common lineHeight=19 base=15 scaleW=256 scaleH=256 pages=1 packed=0\n";
+
+    [Theory]
+    [InlineData("../../payload.txt")]
+    [InlineData("sub/../../../payload.txt")]
+    public void Convert_PageFileEscapingTheDirectory_IsNotCopiedOutsideTheOutputDirectory(string pageFile)
+    {
+        // A .fnt's page file= is untrusted: a relative path climbing out of the input directory
+        // was copied from there to the same relative place outside the output directory.
+        var inputDir = Directory.CreateDirectory(Path.Combine(_tempDir, "in", "a", "b")).FullName;
+        File.WriteAllText(Path.Combine(_tempDir, "in", "payload.txt"), "not an atlas");
+        var inputFnt = Path.Combine(inputDir, "font.fnt");
+        File.WriteAllText(inputFnt, MinimalFntHead + $"page id=0 file=\"{pageFile}\"\nchars count=0\n");
+        var outputDir = Directory.CreateDirectory(Path.Combine(_tempDir, "out", "p", "q")).FullName;
+
+        var (exitCode, _, stderr) = RunCli("convert", inputFnt, "-o", Path.Combine(outputDir, "out.fnt"), "--format", "text");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        File.Exists(Path.Combine(outputDir, "out.fnt")).ShouldBeTrue();
+        File.Exists(Path.Combine(_tempDir, "out", "payload.txt")).ShouldBeFalse("the page was written outside the output directory");
+    }
+
+    [Fact]
+    public void Convert_NestedPageFile_IsStillCopiedBesideTheOutput()
+    {
+        var inputDir = Directory.CreateDirectory(Path.Combine(_tempDir, "in")).FullName;
+        Directory.CreateDirectory(Path.Combine(inputDir, "pages"));
+        File.WriteAllText(Path.Combine(inputDir, "pages", "font_0.png"), "atlas");
+        var inputFnt = Path.Combine(inputDir, "font.fnt");
+        File.WriteAllText(inputFnt, MinimalFntHead + "page id=0 file=\"pages/font_0.png\"\nchars count=0\n");
+        var outputDir = Directory.CreateDirectory(Path.Combine(_tempDir, "out")).FullName;
+
+        var (exitCode, _, stderr) = RunCli("convert", inputFnt, "-o", Path.Combine(outputDir, "out.fnt"), "--format", "text");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        File.Exists(Path.Combine(outputDir, "pages", "font_0.png")).ShouldBeTrue();
+    }
+
     // -- WOFF2 input --
 
     private static readonly string Woff2FontPath = Path.Combine(

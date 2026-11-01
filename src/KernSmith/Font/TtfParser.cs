@@ -381,19 +381,39 @@ internal class TtfParser
     private readonly record struct NameRecord(int Priority, int Start, int Length);
 
     /// <summary>
-    /// Resolves a name ID from the name table, returning the best available string.
+    /// Resolves a name ID from the name table, returning the best available string: the first
+    /// record of the highest priority (Windows English, Windows other, Mac Roman).
     /// </summary>
+    /// <remarks>
+    /// The table is indexed once and each string decoded once: fvar names its axes and instances
+    /// by ID, and resolving each by rescanning the table is quadratic in a hostile font.
+    /// </remarks>
     private string? ResolveNameId(int nameId)
     {
+        _resolvedNames ??= BuildNameIndex();
+        if (!_resolvedNames.TryGetValue(nameId, out var entry))
+            return null;
+        if (entry.Value is not null)
+            return entry.Value;
+
+        var strData = GetTable(Tag('n', 'a', 'm', 'e')).Slice(entry.Record.Start, entry.Record.Length);
+        var value = entry.Record.Priority == 1 ? DecodeLatin1(strData) : DecodeUtf16BigEndian(strData);
+        _resolvedNames[nameId] = (entry.Record, value);
+        return value;
+    }
+
+    /// <summary>The name ID -> best record index behind <see cref="ResolveNameId"/>, with decoded strings cached.</summary>
+    private Dictionary<int, (NameRecord Record, string? Value)>? _resolvedNames;
+
+    private Dictionary<int, (NameRecord Record, string? Value)> BuildNameIndex()
+    {
+        var index = new Dictionary<int, (NameRecord Record, string? Value)>();
         var table = GetTable(Tag('n', 'a', 'm', 'e'));
         if (table.IsEmpty || table.Length < 6)
-            return null;
+            return index;
 
         var count = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(2));
         var stringOffset = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(4));
-
-        string? best = null;
-        int bestPriority = -1;
 
         for (var i = 0; i < count; i++)
         {
@@ -408,40 +428,23 @@ internal class TtfParser
             var length = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(recOffset + 8));
             var offset = BinaryPrimitives.ReadUInt16BigEndian(table.Slice(recOffset + 10));
 
-            if (nid != nameId)
-                continue;
-
             var strStart = stringOffset + offset;
             if (strStart + length > table.Length)
                 continue;
 
-            var strData = table.Slice(strStart, length);
-            string value;
             int priority;
-
             if (platformID == 3 && encodingID == 1)
-            {
-                value = DecodeUtf16BigEndian(strData);
                 priority = languageID == 0x0409 ? 3 : 2;
-            }
             else if (platformID == 1 && encodingID == 0)
-            {
-                value = DecodeLatin1(strData);
                 priority = 1;
-            }
             else
-            {
                 continue;
-            }
 
-            if (priority > bestPriority)
-            {
-                best = value;
-                bestPriority = priority;
-            }
+            if (!index.TryGetValue(nid, out var current) || priority > current.Record.Priority)
+                index[nid] = (new NameRecord(priority, strStart, length), null);
         }
 
-        return best;
+        return index;
     }
 
     // 17A: fvar Table — Variable font axes and named instances
@@ -500,8 +503,9 @@ internal class TtfParser
         var instancesStart = axesArrayOffset + (long)axisCount * axisSize;
 
         // An instance's coordinates are named by the axes; if any axis record was unreadable,
-        // the instances cannot be mapped.
-        if (axisTags.Count < axisCount)
+        // the instances cannot be mapped. A record shorter than its own coordinates overlaps the
+        // next one, and reading them anyway costs instanceCount x axisCount in a hostile font.
+        if (axisTags.Count < axisCount || instanceSize < 4 + axisCount * 4)
         {
             NamedInstances = Array.Empty<NamedInstance>();
             return;
@@ -637,6 +641,9 @@ internal class TtfParser
         if (numGroups < 0 || 16L + (long)numGroups * 12 > subtable.Length)
             return;
 
+        // Groups may not overlap, so a valid subtable visits at most MaxCodepoint + 1 codes in
+        // total, and filtering a group through the subset costs no more than visiting it.
+        long visited = 0;
         for (var i = 0; i < numGroups; i++)
         {
             var groupOffset = 16 + i * 12;
@@ -652,6 +659,10 @@ internal class TtfParser
             var startCharCode = (int)rawStart;
             var endCharCode = (int)Math.Min(rawEnd, MaxCodepoint);
             var startGlyphID = (int)BinaryPrimitives.ReadUInt32BigEndian(subtable.Slice(groupOffset + 8));
+
+            visited += Math.Min(endCharCode - startCharCode + 1L, _requestedCodepoints?.Count ?? long.MaxValue);
+            if (visited > MaxCodepoint + 1)
+                throw new FontParsingException("cmap", 0, "format 12 groups overlap (they cover more than 0x110000 codes).");
 
             // With a requested subset, visit only the requested codepoints a long range contains:
             // overlapping full-Unicode groups would otherwise cost a million lookups each.
@@ -874,7 +885,7 @@ internal class TtfParser
 
             for (var s = 0; s < subTableCount; s++)
             {
-                if (6 + (s + 1) * 2 > lookup.Length)
+                if (6 + (s + 1) * 2 > lookup.Length || !SpendGposWork(SubtableVisitCost))
                     break;
 
                 var subTableOffset = BinaryPrimitives.ReadUInt16BigEndian(lookup.Slice(6 + s * 2));
@@ -964,6 +975,51 @@ internal class TtfParser
         }
     }
 
+    /// <summary>
+    /// Budget for walking GPOS kerning: subtables, coverage, class and pair-record entries
+    /// visited, plus pairs produced. Lookups, subtables and their tables can be shared and listed
+    /// repeatedly, and a class pair expands to every left glyph times every right glyph, so a
+    /// small hostile table can otherwise demand billions of steps.
+    /// </summary>
+    /// <remarks>
+    /// Measured over the Windows system fonts and the test fixtures parsed without a subset, the
+    /// most any spent was about 16 million steps and 5.4 million pairs (Calibri Light); both limits
+    /// leave room above that, and a subset spends far less.
+    /// </remarks>
+    internal const long MaxGposWork = 64_000_000;
+
+    /// <summary>The most kerning pairs GPOS may produce (see <see cref="MaxGposWork"/>).</summary>
+    internal const long MaxGposPairs = 16_000_000;
+
+    /// <summary>
+    /// Steps charged per subtable visited, for its fixed parse cost (a coverage list and a
+    /// pooled buffer). Real fonts visit at most about a thousand kerning subtables, so this costs
+    /// them little, while a lookup or subtable listed millions of times runs out quickly.
+    /// </summary>
+    private const long SubtableVisitCost = 1000;
+
+    /// <summary>
+    /// Most 'kern' lookup references read from the FeatureList. Real fonts list a few hundred
+    /// (one feature per script, each naming the same lookups); a hostile one can share one
+    /// feature among thousands of records, each naming thousands of lookups.
+    /// </summary>
+    private const int MaxKernLookupReferences = 65536;
+
+    private long _gposWork;
+    private long _gposPairs;
+
+    /// <summary>
+    /// Charges <paramref name="steps"/> and <paramref name="newPairs"/> to the GPOS budget; false
+    /// once either limit is passed, after which every later charge fails too and kerning keeps
+    /// only the pairs read so far.
+    /// </summary>
+    private bool SpendGposWork(long steps, long newPairs = 0)
+    {
+        _gposWork += steps;
+        _gposPairs += newPairs;
+        return _gposWork <= MaxGposWork && _gposPairs <= MaxGposPairs;
+    }
+
     private static List<int> FindKernFeatureLookups(ReadOnlySpan<byte> table, int featureListOffset)
     {
         var result = new List<int>();
@@ -995,6 +1051,8 @@ internal class TtfParser
             {
                 if (4 + (j + 1) * 2 > featureTable.Length)
                     break;
+                if (result.Count == MaxKernLookupReferences)
+                    return result;
                 result.Add(BinaryPrimitives.ReadUInt16BigEndian(featureTable.Slice(4 + j * 2)));
             }
         }
@@ -1043,7 +1101,10 @@ internal class TtfParser
         {
             var firstGlyphOf = firstGlyphPool.AsSpan(0, pairSetCount);
             firstGlyphOf.Fill(-1);
-            foreach (var (glyph, index) in ParseCoverage(From(subtable, coverageOffset)))
+            var coverage = ParseCoverage(From(subtable, coverageOffset));
+            if (!SpendGposWork(pairSetCount + coverage.Count))
+                return;
+            foreach (var (glyph, index) in coverage)
             {
                 if ((uint)index < (uint)pairSetCount && firstGlyphOf[index] < 0)
                     firstGlyphOf[index] = glyph;
@@ -1083,7 +1144,7 @@ internal class TtfParser
             for (var p = 0; p < pairValueCount; p++)
             {
                 var recOffset = 2 + p * recordSize;
-                if (recOffset + recordSize > pairSet.Length)
+                if (recOffset + recordSize > pairSet.Length || !SpendGposWork(1))
                     break;
 
                 // A zero record still claims its pair (it often cancels a later class kern).
@@ -1094,6 +1155,8 @@ internal class TtfParser
                 var secondGlyph = BinaryPrimitives.ReadUInt16BigEndian(pairSet.Slice(recOffset));
                 if (_relevantGlyphIndices != null && !_relevantGlyphIndices.Contains(secondGlyph))
                     continue;
+                if (!SpendGposWork(1, 1))
+                    break;
                 if (xAdvance != 0)
                     pairs.Add(new KerningPair(firstGlyph, secondGlyph, xAdvance));
                 resolver?.Offer(firstGlyph, secondGlyph, xAdvance);
@@ -1119,6 +1182,8 @@ internal class TtfParser
             return;
 
         var relevant = _relevantGlyphIndices;
+        if (!SpendGposWork(class1Count + class2Count))
+            return;
 
         // First glyphs by class: the coverage glyphs in coverage order (duplicates kept), each
         // in its classDef1 class (unlisted = class 0), filtered to the subset up front rather
@@ -1129,7 +1194,10 @@ internal class TtfParser
         var class1 = RentClassTable(classDef1, out var class1Length);
         try
         {
-            foreach (var (glyph, _) in ParseCoverage(From(subtable, coverageOffset)))
+            var coverage = ParseCoverage(From(subtable, coverageOffset));
+            if (!SpendGposWork(class1Length + coverage.Count))
+                return;
+            foreach (var (glyph, _) in coverage)
             {
                 if (relevant != null && !relevant.Contains(glyph))
                     continue;
@@ -1158,6 +1226,8 @@ internal class TtfParser
         var class2 = RentClassTable(classDef2, out var class2Length);
         try
         {
+            if (!SpendGposWork(2L * class2Length + (relevant?.Count ?? 0)))
+                return;
             VisitClassDef(classDef2, class2, rightByClass, relevant);
             if (relevant != null)
             {
@@ -1186,7 +1256,7 @@ internal class TtfParser
             {
                 // 64-bit: 65535 x 65535 classes overflow an int offset.
                 var recordOffset = arrayStart + ((long)c1 * class2Count + c2) * recordPairSize;
-                if (recordOffset + recordPairSize > subtable.Length)
+                if (recordOffset + recordPairSize > subtable.Length || !SpendGposWork(1))
                     break;
 
                 var rightGlyphs = rightByClass[c2];
@@ -1196,6 +1266,10 @@ internal class TtfParser
                 var xAdvance = ReadXAdvanceFromValueRecord(subtable.Slice((int)recordOffset), valueFormat1);
                 if (xAdvance == 0)
                     continue;
+
+                var produced = (long)leftGlyphs.Count * rightGlyphs.Count;
+                if (!SpendGposWork(produced, produced))
+                    return;
 
                 foreach (var left in leftGlyphs)
                 {

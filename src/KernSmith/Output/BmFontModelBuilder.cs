@@ -45,7 +45,7 @@ internal static class BmFontModelBuilder
         var pages = new List<PageEntry>();
         for (int i = 0; i < packResult.PageCount; i++)
         {
-            var pageBaseName = outputBaseName ?? fontInfo.FamilyName;
+            var pageBaseName = outputBaseName ?? PageStem(fontInfo.FamilyName);
             pages.Add(new PageEntry(i, $"{pageBaseName}_{i}{textureExtension}"));
         }
 
@@ -162,6 +162,26 @@ internal static class BmFontModelBuilder
             XAdvance: glyph.Metrics.Advance + advanceAdjustX,
             Page: placement.PageIndex,
             Channel: channel);
+    }
+
+    /// <summary>
+    /// The default page-name stem for a family name: every character Windows forbids in a file
+    /// name (path separators included) becomes '_'. The family name comes from the font, and a
+    /// page name is joined to the descriptor's directory by whatever loads it, so it must stay a
+    /// plain file name. The set is fixed rather than <see cref="Path.GetInvalidFileNameChars"/>
+    /// so the same font names its pages the same way on every OS.
+    /// </summary>
+    internal static string PageStem(string familyName)
+    {
+        const string Forbidden = "\"*/:<>?\\|";
+        if (!familyName.Any(c => c < ' ' || Forbidden.Contains(c)))
+            return familyName;
+
+        return string.Create(familyName.Length, familyName, static (chars, name) =>
+        {
+            for (var i = 0; i < chars.Length; i++)
+                chars[i] = name[i] < ' ' || Forbidden.Contains(name[i]) ? '_' : name[i];
+        });
     }
 
     /// <summary>
