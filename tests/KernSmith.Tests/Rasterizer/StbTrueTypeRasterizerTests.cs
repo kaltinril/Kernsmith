@@ -323,6 +323,87 @@ public class StbTrueTypeRasterizerTests : IDisposable
         values[^1].ShouldBeLessThan(128);
     }
 
+    [Theory]
+    [InlineData(32, false)]
+    [InlineData(48, false)]
+    [InlineData(32, true)]
+    public void RasterizeGlyph_SdfBold_EdgeColumnsAreOutsideOnEveryRow(int size, bool italic)
+    {
+        // Regression for #264: emboldening shifted a contour's start point and its duplicate
+        // closing vertex by different amounts, leaving a gap that made the inside test class
+        // whole rows left of the glyph as inside (1-px horizontal streaks).
+        _rasterizer = CreateAndLoadRasterizer();
+        var options = new RasterOptions
+        {
+            Size = size,
+            AntiAlias = AntiAliasMode.Grayscale,
+            Sdf = true,
+            Bold = true,
+            Italic = italic
+        };
+
+        var streaks = new List<string>();
+        for (int cp = 33; cp <= 126; cp++)
+        {
+            var glyph = _rasterizer.RasterizeGlyph(cp, options);
+            if (glyph is null || glyph.Width == 0)
+                continue;
+
+            for (int y = 0; y < glyph.Height; y++)
+            {
+                int left = glyph.BitmapData[y * glyph.Pitch];
+                int right = glyph.BitmapData[y * glyph.Pitch + glyph.Width - 1];
+                if (left >= 128 || right >= 128)
+                    streaks.Add($"'{(char)cp}' row {y}: left {left}, right {right}");
+            }
+        }
+
+        streaks.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void RasterizeGlyph_SdfItalic_OverlappingContoursReadAsInside()
+    {
+        // Regression for #263: the styled SDF path took the ray-crossing parity (even-odd), so
+        // where two contours overlap the solid ink read as outside. Roboto Flex ships its
+        // contours unmerged. Every pixel the non-zero-filled bitmap covers fully must be inside
+        // (>= 128) in the distance field of the same italic outline.
+        using var rasterizer = new StbTrueTypeRasterizer();
+        rasterizer.LoadFont(File.ReadAllBytes(Path.Combine(FixturesDir, "RobotoFlex-Variable.ttf")));
+        var bitmapOptions = new RasterOptions { Size = 48, AntiAlias = AntiAliasMode.Grayscale, Italic = true };
+        var sdfOptions = bitmapOptions with { Sdf = true };
+
+        var holes = new List<string>();
+        for (int cp = 33; cp <= 126; cp++)
+        {
+            var bitmap = rasterizer.RasterizeGlyph(cp, bitmapOptions);
+            var sdf = rasterizer.RasterizeGlyph(cp, sdfOptions);
+            if (bitmap is null || sdf is null || bitmap.Width == 0)
+                continue;
+
+            int dx = bitmap.Metrics.BearingX - sdf.Metrics.BearingX;
+            int dy = sdf.Metrics.BearingY - bitmap.Metrics.BearingY;
+            int count = 0;
+            for (int y = 0; y < bitmap.Height; y++)
+            {
+                for (int x = 0; x < bitmap.Width; x++)
+                {
+                    if (bitmap.BitmapData[y * bitmap.Pitch + x] != 255)
+                        continue;
+                    int sx = x + dx, sy = y + dy;
+                    if (sx < 0 || sy < 0 || sx >= sdf.Width || sy >= sdf.Height
+                        || sdf.BitmapData[sy * sdf.Pitch + sx] < 128)
+                        count++;
+                }
+            }
+
+            if (count > 0)
+                holes.Add($"'{(char)cp}': {count} covered pixels outside");
+        }
+
+        holes.ShouldBeEmpty();
+    }
+
     // -- 16. LoadSystemFont throws NotSupportedException ------------------
 
     [Fact]
@@ -731,14 +812,11 @@ public class StbTrueTypeRasterizerTests : IDisposable
 
         // Advance should match exactly.
         metrics.Value.Advance.ShouldBe(glyph.Metrics.Advance);
-        // SDF pads each side by the spread (8 by default, 16 total), plus bold expansion and
-        // rounding. Use a tolerance of 18 to account for all these combined effects.
-        const int sdfTolerance = 18;
-        Math.Abs(metrics.Value.Width - glyph.Metrics.Width).ShouldBeLessThanOrEqualTo(sdfTolerance);
-        Math.Abs(metrics.Value.Height - glyph.Metrics.Height).ShouldBeLessThanOrEqualTo(sdfTolerance);
-        // BearingX and BearingY also affected by SDF padding.
-        Math.Abs(metrics.Value.BearingX - glyph.Metrics.BearingX).ShouldBeLessThanOrEqualTo(sdfTolerance);
-        Math.Abs(metrics.Value.BearingY - glyph.Metrics.BearingY).ShouldBeLessThanOrEqualTo(sdfTolerance);
+        // The metrics include the SDF padding (#262), so only rounding separates them.
+        Math.Abs(metrics.Value.Width - glyph.Metrics.Width).ShouldBeLessThanOrEqualTo(1);
+        Math.Abs(metrics.Value.Height - glyph.Metrics.Height).ShouldBeLessThanOrEqualTo(1);
+        Math.Abs(metrics.Value.BearingX - glyph.Metrics.BearingX).ShouldBeLessThanOrEqualTo(1);
+        Math.Abs(metrics.Value.BearingY - glyph.Metrics.BearingY).ShouldBeLessThanOrEqualTo(1);
     }
 
     // -- Helpers ----------------------------------------------------------

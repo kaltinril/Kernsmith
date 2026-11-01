@@ -146,8 +146,18 @@ internal static class OutlineTransforms
         for (int i = 0; i < count; i++)
         {
             int curr = start + i;
-            int prev = start + ((i - 1 + count) % count);
-            int next = start + ((i + 1) % count);
+
+            // The neighbours are the nearest vertices at a different position, so coincident
+            // vertices get the same shift. stbtt_GetGlyphShape ends every contour with a vertex
+            // repeating its start point; shifting the two copies differently opens the contour.
+            int prevStep = 1;
+            while (prevStep < count && SamePoint(vertices, curr, start + ((i - prevStep + count) % count)))
+                prevStep++;
+            int nextStep = 1;
+            while (nextStep < count && SamePoint(vertices, curr, start + ((i + nextStep) % count)))
+                nextStep++;
+            int prev = start + ((i - prevStep + count) % count);
+            int next = start + ((i + nextStep) % count);
 
             float px = vertices[prev].x;
             float py = vertices[prev].y;
@@ -265,4 +275,7 @@ internal static class OutlineTransforms
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe bool SamePoint(Stb.stbtt_vertex* vertices, int a, int b) =>
+        vertices[a].x == vertices[b].x && vertices[a].y == vertices[b].y;
 }

@@ -25,7 +25,22 @@ internal class TtfParser
     public NameInfo? Names { get; private set; }
     public IReadOnlyDictionary<int, int> CmapTable { get; private set; } = ReadOnlyDictionary<int, int>.Empty;
     public IReadOnlyList<KerningPair> KernPairs { get; private set; } = Array.Empty<KerningPair>();
+    /// <summary>
+    /// Every non-zero PairPos record of the 'kern' feature's lookups, in feature-list, subtable
+    /// and table order, duplicates and shadowed records included (the raw extraction that
+    /// <c>GposEquivalenceTests</c> pins). Kerning uses <see cref="GposKerningPairs"/>.
+    /// </summary>
     public IReadOnlyList<KerningPair> GposPairs { get; private set; } = Array.Empty<KerningPair>();
+
+    /// <summary>
+    /// One kerning value per glyph pair, as a shaper applies the 'kern' feature: within a lookup
+    /// the first subtable that matches the pair wins (a format 1 record matches its pair, even
+    /// with a zero value; a format 2 subtable matches every pair whose first glyph it covers),
+    /// and each listed lookup applies once, the values of all of them adding up. Pairs
+    /// that come to zero are left out. Order: lookups by first listing in the feature list (the
+    /// order <see cref="GposPairs"/> has, so unconflicted output keeps its order), then first match.
+    /// </summary>
+    public IReadOnlyList<KerningPair> GposKerningPairs { get; private set; } = Array.Empty<KerningPair>();
     public IReadOnlyList<VariationAxis>? VariationAxes { get; private set; }
     public IReadOnlyList<NamedInstance>? NamedInstances { get; private set; }
 
@@ -834,10 +849,17 @@ internal class TtfParser
         var lookupCount = BinaryPrimitives.ReadUInt16BigEndian(lookupList);
         var pairs = new List<KerningPair>();
 
+        // One resolver per distinct lookup: a lookup several 'kern' features list applies once.
+        var resolvers = new Dictionary<int, GposLookupResolver>();
+
         foreach (var lookupIndex in kernLookupIndices)
         {
             if (lookupIndex >= lookupCount || 2 + (lookupIndex + 1) * 2 > lookupList.Length)
                 continue;
+
+            GposLookupResolver? resolver = null;
+            if (!resolvers.ContainsKey(lookupIndex))
+                resolvers[lookupIndex] = resolver = new GposLookupResolver();
 
             var lookupOffset = BinaryPrimitives.ReadUInt16BigEndian(lookupList.Slice(2 + lookupIndex * 2));
             if (lookupOffset >= lookupList.Length)
@@ -874,11 +896,72 @@ internal class TtfParser
 
                 // Only handle PairPos (Type 2)
                 if (effectiveType == 2)
-                    ParsePairPos(subtable, pairs);
+                    ParsePairPos(subtable, pairs, resolver);
             }
         }
 
         GposPairs = pairs;
+        GposKerningPairs = GposLookupResolver.Sum(resolvers.Values);
+    }
+
+    /// <summary>
+    /// Resolves one GPOS lookup's PairPos subtables to one value per pair, first match winning:
+    /// a format 1 record claims its pair (a zero value too), and a format 2 subtable claims every
+    /// pair whose first glyph it covers, so a later subtable cannot change those.
+    /// </summary>
+    private sealed class GposLookupResolver
+    {
+        private readonly Dictionary<long, int> _values = new();
+        private HashSet<int>? _classCoveredLefts;
+
+        /// <summary>A pair a subtable matches; ignored if an earlier subtable matched it.</summary>
+        public void Offer(int left, int right, int value)
+        {
+            if (_classCoveredLefts != null && _classCoveredLefts.Contains(left))
+                return;
+            _values.TryAdd(((long)left << 32) | (uint)right, value);
+        }
+
+        /// <summary>Called after a format 2 subtable: its covered first glyphs claim every pair.</summary>
+        public void ClaimLefts(List<int>?[] leftByClass)
+        {
+            foreach (var lefts in leftByClass)
+            {
+                if (lefts != null)
+                    (_classCoveredLefts ??= new HashSet<int>()).UnionWith(lefts);
+            }
+        }
+
+        /// <summary>The lookups' values added up, in the given lookup order, zero sums left out.</summary>
+        public static IReadOnlyList<KerningPair> Sum(IEnumerable<GposLookupResolver> lookups)
+        {
+            Dictionary<long, int>? total = null;
+            foreach (var lookup in lookups)
+            {
+                if (total == null)
+                {
+                    total = lookup._values;
+                    continue;
+                }
+
+                foreach (var (key, value) in lookup._values)
+                {
+                    total.TryGetValue(key, out var sum);
+                    total[key] = sum + value;
+                }
+            }
+
+            if (total == null || total.Count == 0)
+                return Array.Empty<KerningPair>();
+
+            var result = new List<KerningPair>(total.Count);
+            foreach (var (key, value) in total)
+            {
+                if (value != 0)
+                    result.Add(new KerningPair((int)(key >> 32), (int)key, value));
+            }
+            return result;
+        }
     }
 
     private static List<int> FindKernFeatureLookups(ReadOnlySpan<byte> table, int featureListOffset)
@@ -919,7 +1002,7 @@ internal class TtfParser
         return result;
     }
 
-    private void ParsePairPos(ReadOnlySpan<byte> subtable, List<KerningPair> pairs)
+    private void ParsePairPos(ReadOnlySpan<byte> subtable, List<KerningPair> pairs, GposLookupResolver? resolver)
     {
         if (subtable.Length < 10)
             return;
@@ -933,15 +1016,15 @@ internal class TtfParser
         var valueRecord2Size = ValueRecordSize(valueFormat2);
 
         if (posFormat == 1)
-            ParsePairPosFormat1(subtable, coverageOffset, valueFormat1, valueRecord1Size, valueRecord2Size, pairs);
+            ParsePairPosFormat1(subtable, coverageOffset, valueFormat1, valueRecord1Size, valueRecord2Size, pairs, resolver);
         else if (posFormat == 2)
-            ParsePairPosFormat2(subtable, coverageOffset, valueFormat1, valueRecord1Size, valueRecord2Size, pairs);
+            ParsePairPosFormat2(subtable, coverageOffset, valueFormat1, valueRecord1Size, valueRecord2Size, pairs, resolver);
     }
 
     private void ParsePairPosFormat1(
         ReadOnlySpan<byte> subtable, int coverageOffset,
         int valueFormat1, int valueRecord1Size, int valueRecord2Size,
-        List<KerningPair> pairs)
+        List<KerningPair> pairs, GposLookupResolver? resolver)
     {
         if (subtable.Length < 10)
             return;
@@ -967,7 +1050,7 @@ internal class TtfParser
             }
 
             // Each record: secondGlyph (uint16) + value1 + value2
-            ReadPairSets(subtable, firstGlyphOf, valueFormat1, 2 + valueRecord1Size + valueRecord2Size, pairs);
+            ReadPairSets(subtable, firstGlyphOf, valueFormat1, 2 + valueRecord1Size + valueRecord2Size, pairs, resolver);
         }
         finally
         {
@@ -977,7 +1060,7 @@ internal class TtfParser
 
     private void ReadPairSets(
         ReadOnlySpan<byte> subtable, ReadOnlySpan<int> firstGlyphOf, int valueFormat1, int recordSize,
-        List<KerningPair> pairs)
+        List<KerningPair> pairs, GposLookupResolver? resolver)
     {
         var pairSetCount = firstGlyphOf.Length;
         for (var i = 0; i < pairSetCount; i++)
@@ -1003,14 +1086,17 @@ internal class TtfParser
                 if (recOffset + recordSize > pairSet.Length)
                     break;
 
+                // A zero record still claims its pair (it often cancels a later class kern).
                 var xAdvance = ReadXAdvanceFromValueRecord(pairSet.Slice(recOffset + 2), valueFormat1);
-                if (xAdvance == 0)
+                if (xAdvance == 0 && resolver == null)
                     continue;
 
                 var secondGlyph = BinaryPrimitives.ReadUInt16BigEndian(pairSet.Slice(recOffset));
                 if (_relevantGlyphIndices != null && !_relevantGlyphIndices.Contains(secondGlyph))
                     continue;
-                pairs.Add(new KerningPair(firstGlyph, secondGlyph, xAdvance));
+                if (xAdvance != 0)
+                    pairs.Add(new KerningPair(firstGlyph, secondGlyph, xAdvance));
+                resolver?.Offer(firstGlyph, secondGlyph, xAdvance);
             }
         }
     }
@@ -1018,7 +1104,7 @@ internal class TtfParser
     private void ParsePairPosFormat2(
         ReadOnlySpan<byte> subtable, int coverageOffset,
         int valueFormat1, int valueRecord1Size, int valueRecord2Size,
-        List<KerningPair> pairs)
+        List<KerningPair> pairs, GposLookupResolver? resolver)
     {
         // Format 2 header after the common 8 bytes:
         // classDef1Offset (uint16), classDef2Offset (uint16), class1Count (uint16), class2Count (uint16)
@@ -1114,10 +1200,15 @@ internal class TtfParser
                 foreach (var left in leftGlyphs)
                 {
                     foreach (var right in rightGlyphs)
+                    {
                         pairs.Add(new KerningPair(left, right, xAdvance));
+                        resolver?.Offer(left, right, xAdvance);
+                    }
                 }
             }
         }
+
+        resolver?.ClaimLefts(leftByClass);
     }
 
     /// <summary>Marks a glyph a ClassDef does not list, in a <see cref="RentClassTable"/> table.</summary>

@@ -84,7 +84,7 @@ public sealed class KerningMergeEquivalenceTests
         return bytes.ToArray();
     }
 
-    /// <summary>The original merge, verbatim.</summary>
+    /// <summary>The original merge, verbatim, over the resolved GPOS pairs the reader merges.</summary>
     private static List<KerningPair> ReferenceMerge(TtfParser parser)
     {
         var glyphToCodepoint = new Dictionary<int, int>();
@@ -104,7 +104,7 @@ public sealed class KerningMergeEquivalenceTests
                 mergedPairs[(leftCp, rightCp)] = pair.XAdvanceAdjustment;
         }
 
-        foreach (var pair in parser.GposPairs)
+        foreach (var pair in parser.GposKerningPairs)
         {
             if (glyphToCodepoint.TryGetValue(pair.LeftCodepoint, out var leftCp) &&
                 glyphToCodepoint.TryGetValue(pair.RightCodepoint, out var rightCp))

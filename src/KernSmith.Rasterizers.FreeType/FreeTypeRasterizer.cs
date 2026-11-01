@@ -492,12 +492,29 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
         // Extract metrics from 26.6 fixed-point values (no rendering needed).
         ref var metrics = ref slot->metrics;
+        var bearingX = F26Dot6ToRounded(metrics.horiBearingX);
+        var bearingY = F26Dot6ToRounded(metrics.horiBearingY);
+        var width = F26Dot6ToRounded(metrics.width);
+        var height = F26Dot6ToRounded(metrics.height);
+
+        // FreeType's SDF renderer pads a non-empty outline glyph's bitmap by the spread on
+        // every side; the metrics must include it so they describe the bitmap RasterizeGlyph
+        // returns (BmFont.QueryAtlasSize sizes cells from them).
+        if (options.Sdf && width > 0 && height > 0 && slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_BITMAP)
+        {
+            var spread = ClampSdfSpread(options.SdfSpread);
+            bearingX -= spread;
+            bearingY += spread;
+            width += 2 * spread;
+            height += 2 * spread;
+        }
+
         return new Font.Models.GlyphMetrics(
-            BearingX: F26Dot6ToRounded(metrics.horiBearingX),
-            BearingY: F26Dot6ToRounded(metrics.horiBearingY),
+            BearingX: bearingX,
+            BearingY: bearingY,
             Advance: F26Dot6ToRounded(metrics.horiAdvance),
-            Width: F26Dot6ToRounded(metrics.width),
-            Height: F26Dot6ToRounded(metrics.height));
+            Width: width,
+            Height: height);
     }
 
     /// <inheritdoc />
@@ -612,6 +629,10 @@ public sealed class FreeTypeRasterizer : IRasterizer
     private const uint MinSdfSpread = 2;
     private const uint MaxSdfSpread = 32;
 
+    /// <summary>The spread FreeType renders with: rounded half away from zero, clamped to 2..32.</summary>
+    private static int ClampSdfSpread(float spread) =>
+        Math.Clamp((int)Math.Round(spread, MidpointRounding.AwayFromZero), (int)MinSdfSpread, (int)MaxSdfSpread);
+
     /// <summary>
     /// Sets the SDF renderer's spread on the "sdf" module via FT_Property_Set, skipping the
     /// native call when the requested spread matches what was last set. The spread is rounded
@@ -624,8 +645,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
     /// </remarks>
     private unsafe void EnsureSdfSpread(float spread)
     {
-        var rounded = (uint)Math.Clamp((int)Math.Round(spread, MidpointRounding.AwayFromZero),
-            (int)MinSdfSpread, (int)MaxSdfSpread);
+        var rounded = (uint)ClampSdfSpread(spread);
 
         // Default spread: rely on FreeType's built-in default (no interop, no output change),
         // unless a non-default value was previously set on this library instance.

@@ -133,7 +133,7 @@ internal static unsafe class StbTrueTypeSdfVendored
                 float cy = iy0 + py + 0.5f;
 
                 float minDist = float.MaxValue;
-                int crossings = 0;
+                int winding = 0;
 
                 for (int e = 0; e < edges.Length; e++)
                 {
@@ -143,30 +143,31 @@ internal static unsafe class StbTrueTypeSdfVendored
                     {
                         case EdgeType.Line:
                             LineDistance(cx, cy, edge.X0, edge.Y0, edge.X1, edge.Y1,
-                                ref minDist, ref crossings);
+                                ref minDist, ref winding);
                             break;
 
                         case EdgeType.Quad:
                             QuadDistance(cx, cy, edge.X0, edge.Y0,
                                 edge.Cx, edge.Cy, edge.X1, edge.Y1,
-                                ref minDist, ref crossings);
+                                ref minDist, ref winding);
                             break;
 
                         case EdgeType.Cubic:
                             CubicDistance(cx, cy, edge.X0, edge.Y0,
                                 edge.Cx, edge.Cy, edge.Cx1, edge.Cy1,
                                 edge.X1, edge.Y1,
-                                ref minDist, ref crossings);
+                                ref minDist, ref winding);
                             break;
                     }
                 }
 
                 float dist = MathF.Sqrt(minDist);
 
-                // Sign: inside if odd crossing count (ray-casting parity test, equivalent to even-odd
-                // fill for well-formed contours). Outside is negative, as in stbtt_GetGlyphSDF, so the
-                // field is above onEdgeValue inside the glyph and below it outside.
-                if ((crossings & 1) == 0)
+                // Sign: inside where the winding number is non-zero, the TrueType fill rule and
+                // stbtt_GetGlyphSDF's test (even-odd would read overlapping contours as outside).
+                // Outside is negative, as in stbtt_GetGlyphSDF, so the field is above onEdgeValue
+                // inside the glyph and below it outside.
+                if (winding == 0)
                     dist = -dist;
 
                 // Map signed distance to byte value.
@@ -293,13 +294,13 @@ internal static unsafe class StbTrueTypeSdfVendored
 
     /// <summary>
     /// Computes the squared distance from point (px, py) to the line segment (ax, ay)-(bx, by)
-    /// and updates the crossing counter for winding determination.
+    /// and adds the segment's signed crossing of the rightward ray to the winding number.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void LineDistance(
         float px, float py,
         float ax, float ay, float bx, float by,
-        ref float minDist, ref int crossings)
+        ref float minDist, ref int winding)
     {
         float dx = bx - ax;
         float dy = by - ay;
@@ -334,7 +335,7 @@ internal static unsafe class StbTrueTypeSdfVendored
             float intersectT = (py - ay) / (by - ay);
             float intersectX = ax + intersectT * (bx - ax);
             if (intersectX > px)
-                crossings++;
+                winding += by > ay ? 1 : -1;
         }
     }
 
@@ -348,7 +349,7 @@ internal static unsafe class StbTrueTypeSdfVendored
         float x0, float y0,
         float cx, float cy,
         float x1, float y1,
-        ref float minDist, ref int crossings)
+        ref float minDist, ref int winding)
     {
         // Subdivide the quadratic bezier and compute distance to each sub-segment.
         // More subdivisions = more accurate but slower. 16 steps is a good balance
@@ -367,7 +368,7 @@ internal static unsafe class StbTrueTypeSdfVendored
             float bx = it * it * x0 + 2 * it * t * cx + t * t * x1;
             float by = it * it * y0 + 2 * it * t * cy + t * t * y1;
 
-            LineDistance(px, py, prevX, prevY, bx, by, ref minDist, ref crossings);
+            LineDistance(px, py, prevX, prevY, bx, by, ref minDist, ref winding);
 
             prevX = bx;
             prevY = by;
@@ -385,7 +386,7 @@ internal static unsafe class StbTrueTypeSdfVendored
         float cx, float cy,
         float cx1, float cy1,
         float x1, float y1,
-        ref float minDist, ref int crossings)
+        ref float minDist, ref int winding)
     {
         // Subdivide the cubic bezier. Use more steps than quadratic for accuracy.
         const int steps = 24;
@@ -408,7 +409,7 @@ internal static unsafe class StbTrueTypeSdfVendored
                       + 3 * it * t * t * cy1
                       + t * t * t * y1;
 
-            LineDistance(px, py, prevX, prevY, bx, by, ref minDist, ref crossings);
+            LineDistance(px, py, prevX, prevY, bx, by, ref minDist, ref winding);
 
             prevX = bx;
             prevY = by;

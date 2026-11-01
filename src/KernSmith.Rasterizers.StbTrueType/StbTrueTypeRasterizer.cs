@@ -217,6 +217,8 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
 
         int ix0, iy0, ix1, iy1;
         Stb.stbtt_GetCodepointBitmapBox(_fontInfo!, codepoint, scale, scale, &ix0, &iy0, &ix1, &iy1);
+        if (options.Sdf)
+            PadForSdf(ref ix0, ref iy0, ref ix1, ref iy1, options.SdfSpread);
 
         return new GlyphMetrics(
             BearingX: (int)Math.Round((double)ix0 / aa),
@@ -252,6 +254,8 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
                 OutlineTransforms.ApplyItalicShear(vertices, numVerts);
 
             var (x0, y0, x1, y1) = OutlineTransforms.ComputeBoundingBox(vertices, numVerts, scale, scale);
+            if (options.Sdf)
+                PadForSdf(ref x0, ref y0, ref x1, ref y1, options.SdfSpread);
             int width = Math.Max(0, x1 - x0);
             int height = Math.Max(0, y1 - y0);
 
@@ -361,6 +365,21 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
     {
         int rounded = Math.Clamp((int)Math.Round(spread, MidpointRounding.AwayFromZero), MinSdfSpread, MaxSdfSpread);
         return (rounded, 128.0f / rounded);
+    }
+
+    /// <summary>
+    /// Grows a non-empty bitmap box by the SDF padding on every side, as both SDF paths do, so
+    /// <see cref="GetGlyphMetrics"/> describes the bitmap they return.
+    /// </summary>
+    private static void PadForSdf(ref int x0, ref int y0, ref int x1, ref int y1, float spread)
+    {
+        if (x1 <= x0 || y1 <= y0)
+            return;
+        int padding = SdfField(spread).Padding;
+        x0 -= padding;
+        y0 -= padding;
+        x1 += padding;
+        y1 += padding;
     }
 
     private unsafe RasterizedGlyph? RasterizeSdfGlyph(

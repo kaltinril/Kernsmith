@@ -44,9 +44,9 @@ internal class TtfFontReader : IFontReader
         // Merge kerning pairs: start with kern, overlay GPOS (GPOS takes precedence). A pair
         // keeps the position of its first insertion (Dictionary enumeration order with no
         // removals) and the value of its last.
-        var mergedPairs = new Dictionary<long, int>(parser.KernPairs.Count + parser.GposPairs.Count);
+        var mergedPairs = new Dictionary<long, int>(parser.KernPairs.Count + parser.GposKerningPairs.Count);
         MergeKerningPairs(parser.KernPairs, glyphToCodepoint, mergedPairs);
-        MergeKerningPairs(parser.GposPairs, glyphToCodepoint, mergedPairs);
+        MergeKerningPairs(parser.GposKerningPairs, glyphToCodepoint, mergedPairs);
 
         var kerningPairs = new List<KerningPair>(mergedPairs.Count);
         foreach (var (key, value) in mergedPairs)
