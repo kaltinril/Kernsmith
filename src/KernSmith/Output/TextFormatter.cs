@@ -131,6 +131,8 @@ internal sealed class TextFormatter : IBmFontTextFormatter
             sb.Append(Invariant, $" advanceAdjustY={extended.AdvanceAdjustY.Value}");
         if (extended.ColorFont is true)
             sb.Append(" colorFont=1");
+        if (extended.FallbackCharacter.HasValue)
+            sb.Append(Invariant, $" fallbackChar={extended.FallbackCharacter.Value}");
         if (extended.VariationAxes is { Count: > 0 })
         {
             foreach (var (tag, value) in extended.VariationAxes)

@@ -629,6 +629,7 @@ public static class BmFontReader
             SuperSampleLevel = kvp.ContainsKey("superSampleLevel") ? GetInt(kvp, "superSampleLevel") : null,
             AdvanceAdjustY = kvp.TryGetValue("advanceAdjustY", out var aay) && float.TryParse(aay, CultureInfo.InvariantCulture, out var aayv) ? aayv : null,
             ColorFont = GetBool(kvp, "colorFont") ? true : null,
+            FallbackCharacter = kvp.TryGetValue("fallbackChar", out var fc) && int.TryParse(fc, NumberStyles.Integer, CultureInfo.InvariantCulture, out var fcv) ? fcv : null,
             VariationAxes = axes,
             VariantOf = kvp.TryGetValue("variantOf", out var vo) ? vo : null,
             Variants = kvp.TryGetValue("variants", out var vs) && vs.Length > 0
@@ -665,6 +666,7 @@ public static class BmFontReader
             SuperSampleLevel = el.Attribute("superSampleLevel") != null ? XmlAttrInt(el, "superSampleLevel") : null,
             AdvanceAdjustY = el.Attribute("advanceAdjustY") != null && float.TryParse(el.Attribute("advanceAdjustY")!.Value, CultureInfo.InvariantCulture, out var aayv) ? aayv : null,
             ColorFont = XmlAttrBool(el, "colorFont") ? true : null,
+            FallbackCharacter = int.TryParse(el.Attribute("fallbackChar")?.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var fcv) ? fcv : null,
             VariationAxes = axes,
             VariantOf = el.Attribute("variantOf")?.Value,
             Variants = el.Attribute("variants")?.Value is { Length: > 0 } variantsStr
@@ -721,6 +723,7 @@ public static class BmFontReader
             SuperSampleLevel = root.TryGetProperty("superSampleLevel", out var sl) ? sl.GetInt32() : null,
             AdvanceAdjustY = root.TryGetProperty("advanceAdjustY", out var aay) ? aay.GetSingle() : null,
             ColorFont = root.TryGetProperty("colorFont", out var cf) && cf.GetBoolean() ? true : null,
+            FallbackCharacter = root.TryGetProperty("fallbackChar", out var fc) ? fc.GetInt32() : null,
             VariationAxes = axes,
             VariantOf = root.TryGetProperty("variantOf", out var vo) ? vo.GetString() : null,
             Variants = root.TryGetProperty("variants", out var vs) && vs.ValueKind == JsonValueKind.Array

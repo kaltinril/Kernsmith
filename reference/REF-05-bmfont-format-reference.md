@@ -381,6 +381,7 @@ KernSmith records the generation settings that produced a font in an **extended 
 | `superSampleLevel` | int | Super-sampling level, if super sampling was used. |
 | `advanceAdjustY` | float | Global vertical advance adjustment (Hiero `pad.advance.y`), surfaced here because BMFont has no per-glyph yadvance field. |
 | `colorFont` | bool (`1`) | Present (value 1 / `true`) if color-font rendering (COLR/CPAL) was enabled. |
+| `fallbackChar` | int | Codepoint of the fallback character substituted for missing glyphs (`FallbackCodepoint`, else `FallbackCharacter`), if one was set. |
 | `axis_<tag>` | float | One entry per variable-font axis used at generation time, keyed by the 4-char axis tag (e.g. `axis_wght=700`). In the binary JSON these are nested under a `variationAxes` object instead of flattened into `axis_` keys. |
 
 #### Compatibility
