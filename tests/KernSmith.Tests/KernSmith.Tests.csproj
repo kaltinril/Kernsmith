@@ -6,6 +6,9 @@
     <!-- xUnit1051: suggests threading TestContext.Current.CancellationToken into
          cancellable async calls. Not needed for this suite; suppress the noise. -->
     <NoWarn>$(NoWarn);xUnit1051</NoWarn>
+    <!-- FontStructureConformanceTests calls stb_truetype's pointer API directly as the oracle
+         for the StbTrueType backend's output. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <!-- Override inherited TFMs to add Windows variants for GDI rasterizer testing -->
