@@ -112,19 +112,19 @@ public static class BmfcConfigReader
                         }
                         break;
                     case "isBold":
-                        options.Bold = value == "1";
+                        options.Bold = IsTrue(value);
                         break;
                     case "isItalic":
-                        options.Italic = value == "1";
+                        options.Italic = IsTrue(value);
                         break;
                     case "forceSyntheticBold":
-                        options.ForceSyntheticBold = value == "1";
+                        options.ForceSyntheticBold = IsTrue(value);
                         break;
                     case "forceSyntheticItalic":
-                        options.ForceSyntheticItalic = value == "1";
+                        options.ForceSyntheticItalic = IsTrue(value);
                         break;
                     case "useSmoothing":
-                        if (value == "0")
+                        if (IsFalse(value))
                             options.AntiAlias = AntiAliasMode.None;
                         break;
                     case "aa":
@@ -132,13 +132,13 @@ public static class BmfcConfigReader
                         options.SuperSampleLevel = int.Parse(value, CultureInfo.InvariantCulture);
                         break;
                     case "useHinting":
-                        options.EnableHinting = value == "1";
+                        options.EnableHinting = IsTrue(value);
                         break;
                     case "scaleH":
                         options.HeightPercent = int.Parse(value, CultureInfo.InvariantCulture);
                         break;
                     case "dontIncludeKerningPairs":
-                        options.Kerning = value != "1";
+                        options.Kerning = !IsTrue(value);
                         break;
                     case "autoFitNumPages":
                         if (int.Parse(value, CultureInfo.InvariantCulture) > 0)
@@ -171,10 +171,10 @@ public static class BmfcConfigReader
                         hasSpacing = true;
                         break;
                     case "useFixedHeight":
-                        options.EqualizeCellHeights = value == "1";
+                        options.EqualizeCellHeights = IsTrue(value);
                         break;
                     case "forceZero":
-                        options.ForceOffsetsToZero = value == "1";
+                        options.ForceOffsetsToZero = IsTrue(value);
                         break;
 
                     // Output file
@@ -203,7 +203,7 @@ public static class BmfcConfigReader
                         };
                         break;
                     case "fourChnlPacked":
-                        options.ChannelPacking = value == "1";
+                        options.ChannelPacking = IsTrue(value);
                         break;
                     case "alphaChnl":
                         chnlAlpha = ParseChannelContent(value);
@@ -222,19 +222,19 @@ public static class BmfcConfigReader
                         hasChannels = true;
                         break;
                     case "invA":
-                        invA = value == "1";
+                        invA = IsTrue(value);
                         hasChannels = true;
                         break;
                     case "invR":
-                        invR = value == "1";
+                        invR = IsTrue(value);
                         hasChannels = true;
                         break;
                     case "invG":
-                        invG = value == "1";
+                        invG = IsTrue(value);
                         hasChannels = true;
                         break;
                     case "invB":
-                        invB = value == "1";
+                        invB = IsTrue(value);
                         hasChannels = true;
                         break;
 
@@ -284,7 +284,7 @@ public static class BmfcConfigReader
                         options.ShadowBlurPasses = int.Parse(value, CultureInfo.InvariantCulture);
                         break;
                     case "variantShadow":
-                        wantsShadowVariant = value == "1";
+                        wantsShadowVariant = IsTrue(value);
                         break;
                     case "gradientOffset":
                         options.GradientOffset = float.Parse(value, CultureInfo.InvariantCulture);
@@ -293,7 +293,7 @@ public static class BmfcConfigReader
                         options.GradientScale = float.Parse(value, CultureInfo.InvariantCulture);
                         break;
                     case "gradientCyclic":
-                        options.GradientCyclic = value == "1";
+                        options.GradientCyclic = IsTrue(value);
                         break;
                     case "fillColor":
                         if (!string.IsNullOrEmpty(value))
@@ -341,7 +341,7 @@ public static class BmfcConfigReader
                         options.ItalicAngle = float.Parse(value, CultureInfo.InvariantCulture);
                         break;
                     case "useSdf":
-                        options.Sdf = value == "1";
+                        options.Sdf = IsTrue(value);
                         break;
                     case "sdfMode":
                         options.SdfMode = Enum.TryParse<SdfMode>(value, ignoreCase: true, out var sdfMode) && Enum.IsDefined(sdfMode)
@@ -381,7 +381,7 @@ public static class BmfcConfigReader
                         options.ShadowOpacity = float.Parse(value, CultureInfo.InvariantCulture);
                         break;
                     case "hardShadow":
-                        options.HardShadow = value == "1";
+                        options.HardShadow = IsTrue(value);
                         break;
                     case "variationAxes":
                         options.VariationAxes = ParseVariationAxes(value);
@@ -409,7 +409,7 @@ public static class BmfcConfigReader
                         }
                         break;
                     case "colorFont":
-                        options.ColorFont = value == "1";
+                        options.ColorFont = IsTrue(value);
                         break;
                     case "colorPalette":
                         options.ColorPaletteIndex = int.Parse(value, CultureInfo.InvariantCulture);
@@ -421,10 +421,10 @@ public static class BmfcConfigReader
                         options.Dpi = int.Parse(value, CultureInfo.InvariantCulture);
                         break;
                     case "powerOfTwo":
-                        options.PowerOfTwo = value == "1";
+                        options.PowerOfTwo = IsTrue(value);
                         break;
                     case "autofit":
-                        options.AutofitTexture = value == "1";
+                        options.AutofitTexture = IsTrue(value);
                         break;
                     case "rasterizer":
                         if (Enum.TryParse<RasterizerBackend>(value, true, out var backend))
@@ -507,6 +507,20 @@ public static class BmfcConfigReader
 
         return config;
     }
+
+    /// <summary>
+    /// A boolean value: BMFont writes <c>1</c>/<c>0</c>; <c>true</c>/<c>false</c> and
+    /// <c>yes</c>/<c>no</c> (any case) are accepted too. Anything else reads as false.
+    /// </summary>
+    private static bool IsTrue(string value) =>
+        value == "1"
+        || value.Equals("true", StringComparison.OrdinalIgnoreCase)
+        || value.Equals("yes", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsFalse(string value) =>
+        value == "0"
+        || value.Equals("false", StringComparison.OrdinalIgnoreCase)
+        || value.Equals("no", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Parses a comma-separated <c>tag:value</c> variable-font axis list, e.g.
