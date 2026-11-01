@@ -113,6 +113,12 @@ internal sealed partial class FontStructureValidator
     public bool IsCff { get; }
 
     /// <summary>
+    /// True when the only usable <c>cmap</c> subtable is a Windows symbol one (3,0), whose glyphs
+    /// sit at U+F020-U+F0FF; see <see cref="ValidateCmap"/>.
+    /// </summary>
+    public bool IsSymbolCmap { get; private set; }
+
+    /// <summary>
     /// Checks the file header (or TTC header and face index), the table directory and every
     /// table the backend reads: <c>head</c>, <c>hhea</c>, <c>maxp</c>, <c>hmtx</c>, <c>cmap</c>,
     /// and <c>loca</c>/<c>glyf</c> or <c>CFF </c>.

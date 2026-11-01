@@ -266,7 +266,48 @@ public class FontStructureValidatorTests
         var font = SfntEditor.Roboto();
         for (int i = 0; i < 4; i++)
             font.SetU16("cmap", 4 + (8 * i), 1).SetU16("cmap", 4 + (8 * i) + 2, 0);
-        Rejects(font, "cmap", "no Unicode subtable");
+        Rejects(font, "cmap", "no Unicode or symbol subtable");
+    }
+
+    private static byte[] SymbolFormat4() => Format4([(0xF020, 0xF07E, 1 - 0xF020)]);
+
+    [Fact]
+    public void SymbolOnlyCmap_PassesAndIsRelabelledForStb()
+    {
+        // Wingdings-style (3,0) subtable: accepted, and its record becomes (3,1) in the copy
+        // stb_truetype reads, since stb only reads Unicode subtables.
+        var bytes = RobotoWithCmap(CmapWith(3, 0, SymbolFormat4())).Bytes;
+        var cmapOffset = CmapOffset(bytes);
+
+        var validator = FontStructureValidator.Validate(bytes, 0);
+
+        validator.IsSymbolCmap.ShouldBeTrue();
+        (bytes[cmapOffset + 6], bytes[cmapOffset + 7]).ShouldBe(((byte)0, (byte)1));
+    }
+
+    [Fact]
+    public void SymbolCmap_IsValidatedLikeAUnicodeOne() =>
+        Rejects(RobotoWithCmap(CmapWith(3, 0, SymbolFormat4())).SetU16("cmap", Sub + 6, 3), "cmap", "segCountX2");
+
+    [Fact]
+    public void UnicodeCmap_WinsOverASymbolOne()
+    {
+        // Roboto's own cmap has Unicode subtables; adding nothing symbol-like leaves it alone.
+        var validator = FontStructureValidator.Validate(SfntEditor.Roboto().Bytes, 0);
+        validator.IsSymbolCmap.ShouldBeFalse();
+    }
+
+    private static int CmapOffset(byte[] font)
+    {
+        int numTables = (font[4] << 8) | font[5];
+        for (int i = 0; i < numTables; i++)
+        {
+            int rec = 12 + (16 * i);
+            if (font[rec] == 'c' && font[rec + 1] == 'm' && font[rec + 2] == 'a' && font[rec + 3] == 'p')
+                return (font[rec + 8] << 24) | (font[rec + 9] << 16) | (font[rec + 10] << 8) | font[rec + 11];
+        }
+
+        throw new InvalidOperationException("no cmap");
     }
 
     private static byte[] AsciiFormat4() => Format4([(0x20, 0x7E, 1 - 0x20)]);

@@ -9,6 +9,12 @@ internal sealed partial class FontStructureValidator
     /// fit their declared length, and that length must fit the table. Other formats map nothing
     /// in stb, so only their format field is read.
     /// </summary>
+    /// <remarks>
+    /// A font with no Unicode subtable but a Windows symbol one (platform 3 encoding 0: Wingdings,
+    /// Symbol, Webdings) uses that instead, as core and FreeType do. stb_truetype reads only
+    /// Unicode subtables, so the symbol record is relabelled encoding 1 in the private copy stb
+    /// reads (its U+F0xx codes then map as they are) and <see cref="IsSymbolCmap"/> is set.
+    /// </remarks>
     private void ValidateCmap()
     {
         int c = _cmap.Offset;
@@ -21,6 +27,8 @@ internal sealed partial class FontStructureValidator
             throw Fail("cmap", c + 2, $"{numTables} encoding records run past the table ({length} bytes).");
 
         long selected = -1;
+        long symbol = -1;
+        int symbolRecord = -1;
         for (int i = 0; i < numTables; i++)
         {
             int record = c + 4 + (8 * i);
@@ -32,10 +40,20 @@ internal sealed partial class FontStructureValidator
                     $"encoding record {i} ({platform},{encoding}) points its subtable outside the table (offset {offset}).");
             if (platform == 0 || (platform == 3 && encoding is 1 or 10))
                 selected = offset;
+            else if (platform == 3 && encoding == 0)
+                (symbol, symbolRecord) = (offset, record);
+        }
+
+        if (selected < 0 && symbol >= 0)
+        {
+            _data[symbolRecord + 2] = 0;
+            _data[symbolRecord + 3] = 1;
+            selected = symbol;
+            IsSymbolCmap = true;
         }
 
         if (selected < 0)
-            throw Fail("cmap", c, "no Unicode subtable (platform 0, or platform 3 encoding 1 or 10).");
+            throw Fail("cmap", c, "no Unicode or symbol subtable (platform 0, or platform 3 encoding 0, 1 or 10).");
 
         ValidateCmapSubtable(c + (int)selected, length - (int)selected);
     }

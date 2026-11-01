@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using KernSmith.Font;
 using KernSmith.Font.Models;
 using KernSmith.Font.Tables;
 using KernSmith.Rasterizer;
@@ -22,6 +23,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
     private FreeTypeLibrary? _library;
     private GCHandle _pinnedFontData;
     private unsafe FT_FaceRec_* _face;
+    private bool _symbolCharmap;
     private bool _disposed;
 
     /// <summary>
@@ -60,6 +62,12 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
             _face = face;
 
+            // A font with only a Windows symbol cmap (3,0) maps its glyphs at U+F020-U+F0FF;
+            // FreeType leaves no charmap selected for it, so pick the symbol one. Low codes
+            // reach the same glyphs through GlyphIndex, as core's cmap parse exposes them.
+            _symbolCharmap = FreeTypeNative.FT_Select_Charmap(face, FreeTypeNative.FT_ENCODING_UNICODE) != FT_Error.FT_Err_Ok
+                && FreeTypeNative.FT_Select_Charmap(face, FreeTypeNative.FT_ENCODING_MS_SYMBOL) == FT_Error.FT_Err_Ok;
+
             _lastSetSize = 0f;
             _lastSetDpi = 0;
             _lastSetSdfSpread = 0;
@@ -68,6 +76,18 @@ public sealed class FreeTypeRasterizer : IRasterizer
         {
             throw new FontParsingException($"Failed to load font: {ex.Message}", ex);
         }
+    }
+
+    /// <summary>
+    /// The glyph for a codepoint: through the selected charmap, and for a symbol font also
+    /// through its U+F0xx code (<see cref="SymbolEncoding.ToSymbolCode"/>, BMFont's SYMBOL charset).
+    /// </summary>
+    private unsafe uint GlyphIndex(int codepoint)
+    {
+        var index = FT.FT_Get_Char_Index(_face, (UIntPtr)codepoint);
+        if (index == 0 && _symbolCharmap && SymbolEncoding.ToSymbolCode(codepoint) is { } symbolCode)
+            index = FT.FT_Get_Char_Index(_face, (UIntPtr)symbolCode);
+        return index;
     }
 
     /// <summary>
@@ -155,7 +175,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         EnsureCharSize(options.Size, options.Dpi);
 
         // Get glyph index for the codepoint.
-        var glyphIndex = FT.FT_Get_Char_Index(_face, (UIntPtr)codepoint);
+        var glyphIndex = GlyphIndex(codepoint);
         if (glyphIndex == 0)
             return null; // Missing glyph
 
@@ -332,7 +352,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
         EnsureCharSize(options.Size, options.Dpi);
 
-        var glyphIndex = FT.FT_Get_Char_Index(_face, (UIntPtr)codepoint);
+        var glyphIndex = GlyphIndex(codepoint);
         if (glyphIndex == 0)
             return null;
 
@@ -466,7 +486,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         EnsureCharSize(options.Size, options.Dpi);
 
         // Get glyph index for the codepoint.
-        var glyphIndex = FT.FT_Get_Char_Index(_face, (UIntPtr)codepoint);
+        var glyphIndex = GlyphIndex(codepoint);
         if (glyphIndex == 0)
             return null; // Missing glyph
 

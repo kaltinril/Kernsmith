@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using KernSmith.Font;
 using KernSmith.Font.Models;
 using KernSmith.Font.Tables;
 using KernSmith.Rasterizer;
@@ -419,7 +420,11 @@ public sealed unsafe class DirectWriteRasterizer : IRasterizer
 
     private ushort MapCodepointToGlyphIndex(int codepoint)
     {
-        uint cp = (uint)codepoint;
+        // A symbol font (only a Windows (3,0) cmap) keeps its glyphs at U+F0xx; its
+        // Windows-1252 characters reach them there (BMFont's SYMBOL charset).
+        uint cp = (uint)(_fontFace.Get->IsSymbolFont() && SymbolEncoding.ToSymbolCode(codepoint) is { } symbolCode
+            ? symbolCode
+            : codepoint);
         ushort glyphIndex;
         HRESULT hr = _fontFace.Get->GetGlyphIndices(&cp, 1, &glyphIndex);
         if (hr.FAILED)

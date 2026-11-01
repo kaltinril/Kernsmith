@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using KernSmith.Font;
 using KernSmith.Font.Models;
 using KernSmith.Font.Tables;
 using KernSmith.Rasterizer;
@@ -371,10 +372,15 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
     /// <summary>
     /// The glyph stb_truetype maps <paramref name="codepoint"/> to, or 0 when it maps to none or
     /// to an index past <c>numGlyphs</c>; a nonzero glyph's outline has passed the structure check.
+    /// A symbol font's codepoint also maps through its U+F0xx code
+    /// (<see cref="SymbolEncoding.ToSymbolCode"/>, BMFont's SYMBOL charset).
     /// </summary>
     private int ResolveGlyph(int codepoint)
     {
-        int glyphIndex = _validator!.ResolveGlyph(Stb.stbtt_FindGlyphIndex(_fontInfo!, codepoint));
+        int found = Stb.stbtt_FindGlyphIndex(_fontInfo!, codepoint);
+        if (found == 0 && _validator!.IsSymbolCmap && SymbolEncoding.ToSymbolCode(codepoint) is { } symbolCode)
+            found = Stb.stbtt_FindGlyphIndex(_fontInfo!, symbolCode);
+        int glyphIndex = _validator!.ResolveGlyph(found);
         if (glyphIndex != 0)
             _validator.EnsureGlyph(glyphIndex);
         return glyphIndex;

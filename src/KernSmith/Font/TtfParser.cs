@@ -591,6 +591,8 @@ internal class TtfParser
                 priority = 2; // best: Windows UCS-4
             else if (platformID == 3 && encodingID == 1)
                 priority = 1; // fallback: Windows BMP
+            else if (platformID == 3 && encodingID == 0)
+                priority = 0; // last resort: Windows symbol (Wingdings, Symbol, Webdings)
             else
                 continue;
 
@@ -613,15 +615,23 @@ internal class TtfParser
         // A subset bounds the entry count; entries are only ever added or overwritten.
         var cmap = new Dictionary<int, int>(_requestedCodepoints?.Count ?? 0);
 
+        // A symbol subtable maps its glyphs at U+F000-U+F0FF, and BMFont's SYMBOL charset writes
+        // each one at both that code and code - 0xF000, so the subset is applied after both
+        // codes exist (a request for 'A' must find U+F041's glyph).
+        var symbol = bestPriority == 0;
+        var filter = symbol ? null : _requestedCodepoints;
         if (format == 12)
-            ParseCmapFormat12(subtable, cmap);
+            ParseCmapFormat12(subtable, cmap, filter);
         else if (format == 4)
-            ParseCmapFormat4(subtable, cmap);
+            ParseCmapFormat4(subtable, cmap, filter);
         else
         {
             IsValid = false;
             return;
         }
+
+        if (symbol)
+            cmap = ExpandSymbolCodes(cmap, _requestedCodepoints);
 
         CmapTable = new ReadOnlyDictionary<int, int>(cmap);
 
@@ -630,10 +640,30 @@ internal class TtfParser
             _relevantGlyphIndices = new HashSet<int>(cmap.Values);
     }
 
+    /// <summary>
+    /// A symbol font's glyphs at both their U+F0xx code and that code's byte decoded as
+    /// Windows-1252 (<see cref="SymbolEncoding.ToUnicode"/>), as BMFont's SYMBOL charset writes
+    /// them; then the requested subset, if any.
+    /// </summary>
+    private static Dictionary<int, int> ExpandSymbolCodes(Dictionary<int, int> cmap, HashSet<int>? subset)
+    {
+        var expanded = new Dictionary<int, int>(cmap.Count * 2);
+        foreach (var (code, glyph) in cmap)
+        {
+            if (subset is null || subset.Contains(code))
+                expanded[code] = glyph;
+            var alias = SymbolEncoding.ToUnicode(code);
+            if (alias != code && (subset is null || subset.Contains(alias)))
+                expanded.TryAdd(alias, glyph);
+        }
+
+        return expanded;
+    }
+
     /// <summary>The last Unicode code point.</summary>
     private const uint MaxCodepoint = 0x10FFFF;
 
-    private void ParseCmapFormat12(ReadOnlySpan<byte> subtable, Dictionary<int, int> cmap)
+    private void ParseCmapFormat12(ReadOnlySpan<byte> subtable, Dictionary<int, int> cmap, HashSet<int>? filter)
     {
         if (subtable.Length < 16)
             return;
@@ -662,15 +692,15 @@ internal class TtfParser
             var endCharCode = (int)Math.Min(rawEnd, MaxCodepoint);
             var startGlyphID = (int)BinaryPrimitives.ReadUInt32BigEndian(subtable.Slice(groupOffset + 8));
 
-            visited += Math.Min(endCharCode - startCharCode + 1L, _requestedCodepoints?.Count ?? long.MaxValue);
+            visited += Math.Min(endCharCode - startCharCode + 1L, filter?.Count ?? long.MaxValue);
             if (visited > MaxCodepoint + 1)
                 throw new FontParsingException("cmap", 0, "format 12 groups overlap (they cover more than 0x110000 codes).");
 
             // With a requested subset, visit only the requested codepoints a long range contains:
             // overlapping full-Unicode groups would otherwise cost a million lookups each.
-            if (_requestedCodepoints != null && endCharCode - startCharCode >= _requestedCodepoints.Count)
+            if (filter != null && endCharCode - startCharCode >= filter.Count)
             {
-                foreach (var c in _requestedCodepoints)
+                foreach (var c in filter)
                 {
                     if (c >= startCharCode && c <= endCharCode)
                         cmap[c] = startGlyphID + (c - startCharCode);
@@ -681,7 +711,7 @@ internal class TtfParser
 
             for (var c = startCharCode; c <= endCharCode; c++)
             {
-                if (_requestedCodepoints != null && !_requestedCodepoints.Contains(c))
+                if (filter != null && !filter.Contains(c))
                     continue;
                 cmap[c] = startGlyphID + (c - startCharCode);
 
@@ -691,7 +721,7 @@ internal class TtfParser
         }
     }
 
-    private void ParseCmapFormat4(ReadOnlySpan<byte> subtable, Dictionary<int, int> cmap)
+    private void ParseCmapFormat4(ReadOnlySpan<byte> subtable, Dictionary<int, int> cmap, HashSet<int>? filter)
     {
         if (subtable.Length < 14)
             return;
@@ -749,7 +779,7 @@ internal class TtfParser
 
                 if (glyphIndex != 0)
                 {
-                    if (_requestedCodepoints != null && !_requestedCodepoints.Contains(c))
+                    if (filter != null && !filter.Contains(c))
                         continue;
                     cmap[c] = glyphIndex;
                 }

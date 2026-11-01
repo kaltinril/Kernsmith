@@ -35,6 +35,19 @@ internal static unsafe class FreeTypeNative
     public const int FT_STROKER_LINECAP_ROUND = 1;
     public const int FT_STROKER_LINEJOIN_ROUND = 1;
 
+    /// <summary>FT_ENCODING_UNICODE: FT_ENC_TAG('u', 'n', 'i', 'c').</summary>
+    public const uint FT_ENCODING_UNICODE = 0x756E6963;
+
+    /// <summary>FT_ENCODING_MS_SYMBOL: FT_ENC_TAG('s', 'y', 'm', 'b'), the Windows (3,0) cmap.</summary>
+    public const uint FT_ENCODING_MS_SYMBOL = 0x73796D62;
+
+    /// <summary>
+    /// Makes the face's charmap the one with the given encoding (an FT_Encoding tag); fails with
+    /// an error when the face has none.
+    /// </summary>
+    [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern FT_Error FT_Select_Charmap(FT_FaceRec_* face, uint encoding);
+
     /// <summary>
     /// Selects a bitmap strike by index for bitmap-only fonts.
     /// </summary>
