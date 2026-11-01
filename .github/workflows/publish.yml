@@ -200,13 +200,22 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      id-token: write  # GitHub OIDC token for NuGet Trusted Publishing
     steps:
       - uses: actions/download-artifact@v8
         with:
           path: nupkg
           pattern: nupkg-*
           merge-multiple: true
-      - run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      # Trusted Publishing: GitHub's OIDC token is exchanged for a one-hour nuget.org key, so there is
+      # no long-lived key to expire or leak. Requested right before the push. The nuget.org policy
+      # trusts this repo's publish.yml (RELEASING.md, Publishing credentials).
+      - name: NuGet login (OIDC -> temporary API key)
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: Kaltinril  # the nuget.org profile name that owns the policy (public, not a secret)
+      - run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
   create-release:
     needs: [validate, build-binaries, publish-nuget]
