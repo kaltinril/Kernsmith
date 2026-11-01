@@ -706,6 +706,39 @@ public sealed class BmfcConfigReaderWriterTests
     }
 
     [Fact]
+    public void Parse_LeadingBom_IsIgnored()
+    {
+        var config = BmfcConfigReader.Parse("\uFEFFfontSize=48\n");
+
+        config.Options.Size.ShouldBe(48f);
+    }
+
+    [Theory]
+    [InlineData(0x01)]
+    [InlineData(0x05)]
+    [InlineData(0x09)]
+    [InlineData('0')]
+    [InlineData('?')]
+    [InlineData(0xFFFD)]
+    public void FallbackCharacter_RoundTrips(int codepoint)
+    {
+        var options = new FontGeneratorOptions { FallbackCharacter = (char)codepoint };
+
+        var text = BmfcConfigWriter.Write(new BmfcConfig { Options = options });
+
+        BmfcConfigReader.Parse(text).Options.FallbackCharacter.ShouldBe((char)codepoint);
+    }
+
+    [Theory]
+    [InlineData("5", '5')]   // a single character is that character
+    [InlineData("?", '?')]
+    [InlineData("63", '?')]  // anything longer is a decimal codepoint
+    public void Parse_FallbackChar_ReadsACharacterOrACodepoint(string value, char expected)
+    {
+        BmfcConfigReader.Parse($"fallbackChar={value}\n").Options.FallbackCharacter.ShouldBe(expected);
+    }
+
+    [Fact]
     public void Parse_CharsRangePastUnicode_IsClampedToTheCodepointSpace()
     {
         // A shared .bmfc whose chars= range ran to int.MaxValue looped without end, filling

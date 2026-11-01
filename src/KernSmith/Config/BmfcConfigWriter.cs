@@ -183,11 +183,12 @@ public static class BmfcConfigWriter
             extensions.AppendLine(CultureInfo.InvariantCulture, $"variationAxes={FormatVariationAxes(options.VariationAxes)}");
         if (options.PackingAlgorithm != PackingAlgorithm.MaxRects)
             extensions.AppendLine("packer=skyline");
-        // FallbackCodepoint takes precedence over FallbackCharacter
+        // FallbackCodepoint takes precedence over FallbackCharacter. The reader takes a single
+        // character literally, so the codepoint is written with at least two digits ("05").
         if (options.FallbackCodepoint.HasValue)
-            extensions.AppendLine(CultureInfo.InvariantCulture, $"fallbackChar={options.FallbackCodepoint.Value}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"fallbackChar={options.FallbackCodepoint.Value:00}");
         else if (options.FallbackCharacter.HasValue)
-            extensions.AppendLine(CultureInfo.InvariantCulture, $"fallbackChar={(int)options.FallbackCharacter.Value}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"fallbackChar={(int)options.FallbackCharacter.Value:00}");
         if (options.ColorFont)
             extensions.AppendLine("colorFont=1");
         if (options.ColorPaletteIndex != 0)

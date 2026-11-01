@@ -48,6 +48,10 @@ public static class BmfcConfigReader
 
     private static BmfcConfig ParseCore(string content)
     {
+        // Strip a leading UTF-8 BOM (U+FEFF) so Parse(string) matches Read (File.ReadAllText already strips it).
+        if (content.Length > 0 && content[0] == '\uFEFF')
+            content = content[1..];
+
         var config = new BmfcConfig();
         var options = config.Options;
 
