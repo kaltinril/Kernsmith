@@ -134,40 +134,35 @@ public class AtlasSizeEstimatorTests
     }
 
     // ---------------------------------------------------------------
-    // 5. Channel packing -- area is divided by 4, produces smaller atlas
+    // 5. Channel packing -- glyphs are packed side by side, so the estimate is unchanged
     // ---------------------------------------------------------------
 
-    [Fact]
-    public void Estimate_ChannelPacking_ProducesSmallerOrEqualAtlas()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Estimate_ChannelPacking_SizesLikeAnUnpackedAtlas(bool equalized)
     {
-        // Arrange -- many glyphs with varied sizes to see a clear difference
+        // Channel-packed glyphs never share pixels (each writes one channel of its own rect), so
+        // the atlas needs the whole glyph area, not a quarter of it.
         var rects = Enumerable.Range(0, 200).Select(i => Rect(i, 8 + (i % 5), 12 + (i % 3))).ToArray();
         var baseOptions = new AtlasSizingOptions
         {
             PowerOfTwo = false,
             AllowNonSquare = true,
             ChannelPacking = false,
+            EqualizedCellHeights = equalized,
             MinSize = 1,
             MaxWidth = 4096,
             MaxHeight = 4096
         };
         var packedOptions = baseOptions with { ChannelPacking = true };
 
-        // Act
-        var (wNormal, hNormal) = AtlasSizeEstimator.Estimate(rects, baseOptions);
-        var (wPacked, hPacked) = AtlasSizeEstimator.Estimate(rects, packedOptions);
+        var normal = AtlasSizeEstimator.Estimate(rects, baseOptions);
+        var packed = AtlasSizeEstimator.Estimate(rects, packedOptions);
 
-        // Assert
-        long normalArea = (long)wNormal * hNormal;
-        long packedArea = (long)wPacked * hPacked;
-        packedArea.ShouldBeLessThanOrEqualTo(normalArea,
-            "channel packing should produce a smaller or equal atlas than without");
-
-        // Also verify the channel-packed estimate covers at least 1/4 of total glyph area
+        packed.ShouldBe(normal);
         long totalGlyphArea = rects.Sum(r => (long)r.Width * r.Height);
-        long channelAdjustedArea = (totalGlyphArea + 3) / 4;
-        packedArea.ShouldBeGreaterThanOrEqualTo(channelAdjustedArea,
-            "channel-packed atlas must still cover the channel-adjusted glyph area");
+        ((long)packed.Width * packed.Height).ShouldBeGreaterThanOrEqualTo(totalGlyphArea);
     }
 
     // ---------------------------------------------------------------

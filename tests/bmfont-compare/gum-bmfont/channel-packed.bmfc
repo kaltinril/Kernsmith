@@ -1,0 +1,57 @@
+# AngelCode Bitmap Font Generator configuration file
+# Channel packing (fourChnlPacked=1): each glyph writes one RGBA channel of its own
+# cell, so the atlas is sized like an unpacked one (#295).
+fileVersion=1
+
+# font settings
+fontName=Georgia
+fontFile=
+charSet=0
+fontSize=56
+aa=1
+scaleH=100
+useSmoothing=1
+isBold=0
+isItalic=0
+useUnicode=1
+disableBoxChars=1
+outputInvalidCharGlyph=0
+dontIncludeKerningPairs=0
+useHinting=1
+renderFromOutline=0
+useClearType=0
+autoFitNumPages=0
+
+# character alignment
+paddingDown=0
+paddingUp=0
+paddingRight=0
+paddingLeft=0
+spacingHoriz=1
+spacingVert=1
+useFixedHeight=0
+forceZero=0
+widthPaddingFactor=0.00
+
+# output file
+outWidth=1024
+outHeight=1024
+outBitDepth=32
+fontDescFormat=0
+fourChnlPacked=1
+textureFormat=png
+textureCompression=0
+alphaChnl=0
+redChnl=0
+greenChnl=0
+blueChnl=0
+invA=0
+invR=0
+invG=0
+invB=0
+
+# outline
+outlineThickness=0
+
+# selected chars
+chars=32-126

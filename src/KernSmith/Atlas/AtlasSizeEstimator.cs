@@ -28,7 +28,10 @@ internal sealed record AtlasSizingOptions
     /// <summary>Minimum atlas dimension in pixels.</summary>
     public int MinSize { get; init; } = 64;
 
-    /// <summary>Whether channel packing is enabled (4 glyphs per pixel via RGBA channels).</summary>
+    /// <summary>
+    /// Whether channel packing is enabled. It does not shrink the estimate: channel-packed glyphs
+    /// are packed side by side like any others, each then writing one RGBA channel.
+    /// </summary>
     public bool ChannelPacking { get; init; }
 
     /// <summary>Whether all glyph cells have been equalized to the same height.</summary>
@@ -153,10 +156,6 @@ internal static class AtlasSizeEstimator
             if (r.Height > maxGlyphHeight) maxGlyphHeight = r.Height;
         }
 
-        // Channel packing: 4 glyphs per pixel position.
-        if (options.ChannelPacking)
-            totalArea = (totalArea + 3) / 4; // Ceiling division.
-
         // Equalized cell heights: 1D strip packing fast path.
         if (options.EqualizedCellHeights)
             return EstimateEqualizedCells(rects, options, maxGlyphWidth, maxGlyphHeight, minSize);
@@ -237,7 +236,7 @@ internal static class AtlasSizeEstimator
     {
         var cellWidth = maxGlyphWidth;
         var cellHeight = maxGlyphHeight;
-        var n = options.ChannelPacking ? (rects.Count + 3) / 4 : rects.Count;
+        var n = rects.Count;
 
         // Find optimal width.
         var bestWidth = options.MaxWidth;
