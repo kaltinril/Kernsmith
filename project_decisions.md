@@ -95,5 +95,6 @@ Decisions made, with the why — consult before re-litigating anything. One per 
 
 ## Tooling
 
+- Publishing uses nuget.org Trusted Publishing (GitHub OIDC exchanged for a one-hour key by `NuGet/login`) instead of a stored `NUGET_API_KEY` secret, because nuget.org now caps API keys at 30 days and expired every longer-lived key on 2026-11-01. The release flow is otherwise unchanged (tag push or Run workflow, no environment or approval gate), by Jeremy's choice; it mirrors ShadowDusk's `release.yml`.
 - xUnit + Shouldly, never FluentAssertions — paid licensing (Phase 79).
 - No ReadyToRun: benchmarked ~15% slower than plain JIT on .NET 10.

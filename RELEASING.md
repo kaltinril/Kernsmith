@@ -99,19 +99,23 @@ dotnet pack src/KernSmith.Rasterizers.FreeType -c Release --output ./nupkg
 
 ## Publishing credentials
 
-NuGet packages are pushed with [NuGet Trusted Publishing](https://learn.microsoft.com/nuget/nuget-org/trusted-publishing): the `publish-nuget` job asks GitHub for a short-lived OIDC token (`id-token: write`), and `NuGet/login` exchanges it for a NuGet API key that is valid for one hour. There is no stored API key.
+NuGet packages are pushed with [nuget.org Trusted Publishing](https://learn.microsoft.com/nuget/nuget-org/trusted-publishing), not a stored API key. The `publish-nuget` job asks GitHub for an OIDC token (`id-token: write`), and `NuGet/login` exchanges it for a nuget.org key that lives one hour, so there is no long-lived key to store, rotate, or let expire (nuget.org caps API keys at 30 days and expired every longer-lived key on 2026-11-01).
 
-This needs a Trusted Publishing policy on nuget.org (your username → **Trusted Publishing**):
+It needs one Trusted Publishing policy on nuget.org (your profile → **Trusted Publishing** → create):
 
 | Field | Value |
 |---|---|
-| Package Owner | `kaltinril` |
+| Policy Name | any, e.g. `KernSmith GitHub publish` |
+| Package Owner | `Kaltinril` |
 | Repository Owner | `kaltinril` |
 | Repository | `Kernsmith` |
 | Workflow File | `publish.yml` (file name only) |
 | Environment | *(empty)* |
+| Scope | **Push only new package versions**, glob `KernSmith*` (`KernSmith.*` would miss the core `KernSmith` package) |
 
-Renaming `publish.yml`, moving the repository, or changing the owner breaks the policy until it is updated to match.
+- That scope cannot create a package ID. A release that adds a new package (for example publishing `KernSmith.Rasterizers.Native` with `KernSmith.Imaging`) needs the policy switched to **Push new packages and package versions** for that one run, or the new ID pushed once by hand first.
+- The `user:` in `publish.yml`'s `NuGet/login` step must be the policy owner's nuget.org profile name (`Kaltinril`).
+- A 403 at the NuGet push step means the policy is missing, inactive, or no longer matches the workflow file name.
 
 ## Version Scheme
 
