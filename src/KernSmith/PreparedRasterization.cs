@@ -821,9 +821,9 @@ internal sealed class PreparedRasterization : IDisposable
         var dst = new byte[dstW * dstH * bpp];
 
         if (bpp == 1 || perChannel)
-            BoxSum(glyph.BitmapData, glyph.Pitch, level, dstW, dstH, bpp, dst);
+            BoxSum(glyph.BitmapData, glyph.Pitch, srcW, srcH, level, dstW, dstH, bpp, dst);
         else
-            BoxPremultiplied(glyph.BitmapData, glyph.Pitch, level, dstW, dstH, dst);
+            BoxPremultiplied(glyph.BitmapData, glyph.Pitch, srcW, srcH, level, dstW, dstH, dst);
 
         var metrics = glyph.Metrics;
         var newMetrics = new GlyphMetrics(
@@ -848,14 +848,16 @@ internal sealed class PreparedRasterization : IDisposable
 
     /// <summary>
     /// Each channel of each destination pixel is the integer mean (truncated) of its
-    /// <paramref name="level"/> x <paramref name="level"/> source block, a byte past the end of
+    /// <paramref name="level"/> x <paramref name="level"/> source block, a pixel outside the
+    /// <paramref name="srcW"/> x <paramref name="srcH"/> glyph or a byte past the end of
     /// <paramref name="src"/> counting as 0 (multi-channel distance fields average every channel
     /// on its own; grayscale has one). Source rows are swept in order into per-pixel sums.
     /// </summary>
-    private static void BoxSum(byte[] src, int srcPitch, int level, int dstW, int dstH, int bpp, byte[] dst)
+    private static void BoxSum(byte[] src, int srcPitch, int srcW, int srcH, int level, int dstW, int dstH, int bpp, byte[] dst)
     {
         var area = level * level;
-        var rowBytes = dstW * level * bpp;
+        // Only the glyph's own columns are read: a row's pitch padding, or the next row, is not ink.
+        var rowBytes = Math.Min(srcW, dstW * level) * bpp;
         var sums = ArrayPool<int>.Shared.Rent(dstW * bpp);
         try
         {
@@ -865,35 +867,21 @@ internal sealed class PreparedRasterization : IDisposable
                 acc.Clear();
                 for (var sy = 0; sy < level; sy++)
                 {
-                    var rowStart = (dy * level + sy) * srcPitch;
-                    if (rowStart + rowBytes <= src.Length)
+                    var y = dy * level + sy;
+                    if (y >= srcH)
+                        break;
+                    var rowStart = y * srcPitch;
+                    if (rowStart >= src.Length)
+                        break;
+                    var row = src.AsSpan(rowStart, Math.Min(rowBytes, src.Length - rowStart));
+                    var i = 0;
+                    for (var dx = 0; dx < dstW && i < row.Length; dx++)
                     {
-                        var row = src.AsSpan(rowStart, rowBytes);
-                        var i = 0;
-                        for (var dx = 0; dx < dstW; dx++)
+                        var k = dx * bpp;
+                        for (var sx = 0; sx < level && i < row.Length; sx++)
                         {
-                            var k = dx * bpp;
-                            for (var sx = 0; sx < level; sx++)
-                            {
-                                for (var c = 0; c < bpp; c++)
-                                    acc[k + c] += row[i++];
-                            }
-                        }
-                    }
-                    else
-                    {
-                        var i = rowStart;
-                        for (var dx = 0; dx < dstW; dx++)
-                        {
-                            var k = dx * bpp;
-                            for (var sx = 0; sx < level; sx++)
-                            {
-                                for (var c = 0; c < bpp; c++, i++)
-                                {
-                                    if (i < src.Length)
-                                        acc[k + c] += src[i];
-                                }
-                            }
+                            for (var c = 0; c < bpp && i < row.Length; c++)
+                                acc[k + c] += row[i++];
                         }
                     }
                 }
@@ -913,10 +901,11 @@ internal sealed class PreparedRasterization : IDisposable
     /// Premultiplied-alpha box filter for RGBA: without premultiplying, transparent pixels with
     /// gradient colors bleed dark halos into the edges during downscale. Each destination
     /// pixel's float sums take their source pixels in block order (row by row, left to right)
-    /// — the order that fixes their rounding — and a pixel whose bytes run past the end of
-    /// <paramref name="src"/> is skipped.
+    /// — the order that fixes their rounding — and a pixel outside the
+    /// <paramref name="srcW"/> x <paramref name="srcH"/> glyph, or whose bytes run past the end
+    /// of <paramref name="src"/>, is skipped.
     /// </summary>
-    private static void BoxPremultiplied(byte[] src, int srcPitch, int level, int dstW, int dstH, byte[] dst)
+    private static void BoxPremultiplied(byte[] src, int srcPitch, int srcW, int srcH, int level, int dstW, int dstH, byte[] dst)
     {
         var area = level * level;
         var sums = ArrayPool<float>.Shared.Rent(dstW * 4);
@@ -928,13 +917,19 @@ internal sealed class PreparedRasterization : IDisposable
                 acc.Clear();
                 for (var sy = 0; sy < level; sy++)
                 {
-                    var rowStart = (dy * level + sy) * srcPitch;
+                    var y = dy * level + sy;
+                    if (y >= srcH)
+                        break;
+                    var rowStart = y * srcPitch;
                     for (var dx = 0; dx < dstW; dx++)
                     {
                         var k = dx * 4;
                         for (var sx = 0; sx < level; sx++)
                         {
-                            var srcIdx = rowStart + (dx * level + sx) * 4;
+                            var x = dx * level + sx;
+                            if (x >= srcW)
+                                break;
+                            var srcIdx = rowStart + x * 4;
                             if (srcIdx + 3 < src.Length)
                             {
                                 var a = src[srcIdx + 3] / 255f;
