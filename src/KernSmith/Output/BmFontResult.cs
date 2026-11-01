@@ -241,7 +241,8 @@ public sealed class BmFontResult
 
         // Rebuild page entries to match the output base name. The extension comes from the
         // encoder, because FileWriter names the image files it writes by encoder.FileExtension.
-        var baseName = Path.GetFileNameWithoutExtension(outputPath);
+        // The path has no extension, so a dot in it belongs to the name (FileWriter agrees).
+        var baseName = Path.GetFileName(outputPath);
         var fixedPages = new List<PageEntry>();
         for (int i = 0; i < Model.Pages.Count; i++)
         {
@@ -279,7 +280,7 @@ public sealed class BmFontResult
             }
             else
             {
-                var variantBaseName = Path.GetFileNameWithoutExtension(variantOutputPath);
+                var variantBaseName = Path.GetFileName(variantOutputPath);
                 variantFixedPages = new List<PageEntry>();
                 for (int i = 0; i < variantModel.Pages.Count; i++)
                 {
