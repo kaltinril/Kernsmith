@@ -64,6 +64,13 @@ internal sealed class GenerateCommand
                 return ExitCodes.InvalidArguments;
             }
 
+            // --no-hinting and an explicit hinted level ask for opposite things.
+            if (options.EnableHinting == false && options.HintLevel is { } level && level is not (HintLevel.Default or HintLevel.None))
+            {
+                ConsoleOutput.WriteError($"--no-hinting contradicts --hint-level {level.ToString().ToLowerInvariant()}. Use --hint-level none with hinting off, or drop --no-hinting.");
+                return ExitCodes.InvalidArguments;
+            }
+
             // Validate rasterizer backend
             var available = RasterizerFactory.GetAvailableBackends();
             if (!available.Contains(options.Backend))
@@ -246,6 +253,7 @@ internal sealed class GenerateCommand
             FallbackCharacter = options.FallbackCharacter,
             FallbackCodepoint = options.FallbackCodepoint,
             EnableHinting = options.EnableHinting ?? true,
+            HintLevel = options.HintLevel ?? KernSmith.HintLevel.Default,
             AutofitTexture = options.AutofitTexture,
             EqualizeCellHeights = options.EqualizeCellHeights,
             ForceOffsetsToZero = options.ForceOffsetsToZero,
@@ -740,6 +748,17 @@ internal sealed class GenerateCommand
                     case "--no-hinting":
                         options.EnableHinting = false;
                         break;
+                    case "--hint-level":
+                        options.HintLevel = NextArg(args, ref i, "--hint-level").ToLowerInvariant() switch
+                        {
+                            "default" => HintLevel.Default,
+                            "none" => HintLevel.None,
+                            "light" => HintLevel.Light,
+                            "normal" => HintLevel.Normal,
+                            "full" => HintLevel.Full,
+                            var h => throw new ArgumentException($"Unknown --hint-level: {h}. Use default, none, light, normal or full.")
+                        };
+                        break;
                     case "--autofit":
                         options.AutofitTexture = true;
                         break;
@@ -873,6 +892,7 @@ internal sealed class GenerateCommand
         if (cli.Kerning.HasValue) config.Kerning = cli.Kerning;
         if (cli.PowerOfTwo.HasValue) config.PowerOfTwo = cli.PowerOfTwo;
         if (cli.EnableHinting.HasValue) config.EnableHinting = cli.EnableHinting;
+        if (cli.HintLevel.HasValue) config.HintLevel = cli.HintLevel;
         if (cli.AutofitTexture) config.AutofitTexture = true;
         if (cli.EqualizeCellHeights) config.EqualizeCellHeights = true;
         if (cli.ForceOffsetsToZero) config.ForceOffsetsToZero = true;
@@ -1081,6 +1101,8 @@ internal sealed class GenerateCommand
               --super-sample <n>          Super sampling level 1-4 (default: 1)
               --rasterizer <backend>      Rasterizer backend: freetype (default), stbtruetype, gdi, directwrite, native
               --hinting / --no-hinting    Enable/disable hinting (default: on; native hints only with --aa light)
+              --hint-level <level>        Grid fitting: default|none|light|normal|full (default: the backend's --hinting behaviour;
+                                          an unsupported level steps down to the nearest one the backend has; not with --no-hinting)
               --gamma <n>                 Gamma correction applied during rasterization (default: 1.8)
               --height-percent <n>        Vertical height scaling percentage (default: 100)
               --width-percent <n>         Synthetic condensed/expanded width percentage, 10-1000 (default: 100; native only)

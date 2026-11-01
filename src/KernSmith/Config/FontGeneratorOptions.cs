@@ -199,6 +199,16 @@ public class FontGeneratorOptions
     public bool EnableHinting { get; set; } = true;
 
     /// <summary>
+    /// How strongly outlines are fitted to the pixel grid (default <see cref="KernSmith.HintLevel.Default"/>,
+    /// the backend's existing behaviour). An explicit level owns hinting: it decides regardless of
+    /// <see cref="AntiAlias"/>, and a backend without it renders the nearest lower level it supports.
+    /// <see cref="EnableHinting"/> = false with a level other than <see cref="KernSmith.HintLevel.None"/>
+    /// or <see cref="KernSmith.HintLevel.Default"/> is contradictory and rejected with an
+    /// <see cref="ArgumentException"/> at generation.
+    /// </summary>
+    public HintLevel HintLevel { get; set; }
+
+    /// <summary>
     /// FreeType gamma correction applied during rasterization (default 1.8, matching Hiero).
     /// Maps to Hiero's <c>font.gamma</c>.
     /// </summary>

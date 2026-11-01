@@ -312,6 +312,11 @@ public sealed class BmFontBuilder
     /// <returns>This builder.</returns>
     public BmFontBuilder WithHinting(bool enable = true) { _options.EnableHinting = enable; return this; }
 
+    /// <summary>Sets how strongly outlines are fitted to the pixel grid; see <see cref="FontGeneratorOptions.HintLevel"/>.</summary>
+    /// <param name="level">The hint level.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithHintLevel(HintLevel level) { _options.HintLevel = level; return this; }
+
     /// <summary>If true, shrinks the texture to fit the glyphs tightly.</summary>
     /// <param name="autofit">Enable auto-fit.</param>
     /// <returns>This builder.</returns>
@@ -510,6 +515,7 @@ public sealed class BmFontBuilder
         _options.FallbackCodepoint = source.FallbackCodepoint;
         _options.TextureFormat = source.TextureFormat;
         _options.EnableHinting = source.EnableHinting;
+        _options.HintLevel = source.HintLevel;
         _options.AutofitTexture = source.AutofitTexture;
         _options.EqualizeCellHeights = source.EqualizeCellHeights;
         _options.ForceOffsetsToZero = source.ForceOffsetsToZero;

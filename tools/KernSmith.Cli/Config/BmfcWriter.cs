@@ -75,6 +75,7 @@ internal static class BmfcWriter
             FallbackCharacter = options.FallbackCharacter,
             FallbackCodepoint = options.FallbackCodepoint,
             EnableHinting = options.EnableHinting ?? true,
+            HintLevel = options.HintLevel ?? KernSmith.HintLevel.Default,
             AutofitTexture = options.AutofitTexture,
             EqualizeCellHeights = options.EqualizeCellHeights,
             ForceOffsetsToZero = options.ForceOffsetsToZero,

@@ -94,6 +94,7 @@ internal static class BmfcParser
             FallbackCharacter = gen.FallbackCharacter,
             FallbackCodepoint = gen.FallbackCodepoint,
             EnableHinting = gen.EnableHinting,
+            HintLevel = gen.HintLevel,
             EqualizeCellHeights = gen.EqualizeCellHeights,
             ForceOffsetsToZero = gen.ForceOffsetsToZero,
             HeightPercent = gen.HeightPercent,

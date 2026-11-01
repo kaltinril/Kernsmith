@@ -23,6 +23,13 @@ internal readonly record struct PreparedGlyph(GlyphOutline Outline, OutlineTrans
     /// </summary>
     public int GlyphIndex { get; init; }
 
+    /// <summary>
+    /// The advance in font units before scaling and rounding, set by <see cref="GlyphPipeline.Prepare"/>,
+    /// for a hint stage that rebuilds the advance from the fitted outline and needs the exact
+    /// side bearings rather than the rounded <see cref="Advance"/>.
+    /// </summary>
+    public float AdvanceWidth { get; init; }
+
     /// <summary>True when there is nothing to draw: a real advance, but no bitmap.</summary>
     public bool IsBlank => Outline.IsEmpty || Box.IsEmpty;
 }

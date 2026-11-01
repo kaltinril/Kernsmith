@@ -53,6 +53,7 @@ dotnet tools/KernSmith.Cli/bin/Debug/net10.0/KernSmith.Cli.dll generate -f <font
 ```
 
 Native options: `--aa none|grayscale|light|lcd` (`--mono` = `none`), `--hinting`/`--no-hinting`,
+`--hint-level none|light` (hints `--aa grayscale` and `--aa none` too; `normal`/`full` render as `light` for now),
 `--sdf` or `--sdf-mode sdf|msdf|mtsdf`, `--sdf-spread <n>`, `--color-font`, `--color-palette <n>`,
 `--axis <tag>=<value>` (repeatable), `--instance <name>` (a named instance; `--axis` overrides its
 values), `-b/--bold`, `-i/--italic`, `--italic-angle <deg>`, `--width-percent <n>`,

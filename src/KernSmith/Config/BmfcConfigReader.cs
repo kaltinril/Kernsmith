@@ -369,6 +369,12 @@ public static class BmfcConfigReader
                             _ => options.AntiAlias
                         };
                         break;
+                    case "hintLevel":
+                        options.HintLevel = Enum.TryParse<HintLevel>(value, ignoreCase: true, out var hintLevel)
+                            && Enum.IsDefined(hintLevel)
+                            ? hintLevel
+                            : HintLevel.Default;
+                        break;
                     case "lcdFilter":
                         options.LcdFilter = Enum.TryParse<LcdFilter>(value, ignoreCase: true, out var lcdFilter)
                             && Enum.IsDefined(lcdFilter)

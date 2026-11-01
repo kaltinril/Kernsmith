@@ -38,6 +38,14 @@ The `NativeFeature*` classes time each Native feature path next to the plain Gra
 dotnet run -c Release -f net10.0 --project benchmarks/KernSmith.Benchmarks -- --filter *NativeFeature*
 ```
 
+### Native hinting levels
+
+The `NativeHinting*` classes (phase 188) time Native per hinting setting next to the FreeType backend doing the same work: `NativeHintingRasterizeBenchmarks` runs `RasterizeAll` and `GetGlyphMetrics` (printable ASCII, per glyph) at 8/12/16/32px, and `NativeHintingEndToEndBenchmarks` runs `BmFont.Generate` ASCII at 12 and 32px. Each `Case` is `font aa hinting (backend)`: fonts Roboto (FreeType auto-hints it), NotoSans-Latin (TrueType bytecode) and SourceSerif4 (CFF); anti-alias Grayscale and None; Native with hinting off and Light (grayscale only); FreeType hinted (`Full`, its default) and unhinted as the reference. New hint levels join the case list as Native advertises them. Budgets are in [phase 188](../../plan/phase-188-native-hint-levels.md); use the default job, not `short`, when measuring against them. The parity measurement that goes with these numbers is `tests/hint-parity`.
+
+```
+dotnet run -c Release -f net10.0 --project benchmarks/KernSmith.Benchmarks -- --filter *NativeHinting*
+```
+
 ### Cold start (JIT, ReadyToRun, NativeAOT)
 
 BenchmarkDotNet reports warm steady state: it runs warm-up iterations, so JIT compilation never shows. `benchmarks/KernSmith.ColdStart` measures what a fresh process pays instead. One process times the 1st, 2nd ... Nth `BmFont.Generate` call (default 50) from font bytes to finished output (the `.fnt` text and every page encoded to PNG in memory), records OS process start to `Main` (best effort, from `Process.StartTime`), the JIT counters from `System.Runtime.JitInfo` after the first call (all zero under NativeAOT), and writes JSON:

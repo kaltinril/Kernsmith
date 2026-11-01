@@ -69,7 +69,7 @@ internal sealed class GlyphPipeline
         var box = GlyphBox.Compute(glyph.Outline, glyph.DeclaredBounds, scale);
         int advance = PixelAdvance(glyph.AdvanceWidth, scale);
         GlyphLimits.EnsureGlyphBox(glyphIndex, box.Width, box.Height, options);
-        var prepared = new PreparedGlyph(glyph.Outline, new OutlineTransform(scale, 0f), box, advance) { GlyphIndex = glyphIndex };
+        var prepared = new PreparedGlyph(glyph.Outline, new OutlineTransform(scale, 0f), box, advance) { GlyphIndex = glyphIndex, AdvanceWidth = glyph.AdvanceWidth };
 
         // 4. Pixel-space hinting, measuring reference glyphs through the same stages 1-2.
         return _hinter is null || !GlyphHinter.Applies(options)

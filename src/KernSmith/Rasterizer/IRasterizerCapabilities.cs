@@ -30,6 +30,15 @@ public interface IRasterizerCapabilities
     IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; }
 
     /// <summary>
+    /// The explicit <see cref="HintLevel"/>s this rasterizer implements; empty means only
+    /// <see cref="HintLevel.Default"/>. The generation pipeline never hands the rasterizer an
+    /// unlisted level: it steps the request down (<see cref="HintLevel.Full"/> →
+    /// <see cref="HintLevel.Normal"/> → <see cref="HintLevel.Light"/> → <see cref="HintLevel.None"/>)
+    /// to the first listed one, else <see cref="HintLevel.Default"/>.
+    /// </summary>
+    IReadOnlyList<HintLevel> SupportedHintLevels => [];
+
+    /// <summary>
     /// When true, the rasterizer handles font sizing internally and BmFont should
     /// pass the raw fontSize without cell-height-to-ppem conversion.
     /// </summary>

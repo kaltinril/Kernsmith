@@ -155,6 +155,14 @@ internal sealed class PreparedRasterization : IDisposable
         var ownsRasterizer = options.Rasterizer == null;
         try
         {
+            // Guard: hinting switched off and an explicit hinted level ask for opposite things;
+            // fail loudly rather than let one silently win.
+            if (!options.EnableHinting && options.HintLevel is not (HintLevel.Default or HintLevel.None))
+                throw new ArgumentException(
+                    $"EnableHinting = false contradicts HintLevel = {options.HintLevel}. " +
+                    "Use HintLevel.None (or Default) with hinting off, or leave EnableHinting on and set the level.",
+                    nameof(options));
+
             // Guard: channel packing is incompatible with color fonts.
             if (options.ChannelPacking && options.ColorFont)
                 throw new InvalidOperationException(
@@ -251,6 +259,8 @@ internal sealed class PreparedRasterization : IDisposable
             {
                 AntiAlias = AntiAliasNegotiation.Resolve(
                     options.AntiAlias, rasterizer.Capabilities.SupportedAntiAliasModes),
+                HintLevel = HintLevelNegotiation.Resolve(
+                    options.HintLevel, rasterizer.Capabilities.SupportedHintLevels),
                 Bold = effectiveBold,
                 ForceSyntheticBold = effectiveForceSyntheticBold,
                 Italic = effectiveItalic,

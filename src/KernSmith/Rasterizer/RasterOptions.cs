@@ -96,6 +96,14 @@ public sealed record RasterOptions
     public bool EnableHinting { get; init; } = true;
 
     /// <summary>
+    /// How strongly outlines are fitted to the pixel grid. <see cref="KernSmith.HintLevel.Default"/>
+    /// keeps the backend's reading of <see cref="EnableHinting"/> and <see cref="AntiAlias"/>; an
+    /// explicit level decides on its own. The pipeline only sends a backend a level it lists in
+    /// <see cref="IRasterizerCapabilities.SupportedHintLevels"/> (or <see cref="KernSmith.HintLevel.Default"/>).
+    /// </summary>
+    public HintLevel HintLevel { get; init; }
+
+    /// <summary>
     /// Supersampling factor for higher quality rendering. The rasterizer renders at
     /// Size * SuperSample internally and downscales. Default is 1 (no supersampling).
     /// BMFont's "aa" setting maps to this value. KernSmith core super samples glyphs itself (it
@@ -147,6 +155,7 @@ public sealed record RasterOptions
             ColorPaletteIndex = options.ColorPaletteIndex,
             VariationAxes = options.VariationAxes,
             EnableHinting = options.EnableHinting,
+            HintLevel = options.HintLevel,
             SuperSample = options.SuperSampleLevel,
             WidthPercent = options.WidthPercent,
             ItalicAngle = options.ItalicAngle

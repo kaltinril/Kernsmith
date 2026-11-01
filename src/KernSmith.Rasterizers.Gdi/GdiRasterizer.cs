@@ -753,5 +753,13 @@ public sealed class GdiRasterizer : IRasterizer
 
         public IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; } =
             [AntiAliasMode.None, AntiAliasMode.Grayscale];
+
+        /// <summary>
+        /// GDI always runs the font's own bytecode in both axes and has no unhinted path (it
+        /// ignores <see cref="RasterOptions.EnableHinting"/>), so <see cref="HintLevel.Full"/> is
+        /// its only level; every other request steps down to <see cref="HintLevel.Default"/>, the
+        /// same output.
+        /// </summary>
+        public IReadOnlyList<HintLevel> SupportedHintLevels { get; } = [HintLevel.Full];
     }
 }

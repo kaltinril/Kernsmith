@@ -196,6 +196,7 @@ public sealed record RasterOptions
     public int ColorPaletteIndex { get; init; }          // CPAL palette index for color fonts
     public Dictionary<string, float>? VariationAxes { get; init; } // variable font axis overrides
     public bool EnableHinting { get; init; } = true;     // font hinting for sharper rendering
+    public HintLevel HintLevel { get; init; }            // Default = the backend's EnableHinting behaviour; only levels in SupportedHintLevels are sent
     public int SuperSample { get; init; } = 1;           // core sends 1 for an effective Lcd request
     public int WidthPercent { get; init; } = 100;        // 10-1000; only sent to SupportsWidthScale backends
     public float ItalicAngle { get; init; } = 12f;       // ±60°; only sent to SupportsItalicAngle backends
@@ -227,6 +228,14 @@ public enum SdfMode
 ```
 
 > **Note:** `Msdf`/`Mtsdf` need `IRasterizerCapabilities.SupportsMsdf` (default-interface member, false).
+
+### HintLevel
+
+```csharp
+public enum HintLevel { Default, None, Light, Normal, Full }   // Default = today's per-backend EnableHinting mapping; Full = the font's own hinting else the auto-hinter (FreeType's default)
+```
+
+> **Note:** On both `FontGeneratorOptions` and `RasterOptions`. `IRasterizerCapabilities.SupportedHintLevels` (default-interface member, empty) lists what a backend implements; core steps an unlisted level down (`Full` → `Normal` → `Light` → `None`, else `Default`). `EnableHinting = false` with a level other than `None`/`Default` is an `ArgumentException`.
 
 ### LcdFilter / LcdSubpixelOrder
 

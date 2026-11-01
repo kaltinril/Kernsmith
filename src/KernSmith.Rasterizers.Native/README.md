@@ -75,7 +75,7 @@ Not supported — each raises a clear error or is ignored, as noted:
 
 - **Vector outlines for color glyphs and distance fields** — a face with `COLR` or `CBDT`/`sbix` color glyphs keeps the bitmap outline effect for every glyph under `ColorFont`; `OutlineMode.Vector` with SDF/MSDF is rejected by core
 - **Small caps** — the geometry exists internally; no option selects it
-- **TrueType bytecode hinting** — never run; the auto-hinter is Native's own and fits y only
+- **TrueType bytecode and CFF hinting** — never run; the auto-hinter is Native's own (`Light` fits y only, `Normal` both axes), and `HintLevel.Full` steps down to `Normal`
 - **System fonts by name** — `LoadSystemFont` throws `NotSupportedException`; load font bytes instead
 - **`Gamma`** — not applied in any mode
 
@@ -110,9 +110,19 @@ non-default width or angle throws `NotSupportedException`.
 
 ## Hinting
 
-Native has its own auto-hinter (Phase 174), no TrueType bytecode interpreter. It runs for
-`AntiAlias = Light` with `EnableHinting` on (`.bmfc`: `antiAlias=light`, `useHinting=1`) and
-fits the outline vertically only:
+Native has its own auto-hinter in two strengths, no TrueType bytecode interpreter and no CFF
+hinter. `HintLevel.Light` (`.bmfc`: `hintLevel=light`; CLI `--hint-level light`) is the y-only
+fitter of Phase 174; it also runs at `HintLevel.Default` for `AntiAlias = Light` with
+`EnableHinting` on (`.bmfc`: `antiAlias=light`, `useHinting=1`). `HintLevel.Normal`
+(`hintLevel=normal`, `--hint-level normal`) is the both-axis fitter of Phase 188. Both apply in
+any anti-alias mode but `Lcd` — mono thresholds the hinted outline. `HintLevel.None` is
+unhinted; Native lists `None`, `Light` and `Normal` in `SupportedHintLevels`, so core steps
+`Full` down to `Normal`. `GlyphHinter.EffectiveHintLevel` is the one place that maps a request
+to the level that runs.
+
+### Light
+
+The light fitter (`GridFitter`, `FontHintMetrics`) works vertically only:
 
 - **Blue zones** — baseline, x-height, cap height, ascender and descender, with the overshoot
   of round glyphs, measured from 'x', 'o', 'H', 'O', 'd' and 'p' after any synthetic style or
@@ -127,10 +137,45 @@ fits the outline vertically only:
 - **No point moves more than one pixel**: a fit that would move an edge further is skipped and
   the edge is interpolated instead, so hinting snaps a glyph to the grid without reshaping it.
 
-It applies to TrueType and CFF outlines and to `COLR` version 0 layers and version 1 glyph clips.
-Every other request, including the default (`Grayscale` with `EnableHinting` true), `Lcd` and
-every distance field (SDF, MSDF, MTSDF), renders unhinted. A font with no x-height and no cap height (no Latin reference glyphs, no `OS/2`
-heights) renders unhinted rather than snapped to zones that do not describe it.
+### Normal
+
+The normal fitter (`NormalHinter`, `StemFitter`, `NormalFontMetrics`) fits y and then x, each
+axis with the same engine (`StemFitter` runs on the transposed outline for x), and rebuilds the
+advance:
+
+- **Vertical stretch** — the y axis is scaled so the x-height lands on its rounded-up pixel
+  row; the other zones round to the nearest row at the stretched size (a 9.1 px ascender over a
+  6.4 px x-height becomes 10 rows over 7).
+- **Edges** — straight runs, curve extrema (refined to the curve's true extremum when the node
+  is only near it), the ends of strokes whose side is a curve (an 'S' terminal), and flats a
+  few units long at a bowl's extremum. Edges on the same ink side within 0.3 px merge, so an
+  'S' terminal and the bowl above it snap together.
+- **Strokes** — opposite edges within the maximum stem pair up (round edges need not overlap).
+  In grayscale a stroke keeps its thickness, snapped to the font's standard (measured as the
+  length-weighted median over plain-stemmed letters) when within 10% of it: a stroke under a
+  pixel thick is centred in one pixel at its true coverage (Roboto's 0.82 px stem is one column
+  at ~210, not a solid pixel); a thicker one gets one edge on a pixel boundary and a single
+  fringe. In mono every stroke is its rounded thickness, at least one pixel, on pixel
+  boundaries, so the 50% threshold can neither drop nor double it.
+- **Placement** — in x a per-glyph sub-pixel phase is chosen so the strokes move least, the
+  longest stroke anchors the glyph, and the others keep its phase with their pitches rounded to
+  whole pixels (in mono the outer-to-outer distance rounds, so widened stems eat into counters,
+  not the glyph's width). A gap between features of half a pixel or more stays at least a pixel.
+- **Everything else** moves by one monotone map per axis, so the outline cannot fold; fitted
+  coordinates land on a 1/64 px grid.
+- **Advance** — the fitted outline is placed at the original left side bearing (nudged, never
+  more than a pixel) and the advance is the fitted right edge plus the original right side
+  bearing, rounded (mono adds a quarter pixel: its stems widened). `NormalHintResult` carries
+  the side-bearing deltas a later step could fold into kerning.
+- **Taper** — full strength up to 24 ppem; the allowed edge movement, the stretch and the
+  advance rebuild fall to nothing by 40 ppem, so large text is exactly unhinted.
+
+Both levels apply to TrueType and CFF outlines and to `COLR` version 0 layers and version 1
+glyph clips, and measure their zones and stems per variation instance and synthetic style.
+Every other request, including the default (`Grayscale` with `EnableHinting` true and no
+explicit level), `Lcd` and every distance field (SDF, MSDF, MTSDF), renders unhinted. A font
+with no x-height and no cap height (no Latin reference glyphs, no `OS/2` heights) renders
+unhinted rather than snapped to zones that do not describe it.
 
 ## Errors, limits and threads
 
@@ -188,7 +233,7 @@ Everything is internal; add a feature to its stage rather than to `NativeRasteri
 | 1 | Decode → `DecodedGlyph` (cubic outline, advance, optional declared bbox; font units) | `Internal/Outlines/IOutlineDecoder.cs`, `TrueTypeOutlineDecoder.cs`, `CffOutlineDecoder.cs` (interpreter in `Internal/Cff/`); variations in `Internal/Variations/` | implementing `IOutlineDecoder` and returning it from `OutlineDecoders.ForFace`. Variation deltas live inside the decoder: both decoders receive the face's `FontVariations` (set by `SetVariationAxes`); `TrueTypeOutlineDecoder` applies `gvar`; `CffOutlineDecoder` feeds CFF2 `blend` per-`vsindex` region scalars through `CharstringContext.BlendScalars`. |
 | 2 | Transforms, in order, in font units | `Internal/Pipeline/IGlyphTransform.cs`, `GlyphTransforms.cs` | implementing `IGlyphTransform` and adding it in `GlyphTransforms.For` — `WidthScaleTransform`, `BoldTransform`, then `ItalicTransform` at `ItalicAngle` (167, 168). `SmallCapsTransform` (would go before bold) and `StrokeTransform` exist unregistered; the vector outline layer is `OutlineLayer`, drawn from the fully prepared glyph. Build results with `WithOutline` / `WithAdvanceWidth`. |
 | 3 | Bounds → pixel grid | `Internal/Raster/GlyphBox.cs`, `Internal/Outlines/OutlineBounds.cs` | nothing: a replaced outline loses its declared bbox and is measured from its tight bounds. |
-| 4 | Scale, then pixel-space hinting | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs`; `Internal/Hinting/` | `GlyphHinter.Apply` runs the auto-hinter (174) for hinted requests: `FontHintMetrics` (per face/size/style/instance, cached) and `GridFitter`. It returns a pixel-space outline with an identity `ToPixels`. |
+| 4 | Scale, then pixel-space hinting | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs`; `Internal/Hinting/` | `GlyphHinter.Apply` runs the auto-hinter for hinted requests — `Light` (174): `FontHintMetrics` and `GridFitter`; `Normal` (188): `NormalFontMetrics`, `NormalHinter` and `StemFitter`, which also rebuilds the advance from `PreparedGlyph.AdvanceWidth` — metrics cached per face/size/style/instance. It returns a pixel-space outline with an identity `ToPixels`. |
 | 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs`, `SdfRenderer.cs`, `MsdfRenderer.cs` (distance code and edge coloring in `Internal/Distance/`), `LcdRenderer.cs` (kernels in `Internal/Raster/LcdFilterKernel.cs`), `ColorLayerRenderer.cs`, `PaintGraphRenderer.cs`, `BitmapGlyphRenderer.cs` (strikes and scaling in `Internal/Bitmaps/`) | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` (distance fields first, then LCD, else coverage). Color glyphs (172) wrap that renderer in `GlyphRenderers.SelectForFace`: `BitmapGlyphRenderer` draws `CBDT`/`sbix` bitmaps, and `ColorLayerRenderer` outside it sends `COLR` version 1 paint graphs to `PaintGraphRenderer` and draws version 0 layers itself, preparing every clip or layer glyph through stages 1–4. A bitmap-only face decodes through `BitmapOnlyOutlineDecoder` (empty outlines, `hmtx` advances). `Measure` must match what `Render` produces. |
 
 Invariants:

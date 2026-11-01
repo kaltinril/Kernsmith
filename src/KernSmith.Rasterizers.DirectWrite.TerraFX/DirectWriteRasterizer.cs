@@ -479,7 +479,7 @@ public sealed unsafe class DirectWriteRasterizer : IRasterizer
 
         DWRITE_RENDERING_MODE renderingMode = options.AntiAlias == AntiAliasMode.None
             ? DWRITE_RENDERING_MODE.DWRITE_RENDERING_MODE_ALIASED
-            : (options.EnableHinting
+            : (options.EnableHinting && options.HintLevel != HintLevel.None
                 ? DWRITE_RENDERING_MODE.DWRITE_RENDERING_MODE_NATURAL_SYMMETRIC
                 : DWRITE_RENDERING_MODE.DWRITE_RENDERING_MODE_NATURAL);
 

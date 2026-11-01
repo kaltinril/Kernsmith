@@ -1027,6 +1027,71 @@ public class CliTests : IDisposable
         File.ReadAllText(roundConfig).ShouldNotContain("outlineShape");
     }
 
+    // -- Hint level --
+
+    [Fact]
+    public void GenerateHelp_ListsHintLevel()
+    {
+        var (exitCode, stdout, _) = RunCli("generate", "--help");
+
+        exitCode.ShouldBe(0);
+        stdout.ShouldContain("--hint-level", Case.Sensitive);
+        stdout.ShouldContain("default|none|light|normal|full", Case.Sensitive);
+    }
+
+    [Theory]
+    [InlineData("none")]
+    [InlineData("light")]
+    [InlineData("normal")]
+    [InlineData("full")]
+    public void Init_HintLevel_IsWrittenToConfig_AndReadBackByGenerate(string level)
+    {
+        var configPath = Path.Combine(_tempDir, "hint.bmfc");
+        var (initExit, _, initErr) = RunCli(
+            "init", "-f", FontPath, "-s", "24", "-c", "A", "--hint-level", level, "-o", configPath);
+
+        initExit.ShouldBe(0, $"stderr: {initErr}");
+        File.ReadAllText(configPath).ShouldContain($"hintLevel={level}", Case.Sensitive);
+
+        // A --config value survives generate (the CLI overlay must not reset it) and an explicit
+        // flag overrides it.
+        var keptConfig = Path.Combine(_tempDir, "kept.bmfc");
+        var (keptExit, _, keptErr) = RunCli(
+            "generate", "--config", configPath, "-f", FontPath, "--rasterizer", "native",
+            "-o", Path.Combine(_tempDir, "kept"), "--save-config", keptConfig);
+        keptExit.ShouldBe(0, $"stderr: {keptErr}");
+        File.ReadAllText(keptConfig).ShouldContain($"hintLevel={level}", Case.Sensitive);
+
+        var defaultConfig = Path.Combine(_tempDir, "default.bmfc");
+        var (defaultExit, _, defaultErr) = RunCli(
+            "generate", "--config", configPath, "-f", FontPath, "--hint-level", "default",
+            "-o", Path.Combine(_tempDir, "default"), "--save-config", defaultConfig);
+        defaultExit.ShouldBe(0, $"stderr: {defaultErr}");
+        File.ReadAllText(defaultConfig).ShouldNotContain("hintLevel", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_UnknownHintLevel_IsRejected()
+    {
+        var (exitCode, _, stderr) = RunCli("generate", "-f", FontPath, "-s", "32", "--hint-level", "bogus");
+
+        exitCode.ShouldBe(1);
+        stderr.ShouldContain("--hint-level", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_NoHintingWithAHintedLevel_IsAUsageError()
+    {
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "32", "--no-hinting", "--hint-level", "light",
+            "-o", Path.Combine(_tempDir, "contradiction"));
+
+        exitCode.ShouldBe(1);
+        stderr.ShouldContain("--no-hinting", Case.Sensitive);
+        stderr.ShouldContain("--hint-level", Case.Sensitive);
+        File.Exists(Path.Combine(_tempDir, "contradiction.fnt")).ShouldBeFalse();
+    }
+
     // -- LCD options --
 
     [Fact]

@@ -154,11 +154,20 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
             var bitmapData = new byte[width * height];
             new ReadOnlySpan<byte>(bitmap, width * height).CopyTo(bitmapData);
 
-            // Anti-alias mode None: threshold at 128.
+            // Anti-alias mode None: threshold at 128, then restore thin strokes it dropped.
             if (options.AntiAlias == AntiAliasMode.None)
             {
-                for (int i = 0; i < bitmapData.Length; i++)
-                    bitmapData[i] = bitmapData[i] >= 128 ? (byte)255 : (byte)0;
+                Threshold(bitmapData);
+                Stb.stbtt_vertex* vertices;
+                int numVerts = Stb.stbtt_GetGlyphShape(_fontInfo!, glyphIndex, &vertices);
+                try
+                {
+                    DropoutControl.Apply(bitmapData, width, height, vertices, numVerts, scale, xoff, yoff);
+                }
+                finally
+                {
+                    Stb.stbtt_FreeShape(_fontInfo!, vertices);
+                }
             }
 
             // Downscale bitmap by averaging aa x aa blocks when supersampling.
@@ -730,14 +739,14 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
                 bitmap.stride = width;
                 bitmap.pixels = (byte*)handle.AddrOfPinnedObject();
 
-                Stb.stbtt_Rasterize(&bitmap, 0.35f, vertices, numVerts,
+                Stb.stbtt_Rasterize(&bitmap, DropoutControl.FlatnessInPixels, vertices, numVerts,
                     scale, scale, 0, 0, x0, y0, 1, null, false);
 
-                // Anti-alias mode None: threshold at 128.
+                // Anti-alias mode None: threshold at 128, then restore thin strokes it dropped.
                 if (options.AntiAlias == AntiAliasMode.None)
                 {
-                    for (int i = 0; i < pixels.Length; i++)
-                        pixels[i] = pixels[i] >= 128 ? (byte)255 : (byte)0;
+                    Threshold(pixels);
+                    DropoutControl.Apply(pixels, width, height, vertices, numVerts, scale, x0, y0);
                 }
 
                 var bitmapData = pixels;
@@ -772,6 +781,16 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         {
             Stb.stbtt_FreeShape(_fontInfo!, vertices);
         }
+    }
+
+    /// <summary>
+    /// <see cref="AntiAliasMode.None"/>'s first step: coverage at or above 128 becomes 255, the
+    /// rest 0. Strokes it erases are restored by <see cref="DropoutControl"/>.
+    /// </summary>
+    private static void Threshold(byte[] pixels)
+    {
+        for (int i = 0; i < pixels.Length; i++)
+            pixels[i] = pixels[i] >= 128 ? (byte)255 : (byte)0;
     }
 
     private static byte[] DownscaleBitmap(byte[] source, ref int width, ref int height, int aa)

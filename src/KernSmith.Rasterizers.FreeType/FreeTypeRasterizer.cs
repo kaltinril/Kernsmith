@@ -91,6 +91,15 @@ public sealed class FreeTypeRasterizer : IRasterizer
     }
 
     /// <summary>
+    /// True when the glyph loads with <c>FT_LOAD_NO_HINTING</c>: hinting switched off, or an
+    /// explicit <see cref="HintLevel.None"/>. Every other level (the pipeline only sends
+    /// <see cref="HintLevel.Full"/>, this backend's default engine selection, or
+    /// <see cref="HintLevel.Default"/>) keeps the default load flags.
+    /// </summary>
+    private static bool Unhinted(RasterOptions options) =>
+        !options.EnableHinting || options.HintLevel == HintLevel.None;
+
+    /// <summary>
     /// Selects a color palette by index for CPAL-based color fonts.
     /// Must be called after <see cref="LoadFont"/> and before rasterization.
     /// </summary>
@@ -190,7 +199,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (options.AntiAlias == AntiAliasMode.None && !options.Sdf)
             loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_TARGET_MONO;
 
-        if (!options.EnableHinting)
+        if (Unhinted(options))
             loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
 
         // Load the glyph.
@@ -358,7 +367,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
         // Load glyph outline (no bitmap, no hinting for cleaner strokes).
         var loadFlags = (FT_LOAD)FreeTypeNative.FT_LOAD_NO_BITMAP;
-        if (!options.EnableHinting)
+        if (Unhinted(options))
             loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
 
         var error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
@@ -492,7 +501,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
         // Load the glyph without rendering.
         var loadFlags = FT_LOAD.FT_LOAD_DEFAULT;
-        if (!options.EnableHinting)
+        if (Unhinted(options))
             loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
 
         var error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
@@ -786,5 +795,13 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
         public IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; } =
             Enum.GetValues<AntiAliasMode>();
+
+        /// <summary>
+        /// <see cref="HintLevel.None"/> loads with <c>FT_LOAD_NO_HINTING</c>; <see cref="HintLevel.Full"/>
+        /// is <c>FT_LOAD_DEFAULT</c> — FreeType's own per-font engine choice, this backend's
+        /// hinted output as it has always been. Light and Normal are not mapped yet (they would
+        /// need <c>FT_LOAD_TARGET_LIGHT</c> / <c>FT_LOAD_FORCE_AUTOHINT</c>) and step down to None.
+        /// </summary>
+        public IReadOnlyList<HintLevel> SupportedHintLevels { get; } = [HintLevel.None, HintLevel.Full];
     }
 }
