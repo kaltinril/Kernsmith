@@ -24,13 +24,16 @@ char id=192 x=0 y=23 width=14 height=21 xoffset=1 yoffset=4 xadvance=16 page=0 c
 char id=201 x=0 y=45 width=12 height=21 xoffset=1 yoffset=4 xadvance=14 page=0 chnl=15
 char id=231 x=13 y=45 width=12 height=19 xoffset=1 yoffset=9 xadvance=13 page=0 chnl=15
 char id=246 x=0 y=0 width=14 height=22 xoffset=1 yoffset=4 xadvance=16 page=0 chnl=15
-kernings count=22
+kernings count=26
 kerning first=38 second=84 amount=-1
 kerning first=65 second=84 amount=-1
+kerning first=97 second=84 amount=-1
 kerning first=192 second=84 amount=-1
 kerning first=65 second=121 amount=-1
+kerning first=97 second=121 amount=-1
 kerning first=192 second=121 amount=-1
 kerning first=84 second=65 amount=-1
+kerning first=84 second=97 amount=-1
 kerning first=84 second=192 amount=-1
 kerning first=84 second=44 amount=-1
 kerning first=84 second=46 amount=-1
@@ -38,6 +41,7 @@ kerning first=84 second=38 amount=-1
 kerning first=86 second=44 amount=-1
 kerning first=86 second=46 amount=-1
 kerning first=121 second=65 amount=-1
+kerning first=121 second=97 amount=-1
 kerning first=121 second=192 amount=-1
 kerning first=121 second=44 amount=-1
 kerning first=121 second=46 amount=-1

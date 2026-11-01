@@ -21,17 +21,6 @@ internal class TtfFontReader : IFontReader
             ? new TtfParser(SharedFontBytes, faceIndex, RequestedCodepoints)
             : new TtfParser(fontData, faceIndex, RequestedCodepoints);
 
-        // Build reverse cmap: glyphIndex -> lowest codepoint
-        var glyphToCodepoint = new Dictionary<int, int>();
-        foreach (var (codepoint, glyphIndex) in parser.CmapTable)
-        {
-            if (glyphIndex == 0)
-                continue;
-
-            if (!glyphToCodepoint.TryGetValue(glyphIndex, out var existing) || codepoint < existing)
-                glyphToCodepoint[glyphIndex] = codepoint;
-        }
-
         // Available codepoints: all codepoints that map to a non-zero glyph index, sorted
         var availableCodepoints = new List<int>(parser.CmapTable.Count);
         foreach (var (codepoint, glyphIndex) in parser.CmapTable)
@@ -41,12 +30,27 @@ internal class TtfFontReader : IFontReader
         }
         availableCodepoints.Sort(); // keys are unique, so this is the stable order too
 
+        // Reverse cmap: glyph -> its lowest codepoint, plus (rarely) its other codepoints in
+        // ascending order. Kerning is by glyph, so every codepoint of a glyph gets its pairs.
+        var glyphToCodepoint = new Dictionary<int, int>();
+        Dictionary<int, List<int>>? glyphToMoreCodepoints = null;
+        foreach (var codepoint in availableCodepoints)
+        {
+            var glyphIndex = parser.CmapTable[codepoint];
+            if (glyphToCodepoint.TryAdd(glyphIndex, codepoint))
+                continue;
+            glyphToMoreCodepoints ??= new Dictionary<int, List<int>>();
+            if (!glyphToMoreCodepoints.TryGetValue(glyphIndex, out var more))
+                glyphToMoreCodepoints[glyphIndex] = more = new List<int>(1);
+            more.Add(codepoint);
+        }
+
         // Merge kerning pairs: start with kern, overlay GPOS (GPOS takes precedence). A pair
         // keeps the position of its first insertion (Dictionary enumeration order with no
         // removals) and the value of its last.
         var mergedPairs = new Dictionary<long, int>(parser.KernPairs.Count + parser.GposKerningPairs.Count);
-        MergeKerningPairs(parser.KernPairs, glyphToCodepoint, mergedPairs);
-        MergeKerningPairs(parser.GposKerningPairs, glyphToCodepoint, mergedPairs);
+        MergeKerningPairs(parser.KernPairs, glyphToCodepoint, glyphToMoreCodepoints, mergedPairs);
+        MergeKerningPairs(parser.GposKerningPairs, glyphToCodepoint, glyphToMoreCodepoints, mergedPairs);
 
         var kerningPairs = new List<KerningPair>(mergedPairs.Count);
         foreach (var (key, value) in mergedPairs)
@@ -129,18 +133,43 @@ internal class TtfFontReader : IFontReader
     }
 
     /// <summary>
-    /// Adds each pair whose glyphs both map to a codepoint, keyed by the codepoint pair packed
-    /// into a <see cref="long"/> (left in the high half), overwriting an earlier value.
+    /// Adds each pair whose glyphs both map to a codepoint, once per (left, right) codepoint
+    /// combination (left-major, ascending), keyed by the codepoint pair packed into a
+    /// <see cref="long"/> (left in the high half), overwriting an earlier value.
     /// </summary>
     private static void MergeKerningPairs(
-        IReadOnlyList<KerningPair> pairs, Dictionary<int, int> glyphToCodepoint, Dictionary<long, int> merged)
+        IReadOnlyList<KerningPair> pairs, Dictionary<int, int> glyphToCodepoint,
+        Dictionary<int, List<int>>? glyphToMoreCodepoints, Dictionary<long, int> merged)
     {
         foreach (var pair in pairs)
         {
-            if (glyphToCodepoint.TryGetValue(pair.LeftCodepoint, out var leftCp) &&
-                glyphToCodepoint.TryGetValue(pair.RightCodepoint, out var rightCp))
+            if (!glyphToCodepoint.TryGetValue(pair.LeftCodepoint, out var leftCp) ||
+                !glyphToCodepoint.TryGetValue(pair.RightCodepoint, out var rightCp))
+                continue;
+
+            var value = pair.XAdvanceAdjustment;
+            List<int>? moreLeft = null, moreRight = null;
+            if (glyphToMoreCodepoints != null)
             {
-                merged[((long)leftCp << 32) | (uint)rightCp] = pair.XAdvanceAdjustment;
+                glyphToMoreCodepoints.TryGetValue(pair.LeftCodepoint, out moreLeft);
+                glyphToMoreCodepoints.TryGetValue(pair.RightCodepoint, out moreRight);
+            }
+
+            AddRow(merged, leftCp, rightCp, moreRight, value);
+            if (moreLeft != null)
+            {
+                foreach (var cp in moreLeft)
+                    AddRow(merged, cp, rightCp, moreRight, value);
+            }
+        }
+
+        static void AddRow(Dictionary<long, int> merged, int left, int right, List<int>? moreRight, int value)
+        {
+            merged[((long)left << 32) | (uint)right] = value;
+            if (moreRight != null)
+            {
+                foreach (var cp in moreRight)
+                    merged[((long)left << 32) | (uint)cp] = value;
             }
         }
     }
