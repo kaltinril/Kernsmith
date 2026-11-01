@@ -42,6 +42,8 @@ Your backend implements two interfaces from `KernSmith.Rasterizer`:
 
 When optional methods return `null`, KernSmith falls back to its built-in TTF table parsers.
 
+**Symbol fonts.** A font whose only usable `cmap` subtable is the Windows symbol one (3,0) -- Wingdings, Webdings, Symbol -- maps its glyphs at U+F020-U+F0FF. Core's parser also exposes each glyph at that byte decoded as Windows-1252, as BMFont does, so `RasterizeGlyph` may be asked for either code. When a codepoint has no glyph in such a font, look it up again at `KernSmith.Font.SymbolEncoding.ToSymbolCode(codepoint)`; `SymbolEncoding.IsSymbolFont(fontData, faceIndex)` tells you whether the font is one.
+
 ### IRasterizerCapabilities
 
 **Required members:**

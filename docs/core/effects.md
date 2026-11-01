@@ -1,14 +1,14 @@
 # Effects and Post-Processing
 
-KernSmith provides two mechanisms for transforming glyph bitmaps: **effects** (composited layers) and **post-processors** (sequential bitmap transforms). Both run after rasterization and before atlas packing.
+KernSmith provides two mechanisms for transforming glyph bitmaps: **effects** (composited layers) and **post-processors** (sequential bitmap transforms). Both run after rasterization (and after any super-sample downscale) and before atlas packing.
 
 ## Pipeline Overview
 
 ```
-Font file --> Rasterize glyphs --> Effects (GlyphCompositor) --> Post-processors --> Atlas packing
+Font file --> Rasterize glyphs --> Super-sample downscale --> Effects (GlyphCompositor) --> Post-processors --> Atlas packing
 ```
 
-1. The rasterizer produces a grayscale (or RGBA) bitmap for each glyph.
+1. The rasterizer produces a grayscale (or RGBA) bitmap for each glyph. With `SuperSampleLevel` > 1 it renders at the larger size and the glyph is box-filtered down to the final size here, so effect and post-processor sizes (outline width, shadow offset, blur) apply at the final size.
 2. **Effects** generate independent layers (shadow, outline, body/gradient) that are composited back-to-front by <xref:KernSmith.Rasterizer.GlyphCompositor>.
 3. **Post-processors** receive the composited bitmap and transform it sequentially -- each processor's output feeds the next.
 4. The final bitmap is packed into the texture atlas.

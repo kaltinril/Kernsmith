@@ -383,6 +383,8 @@ KernSmith records the generation settings that produced a font in an **extended 
 | `colorFont` | bool (`1`) | Present (value 1 / `true`) if color-font rendering (COLR/CPAL) was enabled. |
 | `fallbackChar` | int | Codepoint of the fallback character substituted for missing glyphs (`FallbackCodepoint`, else `FallbackCharacter`), if one was set. |
 | `axis_<tag>` | float | One entry per variable-font axis used at generation time, keyed by the 4-char axis tag (e.g. `axis_wght=700`). In the binary JSON these are nested under a `variationAxes` object instead of flattened into `axis_` keys. |
+| `variantOf` | string | On an atlas variant's font (e.g. the `-shadow` silhouette), the family name of the primary font it is a variant of. Quoted in text (`variantOf="Arial"`). |
+| `variants` | string | On the primary font, the comma-separated names of the atlas variants generated alongside it (`variants="shadow"`). In the binary JSON this is an array of strings. |
 
 #### Compatibility
 
@@ -519,7 +521,7 @@ Related `.bmfc` settings that constrain the autofit search:
 
 ### Cell Height Equalization
 
-When the "equalize cell heights" option is enabled, all characters are drawn in uniform-height cells. This simplifies gradient or height-based post-processing but reduces the number of characters that fit per texture and increases the size of drawn rectangles at runtime.
+When the "equalize cell heights" option (`.bmfc` `useFixedHeight`, KernSmith `EqualizeCellHeights`) is enabled, every glyph cell spans the whole line box: each char gets `yoffset` 0 and `height` = `lineHeight`, with the baseline at row `base` of every cell. A glyph reaching above or below the line box grows every cell to cover it, so all cells keep the same top and height. This simplifies gradient or height-based post-processing but reduces the number of characters that fit per texture and increases the size of drawn rectangles at runtime.
 
 ---
 

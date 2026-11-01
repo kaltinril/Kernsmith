@@ -135,7 +135,7 @@ kernsmith generate -f font.ttf -s 32 --range 0020-007E --range 00A0-00FF
 | `--pot / --no-pot` | Force power-of-two textures (default: on) |
 | `--packer <alg>` | Packing algorithm: `maxrects` (default), `skyline` |
 | `--channel-pack` | Pack glyphs into individual RGBA channels |
-| `--equalize-heights` | Equalize all glyph cell heights |
+| `--equalize-heights` | Make every glyph cell span the whole line, as BMFont's `useFixedHeight` does: `yoffset` 0 and `height` = `lineHeight` for every char, baseline at row `base` (cells grow to cover any glyph reaching outside the line box) |
 | `--force-offsets-zero` | Set all xoffset/yoffset to zero |
 
 ```
@@ -214,7 +214,7 @@ kernsmith generate -f font.ttf -s 32 -o output/myfont
 | Flag | Description |
 |------|-------------|
 | `--config <path>` | Load settings from a `.bmfc` or `.hiero` configuration file (format auto-detected by inspecting file content, with the extension used only as a fallback when the content is inconclusive) |
-| `--save-config <path>` | Save current settings to a `.bmfc` or `.hiero` file (format auto-detected by extension) |
+| `--save-config <path>` | Save current settings to a `.bmfc` or `.hiero` file (format auto-detected by extension). Written only after a successful generation, never with `--dry-run` |
 | `--dry-run` | Show what would be generated without writing files |
 | `--time` | Print actual generation time (excludes CLI startup) |
 | `--profile` | Print stage-level timing breakdown (font parsing, rasterization, packing, etc.) |
@@ -230,7 +230,7 @@ Commands report their outcome with these process exit codes:
 |------|---------|
 | `0` | Success |
 | `1` | Invalid arguments (and `batch` when any job failed) |
-| `2` | File not found |
+| `2` | File not found -- a missing `--config` file, `--chars-file`, `batch` jobs file, or `convert`/`inspect`/`info` input. A missing `generate -f` font file exits `1` |
 | `3` | Font could not be parsed |
 | `4` | Generation error -- including a backend rejecting the font or an option (e.g. `--rasterizer stbtruetype --color-font`), printed to stderr as `Error: Generation error (<backend> rasterizer): <message>` |
 | `5` | Output could not be written |
@@ -242,7 +242,7 @@ Commands report their outcome with these process exit codes:
 
 Generate a `.bmfc` or `.hiero` configuration file from CLI flags without rendering a font. This lets you scaffold a config, tweak it by hand, then run `kernsmith generate --config`.
 
-The `init` command accepts all the same flags as `generate` (font source, size, effects, atlas settings, etc.). The `-o` flag sets the output config file path instead of the font output path. The format is chosen by the file extension — use `.hiero` to write a Hiero config; a path with no extension defaults to `.bmfc`. Any explicit extension is respected as-is (kept verbatim, not suffixed with `.bmfc`), and BMFont content is written for any non-`.hiero` extension. A `.bmfc` written by `init` sets `outputPath` to the config path without its extension, so `kernsmith generate --config my-font.bmfc` writes `my-font.fnt` beside it.
+The `init` command accepts all the same flags as `generate` (font source, size, effects, atlas settings, etc.); `--config`, `--dry-run`, `--save-config`, `--time` and `--profile` are accepted but ignored. The `-o` flag sets the output config file path instead of the font output path. The format is chosen by the file extension — use `.hiero` to write a Hiero config; a path with no extension defaults to `.bmfc`. Any explicit extension is respected as-is (kept verbatim, not suffixed with `.bmfc`), and BMFont content is written for any non-`.hiero` extension. A `.bmfc` written by `init` sets `outputPath` to the config path without its extension, so `kernsmith generate --config my-font.bmfc` writes `my-font.fnt` beside it.
 
 ```
 kernsmith init [options]
@@ -291,7 +291,7 @@ Shows: font face, size, style, character count, kerning pairs, page count, textu
 
 ### convert
 
-Convert between BMFont `.fnt` formats (text, XML, binary). Atlas page image files are automatically copied to the output directory.
+Convert between BMFont `.fnt` formats (text, XML, binary). Atlas page image files are automatically copied to the output directory when it differs from the input's. A page path may nest (`pages/font_0.png`), but a page whose path leaves the input or output directory is not copied -- `convert` prints a warning and skips it.
 
 ```
 kernsmith convert <input> -o <output> [--format <text|xml|binary>]
@@ -367,7 +367,7 @@ List available rasterizer backends and their capabilities.
 kernsmith list-rasterizers
 ```
 
-Shows each backend with its availability, platform support, and capabilities (color fonts, variable fonts, SDF, vector outline, synthetic bold/italic, system fonts).
+Lists every backend: each line shows its availability on the current machine (`(default)`, `(available)` or `(not available)`), a platform note (`All platforms` or `Windows only`), and, for available backends, their capabilities (color fonts, variable fonts, SDF, vector outline, synthetic bold/italic, system fonts).
 
 #### Rasterizer Examples
 
@@ -576,7 +576,7 @@ Settings can be stored in `.bmfc` files (INI-like format) or `.hiero` files (Hie
 
 ### Sample .bmfc File
 
-`.bmfc` is BMFont's flat `key=value` format; KernSmith reads BMFont's keys plus its own extensions (`kernsmith init` writes one from any set of flags). An abridged example:
+`.bmfc` is BMFont's flat `key=value` format; KernSmith reads BMFont's keys plus its own extensions (`kernsmith init` writes one from any set of flags). Boolean keys accept `1`/`0`, `true`/`false` or `yes`/`no` in any case; KernSmith writes `1`/`0`. An abridged example:
 
 ```ini
 # mygame-font.bmfc

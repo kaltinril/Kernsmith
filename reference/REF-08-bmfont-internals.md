@@ -432,7 +432,7 @@ When `fourChnlPacked=true` and `outBitDepth=32`:
 | `paddingLeft` | int | Left padding pixels |
 | `spacingHoriz` | int | Horizontal atlas spacing pixels |
 | `spacingVert` | int | Vertical atlas spacing pixels |
-| `useFixedHeight` | bool | Equalize cell heights across all glyphs |
+| `useFixedHeight` | bool | Equalize cell heights: every cell spans the line box (`yoffset` 0, `height` = `lineHeight`, baseline at row `base`), grown to cover any glyph reaching outside it |
 | `forceZero` | bool | Force offsets to zero |
 | `outWidth` | int | Texture page width |
 | `outHeight` | int | Texture page height |

@@ -169,12 +169,12 @@ FreeTypeSharp uses `[DllImport("freetype")]` extensively. It will **not** work i
 - Approximately 4,500 methods throw `PlatformNotSupportedException` in browser WASM (dotnet/runtime#41087).
 - **Unsupported:** `System.Diagnostics.Process`, `Microsoft.Win32.Registry`, `System.Drawing` (GDI+ dependency), `System.Net.Sockets`, `System.IO.Pipes`.
 - **Fully available:** `Span<T>`, `Memory<T>` (pure managed), `BinaryPrimitives` (critical for TTF parsing), `Marshal` class (managed marshalling methods), `GCHandle`.
-- StbImageWriteSharp is a pure managed C# port with zero native dependencies -- should work.
+- `System.IO.Compression.ZLibStream` (BCL zlib/deflate) is available.
 
 ### KernSmith Impact
 
 - `BinaryPrimitives` and `Span<T>` (core of TTF parsing) are safe.
-- StbImageWriteSharp (PNG/TGA encoding) is safe.
+- Atlas encoding is safe: core's own `PngEncoder` deflates through the BCL's `ZLibStream`, and `TgaEncoder`/`DdsEncoder` write uncompressed images in plain managed code. StbImageWriteSharp is used only by the test project.
 - Registry usage in `DefaultSystemFontProvider` is a problem.
 - Any `System.Drawing` usage must be eliminated from WASM code paths.
 

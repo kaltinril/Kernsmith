@@ -5,7 +5,7 @@ namespace KernSmith.Rasterizers.StbTrueType;
 /// <summary>
 /// Describes what the StbTrueType rasterizer backend supports. SDF generation and synthetic
 /// bold/italic are supported; color fonts, variable fonts, and outline stroking are not.
-/// Only TrueType (TTF) outlines are handled.
+/// TrueType (glyf) and CFF (.otf) outlines are handled; CFF2 is not.
 /// </summary>
 internal sealed class StbTrueTypeCapabilities : IRasterizerCapabilities
 {

@@ -213,9 +213,9 @@ The Font Config panel includes a rasterizer backend dropdown. Different backends
 | StbTrueType | All | No | No | Yes |
 | Native (experimental) | All | Yes (COLR, CBDT/sbix) | Yes | Yes, plus MSDF/MTSDF |
 
-FreeType and the experimental Native backend render color and variable fonts; DirectWrite's color and variable-font support is stubbed and not yet implemented. Native also adds Light/LCD anti-aliasing with LCD filter and order, vector outlines, synthetic width and italic angle. It is built from source and not yet on NuGet.
+FreeType and the experimental Native backend render color and variable fonts; DirectWrite's color and variable-font support is stubbed and not yet implemented. Light and LCD anti-aliasing are available on FreeType and Native; Native also adds the LCD filter and subpixel order, vector outlines, synthetic width and italic angle. It is built from source and not yet on NuGet.
 
-Install the corresponding NuGet package to enable a backend. They auto-register via module initializer -- no code changes needed.
+The app references every backend as a project from this repository (GDI and DirectWrite in the `net10.0-windows` build only), so nothing needs installing; the dropdown lists the backends available on the current platform.
 
 ## Tips
 

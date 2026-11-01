@@ -29,10 +29,12 @@
 - **Gamma correction** -- adjust grayscale coverage to darken or lighten rendered glyphs
 - **SDF rendering** -- signed distance field output with configurable spread for resolution-independent text; multi-channel MSDF/MTSDF (`SdfMode`) on the experimental Native backend
 - **Super sampling** -- 2x-4x rasterization with box-filter downscale for smoother edges (LCD output always renders at the final size)
+- **Anti-aliasing modes** -- `Grayscale` (default), `None`, `Light` and `Lcd` subpixel output with a selectable `LcdFilter` and `LcdSubpixelOrder` (support varies by backend)
 - **Advance adjustment** -- global per-glyph horizontal advance offset for custom letter spacing
 - **Design-unit glyph metrics** -- `FontInfo.DesignMetrics` exposes per-glyph advance width and left side bearing in unscaled font design units, keyed by codepoint, for text-width measurement (e.g. word-wrap) without rasterizing
 - **Variable fonts** -- set variation axes (weight, width, slant, etc.)
 - **Color fonts** -- COLR/CPAL color glyphs with palette selection, and CBDT/sbix bitmap emoji
+- **Symbol fonts** -- Wingdings, Webdings, Symbol and other fonts with only a Windows symbol `cmap` work on every backend, BMFont-compatibly: each glyph is available at its U+F0xx code and at its byte decoded as Windows-1252 (see `KernSmith.Font.SymbolEncoding`)
 - **Synthetic styles** -- bold and italic on every backend; condensed/expanded width (`WidthPercent`) and a custom italic angle (`ItalicAngle`) on the experimental Native backend
 - **Channel packing** -- pack multiple glyphs into RGBA channels for compact atlases
 - **Per-channel compositing** -- independent control of what each RGBA channel contains (glyph, outline, both, zero, one, shadow)
@@ -50,7 +52,7 @@
 - **Pipeline metrics** -- stage-level timing breakdown for profiling
 - **Cross-platform** -- Windows, Linux, macOS, Android, iOS, Mac Catalyst and Blazor WASM via .NET 8.0 and .NET 10.0 (see [Platform Support](#platform-support))
 - **Pluggable rasterizers** -- swap rendering backends to match your platform and feature needs
-- **Hardened font parsing** -- core's font parser and the Native backend apply bounds validation and resource limits, so malformed font files fail with an exception instead of hanging or crashing. For untrusted fonts (user uploads, URLs from users, servers) use the Native or FreeType backend; StbTrueType is for trusted fonts only (see the backend table)
+- **Hardened font parsing** -- core's font parser and the Native backend apply bounds validation and resource limits, so malformed font files fail with an exception instead of hanging or crashing. The StbTrueType backend also checks each font's structure against the OpenType spec and rejects a non-conforming font with a `FontParsingException` -- defense in depth only, so StbTrueType still needs trusted fonts. For untrusted fonts (user uploads, URLs from users, servers) use the Native or FreeType backend; StbTrueType is for trusted fonts only (see the backend table)
 
 ## Rasterizer Backends
 
@@ -58,10 +60,10 @@ KernSmith supports pluggable rasterizer backends. Install at least one backend p
 
 | Backend | Platform | Hinting | Color Fonts | Variable Fonts | SDF | Notes |
 |---------|----------|---------|-------------|-----------------|-----|-------|
-| **FreeType**<br>[![NuGet](https://img.shields.io/nuget/v/KernSmith.Rasterizers.FreeType.svg?label=&color=blue)](https://www.nuget.org/packages/KernSmith.Rasterizers.FreeType) | Windows, Linux x64, macOS, Android | Yes (native bytecode + autohint fallback) | Yes | Yes | Yes | Cross-platform, full feature support. Default choice unless you have a platform- or environment-specific reason to pick another backend. |
+| **FreeType**<br>[![NuGet](https://img.shields.io/nuget/v/KernSmith.Rasterizers.FreeType.svg?label=&color=blue)](https://www.nuget.org/packages/KernSmith.Rasterizers.FreeType) | Windows, Linux x64, macOS, Android | Yes (native bytecode + autohint fallback) | Yes | Yes | Yes | Cross-platform, the most complete published backend (no MSDF, vector outlines, `WidthPercent` or `ItalicAngle`; `COLR` version 1 glyphs render as grayscale). Default choice unless you have a platform- or environment-specific reason to pick another backend. |
 | **GDI**<br>[![NuGet](https://img.shields.io/nuget/v/KernSmith.Rasterizers.Gdi.svg?label=&color=blue)](https://www.nuget.org/packages/KernSmith.Rasterizers.Gdi) | Windows only | Yes (native Windows hinting) | No | No | No | Matches BMFont reference output for pixel-perfect parity. |
 | **DirectWrite**<br>[![NuGet](https://img.shields.io/nuget/v/KernSmith.Rasterizers.DirectWrite.TerraFX.svg?label=&color=blue)](https://www.nuget.org/packages/KernSmith.Rasterizers.DirectWrite.TerraFX) | Windows only | Yes (natural/symmetric hinting) | No | No | No | Modern Windows rendering. Color and variable fonts are not yet implemented; use FreeType for those. |
-| **StbTrueType**<br>[![NuGet](https://img.shields.io/nuget/v/KernSmith.Rasterizers.StbTrueType.svg?label=&color=blue)](https://www.nuget.org/packages/KernSmith.Rasterizers.StbTrueType) | Cross-platform | No | No | No | Yes | Pure C#, no native dependencies. Good for WASM and AOT. **Trusted fonts only**: the underlying stb_truetype library does no bounds checking, so a malformed font can crash the process -- use Native or FreeType for untrusted input. No hinting engine, so small sizes with `AntiAlias.None` can look rough on thin stems -- prefer `AntiAlias.Grayscale` or raise `SuperSample` for crisper small-size text. |
+| **StbTrueType**<br>[![NuGet](https://img.shields.io/nuget/v/KernSmith.Rasterizers.StbTrueType.svg?label=&color=blue)](https://www.nuget.org/packages/KernSmith.Rasterizers.StbTrueType) | Cross-platform | No | No | No | Yes | Pure C#, no native dependencies. Good for WASM and AOT. **Trusted fonts only**: the underlying stb_truetype library does no bounds checking, so a malformed font can crash the process -- use Native or FreeType for untrusted input. No hinting engine, so small sizes with `AntiAliasMode.None` can look rough on thin stems -- prefer `AntiAliasMode.Grayscale` or raise `SuperSampleLevel` for crisper small-size text. |
 | **Native**<br>_experimental, not on NuGet yet_ | Cross-platform | `Light` only (own vertical auto-hinter) | Yes (COLR v0 and v1, CBDT/sbix) | Yes | Yes | KernSmith's own rasterizer -- pure C#, zero third-party dependencies. Renders TrueType (`.ttf`) and CFF/CFF2 (`.otf`) outlines, including variable instances of both. Synthetic bold/italic match FreeType's. The only backend with multi-channel SDF (`SdfMode.Msdf`/`Mtsdf`), vector outlines (`OutlineMode.Vector`), `WidthPercent` and `ItalicAngle`. Anti-aliasing `None` (with dropout control), `Grayscale`, `Light` and `Lcd` (RGB/BGR or vertical panels, selectable filter). No TrueType bytecode hinting or system fonts. Available today from the repository and the CLI (`--rasterizer native`); the package is not published, so it cannot be resolved from a NuGet-only build. |
 
 Install a backend:
@@ -533,7 +535,7 @@ result.ToFile("output/myfont", OutputFormat.Xml);
 result.ToFile("output/myfont", OutputFormat.Binary);
 ```
 
-`ToFile` writes the `.fnt` descriptor, all `.png` atlas pages, and a `.bmfc` config file (when source options are available).
+`ToFile` writes the `.fnt` descriptor, all atlas pages in the generation's `TextureFormat` (`.png`, `.tga` or `.dds`) or custom `AtlasEncoder`, and a `.bmfc` config file (when source options are available).
 
 ### In-Memory Access
 

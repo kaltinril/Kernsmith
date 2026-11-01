@@ -138,28 +138,35 @@ KernSmith now supports the libGDX **Hiero `.hiero`** format for interop: it can 
 | Rasterizer backend | ✅ | 🔜 | 🔜 |
 | ClearType | 🔜 | ❌ | 🔜 |
 | Render from outline | 🔜 | ❌ | ❌ |
-| Gamma | ❌ | 🔜 | 🔜 |
-| Mono (no AA) | ❌ | 🔜 | 🔜 |
+| Gamma | ✅ | ✅ | 🔜 |
+| Mono (no AA) | ✅ | ✅ | 🔜 |
+| LCD filter / subpixel order | ✅ | ❌ | 🔜 |
+| Multi-channel SDF mode (MSDF/MTSDF) | ✅ | ❌ | 🔜 |
+| SDF scale | ✅ | ✅ | 🔜 |
+| Synthetic width percent | ✅ | ❌ | 🔜 |
+| Synthetic italic angle | ✅ | ❌ | 🔜 |
 | **Effects** | | | |
 | Outline width | ✅ | ✅ | 🔜 |
 | Outline color | ✅ | ✅ | 🔜 |
+| Outline shape (round/square/plus) | ✅ | ❌ | 🔜 |
+| Outline mode (effect/vector) | ✅ | ❌ | 🔜 |
 | Outline join type | ❌ | 🔜 | 🔜 |
 | Gradient (colors/angle/midpoint) | ✅ | ✅ | 🔜 |
 | Shadow (offset/blur/color) | ✅ | ✅ | 🔜 |
-| Shadow opacity | ❌ | 🔜 | 🔜 |
-| Hard shadow | ❌ | ❌ | 🔜 |
+| Shadow opacity | ✅ | ✅ | 🔜 |
+| Hard shadow | ✅ | ❌ | 🔜 |
 | Texture fill | ❌ | ❌ | 🔜 |
 | Wobble/zigzag outline | ❌ | 🔜 | 🔜 |
 | Effect stacking/ordering | ❌ | 🔜 | 🔜 |
 | **Variable / Color Fonts** | | | |
-| Variable font axes | ❌ | ❌ | 🔜 |
+| Variable font axes | ✅ | ❌ | 🔜 |
 | Color font mode | ✅ | ❌ | 🔜 |
 | Color palette index | ✅ | ❌ | 🔜 |
 | **Atlas / Packing** | | | |
 | Texture size (W x H) | ✅ | ✅ | 🔜 |
 | Packing algorithm | ✅ | ❌ | 🔜 |
 | Padding (4 sides) | ✅ | ✅ | 🔜 |
-| Padding advance X/Y | ❌ | 🔜 | 🔜 |
+| Padding advance X/Y (advance adjust) | ✅ | ✅ | 🔜 |
 | Spacing (H/V) | ✅ | ❌ | 🔜 |
 | Channel packing | ✅ | ❌ | 🔜 |
 | Per-channel config | ✅ | ❌ | 🔜 |
@@ -197,7 +204,7 @@ KernSmith supports five pluggable rasterizer backends. Each has different platfo
 | **Linux x64** | ✅ | ❌ | ❌ | ✅ | ✅ |
 | **Linux arm64** | ❌ | ❌ | ❌ | ✅ | ✅ |
 | **macOS** | ✅ | ❌ | ❌ | ✅ | ✅ |
-| **Blazor WASM** | ❌ | ❌ | ❌ | ✅ ² | ⏳ |
+| **Blazor WASM** | ❌ | ❌ | ❌ | ✅ ² | ✅ ² |
 | **NativeAOT** | ⚠️ | ⚠️ | ⚠️ | ✅ | ✅ |
 | **Android** | ✅ ¹ | ❌ | ❌ | ✅ | ✅ |
 | **iOS** | ❌ | ❌ | ❌ | ✅ | ✅ |
@@ -211,9 +218,9 @@ KernSmith supports five pluggable rasterizer backends. Each has different platfo
 
 ¹ Android x86_64 (emulators, Chromebooks) needs `KernSmith.Rasterizers.FreeType` 0.23.0 or later; arm64 works in all versions.
 
-² Blazor WASM is built and published in CI but the output is not run.
+² Blazor WASM is built and published in CI but the output is not run there. StbTrueType and Native were verified by running the published Blazor WASM sample in headless Chrome (interpreted build; the AOT build is not yet run in a browser).
 
-Native's platform rows follow from it being pure managed code with no native dependencies (it is marked `IsTrimmable`/`IsAotCompatible`); Android, Linux arm64, Mac Catalyst (full AOT), and the iOS simulator have been verified by the platform smoke test, but the WASM and console targets have not been exercised for it yet. StbTrueType remains the recommended managed backend for those environments. FreeType is ❌ on iOS because an iOS app referencing it fails to link (FreeTypeSharp's static iOS library needs libpng, which nothing provides); do not reference it in iOS apps. ⏳ = expected but not yet verified; see the [README platform support table](README.md#platform-support) for what the platform smoke test has confirmed.
+Native's platform rows follow from it being pure managed code with no native dependencies (it is marked `IsTrimmable`/`IsAotCompatible`); Android, Linux arm64, Mac Catalyst (full AOT), and the iOS simulator have been verified by the platform smoke test and Blazor WASM in headless Chrome (²), but the console targets have not been exercised for it yet. StbTrueType remains the recommended managed backend for those environments. FreeType is ❌ on iOS because an iOS app referencing it fails to link (FreeTypeSharp's static iOS library needs libpng, which nothing provides); do not reference it in iOS apps. ⏳ = expected but not yet verified; see the [README platform support table](README.md#platform-support) for what the platform smoke test has confirmed.
 
 ### Feature Support
 
@@ -224,6 +231,7 @@ Native's platform rows follow from it being pure managed code with no native dep
 | **WOFF** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **WOFF2** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **TTC (font collections)** | ✅ | ❌ | ✅ | ✅ | ✅ |
+| **Symbol fonts** (Windows symbol `cmap`) | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Anti-aliasing** | Grayscale, Light, LCD, None | Grayscale, None | None, Grayscale | Grayscale, None | Grayscale, Light, LCD, None |
 | **LCD subpixel order / filter** | ❌ | ❌ | ❌ | ❌ | ✅ (RGB, BGR, vertical; 4 filters) |
 | **SDF Rendering** | ✅ | ❌ | ❌ | ✅ | ✅ |
@@ -245,7 +253,7 @@ Native's hinting is ⚠️: its own vertical-only auto-hinter runs for `Light` a
 
 ### When to Use
 
-- **FreeType** -- Default for most use cases. Cross-platform, full-featured, industry-standard quality.
+- **FreeType** -- Default for most use cases. Cross-platform, the most complete published backend, industry-standard quality.
 - **GDI** -- Pixel-perfect BMFont.exe compatibility on Windows. Use for validating against BMFont reference output.
 - **DirectWrite** -- Windows system-font loading with ClearType-hinted grayscale rendering. High-quality Windows text output. (For color fonts or variable fonts, use FreeType.)
 - **StbTrueType** -- Blazor WASM, NativeAOT, consoles, Mac Catalyst, iOS, or anywhere native libraries are unavailable. Pure C#, zero dependencies.
