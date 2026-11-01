@@ -34,7 +34,7 @@ internal static class BmFontModelBuilder
 
         var info = BuildInfo(fontInfo, options);
 
-        var (lineHeight, baseLine) = ComputeLineMetrics(fontInfo, metricSize, rasterizerFontMetrics);
+        var (lineHeight, baseLine) = ComputeLineMetrics(fontInfo, metricSize, rasterizerFontMetrics, options.HeightPercent);
 
         var common = BuildCommon(
             options, lineHeight, baseLine,
@@ -210,10 +210,25 @@ internal static class BmFontModelBuilder
     }
 
     /// <summary>
-    /// Computes lineHeight and base (ascent) in pixels for the common block.
-    /// Shared with <see cref="BmFontIncrementalSession"/>.
+    /// Computes lineHeight and base (ascent) in pixels for the common block, stretched by
+    /// <paramref name="heightPercent"/> like the glyphs: BMFont rounds the stretched values up
+    /// (<c>ceil(height × scaleH / 100)</c>). Shared with <see cref="BmFontIncrementalSession"/>.
     /// </summary>
     internal static (int LineHeight, int BaseLine) ComputeLineMetrics(
+        FontInfo fontInfo, float metricSize, RasterizerFontMetrics? rasterizerFontMetrics, int heightPercent = 100)
+    {
+        var (lineHeight, baseLine) = ComputeUnstretchedLineMetrics(fontInfo, metricSize, rasterizerFontMetrics);
+        if (heightPercent == 100)
+            return (lineHeight, baseLine);
+
+        // The same clamp as HeightStretchPostProcessor's.
+        var percent = Math.Max(10, heightPercent);
+        return (
+            (int)Math.Ceiling(lineHeight * (double)percent / 100),
+            (int)Math.Ceiling(baseLine * (double)percent / 100));
+    }
+
+    private static (int LineHeight, int BaseLine) ComputeUnstretchedLineMetrics(
         FontInfo fontInfo, float metricSize, RasterizerFontMetrics? rasterizerFontMetrics)
     {
         if (rasterizerFontMetrics is not null)

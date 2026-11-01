@@ -283,7 +283,7 @@ public sealed class BmFontIncrementalSession : IDisposable
 
         _lineMetrics ??= BmFontModelBuilder.ComputeLineMetrics(
             _prepared.FontInfo, (float)(_prepared.EffectiveSize * BmFontModelBuilder.DpiScale(_prepared.Options)),
-            raster.RasterizerFontMetrics);
+            raster.RasterizerFontMetrics, _options.HeightPercent);
 
         _kerningIndex ??= BuildKerningIndex(raster.RasterizerKerningPairs);
 
