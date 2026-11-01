@@ -132,7 +132,7 @@ internal sealed class PreparedRasterization : IDisposable
         if (fontReader is TtfFontReader ttfReader)
         {
             ttfReader.RequestedCodepoints = subsetToCharacterSet
-                ? options.Characters.GetCodepointsHashSet()
+                ? SubsetWithFallback(options)
                 : null;
             ttfReader.SharedFontBytes = fontData;
         }
@@ -355,6 +355,22 @@ internal sealed class PreparedRasterization : IDisposable
                 rasterizer.Dispose();
             throw;
         }
+    }
+
+    /// <summary>
+    /// The codepoints a subset parse keeps: the character set plus the fallback that
+    /// <see cref="ResolveCodepoints"/> appends, so the fallback keeps its kerning pairs.
+    /// </summary>
+    private static HashSet<int> SubsetWithFallback(FontGeneratorOptions options)
+    {
+        var codepoints = options.Characters.GetCodepointsHashSet();
+        var fallback = options.FallbackCodepoint
+            ?? (options.FallbackCharacter.HasValue ? (int)options.FallbackCharacter.Value : (int?)null);
+        if (fallback is not { } cp || codepoints.Contains(cp))
+            return codepoints;
+
+        // A copy: the character set owns its set.
+        return new HashSet<int>(codepoints) { cp };
     }
 
     /// <summary>
