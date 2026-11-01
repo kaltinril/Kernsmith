@@ -9,9 +9,16 @@ namespace KernSmith.Rasterizers.StbTrueType;
 /// <summary>
 /// Pure C# rasterizer backend using stb_truetype. Cross-platform, with no native dependencies,
 /// making it ideal for Blazor WASM, iOS AOT, and serverless scenarios. Supports SDF generation
-/// and synthetic bold/italic; does not support color fonts, variable fonts, or outline stroking,
-/// and handles TrueType (TTF) outlines only.
+/// and synthetic bold/italic; does not support color fonts, variable fonts, or outline stroking.
 /// </summary>
+/// <remarks>
+/// stb_truetype trusts the font's offsets and lengths, so the backend checks the font's
+/// structure against the OpenType specification first: the tables at <see cref="LoadFont"/>,
+/// and each glyph's outline the first time it is measured or rendered. A non-conforming font
+/// is a <see cref="FontParsingException"/>; a glyph bitmap over 16384 px per side is a
+/// <see cref="RasterizationException"/>. The check is defense in depth, not a guarantee: use
+/// this backend for trusted fonts only.
+/// </remarks>
 public sealed class StbTrueTypeRasterizer : IRasterizer
 {
     private static readonly IRasterizerCapabilities StbCapabilitiesInstance = new StbTrueTypeCapabilities();
@@ -24,6 +31,7 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
     public IRasterizerCapabilities Capabilities => StbCapabilitiesInstance;
 
     private Stb.stbtt_fontinfo? _fontInfo;
+    private FontStructureValidator? _validator;
     private byte[]? _fontData;
     private GCHandle _pinnedFontData;
     private bool _disposed;
@@ -36,19 +44,20 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         if (_fontInfo is not null)
             throw new InvalidOperationException("Font already loaded. Create a new StbTrueTypeRasterizer instance.");
 
-        _fontData = fontData.ToArray();
+        // The structure check may repair the copy stb_truetype reads (a one-point off-curve
+        // contour, see FontStructureValidator), so it must run on this private array.
+        var fontCopy = fontData.ToArray();
+        var validator = FontStructureValidator.Validate(fontCopy, faceIndex);
+        _fontData = fontCopy;
         _pinnedFontData = GCHandle.Alloc(_fontData, GCHandleType.Pinned);
 
         try
         {
             var dataPtr = (byte*)_pinnedFontData.AddrOfPinnedObject();
-            var offset = Stb.stbtt_GetFontOffsetForIndex(dataPtr, faceIndex);
-            if (offset < 0)
-                throw new FontParsingException($"Failed to find font at face index {faceIndex}.");
-
             _fontInfo = new Stb.stbtt_fontinfo();
-            if (Stb.stbtt_InitFont(_fontInfo, dataPtr, offset) == 0)
+            if (Stb.stbtt_InitFont(_fontInfo, dataPtr, validator.FaceOffset) == 0)
                 throw new FontParsingException("Failed to initialize font with stb_truetype.");
+            _validator = validator;
         }
         catch
         {
@@ -84,12 +93,12 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         float effectiveSize = options.Size * options.Dpi / 72.0f * aa;
         float scale = Stb.stbtt_ScaleForMappingEmToPixels(_fontInfo!, effectiveSize);
 
-        int glyphIndex = Stb.stbtt_FindGlyphIndex(_fontInfo!, codepoint);
+        int glyphIndex = ResolveGlyph(codepoint);
         if (glyphIndex == 0)
             return null;
 
         int advance, lsb;
-        Stb.stbtt_GetCodepointHMetrics(_fontInfo!, codepoint, &advance, &lsb);
+        Stb.stbtt_GetGlyphHMetrics(_fontInfo!, glyphIndex, &advance, &lsb);
 
         if (options.Sdf)
         {
@@ -102,8 +111,9 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
             return RasterizeStyledGlyph(codepoint, glyphIndex, scale, advance, lsb, aa, options);
 
         // Get bitmap box for bearing metrics.
+        EnsureBitmapFits(glyphIndex, scale, 0);
         int ix0, iy0, ix1, iy1;
-        Stb.stbtt_GetCodepointBitmapBox(_fontInfo!, codepoint, scale, scale, &ix0, &iy0, &ix1, &iy1);
+        Stb.stbtt_GetGlyphBitmapBox(_fontInfo!, glyphIndex, scale, scale, &ix0, &iy0, &ix1, &iy1);
 
         int bearingX = (int)Math.Round((double)ix0 / aa);
         int bearingY = (int)Math.Round((double)-iy0 / aa);
@@ -111,8 +121,8 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
 
         // Rasterize the glyph bitmap.
         int width, height, xoff, yoff;
-        byte* bitmap = Stb.stbtt_GetCodepointBitmap(
-            _fontInfo!, scale, scale, codepoint, &width, &height, &xoff, &yoff);
+        byte* bitmap = Stb.stbtt_GetGlyphBitmap(
+            _fontInfo!, scale, scale, glyphIndex, &width, &height, &xoff, &yoff);
 
         if (bitmap == null || width == 0 || height == 0)
         {
@@ -205,18 +215,19 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         float effectiveSize = options.Size * options.Dpi / 72.0f * aa;
         float scale = Stb.stbtt_ScaleForMappingEmToPixels(_fontInfo!, effectiveSize);
 
-        int glyphIndex = Stb.stbtt_FindGlyphIndex(_fontInfo!, codepoint);
+        int glyphIndex = ResolveGlyph(codepoint);
         if (glyphIndex == 0)
             return null;
 
         int advance, lsb;
-        Stb.stbtt_GetCodepointHMetrics(_fontInfo!, codepoint, &advance, &lsb);
+        Stb.stbtt_GetGlyphHMetrics(_fontInfo!, glyphIndex, &advance, &lsb);
 
         if (options.Bold || options.Italic)
-            return GetStyledGlyphMetrics(codepoint, glyphIndex, scale, advance, aa, options);
+            return GetStyledGlyphMetrics(glyphIndex, scale, advance, aa, options);
 
+        EnsureBitmapFits(glyphIndex, scale, options.Sdf ? SdfField(options.SdfSpread).Padding : 0);
         int ix0, iy0, ix1, iy1;
-        Stb.stbtt_GetCodepointBitmapBox(_fontInfo!, codepoint, scale, scale, &ix0, &iy0, &ix1, &iy1);
+        Stb.stbtt_GetGlyphBitmapBox(_fontInfo!, glyphIndex, scale, scale, &ix0, &iy0, &ix1, &iy1);
         if (options.Sdf)
             PadForSdf(ref ix0, ref iy0, ref ix1, ref iy1, options.SdfSpread);
 
@@ -229,10 +240,10 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
     }
 
     private unsafe GlyphMetrics? GetStyledGlyphMetrics(
-        int codepoint, int glyphIndex, float scale, int advance, int aa, RasterOptions options)
+        int glyphIndex, float scale, int advance, int aa, RasterOptions options)
     {
         Stb.stbtt_vertex* vertices;
-        int numVerts = Stb.stbtt_GetCodepointShape(_fontInfo!, codepoint, &vertices);
+        int numVerts = Stb.stbtt_GetGlyphShape(_fontInfo!, glyphIndex, &vertices);
         if (numVerts == 0)
         {
             int scaledAdvance = (int)Math.Round(advance * scale / aa);
@@ -253,6 +264,7 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
             if (options.Italic)
                 OutlineTransforms.ApplyItalicShear(vertices, numVerts);
 
+            EnsureVerticesFit(glyphIndex, vertices, numVerts, scale, options.Sdf ? SdfField(options.SdfSpread).Padding : 0);
             var (x0, y0, x1, y1) = OutlineTransforms.ComputeBoundingBox(vertices, numVerts, scale, scale);
             if (options.Sdf)
                 PadForSdf(ref x0, ref y0, ref x1, ref y1, options.SdfSpread);
@@ -344,6 +356,7 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         if (_pinnedFontData.IsAllocated)
             _pinnedFontData.Free();
 
+        _validator = null;
         _fontData = null;
     }
 
@@ -353,6 +366,57 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
     {
         if (_fontInfo is null)
             throw new InvalidOperationException("Font not loaded. Call LoadFont first.");
+    }
+
+    /// <summary>
+    /// The glyph stb_truetype maps <paramref name="codepoint"/> to, or 0 when it maps to none or
+    /// to an index past <c>numGlyphs</c>; a nonzero glyph's outline has passed the structure check.
+    /// </summary>
+    private int ResolveGlyph(int codepoint)
+    {
+        int glyphIndex = _validator!.ResolveGlyph(Stb.stbtt_FindGlyphIndex(_fontInfo!, codepoint));
+        if (glyphIndex != 0)
+            _validator.EnsureGlyph(glyphIndex);
+        return glyphIndex;
+    }
+
+    /// <summary>
+    /// Rejects the bitmap stb_truetype would size from the glyph's box (the <c>glyf</c> header, or
+    /// a CFF glyph's charstring extent) at <paramref name="scale"/>, before it allocates it.
+    /// </summary>
+    private unsafe void EnsureBitmapFits(int glyphIndex, float scale, int padding)
+    {
+        int x0, y0, x1, y1;
+        if (Stb.stbtt_GetGlyphBox(_fontInfo!, glyphIndex, &x0, &y0, &x1, &y1) != 0)
+            FontStructureValidator.EnsureBitmapBox(glyphIndex, x0, y0, x1, y1, scale, padding);
+    }
+
+    /// <summary>Rejects the bitmap a transformed outline's control box needs at <paramref name="scale"/>.</summary>
+    private static unsafe void EnsureVerticesFit(int glyphIndex, Stb.stbtt_vertex* vertices, int numVerts, float scale, int padding)
+    {
+        if (numVerts <= 0)
+            return;
+
+        int minX = int.MaxValue, minY = int.MaxValue, maxX = int.MinValue, maxY = int.MinValue;
+        for (int i = 0; i < numVerts; i++)
+        {
+            ref var v = ref vertices[i];
+            Include(v.x, v.y);
+            if (v.type is 3 or 4) // vcurve, vcubic
+                Include(v.cx, v.cy);
+            if (v.type == 4)
+                Include(v.cx1, v.cy1);
+        }
+
+        FontStructureValidator.EnsureBitmapBox(glyphIndex, minX, minY, maxX, maxY, scale, padding);
+
+        void Include(int x, int y)
+        {
+            minX = Math.Min(minX, x);
+            maxX = Math.Max(maxX, x);
+            minY = Math.Min(minY, y);
+            maxY = Math.Max(maxY, y);
+        }
     }
 
     /// <summary>
@@ -386,10 +450,11 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         int codepoint, int glyphIndex, float scale, int advance, int lsb, int aa, float sdfSpread)
     {
         var (padding, pixelDistScale) = SdfField(sdfSpread);
+        EnsureBitmapFits(glyphIndex, scale, padding);
 
         int width, height, xoff, yoff;
-        byte* bitmap = Stb.stbtt_GetCodepointSDF(
-            _fontInfo!, scale, codepoint, padding, 128, pixelDistScale,
+        byte* bitmap = Stb.stbtt_GetGlyphSDF(
+            _fontInfo!, scale, glyphIndex, padding, 128, pixelDistScale,
             &width, &height, &xoff, &yoff);
 
         if (bitmap == null || width == 0 || height == 0)
@@ -457,7 +522,7 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         RasterOptions options)
     {
         Stb.stbtt_vertex* vertices;
-        int numVerts = Stb.stbtt_GetCodepointShape(_fontInfo!, codepoint, &vertices);
+        int numVerts = Stb.stbtt_GetGlyphShape(_fontInfo!, glyphIndex, &vertices);
         if (numVerts == 0)
         {
             // Whitespace glyph: valid advance, zero-size bitmap.
@@ -496,6 +561,7 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
 
             var (padding, pixelDistScale) = SdfField(options.SdfSpread);
             const byte onEdgeValue = 128;
+            EnsureVerticesFit(glyphIndex, vertices, numVerts, scale, padding);
 
             byte[]? bitmapData = StbTrueTypeSdfVendored.GetGlyphSdfFromVertices(
                 vertices, numVerts, scale, padding, onEdgeValue, pixelDistScale,
@@ -566,7 +632,7 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         RasterOptions options)
     {
         Stb.stbtt_vertex* vertices;
-        int numVerts = Stb.stbtt_GetCodepointShape(_fontInfo!, codepoint, &vertices);
+        int numVerts = Stb.stbtt_GetGlyphShape(_fontInfo!, glyphIndex, &vertices);
         if (numVerts == 0)
         {
             // Whitespace glyph (e.g., space): valid advance, zero-size bitmap.
@@ -607,6 +673,7 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
             }
 
             // Compute bbox from modified vertices.
+            EnsureVerticesFit(glyphIndex, vertices, numVerts, scale, 0);
             var (x0, y0, x1, y1) = OutlineTransforms.ComputeBoundingBox(vertices, numVerts, scale, scale);
 
             int width = x1 - x0;
