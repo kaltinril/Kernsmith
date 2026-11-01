@@ -357,7 +357,7 @@ public static class BmFont
 
             // Build atlas page at region dimensions.
             metrics?.Begin("AtlasEncoding");
-            var encoder = options.AtlasEncoder ?? new StbPngEncoder();
+            var encoder = options.AtlasEncoder ?? new PngEncoder();
             var atlasPages = AtlasBuilder.Build(glyphs, packResult, padding, encoder);
             var atlasPage = atlasPages[0];
 
@@ -450,7 +450,7 @@ public static class BmFont
             {
                 TextureFormat.Tga => new TgaEncoder(),
                 TextureFormat.Dds => new DdsEncoder(),
-                _ => new StbPngEncoder()
+                _ => new PngEncoder()
             });
             IReadOnlyList<AtlasPage> pages;
             IReadOnlyDictionary<int, int>? glyphChannels = null;
@@ -595,7 +595,7 @@ public static class BmFont
         {
             TextureFormat.Tga => new TgaEncoder(),
             TextureFormat.Dds => new DdsEncoder(),
-            _ => new StbPngEncoder()
+            _ => new PngEncoder()
         });
 
         var renderGlyphs = new List<RasterizedGlyph>();
@@ -1235,7 +1235,7 @@ public static class BmFont
         {
             TextureFormat.Tga => new TgaEncoder(),
             TextureFormat.Dds => new DdsEncoder(),
-            _ => new StbPngEncoder()
+            _ => new PngEncoder()
         });
         var sharedPages = AtlasBuilder.Build(allGlyphs, packResult, maxPadding, encoder);
 

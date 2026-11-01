@@ -24,7 +24,7 @@ public class RenderToExistingTests
             pixels[i * 4 + 2] = b;
             pixels[i * 4 + 3] = a;
         }
-        var encoder = new StbPngEncoder();
+        var encoder = new PngEncoder();
         return encoder.Encode(pixels, width, height, PixelFormat.Rgba32);
     }
 

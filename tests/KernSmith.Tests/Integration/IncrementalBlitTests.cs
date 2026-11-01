@@ -134,7 +134,7 @@ public class IncrementalBlitTests
             PageHeight = s.Page.Height,
         };
 
-        var expected = AtlasBuilder.Build(unionGlyphs, packResult, s.Padding, new StbPngEncoder());
+        var expected = AtlasBuilder.Build(unionGlyphs, packResult, s.Padding, new PngEncoder());
         expected.Count.ShouldBe(1);
         expected[0].Format.ShouldBe(PixelFormat.Grayscale8);
 

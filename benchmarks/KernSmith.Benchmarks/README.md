@@ -60,6 +60,14 @@ The repo's decision not to ship ReadyToRun (`project_decisions.md`, Tooling) is 
 
 What it found (Roboto ASCII 32px, K=20, full table in [phase 177](../../plan/phase-177-performance-optimization.md#measured-results)): under JIT the first `Generate` takes 89-111 ms depending on the backend, 10-15x its steady state, most of it compiling 830-1,170 methods. ReadyToRun halves that (38-51 ms) and NativeAOT removes it (3.7-6.9 ms, 1-2x steady). Process start to first result is 146-169 ms (JIT), 93-104 ms (ReadyToRun) and 17-20 ms (NativeAOT). An app that cares about first-call latency — a CLI, a serverless function, anything that generates one font per process — should publish with ReadyToRun or NativeAOT; a long-running app pays the JIT cost once.
 
+### Output stage
+
+`OutputBenchmarks` times what a caller pays after `BmFont.Generate`: encoding the atlas pages (PNG, TGA, DDS) and formatting the `.fnt` (text, XML, binary), Roboto 32px, ASCII and ASCII + Latin-1. Generation runs once in setup, so each row is the output stage alone. PNG encoding dominates it — on the default 256x256 page it takes longer than generating the font.
+
+```
+dotnet run -c Release -f net10.0 --project benchmarks/KernSmith.Benchmarks -- --filter *OutputBenchmarks*
+```
+
 ### WOFF2 decoding
 
 `Woff2DecodeBenchmarks` times KernSmith's managed Brotli decoder against the BCL's native one on the same stream (Roboto-Regular.woff2), and `BmFont.ReadFontInfo` on the WOFF2 against the plain TTF. Results are in [phase 177](../../plan/phase-177-performance-optimization.md).
