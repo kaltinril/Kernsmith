@@ -9,7 +9,7 @@
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <IsAotCompatible>true</IsAotCompatible>
     <PackageId>KernSmith.Rasterizers.StbTrueType</PackageId>
-    <Description>StbTrueType rasterizer backend for KernSmith. Pure C#, cross-platform. No native dependencies. Ideal for Blazor WASM, iOS AOT, and serverless.</Description>
+    <Description>StbTrueType rasterizer backend for KernSmith. Pure C#, cross-platform. No native dependencies. Good for Blazor WASM and iOS AOT. For trusted fonts only: stb_truetype does no bounds checking, so use the Native or FreeType backend for untrusted fonts.</Description>
     <PackageProjectUrl>https://github.com/kaltinril/Kernsmith</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Authors>Kaltinril (Jeremy Swartwood)</Authors>
