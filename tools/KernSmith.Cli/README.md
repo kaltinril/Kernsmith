@@ -242,7 +242,7 @@ Commands report their outcome with these process exit codes:
 
 Generate a `.bmfc` or `.hiero` configuration file from CLI flags without rendering a font. This lets you scaffold a config, tweak it by hand, then run `kernsmith generate --config`.
 
-The `init` command accepts all the same flags as `generate` (font source, size, effects, atlas settings, etc.). The `-o` flag sets the output config file path instead of the font output path. The format is chosen by the file extension — use `.hiero` to write a Hiero config; a path with no extension defaults to `.bmfc`. Any explicit extension is respected as-is (kept verbatim, not suffixed with `.bmfc`), and BMFont content is written for any non-`.hiero` extension.
+The `init` command accepts all the same flags as `generate` (font source, size, effects, atlas settings, etc.). The `-o` flag sets the output config file path instead of the font output path. The format is chosen by the file extension — use `.hiero` to write a Hiero config; a path with no extension defaults to `.bmfc`. Any explicit extension is respected as-is (kept verbatim, not suffixed with `.bmfc`), and BMFont content is written for any non-`.hiero` extension. A `.bmfc` written by `init` sets `outputPath` to the config path without its extension, so `kernsmith generate --config my-font.bmfc` writes `my-font.fnt` beside it.
 
 ```
 kernsmith init [options]

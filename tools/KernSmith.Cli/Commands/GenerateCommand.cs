@@ -244,6 +244,7 @@ internal sealed class GenerateCommand
             Backend = options.Backend,
             SuperSampleLevel = options.SuperSampleLevel,
             FallbackCharacter = options.FallbackCharacter,
+            FallbackCodepoint = options.FallbackCodepoint,
             EnableHinting = options.EnableHinting ?? true,
             AutofitTexture = options.AutofitTexture,
             EqualizeCellHeights = options.EqualizeCellHeights,
@@ -254,6 +255,7 @@ internal sealed class GenerateCommand
             MatchCharHeight = options.MatchCharHeight,
             ColorFont = options.ColorFont,
             ColorPaletteIndex = options.ColorPaletteIndex,
+            SdfScale = options.SdfScale,
             CollectMetrics = options.ShowProfile,
         };
 
@@ -320,12 +322,13 @@ internal sealed class GenerateCommand
             genOptions.OutlineG = oc.G;
             genOptions.OutlineB = oc.B;
         }
-        if (options.ShadowOffsetX != 0 || options.ShadowOffsetY != 0 || options.ShadowColor != null
+        if (options.ShadowOffsetX != 0 || options.ShadowOffsetY != 0 || options.ShadowBlur != 0 || options.ShadowColor != null
             || options.ShadowBlurKernelSize != 0 || options.ShadowBlurPasses != 1)
         {
             genOptions.ShadowOffsetX = options.ShadowOffsetX;
             genOptions.ShadowOffsetY = options.ShadowOffsetY;
             genOptions.ShadowBlur = options.ShadowBlur;
+            genOptions.ShadowOpacity = options.ShadowOpacity;
             genOptions.ShadowBlurKernelSize = options.ShadowBlurKernelSize;
             genOptions.ShadowBlurPasses = options.ShadowBlurPasses;
             if (options.ShadowColor != null)
@@ -352,6 +355,7 @@ internal sealed class GenerateCommand
         if (options.Gamma.HasValue)
             genOptions.Gamma = options.Gamma.Value;
         genOptions.AdvanceAdjustX = options.AdvanceAdjustX;
+        genOptions.AdvanceAdjustY = options.AdvanceAdjustY;
 
         return genOptions;
     }
@@ -867,7 +871,7 @@ internal sealed class GenerateCommand
         if (cli.ColorPaletteIndex != 0) config.ColorPaletteIndex = cli.ColorPaletteIndex;
         if (cli.Backend != RasterizerBackend.FreeType) config.Backend = cli.Backend;
         if (cli.SuperSampleLevel != 1) config.SuperSampleLevel = cli.SuperSampleLevel;
-        if (cli.FallbackCharacter.HasValue) config.FallbackCharacter = cli.FallbackCharacter;
+        if (cli.FallbackCharacter.HasValue) { config.FallbackCharacter = cli.FallbackCharacter; config.FallbackCodepoint = null; }
         if (cli.TextureFormat != null) config.TextureFormat = cli.TextureFormat;
         if (cli.HeightPercent != 100) config.HeightPercent = cli.HeightPercent;
         if (cli.WidthPercent != 100) config.WidthPercent = cli.WidthPercent;
