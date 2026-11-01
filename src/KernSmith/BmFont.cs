@@ -577,14 +577,11 @@ public static class BmFont
 
         if (options.AutofitTexture && shared.PageCount > 1)
         {
-            // One-step bump: double the smaller dimension (or next POT), then repack once.
-            if (groupWidth <= groupHeight)
-                groupWidth = groupSizingOptions.PowerOfTwo ? groupWidth * 2 : (int)(groupWidth * 1.5);
-            else
-                groupHeight = groupSizingOptions.PowerOfTwo ? groupHeight * 2 : (int)(groupHeight * 1.5);
-
-            groupWidth = Math.Min(groupWidth, options.MaxTextureWidth);
-            groupHeight = Math.Min(groupHeight, options.MaxTextureHeight);
+            // The same one-step bump Generate applies without variants: the smaller dimension
+            // that can still grow, else the other.
+            (groupWidth, groupHeight) = AtlasSizeEstimator.BumpSize(
+                groupWidth, groupHeight, groupSizingOptions.PowerOfTwo,
+                options.MaxTextureWidth, options.MaxTextureHeight);
 
             (shared, placementsByTag) = AtlasGroupBuilder.Pack(packer, groupSources, groupWidth, groupHeight);
         }
