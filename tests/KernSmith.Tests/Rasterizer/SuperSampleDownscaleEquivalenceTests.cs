@@ -63,8 +63,8 @@ public sealed class SuperSampleDownscaleEquivalenceTests
     {
         var srcW = glyph.Width;
         var srcH = glyph.Height;
-        var dstW = Math.Max(1, srcW / level);
-        var dstH = Math.Max(1, srcH / level);
+        var dstW = (srcW + level - 1) / level;
+        var dstH = (srcH + level - 1) / level;
         var bpp = glyph.Format == PixelFormat.Rgba32 ? 4 : 1;
         var dst = new byte[dstW * dstH * bpp];
         var srcPitch = glyph.Pitch;

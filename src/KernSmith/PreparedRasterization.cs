@@ -809,13 +809,12 @@ internal sealed class PreparedRasterization : IDisposable
             };
         }
 
+        // The size rounds up, as BMFont's does, so ink in a last partial block is kept (averaged
+        // with the transparent pixels past the glyph's edge); the bearings still truncate.
         var srcW = glyph.Width;
         var srcH = glyph.Height;
-        var dstW = srcW / level;
-        var dstH = srcH / level;
-
-        if (dstW == 0) dstW = 1;
-        if (dstH == 0) dstH = 1;
+        var dstW = (srcW + level - 1) / level;
+        var dstH = (srcH + level - 1) / level;
 
         var bpp = glyph.Format == PixelFormat.Rgba32 ? 4 : 1;
         var dst = new byte[dstW * dstH * bpp];

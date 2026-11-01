@@ -36,6 +36,43 @@ public sealed class SuperSampleDownscaleTests
         scaled.BitmapData.ShouldBe(new byte[] { 255, 0, 0, 255 / 4 });
     }
 
+    [Fact]
+    public void SizeRoundsUp_SoInkInTheLastPartialBlockIsKept()
+    {
+        // 5x3 at level 2: BMFont rounds the size up (3x2), keeping the fifth column and third row,
+        // each averaged over a full block with the missing pixels transparent.
+        byte[] data =
+        [
+            0, 0, 0, 0, 255,
+            0, 0, 0, 0, 255,
+            255, 255, 0, 0, 255,
+        ];
+        var glyph = Glyph(width: 5, height: 3, pitch: 5, PixelFormat.Grayscale8, data);
+
+        var scaled = PreparedRasterization.SuperSampleDownscale(glyph, 2);
+
+        scaled.Width.ShouldBe(3);
+        scaled.Height.ShouldBe(2);
+        scaled.Pitch.ShouldBe(3);
+        scaled.Metrics.Width.ShouldBe(3);
+        scaled.Metrics.Height.ShouldBe(2);
+        scaled.BitmapData.ShouldBe(new byte[] { 0, 0, 510 / 4, 510 / 4, 0, 255 / 4 });
+    }
+
+    [Fact]
+    public void RgbaSizeRoundsUp_SoInkInTheLastPartialBlockIsKept()
+    {
+        // 3x1 at level 2: the third pixel (opaque green) lands in a second, half-empty block.
+        byte[] data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 0, 255];
+        var glyph = Glyph(width: 3, height: 1, pitch: 12, PixelFormat.Rgba32, data);
+
+        var scaled = PreparedRasterization.SuperSampleDownscale(glyph, 2);
+
+        scaled.Width.ShouldBe(2);
+        scaled.Height.ShouldBe(1);
+        scaled.BitmapData.ShouldBe(new byte[] { 0, 0, 0, 0, 0, 255, 0, 255 / 4 });
+    }
+
     private static RasterizedGlyph Glyph(int width, int height, int pitch, PixelFormat format, byte[] data) => new()
     {
         Codepoint = 'x',
