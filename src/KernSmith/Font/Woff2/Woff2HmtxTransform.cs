@@ -84,7 +84,7 @@ internal static class Woff2HmtxTransform
 
         if (end <= start)
             return 0;
-        if (start + 4 > glyf.Length)
+        if ((long)start + 4 > glyf.Length)
             throw Woff2Decoder.Invalid("loca points past the end of glyf");
         return BinaryPrimitives.ReadInt16BigEndian(glyf.Slice(start + 2));
     }
