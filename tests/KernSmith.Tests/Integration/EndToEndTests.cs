@@ -622,7 +622,9 @@ public class EndToEndTests
             Padding = new Padding(0),
             ShadowOffsetX = offset,
             ShadowOffsetY = offset,
-            ShadowR = 0, ShadowG = 0, ShadowB = 0,
+            ShadowR = 0,
+            ShadowG = 0,
+            ShadowB = 0,
             Channels = offset == 0
                 ? new ChannelConfig(Alpha: ChannelContent.Glyph, Red: ChannelContent.Zero,
                     Green: ChannelContent.Zero, Blue: ChannelContent.Zero)

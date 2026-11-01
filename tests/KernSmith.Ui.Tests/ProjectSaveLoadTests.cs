@@ -83,7 +83,10 @@ public sealed class ProjectSaveLoadTests : IDisposable
 
         fontConfig.LoadFromSystem(new SystemFontInfo
         {
-            FamilyName = "Roboto", StyleName = "Regular", FilePath = RobotoPath, FaceIndex = 0,
+            FamilyName = "Roboto",
+            StyleName = "Regular",
+            FilePath = RobotoPath,
+            FaceIndex = 0,
         });
 
         fontConfig.FaceIndex.ShouldBe(0);
