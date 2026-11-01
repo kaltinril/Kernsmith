@@ -29,7 +29,7 @@ public sealed class SuperSampleBackendTests
         };
 
         using var prepared = PreparedRasterization.Prepare(Font(), options, systemFontName: null, subsetToCharacterSet: true);
-        var actual = prepared.RasterizeAndProcess(chars.Select(c => (int)c).ToList(), equalizeTargetHeight: null).Glyphs;
+        var actual = prepared.RasterizeAndProcess(chars.Select(c => (int)c).ToList(), equalizeSpan: null).Glyphs;
 
         using var reference = new StbTrueTypeRasterizer();
         reference.LoadFont(Font());

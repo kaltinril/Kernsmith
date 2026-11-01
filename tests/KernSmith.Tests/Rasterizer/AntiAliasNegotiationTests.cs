@@ -102,7 +102,7 @@ public class AntiAliasNegotiationTests
         using (var prepared = PreparedRasterization.Prepare(
             LoadTestFont(), options, systemFontName: null, subsetToCharacterSet: true))
         {
-            prepared.RasterizeAndProcess(new[] { (int)'A' }, equalizeTargetHeight: null);
+            prepared.RasterizeAndProcess(new[] { (int)'A' }, equalizeSpan: null);
         }
 
         recording.Seen.ShouldNotBeEmpty();
@@ -119,7 +119,7 @@ public class AntiAliasNegotiationTests
         using (var prepared = PreparedRasterization.Prepare(
             LoadTestFont(), options, systemFontName: null, subsetToCharacterSet: true))
         {
-            prepared.RasterizeAndProcess(new[] { (int)'A' }, equalizeTargetHeight: null);
+            prepared.RasterizeAndProcess(new[] { (int)'A' }, equalizeSpan: null);
         }
 
         recording.Seen.ShouldNotBeEmpty();

@@ -188,7 +188,7 @@ public class LcdOptionsTests
 
         using (var prepared = PreparedRasterization.Prepare(Font(), options, systemFontName: null, subsetToCharacterSet: true))
         {
-            prepared.RasterizeAndProcess(new[] { (int)'A' }, equalizeTargetHeight: null);
+            prepared.RasterizeAndProcess(new[] { (int)'A' }, equalizeSpan: null);
         }
 
         recording.Seen.ShouldNotBeEmpty();

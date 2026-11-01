@@ -201,7 +201,7 @@ public static class BmFont
         using var prepared = PreparedRasterization.Prepare(
             fontData, options, systemFontName, subsetToCharacterSet: true);
         var codepoints = prepared.ResolveCodepoints();
-        var result = prepared.RasterizeAndProcess(codepoints, equalizeTargetHeight: null);
+        var result = prepared.RasterizeAndProcess(codepoints, equalizeSpan: null);
 
         // Resolving drops requested characters the font has no glyph for; they failed too, as an
         // incremental session reports them.

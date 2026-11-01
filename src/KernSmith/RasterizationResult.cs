@@ -42,6 +42,9 @@ internal sealed class RasterizationResult
     /// </summary>
     public List<RasterizedGlyph>? RawGlyphsForVariants { get; init; }
 
+    /// <summary>The span every cell was equalized to, or null when equalization is off.</summary>
+    public EqualizedSpan? EqualizedSpan { get; init; }
+
     /// <summary>
     /// Backend-drawn outline layers by codepoint, at the output size and placed against the final
     /// <see cref="Glyphs"/>, for an Outline channel to use instead of the bitmap outline. Only

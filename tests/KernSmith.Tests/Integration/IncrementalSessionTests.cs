@@ -531,20 +531,29 @@ public class IncrementalSessionTests
     }
 
     [Fact]
-    public void ResumeIncremental_EqualizedModel_TallerGlyphThrows()
+    public void ResumeIncremental_EqualizedModel_TallerGlyphSharesTheLineBoxCell()
     {
+        // Equalized cells span the whole line box (BMFont useFixedHeight), so a glyph taller than
+        // every original one ('l' after "ace") still fits the established cell and matches it.
         var fontData = LoadTestFont();
         var genOptions = Options();
         genOptions.EqualizeCellHeights = true;
         genOptions.Characters = CharacterSet.FromChars("ace");
         var generated = BmFont.Generate(fontData, genOptions);
+        var cell = generated.Model.Characters[0];
 
         var resumeOptions = Options();
         resumeOptions.EqualizeCellHeights = true;
         using var session = BmFont.ResumeIncremental(fontData, resumeOptions, generated.Model);
+        session.AddGlyphs("l");
 
-        // 'l' is taller than the x-height cell of "ace" — stable packing forbids growing cells.
-        Should.Throw<InvalidOperationException>(() => session.AddGlyphs("l"));
+        var l = session.CurrentModel.Characters.Single(c => c.Id == 'l');
+        (l.YOffset, l.Height).ShouldBe((cell.YOffset, cell.Height));
+
+        // And it is the cell Generate gives the whole set.
+        genOptions.Characters = CharacterSet.FromChars("acel");
+        var all = BmFont.Generate(fontData, genOptions).Model.Characters.Single(c => c.Id == 'l');
+        (l.YOffset, l.Height).ShouldBe((all.YOffset, all.Height));
     }
 
     // ---------------------------------------------------------------

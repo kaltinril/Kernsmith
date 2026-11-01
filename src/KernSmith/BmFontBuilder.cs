@@ -317,7 +317,7 @@ public sealed class BmFontBuilder
     /// <returns>This builder.</returns>
     public BmFontBuilder WithAutofitTexture(bool autofit = true) { _options.AutofitTexture = autofit; return this; }
 
-    /// <summary>If true, makes all glyph cells the same height.</summary>
+    /// <summary>If true, makes every glyph cell span the whole line (BMFont's <c>useFixedHeight</c>).</summary>
     /// <param name="equalize">Enable equal cell heights.</param>
     /// <returns>This builder.</returns>
     public BmFontBuilder WithEqualizeCellHeights(bool equalize = true) { _options.EqualizeCellHeights = equalize; return this; }

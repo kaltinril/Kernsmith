@@ -34,7 +34,7 @@ public class VectorOutlineTests
     {
         options.Rasterizer = rasterizer;
         using var prepared = PreparedRasterization.Prepare(Roboto(), options, systemFontName: null, subsetToCharacterSet: true);
-        return prepared.RasterizeAndProcess(prepared.ResolveCodepoints(), equalizeTargetHeight: null);
+        return prepared.RasterizeAndProcess(prepared.ResolveCodepoints(), equalizeSpan: null);
     }
 
     private static RasterizedGlyph Glyph(RasterizationResult result, char c) => result.Glyphs.Single(g => g.Codepoint == c);
@@ -189,7 +189,7 @@ public class VectorOutlineTests
         options.Rasterizer = backend;
 
         using var prepared = PreparedRasterization.Prepare(Roboto(), options, systemFontName: null, subsetToCharacterSet: true);
-        prepared.RasterizeAndProcess(prepared.ResolveCodepoints(), equalizeTargetHeight: null);
+        prepared.RasterizeAndProcess(prepared.ResolveCodepoints(), equalizeSpan: null);
         backend.Calls.ShouldBeEmpty();
     }
 

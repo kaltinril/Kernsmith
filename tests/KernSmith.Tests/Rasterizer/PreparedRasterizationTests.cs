@@ -28,16 +28,18 @@ public class PreparedRasterizationTests
             fontData, EqualizeOptions(), systemFontName: null, subsetToCharacterSet: true);
         var codepoints = prepared.ResolveCodepoints();
 
-        var natural = prepared.RasterizeAndProcess(codepoints, equalizeTargetHeight: null);
-        var naturalMax = natural.Glyphs.Max(g => g.Height);
-        var target = naturalMax + 10;
+        var natural = prepared.RasterizeAndProcess(codepoints, equalizeSpan: null);
+        var span = natural.EqualizedSpan!.Value;
+        var target = new EqualizedSpan(span.Top - 3, span.Bottom + 7);
 
         // Act
-        var padded = prepared.RasterizeAndProcess(codepoints, equalizeTargetHeight: target);
+        var padded = prepared.RasterizeAndProcess(codepoints, equalizeSpan: target);
 
-        // Assert — every glyph is padded to exactly the requested cell height
-        padded.Glyphs.ShouldAllBe(g => g.Height == target,
-            "an equalize target above the natural max should pad every glyph to that target");
+        // Assert — every glyph is padded to exactly the requested cell, its top 3 rows higher
+        padded.Glyphs.ShouldAllBe(g => g.Height == span.Bottom - span.Top + 10,
+            "an equalize target wider than the natural span should pad every glyph to that target");
+        for (var i = 0; i < padded.Glyphs.Count; i++)
+            padded.Glyphs[i].Metrics.BearingY.ShouldBe(natural.Glyphs[i].Metrics.BearingY + 3);
     }
 
     [Fact]
@@ -49,12 +51,19 @@ public class PreparedRasterizationTests
             fontData, EqualizeOptions(), systemFontName: null, subsetToCharacterSet: true);
         var codepoints = prepared.ResolveCodepoints();
 
-        var natural = prepared.RasterizeAndProcess(codepoints, equalizeTargetHeight: null);
-        var naturalMax = natural.Glyphs.Max(g => g.Height);
+        var natural = prepared.RasterizeAndProcess(codepoints, equalizeSpan: null);
+        var span = natural.EqualizedSpan!.Value;
 
-        // Act + Assert — a glyph taller than the target would change the original atlas
+        // The tallest glyph's top row: the baseline is BearingY + Top in every equalized cell.
+        var baseLine = natural.Glyphs[0].Metrics.BearingY + span.Top;
+        var unequalized = EqualizeOptions();
+        unequalized.EqualizeCellHeights = false;
+        using var plain = PreparedRasterization.Prepare(fontData, unequalized, systemFontName: null, subsetToCharacterSet: true);
+        var inkTop = plain.RasterizeAndProcess(codepoints, equalizeSpan: null).Glyphs.Min(g => baseLine - g.Metrics.BearingY);
+
+        // Act + Assert — a glyph reaching outside the target would change the original atlas
         var ex = Should.Throw<InvalidOperationException>(() =>
-            prepared.RasterizeAndProcess(codepoints, equalizeTargetHeight: naturalMax - 1));
+            prepared.RasterizeAndProcess(codepoints, equalizeSpan: new EqualizedSpan(inkTop + 1, span.Bottom)));
         ex.Message.ShouldContain("equalized cell height", Case.Sensitive);
     }
 
@@ -69,7 +78,7 @@ public class PreparedRasterizationTests
             fontData, EqualizeOptions(), systemFontName: null, subsetToCharacterSet: true);
 
         // Act
-        var viaSplit = prepared.RasterizeAndProcess(prepared.ResolveCodepoints(), equalizeTargetHeight: null);
+        var viaSplit = prepared.RasterizeAndProcess(prepared.ResolveCodepoints(), equalizeSpan: null);
 
         // Assert — same glyphs, same max-height equalization, same pixels
         viaSplit.Glyphs.Count.ShouldBe(viaWrapper.Glyphs.Count);
@@ -127,8 +136,8 @@ public class PreparedRasterizationTests
         using var prepared = PreparedRasterization.Prepare(
             fontData, options, systemFontName: null, subsetToCharacterSet: false);
 
-        prepared.RasterizeAndProcess(new[] { (int)'A' }, equalizeTargetHeight: null);
-        prepared.RasterizeAndProcess(new[] { (int)'B' }, equalizeTargetHeight: null);
+        prepared.RasterizeAndProcess(new[] { (int)'A' }, equalizeSpan: null);
+        prepared.RasterizeAndProcess(new[] { (int)'B' }, equalizeSpan: null);
 
         counting.FontMetricsCalls.ShouldBe(1);
         counting.KerningPairsCalls.ShouldBe(1);

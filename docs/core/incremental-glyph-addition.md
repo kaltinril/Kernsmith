@@ -195,7 +195,8 @@ reallocate the texture and copy the old contents to `(0, 0)` — old pixels neve
   existing glyph, so a glyph added later lands wherever free space remains, not where a full
   repack of the combined set would put it. Packing efficiency degrades accordingly; regenerate
   when you want an optimal layout.
-- With `EqualizeCellHeights`, a new glyph *taller* than the atlas's established cell height
+- With `EqualizeCellHeights`, every cell spans the line box (grown to cover the glyphs the
+  atlas was made with), so most later glyphs fit it; one reaching above or below that cell
   throws (`InvalidOperationException`) — accepting it would have changed every existing cell.
   Regenerate to include it.
 - A `PackingAlgorithm.Skyline` configuration — or a custom `FontGeneratorOptions.Packer` —

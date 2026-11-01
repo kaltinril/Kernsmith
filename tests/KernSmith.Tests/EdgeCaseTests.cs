@@ -207,7 +207,7 @@ public class EdgeCaseTests
     }
 
     [Fact]
-    public void Generate_WithEqualizeCellHeights_HeightIsMaxOfAllGlyphs()
+    public void Generate_WithEqualizeCellHeights_HeightSpansTheLineBoxAndEveryGlyph()
     {
         // Arrange
         var fontData = LoadTestFont();
@@ -227,12 +227,15 @@ public class EdgeCaseTests
             EqualizeCellHeights = true
         });
 
-        // Assert — the equalized height should equal the max natural height
-        var maxNaturalHeight = resultWithout.Model.Characters.Max(c => c.Height);
-        var equalizedHeight = resultWith.Model.Characters.First().Height;
+        // Assert — the equalized cell is the line box grown to cover every glyph (BMFont's
+        // useFixedHeight), so it spans from the highest glyph top to the lowest glyph bottom
+        var chars = resultWithout.Model.Characters.Where(c => c.Height > 0).ToList();
+        var top = Math.Min(0, chars.Min(c => c.YOffset));
+        var bottom = Math.Max(resultWithout.Model.Common.LineHeight, chars.Max(c => c.YOffset + c.Height));
+        var equalized = resultWith.Model.Characters.First();
 
-        equalizedHeight.ShouldBe(maxNaturalHeight,
-            "equalized height should match the tallest glyph from non-equalized rendering");
+        equalized.Height.ShouldBe(bottom - top, "equalized height should span the line box and every glyph");
+        equalized.YOffset.ShouldBe(top);
     }
 
     [Fact]

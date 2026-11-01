@@ -53,7 +53,7 @@ public sealed class BmFontIncrementalSession : IDisposable
     private bool _kerningPreScaled;
 
     private MaxRectsState? _packState;
-    private int? _equalizeTarget;
+    private EqualizedSpan? _equalizeTarget;
     private (int LineHeight, int BaseLine)? _lineMetrics;
     private bool _fallbackResolved;
     private BmFontModel? _cachedModel;
@@ -160,9 +160,15 @@ public sealed class BmFontIncrementalSession : IDisposable
             // the existing atlas (yoffset is relative to the same base line).
             session._lineMetrics = (existing.Common.LineHeight, existing.Common.Base);
 
-            // Equalized cell height is recoverable from any char (F3).
+            // The equalized cell is recoverable from any char (F3): every cell has the same top
+            // row (its yoffset) and height. ForceOffsetsToZero hides the top, which is the line
+            // top (0) unless a glyph reached above the line.
             if (options.EqualizeCellHeights && existing.Characters.Count > 0)
-                session._equalizeTarget = existing.Characters[0].Height - padding.Up - padding.Down;
+            {
+                var c = existing.Characters[0];
+                var top = options.ForceOffsetsToZero ? 0 : c.YOffset + padding.Up;
+                session._equalizeTarget = new EqualizedSpan(top, top + c.Height - padding.Up - padding.Down);
+            }
 
             return session;
         }
@@ -269,16 +275,16 @@ public sealed class BmFontIncrementalSession : IDisposable
             return EmptyResult(failed, alreadyPresent);
 
         // A begin-session's first equalized batch with visible glyphs establishes the
-        // session's cell height. A whitespace-only batch (all 0-height glyphs) must not
-        // establish a 0px target — that would make every later add throw; the target
-        // stays unestablished until a batch with a visible glyph arrives.
+        // session's cell (the line box grown to cover them). A whitespace-only batch must not:
+        // its cell is the bare line box, and a later glyph reaching outside it would throw, so
+        // the target stays unestablished until a batch with ink arrives.
         if (_options.EqualizeCellHeights && _equalizeTarget is null)
         {
-            var max = 0;
+            var visible = false;
             foreach (var g in glyphs)
-                if (g.Height > max) max = g.Height;
-            if (max > 0)
-                _equalizeTarget = max;
+                visible |= g.Width > 0 && g.BitmapData.Any(v => v != 0);
+            if (visible)
+                _equalizeTarget = raster.EqualizedSpan;
         }
 
         _lineMetrics ??= BmFontModelBuilder.ComputeLineMetrics(

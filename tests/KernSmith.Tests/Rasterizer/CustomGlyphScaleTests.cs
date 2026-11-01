@@ -37,7 +37,7 @@ public sealed class CustomGlyphScaleTests
         };
 
         using var prepared = PreparedRasterization.Prepare(Font(), options, systemFontName: null, subsetToCharacterSet: true);
-        var glyph = prepared.RasterizeAndProcess(prepared.ResolveCodepoints(), equalizeTargetHeight: null)
+        var glyph = prepared.RasterizeAndProcess(prepared.ResolveCodepoints(), equalizeSpan: null)
             .Glyphs.Single(g => g.Codepoint == Star);
 
         glyph.Width.ShouldBe(6);

@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Threading.Tasks;
 using KernSmith.Font;
 using KernSmith.Font.Models;
+using KernSmith.Output;
 using KernSmith.Rasterizer;
 
 namespace KernSmith;
@@ -458,12 +459,12 @@ internal sealed class PreparedRasterization : IDisposable
     /// cell-height equalization. Callable repeatedly on one prepared instance.
     /// </summary>
     /// <param name="codepoints">The codepoints to rasterize.</param>
-    /// <param name="equalizeTargetHeight">When <see cref="FontGeneratorOptions.EqualizeCellHeights"/>
-    /// is on: null pads every glyph to the batch's own max height (the classic behavior); a value
-    /// pads to exactly that height instead, so glyphs added later match the cells of an existing
-    /// equalized atlas (phase 183 F3). Throws <see cref="InvalidOperationException"/> if any glyph
-    /// is taller than the given target. Ignored when equalization is off.</param>
-    internal RasterizationResult RasterizeAndProcess(IReadOnlyList<int> codepoints, int? equalizeTargetHeight)
+    /// <param name="equalizeSpan">When <see cref="FontGeneratorOptions.EqualizeCellHeights"/> is on:
+    /// null gives every cell the batch's own span (the line box grown to cover every glyph); a value
+    /// uses exactly that span instead, so glyphs added later match the cells of an existing
+    /// equalized atlas (phase 183 F3). Throws <see cref="InvalidOperationException"/> if a glyph
+    /// reaches outside the given span. Ignored when equalization is off.</param>
+    internal RasterizationResult RasterizeAndProcess(IReadOnlyList<int> codepoints, EqualizedSpan? equalizeSpan)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -573,32 +574,65 @@ internal sealed class PreparedRasterization : IDisposable
             }
         }
 
+        // Capture rasterizer-provided values (once) so the result stays valid after disposal;
+        // equalization needs the line metrics they give.
+        if (!_rasterizerProvidedCaptured)
+        {
+            _rasterizerFontMetrics = _rasterizer.GetFontMetrics(_rasterOptions);
+            _rasterizerKerningPairs = _rasterizer.GetKerningPairs(_rasterOptions);
+            _rasterizerProvidedCaptured = true;
+        }
+
+        // BMFont's useFixedHeight: every cell spans the line box (yoffset 0, height lineHeight,
+        // the baseline at row `base` of every cell), grown to cover any glyph reaching outside it.
+        EqualizedSpan? span = null;
         if (options.EqualizeCellHeights && glyphs.Count > 0)
         {
-            var targetHeight = equalizeTargetHeight ?? glyphs.Max(g => g.Height);
-            if (equalizeTargetHeight.HasValue)
+            var (lineHeight, baseLine) = BmFontModelBuilder.ComputeLineMetrics(
+                FontInfo, (float)(EffectiveSize * BmFontModelBuilder.DpiScale(options)),
+                _rasterizerFontMetrics, options.HeightPercent);
+
+            if (equalizeSpan is { } target)
             {
-                // Stable packing forbids changing existing cells: a glyph taller than the
-                // atlas's equalized cell height would have grown every cell in the original
-                // atlas, so it cannot be added incrementally.
+                // Stable packing forbids changing existing cells: a glyph reaching outside the
+                // atlas's equalized cell would have grown every cell in the original atlas, so it
+                // cannot be added incrementally.
                 foreach (var g in glyphs)
                 {
-                    if (g.Height > targetHeight)
+                    var top = baseLine - g.Metrics.BearingY;
+                    if (g.Height > 0 && (top < target.Top || top + g.Height > target.Bottom))
                         throw new InvalidOperationException(
-                            $"Glyph U+{g.Codepoint:X4} is {g.Height}px tall, which exceeds the atlas's " +
-                            $"equalized cell height of {targetHeight}px. Adding it would change the " +
-                            "existing atlas's cells; the atlas must be regenerated to include this glyph.");
+                            $"Glyph U+{g.Codepoint:X4} spans rows {top} to {top + g.Height} of the line, outside the " +
+                            $"atlas's equalized cell height (rows {target.Top} to {target.Bottom}). Adding it would " +
+                            "change the existing atlas's cells; the atlas must be regenerated to include this glyph.");
                 }
+
+                span = target;
             }
+            else
+            {
+                int top = 0, bottom = lineHeight;
+                foreach (var g in glyphs)
+                {
+                    if (g.Height <= 0)
+                        continue;
+                    top = Math.Min(top, baseLine - g.Metrics.BearingY);
+                    bottom = Math.Max(bottom, baseLine - g.Metrics.BearingY + g.Height);
+                }
+
+                span = new EqualizedSpan(top, bottom);
+            }
+
+            var cell = span.Value;
             if (OperatingSystem.IsBrowser() || glyphs.Count < ParallelThreshold)
             {
                 for (var i = 0; i < glyphs.Count; i++)
-                    glyphs[i] = EqualizeCellHeight(glyphs[i], targetHeight);
+                    glyphs[i] = EqualizeCellHeight(glyphs[i], baseLine, cell);
             }
             else
             {
                 Parallel.For(0, glyphs.Count, i =>
-                    glyphs[i] = EqualizeCellHeight(glyphs[i], targetHeight));
+                    glyphs[i] = EqualizeCellHeight(glyphs[i], baseLine, cell));
             }
         }
 
@@ -632,14 +666,6 @@ internal sealed class PreparedRasterization : IDisposable
         var rasterizedCodepoints = new HashSet<int>(glyphs.Select(g => g.Codepoint));
         var failedCodepoints = codepointList.Where(cp => !rasterizedCodepoints.Contains(cp)).ToList();
 
-        // Capture rasterizer-provided values (once) so the result stays valid after disposal
-        if (!_rasterizerProvidedCaptured)
-        {
-            _rasterizerFontMetrics = _rasterizer.GetFontMetrics(_rasterOptions);
-            _rasterizerKerningPairs = _rasterizer.GetKerningPairs(_rasterOptions);
-            _rasterizerProvidedCaptured = true;
-        }
-
         return new RasterizationResult
         {
             FontInfo = FontInfo,
@@ -652,6 +678,7 @@ internal sealed class PreparedRasterization : IDisposable
             RasterizerFontMetrics = _rasterizerFontMetrics,
             RasterizerKerningPairs = _rasterizerKerningPairs,
             RawGlyphsForVariants = rawGlyphsForVariants,
+            EqualizedSpan = span,
             ChannelOutlineMasks = routedMasks is null ? null : CollectRoutedMasks(glyphs, routedMasks)
         };
     }
@@ -1039,24 +1066,28 @@ internal sealed class PreparedRasterization : IDisposable
         }
     }
 
-    /// <summary>Pads a glyph bitmap to the target height for uniform cell sizes.</summary>
-    private static RasterizedGlyph EqualizeCellHeight(RasterizedGlyph glyph, int targetHeight)
+    /// <summary>
+    /// Places a glyph in an equalized cell: <paramref name="cell"/>'s rows of the line (row 0 is the
+    /// line top, <paramref name="baseLine"/> the baseline), so every cell has the same height and
+    /// top, and the baseline on the same row.
+    /// </summary>
+    private static RasterizedGlyph EqualizeCellHeight(RasterizedGlyph glyph, int baseLine, EqualizedSpan cell)
     {
-        if (glyph.Height >= targetHeight)
-            return glyph;
-
         var bpp = glyph.Format == PixelFormat.Rgba32 ? 4 : 1;
         var newPitch = glyph.Width * bpp;
-        var dst = new byte[newPitch * targetHeight];
+        var height = cell.Bottom - cell.Top;
+        var dst = new byte[newPitch * height];
 
-        // Copy the original bitmap at the top (yoffset will handle alignment).
+        var firstRow = baseLine - glyph.Metrics.BearingY - cell.Top;
         for (var row = 0; row < glyph.Height; row++)
         {
             var srcOffset = row * glyph.Pitch;
-            var dstOffset = row * newPitch;
+            var dstRow = firstRow + row;
+            if (dstRow < 0 || dstRow >= height)
+                continue;
             var rowBytes = Math.Min(glyph.Width * bpp, glyph.BitmapData.Length - srcOffset);
             if (rowBytes > 0)
-                Array.Copy(glyph.BitmapData, srcOffset, dst, dstOffset, rowBytes);
+                Array.Copy(glyph.BitmapData, srcOffset, dst, dstRow * newPitch, rowBytes);
         }
 
         return new RasterizedGlyph
@@ -1065,9 +1096,9 @@ internal sealed class PreparedRasterization : IDisposable
             GlyphIndex = glyph.GlyphIndex,
             BitmapData = dst,
             Width = glyph.Width,
-            Height = targetHeight,
+            Height = height,
             Pitch = newPitch,
-            Metrics = glyph.Metrics,
+            Metrics = glyph.Metrics with { BearingY = baseLine - cell.Top, Height = height },
             Format = glyph.Format
         };
     }
@@ -1129,3 +1160,10 @@ internal sealed class PreparedRasterization : IDisposable
         };
     }
 }
+
+/// <summary>
+/// An equalized cell's rows relative to the line top (row 0; the baseline is at <c>base</c>):
+/// <see cref="Top"/> is 0 unless a glyph reaches above the line, <see cref="Bottom"/> (exclusive)
+/// is <c>lineHeight</c> unless one reaches below it.
+/// </summary>
+internal readonly record struct EqualizedSpan(int Top, int Bottom);

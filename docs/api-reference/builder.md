@@ -87,7 +87,7 @@ Call exactly one of these before `Build()`.
 | `WithPackingAlgorithm(PackingAlgorithm algorithm)` | MaxRects or Skyline. |
 | `WithPowerOfTwo(bool powerOfTwo = true)` | Round texture dimensions up to powers of two. |
 | `WithAutofitTexture(bool autofit = true)` | Shrink the texture to fit glyphs tightly. |
-| `WithEqualizeCellHeights(bool equalize = true)` | Pad all glyph cells to the same height. |
+| `WithEqualizeCellHeights(bool equalize = true)` | Make every glyph cell span the whole line (BMFont `useFixedHeight`). |
 | `WithForceOffsetsToZero(bool force = true)` | Zero out all glyph x/y offsets. |
 | `WithTextureFormat(TextureFormat format)` | PNG, TGA, or DDS. |
 | `WithPackingEfficiency(float efficiency)` | Hint for atlas size estimation (`0.0`-`1.0`). |

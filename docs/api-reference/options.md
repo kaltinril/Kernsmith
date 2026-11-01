@@ -96,7 +96,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 | `PackingAlgorithm` | `PackingAlgorithm` | `MaxRects` | MaxRects or Skyline. |
 | `PowerOfTwo` | `bool` | `true` | Round dimensions up to powers of two. |
 | `AutofitTexture` | `bool` | `false` | Pick the smallest power-of-two texture that fits; max width/height remain an upper bound (the chosen size is capped to them). |
-| `EqualizeCellHeights` | `bool` | `false` | Pad all glyph cells to a common height and baseline. |
+| `EqualizeCellHeights` | `bool` | `false` | Every cell spans the whole line (BMFont `useFixedHeight`): `yoffset` 0, `height` = `lineHeight`, baseline on row `base`; grown for any glyph reaching outside the line box. |
 | `ForceOffsetsToZero` | `bool` | `false` | Zero out all xoffset/yoffset values. |
 | `TextureFormat` | `TextureFormat` | `Png` | PNG, TGA, or DDS. |
 | `SizeConstraints` | `AtlasSizeConstraints?` | `null` | Force square, power-of-two, or fixed width. |

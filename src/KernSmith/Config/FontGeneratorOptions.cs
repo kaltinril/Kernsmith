@@ -211,7 +211,10 @@ public class FontGeneratorOptions
     public bool AutofitTexture { get; set; }
 
     /// <summary>
-    /// If true, pads all glyph cells to the same height and aligns them to a common baseline.
+    /// If true, every glyph cell spans the whole line, as BMFont's <c>useFixedHeight</c> does:
+    /// <c>yoffset</c> 0 and <c>height</c> = <c>lineHeight</c> for every char, with the baseline at
+    /// row <c>base</c> of every cell. A glyph reaching above or below the line box grows every
+    /// cell to cover it (the same top and height for all).
     /// </summary>
     public bool EqualizeCellHeights { get; set; }
 
