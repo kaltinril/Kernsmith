@@ -16,11 +16,10 @@ public class SdfAtlasSizeQueryTests
     private static readonly byte[] FontData =
         File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Roboto-Regular.ttf"));
 
-    // FreeType's synthetic bold metrics are an approximation of their own (twice the embolden
-    // strength) with or without SDF, so only its unstyled metrics are held to the bitmap here.
     public static TheoryData<string, bool, int> Cases() => new()
     {
         { "FreeType", false, 8 },
+        { "FreeType", true, 8 },
         { "FreeType", false, 4 },
         { "StbTrueType", false, 8 },
         { "StbTrueType", true, 8 },
@@ -35,11 +34,23 @@ public class SdfAtlasSizeQueryTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    public void GetGlyphMetrics_Sdf_MatchesRasterizedGlyphBox(string backend, bool bold, int spread)
+    public void GetGlyphMetrics_Sdf_MatchesRasterizedGlyphBox(string backend, bool bold, int spread) =>
+        AssertMetricsMatchGlyphs(backend, new RasterOptions { Size = 32, Sdf = true, SdfSpread = spread, Bold = bold });
+
+    // #276: FreeType's synthetic bold box grew by twice the embolden strength, though
+    // FT_Outline_Embolden grows the outline by the strength in all.
+    [Theory]
+    [InlineData("FreeType", 32f)]
+    [InlineData("FreeType", 12f)]
+    [InlineData("FreeType", 72f)]
+    [InlineData("StbTrueType", 32f)]
+    public void GetGlyphMetrics_SyntheticBold_MatchesRasterizedGlyphBox(string backend, float size) =>
+        AssertMetricsMatchGlyphs(backend, new RasterOptions { Size = size, Bold = true });
+
+    private static void AssertMetricsMatchGlyphs(string backend, RasterOptions options)
     {
         using var rasterizer = Create(backend);
         rasterizer.LoadFont(FontData);
-        var options = new RasterOptions { Size = 32, Sdf = true, SdfSpread = spread, Bold = bold };
 
         var mismatches = new List<string>();
         for (int cp = 33; cp <= 126; cp++)
