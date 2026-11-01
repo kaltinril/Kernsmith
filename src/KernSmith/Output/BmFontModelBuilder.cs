@@ -420,8 +420,8 @@ internal static class BmFontModelBuilder
             AdvanceAdjustY = advanceAdjustY
         };
 
-        // Only include metadata when there are extended fields worth storing.
-        // GeneratorVersion alone is always present, so we check for extras.
-        return meta;
+        // Written only when it carries a field beyond GeneratorVersion (REF-05), so a default
+        // font is a plain BMFont file with no kernsmith line, XML element or binary block 6.
+        return meta.HasExtendedFields ? meta : null;
     }
 }

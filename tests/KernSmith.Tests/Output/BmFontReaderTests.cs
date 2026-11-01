@@ -454,7 +454,9 @@ public sealed class KernSmithReaderTests
             Characters = CharacterSet.Ascii
         });
 
-        result.Model.Extended!.AdvanceAdjustY.ShouldBeNull();
+        // With nothing else extended, there is no extended metadata at all.
+        result.Model.Extended?.AdvanceAdjustY.ShouldBeNull();
+        result.FntText.ShouldNotContain("advanceAdjustY", Case.Sensitive);
     }
 
     // ------------------------------------------------------------------
