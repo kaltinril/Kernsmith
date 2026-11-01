@@ -6,6 +6,8 @@ A pure C# rasterizer backend for KernSmith using StbTrueTypeSharp.
 
 This package provides a cross-platform rasterizer with zero native dependencies. It supports SDF rendering and runs on Windows, Linux, macOS, Android, iOS, Mac Catalyst, Blazor WASM, and serverless environments -- see the [platform support table](https://github.com/kaltinril/Kernsmith#platform-support).
 
+> **Trusted fonts only.** StbTrueType is built on stb_truetype, which does no bounds checking of font data (its authors state it must not be used on untrusted font files). A malformed font can crash the process rather than throw an exception. For fonts from users, uploads or URLs, use the Native or FreeType backend.
+
 **Platform**: Cross-platform (`net8.0`, `net10.0`). No native libraries required.
 
 ## Usage
