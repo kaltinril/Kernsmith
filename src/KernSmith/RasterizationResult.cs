@@ -20,6 +20,9 @@ internal sealed class RasterizationResult
     /// </summary>
     public float EffectiveSize { get; init; }
 
+    /// <summary>The super-sample level the glyphs were rendered at (1 for LCD), the <c>.fnt</c> <c>aa</c>.</summary>
+    public int SuperSampleLevel { get; init; } = 1;
+
     /// <summary>
     /// Rasterizer-provided font-wide metrics, or null to fall back to TTF table calculation.
     /// </summary>

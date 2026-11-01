@@ -57,6 +57,13 @@ internal sealed class PreparedRasterization : IDisposable
     /// </summary>
     public float EffectiveSize { get; }
 
+    /// <summary>
+    /// The super-sample level glyphs are rendered at: <see cref="FontGeneratorOptions.SuperSampleLevel"/>
+    /// clamped to 1-4, or 1 for an LCD render (never super sampled). What the <c>.fnt</c> writes as
+    /// <c>aa</c>.
+    /// </summary>
+    public int SuperSampleLevel { get; }
+
     private PreparedRasterization(
         byte[] fontData,
         FontInfo fontInfo,
@@ -66,6 +73,7 @@ internal sealed class PreparedRasterization : IDisposable
         RasterOptions rasterOptions,
         RasterOptions effectiveRasterOptions,
         float effectiveSize,
+        int superSampleLevel,
         int renderScale,
         List<IGlyphEffect> effects,
         bool hasEffects,
@@ -80,6 +88,7 @@ internal sealed class PreparedRasterization : IDisposable
         _rasterOptions = rasterOptions;
         _effectiveRasterOptions = effectiveRasterOptions;
         EffectiveSize = effectiveSize;
+        SuperSampleLevel = superSampleLevel;
         _renderScale = renderScale;
         _effects = effects;
         _hasEffects = hasEffects;
@@ -352,7 +361,7 @@ internal sealed class PreparedRasterization : IDisposable
 
             return new PreparedRasterization(
                 fontData, fontInfo, options, rasterizer, ownsRasterizer,
-                rasterOptions, effectiveRasterOptions, effectiveSize, renderScale,
+                rasterOptions, effectiveRasterOptions, effectiveSize, ssLevel, renderScale,
                 effects, hasEffects, activePostProcessors, vectorOutline);
         }
         catch
@@ -580,6 +589,7 @@ internal sealed class PreparedRasterization : IDisposable
             FailedCodepoints = failedCodepoints,
             Options = options,
             EffectiveSize = EffectiveSize,
+            SuperSampleLevel = SuperSampleLevel,
             RasterizerFontMetrics = _rasterizerFontMetrics,
             RasterizerKerningPairs = _rasterizerKerningPairs,
             RawGlyphsForVariants = rawGlyphsForVariants,

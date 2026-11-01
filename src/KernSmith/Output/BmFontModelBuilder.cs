@@ -24,7 +24,8 @@ internal static class BmFontModelBuilder
         int? overrideScaleH = null,
         float? effectiveSize = null,
         RasterizerFontMetrics? rasterizerFontMetrics = null,
-        IReadOnlyList<ScaledKerningPair>? rasterizerKerningPairs = null)
+        IReadOnlyList<ScaledKerningPair>? rasterizerKerningPairs = null,
+        int superSampleLevel = 1)
     {
         // The effective ppem used for rasterization. When cell-height scaling is
         // applied, this is smaller than options.Size. For metric calculations we
@@ -32,7 +33,7 @@ internal static class BmFontModelBuilder
         // Backends render at size × Dpi / 72 pixels per em, so font-unit metrics scale by it too.
         var metricSize = (float)((effectiveSize ?? options.Size) * DpiScale(options));
 
-        var info = BuildInfo(fontInfo, options);
+        var info = BuildInfo(fontInfo, options, superSampleLevel);
 
         var (lineHeight, baseLine) = ComputeLineMetrics(fontInfo, metricSize, rasterizerFontMetrics, options.HeightPercent);
 
@@ -190,7 +191,9 @@ internal static class BmFontModelBuilder
     /// Shared with <see cref="BmFontIncrementalSession"/> so incremental models
     /// stay identical to full-generate models.
     /// </summary>
-    internal static InfoBlock BuildInfo(FontInfo fontInfo, FontGeneratorOptions options)
+    /// <param name="superSampleLevel">The level the glyphs were rendered at
+    /// (<see cref="PreparedRasterization.SuperSampleLevel"/>), written as <c>aa</c>.</param>
+    internal static InfoBlock BuildInfo(FontInfo fontInfo, FontGeneratorOptions options, int superSampleLevel)
     {
         return new InfoBlock(
             Face: fontInfo.FamilyName,
@@ -203,7 +206,7 @@ internal static class BmFontModelBuilder
             // BMFont writes its height percent and super-sample level here (the stretch clamps to 10%).
             StretchH: Math.Max(10, options.HeightPercent),
             Charset: "",
-            Aa: Math.Clamp(options.SuperSampleLevel, 1, 4),
+            Aa: superSampleLevel,
             Padding: options.Padding,
             Spacing: options.Spacing,
             Outline: options.Outline);

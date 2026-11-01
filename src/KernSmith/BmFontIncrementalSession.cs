@@ -587,7 +587,7 @@ public sealed class BmFontIncrementalSession : IDisposable
 
     private BmFontModel BuildModel()
     {
-        var info = _existingInfo ?? BmFontModelBuilder.BuildInfo(_prepared.FontInfo, _options);
+        var info = _existingInfo ?? BmFontModelBuilder.BuildInfo(_prepared.FontInfo, _options, _prepared.SuperSampleLevel);
         var (lineHeight, baseLine) = _lineMetrics ?? default;
         var common = BmFontModelBuilder.BuildCommon(
             _options, lineHeight, baseLine, PageWidth, PageHeight, PageCount);
