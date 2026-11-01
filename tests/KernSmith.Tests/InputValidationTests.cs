@@ -175,6 +175,22 @@ public class InputValidationTests
         Should.Throw<ArgumentOutOfRangeException>(act);
     }
 
+    [Fact]
+    public void Generate_SizeNaN_ThrowsArgumentOutOfRangeException()
+    {
+        var act = () => BmFont.Generate(LoadTestFont(), new FontGeneratorOptions { Size = float.NaN });
+
+        Should.Throw<ArgumentOutOfRangeException>(act).Message.ShouldContain("Size must be", Case.Sensitive);
+    }
+
+    [Fact]
+    public void QueryAtlasSize_SizeNaN_ThrowsArgumentOutOfRangeException()
+    {
+        var act = () => BmFont.QueryAtlasSize(LoadTestFont(), new FontGeneratorOptions { Size = float.NaN });
+
+        Should.Throw<ArgumentOutOfRangeException>(act).Message.ShouldContain("Size must be", Case.Sensitive);
+    }
+
     // ---------------------------------------------------------------
     // A10 — MaxTextureWidth / MaxTextureHeight validation
     // ---------------------------------------------------------------

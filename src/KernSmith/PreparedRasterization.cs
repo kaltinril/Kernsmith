@@ -106,7 +106,7 @@ internal sealed class PreparedRasterization : IDisposable
     {
         ArgumentNullException.ThrowIfNull(fontData);
 
-        if (options.Size <= 0 || options.Size > 10000)
+        if (!(options.Size > 0 && options.Size <= 10000)) // NaN fails both
             throw new ArgumentOutOfRangeException(nameof(options), $"Size must be between 1 and 10000, was {options.Size}.");
 
         // 0. Auto-detect and decompress WOFF/WOFF2 to standard sfnt

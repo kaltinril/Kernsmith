@@ -851,7 +851,7 @@ public static class BmFont
     {
         options ??= new FontGeneratorOptions();
 
-        if (options.Size <= 0 || options.Size > 10000)
+        if (!(options.Size > 0 && options.Size <= 10000)) // NaN fails both
             throw new ArgumentOutOfRangeException(nameof(options), $"Size must be between 1 and 10000, was {options.Size}.");
 
         // Auto-detect and decompress WOFF/WOFF2

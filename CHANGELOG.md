@@ -92,6 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A `.bmfc` fallback character U+0001-U+0009 was written as a single digit (`fallbackChar=5`) and read back as that digit (`'5'`, U+0035), because the reader takes a one-character value literally. The codepoint is now written with at least two digits (`05`). `BmfcConfigReader.Parse(string)` also skips a leading byte order mark, as `Read` and the Hiero reader already did; before, a BOM-prefixed first key was ignored.
 - The desktop UI: opening a project whose font file no longer exists kept the previously loaded font, so the project generated (and re-saved) with a font it does not name and the status bar showed the old family. The font is now unloaded and the status bar names the missing file. Choosing a system font also kept the face index (and face list) of a font collection loaded before it, so it could render the wrong face; it now takes the system font's own face.
 - The fallback character was recorded in `ExtendedMetadata.FallbackCharacter` but never written to the `.fnt`, so it was lost on a save and reload. It is now the `fallbackChar` field (its codepoint) of the `kernsmith` line, the XML `<kernsmith>` element and the binary block 6, and `BmFontReader` reads it back.
+- `Size = NaN` passed option validation (every comparison with NaN is false) and failed later with an `OverflowException`; `Generate` and `QueryAtlasSize` now reject it with the same `ArgumentOutOfRangeException` as any other size outside 1-10000.
 
 ## [0.24.0] - 2026-10-18
 
