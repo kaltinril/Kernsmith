@@ -34,6 +34,8 @@ public class QueryAtlasSizeAccuracyTests
         ["shadow"] = o => { o.ShadowOffsetX = 3; o.ShadowOffsetY = -2; o.ShadowBlur = 2; },
         ["outline-shadow"] = o => { o.Outline = 2; o.ShadowOffsetX = 2; o.ShadowOffsetY = 2; o.ShadowBlur = 1; },
         ["supersample-2"] = o => o.SuperSampleLevel = 2,
+        ["supersample-4"] = o => o.SuperSampleLevel = 4,
+        ["outline-shadow-supersample-2"] = o => { o.SuperSampleLevel = 2; o.Outline = 2; o.ShadowOffsetX = 3; o.ShadowOffsetY = 3; o.ShadowBlur = 1; },
         ["height-150"] = o => o.HeightPercent = 150,
         ["bold"] = o => o.Bold = true,
     };

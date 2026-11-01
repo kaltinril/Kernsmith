@@ -412,8 +412,8 @@ internal sealed class PreparedRasterization : IDisposable
     /// <summary>
     /// The size <see cref="RasterizeAndProcess"/> would give a glyph, from the backend's
     /// metrics alone (no rasterization), or null when the backend has no glyph for it: measured
-    /// at the render size, height-stretched, grown by the baked effects, downscaled from the
-    /// render scale, and a blank glyph given its outline cell. Keep in sync with
+    /// at the render size, height-stretched, downscaled from the render scale (rounding up), grown
+    /// by the baked effects, and a blank glyph given its outline cell. Keep in sync with
     /// <see cref="RasterizeAndProcess"/>; custom glyphs, post-processors, channel-routed
     /// effects and cell-height equalization are not modelled.
     /// </summary>
@@ -428,19 +428,20 @@ internal sealed class PreparedRasterization : IDisposable
         if (width > 0 && height > 0)
         {
             if (Options.HeightPercent != 100)
-                height = Math.Max(1, height * Options.HeightPercent / 100);
+                height = Math.Max(1, height * Math.Max(10, Options.HeightPercent) / 100);
+
+            // The downscale runs before the effects and rounds the size up (SuperSampleDownscale).
+            if (_renderScale > 1)
+            {
+                width = (width + _renderScale - 1) / _renderScale;
+                height = (height + _renderScale - 1) / _renderScale;
+            }
 
             if (_effects.Count > 0)
             {
                 var (left, top, right, bottom) = GlyphCompositor.Margins(_effects);
                 width += left + right;
                 height += top + bottom;
-            }
-
-            if (_renderScale > 1)
-            {
-                width = Math.Max(1, width / _renderScale);
-                height = Math.Max(1, height / _renderScale);
             }
         }
         else if (Options.Outline > 0 && metrics.Advance > 0)
