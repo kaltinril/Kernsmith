@@ -614,10 +614,20 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (err != FT_Error.FT_Err_Ok)
             return;
 
-        // Adjust metrics to match FreeType's FT_GlyphSlot_Embolden behavior.
-        slot->metrics.width += (IntPtr)(2 * strength);
-        slot->metrics.height += (IntPtr)(2 * strength);
-        slot->metrics.horiBearingY += (IntPtr)strength;
+        // The box comes from the emboldened outline's control box rounded outward to whole
+        // pixels, as FreeType presets an anti-aliased bitmap from it: FT_Outline_Embolden grows
+        // the outline by about `strength` in all, half per side, so a fixed adjustment misstates
+        // it, and GetGlyphMetrics must describe the bitmap RasterizeGlyph returns.
+        FreeTypeNative.FT_BBox cbox;
+        FreeTypeNative.FT_Outline_Get_CBox(&slot->outline, &cbox);
+        var xMin = cbox.xMin & ~(nint)63;
+        var yMin = cbox.yMin & ~(nint)63;
+        var xMax = (cbox.xMax + 63) & ~(nint)63;
+        var yMax = (cbox.yMax + 63) & ~(nint)63;
+        slot->metrics.width = xMax - xMin;
+        slot->metrics.height = yMax - yMin;
+        slot->metrics.horiBearingX = xMin;
+        slot->metrics.horiBearingY = yMax;
         slot->metrics.horiAdvance += (IntPtr)strength;
         slot->metrics.vertAdvance += (IntPtr)strength;
     }

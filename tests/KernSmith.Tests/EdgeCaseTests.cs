@@ -207,7 +207,7 @@ public class EdgeCaseTests
     }
 
     [Fact]
-    public void Generate_WithEqualizeCellHeights_HeightIsMaxOfAllGlyphs()
+    public void Generate_WithEqualizeCellHeights_HeightSpansTheLineBoxAndEveryGlyph()
     {
         // Arrange
         var fontData = LoadTestFont();
@@ -227,12 +227,15 @@ public class EdgeCaseTests
             EqualizeCellHeights = true
         });
 
-        // Assert — the equalized height should equal the max natural height
-        var maxNaturalHeight = resultWithout.Model.Characters.Max(c => c.Height);
-        var equalizedHeight = resultWith.Model.Characters.First().Height;
+        // Assert — the equalized cell is the line box grown to cover every glyph (BMFont's
+        // useFixedHeight), so it spans from the highest glyph top to the lowest glyph bottom
+        var chars = resultWithout.Model.Characters.Where(c => c.Height > 0).ToList();
+        var top = Math.Min(0, chars.Min(c => c.YOffset));
+        var bottom = Math.Max(resultWithout.Model.Common.LineHeight, chars.Max(c => c.YOffset + c.Height));
+        var equalized = resultWith.Model.Characters.First();
 
-        equalizedHeight.ShouldBe(maxNaturalHeight,
-            "equalized height should match the tallest glyph from non-equalized rendering");
+        equalized.Height.ShouldBe(bottom - top, "equalized height should span the line box and every glyph");
+        equalized.YOffset.ShouldBe(top);
     }
 
     [Fact]
@@ -426,6 +429,31 @@ public class EdgeCaseTests
             ch.XAdvance.ShouldBeLessThan(64,
                 $"glyph {ch.Id} XAdvance should not be at the 4x upscaled size");
         }
+    }
+
+    [Theory]
+    [InlineData(RasterizerBackend.FreeType, 2)]
+    [InlineData(RasterizerBackend.FreeType, 4)]
+    [InlineData(RasterizerBackend.StbTrueType, 2)]
+    public void Generate_WithSuperSampling_BlankGlyphAdvanceIsAtFinalSize(RasterizerBackend backend, int level)
+    {
+        // A space has no bitmap, but its advance was measured at the super-sampled size and must
+        // come back down with the inked glyphs'.
+        var fontData = LoadTestFont();
+        FontGeneratorOptions Options(int ss) => new()
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars(" A"),
+            SuperSampleLevel = ss,
+            Backend = backend,
+        };
+
+        var plain = BmFont.Generate(fontData, Options(1)).Model.Characters.Single(c => c.Id == ' ');
+        var sampled = BmFont.Generate(fontData, Options(level)).Model.Characters.Single(c => c.Id == ' ');
+
+        sampled.XAdvance.ShouldBeInRange(plain.XAdvance - 1, plain.XAdvance + 1);
+        sampled.XOffset.ShouldBeInRange(plain.XOffset - 1, plain.XOffset + 1);
+        sampled.YOffset.ShouldBeInRange(plain.YOffset - 1, plain.YOffset + 1);
     }
 
     #endregion

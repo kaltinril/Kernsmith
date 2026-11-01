@@ -1887,4 +1887,25 @@ public sealed class HieroConfigTests : IDisposable
 
         parsed.Options.Gamma.ShouldBe(2.2f);
     }
+
+    [Fact]
+    public void Write_RangeSpanningSurrogates_SkipsThemAndKeepsTheRest()
+    {
+        // A BMP range such as 0-65535 includes the surrogate block, which has no UTF-16 text
+        // form of its own (and no glyphs); the writer must not throw on it.
+        var config = new BmfcConfig
+        {
+            FontName = "Arial",
+            Options = new FontGeneratorOptions
+            {
+                Size = 24,
+                Characters = CharacterSet.FromRanges((0xD7FE, 0xE001)),
+            },
+        };
+
+        var hiero = HieroConfigWriter.Write(config);
+
+        var parsed = HieroConfigReader.Parse(hiero).Options.Characters.GetCodepoints().ToList();
+        parsed.ShouldBe(new[] { 0xD7FE, 0xD7FF, 0xE000, 0xE001 });
+    }
 }

@@ -28,6 +28,24 @@ public class RenderToExistingTests
         return encoder.Encode(pixels, width, height, PixelFormat.Rgba32);
     }
 
+    [Fact]
+    public void TargetRegion_WithCustomChannels_ThrowsNotSupported()
+    {
+        // The target-region path never runs the channel compositor: a routed outline was
+        // silently dropped (Roboto 'I', Outline 3: 3x18 cells where Generate gives 9x24).
+        var options = new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.FromChars("I"),
+            Outline = 3,
+            Channels = new ChannelConfig(Alpha: ChannelContent.Outline),
+            TargetRegion = new AtlasTargetRegion { SourcePngData = CreateTestPng(256, 256), Width = 256, Height = 256 },
+        };
+
+        var ex = Should.Throw<NotSupportedException>(() => BmFont.Generate(FontData, options));
+        ex.Message.ShouldContain("Channels", Case.Sensitive);
+    }
+
     // ---------------------------------------------------------------
     // 1. Glyphs appear at correct offset — output image matches source dimensions
     // ---------------------------------------------------------------

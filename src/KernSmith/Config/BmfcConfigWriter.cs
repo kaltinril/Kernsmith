@@ -47,66 +47,66 @@ public static class BmfcConfigWriter
 
         // Font settings
         sb.AppendLine("# font settings");
-        sb.AppendLine($"fontName={config.FontName ?? ""}");
-        sb.AppendLine($"fontFile={FormatPath(config.FontFile, relativeBasePath)}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"fontName={config.FontName ?? ""}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"fontFile={FormatPath(config.FontFile, relativeBasePath)}");
         // .bmfc is an integer-only format; round here since FontGeneratorOptions.Size is float.
         var fontSize = (int)Math.Round(options.Size);
         if (options.Size != Math.Round(options.Size))
             Debug.WriteLine($"[BmfcConfigWriter] Fractional font size {options.Size.ToString(CultureInfo.InvariantCulture)} was rounded to {fontSize} for the .bmfc integer fontSize field; this is lossy.");
         if (options.MatchCharHeight)
             fontSize = -fontSize;
-        sb.AppendLine($"fontSize={fontSize}");
-        sb.AppendLine($"isBold={(options.Bold ? 1 : 0)}");
-        sb.AppendLine($"isItalic={(options.Italic ? 1 : 0)}");
-        sb.AppendLine($"useSmoothing={(options.AntiAlias == AntiAliasMode.None ? 0 : 1)}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"fontSize={fontSize}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"isBold={(options.Bold ? 1 : 0)}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"isItalic={(options.Italic ? 1 : 0)}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"useSmoothing={(options.AntiAlias == AntiAliasMode.None ? 0 : 1)}");
         // BMFont's `aa` is the supersampling factor (1, 2 or 4), not the anti-alias mode --
         // which is also how BmfcConfigReader reads it. The mode itself rides on useSmoothing
         // (for None) plus the `antiAlias` extension below (for Light/Lcd).
-        sb.AppendLine($"aa={options.SuperSampleLevel}");
-        sb.AppendLine($"useHinting={(options.EnableHinting ? 1 : 0)}");
-        sb.AppendLine($"scaleH={options.HeightPercent}");
-        sb.AppendLine($"dontIncludeKerningPairs={(options.Kerning ? 0 : 1)}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"aa={options.SuperSampleLevel}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"useHinting={(options.EnableHinting ? 1 : 0)}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"scaleH={options.HeightPercent}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"dontIncludeKerningPairs={(options.Kerning ? 0 : 1)}");
         sb.AppendLine();
 
         // Character alignment
         sb.AppendLine("# character alignment");
         var pad = options.Padding;
-        sb.AppendLine($"paddingUp={pad.Up}");
-        sb.AppendLine($"paddingDown={pad.Down}");
-        sb.AppendLine($"paddingRight={pad.Right}");
-        sb.AppendLine($"paddingLeft={pad.Left}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"paddingUp={pad.Up}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"paddingDown={pad.Down}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"paddingRight={pad.Right}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"paddingLeft={pad.Left}");
         var spc = options.Spacing;
-        sb.AppendLine($"spacingHoriz={spc.Horizontal}");
-        sb.AppendLine($"spacingVert={spc.Vertical}");
-        sb.AppendLine($"useFixedHeight={(options.EqualizeCellHeights ? 1 : 0)}");
-        sb.AppendLine($"forceZero={(options.ForceOffsetsToZero ? 1 : 0)}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"spacingHoriz={spc.Horizontal}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"spacingVert={spc.Vertical}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"useFixedHeight={(options.EqualizeCellHeights ? 1 : 0)}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"forceZero={(options.ForceOffsetsToZero ? 1 : 0)}");
         sb.AppendLine();
 
         // Output file
         sb.AppendLine("# output file");
-        sb.AppendLine($"outWidth={options.MaxTextureWidth}");
-        sb.AppendLine($"outHeight={options.MaxTextureHeight}");
-        sb.AppendLine($"fontDescFormat={FormatOutputFormat(config.OutputFormat)}");
-        sb.AppendLine($"textureFormat={FormatTextureFormat(options.TextureFormat)}");
-        sb.AppendLine($"fourChnlPacked={(options.ChannelPacking ? 1 : 0)}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"outWidth={options.MaxTextureWidth}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"outHeight={options.MaxTextureHeight}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"fontDescFormat={FormatOutputFormat(config.OutputFormat)}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"textureFormat={FormatTextureFormat(options.TextureFormat)}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"fourChnlPacked={(options.ChannelPacking ? 1 : 0)}");
         WriteChannelConfig(sb, options.Channels);
         sb.AppendLine();
 
         // Outline
         sb.AppendLine("# outline");
-        sb.AppendLine($"outlineThickness={options.Outline}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"outlineThickness={options.Outline}");
         sb.AppendLine();
 
         // Selected chars
         sb.AppendLine("# selected chars");
-        sb.AppendLine($"chars={FormatChars(options.Characters)}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"chars={FormatChars(options.Characters)}");
         sb.AppendLine();
 
         // Output path (if set)
         if (!string.IsNullOrEmpty(config.OutputPath))
         {
             sb.AppendLine("# output path");
-            sb.AppendLine($"outputPath={FormatPath(config.OutputPath, relativeBasePath)}");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"outputPath={FormatPath(config.OutputPath, relativeBasePath)}");
             sb.AppendLine();
         }
 
@@ -114,94 +114,95 @@ public static class BmfcConfigWriter
         var extensions = new StringBuilder();
         if (options.GradientStartR.HasValue && options.GradientEndR.HasValue)
         {
-            extensions.AppendLine($"gradientTop={FormatColor(options.GradientStartR.Value, options.GradientStartG.GetValueOrDefault(), options.GradientStartB.GetValueOrDefault())}");
-            extensions.AppendLine($"gradientBottom={FormatColor(options.GradientEndR.Value, options.GradientEndG.GetValueOrDefault(), options.GradientEndB.GetValueOrDefault())}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"gradientTop={FormatColor(options.GradientStartR.Value, options.GradientStartG.GetValueOrDefault(), options.GradientStartB.GetValueOrDefault())}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"gradientBottom={FormatColor(options.GradientEndR.Value, options.GradientEndG.GetValueOrDefault(), options.GradientEndB.GetValueOrDefault())}");
         }
         if (options.GradientAngle != 90f)
-            extensions.AppendLine($"gradientAngle={options.GradientAngle.ToString(CultureInfo.InvariantCulture)}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"gradientAngle={options.GradientAngle.ToString(CultureInfo.InvariantCulture)}");
         if (options.GradientMidpoint != 0.5f)
-            extensions.AppendLine($"gradientMidpoint={options.GradientMidpoint.ToString(CultureInfo.InvariantCulture)}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"gradientMidpoint={options.GradientMidpoint.ToString(CultureInfo.InvariantCulture)}");
         if (options.GradientOffset != 0f)
-            extensions.AppendLine($"gradientOffset={options.GradientOffset.ToString(CultureInfo.InvariantCulture)}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"gradientOffset={options.GradientOffset.ToString(CultureInfo.InvariantCulture)}");
         if (options.GradientScale != 1f)
-            extensions.AppendLine($"gradientScale={options.GradientScale.ToString(CultureInfo.InvariantCulture)}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"gradientScale={options.GradientScale.ToString(CultureInfo.InvariantCulture)}");
         if (options.GradientCyclic)
             extensions.AppendLine("gradientCyclic=1");
         if (options.ShadowOffsetX != 0)
-            extensions.AppendLine($"shadowOffsetX={options.ShadowOffsetX}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"shadowOffsetX={options.ShadowOffsetX}");
         if (options.ShadowOffsetY != 0)
-            extensions.AppendLine($"shadowOffsetY={options.ShadowOffsetY}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"shadowOffsetY={options.ShadowOffsetY}");
         if (options.ShadowR != 0 || options.ShadowG != 0 || options.ShadowB != 0)
-            extensions.AppendLine($"shadowColor={FormatColor(options.ShadowR, options.ShadowG, options.ShadowB)}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"shadowColor={FormatColor(options.ShadowR, options.ShadowG, options.ShadowB)}");
         if (options.ShadowBlur != 0)
-            extensions.AppendLine($"shadowBlur={options.ShadowBlur}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"shadowBlur={options.ShadowBlur}");
         if (options.ShadowBlurKernelSize != 0)
-            extensions.AppendLine($"shadowBlurKernelSize={options.ShadowBlurKernelSize}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"shadowBlurKernelSize={options.ShadowBlurKernelSize}");
         if (options.ShadowBlurPasses != 1)
-            extensions.AppendLine($"shadowBlurPasses={options.ShadowBlurPasses}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"shadowBlurPasses={options.ShadowBlurPasses}");
         if (options.Variants is { Count: > 0 } && options.Variants.Any(v => v.Name == "shadow" && v.Kind == AtlasVariantKind.ShadowSilhouette))
             extensions.AppendLine("variantShadow=1");
         if (options.FillColorR != 255 || options.FillColorG != 255 || options.FillColorB != 255 || options.FillColorA != 255)
-            extensions.AppendLine($"fillColor={options.FillColorR:X2}{options.FillColorG:X2}{options.FillColorB:X2}{options.FillColorA:X2}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"fillColor={options.FillColorR:X2}{options.FillColorG:X2}{options.FillColorB:X2}{options.FillColorA:X2}");
         if (options.SdfSpread != 8f)
-            extensions.AppendLine($"sdfSpread={options.SdfSpread.ToString(CultureInfo.InvariantCulture)}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"sdfSpread={options.SdfSpread.ToString(CultureInfo.InvariantCulture)}");
         if (options.Gamma != 1.8f)
-            extensions.AppendLine($"gamma={options.Gamma.ToString(CultureInfo.InvariantCulture)}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"gamma={options.Gamma.ToString(CultureInfo.InvariantCulture)}");
         if (options.AdvanceAdjustX != 0f)
-            extensions.AppendLine($"advanceAdjustX={options.AdvanceAdjustX.ToString(CultureInfo.InvariantCulture)}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"advanceAdjustX={options.AdvanceAdjustX.ToString(CultureInfo.InvariantCulture)}");
         if (options.AdvanceAdjustY != 0f)
-            extensions.AppendLine($"advanceAdjustY={options.AdvanceAdjustY.ToString(CultureInfo.InvariantCulture)}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"advanceAdjustY={options.AdvanceAdjustY.ToString(CultureInfo.InvariantCulture)}");
         if (options.Outline > 0 && (options.OutlineR != 0 || options.OutlineG != 0 || options.OutlineB != 0))
-            extensions.AppendLine($"outlineColor={FormatColor(options.OutlineR, options.OutlineG, options.OutlineB)}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"outlineColor={FormatColor(options.OutlineR, options.OutlineG, options.OutlineB)}");
         if (options.Outline > 0 && options.OutlineShape != OutlineShape.Round)
-            extensions.AppendLine($"outlineShape={options.OutlineShape.ToString().ToLowerInvariant()}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"outlineShape={options.OutlineShape.ToString().ToLowerInvariant()}");
         if (options.OutlineMode != OutlineMode.Effect)
-            extensions.AppendLine($"outlineMode={options.OutlineMode.ToString().ToLowerInvariant()}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"outlineMode={options.OutlineMode.ToString().ToLowerInvariant()}");
         if (options.WidthPercent != 100)
-            extensions.AppendLine($"widthPercent={options.WidthPercent}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"widthPercent={options.WidthPercent}");
         if (!options.ItalicAngle.Equals(12f))
-            extensions.AppendLine($"italicAngle={options.ItalicAngle.ToString(CultureInfo.InvariantCulture)}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"italicAngle={options.ItalicAngle.ToString(CultureInfo.InvariantCulture)}");
         if (options.Sdf)
             extensions.AppendLine("useSdf=1");
         if (options.SdfScale != 1)
-            extensions.AppendLine($"sdfScale={options.SdfScale}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"sdfScale={options.SdfScale}");
         if (options.SdfMode != SdfMode.None)
-            extensions.AppendLine($"sdfMode={options.SdfMode.ToString().ToLowerInvariant()}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"sdfMode={options.SdfMode.ToString().ToLowerInvariant()}");
         // None is already conveyed by useSmoothing=0 and Grayscale is the default, so only the
         // two modes the standard keys cannot express need an extension.
         if (options.AntiAlias is AntiAliasMode.Light or AntiAliasMode.Lcd)
-            extensions.AppendLine($"antiAlias={options.AntiAlias.ToString().ToLowerInvariant()}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"antiAlias={options.AntiAlias.ToString().ToLowerInvariant()}");
         if (options.LcdFilter != LcdFilter.Default)
-            extensions.AppendLine($"lcdFilter={options.LcdFilter.ToString().ToLowerInvariant()}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"lcdFilter={options.LcdFilter.ToString().ToLowerInvariant()}");
         if (options.LcdSubpixelOrder != LcdSubpixelOrder.Rgb)
-            extensions.AppendLine($"lcdOrder={options.LcdSubpixelOrder.ToString().ToLowerInvariant()}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"lcdOrder={options.LcdSubpixelOrder.ToString().ToLowerInvariant()}");
         if (options.ShadowOpacity != 1.0f)
-            extensions.AppendLine($"shadowOpacity={options.ShadowOpacity.ToString(CultureInfo.InvariantCulture)}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"shadowOpacity={options.ShadowOpacity.ToString(CultureInfo.InvariantCulture)}");
         if (options.HardShadow)
             extensions.AppendLine("hardShadow=1");
         if (options.VariationAxes is { Count: > 0 })
-            extensions.AppendLine($"variationAxes={FormatVariationAxes(options.VariationAxes)}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"variationAxes={FormatVariationAxes(options.VariationAxes)}");
         if (options.PackingAlgorithm != PackingAlgorithm.MaxRects)
             extensions.AppendLine("packer=skyline");
-        // FallbackCodepoint takes precedence over FallbackCharacter
+        // FallbackCodepoint takes precedence over FallbackCharacter. The reader takes a single
+        // character literally, so the codepoint is written with at least two digits ("05").
         if (options.FallbackCodepoint.HasValue)
-            extensions.AppendLine($"fallbackChar={options.FallbackCodepoint.Value}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"fallbackChar={options.FallbackCodepoint.Value:00}");
         else if (options.FallbackCharacter.HasValue)
-            extensions.AppendLine($"fallbackChar={(int)options.FallbackCharacter.Value}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"fallbackChar={(int)options.FallbackCharacter.Value:00}");
         if (options.ColorFont)
             extensions.AppendLine("colorFont=1");
         if (options.ColorPaletteIndex != 0)
-            extensions.AppendLine($"colorPalette={options.ColorPaletteIndex}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"colorPalette={options.ColorPaletteIndex}");
         if (options.FaceIndex != 0)
-            extensions.AppendLine($"faceIndex={options.FaceIndex}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"faceIndex={options.FaceIndex}");
         if (options.Dpi != 72)
-            extensions.AppendLine($"dpi={options.Dpi}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"dpi={options.Dpi}");
         if (!options.PowerOfTwo)
             extensions.AppendLine("powerOfTwo=0");
         if (options.AutofitTexture)
             extensions.AppendLine("autofit=1");
         if (options.Backend != RasterizerBackend.FreeType)
-            extensions.AppendLine($"rasterizer={options.Backend.ToString().ToLowerInvariant()}");
+            extensions.AppendLine(CultureInfo.InvariantCulture, $"rasterizer={options.Backend.ToString().ToLowerInvariant()}");
         if (options.ForceSyntheticBold)
             extensions.AppendLine("forceSyntheticBold=1");
         if (options.ForceSyntheticItalic)
@@ -246,14 +247,14 @@ public static class BmfcConfigWriter
         if (channels is null || channels.IsDefault)
             return;
 
-        sb.AppendLine($"alphaChnl={(int)channels.Alpha}");
-        sb.AppendLine($"redChnl={(int)channels.Red}");
-        sb.AppendLine($"greenChnl={(int)channels.Green}");
-        sb.AppendLine($"blueChnl={(int)channels.Blue}");
-        sb.AppendLine($"invA={(channels.InvertAlpha ? 1 : 0)}");
-        sb.AppendLine($"invR={(channels.InvertRed ? 1 : 0)}");
-        sb.AppendLine($"invG={(channels.InvertGreen ? 1 : 0)}");
-        sb.AppendLine($"invB={(channels.InvertBlue ? 1 : 0)}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"alphaChnl={(int)channels.Alpha}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"redChnl={(int)channels.Red}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"greenChnl={(int)channels.Green}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"blueChnl={(int)channels.Blue}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"invA={(channels.InvertAlpha ? 1 : 0)}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"invR={(channels.InvertRed ? 1 : 0)}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"invG={(channels.InvertGreen ? 1 : 0)}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"invB={(channels.InvertBlue ? 1 : 0)}");
     }
 
     private static int FormatOutputFormat(OutputFormat format) => format switch

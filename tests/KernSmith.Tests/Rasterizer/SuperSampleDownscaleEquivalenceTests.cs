@@ -7,7 +7,8 @@ namespace KernSmith.Tests.Rasterizer;
 /// <summary>
 /// Holds <see cref="PreparedRasterization.SuperSampleDownscale"/> to a frozen copy of its
 /// per-pixel box filter over randomized glyphs (grayscale, RGBA premultiplied, RGBA per
-/// channel; padded pitch; short buffers; glyphs narrower than the level): byte-identical.
+/// channel; padded pitch; short buffers; glyphs narrower than the level): byte-identical. The
+/// reference reads only the glyph's own pixels, never pitch padding or the next row.
 /// </summary>
 public sealed class SuperSampleDownscaleEquivalenceTests
 {
@@ -62,12 +63,15 @@ public sealed class SuperSampleDownscaleEquivalenceTests
     {
         var srcW = glyph.Width;
         var srcH = glyph.Height;
-        var dstW = Math.Max(1, srcW / level);
-        var dstH = Math.Max(1, srcH / level);
+        var dstW = (srcW + level - 1) / level;
+        var dstH = (srcH + level - 1) / level;
         var bpp = glyph.Format == PixelFormat.Rgba32 ? 4 : 1;
         var dst = new byte[dstW * dstH * bpp];
         var srcPitch = glyph.Pitch;
         var area = level * level;
+
+        // Only the glyph's own pixels count; padding, the next row and the buffer's end are 0.
+        bool Inside(int x, int y) => x < srcW && y < srcH;
 
         for (var dy = 0; dy < dstH; dy++)
         {
@@ -83,7 +87,7 @@ public sealed class SuperSampleDownscaleEquivalenceTests
                             for (var sx = 0; sx < level; sx++)
                             {
                                 var srcIdx = (dy * level + sy) * srcPitch + (dx * level + sx) * 4 + c;
-                                if (srcIdx < glyph.BitmapData.Length)
+                                if (Inside(dx * level + sx, dy * level + sy) && srcIdx < glyph.BitmapData.Length)
                                     sum += glyph.BitmapData[srcIdx];
                             }
                         }
@@ -98,7 +102,7 @@ public sealed class SuperSampleDownscaleEquivalenceTests
                         for (var sx = 0; sx < level; sx++)
                         {
                             var srcIdx = (dy * level + sy) * srcPitch + (dx * level + sx);
-                            if (srcIdx < glyph.BitmapData.Length)
+                            if (Inside(dx * level + sx, dy * level + sy) && srcIdx < glyph.BitmapData.Length)
                                 sum += glyph.BitmapData[srcIdx];
                         }
                     }
@@ -112,7 +116,7 @@ public sealed class SuperSampleDownscaleEquivalenceTests
                         for (var sx = 0; sx < level; sx++)
                         {
                             var srcIdx = (dy * level + sy) * srcPitch + (dx * level + sx) * 4;
-                            if (srcIdx + 3 < glyph.BitmapData.Length)
+                            if (Inside(dx * level + sx, dy * level + sy) && srcIdx + 3 < glyph.BitmapData.Length)
                             {
                                 var a = glyph.BitmapData[srcIdx + 3] / 255f;
                                 sumR += glyph.BitmapData[srcIdx] * a;

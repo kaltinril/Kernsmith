@@ -30,12 +30,13 @@ internal sealed class CliOptions
     public List<(int Start, int End)> UnicodeRanges { get; set; } = new();
 
     // Atlas
-    public int MaxTextureSize { get; set; } = 1024;
+    // Null = not given: a --config file then keeps its own value (see MergeConfigIntoOptions).
+    public int? MaxTextureSize { get; set; }
     public int? MaxTextureWidth { get; set; }
     public int? MaxTextureHeight { get; set; }
-    public Padding Padding { get; set; } = new(0);
-    public Spacing Spacing { get; set; } = new(1);
-    public bool? PowerOfTwo { get; set; } = true;
+    public Padding? Padding { get; set; }
+    public Spacing? Spacing { get; set; }
+    public bool? PowerOfTwo { get; set; }
     public PackingAlgorithm PackingAlgorithm { get; set; } = PackingAlgorithm.MaxRects;
     public bool ChannelPacking { get; set; }
     public ChannelConfig? Channels { get; set; }
@@ -62,14 +63,16 @@ internal sealed class CliOptions
     public int ShadowBlurKernelSize { get; set; }
     public int ShadowBlurPasses { get; set; } = 1;
     public bool HardShadow { get; set; }
+    public float ShadowOpacity { get; set; } = 1f;
     public bool ShadowVariant { get; set; }
 
     // Kerning
-    public bool? Kerning { get; set; } = true;
+    public bool? Kerning { get; set; }
 
     // Rendering extras
     public int SuperSampleLevel { get; set; } = 1;
     public char? FallbackCharacter { get; set; }
+    public int? FallbackCodepoint { get; set; }
     public bool? EnableHinting { get; set; }
     public bool EqualizeCellHeights { get; set; }
     public bool ForceOffsetsToZero { get; set; }
@@ -80,8 +83,10 @@ internal sealed class CliOptions
     public bool ColorFont { get; set; }
     public int ColorPaletteIndex { get; set; }
     public float? SdfSpread { get; set; }
+    public int SdfScale { get; set; } = 1;
     public float? Gamma { get; set; }
     public float AdvanceAdjustX { get; set; }
+    public float AdvanceAdjustY { get; set; }
 
     // Rasterizer
     public RasterizerBackend Backend { get; set; } = RasterizerBackend.FreeType;

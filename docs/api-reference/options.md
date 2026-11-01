@@ -96,11 +96,11 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 | `PackingAlgorithm` | `PackingAlgorithm` | `MaxRects` | MaxRects or Skyline. |
 | `PowerOfTwo` | `bool` | `true` | Round dimensions up to powers of two. |
 | `AutofitTexture` | `bool` | `false` | Pick the smallest power-of-two texture that fits; max width/height remain an upper bound (the chosen size is capped to them). |
-| `EqualizeCellHeights` | `bool` | `false` | Pad all glyph cells to a common height and baseline. |
+| `EqualizeCellHeights` | `bool` | `false` | Every cell spans the whole line (BMFont `useFixedHeight`): `yoffset` 0, `height` = `lineHeight`, baseline on row `base`; grown for any glyph reaching outside the line box. |
 | `ForceOffsetsToZero` | `bool` | `false` | Zero out all xoffset/yoffset values. |
 | `TextureFormat` | `TextureFormat` | `Png` | PNG, TGA, or DDS. |
 | `SizeConstraints` | `AtlasSizeConstraints?` | `null` | Force square, power-of-two, or fixed width. |
-| `TargetRegion` | `AtlasTargetRegion?` | `null` | Render glyphs into a region of an existing PNG. Not supported together with `Variants`. |
+| `TargetRegion` | `AtlasTargetRegion?` | `null` | Render glyphs into a region of an existing PNG. Not supported together with `Variants` or a non-default `Channels` configuration. |
 | `Variants` | `IReadOnlyList<AtlasVariant>?` | `null` | Additional character-set renderings (e.g. a dropshadow silhouette) packed into the same shared atlas as the primary glyphs. See [Atlas Variants](../core/atlas-variants.md). |
 
 ## Channels and packing

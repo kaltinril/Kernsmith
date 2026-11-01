@@ -121,7 +121,8 @@ public static class BmFont
     /// <remarks>
     /// Not supported in a session (throws <see cref="NotSupportedException"/>):
     /// <see cref="FontGeneratorOptions.Variants"/>, <see cref="FontGeneratorOptions.ChannelPacking"/>,
-    /// <see cref="FontGeneratorOptions.TargetRegion"/>, <see cref="FontGeneratorOptions.CustomGlyphs"/>.
+    /// <see cref="FontGeneratorOptions.TargetRegion"/>, <see cref="FontGeneratorOptions.CustomGlyphs"/>,
+    /// and a non-default <see cref="FontGeneratorOptions.Channels"/> configuration.
     /// A <see cref="PackingAlgorithm.Skyline"/> configuration — or a custom
     /// <see cref="FontGeneratorOptions.Packer"/> — silently uses MaxRects for
     /// additions (arbitrary packer state cannot be reconstructed incrementally).
@@ -182,6 +183,8 @@ public static class BmFont
             throw new NotSupportedException("FontGeneratorOptions.Variants is not supported in an incremental session.");
         if (options.ChannelPacking)
             throw new NotSupportedException("FontGeneratorOptions.ChannelPacking is not supported in an incremental session.");
+        if (ShouldApplyChannelConfig(options))
+            throw new NotSupportedException("A custom FontGeneratorOptions.Channels configuration is not supported in an incremental session.");
         if (options.TargetRegion is not null)
             throw new NotSupportedException("FontGeneratorOptions.TargetRegion is not supported in an incremental session.");
         if (options.CustomGlyphs is { Count: > 0 })
@@ -198,7 +201,20 @@ public static class BmFont
         using var prepared = PreparedRasterization.Prepare(
             fontData, options, systemFontName, subsetToCharacterSet: true);
         var codepoints = prepared.ResolveCodepoints();
-        return prepared.RasterizeAndProcess(codepoints, equalizeTargetHeight: null);
+        var result = prepared.RasterizeAndProcess(codepoints, equalizeSpan: null);
+
+        // Resolving drops requested characters the font has no glyph for; they failed too, as an
+        // incremental session reports them.
+        var available = prepared.FontInfo.AvailableCodepoints.ToHashSet();
+        var failed = result.FailedCodepoints;
+        var reported = failed.ToHashSet();
+        foreach (var cp in options.Characters.GetCodepoints())
+        {
+            if (!available.Contains(cp) && reported.Add(cp))
+                failed.Add(cp);
+        }
+        failed.Sort();
+        return result;
     }
 
     internal static int EncodeCombinedId(int fontIndex, int codepoint)
@@ -225,6 +241,8 @@ public static class BmFont
             throw new NotSupportedException("FontGeneratorOptions.Variants is not supported together with ChannelPacking.");
         if (options.Variants is { Count: > 0 } && ShouldApplyChannelConfig(options))
             throw new NotSupportedException("FontGeneratorOptions.Variants is not supported together with a custom Channels configuration.");
+        if (options.TargetRegion is not null && ShouldApplyChannelConfig(options))
+            throw new NotSupportedException("FontGeneratorOptions.TargetRegion is not supported together with a custom Channels configuration.");
 
         var metrics = options.CollectMetrics ? new PipelineMetrics() : null;
 
@@ -289,19 +307,12 @@ public static class BmFont
             }
         }
 
-        // Use the larger of the outline/shadow-expanded glyphs (when present) for atlas
-        // sizing/packing so the packed rectangles match the glyphs that actually get
-        // composited. When both outline and shadow channels are configured together, size
-        // against whichever expands each glyph further so neither overlay is clipped.
-        var rectGlyphs = (channelOutlineGlyphs, channelShadowGlyphs) switch
-        {
-            (not null, not null) => channelOutlineGlyphs
-                .Zip(channelShadowGlyphs, (o, s) => o.Width * o.Height >= s.Width * s.Height ? o : s)
-                .ToList(),
-            (not null, null) => channelOutlineGlyphs,
-            (null, not null) => channelShadowGlyphs,
-            _ => glyphs
-        };
+        // Size each packed cell (and, below, its .fnt entry) as the box ChannelCompositor draws:
+        // the union of the glyph and its outline/shadow layers, so neither overlay is clipped or
+        // spills out of the cell, and the offsets put the glyph where it is drawn.
+        IReadOnlyList<RasterizedGlyph> rectGlyphs = channelOutlineGlyphs is null && channelShadowGlyphs is null
+            ? glyphs
+            : glyphs.Select((g, i) => ChannelCompositor.Cell(g, channelOutlineGlyphs?[i], channelShadowGlyphs?[i])).ToList();
         var glyphRects = rectGlyphs.Select(g => new GlyphRect(
             g.Codepoint,
             g.Width + padding.Left + padding.Right + spacing.Horizontal,
@@ -400,7 +411,8 @@ public static class BmFont
                 overrideScaleW: sourceWidth, overrideScaleH: sourceHeight,
                 effectiveSize: rasterResult.EffectiveSize,
                 rasterizerFontMetrics: rasterResult.RasterizerFontMetrics,
-                rasterizerKerningPairs: rasterResult.RasterizerKerningPairs);
+                rasterizerKerningPairs: rasterResult.RasterizerKerningPairs,
+                superSampleLevel: rasterResult.SuperSampleLevel);
             metrics?.End();
 
             return new BmFontResult(model, pages, failedCodepoints, metrics, options, sourceFontFile, sourceFontName);
@@ -470,10 +482,8 @@ public static class BmFont
 
                 if (outlineGlyphs != null || shadowGlyphs != null)
                 {
-                    // Use the per-glyph larger of outline/shadow (rectGlyphs, computed above)
-                    // for the model so .fnt metrics (width, height, xoffset, yoffset, xadvance)
-                    // reflect whichever expansion the packed cell was actually sized for —
-                    // otherwise the unused overlay's pixels would be cropped by the quad.
+                    // The model takes the union cells (rectGlyphs, computed above), so .fnt
+                    // width, height, xoffset and yoffset describe exactly what was drawn.
                     glyphs = rectGlyphs.ToList();
                 }
             }
@@ -494,7 +504,8 @@ public static class BmFont
             var model = BmFontModelBuilder.Build(fontInfo, glyphs, packResult, options, glyphChannels,
                 effectiveSize: rasterResult.EffectiveSize,
                 rasterizerFontMetrics: rasterResult.RasterizerFontMetrics,
-                rasterizerKerningPairs: rasterResult.RasterizerKerningPairs);
+                rasterizerKerningPairs: rasterResult.RasterizerKerningPairs,
+                superSampleLevel: rasterResult.SuperSampleLevel);
             metrics?.End();
 
             return new BmFontResult(model, pages, failedCodepoints, metrics, options, sourceFontFile, sourceFontName);
@@ -573,14 +584,11 @@ public static class BmFont
 
         if (options.AutofitTexture && shared.PageCount > 1)
         {
-            // One-step bump: double the smaller dimension (or next POT), then repack once.
-            if (groupWidth <= groupHeight)
-                groupWidth = groupSizingOptions.PowerOfTwo ? groupWidth * 2 : (int)(groupWidth * 1.5);
-            else
-                groupHeight = groupSizingOptions.PowerOfTwo ? groupHeight * 2 : (int)(groupHeight * 1.5);
-
-            groupWidth = Math.Min(groupWidth, options.MaxTextureWidth);
-            groupHeight = Math.Min(groupHeight, options.MaxTextureHeight);
+            // The same one-step bump Generate applies without variants: the smaller dimension
+            // that can still grow, else the other.
+            (groupWidth, groupHeight) = AtlasSizeEstimator.BumpSize(
+                groupWidth, groupHeight, groupSizingOptions.PowerOfTwo,
+                options.MaxTextureWidth, options.MaxTextureHeight);
 
             (shared, placementsByTag) = AtlasGroupBuilder.Pack(packer, groupSources, groupWidth, groupHeight);
         }
@@ -626,7 +634,8 @@ public static class BmFont
             placementOverride: placementsByTag["primary"],
             effectiveSize: rasterResult.EffectiveSize,
             rasterizerFontMetrics: rasterResult.RasterizerFontMetrics,
-            rasterizerKerningPairs: rasterResult.RasterizerKerningPairs);
+            rasterizerKerningPairs: rasterResult.RasterizerKerningPairs,
+            superSampleLevel: rasterResult.SuperSampleLevel);
         model = BmFontModelBuilder.WithVariantLinks(model, variantOf: null,
             variants: options.Variants.Select(v => v.Name).ToList());
 
@@ -639,7 +648,8 @@ public static class BmFont
                 placementOverride: placementsByTag[variant.Name],
                 effectiveSize: rasterResult.EffectiveSize,
                 rasterizerFontMetrics: rasterResult.RasterizerFontMetrics,
-                rasterizerKerningPairs: rasterResult.RasterizerKerningPairs);
+                rasterizerKerningPairs: rasterResult.RasterizerKerningPairs,
+                superSampleLevel: rasterResult.SuperSampleLevel);
             variantModel = BmFontModelBuilder.WithVariantLinks(variantModel, variantOf: fontInfo.FamilyName, variants: null);
 
             variantModelsDict[variant.Name] = variantModel;
@@ -851,112 +861,65 @@ public static class BmFont
     {
         options ??= new FontGeneratorOptions();
 
-        if (options.Size <= 0 || options.Size > 10000)
-            throw new ArgumentOutOfRangeException(nameof(options), $"Size must be between 1 and 10000, was {options.Size}.");
+        // 1. Parse the font and set up the backend exactly as generation does (cell-height ppem,
+        // synthetic-style guards, anti-alias negotiation, render scale, effects).
+        using var prepared = PreparedRasterization.Prepare(
+            fontData, options, systemFontName: null, subsetToCharacterSet: true);
 
-        // Auto-detect and decompress WOFF/WOFF2
-        if (WoffDecompressor.IsWoff(fontData) || WoffDecompressor.IsWoff2(fontData))
-            fontData = WoffDecompressor.Decompress(fontData);
+        // 2. Resolve character set (fallback included)
+        var codepoints = prepared.ResolveCodepoints();
 
-        // 1. Parse font
-        var fontReader = options.FontReader ?? new TtfFontReader();
-        if (fontReader is TtfFontReader ttfReader)
+        // 3. Size each glyph from its metrics, without rasterizing
+        var padding = options.Padding;
+        var spacing = options.Spacing;
+
+        var glyphRects = new List<GlyphRect>();
+        foreach (var cp in codepoints)
         {
-            ttfReader.RequestedCodepoints = options.Characters.GetCodepointsHashSet();
-            ttfReader.SharedFontBytes = fontData;
-        }
-
-        var fontInfo = fontReader.ReadFont(fontData, options.FaceIndex);
-
-        // 2. Resolve character set
-        var codepoints = options.Characters.Resolve(fontInfo.AvailableCodepoints).ToList();
-        // FallbackCodepoint takes precedence over FallbackCharacter
-        var resolvedFallback = options.FallbackCodepoint
-            ?? (options.FallbackCharacter.HasValue ? (int)options.FallbackCharacter.Value : (int?)null);
-        if (resolvedFallback.HasValue)
-        {
-            if (!codepoints.Contains(resolvedFallback.Value))
-                codepoints.Add(resolvedFallback.Value);
-        }
-
-        // 3. Get metrics without rasterizing
-        var rasterizer = options.Rasterizer
-            ?? RasterizerFactory.Create(options.Backend);
-        try
-        {
-            rasterizer.LoadFont(fontData, options.FaceIndex);
-
-            // Apply variable font axes if specified.
-            if (rasterizer.Capabilities.SupportsVariableFonts
-                && options.VariationAxes is { Count: > 0 }
-                && fontInfo.VariationAxes is { Count: > 0 })
+            if (prepared.MeasureGlyph(cp) is { } size)
             {
-                rasterizer.SetVariationAxes(fontInfo.VariationAxes, options.VariationAxes);
+                glyphRects.Add(new GlyphRect(
+                    cp,
+                    size.Width + padding.Left + padding.Right + spacing.Horizontal,
+                    size.Height + padding.Up + padding.Down + spacing.Vertical));
             }
-
-            var rasterOptions = RasterOptions.FromGeneratorOptions(options) with
-            {
-                AntiAlias = AntiAliasNegotiation.Resolve(
-                    options.AntiAlias, rasterizer.Capabilities.SupportedAntiAliasModes)
-            };
-            var padding = options.Padding;
-            var spacing = options.Spacing;
-
-            var glyphRects = new List<GlyphRect>();
-            foreach (var cp in codepoints)
-            {
-                var m = rasterizer.GetGlyphMetrics(cp, rasterOptions);
-                if (m.HasValue)
-                {
-                    var gm = m.Value;
-                    glyphRects.Add(new GlyphRect(
-                        cp,
-                        gm.Width + padding.Left + padding.Right + spacing.Horizontal,
-                        gm.Height + padding.Up + padding.Down + spacing.Vertical));
-                }
-            }
-
-            // 4. Estimate atlas size
-            var sizingOptions = AtlasSizeEstimator.BuildSizingOptions(options);
-
-            var (estWidth, estHeight) = AtlasSizeEstimator.Estimate(glyphRects, sizingOptions);
-
-            // 5. Apply size constraints if specified.
-            if (options.SizeConstraints is { } sizeConstraints)
-            {
-                var (cw, ch) = AtlasSizeEstimator.ApplyConstraints(
-                    estWidth, estHeight, sizeConstraints, sizingOptions, glyphRects);
-                estWidth = cw;
-                estHeight = ch;
-            }
-
-            // 6. Calculate estimated efficiency
-            long totalGlyphArea = 0;
-            foreach (var r in glyphRects)
-                totalGlyphArea += (long)r.Width * r.Height;
-
-            long atlasArea = (long)estWidth * estHeight;
-            var efficiency = atlasArea > 0 ? (float)totalGlyphArea / atlasArea : 0f;
-
-            // Determine page count estimate (simple: how many full pages worth of glyph area).
-            var pageCount = atlasArea > 0
-                ? Math.Max(1, (int)Math.Ceiling((double)totalGlyphArea / (atlasArea * options.PackingEfficiencyHint)))
-                : 1;
-
-            return new AtlasSizeInfo
-            {
-                Width = estWidth,
-                Height = estHeight,
-                PageCount = pageCount,
-                GlyphCount = glyphRects.Count,
-                EstimatedEfficiency = efficiency
-            };
         }
-        finally
+
+        // 4. Estimate atlas size
+        var sizingOptions = AtlasSizeEstimator.BuildSizingOptions(options);
+
+        var (estWidth, estHeight) = AtlasSizeEstimator.Estimate(glyphRects, sizingOptions);
+
+        // 5. Apply size constraints if specified.
+        if (options.SizeConstraints is { } sizeConstraints)
         {
-            if (options.Rasterizer == null)
-                rasterizer.Dispose();
+            var (cw, ch) = AtlasSizeEstimator.ApplyConstraints(
+                estWidth, estHeight, sizeConstraints, sizingOptions, glyphRects);
+            estWidth = cw;
+            estHeight = ch;
         }
+
+        // 6. Calculate estimated efficiency
+        long totalGlyphArea = 0;
+        foreach (var r in glyphRects)
+            totalGlyphArea += (long)r.Width * r.Height;
+
+        long atlasArea = (long)estWidth * estHeight;
+        var efficiency = atlasArea > 0 ? (float)totalGlyphArea / atlasArea : 0f;
+
+        // Determine page count estimate (simple: how many full pages worth of glyph area).
+        var pageCount = atlasArea > 0
+            ? Math.Max(1, (int)Math.Ceiling((double)totalGlyphArea / (atlasArea * options.PackingEfficiencyHint)))
+            : 1;
+
+        return new AtlasSizeInfo
+        {
+            Width = estWidth,
+            Height = estHeight,
+            PageCount = pageCount,
+            GlyphCount = glyphRects.Count,
+            EstimatedEfficiency = efficiency
+        };
     }
 
     /// <summary>Generates a bitmap font from a config file, auto-detecting .bmfc or .hiero format.</summary>
@@ -1069,6 +1032,14 @@ public static class BmFont
         || channels.Red is ChannelContent.Outline or ChannelContent.GlyphAndOutline
         || channels.Green is ChannelContent.Outline or ChannelContent.GlyphAndOutline
         || channels.Blue is ChannelContent.Outline or ChannelContent.GlyphAndOutline;
+
+    /// <summary>True when a honored channel layout routes shadow content into a channel.</summary>
+    internal static bool RoutesShadow(FontGeneratorOptions options) =>
+        options.Channels is { IsDefault: false } channels
+        && (channels.Alpha == ChannelContent.Shadow
+            || channels.Red == ChannelContent.Shadow
+            || channels.Green == ChannelContent.Shadow
+            || channels.Blue == ChannelContent.Shadow);
 
     /// <summary>Generates multiple BMFonts in batch, with optional parallelism and font caching.</summary>
     /// <param name="jobs">The batch jobs to run.</param>
@@ -1237,7 +1208,21 @@ public static class BmFont
             TextureFormat.Dds => new DdsEncoder(),
             _ => new PngEncoder()
         });
-        var sharedPages = AtlasBuilder.Build(allGlyphs, packResult, maxPadding, encoder);
+        // Each glyph is drawn inside its max-padding rect at its own job's padding, because
+        // that job's .fnt describes the glyph with its own padding (BuildCharEntry).
+        var blitPlacements = packResult.Placements.Select(p =>
+        {
+            var own = jobs[DecodeCombinedId(p.Id).FontIndex].Options.Padding;
+            return new GlyphPlacement(p.Id, p.PageIndex, p.X + own.Left, p.Y + own.Up);
+        }).ToList();
+        var blitPack = new PackResult
+        {
+            Placements = blitPlacements,
+            PageCount = packResult.PageCount,
+            PageWidth = packResult.PageWidth,
+            PageHeight = packResult.PageHeight,
+        };
+        var sharedPages = AtlasBuilder.Build(allGlyphs, blitPack, new Padding(0, 0, 0, 0), encoder);
 
         // 6. For each font, extract placements and build BmFontModel.
         var results = new BatchJobResult[jobs.Count];
@@ -1266,7 +1251,8 @@ public static class BmFont
                     placementOverride: placementOverride,
                     effectiveSize: rr.EffectiveSize,
                     rasterizerFontMetrics: rr.RasterizerFontMetrics,
-                    rasterizerKerningPairs: rr.RasterizerKerningPairs);
+                    rasterizerKerningPairs: rr.RasterizerKerningPairs,
+                    superSampleLevel: rr.SuperSampleLevel);
                 var fontResult = new BmFontResult(model, sharedPages, rr.FailedCodepoints);
 
                 sw.Stop();

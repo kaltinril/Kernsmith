@@ -436,6 +436,29 @@ public class IncrementalSessionTests
     }
 
     [Fact]
+    public void BeginIncremental_WithCustomChannels_ThrowsNotSupported()
+    {
+        // A session never runs the channel compositor: a routed outline was silently dropped
+        // (Roboto 'I', Outline 3: 3x18 cells where Generate gives 9x24).
+        var options = Options();
+        options.Outline = 3;
+        options.Channels = new ChannelConfig(Alpha: ChannelContent.Outline);
+        var ex = Should.Throw<NotSupportedException>(() => BmFont.BeginIncremental(LoadTestFont(), options));
+        ex.Message.ShouldContain("Channels", Case.Sensitive);
+
+        Should.Throw<NotSupportedException>(() =>
+            BmFont.ResumeIncremental(LoadTestFont(), options, BmFont.Generate(LoadTestFont(), Options()).Model));
+    }
+
+    [Fact]
+    public void BeginIncremental_WithDefaultChannels_IsAccepted()
+    {
+        var options = Options();
+        options.Channels = new ChannelConfig();
+        using var session = BmFont.BeginIncremental(LoadTestFont(), options);
+    }
+
+    [Fact]
     public void BeginIncremental_WithTargetRegion_ThrowsNotSupported()
     {
         var options = Options();
@@ -508,20 +531,29 @@ public class IncrementalSessionTests
     }
 
     [Fact]
-    public void ResumeIncremental_EqualizedModel_TallerGlyphThrows()
+    public void ResumeIncremental_EqualizedModel_TallerGlyphSharesTheLineBoxCell()
     {
+        // Equalized cells span the whole line box (BMFont useFixedHeight), so a glyph taller than
+        // every original one ('l' after "ace") still fits the established cell and matches it.
         var fontData = LoadTestFont();
         var genOptions = Options();
         genOptions.EqualizeCellHeights = true;
         genOptions.Characters = CharacterSet.FromChars("ace");
         var generated = BmFont.Generate(fontData, genOptions);
+        var cell = generated.Model.Characters[0];
 
         var resumeOptions = Options();
         resumeOptions.EqualizeCellHeights = true;
         using var session = BmFont.ResumeIncremental(fontData, resumeOptions, generated.Model);
+        session.AddGlyphs("l");
 
-        // 'l' is taller than the x-height cell of "ace" — stable packing forbids growing cells.
-        Should.Throw<InvalidOperationException>(() => session.AddGlyphs("l"));
+        var l = session.CurrentModel.Characters.Single(c => c.Id == 'l');
+        (l.YOffset, l.Height).ShouldBe((cell.YOffset, cell.Height));
+
+        // And it is the cell Generate gives the whole set.
+        genOptions.Characters = CharacterSet.FromChars("acel");
+        var all = BmFont.Generate(fontData, genOptions).Model.Characters.Single(c => c.Id == 'l');
+        (l.YOffset, l.Height).ShouldBe((all.YOffset, all.Height));
     }
 
     // ---------------------------------------------------------------
@@ -723,6 +755,28 @@ public class IncrementalSessionTests
 
         session.CurrentModel.Characters.Select(c => c.Id)
             .ShouldBe(generated.Model.Characters.Select(c => c.Id), ignoreOrder: true);
+    }
+
+    [Fact]
+    public void Generate_FallbackCharacter_KeepsItsKerningPairs()
+    {
+        // The fallback is added after the font is parsed; a parse subset to Characters alone
+        // dropped its pairs in Generate, while a session (unfiltered parse) kept them (#303).
+        var fontData = LoadTestFont();
+        var genOptions = Options();
+        genOptions.FallbackCharacter = 'V';
+        genOptions.Characters = CharacterSet.FromChars("AT");
+        var generated = BmFont.Generate(fontData, genOptions);
+
+        var options = Options();
+        options.FallbackCharacter = 'V';
+        using var session = BmFont.BeginIncremental(fontData, options);
+        session.AddGlyphs("AT");
+        var sessionPairs = session.CurrentModel.KerningPairs.Select(k => (k.First, k.Second, k.Amount)).ToList();
+        sessionPairs.ShouldContain(k => k.First == 'A' && k.Second == 'V');
+
+        generated.Model.KerningPairs.Select(k => (k.First, k.Second, k.Amount))
+            .ShouldBe(sessionPairs, ignoreOrder: true);
     }
 
     // ---------------------------------------------------------------

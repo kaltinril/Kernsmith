@@ -90,7 +90,7 @@ internal static class FileWriter
         IAtlasEncoder encoder)
     {
         var directory = Path.GetDirectoryName(outputPath) ?? ".";
-        var baseName = Path.GetFileNameWithoutExtension(outputPath);
+        var baseName = Path.GetFileName(outputPath);
 
         // Encode all pages in parallel (sequential on WASM where threads are unavailable)
         var encodedPages = new byte[pages.Count][];

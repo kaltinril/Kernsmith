@@ -190,12 +190,13 @@ reallocate the texture and copy the old contents to `(0, 0)` — old pixels neve
 - **One session = one set of settings.** Every add uses the options the session was started
   with; mixing sizes or styles in one atlas means one session (and one atlas) per style.
 - Not supported in a session (throws at `BeginIncremental`/`ResumeIncremental`): `Variants`,
-  `ChannelPacking`, `TargetRegion`, `CustomGlyphs`.
+  `ChannelPacking`, `TargetRegion`, `CustomGlyphs`, and a non-default `Channels` configuration.
 - **Placements differ from a full regenerate — by design.** Stable packing never moves an
   existing glyph, so a glyph added later lands wherever free space remains, not where a full
   repack of the combined set would put it. Packing efficiency degrades accordingly; regenerate
   when you want an optimal layout.
-- With `EqualizeCellHeights`, a new glyph *taller* than the atlas's established cell height
+- With `EqualizeCellHeights`, every cell spans the line box (grown to cover the glyphs the
+  atlas was made with), so most later glyphs fit it; one reaching above or below that cell
   throws (`InvalidOperationException`) — accepting it would have changed every existing cell.
   Regenerate to include it.
 - A `PackingAlgorithm.Skyline` configuration — or a custom `FontGeneratorOptions.Packer` —

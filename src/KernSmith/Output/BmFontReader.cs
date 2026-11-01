@@ -257,6 +257,9 @@ public static class BmFontReader
             return ReadBinary(fntData);
 
         var text = Encoding.UTF8.GetString(fntData);
+        // A UTF-8 BOM decodes to U+FEFF, which TrimStart does not remove.
+        if (text.Length > 0 && text[0] == '\uFEFF')
+            text = text.Substring(1);
         var trimmed = text.TrimStart();
 
         if (trimmed.StartsWith("<?xml", StringComparison.OrdinalIgnoreCase) ||
@@ -501,7 +504,8 @@ public static class BmFontReader
         var scaleH = BitConverter.ToUInt16(data[6..]);
         var pageCount = BitConverter.ToUInt16(data[8..]);
         var bitField = data[10];
-        var packed = (bitField & (1 << 7)) != 0;
+        // Packed is 0x01 (BMFont); 0x80 is also accepted, as KernSmith wrote it before.
+        var packed = (bitField & 0x81) != 0;
         var alphaChnl = data[11];
         var redChnl = data[12];
         var greenChnl = data[13];
@@ -625,6 +629,7 @@ public static class BmFontReader
             SuperSampleLevel = kvp.ContainsKey("superSampleLevel") ? GetInt(kvp, "superSampleLevel") : null,
             AdvanceAdjustY = kvp.TryGetValue("advanceAdjustY", out var aay) && float.TryParse(aay, CultureInfo.InvariantCulture, out var aayv) ? aayv : null,
             ColorFont = GetBool(kvp, "colorFont") ? true : null,
+            FallbackCharacter = kvp.TryGetValue("fallbackChar", out var fc) && int.TryParse(fc, NumberStyles.Integer, CultureInfo.InvariantCulture, out var fcv) ? fcv : null,
             VariationAxes = axes,
             VariantOf = kvp.TryGetValue("variantOf", out var vo) ? vo : null,
             Variants = kvp.TryGetValue("variants", out var vs) && vs.Length > 0
@@ -661,6 +666,7 @@ public static class BmFontReader
             SuperSampleLevel = el.Attribute("superSampleLevel") != null ? XmlAttrInt(el, "superSampleLevel") : null,
             AdvanceAdjustY = el.Attribute("advanceAdjustY") != null && float.TryParse(el.Attribute("advanceAdjustY")!.Value, CultureInfo.InvariantCulture, out var aayv) ? aayv : null,
             ColorFont = XmlAttrBool(el, "colorFont") ? true : null,
+            FallbackCharacter = int.TryParse(el.Attribute("fallbackChar")?.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var fcv) ? fcv : null,
             VariationAxes = axes,
             VariantOf = el.Attribute("variantOf")?.Value,
             Variants = el.Attribute("variants")?.Value is { Length: > 0 } variantsStr
@@ -717,6 +723,7 @@ public static class BmFontReader
             SuperSampleLevel = root.TryGetProperty("superSampleLevel", out var sl) ? sl.GetInt32() : null,
             AdvanceAdjustY = root.TryGetProperty("advanceAdjustY", out var aay) ? aay.GetSingle() : null,
             ColorFont = root.TryGetProperty("colorFont", out var cf) && cf.GetBoolean() ? true : null,
+            FallbackCharacter = root.TryGetProperty("fallbackChar", out var fc) ? fc.GetInt32() : null,
             VariationAxes = axes,
             VariantOf = root.TryGetProperty("variantOf", out var vo) ? vo.GetString() : null,
             Variants = root.TryGetProperty("variants", out var vs) && vs.ValueKind == JsonValueKind.Array

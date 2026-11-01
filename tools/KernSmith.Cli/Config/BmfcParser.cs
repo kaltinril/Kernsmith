@@ -50,6 +50,8 @@ internal static class BmfcParser
             SdfMode = gen.SdfMode,
             Bold = gen.Bold,
             Italic = gen.Italic,
+            ForceSyntheticBold = gen.ForceSyntheticBold,
+            ForceSyntheticItalic = gen.ForceSyntheticItalic,
 
             // Atlas
             Padding = gen.Padding,
@@ -75,9 +77,14 @@ internal static class BmfcParser
             ShadowBlur = gen.ShadowBlur,
             ShadowBlurKernelSize = gen.ShadowBlurKernelSize,
             ShadowBlurPasses = gen.ShadowBlurPasses,
+            ShadowOpacity = gen.ShadowOpacity,
+            HardShadow = gen.HardShadow,
+            ShadowVariant = gen.Variants?.Any(v => v.Kind == AtlasVariantKind.ShadowSilhouette) == true,
             SdfSpread = gen.SdfSpread,
+            SdfScale = gen.SdfScale,
             Gamma = gen.Gamma,
             AdvanceAdjustX = gen.AdvanceAdjustX,
+            AdvanceAdjustY = gen.AdvanceAdjustY,
 
             // Kerning
             Kerning = gen.Kerning,
@@ -85,6 +92,7 @@ internal static class BmfcParser
             // Rendering extras
             SuperSampleLevel = gen.SuperSampleLevel,
             FallbackCharacter = gen.FallbackCharacter,
+            FallbackCodepoint = gen.FallbackCodepoint,
             EnableHinting = gen.EnableHinting,
             EqualizeCellHeights = gen.EqualizeCellHeights,
             ForceOffsetsToZero = gen.ForceOffsetsToZero,

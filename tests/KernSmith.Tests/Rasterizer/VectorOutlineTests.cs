@@ -34,7 +34,7 @@ public class VectorOutlineTests
     {
         options.Rasterizer = rasterizer;
         using var prepared = PreparedRasterization.Prepare(Roboto(), options, systemFontName: null, subsetToCharacterSet: true);
-        return prepared.RasterizeAndProcess(prepared.ResolveCodepoints(), equalizeTargetHeight: null);
+        return prepared.RasterizeAndProcess(prepared.ResolveCodepoints(), equalizeSpan: null);
     }
 
     private static RasterizedGlyph Glyph(RasterizationResult result, char c) => result.Glyphs.Single(g => g.Codepoint == c);
@@ -126,7 +126,7 @@ public class VectorOutlineTests
     }
 
     [Fact]
-    public void VectorMode_AsksSeriallyWithTheRenderSizeWidthAndShape()
+    public void VectorMode_AsksSeriallyWithTheWidthScaledToTheRenderSize()
     {
         using var backend = LayerBackend.Box();
         var options = Options("ABCDEFGHIJKLMNOP");
@@ -136,8 +136,9 @@ public class VectorOutlineTests
 
         backend.Calls.Count.ShouldBe(16);
         backend.MaxConcurrentCalls.ShouldBe(1, "rasterizers are not thread-safe; layers must be asked for in the serial step");
-        backend.Calls.ShouldAllBe(c => c.Width == Ow && c.Shape == OutlineShape.Square && c.HeightScale.Equals(1f));
-        // Same thickness definition as the effect: Outline pixels at the supersampled render size.
+        // Same thickness definition as the effect: Outline output pixels, so twice that at the
+        // super-sampled render size the layer is drawn at.
+        backend.Calls.ShouldAllBe(c => c.Width == Ow * 2 && c.Shape == OutlineShape.Square && c.HeightScale.Equals(1f));
         backend.Calls.ShouldAllBe(c => c.Size.Equals(backend.GlyphSizes[0]));
         backend.GlyphSizes.ShouldAllBe(s => s.Equals(backend.GlyphSizes[0]));
     }
@@ -188,7 +189,7 @@ public class VectorOutlineTests
         options.Rasterizer = backend;
 
         using var prepared = PreparedRasterization.Prepare(Roboto(), options, systemFontName: null, subsetToCharacterSet: true);
-        prepared.RasterizeAndProcess(prepared.ResolveCodepoints(), equalizeTargetHeight: null);
+        prepared.RasterizeAndProcess(prepared.ResolveCodepoints(), equalizeSpan: null);
         backend.Calls.ShouldBeEmpty();
     }
 

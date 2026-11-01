@@ -20,6 +20,9 @@ internal sealed class RasterizationResult
     /// </summary>
     public float EffectiveSize { get; init; }
 
+    /// <summary>The super-sample level the glyphs were rendered at (1 for LCD), the <c>.fnt</c> <c>aa</c>.</summary>
+    public int SuperSampleLevel { get; init; } = 1;
+
     /// <summary>
     /// Rasterizer-provided font-wide metrics, or null to fall back to TTF table calculation.
     /// </summary>
@@ -38,6 +41,9 @@ internal sealed class RasterizationResult
     /// may already have a baked shadow/outline/gradient composited into its RGBA.
     /// </summary>
     public List<RasterizedGlyph>? RawGlyphsForVariants { get; init; }
+
+    /// <summary>The span every cell was equalized to, or null when equalization is off.</summary>
+    public EqualizedSpan? EqualizedSpan { get; init; }
 
     /// <summary>
     /// Backend-drawn outline layers by codepoint, at the output size and placed against the final

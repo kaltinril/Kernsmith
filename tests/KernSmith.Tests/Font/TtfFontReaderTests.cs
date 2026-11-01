@@ -90,4 +90,22 @@ public class TtfFontReaderTests
             metrics.AdvanceWidth.ShouldBeLessThan(fontInfo.UnitsPerEm, $"'{cp}' advance width should be less than unitsPerEm");
         }
     }
+
+    [Fact]
+    public void ReadFont_KerningCoversEveryCodepointOfASharedGlyph()
+    {
+        // Source Serif 4 maps U+02BC and U+2019 to one glyph (quoteright); fontTools gives
+        // P quoteright = 20. Each codepoint of the glyph gets the pair, not just the lowest.
+        var font = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "SourceSerif4-Regular.otf"));
+        foreach (var requested in new HashSet<int>?[] { null, new() { 'P', 0x02BC, 0x2019 } })
+        {
+            var info = new TtfFontReader { RequestedCodepoints = requested }.ReadFont(font);
+            int Kern(int left, int right) => info.KerningPairs
+                .Where(p => p.LeftCodepoint == left && p.RightCodepoint == right)
+                .Select(p => p.XAdvanceAdjustment).DefaultIfEmpty(0).Single();
+
+            Kern('P', 0x02BC).ShouldBe(20, $"subset={requested?.Count}");
+            Kern('P', 0x2019).ShouldBe(20, $"subset={requested?.Count}");
+        }
+    }
 }

@@ -131,7 +131,7 @@ public class LcdOptionsTests
         var supersampled = Recorded(AllModes, AntiAliasMode.Grayscale, superSample: 2);
 
         supersampled.Size.ShouldBe(plain.Size * 2);
-        supersampled.SuperSample.ShouldBe(2);
+        supersampled.SuperSample.ShouldBe(1, "core does the super sampling; the backend renders once at Size x level");
     }
 
     [Fact]
@@ -144,7 +144,8 @@ public class LcdOptionsTests
 
         degraded.AntiAlias.ShouldBe(AntiAliasMode.Grayscale);
         degraded.Size.ShouldBe(grayscale.Size);
-        degraded.SuperSample.ShouldBe(2);
+        degraded.Size.ShouldBe(Recorded(NoneAndGrayscale, AntiAliasMode.Grayscale, superSample: 1).Size * 2);
+        degraded.SuperSample.ShouldBe(1);
     }
 
     [Theory]
@@ -187,7 +188,7 @@ public class LcdOptionsTests
 
         using (var prepared = PreparedRasterization.Prepare(Font(), options, systemFontName: null, subsetToCharacterSet: true))
         {
-            prepared.RasterizeAndProcess(new[] { (int)'A' }, equalizeTargetHeight: null);
+            prepared.RasterizeAndProcess(new[] { (int)'A' }, equalizeSpan: null);
         }
 
         recording.Seen.ShouldNotBeEmpty();

@@ -73,41 +73,8 @@ internal static class ChannelCompositor
                     shadowById.TryGetValue(placement.Id, out var shadowGlyph);
                     var hasShadow = shadowGlyph != null;
 
-                    // Outline expands symmetrically (same width added on every side), so its
-                    // offset from the base glyph is derived from the width/height delta.
-                    var outlineExpandLeft = outlineGlyph != null ? (outlineGlyph.Width - glyph.Width) / 2 : 0;
-                    var outlineExpandTop = outlineGlyph != null ? (outlineGlyph.Height - glyph.Height) / 2 : 0;
-
-                    // Shadow expansion is generally asymmetric (an offset can push the shadow
-                    // further to one side than the other), unlike outline's symmetric ring,
-                    // so its offset is derived from the actual bearing delta baked into the
-                    // shadow glyph's metrics rather than assumed to be centered.
-                    var shadowExpandLeft = shadowGlyph != null ? glyph.Metrics.BearingX - shadowGlyph.Metrics.BearingX : 0;
-                    var shadowExpandTop = shadowGlyph != null ? shadowGlyph.Metrics.BearingY - glyph.Metrics.BearingY : 0;
-
-                    // The iteration canvas is the union of the base glyph and any outline/shadow
-                    // footprints, expressed in a coordinate frame where the base glyph's own
-                    // top-left is (0,0). This keeps neither overlay clipped even when outline
-                    // and shadow expand by different amounts on each side.
-                    var minX = 0;
-                    var minY = 0;
-                    var maxX = glyph.Width;
-                    var maxY = glyph.Height;
-
-                    if (outlineGlyph != null)
-                    {
-                        minX = Math.Min(minX, -outlineExpandLeft);
-                        minY = Math.Min(minY, -outlineExpandTop);
-                        maxX = Math.Max(maxX, -outlineExpandLeft + outlineGlyph.Width);
-                        maxY = Math.Max(maxY, -outlineExpandTop + outlineGlyph.Height);
-                    }
-                    if (shadowGlyph != null)
-                    {
-                        minX = Math.Min(minX, -shadowExpandLeft);
-                        minY = Math.Min(minY, -shadowExpandTop);
-                        maxX = Math.Max(maxX, -shadowExpandLeft + shadowGlyph.Width);
-                        maxY = Math.Max(maxY, -shadowExpandTop + shadowGlyph.Height);
-                    }
+                    var (outlineExpandLeft, outlineExpandTop, shadowExpandLeft, shadowExpandTop, minX, minY, maxX, maxY) =
+                        Canvas(glyph, outlineGlyph, shadowGlyph);
 
                     var iterW = maxX - minX;
                     var iterH = maxY - minY;
@@ -167,6 +134,91 @@ internal static class ChannelCompositor
         }
 
         return pages;
+    }
+
+    /// <summary>
+    /// The cell <see cref="Build"/> draws for <paramref name="glyph"/>: the union of the glyph and
+    /// its outline and shadow layers, as a pixel-less glyph with that box's size and bearings, so
+    /// the packed rect and the <c>.fnt</c> entry match what is drawn. A blank glyph draws nothing
+    /// and keeps whichever of the three is largest.
+    /// </summary>
+    internal static RasterizedGlyph Cell(RasterizedGlyph glyph, RasterizedGlyph? outlineGlyph, RasterizedGlyph? shadowGlyph)
+    {
+        if (glyph.BitmapData.Length == 0 || glyph.Width == 0 || glyph.Height == 0)
+        {
+            var largest = glyph;
+            foreach (var layer in new[] { outlineGlyph, shadowGlyph })
+            {
+                if (layer is not null && layer.Width * layer.Height >= largest.Width * largest.Height)
+                    largest = layer;
+            }
+
+            return largest;
+        }
+
+        var (_, _, _, _, minX, minY, maxX, maxY) = Canvas(glyph, outlineGlyph, shadowGlyph);
+        var metrics = glyph.Metrics;
+        return new RasterizedGlyph
+        {
+            Codepoint = glyph.Codepoint,
+            GlyphIndex = glyph.GlyphIndex,
+            BitmapData = [],
+            Width = maxX - minX,
+            Height = maxY - minY,
+            Pitch = 0,
+            Metrics = metrics with
+            {
+                BearingX = metrics.BearingX + minX,
+                BearingY = metrics.BearingY - minY,
+                Width = maxX - minX,
+                Height = maxY - minY,
+            },
+            Format = glyph.Format,
+        };
+    }
+
+    /// <summary>
+    /// Where the outline and shadow layers sit against <paramref name="glyph"/>, and the union of
+    /// all three, in a frame where the glyph's own top-left is (0,0).
+    /// </summary>
+    private static (int OutlineLeft, int OutlineTop, int ShadowLeft, int ShadowTop, int MinX, int MinY, int MaxX, int MaxY) Canvas(
+        RasterizedGlyph glyph, RasterizedGlyph? outlineGlyph, RasterizedGlyph? shadowGlyph)
+    {
+        // Outline expands symmetrically (same width added on every side), so its
+        // offset from the base glyph is derived from the width/height delta.
+        var outlineExpandLeft = outlineGlyph != null ? (outlineGlyph.Width - glyph.Width) / 2 : 0;
+        var outlineExpandTop = outlineGlyph != null ? (outlineGlyph.Height - glyph.Height) / 2 : 0;
+
+        // Shadow expansion is generally asymmetric (an offset can push the shadow
+        // further to one side than the other), unlike outline's symmetric ring,
+        // so its offset is derived from the actual bearing delta baked into the
+        // shadow glyph's metrics rather than assumed to be centered.
+        var shadowExpandLeft = shadowGlyph != null ? glyph.Metrics.BearingX - shadowGlyph.Metrics.BearingX : 0;
+        var shadowExpandTop = shadowGlyph != null ? shadowGlyph.Metrics.BearingY - glyph.Metrics.BearingY : 0;
+
+        // The union keeps neither overlay clipped even when outline and shadow expand by
+        // different amounts on each side.
+        var minX = 0;
+        var minY = 0;
+        var maxX = glyph.Width;
+        var maxY = glyph.Height;
+
+        if (outlineGlyph != null)
+        {
+            minX = Math.Min(minX, -outlineExpandLeft);
+            minY = Math.Min(minY, -outlineExpandTop);
+            maxX = Math.Max(maxX, -outlineExpandLeft + outlineGlyph.Width);
+            maxY = Math.Max(maxY, -outlineExpandTop + outlineGlyph.Height);
+        }
+        if (shadowGlyph != null)
+        {
+            minX = Math.Min(minX, -shadowExpandLeft);
+            minY = Math.Min(minY, -shadowExpandTop);
+            maxX = Math.Max(maxX, -shadowExpandLeft + shadowGlyph.Width);
+            maxY = Math.Max(maxY, -shadowExpandTop + shadowGlyph.Height);
+        }
+
+        return (outlineExpandLeft, outlineExpandTop, shadowExpandLeft, shadowExpandTop, minX, minY, maxX, maxY);
     }
 
     private static byte GetGlyphAlpha(RasterizedGlyph glyph, int row, int col)

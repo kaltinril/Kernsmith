@@ -59,19 +59,25 @@ internal sealed class ShadowEffect : IGlyphEffect
         _hardShadow = hardShadow;
     }
 
+    public (int Left, int Top, int Right, int Bottom) Margins
+    {
+        get
+        {
+            // Effective per-axis blur radius. The optional kernel-size control adds to the primary
+            // radius; with the default kernel size of 0 this equals _blurRadius exactly.
+            // Multiple passes each spread by _blurRadius, so reserve room for all of them.
+            var blurMargin = (_blurRadius + _blurKernelSize) * _blurPasses;
+
+            // The expanded bitmap size accommodates shadow + blur.
+            return (Math.Max(0, -_offsetX) + blurMargin, Math.Max(0, -_offsetY) + blurMargin,
+                Math.Max(0, _offsetX) + blurMargin, Math.Max(0, _offsetY) + blurMargin);
+        }
+    }
+
     public GlyphLayer Generate(byte[] alphaData, int width, int height, int pitch, GlyphMetrics metrics)
     {
-        // Effective per-axis blur radius. The optional kernel-size control adds to the primary
-        // radius; with the default kernel size of 0 this equals _blurRadius exactly.
-        // Multiple passes each spread by _blurRadius, so reserve room for all of them.
         var effectiveRadius = _blurRadius + _blurKernelSize;
-        var blurMargin = effectiveRadius * _blurPasses;
-
-        // Calculate the expanded bitmap size to accommodate shadow + blur.
-        var expandLeft = Math.Max(0, -_offsetX) + blurMargin;
-        var expandRight = Math.Max(0, _offsetX) + blurMargin;
-        var expandTop = Math.Max(0, -_offsetY) + blurMargin;
-        var expandBottom = Math.Max(0, _offsetY) + blurMargin;
+        var (expandLeft, expandTop, expandRight, expandBottom) = Margins;
 
         var dstW = width + expandLeft + expandRight;
         var dstH = height + expandTop + expandBottom;

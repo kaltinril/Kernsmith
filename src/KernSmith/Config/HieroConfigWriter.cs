@@ -195,6 +195,8 @@ public static class HieroConfigWriter
         {
             if (cp == '\n')
                 sb.Append("\\n");
+            else if (cp is >= 0xD800 and <= 0xDFFF)
+                continue; // a lone surrogate has no text form (and no glyph)
             else
                 sb.Append(char.ConvertFromUtf32(cp));
         }

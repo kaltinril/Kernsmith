@@ -673,7 +673,9 @@ public class MainViewModel : ViewModel
         {
             _projectService.LoadProject(path, FontConfig, AtlasConfig, Effects, CharacterGrid);
             _sessionService.State.LastProjectPath = path;
-            if (FontConfig.IsFontLoaded)
+            if (_projectService.MissingFontFile is { } missing)
+                StatusBar.SetError($"Font file not found: {missing} (project {Path.GetFileName(path)} loaded without a font)");
+            else if (FontConfig.IsFontLoaded)
                 StatusBar.StatusText = $"Project loaded: {Path.GetFileName(path)} — {FontConfig.FamilyName}";
             else
                 StatusBar.StatusText = $"Project loaded: {Path.GetFileName(path)} (no font file found)";

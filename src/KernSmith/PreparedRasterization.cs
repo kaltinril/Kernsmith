@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Threading.Tasks;
 using KernSmith.Font;
 using KernSmith.Font.Models;
+using KernSmith.Output;
 using KernSmith.Rasterizer;
 
 namespace KernSmith;
@@ -57,6 +58,13 @@ internal sealed class PreparedRasterization : IDisposable
     /// </summary>
     public float EffectiveSize { get; }
 
+    /// <summary>
+    /// The super-sample level glyphs are rendered at: <see cref="FontGeneratorOptions.SuperSampleLevel"/>
+    /// clamped to 1-4, or 1 for an LCD render (never super sampled). What the <c>.fnt</c> writes as
+    /// <c>aa</c>.
+    /// </summary>
+    public int SuperSampleLevel { get; }
+
     private PreparedRasterization(
         byte[] fontData,
         FontInfo fontInfo,
@@ -66,6 +74,7 @@ internal sealed class PreparedRasterization : IDisposable
         RasterOptions rasterOptions,
         RasterOptions effectiveRasterOptions,
         float effectiveSize,
+        int superSampleLevel,
         int renderScale,
         List<IGlyphEffect> effects,
         bool hasEffects,
@@ -80,6 +89,7 @@ internal sealed class PreparedRasterization : IDisposable
         _rasterOptions = rasterOptions;
         _effectiveRasterOptions = effectiveRasterOptions;
         EffectiveSize = effectiveSize;
+        SuperSampleLevel = superSampleLevel;
         _renderScale = renderScale;
         _effects = effects;
         _hasEffects = hasEffects;
@@ -106,7 +116,7 @@ internal sealed class PreparedRasterization : IDisposable
     {
         ArgumentNullException.ThrowIfNull(fontData);
 
-        if (options.Size <= 0 || options.Size > 10000)
+        if (!(options.Size > 0 && options.Size <= 10000)) // NaN fails both
             throw new ArgumentOutOfRangeException(nameof(options), $"Size must be between 1 and 10000, was {options.Size}.");
 
         // 0. Auto-detect and decompress WOFF/WOFF2 to standard sfnt
@@ -132,7 +142,7 @@ internal sealed class PreparedRasterization : IDisposable
         if (fontReader is TtfFontReader ttfReader)
         {
             ttfReader.RequestedCodepoints = subsetToCharacterSet
-                ? options.Characters.GetCodepointsHashSet()
+                ? SubsetWithFallback(options)
                 : null;
             ttfReader.SharedFontBytes = fontData;
         }
@@ -289,9 +299,16 @@ internal sealed class PreparedRasterization : IDisposable
             // renderScale collapses to a single upscale factor for both paths.
             var sdfScale = sdfMode != SdfMode.None ? Math.Clamp(options.SdfScale, 1, 4) : 1;
             var renderScale = sdfScale > 1 ? sdfScale : ssLevel;
-            var effectiveRasterOptions = renderScale > 1
-                ? rasterOptions with { Size = rasterOptions.Size * renderScale }
-                : rasterOptions;
+            // Glyphs render once at Size x renderScale and core box-filters them down, so the
+            // backend is told SuperSample = 1: one that honors it (StbTrueType, GDI, DirectWrite)
+            // would otherwise render at the level squared and round the bearings twice. The font
+            // metrics query keeps the level, so GDI measures lineHeight/base at the super-sampled
+            // size and rounds them up, as BMFont does.
+            var effectiveRasterOptions = rasterOptions with
+            {
+                Size = rasterOptions.Size * renderScale,
+                SuperSample = 1,
+            };
 
             // Pre-compute transform parameters once
             var effects = BuildEffects(options);
@@ -334,10 +351,9 @@ internal sealed class PreparedRasterization : IDisposable
                 if (!routed || BmFont.RoutesOutline(options.Channels!))
                 {
                     vectorOutline = new VectorOutlineRequest(
-                        // Same thickness definition as each mode's bitmap outline: the effect grows
-                        // the glyph at the render (supersampled) size, the routed outline at the
-                        // output size.
-                        LayerWidth: routed ? options.Outline * renderScale : options.Outline,
+                        // Drawn at the render (super-sampled) size and downscaled with the glyph,
+                        // so it is Outline output pixels wide, like the bitmap outline in both modes.
+                        LayerWidth: options.Outline * renderScale,
                         options.OutlineShape,
                         HeightScale: Math.Max(10, options.HeightPercent) / 100f,
                         Routed: routed);
@@ -346,7 +362,7 @@ internal sealed class PreparedRasterization : IDisposable
 
             return new PreparedRasterization(
                 fontData, fontInfo, options, rasterizer, ownsRasterizer,
-                rasterOptions, effectiveRasterOptions, effectiveSize, renderScale,
+                rasterOptions, effectiveRasterOptions, effectiveSize, ssLevel, renderScale,
                 effects, hasEffects, activePostProcessors, vectorOutline);
         }
         catch
@@ -355,6 +371,22 @@ internal sealed class PreparedRasterization : IDisposable
                 rasterizer.Dispose();
             throw;
         }
+    }
+
+    /// <summary>
+    /// The codepoints a subset parse keeps: the character set plus the fallback that
+    /// <see cref="ResolveCodepoints"/> appends, so the fallback keeps its kerning pairs.
+    /// </summary>
+    private static HashSet<int> SubsetWithFallback(FontGeneratorOptions options)
+    {
+        var codepoints = options.Characters.GetCodepointsHashSet();
+        var fallback = options.FallbackCodepoint
+            ?? (options.FallbackCharacter.HasValue ? (int)options.FallbackCharacter.Value : (int?)null);
+        if (fallback is not { } cp || codepoints.Contains(cp))
+            return codepoints;
+
+        // A copy: the character set owns its set.
+        return new HashSet<int>(codepoints) { cp };
     }
 
     /// <summary>
@@ -379,17 +411,60 @@ internal sealed class PreparedRasterization : IDisposable
     }
 
     /// <summary>
+    /// The size <see cref="RasterizeAndProcess"/> would give a glyph, from the backend's
+    /// metrics alone (no rasterization), or null when the backend has no glyph for it: measured
+    /// at the render size, height-stretched, downscaled from the render scale (rounding up), grown
+    /// by the baked effects, and a blank glyph given its outline cell. Keep in sync with
+    /// <see cref="RasterizeAndProcess"/>; custom glyphs, post-processors, channel-routed
+    /// effects and cell-height equalization are not modelled.
+    /// </summary>
+    internal (int Width, int Height)? MeasureGlyph(int codepoint)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (_rasterizer.GetGlyphMetrics(codepoint, _effectiveRasterOptions) is not { } metrics)
+            return null;
+
+        int width = metrics.Width, height = metrics.Height;
+        if (width > 0 && height > 0)
+        {
+            if (Options.HeightPercent != 100)
+                height = Math.Max(1, height * Math.Max(10, Options.HeightPercent) / 100);
+
+            // The downscale runs before the effects and rounds the size up (SuperSampleDownscale).
+            if (_renderScale > 1)
+            {
+                width = (width + _renderScale - 1) / _renderScale;
+                height = (height + _renderScale - 1) / _renderScale;
+            }
+
+            if (_effects.Count > 0)
+            {
+                var (left, top, right, bottom) = GlyphCompositor.Margins(_effects);
+                width += left + right;
+                height += top + bottom;
+            }
+        }
+        else if (Options.Outline > 0 && metrics.Advance > 0)
+        {
+            width = height = 1 + Options.Outline * 2;
+        }
+
+        return (width, height);
+    }
+
+    /// <summary>
     /// Rasterizes and processes the given codepoints through the prepared pipeline: rasterize,
     /// height-stretch, custom-glyph substitution, effects/post-processor/downscale pass, and
     /// cell-height equalization. Callable repeatedly on one prepared instance.
     /// </summary>
     /// <param name="codepoints">The codepoints to rasterize.</param>
-    /// <param name="equalizeTargetHeight">When <see cref="FontGeneratorOptions.EqualizeCellHeights"/>
-    /// is on: null pads every glyph to the batch's own max height (the classic behavior); a value
-    /// pads to exactly that height instead, so glyphs added later match the cells of an existing
-    /// equalized atlas (phase 183 F3). Throws <see cref="InvalidOperationException"/> if any glyph
-    /// is taller than the given target. Ignored when equalization is off.</param>
-    internal RasterizationResult RasterizeAndProcess(IReadOnlyList<int> codepoints, int? equalizeTargetHeight)
+    /// <param name="equalizeSpan">When <see cref="FontGeneratorOptions.EqualizeCellHeights"/> is on:
+    /// null gives every cell the batch's own span (the line box grown to cover every glyph); a value
+    /// uses exactly that span instead, so glyphs added later match the cells of an existing
+    /// equalized atlas (phase 183 F3). Throws <see cref="InvalidOperationException"/> if a glyph
+    /// reaches outside the given span. Ignored when equalization is off.</param>
+    internal RasterizationResult RasterizeAndProcess(IReadOnlyList<int> codepoints, EqualizedSpan? equalizeSpan)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -438,6 +513,7 @@ internal sealed class PreparedRasterization : IDisposable
             : null;
 
         var needsDownscale = _renderScale > 1;
+        var customCodepoints = options.CustomGlyphs is { Count: > 0 } custom ? custom.Keys.ToHashSet() : null;
 
         // Multi-channel distance fields average each channel on its own: MTSDF alpha is a
         // distance, not opacity, so premultiplying RGB by it would destroy their distances.
@@ -445,8 +521,7 @@ internal sealed class PreparedRasterization : IDisposable
 
         // Atlas variants (e.g. a shadow silhouette) need the glyph's own bare coverage —
         // not a copy that may already have a baked outline/gradient/shadow composited into
-        // its RGBA below — so snapshot the pre-effects glyph here (still applying the same
-        // super-sample downscale as the primary, so scale matches).
+        // its RGBA below — so snapshot the downscaled glyph before the effects.
         List<RasterizedGlyph>? rawGlyphsForVariants = options.Variants is { Count: > 0 }
             ? new List<RasterizedGlyph>(new RasterizedGlyph[glyphs.Count])
             : null;
@@ -460,8 +535,16 @@ internal sealed class PreparedRasterization : IDisposable
                 var g = glyphs[i];
                 OutlineMask? mask = null;
                 masks?.TryGetValue(g.Codepoint, out mask);
+                // Downscale first: effect and post-processor sizes (outline width, shadow offset
+                // and blur) are output pixels at every super-sample level, as BMFont's outline is.
+                // A custom glyph was supplied at the final size and is not downscaled.
+                if (needsDownscale && customCodepoints?.Contains(g.Codepoint) != true)
+                {
+                    g = SuperSampleDownscale(g, _renderScale, perChannel);
+                    mask = mask?.Downscale(_renderScale);
+                }
                 if (rawGlyphsForVariants != null)
-                    rawGlyphsForVariants[i] = needsDownscale ? SuperSampleDownscale(g, _renderScale, perChannel) : g;
+                    rawGlyphsForVariants[i] = g;
                 if (_hasEffects)
                 {
                     var effects = mask is not null && !vector!.Routed ? WithVectorOutline(mask) : _effects;
@@ -474,12 +557,6 @@ internal sealed class PreparedRasterization : IDisposable
                 {
                     foreach (var processor in _activePostProcessors)
                         g = processor.Process(g);
-                }
-                if (needsDownscale)
-                {
-                    g = SuperSampleDownscale(g, _renderScale, perChannel);
-                    if (routedMasks != null)
-                        mask = mask?.Downscale(_renderScale);
                 }
                 if (routedMasks != null)
                     routedMasks[i] = mask;
@@ -497,32 +574,65 @@ internal sealed class PreparedRasterization : IDisposable
             }
         }
 
+        // Capture rasterizer-provided values (once) so the result stays valid after disposal;
+        // equalization needs the line metrics they give.
+        if (!_rasterizerProvidedCaptured)
+        {
+            _rasterizerFontMetrics = _rasterizer.GetFontMetrics(_rasterOptions);
+            _rasterizerKerningPairs = _rasterizer.GetKerningPairs(_rasterOptions);
+            _rasterizerProvidedCaptured = true;
+        }
+
+        // BMFont's useFixedHeight: every cell spans the line box (yoffset 0, height lineHeight,
+        // the baseline at row `base` of every cell), grown to cover any glyph reaching outside it.
+        EqualizedSpan? span = null;
         if (options.EqualizeCellHeights && glyphs.Count > 0)
         {
-            var targetHeight = equalizeTargetHeight ?? glyphs.Max(g => g.Height);
-            if (equalizeTargetHeight.HasValue)
+            var (lineHeight, baseLine) = BmFontModelBuilder.ComputeLineMetrics(
+                FontInfo, (float)(EffectiveSize * BmFontModelBuilder.DpiScale(options)),
+                _rasterizerFontMetrics, options.HeightPercent);
+
+            if (equalizeSpan is { } target)
             {
-                // Stable packing forbids changing existing cells: a glyph taller than the
-                // atlas's equalized cell height would have grown every cell in the original
-                // atlas, so it cannot be added incrementally.
+                // Stable packing forbids changing existing cells: a glyph reaching outside the
+                // atlas's equalized cell would have grown every cell in the original atlas, so it
+                // cannot be added incrementally.
                 foreach (var g in glyphs)
                 {
-                    if (g.Height > targetHeight)
+                    var top = baseLine - g.Metrics.BearingY;
+                    if (g.Height > 0 && (top < target.Top || top + g.Height > target.Bottom))
                         throw new InvalidOperationException(
-                            $"Glyph U+{g.Codepoint:X4} is {g.Height}px tall, which exceeds the atlas's " +
-                            $"equalized cell height of {targetHeight}px. Adding it would change the " +
-                            "existing atlas's cells; the atlas must be regenerated to include this glyph.");
+                            $"Glyph U+{g.Codepoint:X4} spans rows {top} to {top + g.Height} of the line, outside the " +
+                            $"atlas's equalized cell height (rows {target.Top} to {target.Bottom}). Adding it would " +
+                            "change the existing atlas's cells; the atlas must be regenerated to include this glyph.");
                 }
+
+                span = target;
             }
+            else
+            {
+                int top = 0, bottom = lineHeight;
+                foreach (var g in glyphs)
+                {
+                    if (g.Height <= 0)
+                        continue;
+                    top = Math.Min(top, baseLine - g.Metrics.BearingY);
+                    bottom = Math.Max(bottom, baseLine - g.Metrics.BearingY + g.Height);
+                }
+
+                span = new EqualizedSpan(top, bottom);
+            }
+
+            var cell = span.Value;
             if (OperatingSystem.IsBrowser() || glyphs.Count < ParallelThreshold)
             {
                 for (var i = 0; i < glyphs.Count; i++)
-                    glyphs[i] = EqualizeCellHeight(glyphs[i], targetHeight);
+                    glyphs[i] = EqualizeCellHeight(glyphs[i], baseLine, cell);
             }
             else
             {
                 Parallel.For(0, glyphs.Count, i =>
-                    glyphs[i] = EqualizeCellHeight(glyphs[i], targetHeight));
+                    glyphs[i] = EqualizeCellHeight(glyphs[i], baseLine, cell));
             }
         }
 
@@ -556,14 +666,6 @@ internal sealed class PreparedRasterization : IDisposable
         var rasterizedCodepoints = new HashSet<int>(glyphs.Select(g => g.Codepoint));
         var failedCodepoints = codepointList.Where(cp => !rasterizedCodepoints.Contains(cp)).ToList();
 
-        // Capture rasterizer-provided values (once) so the result stays valid after disposal
-        if (!_rasterizerProvidedCaptured)
-        {
-            _rasterizerFontMetrics = _rasterizer.GetFontMetrics(_rasterOptions);
-            _rasterizerKerningPairs = _rasterizer.GetKerningPairs(_rasterOptions);
-            _rasterizerProvidedCaptured = true;
-        }
-
         return new RasterizationResult
         {
             FontInfo = FontInfo,
@@ -572,9 +674,11 @@ internal sealed class PreparedRasterization : IDisposable
             FailedCodepoints = failedCodepoints,
             Options = options,
             EffectiveSize = EffectiveSize,
+            SuperSampleLevel = SuperSampleLevel,
             RasterizerFontMetrics = _rasterizerFontMetrics,
             RasterizerKerningPairs = _rasterizerKerningPairs,
             RawGlyphsForVariants = rawGlyphsForVariants,
+            EqualizedSpan = span,
             ChannelOutlineMasks = routedMasks is null ? null : CollectRoutedMasks(glyphs, routedMasks)
         };
     }
@@ -703,12 +807,18 @@ internal sealed class PreparedRasterization : IDisposable
         var effects = new List<IGlyphEffect>();
 
         // Detect shadow: from options properties or from a ShadowPostProcessor in the list.
+        // A shadow routed into its own channel is drawn there, from these glyphs (BmFont's
+        // channel shadow glyphs); baking it here too would put it in the Glyph channels and
+        // shadow the shadow.
         if (options.HasShadow)
         {
-            effects.Add(new ShadowEffect(
-                options.ShadowOffsetX, options.ShadowOffsetY, options.ShadowBlur,
-                options.ShadowR, options.ShadowG, options.ShadowB, options.ShadowOpacity,
-                options.HardShadow, options.ShadowBlurPasses, options.ShadowBlurKernelSize));
+            if (!BmFont.RoutesShadow(options))
+            {
+                effects.Add(new ShadowEffect(
+                    options.ShadowOffsetX, options.ShadowOffsetY, options.ShadowBlur,
+                    options.ShadowR, options.ShadowG, options.ShadowB, options.ShadowOpacity,
+                    options.HardShadow, options.ShadowBlurPasses, options.ShadowBlurKernelSize));
+            }
         }
         else if (options.PostProcessors != null)
         {
@@ -780,24 +890,43 @@ internal sealed class PreparedRasterization : IDisposable
     /// </summary>
     internal static RasterizedGlyph SuperSampleDownscale(RasterizedGlyph glyph, int level, bool perChannel = false)
     {
+        // A blank glyph (space) has no pixels, but its metrics were measured at the
+        // super-sampled size like every other glyph's.
         if (glyph.Width == 0 || glyph.Height == 0)
-            return glyph;
+        {
+            var m = glyph.Metrics;
+            return new RasterizedGlyph
+            {
+                Codepoint = glyph.Codepoint,
+                GlyphIndex = glyph.GlyphIndex,
+                BitmapData = glyph.BitmapData,
+                Width = glyph.Width,
+                Height = glyph.Height,
+                Pitch = glyph.Pitch,
+                Metrics = m with
+                {
+                    BearingX = m.BearingX / level,
+                    BearingY = m.BearingY / level,
+                    Advance = m.Advance / level,
+                },
+                Format = glyph.Format,
+            };
+        }
 
+        // The size rounds up, as BMFont's does, so ink in a last partial block is kept (averaged
+        // with the transparent pixels past the glyph's edge); the bearings still truncate.
         var srcW = glyph.Width;
         var srcH = glyph.Height;
-        var dstW = srcW / level;
-        var dstH = srcH / level;
-
-        if (dstW == 0) dstW = 1;
-        if (dstH == 0) dstH = 1;
+        var dstW = (srcW + level - 1) / level;
+        var dstH = (srcH + level - 1) / level;
 
         var bpp = glyph.Format == PixelFormat.Rgba32 ? 4 : 1;
         var dst = new byte[dstW * dstH * bpp];
 
         if (bpp == 1 || perChannel)
-            BoxSum(glyph.BitmapData, glyph.Pitch, level, dstW, dstH, bpp, dst);
+            BoxSum(glyph.BitmapData, glyph.Pitch, srcW, srcH, level, dstW, dstH, bpp, dst);
         else
-            BoxPremultiplied(glyph.BitmapData, glyph.Pitch, level, dstW, dstH, dst);
+            BoxPremultiplied(glyph.BitmapData, glyph.Pitch, srcW, srcH, level, dstW, dstH, dst);
 
         var metrics = glyph.Metrics;
         var newMetrics = new GlyphMetrics(
@@ -822,14 +951,16 @@ internal sealed class PreparedRasterization : IDisposable
 
     /// <summary>
     /// Each channel of each destination pixel is the integer mean (truncated) of its
-    /// <paramref name="level"/> x <paramref name="level"/> source block, a byte past the end of
+    /// <paramref name="level"/> x <paramref name="level"/> source block, a pixel outside the
+    /// <paramref name="srcW"/> x <paramref name="srcH"/> glyph or a byte past the end of
     /// <paramref name="src"/> counting as 0 (multi-channel distance fields average every channel
     /// on its own; grayscale has one). Source rows are swept in order into per-pixel sums.
     /// </summary>
-    private static void BoxSum(byte[] src, int srcPitch, int level, int dstW, int dstH, int bpp, byte[] dst)
+    private static void BoxSum(byte[] src, int srcPitch, int srcW, int srcH, int level, int dstW, int dstH, int bpp, byte[] dst)
     {
         var area = level * level;
-        var rowBytes = dstW * level * bpp;
+        // Only the glyph's own columns are read: a row's pitch padding, or the next row, is not ink.
+        var rowBytes = Math.Min(srcW, dstW * level) * bpp;
         var sums = ArrayPool<int>.Shared.Rent(dstW * bpp);
         try
         {
@@ -839,35 +970,21 @@ internal sealed class PreparedRasterization : IDisposable
                 acc.Clear();
                 for (var sy = 0; sy < level; sy++)
                 {
-                    var rowStart = (dy * level + sy) * srcPitch;
-                    if (rowStart + rowBytes <= src.Length)
+                    var y = dy * level + sy;
+                    if (y >= srcH)
+                        break;
+                    var rowStart = y * srcPitch;
+                    if (rowStart >= src.Length)
+                        break;
+                    var row = src.AsSpan(rowStart, Math.Min(rowBytes, src.Length - rowStart));
+                    var i = 0;
+                    for (var dx = 0; dx < dstW && i < row.Length; dx++)
                     {
-                        var row = src.AsSpan(rowStart, rowBytes);
-                        var i = 0;
-                        for (var dx = 0; dx < dstW; dx++)
+                        var k = dx * bpp;
+                        for (var sx = 0; sx < level && i < row.Length; sx++)
                         {
-                            var k = dx * bpp;
-                            for (var sx = 0; sx < level; sx++)
-                            {
-                                for (var c = 0; c < bpp; c++)
-                                    acc[k + c] += row[i++];
-                            }
-                        }
-                    }
-                    else
-                    {
-                        var i = rowStart;
-                        for (var dx = 0; dx < dstW; dx++)
-                        {
-                            var k = dx * bpp;
-                            for (var sx = 0; sx < level; sx++)
-                            {
-                                for (var c = 0; c < bpp; c++, i++)
-                                {
-                                    if (i < src.Length)
-                                        acc[k + c] += src[i];
-                                }
-                            }
+                            for (var c = 0; c < bpp && i < row.Length; c++)
+                                acc[k + c] += row[i++];
                         }
                     }
                 }
@@ -887,10 +1004,11 @@ internal sealed class PreparedRasterization : IDisposable
     /// Premultiplied-alpha box filter for RGBA: without premultiplying, transparent pixels with
     /// gradient colors bleed dark halos into the edges during downscale. Each destination
     /// pixel's float sums take their source pixels in block order (row by row, left to right)
-    /// — the order that fixes their rounding — and a pixel whose bytes run past the end of
-    /// <paramref name="src"/> is skipped.
+    /// — the order that fixes their rounding — and a pixel outside the
+    /// <paramref name="srcW"/> x <paramref name="srcH"/> glyph, or whose bytes run past the end
+    /// of <paramref name="src"/>, is skipped.
     /// </summary>
-    private static void BoxPremultiplied(byte[] src, int srcPitch, int level, int dstW, int dstH, byte[] dst)
+    private static void BoxPremultiplied(byte[] src, int srcPitch, int srcW, int srcH, int level, int dstW, int dstH, byte[] dst)
     {
         var area = level * level;
         var sums = ArrayPool<float>.Shared.Rent(dstW * 4);
@@ -902,13 +1020,19 @@ internal sealed class PreparedRasterization : IDisposable
                 acc.Clear();
                 for (var sy = 0; sy < level; sy++)
                 {
-                    var rowStart = (dy * level + sy) * srcPitch;
+                    var y = dy * level + sy;
+                    if (y >= srcH)
+                        break;
+                    var rowStart = y * srcPitch;
                     for (var dx = 0; dx < dstW; dx++)
                     {
                         var k = dx * 4;
                         for (var sx = 0; sx < level; sx++)
                         {
-                            var srcIdx = rowStart + (dx * level + sx) * 4;
+                            var x = dx * level + sx;
+                            if (x >= srcW)
+                                break;
+                            var srcIdx = rowStart + x * 4;
                             if (srcIdx + 3 < src.Length)
                             {
                                 var a = src[srcIdx + 3] / 255f;
@@ -942,24 +1066,28 @@ internal sealed class PreparedRasterization : IDisposable
         }
     }
 
-    /// <summary>Pads a glyph bitmap to the target height for uniform cell sizes.</summary>
-    private static RasterizedGlyph EqualizeCellHeight(RasterizedGlyph glyph, int targetHeight)
+    /// <summary>
+    /// Places a glyph in an equalized cell: <paramref name="cell"/>'s rows of the line (row 0 is the
+    /// line top, <paramref name="baseLine"/> the baseline), so every cell has the same height and
+    /// top, and the baseline on the same row.
+    /// </summary>
+    private static RasterizedGlyph EqualizeCellHeight(RasterizedGlyph glyph, int baseLine, EqualizedSpan cell)
     {
-        if (glyph.Height >= targetHeight)
-            return glyph;
-
         var bpp = glyph.Format == PixelFormat.Rgba32 ? 4 : 1;
         var newPitch = glyph.Width * bpp;
-        var dst = new byte[newPitch * targetHeight];
+        var height = cell.Bottom - cell.Top;
+        var dst = new byte[newPitch * height];
 
-        // Copy the original bitmap at the top (yoffset will handle alignment).
+        var firstRow = baseLine - glyph.Metrics.BearingY - cell.Top;
         for (var row = 0; row < glyph.Height; row++)
         {
             var srcOffset = row * glyph.Pitch;
-            var dstOffset = row * newPitch;
+            var dstRow = firstRow + row;
+            if (dstRow < 0 || dstRow >= height)
+                continue;
             var rowBytes = Math.Min(glyph.Width * bpp, glyph.BitmapData.Length - srcOffset);
             if (rowBytes > 0)
-                Array.Copy(glyph.BitmapData, srcOffset, dst, dstOffset, rowBytes);
+                Array.Copy(glyph.BitmapData, srcOffset, dst, dstRow * newPitch, rowBytes);
         }
 
         return new RasterizedGlyph
@@ -968,9 +1096,9 @@ internal sealed class PreparedRasterization : IDisposable
             GlyphIndex = glyph.GlyphIndex,
             BitmapData = dst,
             Width = glyph.Width,
-            Height = targetHeight,
+            Height = height,
             Pitch = newPitch,
-            Metrics = glyph.Metrics,
+            Metrics = glyph.Metrics with { BearingY = baseLine - cell.Top, Height = height },
             Format = glyph.Format
         };
     }
@@ -1032,3 +1160,10 @@ internal sealed class PreparedRasterization : IDisposable
         };
     }
 }
+
+/// <summary>
+/// An equalized cell's rows relative to the line top (row 0; the baseline is at <c>base</c>):
+/// <see cref="Top"/> is 0 unless a glyph reaches above the line, <see cref="Bottom"/> (exclusive)
+/// is <c>lineHeight</c> unless one reaches below it.
+/// </summary>
+internal readonly record struct EqualizedSpan(int Top, int Bottom);

@@ -14,6 +14,11 @@ public class ProjectService
     public string? CurrentProjectPath { get; private set; }
 
     /// <summary>
+    /// The font file the last loaded project names but that does not exist, or null.
+    /// </summary>
+    public string? MissingFontFile { get; private set; }
+
+    /// <summary>
     /// Saves the current UI state to a .bmfc or .hiero file at the specified path.
     /// The output format is auto-detected from the file extension.
     /// </summary>
@@ -53,10 +58,20 @@ public class ProjectService
         var config = ConfigFormatFactory.ReadConfig(path);
         var options = config.Options;
 
-        // Load font source
-        if (!string.IsNullOrEmpty(config.FontFile) && File.Exists(config.FontFile))
+        // Load font source. A font file that is gone unloads the current font: keeping it would
+        // generate (and re-save) the project with a font it does not name.
+        MissingFontFile = null;
+        if (!string.IsNullOrEmpty(config.FontFile))
         {
-            fontConfig.LoadFromFile(config.FontFile);
+            if (File.Exists(config.FontFile))
+            {
+                fontConfig.LoadFromFile(config.FontFile);
+            }
+            else
+            {
+                MissingFontFile = config.FontFile;
+                fontConfig.Unload();
+            }
         }
 
         // Font settings
@@ -80,11 +95,14 @@ public class ProjectService
         atlasConfig.SpacingH = options.Spacing.Horizontal;
         atlasConfig.SpacingV = options.Spacing.Vertical;
         atlasConfig.IncludeKerning = options.Kerning;
+        atlasConfig.PackingAlgorithmIndex = (int)options.PackingAlgorithm;
         atlasConfig.DescriptorFormat = config.OutputFormat;
 
         // Effects
         effects.FillColor = EffectsViewModel.ToHex(options.FillColorR, options.FillColorG, options.FillColorB);
         effects.AdvanceAdjustX = options.AdvanceAdjustX;
+        // The UI falls back to '?' when a project names no fallback (SaveProject omits it then).
+        effects.FallbackCharacter = options.FallbackCharacter?.ToString() ?? "?";
         effects.Gamma = options.Gamma;
         effects.Bold = options.Bold;
         effects.Italic = options.Italic;
@@ -109,7 +127,7 @@ public class ProjectService
         effects.ShadowBlurKernelSize = options.ShadowBlurKernelSize;
         effects.ShadowBlurPasses = options.ShadowBlurPasses;
         effects.ShadowColor = EffectsViewModel.ToHex(options.ShadowR, options.ShadowG, options.ShadowB);
-        effects.ShadowOpacity = (int)(options.ShadowOpacity * 100);
+        effects.ShadowOpacity = (int)Math.Round(options.ShadowOpacity * 100);
         effects.HardShadow = options.HardShadow;
         effects.GradientEnabled = options.GradientStartR.HasValue && options.GradientEndR.HasValue;
         effects.GradientStartColor = EffectsViewModel.ToHex(
@@ -174,11 +192,15 @@ public class ProjectService
             Padding = new Padding(atlasConfig.PaddingUp, atlasConfig.PaddingRight, atlasConfig.PaddingDown, atlasConfig.PaddingLeft),
             Spacing = new Spacing(atlasConfig.SpacingH, atlasConfig.SpacingV),
             Kerning = atlasConfig.IncludeKerning,
+            PackingAlgorithm = (PackingAlgorithm)atlasConfig.PackingAlgorithmIndex,
             FillColorR = fillRgb.R,
             FillColorG = fillRgb.G,
             FillColorB = fillRgb.B,
             FillColorA = 255,
             AdvanceAdjustX = effects.AdvanceAdjustX,
+            FallbackCharacter = !string.IsNullOrEmpty(effects.FallbackCharacter) && effects.FallbackCharacter != "?"
+                ? effects.FallbackCharacter[0]
+                : null,
             Gamma = effects.Gamma,
             Bold = effects.Bold,
             Italic = effects.Italic,

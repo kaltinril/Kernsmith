@@ -24,16 +24,18 @@ internal static class BmFontModelBuilder
         int? overrideScaleH = null,
         float? effectiveSize = null,
         RasterizerFontMetrics? rasterizerFontMetrics = null,
-        IReadOnlyList<ScaledKerningPair>? rasterizerKerningPairs = null)
+        IReadOnlyList<ScaledKerningPair>? rasterizerKerningPairs = null,
+        int superSampleLevel = 1)
     {
         // The effective ppem used for rasterization. When cell-height scaling is
         // applied, this is smaller than options.Size. For metric calculations we
         // use the effective size; for the InfoBlock we record the original.
-        var metricSize = effectiveSize ?? options.Size;
+        // Backends render at size × Dpi / 72 pixels per em, so font-unit metrics scale by it too.
+        var metricSize = (float)((effectiveSize ?? options.Size) * DpiScale(options));
 
-        var info = BuildInfo(fontInfo, options);
+        var info = BuildInfo(fontInfo, options, superSampleLevel);
 
-        var (lineHeight, baseLine) = ComputeLineMetrics(fontInfo, metricSize, rasterizerFontMetrics);
+        var (lineHeight, baseLine) = ComputeLineMetrics(fontInfo, metricSize, rasterizerFontMetrics, options.HeightPercent);
 
         var common = BuildCommon(
             options, lineHeight, baseLine,
@@ -189,7 +191,9 @@ internal static class BmFontModelBuilder
     /// Shared with <see cref="BmFontIncrementalSession"/> so incremental models
     /// stay identical to full-generate models.
     /// </summary>
-    internal static InfoBlock BuildInfo(FontInfo fontInfo, FontGeneratorOptions options)
+    /// <param name="superSampleLevel">The level the glyphs were rendered at
+    /// (<see cref="PreparedRasterization.SuperSampleLevel"/>), written as <c>aa</c>.</param>
+    internal static InfoBlock BuildInfo(FontInfo fontInfo, FontGeneratorOptions options, int superSampleLevel)
     {
         return new InfoBlock(
             Face: fontInfo.FamilyName,
@@ -199,19 +203,35 @@ internal static class BmFontModelBuilder
             Unicode: true,
             Smooth: options.AntiAlias != AntiAliasMode.None,
             FixedHeight: false,
-            StretchH: 100,
+            // BMFont writes its height percent and super-sample level here (the stretch clamps to 10%).
+            StretchH: Math.Max(10, options.HeightPercent),
             Charset: "",
-            Aa: 1,
+            Aa: superSampleLevel,
             Padding: options.Padding,
             Spacing: options.Spacing,
             Outline: options.Outline);
     }
 
     /// <summary>
-    /// Computes lineHeight and base (ascent) in pixels for the common block.
-    /// Shared with <see cref="BmFontIncrementalSession"/>.
+    /// Computes lineHeight and base (ascent) in pixels for the common block, stretched by
+    /// <paramref name="heightPercent"/> like the glyphs: BMFont rounds the stretched values up
+    /// (<c>ceil(height × scaleH / 100)</c>). Shared with <see cref="BmFontIncrementalSession"/>.
     /// </summary>
     internal static (int LineHeight, int BaseLine) ComputeLineMetrics(
+        FontInfo fontInfo, float metricSize, RasterizerFontMetrics? rasterizerFontMetrics, int heightPercent = 100)
+    {
+        var (lineHeight, baseLine) = ComputeUnstretchedLineMetrics(fontInfo, metricSize, rasterizerFontMetrics);
+        if (heightPercent == 100)
+            return (lineHeight, baseLine);
+
+        // The same clamp as HeightStretchPostProcessor's.
+        var percent = Math.Max(10, heightPercent);
+        return (
+            (int)Math.Ceiling(lineHeight * (double)percent / 100),
+            (int)Math.Ceiling(baseLine * (double)percent / 100));
+    }
+
+    private static (int LineHeight, int BaseLine) ComputeUnstretchedLineMetrics(
         FontInfo fontInfo, float metricSize, RasterizerFontMetrics? rasterizerFontMetrics)
     {
         if (rasterizerFontMetrics is not null)
@@ -284,6 +304,13 @@ internal static class BmFontModelBuilder
             GreenChnl: greenChnl,
             BlueChnl: blueChnl);
     }
+
+    /// <summary>
+    /// Pixels per em per point of size: every backend renders at <c>Size × Dpi / 72</c> ppem
+    /// (<c>Dpi</c> 0 meaning 72, as on FreeType and Native).
+    /// </summary>
+    internal static double DpiScale(FontGeneratorOptions options) =>
+        options.Dpi > 0 ? options.Dpi / 72.0 : 1.0;
 
     /// <summary>Atlas page file extension for the configured texture format.</summary>
     internal static string TextureExtension(FontGeneratorOptions options) => options.TextureFormat switch
@@ -393,8 +420,8 @@ internal static class BmFontModelBuilder
             AdvanceAdjustY = advanceAdjustY
         };
 
-        // Only include metadata when there are extended fields worth storing.
-        // GeneratorVersion alone is always present, so we check for extras.
-        return meta;
+        // Written only when it carries a field beyond GeneratorVersion (REF-05), so a default
+        // font is a plain BMFont file with no kernsmith line, XML element or binary block 6.
+        return meta.HasExtendedFields ? meta : null;
     }
 }

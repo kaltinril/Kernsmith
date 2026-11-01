@@ -53,11 +53,13 @@ internal static class BmfcWriter
             Size = options.Size ?? 32,
             Bold = options.Bold,
             Italic = options.Italic,
+            ForceSyntheticBold = options.ForceSyntheticBold,
+            ForceSyntheticItalic = options.ForceSyntheticItalic,
             AntiAlias = options.AntiAlias,
             LcdFilter = options.LcdFilter ?? KernSmith.LcdFilter.Default,
             LcdSubpixelOrder = options.LcdSubpixelOrder ?? KernSmith.LcdSubpixelOrder.Rgb,
-            Padding = options.Padding,
-            Spacing = options.Spacing,
+            Padding = options.Padding ?? new Padding(0),
+            Spacing = options.Spacing ?? new Spacing(1),
             PackingAlgorithm = options.PackingAlgorithm,
             Kerning = options.Kerning ?? true,
             Outline = options.Outline,
@@ -71,6 +73,7 @@ internal static class BmfcWriter
             ChannelPacking = options.ChannelPacking,
             SuperSampleLevel = options.SuperSampleLevel,
             FallbackCharacter = options.FallbackCharacter,
+            FallbackCodepoint = options.FallbackCodepoint,
             EnableHinting = options.EnableHinting ?? true,
             AutofitTexture = options.AutofitTexture,
             EqualizeCellHeights = options.EqualizeCellHeights,
@@ -91,7 +94,11 @@ internal static class BmfcWriter
             ShadowBlur = options.ShadowBlur,
             ShadowBlurKernelSize = options.ShadowBlurKernelSize,
             ShadowBlurPasses = options.ShadowBlurPasses,
+            ShadowOpacity = options.ShadowOpacity,
+            HardShadow = options.HardShadow,
+            SdfScale = options.SdfScale,
             AdvanceAdjustX = options.AdvanceAdjustX,
+            AdvanceAdjustY = options.AdvanceAdjustY,
             Backend = options.Backend,
         };
 
@@ -102,7 +109,7 @@ internal static class BmfcWriter
             genOptions.Gamma = options.Gamma.Value;
 
         // Set MaxTextureSize (sets both width and height)
-        genOptions.MaxTextureSize = options.MaxTextureSize;
+        genOptions.MaxTextureSize = options.MaxTextureSize ?? 1024;
         // Then override individually if explicitly set
         if (options.MaxTextureWidth.HasValue)
             genOptions.MaxTextureWidth = options.MaxTextureWidth.Value;
@@ -155,11 +162,11 @@ internal static class BmfcWriter
             genOptions.FillColorA = fill.A;
         }
 
-        // Build character set from CLI options
-        if (options.UnicodeRanges.Count > 0)
-        {
-            genOptions.Characters = CharacterSet.FromRanges(options.UnicodeRanges.ToArray());
-        }
+        if (options.ShadowVariant)
+            genOptions.Variants = [new("shadow", AtlasVariantKind.ShadowSilhouette, options.ShadowBlur, options.HardShadow)];
+
+        // The same union of -c/--chars/--chars-file/--range that generation renders.
+        genOptions.Characters = Commands.GenerateCommand.BuildCharacterSet(options);
 
         if (options.VariationAxes.Count > 0)
             genOptions.VariationAxes = new Dictionary<string, float>(options.VariationAxes);
