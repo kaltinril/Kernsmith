@@ -444,6 +444,7 @@ internal sealed class PreparedRasterization : IDisposable
             : null;
 
         var needsDownscale = _renderScale > 1;
+        var customCodepoints = options.CustomGlyphs is { Count: > 0 } custom ? custom.Keys.ToHashSet() : null;
 
         // Multi-channel distance fields average each channel on its own: MTSDF alpha is a
         // distance, not opacity, so premultiplying RGB by it would destroy their distances.
@@ -467,7 +468,8 @@ internal sealed class PreparedRasterization : IDisposable
                 masks?.TryGetValue(g.Codepoint, out mask);
                 // Downscale first: effect and post-processor sizes (outline width, shadow offset
                 // and blur) are output pixels at every super-sample level, as BMFont's outline is.
-                if (needsDownscale)
+                // A custom glyph was supplied at the final size and is not downscaled.
+                if (needsDownscale && customCodepoints?.Contains(g.Codepoint) != true)
                 {
                     g = SuperSampleDownscale(g, _renderScale, perChannel);
                     mask = mask?.Downscale(_renderScale);
