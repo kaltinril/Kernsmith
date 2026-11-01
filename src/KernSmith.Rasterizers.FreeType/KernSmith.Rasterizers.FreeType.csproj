@@ -6,7 +6,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>CS1591</NoWarn>
     <PackageId>KernSmith.Rasterizers.FreeType</PackageId>
-    <Description>FreeType rasterizer backend for KernSmith. Runs on Windows, Linux x64, macOS, and Android (not iOS, where it fails to link). Supports color fonts, variable fonts, SDF, and outline effects.</Description>
+    <Description>FreeType rasterizer backend for KernSmith. Runs on Windows, Linux x64, macOS, and Android (not iOS, where it fails to link). Renders color fonts (COLRv0/CPAL, CBDT, sbix; COLRv1 glyphs as grayscale), variable fonts, SDF, font hinting (bytecode with autohint fallback), and every anti-alias mode including Light and LCD.</Description>
     <PackageProjectUrl>https://github.com/kaltinril/Kernsmith</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Authors>Kaltinril (Jeremy Swartwood)</Authors>

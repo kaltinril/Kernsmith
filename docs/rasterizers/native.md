@@ -35,7 +35,7 @@ kernsmith generate --font Roboto-Regular.ttf --size 32 --rasterizer native --out
 - PostScript (`CFF ` / `CFF2`) outlines -- `.otf` files, including CID-keyed fonts
 - TrueType Collections (`.ttc`) via face index
 - WOFF and WOFF2 files wrapping either outline format (KernSmith core decompresses them before the backend sees the bytes)
-- `cmap` formats 4 and 12 for character lookup
+- `cmap` formats 4 and 12 for character lookup, including the Windows symbol (3,0) subtable of fonts such as Wingdings, Webdings and Symbol: each glyph is reached at its U+F0xx code and at its byte decoded as Windows-1252, as BMFont does (`KernSmith.Font.SymbolEncoding`)
 - Anti-aliasing:
   - `Grayscale` -- exact-area coverage, unhinted
   - `None` -- a 50% coverage threshold with dropout control, so strokes thinner than half a pixel still leave a pixel; each glyph box is cropped to its ink

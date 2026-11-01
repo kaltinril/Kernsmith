@@ -103,3 +103,5 @@ non-default features were used.
 | `ColorFont` | `bool?` | Whether color font rendering was enabled. |
 | `FallbackCharacter` | `int?` | Fallback codepoint for missing glyphs, if configured. |
 | `AdvanceAdjustY` | `float?` | Global vertical advance adjustment (Hiero `pad.advance.y`), if non-zero. BMFont has no per-glyph yadvance field, so this is surfaced here to round-trip. |
+| `VariantOf` | `string?` | On an [atlas variant](../core/atlas-variants.md)'s model, the family name of the primary font it is a variant of; null on the primary model. |
+| `Variants` | `IReadOnlyList<string>?` | On the primary model, the names of the atlas variants generated alongside it; null on a variant model. |

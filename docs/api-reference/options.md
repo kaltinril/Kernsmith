@@ -130,6 +130,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 |----------|------|---------|-------------|
 | `Kerning` | `bool` | `true` | Include kerning pairs in the output. |
 | `AdvanceAdjustX` | `float` | `0f` | Global value added to every glyph's `xadvance`. |
+| `AdvanceAdjustY` | `float` | `0f` | Global vertical advance adjustment (Hiero `pad.advance.y`). BMFont has no per-glyph `yadvance`, so it is recorded in the extended metadata (`ExtendedMetadata.AdvanceAdjustY`) to round-trip. |
 | `CollectMetrics` | `bool` | `false` | Record per-stage pipeline timing on the result. |
 
 ## Pluggable components

@@ -123,8 +123,8 @@ static int ShowHelp()
           --help, -h    Show help
           --version     Show version
           --no-color    Disable colored output
-          -v, --verbose Show detailed progress
-          -q, --quiet   Suppress all output except errors
+
+        -v/--verbose and -q/--quiet are per-command options.
 
         Run 'kernsmith <command> --help' for command-specific options.
         """);

@@ -52,6 +52,9 @@ Thrown when a font cannot be read. This is the most common KernSmith exception. 
 - a WOFF or WOFF2 file is malformed, truncated, or its compressed data is corrupt;
 - a requested face index is out of range for a `.ttc`/`.otc` collection;
 - a backend fails to initialize the font (e.g. FreeType or StbTrueType load failure);
+- the StbTrueType backend's OpenType structure check rejects a non-conforming font (when it
+  loads, or when a glyph's outline data is first used), or the font has no Unicode or Windows
+  symbol `cmap` subtable;
 - a requested system font family is not installed and is not registered.
 
 | Member | Description |

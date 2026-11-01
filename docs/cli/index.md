@@ -45,7 +45,7 @@ See the [Command Reference](commands.md) for full details on every command and f
 
 ## Configuration Files
 
-Settings can be stored in BMFont `.bmfc` files or Hiero `.hiero` (libGDX) files and loaded with `--config`. When loading, the format is auto-detected by inspecting the file content (the extension is used only as a fallback when the content is inconclusive). Use the `init` command or `--save-config` to scaffold a config, then edit by hand.
+Settings can be stored in BMFont `.bmfc` files or Hiero `.hiero` (libGDX) files and loaded with `--config`. When loading, the format is auto-detected by inspecting the file content (the extension is used only as a fallback when the content is inconclusive). Use the `init` command or `--save-config` to scaffold a config, then edit by hand. `.bmfc` boolean keys accept `1`/`0`, `true`/`false` or `yes`/`no` in any case; KernSmith writes `1`/`0`.
 
 ```bash
 # Scaffold a .bmfc config
@@ -63,10 +63,12 @@ kernsmith generate --config my-font.bmfc -s 48 --format xml
 
 ## Global Options
 
-| Flag | Description |
-|------|-------------|
-| `--help, -h` | Show help |
-| `--version` | Show version |
-| `--no-color` | Disable colored output |
-| `-v, --verbose` | Show detailed progress |
-| `-q, --quiet` | Suppress all output except errors |
+Only `--no-color` is truly global -- it is stripped before command dispatch, so it works alongside any command. The rest are scoped:
+
+| Flag | Scope | Description |
+|------|-------|-------------|
+| `--no-color` | Any command | Disable colored output |
+| `--help, -h` | Alone (`kernsmith --help`), or `kernsmith <command> --help` | Show help |
+| `--version` | Alone (`kernsmith --version`) | Show version |
+| `-v, --verbose` | Parsed per command | Show detailed progress |
+| `-q, --quiet` | Parsed per command | Suppress all output except errors |

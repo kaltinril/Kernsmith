@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-10-31
+
 ### Added
 
 - **The experimental Native rasterizer is now close to feature-complete**, still entirely KernSmith's own managed C# and still unpublished (use a source build or the CLI's `--rasterizer native`):

@@ -191,6 +191,8 @@ internal static class BmFontModelBuilder
     /// Shared with <see cref="BmFontIncrementalSession"/> so incremental models
     /// stay identical to full-generate models.
     /// </summary>
+    /// <param name="fontInfo">The parsed font the info block describes.</param>
+    /// <param name="options">The generation options (size, style, padding, spacing, height percent).</param>
     /// <param name="superSampleLevel">The level the glyphs were rendered at
     /// (<see cref="PreparedRasterization.SuperSampleLevel"/>), written as <c>aa</c>.</param>
     internal static InfoBlock BuildInfo(FontInfo fontInfo, FontGeneratorOptions options, int superSampleLevel)

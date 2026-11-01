@@ -41,7 +41,7 @@ RasterizerBackend enum:
 
 | Capability | FreeType | GDI | DirectWrite | StbTrueType | Native |
 |---|---|---|---|---|---|
-| **Platform** | Cross-platform (Windows, Linux x64, macOS, Android) | Windows only | Windows only | Cross-platform (Windows, Linux x64 and arm64, macOS, Android, iOS simulator, Mac Catalyst; builds for Blazor WASM) | Cross-platform (Windows, Linux x64 and arm64, macOS, Android, iOS simulator, Mac Catalyst) |
+| **Platform** | Cross-platform (Windows, Linux x64, macOS, Android) | Windows only | Windows only | Cross-platform (Windows, Linux x64 and arm64, macOS, Android, iOS simulator, Mac Catalyst, Blazor WASM) | Cross-platform (Windows, Linux x64 and arm64, macOS, Android, iOS simulator, Mac Catalyst, Blazor WASM) |
 | **NuGet package** | `KernSmith.Rasterizers.FreeType` | `KernSmith.Rasterizers.Gdi` | `KernSmith.Rasterizers.DirectWrite.TerraFX` | `KernSmith.Rasterizers.StbTrueType` | none (not published) |
 | **Color fonts** (COLR/CPAL, CBDT/CBLC, sbix) | Yes (`COLR` v1 as grayscale; bitmaps at strike size) | No | No (stubbed, no impl yet) | No | Yes (`COLR` v0 and v1; bitmaps scaled to the requested size) |
 | **Variable fonts** (fvar axes) | Yes | No | No (stubbed, no impl yet) | No | Yes (TrueType `gvar` and CFF2 `blend`) |
@@ -137,7 +137,7 @@ RasterizerBackend enum:
 
 **Package**: `KernSmith.Rasterizers.StbTrueType` (separate NuGet, cross-platform TFMs: `net8.0`, `net10.0`).
 
-**When to use**: When you need a pure C# rasterizer with zero native dependencies. Required for Blazor WASM and for platforms with no FreeTypeSharp native library (Linux arm64, Mac Catalyst); suited to serverless and AOT deployments. Verified on Android, iOS (simulator) and Mac Catalyst (full AOT); see the README platform support table. Also useful when you want to avoid shipping platform-specific native binaries.
+**When to use**: When you need a pure C# rasterizer with zero native dependencies. The only published backend for Blazor WASM (with trusted fonts; the unpublished Native backend also runs there) and for platforms with no FreeTypeSharp native library (Linux arm64, Mac Catalyst); suited to serverless and AOT deployments. Verified on Android, iOS (simulator) and Mac Catalyst (full AOT); see the README platform support table. Also useful when you want to avoid shipping platform-specific native binaries.
 
 **Strengths**:
 
@@ -151,12 +151,13 @@ RasterizerBackend enum:
 
 **Limitations**:
 
+- **Trusted fonts only.** stb_truetype does no bounds checking, so a malformed font can crash the process. The backend checks each font's structure against the OpenType spec (the table directory and the tables it reads at load, each glyph's outline data on first use) and rejects a non-conforming font with `FontParsingException`; this is defense in depth, not a guarantee. Use Native or FreeType for untrusted fonts.
 - No color font support (COLR/CPAL, CBDT/CBLC, sbix).
 - No variable font support (fvar axes).
 - No outline stroke support.
 - Cannot load system-installed fonts by family name.
 - Anti-alias limited to None and Grayscale.
-- Hinting quality is more limited than FreeType or platform rasterizers.
+- No hinting (stb_truetype has no hinting engine).
 - Requires `AllowUnsafeBlocks` due to StbTrueTypeSharp's pointer-based API.
 
 ---

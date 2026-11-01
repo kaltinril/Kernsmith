@@ -37,7 +37,7 @@ kernsmith generate -f <font> -s <size> [options]
 | `--width-percent <n>` | Synthetic condensed/expanded width percentage, 10-1000 (default: 100). Native only; other backends fail with a generation error. `.bmfc` key `widthPercent` |
 | `--match-char-height` | Match rendered height to requested pixel height |
 | `--advance-x <n>` | Global horizontal advance adjustment added to every glyph (alias `--advance-adjust-x`, default: 0) |
-| `--fallback-char <char>` | Fallback character for missing glyphs |
+| `--fallback-char <char>` | Fallback character for missing glyphs (char or codepoint) |
 
 ### Style
 
@@ -87,7 +87,7 @@ kernsmith generate -f font.ttf -s 32 --range 0020-007E --range 00A0-00FF
 | `--pot / --no-pot` | Force power-of-two textures (default: on) |
 | `--packer <alg>` | Packing algorithm: `maxrects` (default), `skyline` |
 | `--channel-pack` | Pack glyphs into individual RGBA channels |
-| `--equalize-heights` | Equalize all glyph cell heights |
+| `--equalize-heights` | Make every glyph cell span the whole line, as BMFont's `useFixedHeight` does: `yoffset` 0 and `height` = `lineHeight` for every char, baseline at row `base` (cells grow to cover any glyph reaching outside the line box) |
 | `--force-offsets-zero` | Set all xoffset/yoffset to zero |
 
 ### Effects
@@ -163,8 +163,8 @@ kernsmith generate -f RobotoFlex.ttf -s 32 --instance "Bold"
 
 | Flag | Description |
 |------|-------------|
-| `--config <path>` | Load settings from a `.bmfc` or `.hiero` configuration file (format auto-detected by inspecting file content, with the extension used only as a fallback when the content is inconclusive) |
-| `--save-config <path>` | Save current settings to a `.bmfc` or `.hiero` file (format chosen by the file extension; `.hiero` writes a Hiero config, otherwise BMFont) |
+| `--config <path>` | Load settings from a `.bmfc` or `.hiero` configuration file (format auto-detected by inspecting file content, with the extension used only as a fallback when the content is inconclusive). `.bmfc` boolean keys accept `1`/`0`, `true`/`false` or `yes`/`no` in any case |
+| `--save-config <path>` | Save current settings to a `.bmfc` or `.hiero` file (format chosen by the file extension; `.hiero` writes a Hiero config, otherwise BMFont). Written only after a successful generation, never with `--dry-run` |
 | `--dry-run` | Show what would be generated without writing files |
 | `--time` | Print actual generation time (excludes CLI startup) |
 | `--profile` | Print stage-level timing breakdown |
@@ -179,7 +179,7 @@ Commands report their outcome with these process exit codes:
 |------|---------|
 | `0` | Success |
 | `1` | Invalid arguments (and `batch` when any job failed) |
-| `2` | File not found |
+| `2` | File not found -- a missing `--config` file, `--chars-file`, `batch` jobs file, or `convert`/`inspect`/`info` input. A missing `generate -f` font file exits `1` |
 | `3` | Font could not be parsed |
 | `4` | Generation error -- including a backend rejecting the font or an option (e.g. `--rasterizer stbtruetype --color-font`), printed to stderr as `Error: Generation error (<backend> rasterizer): <message>` |
 | `5` | Output could not be written |
@@ -189,7 +189,7 @@ Commands report their outcome with these process exit codes:
 
 ## init
 
-Generate a `.bmfc` or `.hiero` configuration file from CLI flags without rendering a font. Accepts all the same flags as `generate`.
+Generate a `.bmfc` or `.hiero` configuration file from CLI flags without rendering a font. Accepts all the same flags as `generate`; `--config`, `--dry-run`, `--save-config`, `--time` and `--profile` are accepted but ignored.
 
 ```
 kernsmith init [options]
@@ -278,7 +278,7 @@ kernsmith inspect myfont.fnt --json
 
 ## convert
 
-Convert between BMFont `.fnt` formats. Atlas page images are automatically copied to the output directory.
+Convert between BMFont `.fnt` formats. Atlas page images are automatically copied to the output directory when it differs from the input's. A page path may nest (`pages/font_0.png`), but a page whose path leaves the input or output directory is not copied -- `convert` prints a warning and skips it.
 
 ```
 kernsmith convert <input> -o <output> [--format <text|xml|binary>]
@@ -332,7 +332,7 @@ kernsmith benchmark-fonts --json
 
 ## list-rasterizers
 
-List available rasterizer backends on the current platform. Shows each backend's availability, platform support, and capabilities (color fonts, variable fonts, SDF, vector outline, synthetic bold/italic, system fonts).
+List every rasterizer backend: each line shows its availability on the current machine (`(default)`, `(available)` or `(not available)`), a platform note (`All platforms` or `Windows only`), and, for available backends, their capabilities (color fonts, variable fonts, SDF, vector outline, synthetic bold/italic, system fonts).
 
 ```
 kernsmith list-rasterizers

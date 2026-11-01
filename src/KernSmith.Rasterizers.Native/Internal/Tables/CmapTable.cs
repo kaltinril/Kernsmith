@@ -136,7 +136,7 @@ internal sealed class CmapTable
     /// <summary>
     /// Parses the <c>cmap</c> table and selects the best Unicode subtable.
     /// </summary>
-    /// <exception cref="FontFormatException">If no supported Unicode subtable is found.</exception>
+    /// <exception cref="FontFormatException">If no supported Unicode or Windows symbol (3,0) subtable is found.</exception>
     public static CmapTable Parse(ReadOnlySpan<byte> data)
     {
         var reader = new FontReader(data);

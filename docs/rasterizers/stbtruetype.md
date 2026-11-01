@@ -1,6 +1,6 @@
 # StbTrueType
 
-Managed-only rasterizer backend for KernSmith using [StbTrueTypeSharp](https://github.com/StbSharp/StbTrueTypeSharp). No native dependencies -- verified on Windows, Linux x64 and arm64, macOS, Android, iOS, and Mac Catalyst, builds for Blazor WASM, and suited to NativeAOT and serverless environments -- see the [platform support table](../../README.md#platform-support).
+Managed-only rasterizer backend for KernSmith using [StbTrueTypeSharp](https://github.com/StbSharp/StbTrueTypeSharp). No native dependencies -- verified on Windows, Linux x64 and arm64, macOS, Android, iOS, Mac Catalyst and Blazor WASM (interpreted build, in headless Chrome), and suited to NativeAOT and serverless environments -- see the [platform support table](../../README.md#platform-support).
 
 ## Installation
 
@@ -26,7 +26,7 @@ var result = BmFont.Generate("path/to/font.ttf", options);
 
 ## Capabilities
 
-- TTF input
+- TrueType (`.ttf`) and CFF (`.otf`) input, but not CFF2; WOFF/WOFF2 (decompressed by core); symbol-`cmap` fonts such as Wingdings, Webdings and Symbol
 - Anti-aliasing (Grayscale and None modes)
 - SDF (Signed Distance Field) rendering
 - Super sampling
@@ -45,6 +45,7 @@ This is novel work -- no other StbTrueTypeSharp consumer (including FontStashSha
 
 ## Limitations
 
+- **Trusted fonts only.** The underlying stb_truetype library does no bounds checking, so a malformed font can crash the process. The backend checks each font's structure against the OpenType spec (the table directory and the tables it reads when the font loads, each glyph's outline data the first time it is used) and rejects a non-conforming font with `FontParsingException`, but that is defense in depth, not a guarantee -- use the Native or FreeType backend for untrusted fonts (user uploads, URLs from users, servers)
 - No TrueType hinting (lower quality at small sizes < 16px)
 - No color font support (COLR/CPAL, CBDT/sbix)
 - No variable font axis support
@@ -93,7 +94,7 @@ Use StbTrueType when you need bitmap font generation on platforms where native F
 
 ## Blazor WASM
 
-StbTrueType is the recommended backend for Blazor WebAssembly. A complete working sample is available in `samples/KernSmith.Samples.BlazorWasm/`.
+StbTrueType is the recommended published backend for Blazor WebAssembly with trusted fonts. For untrusted fonts (user uploads), use the experimental [Native](native.md) backend, which also runs in Blazor WASM but is not on NuGet yet. A complete working sample is available in `samples/KernSmith.Samples.BlazorWasm/`.
 
 ### Setup
 

@@ -1116,7 +1116,7 @@ internal sealed class GenerateCommand
               --no-pot                    Allow non-power-of-two textures
               --packer <maxrects|skyline> Packing algorithm (default: maxrects)
               --channel-pack              Pack glyphs into individual RGBA channels
-              --equalize-heights          Equalize all glyph cell heights
+              --equalize-heights          Every cell spans the line box (BMFont useFixedHeight)
               --force-offsets-zero        Set all xoffset/yoffset to zero
 
             Effects:
@@ -1150,7 +1150,7 @@ internal sealed class GenerateCommand
 
             Configuration:
               --config <path>             Load settings from a .bmfc or .hiero config file
-              --save-config <path>        Save current settings to a .bmfc or .hiero file
+              --save-config <path>        Save settings to a .bmfc or .hiero file after a successful run (not with --dry-run)
               --dry-run                   Show what would be generated without writing files
               --time                      Print generation time (excludes CLI startup)
               --profile                   Show per-stage pipeline timing breakdown

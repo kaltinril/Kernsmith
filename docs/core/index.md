@@ -5,7 +5,7 @@ The `KernSmith` NuGet package is the core library that powers bitmap font genera
 ## Pipeline Flow
 
 1. **Font reading** -- parse TTF/OTF/WOFF/WOFF2 tables (cmap, head, hhea, OS/2, GPOS) for the requested codepoints
-2. **Rasterization** -- render glyphs via a [pluggable rasterizer backend](../rasterizers/index.md) (FreeType by default, with GDI and DirectWrite alternatives) with optional effects (outline, gradient, shadow)
+2. **Rasterization** -- render glyphs via a [pluggable rasterizer backend](../rasterizers/index.md) (FreeType by default, with GDI, DirectWrite, StbTrueType and the experimental Native alternatives) with optional effects (outline, gradient, shadow)
 3. **Atlas packing** -- arrange glyphs into texture pages using MaxRects or Skyline algorithms
 4. **Output formatting** -- produce BMFont `.fnt` descriptors (text, XML, or binary) and encoded atlas images
 
@@ -14,7 +14,7 @@ The `KernSmith` NuGet package is the core library that powers bitmap font genera
 | Namespace | Purpose |
 |-----------|---------|
 | `KernSmith` | Entry point (<xref:KernSmith.BmFont>), configuration types (<xref:KernSmith.FontGeneratorOptions>, <xref:KernSmith.CharacterSet>, <xref:KernSmith.Padding>, <xref:KernSmith.Spacing>, <xref:KernSmith.ChannelConfig>, <xref:KernSmith.BmfcConfig>, <xref:KernSmith.AtlasSizeConstraints>, <xref:KernSmith.AntiAliasMode>, <xref:KernSmith.OutputFormat>, <xref:KernSmith.TextureFormat>), exceptions, enums |
-| `KernSmith.Font` | Font reading and TTF table parsing |
+| `KernSmith.Font` | Font reading and TTF table parsing; <xref:KernSmith.Font.SymbolEncoding> maps symbol-`cmap` fonts (Wingdings, Webdings, Symbol) between their U+F0xx codes and Windows-1252 |
 | `KernSmith.Font.Models` | Data models: <xref:KernSmith.Font.Models.FontInfo>, <xref:KernSmith.Font.Models.KerningPair>, <xref:KernSmith.Font.Models.GlyphMetrics>, <xref:KernSmith.Font.Models.GlyphDesignMetrics> |
 | `KernSmith.Font.Tables` | Parsed table structures: <xref:KernSmith.Font.Tables.HeadTable>, <xref:KernSmith.Font.Tables.HheaTable>, <xref:KernSmith.Font.Tables.Os2Metrics>, <xref:KernSmith.Font.Tables.NameInfo> |
 | `KernSmith.Rasterizer` | <xref:KernSmith.Rasterizer.IRasterizer>, glyph effects (<xref:KernSmith.Rasterizer.IGlyphEffect>), <xref:KernSmith.Rasterizer.GlyphCompositor> |
@@ -73,7 +73,7 @@ For direct GPU upload, the following helpers convert a page to a specific pixel 
 
 Configuration for the generation pipeline: font size, character set, effects (outline, gradient, shadow), atlas settings, SDF, super sampling, variable font axes, and more.
 
-`Size` is a `float` (default `32f`) and supports fractional values when paired with the FreeType, StbTrueType, or DirectWrite rasterizer. The GDI rasterizer rounds fractional sizes to the nearest integer. Integer literals (e.g. `Size = 32`) continue to compile via implicit widening. BMFont on-disk formats store integer size; formatters round at the write boundary using `Math.Round`.
+`Size` is a `float` (default `32f`) and supports fractional values when paired with the FreeType, StbTrueType, DirectWrite, or Native rasterizer. The GDI rasterizer rounds fractional sizes to the nearest integer. Integer literals (e.g. `Size = 32`) continue to compile via implicit widening. BMFont on-disk formats store integer size; formatters round at the write boundary using `Math.Round`.
 
 #### Bold / Italic Properties
 
@@ -94,9 +94,9 @@ Defines which Unicode codepoints to include. Provides presets (`Ascii`, `Extende
 
 ### Blazor WASM
 
-The core library works in Blazor WebAssembly when paired with the StbTrueType rasterizer backend. Key constraints:
+The core library works in Blazor WebAssembly when paired with the StbTrueType or the experimental Native rasterizer backend. Key constraints:
 
-- Use `KernSmith.Rasterizers.StbTrueType` — FreeType requires native binaries unavailable in WASM
+- Use `KernSmith.Rasterizers.StbTrueType` (trusted fonts only) or Native (from a source build; not on NuGet yet) — FreeType requires native binaries unavailable in WASM
 - Use in-memory APIs (`FntText`, `GetPngData()`) instead of `ToFile()`
 - System font loading returns empty results — use `BmFont.RegisterFont()` to provide font data
 - Enable `<RunAOTCompilation>true</RunAOTCompilation>` for production performance
