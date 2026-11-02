@@ -7,8 +7,9 @@ namespace KernSmith.Rasterizers.Native.Internal.Hinting;
 /// carries TrueType bytecode, whether that bytecode was written for integer ppem
 /// (<c>head.flags</c> bit 3), its <c>hdmx</c> device advances, its <c>gasp</c> grid-fitting
 /// ranges and its x-height ratio. The <c>Normal</c> hinter reads it once per face to decide
-/// the ppem it fits at, where an advance comes from, whether to fit at a size at all, and how
-/// the x-height rounds; every other level ignores it.
+/// the ppem it fits at, whether to fit at a size at all, and how the x-height rounds; every
+/// other level ignores it. The <c>hdmx</c> advances are parsed and exposed for diagnostics
+/// (parity tooling) only — nothing in the pipeline consumes them, see <see cref="HdmxAdvance"/>.
 /// </summary>
 /// <remarks>
 /// A font has bytecode by FreeType's rule — an <c>fpgm</c> or <c>prep</c> table, or
@@ -90,9 +91,12 @@ internal sealed class HintingProfile
 
     /// <summary>
     /// The <c>hdmx</c> advance of a glyph at an integer ppem, in pixels, or null when the face
-    /// does not prefer integer ppem (the record would not describe what is drawn), has no
-    /// record for that ppem, or the glyph is outside the font. Device metrics describe the
-    /// unstyled glyphs at the default instance; the caller falls back for anything else.
+    /// does not prefer integer ppem (the record would not describe a glyph drawn at that ppem),
+    /// has no record for that ppem, or the glyph is outside the font. Not an advance the
+    /// pipeline uses: the table holds the advances that go with the bytecode's own outlines
+    /// (Georgia's instructions widen its letters a pixel at text sizes), and Native does not run
+    /// the bytecode, so with Native's narrower ink those advances set a line loose in both
+    /// anti-alias modes. Only valid together with a TrueType interpreter; a diagnostic until then.
     /// </summary>
     public int? HdmxAdvance(int ppem, int glyphIndex) =>
         PrefersIntegerPpem && Hdmx is not null && Hdmx.TryGetAdvance(ppem, glyphIndex, out int advance) ? advance : null;

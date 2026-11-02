@@ -12,8 +12,9 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// "The font already knows": under <see cref="HintLevel.Normal"/>, a font with TrueType
 /// bytecode whose <c>head.flags</c> bit 3 asks for integer ppem is fitted and rendered at the
 /// integer ppem its designer hinted for (as FreeType's TrueType driver and GDI do), takes its
-/// advances from <c>hdmx</c> where the table has a record for that ppem and the rounded linear
-/// advance at the integer ppem elsewhere, and is not fitted at the sizes its <c>gasp</c> table
+/// advances as the rounded linear advance at that integer ppem in both anti-alias modes — never
+/// from <c>hdmx</c>, whose advances go with the bytecode's own outlines, which Native does not
+/// draw — and is not fitted at the sizes its <c>gasp</c> table
 /// says not to grid-fit. Autohint fonts (Roboto) and every other level are untouched. The
 /// Windows system fonts are the only fonts with all three tables; the tests skip without them.
 /// </summary>
@@ -76,19 +77,19 @@ public class NativeBytecodeFontTests
 
     [Theory]
     [MemberData(nameof(HdmxFonts))]
-    public void Advances_AreFreeTypesHintedOnes_WhereHdmxHasARecord(string file)
+    public void Advances_AreTheLinearOnesAtTheIntegerPpem_InBothModes_NotHdmx(string file)
     {
-        // hdmx is the designer's table of hinted advances per integer ppem; FreeType's
-        // interpreter reports exactly those. Where the record for round(ppem) exists, Normal's
-        // advances are the table's, in both anti-alias modes (the mode never changes an advance).
+        // hdmx records the advances that go with the bytecode's own (widened) outlines, which
+        // Native does not draw: with Native's shapes those advances set text loose in both
+        // modes. The advance is the linear one at round(ppem), rounded once, in grayscale and
+        // bilevel alike — at every cell with an hdmx record, where the table would say otherwise.
         var bytes = SystemFont(file);
         using var native = Load(bytes);
-        using var freeType = new FreeTypeRasterizer();
-        freeType.LoadFont(bytes);
         var face = native.Face!;
         var profile = HintingProfile.For(face);
 
         int cellsWithARecord = 0;
+        int hdmxDisagrees = 0;
         for (int cell = 10; cell <= 18; cell++)
         {
             float size = SizeForCell(native, cell);
@@ -97,32 +98,89 @@ public class NativeBytecodeFontTests
                 continue;
 
             cellsWithARecord++;
+            foreach (char c in Ascii)
+            {
+                int glyph = face.GetGlyphIndex(c);
+                int linearAtInteger = GlyphPipeline.PixelAdvance(face.Hmtx.GetAdvanceWidth(glyph), integerPpem / (float)face.Head.UnitsPerEm);
+                native.RasterizeGlyph(c, Normal(size, AntiAliasMode.None))!.Metrics.Advance.ShouldBe(linearAtInteger, $"{file} '{c}' at {cell}px ({size:F2} -> {integerPpem} ppem) bilevel");
+                native.RasterizeGlyph(c, Normal(size))!.Metrics.Advance.ShouldBe(linearAtInteger, $"{file} '{c}' at {cell}px ({size:F2} -> {integerPpem} ppem) grayscale");
+                if (profile.HdmxAdvance(integerPpem, glyph)!.Value != linearAtInteger)
+                    hdmxDisagrees++;
+            }
+        }
+
+        cellsWithARecord.ShouldBeGreaterThanOrEqualTo(4, $"{file}: too few cells had an hdmx record to test");
+        hdmxDisagrees.ShouldBeGreaterThan(0, $"{file}: hdmx never differs from the linear advance at these cells, so the test cannot tell the two apart");
+    }
+
+    [Theory]
+    [InlineData(AntiAliasMode.Grayscale)]
+    [InlineData(AntiAliasMode.None)]
+    public void Georgia12px_LineIsAsLongAsUnhinted_AndTheInkIsUntouched(AntiAliasMode mode)
+    {
+        // Georgia's instructions widen its letters at small sizes and hdmx records the advances
+        // that go with those widened shapes (FreeType's bilevel h, n, c, r, w are a pixel wider
+        // than Native's at a 12 px cell). Under hdmx a line of Native's narrower ink ran 158 px
+        // in bilevel and 155 in grayscale against the unhinted line at the same ppem: visibly
+        // loose. The advance rule changes nothing but the advance: the line is the unhinted
+        // one's within 3%, and the fitted ink is the width it was.
+        var bytes = SystemFont("georgia.ttf");
+        using var native = Load(bytes);
+        float size = SizeForCell(native, 12);
+        float integerPpem = MathF.Floor(size + 0.5f);
+        integerPpem.ShouldBe(11f);
+
+        var widths = new StringBuilder();
+        foreach (char c in "hncrw")
+            widths.Append(c).Append(native.RasterizeGlyph(c, Normal(size, mode))!.Width).Append(' ');
+        widths.ToString().ShouldBe(mode == AntiAliasMode.None ? "h6 n6 c4 r4 w8 " : "h6 n6 c5 r6 w9 ", $"georgia {mode} at 12px ink widths");
+
+        int hinted = LineLength(native, Normal(size, mode));
+        int unhinted = LineLength(native, Unhinted(integerPpem, mode));
+        Math.Abs(hinted - unhinted).ShouldBeLessThanOrEqualTo((int)(0.03 * unhinted), $"georgia {mode} at 12px: line {hinted} px vs {unhinted} px unhinted at {integerPpem} ppem");
+    }
+
+    [Theory]
+    [MemberData(nameof(AllFour))]
+    public void GrayscaleAdvances_MatchFreeTypesGrayscale(string file)
+    {
+        // FreeType's grayscale (v40) keeps the linear advances at the integer ppem; so does
+        // Normal, so the two agree on nearly every printable ASCII glyph. The leftovers are
+        // exact half pixels, which FreeType's 26.6 scaling rounds up and Native's float
+        // rounds down (Arial's 1479-unit caps at 9 ppem are 6.4995 px: 6 here, 7 there).
+        var bytes = SystemFont(file);
+        using var native = Load(bytes);
+        using var freeType = new FreeTypeRasterizer();
+        freeType.LoadFont(bytes);
+
+        foreach (int cell in new[] { 10, 12, 14 })
+        {
+            float size = SizeForCell(native, cell);
             int matches = 0;
             var differences = new StringBuilder();
             foreach (char c in Ascii)
             {
-                int bilevel = native.RasterizeGlyph(c, Normal(size, AntiAliasMode.None))!.Metrics.Advance;
-                int grayscale = native.RasterizeGlyph(c, Normal(size))!.Metrics.Advance;
-                grayscale.ShouldBe(bilevel, $"{file} '{c}' at {cell}px: grayscale and bilevel advances differ");
-                bilevel.ShouldBe(profile.HdmxAdvance(integerPpem, face.GetGlyphIndex(c))!.Value, $"{file} '{c}' at {cell}px: not the hdmx advance");
-                int oracle = freeType.RasterizeGlyph(c, FreeTypeHinted(size, AntiAliasMode.None))!.Metrics.Advance;
-                if (bilevel == oracle)
+                int actual = native.RasterizeGlyph(c, Normal(size))!.Metrics.Advance;
+                int oracle = freeType.RasterizeGlyph(c, FreeTypeHinted(size, AntiAliasMode.Grayscale))!.Metrics.Advance;
+                if (actual == oracle)
                     matches++;
                 else
-                    differences.Append(CultureInfo.InvariantCulture, $"'{c}' {bilevel} vs {oracle} ");
+                    differences.Append(CultureInfo.InvariantCulture, $"'{c}' {actual} vs {oracle} ");
             }
 
-            matches.ShouldBeGreaterThanOrEqualTo(Ascii.Length - OracleSlack, $"{file} at {cell}px ({size:F2} -> {integerPpem} ppem): {differences}");
+            matches.ShouldBeGreaterThanOrEqualTo(80, $"{file} grayscale at {cell}px ({size:F2} ppem) vs FreeType grayscale: {differences}");
         }
-
-        cellsWithARecord.ShouldBeGreaterThanOrEqualTo(4, $"{file}: too few cells had an hdmx record to test");
     }
+
+    /// <summary>The summed advances of a pangram, in pixels, under the given request.</summary>
+    private static int LineLength(NativeRasterizer native, RasterOptions options) =>
+        "The quick brown fox jumps over the lazy dog".Sum(c => native.RasterizeGlyph(c, options)!.Metrics.Advance);
 
     [Fact]
     public void Advances_AreTheLinearOnesAtTheIntegerPpem_WithoutAnHdmxRecord()
     {
-        // Verdana ships no hdmx: the advance is the font's linear advance scaled at round(ppem),
-        // rounded once — which is also what FreeType's interpreter reports for it.
+        // Verdana ships no hdmx, so FreeType's interpreter reports the font's linear advance
+        // scaled at round(ppem), rounded once — the same advance Normal gives every integer-ppem face.
         var bytes = SystemFont("verdana.ttf");
         using var native = Load(bytes);
         using var freeType = new FreeTypeRasterizer();
@@ -222,8 +280,8 @@ public class NativeBytecodeFontTests
     [MemberData(nameof(AllFour))]
     public void Metrics_MatchTheBitmap_InBothModes(string file)
     {
-        // GetGlyphMetrics runs the same stages as RasterizeGlyph: the integer ppem, the hdmx
-        // advance and the gasp decision must all be visible to both.
+        // GetGlyphMetrics runs the same stages as RasterizeGlyph: the integer ppem, the
+        // advance at it and the gasp decision must all be visible to both.
         var bytes = SystemFont(file);
         using var native = Load(bytes);
         var failures = new StringBuilder();
@@ -248,8 +306,8 @@ public class NativeBytecodeFontTests
     [Fact]
     public void SyntheticBold_TakesTheLinearAdvanceAtTheIntegerPpem()
     {
-        // hdmx describes the unstyled glyphs only: an emboldened glyph's advance is its own
-        // (grown) linear advance at the integer ppem, which is what None reports at that size.
+        // An emboldened glyph's advance is its own (grown) linear advance at the integer ppem,
+        // which is what None reports at that size.
         var bytes = SystemFont("arial.ttf");
         using var native = Load(bytes);
         float size = SizeForCell(native, 12);
