@@ -384,7 +384,7 @@ public class NativeBytecodeFontTests
     private static float SizeForCell(NativeRasterizer native, float cell)
     {
         var face = native.Face!;
-        return cell * face.Head.UnitsPerEm / (face.Os2.WinAscent + (float)face.Os2.WinDescent);
+        return cell * (float)face.Head.UnitsPerEm / (face.Os2.WinAscent + (float)face.Os2.WinDescent);
     }
 
     internal static byte[] SystemFont(string file)

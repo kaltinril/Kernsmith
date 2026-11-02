@@ -27,7 +27,7 @@ public class NativeBilevelStemWidthTests
         using var native = new NativeRasterizer();
         native.LoadFont(NativeBytecodeFontTests.SystemFont(file));
         var face = native.Face!;
-        float size = cell * face.Head.UnitsPerEm / (face.Os2.WinAscent + (float)face.Os2.WinDescent);
+        float size = cell * (float)face.Head.UnitsPerEm / (face.Os2.WinAscent + (float)face.Os2.WinDescent);
 
         var widths = StemWidths(native, size);
         widths.Values.Distinct().Count().ShouldBe(1, $"{file} {cell} px: {Describe(widths)}");
