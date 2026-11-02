@@ -34,6 +34,12 @@ internal sealed class RasterizationResult
     public IReadOnlyList<ScaledKerningPair>? RasterizerKerningPairs { get; init; }
 
     /// <summary>
+    /// Rasterizer-provided per-pair spacing corrections in pixels, folded into the kerning
+    /// pairs before rounding (<see cref="FontGeneratorOptions.BakeHintingIntoKerning"/>), or null.
+    /// </summary>
+    public IReadOnlyList<ScaledKerningAdjustment>? RasterizerKerningAdjustments { get; init; }
+
+    /// <summary>
     /// Snapshot of the glyphs after height-stretch/custom-glyph overrides and any
     /// super-sample downscale, but BEFORE outline/gradient/shadow effects were composited.
     /// Only populated when <see cref="FontGeneratorOptions.Variants"/> is non-empty — atlas
@@ -44,6 +50,14 @@ internal sealed class RasterizationResult
 
     /// <summary>The span every cell was equalized to, or null when equalization is off.</summary>
     public EqualizedSpan? EqualizedSpan { get; init; }
+
+    /// <summary>
+    /// Each glyph's unrounded advance and left side bearing in output pixels (super sampling
+    /// divided out, effects' advance growth added, 1/64 px steps), by codepoint, for the extended
+    /// metadata; null unless <see cref="FontGeneratorOptions.FractionalMetrics"/> is on. A custom
+    /// glyph has no entry.
+    /// </summary>
+    public IReadOnlyDictionary<int, FractionalGlyphMetrics>? FractionalMetrics { get; init; }
 
     /// <summary>
     /// Backend-drawn outline layers by codepoint, at the output size and placed against the final

@@ -68,9 +68,17 @@ public sealed class ExtendedMetadata
     public IReadOnlyList<string>? Variants { get; init; }
 
     /// <summary>
+    /// Each character's unrounded advance and left side bearing, and what hinting moved them by,
+    /// in the order of the <c>char</c> entries — present only when the font was generated with
+    /// <see cref="FontGeneratorOptions.FractionalMetrics"/>. See <see cref="FractionalCharMetrics"/>.
+    /// </summary>
+    public IReadOnlyList<FractionalCharMetrics>? FractionalMetrics { get; init; }
+
+    /// <summary>
     /// Returns true if any extended field (beyond GeneratorVersion) is set.
     /// </summary>
     internal bool HasExtendedFields =>
+        FractionalMetrics is { Count: > 0 } ||
         SdfSpread.HasValue ||
         SdfMode.HasValue ||
         OutlineThickness.HasValue ||

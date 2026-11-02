@@ -17,7 +17,8 @@ internal readonly record struct MaxpTable(
     ushort MaxCompositePoints,
     ushort MaxCompositeContours,
     ushort MaxComponentElements,
-    ushort MaxComponentDepth)
+    ushort MaxComponentDepth,
+    ushort MaxSizeOfInstructions = 0)
 {
     /// <summary>Hard ceiling on composite recursion, regardless of what the font declares.</summary>
     public const int MaxAllowedComponentDepth = 64;
@@ -54,9 +55,10 @@ internal readonly record struct MaxpTable(
         ushort maxCompositeContours = reader.ReadUInt16();
 
         // maxZones(2) maxTwilightPoints(2) maxStorage(2) maxFunctionDefs(2)
-        // maxInstructionDefs(2) maxStackElements(2) maxSizeOfInstructions(2) => 14 bytes.
-        // All are hinting-interpreter limits; we do not run hinting.
-        reader.Skip(14);
+        // maxInstructionDefs(2) maxStackElements(2) => 12 bytes of interpreter limits we never
+        // use; maxSizeOfInstructions(2) follows and tells whether any glyph carries bytecode.
+        reader.Skip(12);
+        ushort maxSizeOfInstructions = reader.ReadUInt16();
 
         ushort maxComponentElements = reader.ReadUInt16();
         ushort maxComponentDepth = reader.ReadUInt16();
@@ -68,6 +70,7 @@ internal readonly record struct MaxpTable(
             maxCompositePoints,
             maxCompositeContours,
             maxComponentElements,
-            maxComponentDepth);
+            maxComponentDepth,
+            maxSizeOfInstructions);
     }
 }

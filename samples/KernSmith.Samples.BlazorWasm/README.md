@@ -21,7 +21,9 @@ dotnet serve -d samples/KernSmith.Samples.BlazorWasm/bin/Release/net10.0/publish
 
 Open http://localhost:5050 in your browser.
 
-To generate without a click (e.g. from a headless browser), put a font under `wwwroot` and pass it in the query string: `http://localhost:5050/?backend=native&font=fonts/Roboto-Regular.ttf` fetches the font and generates with the chosen backend (`stbtruetype` or `native`).
+To generate without a click (e.g. from a headless browser), pass a font URL in the query string: `http://localhost:5050/?backend=native&font=fonts/Roboto-Regular.ttf` fetches the font and generates with the chosen backend (`stbtruetype` or `native`). Roboto ships under `wwwroot/fonts` (linked from the test fixtures) for exactly this.
+
+Under the result the page shows a **determinism hash**: the SHA-256 of the `.fnt` metrics and raw atlas pixels, computed by the same code the Native test project uses. With Native, the hash for Roboto at the defaults (32 px, ASCII, grayscale) must equal the `roboto/32px/grayscale/default` entry of `tests/KernSmith.Rasterizers.Native.Tests/Determinism/manifest.json` — the browser produces the same bytes as every other host. CI checks this on every run with `tests/KernSmith.DeterminismProbe/wasm-check.mjs` (headless Chromium via Playwright), which you can run locally too; see `TESTING-NATIVE.md`.
 
 To publish without the `wasm-tools` workload, add `-p:RunAOTCompilation=false` (interpreted).
 

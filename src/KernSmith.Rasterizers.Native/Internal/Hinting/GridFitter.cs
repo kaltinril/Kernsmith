@@ -213,7 +213,7 @@ internal static class GridFitter
     /// Pairs each edge with the nearest opposite edge on its ink side that overlaps it
     /// horizontally, keeping only mutual best matches: those are the strokes.
     /// </summary>
-    private static void Pair(List<Edge> edges, float maxStem)
+    internal static void Pair(List<Edge> edges, float maxStem)
     {
         var best = new Edge?[edges.Count];
         for (int i = 0; i < edges.Count; i++)
@@ -328,7 +328,14 @@ internal static class GridFitter
     /// <param name="commands">The outline.</param>
     /// <param name="aliases">Slots that duplicate a contour's start point (its Close, and a last
     /// segment ending exactly on the start) and must move with it.</param>
-    private static List<Edge> FindEdges(OutlineCommand[] commands, out List<(int Alias, int Canonical)> aliases)
+    /// <param name="minEdgeLength">The shortest edge, in pixels, worth keeping; the light
+    /// fitter's <see cref="MinEdgeLength"/> by default.</param>
+    /// <param name="halfTangents">True to also take a node where a curve arrives or leaves
+    /// horizontally and the other segment cuts across it (a stroke's terminal) as a round edge;
+    /// off for the light fitter, whose output must not change.</param>
+    /// <param name="slopeTolerance">The largest |dy/dx| that still counts as horizontal; the
+    /// light fitter's <see cref="SlopeTolerance"/> by default.</param>
+    internal static List<Edge> FindEdges(OutlineCommand[] commands, out List<(int Alias, int Canonical)> aliases, float minEdgeLength = MinEdgeLength, bool halfTangents = false, float slopeTolerance = SlopeTolerance)
     {
         aliases = [];
         var edges = new List<Edge>();
@@ -347,7 +354,7 @@ internal static class GridFitter
             while (end < commands.Length && commands[end].Type is OutlineCommandType.LineTo or OutlineCommandType.CubicTo)
                 end++;
 
-            ContourEdges(commands, i, end, clockwise, edges, aliases);
+            ContourEdges(commands, i, end, clockwise, edges, aliases, minEdgeLength, halfTangents, slopeTolerance);
             i = end < commands.Length && commands[end].Type == OutlineCommandType.Close ? end + 1 : end;
         }
 
@@ -355,7 +362,7 @@ internal static class GridFitter
     }
 
     private static void ContourEdges(
-        OutlineCommand[] commands, int start, int end, bool clockwise, List<Edge> edges, List<(int Alias, int Canonical)> aliases)
+        OutlineCommand[] commands, int start, int end, bool clockwise, List<Edge> edges, List<(int Alias, int Canonical)> aliases, float minEdgeLength, bool halfTangents, float slopeTolerance)
     {
         int startSlot = start * 3;
         if (end < commands.Length && commands[end].Type == OutlineCommandType.Close)
@@ -386,7 +393,7 @@ internal static class GridFitter
 
         var horizontal = new bool[n];
         for (int k = 0; k < n; k++)
-            horizontal[k] = IsHorizontal(commands, segments[k]);
+            horizontal[k] = IsHorizontal(commands, segments[k], slopeTolerance);
 
         var runs = new List<Run>();
         for (int k = 0; k < n; k++)
@@ -405,24 +412,26 @@ internal static class GridFitter
 
                 var before = segments[(k + n - 1) % n];
                 if (before.IsCubic)
-                    run.AddTangentControl(commands, before.Ctrl2, segment.From);
+                    run.AddTangentControl(commands, before.Ctrl2, segment.From, slopeTolerance);
                 var after = segments[(k + 1) % n];
                 if (after.IsCubic)
-                    run.AddTangentControl(commands, after.Ctrl1, segment.To);
+                    run.AddTangentControl(commands, after.Ctrl1, segment.To, slopeTolerance);
 
                 runs.Add(run);
             }
 
             var next = segments[(k + 1) % n];
-            if (!horizontal[k] && !horizontal[(k + 1) % n] && HorizontalTangent(commands, segment, next, out float direction, out float xLow, out float xHigh))
+            if (!horizontal[k] && !horizontal[(k + 1) % n]
+                && (HorizontalTangent(commands, segment, next, slopeTolerance, out float direction, out float xLow, out float xHigh)
+                    || (halfTangents && HalfTangent(commands, segment, next, slopeTolerance, out direction, out xLow, out xHigh))))
             {
                 var run = new Run(segment.To, segment.To, direction, round: true);
                 run.AddPoint(commands, segment.To, onCurve: true);
                 run.Extend(xLow, xHigh);
                 if (segment.IsCubic)
-                    run.AddTangentControl(commands, segment.Ctrl2, segment.To);
+                    run.AddTangentControl(commands, segment.Ctrl2, segment.To, slopeTolerance);
                 if (next.IsCubic)
-                    run.AddTangentControl(commands, next.Ctrl1, segment.To);
+                    run.AddTangentControl(commands, next.Ctrl1, segment.To, slopeTolerance);
                 runs.Add(run);
             }
         }
@@ -445,14 +454,14 @@ internal static class GridFitter
 
         foreach (var run in merged)
         {
-            if (run.XMax - run.XMin < MinEdgeLength)
+            if (run.XMax - run.XMin < minEdgeLength)
                 continue;
 
             edges.Add(new Edge(run.MeanY, run.XMin, run.XMax, isTop: run.Direction > 0f == clockwise, run.Round, run.Points, run.TangentControls));
         }
     }
 
-    private static bool IsHorizontal(OutlineCommand[] commands, Segment segment)
+    private static bool IsHorizontal(OutlineCommand[] commands, Segment segment, float slopeTolerance)
     {
         float dx = MathF.Abs(X(commands, segment.To) - X(commands, segment.From));
         if (dx < 1e-4f)
@@ -467,7 +476,7 @@ internal static class GridFitter
             high = MathF.Max(high, MathF.Max(c1, c2));
         }
 
-        return high - low <= SlopeTolerance * dx;
+        return high - low <= slopeTolerance * dx;
     }
 
     /// <summary>
@@ -475,7 +484,7 @@ internal static class GridFitter
     /// curve extremum such as the top of an 'o'): both tangents near horizontal, same way.
     /// </summary>
     private static bool HorizontalTangent(
-        OutlineCommand[] commands, Segment incoming, Segment outgoing, out float direction, out float xLow, out float xHigh)
+        OutlineCommand[] commands, Segment incoming, Segment outgoing, float slopeTolerance, out float direction, out float xLow, out float xHigh)
     {
         int node = incoming.To;
         float nx = X(commands, node), ny = Y(commands, node);
@@ -493,8 +502,42 @@ internal static class GridFitter
         return MathF.Abs(inX) > 1e-4f
             && MathF.Abs(outX) > 1e-4f
             && MathF.Sign(inX) == MathF.Sign(outX)
-            && MathF.Abs(inY) <= SlopeTolerance * MathF.Abs(inX)
-            && MathF.Abs(outY) <= SlopeTolerance * MathF.Abs(outX);
+            && MathF.Abs(inY) <= slopeTolerance * MathF.Abs(inX)
+            && MathF.Abs(outY) <= slopeTolerance * MathF.Abs(outX);
+    }
+
+    /// <summary>
+    /// True when exactly one of the two segments meeting at a node runs horizontally into it
+    /// (or out of it) and the other cuts across — the end of a stroke whose side is a curve, such
+    /// as the terminals of an 'S' or 'c'. The node is the curve's extremum along the edge axis,
+    /// and the edge's direction is the flat side's direction of travel.
+    /// </summary>
+    private static bool HalfTangent(
+        OutlineCommand[] commands, Segment incoming, Segment outgoing, float slopeTolerance, out float direction, out float xLow, out float xHigh)
+    {
+        int node = incoming.To;
+        float nx = X(commands, node), ny = Y(commands, node);
+
+        int before = incoming.IsCubic ? FirstDistinct(commands, node, incoming.Ctrl2, incoming.Ctrl1, incoming.From) : incoming.From;
+        int after = outgoing.IsCubic ? FirstDistinct(commands, node, outgoing.Ctrl1, outgoing.Ctrl2, outgoing.To) : outgoing.To;
+
+        float inX = nx - X(commands, before), inY = ny - Y(commands, before);
+        float outX = X(commands, after) - nx, outY = Y(commands, after) - ny;
+        bool inFlat = MathF.Abs(inX) > 1e-4f && MathF.Abs(inY) <= slopeTolerance * MathF.Abs(inX);
+        bool outFlat = MathF.Abs(outX) > 1e-4f && MathF.Abs(outY) <= slopeTolerance * MathF.Abs(outX);
+
+        if (inFlat == outFlat)
+        {
+            direction = 0f;
+            xLow = xHigh = nx;
+            return false;
+        }
+
+        int flat = inFlat ? before : after;
+        direction = MathF.Sign(inFlat ? inX : outX);
+        xLow = MathF.Min(nx, X(commands, flat));
+        xHigh = MathF.Max(nx, X(commands, flat));
+        return true;
     }
 
     /// <summary>The first slot whose point differs from <paramref name="node"/>'s, for a tangent.</summary>
@@ -549,13 +592,13 @@ internal static class GridFitter
     private static bool SamePoint(OutlineCommand[] commands, int a, int b) =>
         X(commands, a).Equals(X(commands, b)) && Y(commands, a).Equals(Y(commands, b));
 
-    private static float X(OutlineCommand[] commands, int slot)
+    internal static float X(OutlineCommand[] commands, int slot)
     {
         var c = commands[slot / 3];
         return (slot % 3) switch { 0 => c.EndX, 1 => c.Ctrl1X, _ => c.Ctrl2X };
     }
 
-    private static float Y(OutlineCommand[] commands, int slot)
+    internal static float Y(OutlineCommand[] commands, int slot)
     {
         var c = commands[slot / 3];
         return (slot % 3) switch { 0 => c.EndY, 1 => c.Ctrl1Y, _ => c.Ctrl2Y };
@@ -605,11 +648,11 @@ internal static class GridFitter
         }
 
         /// <summary>Records a neighbouring curve's control when it leaves <paramref name="node"/> horizontally.</summary>
-        public void AddTangentControl(OutlineCommand[] commands, int control, int node)
+        public void AddTangentControl(OutlineCommand[] commands, int control, int node, float slopeTolerance)
         {
             float dx = MathF.Abs(X(commands, control) - X(commands, node));
             float dy = MathF.Abs(Y(commands, control) - Y(commands, node));
-            if (dx > 1e-4f && dy <= SlopeTolerance * dx)
+            if (dx > 1e-4f && dy <= slopeTolerance * dx)
                 TangentControls.Add((control, node));
         }
 
@@ -642,16 +685,29 @@ internal static class GridFitter
     }
 
     /// <summary>A horizontal edge: where it is, which side its ink is on, and where it goes.</summary>
-    private sealed class Edge(float y, float xMin, float xMax, bool isTop, bool isRound, List<int> points, List<(int Control, int Node)> tangentControls)
+    internal sealed class Edge(float y, float xMin, float xMax, bool isTop, bool isRound, List<int> points, List<(int Control, int Node)> tangentControls)
     {
-        /// <summary>Its height before fitting (mean of its on-curve points).</summary>
-        public float Y { get; } = y;
+        /// <summary>Its height before fitting (mean of its on-curve points). A fitter may
+        /// refine it (a curve's true extremum rather than the node near it) before placing.</summary>
+        public float Y { get; set; } = y;
 
         public float XMin { get; } = xMin;
 
         public float XMax { get; } = xMax;
 
-        public float Length => XMax - XMin;
+        /// <summary>
+        /// How much ink lies along the edge: its extent, or for an edge the <c>Normal</c>
+        /// fitter merged from several (<see cref="InkLength"/>) the sum of theirs. INVARIANT:
+        /// this, never the span between merged parts, is what qualifies a straight edge to be
+        /// placed on its own (<c>StemFitter</c>'s lone-edge pass) and weights it as a stroke:
+        /// two 0.3 px serif tips 3 px apart are 0.6 px of edge, not 3.5, and follow their stem
+        /// instead of dragging the glyph's edge to the grid by themselves, while the ends of
+        /// an '='s bars, 0.6 px each, still snap together as the one feature they are.
+        /// </summary>
+        public float Length => InkLength ?? XMax - XMin;
+
+        /// <summary>The summed extent of the edges merged into this one; null for an unmerged edge.</summary>
+        public float? InkLength { get; set; }
 
         /// <summary>True when the ink is below the edge (the top of a stroke).</summary>
         public bool IsTop { get; } = isTop;
@@ -667,6 +723,10 @@ internal static class GridFitter
 
         /// <summary>The opposite edge of the stroke this edge bounds, if any.</summary>
         public Edge? Partner { get; set; }
+
+        /// <summary>True when every point of the edge lies on a contour no larger than a dot
+        /// (set by the <c>Normal</c> fitter; see <c>StemFitter.IsDot</c>).</summary>
+        public bool OnDotContour { get; set; }
 
         /// <summary>Its fitted height, once placed.</summary>
         public float? Hinted { get; set; }

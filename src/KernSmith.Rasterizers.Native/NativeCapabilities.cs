@@ -1,4 +1,5 @@
 using KernSmith.Rasterizer;
+using KernSmith.Rasterizers.Native.Internal.Pipeline;
 
 namespace KernSmith.Rasterizers.Native;
 
@@ -40,4 +41,15 @@ internal sealed class NativeCapabilities : IRasterizerCapabilities
     /// </summary>
     public IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; } =
         [AntiAliasMode.None, AntiAliasMode.Grayscale, AntiAliasMode.Light, AntiAliasMode.Lcd];
+
+    /// <summary>
+    /// <see cref="HintLevel.None"/> is unhinted and <see cref="HintLevel.Light"/> the y-only
+    /// auto-hinter (Phase 174), whatever the anti-alias mode; <see cref="HintLevel.Normal"/> the
+    /// both-axis auto-hinter with rebuilt advances (Phase 188), for grayscale and mono.
+    /// <see cref="HintLevel.Full"/> is not listed — the pipeline steps it down to Normal — until
+    /// a font-native engine (TrueType bytecode, CFF hints) exists.
+    /// <see cref="GlyphHinter.EffectiveHintLevel"/> is the single place that maps a request to
+    /// the level Native runs.
+    /// </summary>
+    public IReadOnlyList<HintLevel> SupportedHintLevels { get; } = [HintLevel.None, HintLevel.Light, HintLevel.Normal];
 }

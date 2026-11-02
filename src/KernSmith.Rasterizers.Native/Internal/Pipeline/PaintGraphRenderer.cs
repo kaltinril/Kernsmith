@@ -95,7 +95,7 @@ internal sealed class PaintGraphRenderer
         {
             _pipeline = pipeline;
             _baseGlyph = baseGlyph;
-            _options = options;
+            _options = GlyphHinter.ForColorLayers(options);
             _transforms = GlyphTransforms.For(options, pipeline.UnitsPerEm);
             _fontToPixels = pipeline.FontUnitsToPixels(options);
             _fontToPixelMatrix = ToMatrix(_fontToPixels);
@@ -464,7 +464,7 @@ internal sealed class PaintGraphRenderer
 
             return (x, y) =>
             {
-                double angle = Math.Atan2(y - g.CenterY, x - g.CenterX) * (180 / Math.PI);
+                double angle = DeterministicMath.Atan2(y - g.CenterY, x - g.CenterX) * (180 / Math.PI);
                 if (angle < 0)
                     angle += 360;
                 if (equal)

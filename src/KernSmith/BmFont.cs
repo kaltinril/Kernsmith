@@ -412,7 +412,9 @@ public static class BmFont
                 effectiveSize: rasterResult.EffectiveSize,
                 rasterizerFontMetrics: rasterResult.RasterizerFontMetrics,
                 rasterizerKerningPairs: rasterResult.RasterizerKerningPairs,
-                superSampleLevel: rasterResult.SuperSampleLevel);
+                kerningAdjustments: rasterResult.RasterizerKerningAdjustments,
+                superSampleLevel: rasterResult.SuperSampleLevel,
+                fractionalMetrics: rasterResult.FractionalMetrics);
             metrics?.End();
 
             return new BmFontResult(model, pages, failedCodepoints, metrics, options, sourceFontFile, sourceFontName);
@@ -505,7 +507,9 @@ public static class BmFont
                 effectiveSize: rasterResult.EffectiveSize,
                 rasterizerFontMetrics: rasterResult.RasterizerFontMetrics,
                 rasterizerKerningPairs: rasterResult.RasterizerKerningPairs,
-                superSampleLevel: rasterResult.SuperSampleLevel);
+                kerningAdjustments: rasterResult.RasterizerKerningAdjustments,
+                superSampleLevel: rasterResult.SuperSampleLevel,
+                fractionalMetrics: rasterResult.FractionalMetrics);
             metrics?.End();
 
             return new BmFontResult(model, pages, failedCodepoints, metrics, options, sourceFontFile, sourceFontName);
@@ -635,7 +639,9 @@ public static class BmFont
             effectiveSize: rasterResult.EffectiveSize,
             rasterizerFontMetrics: rasterResult.RasterizerFontMetrics,
             rasterizerKerningPairs: rasterResult.RasterizerKerningPairs,
-            superSampleLevel: rasterResult.SuperSampleLevel);
+            kerningAdjustments: rasterResult.RasterizerKerningAdjustments,
+            superSampleLevel: rasterResult.SuperSampleLevel,
+            fractionalMetrics: rasterResult.FractionalMetrics);
         model = BmFontModelBuilder.WithVariantLinks(model, variantOf: null,
             variants: options.Variants.Select(v => v.Name).ToList());
 
@@ -649,6 +655,7 @@ public static class BmFont
                 effectiveSize: rasterResult.EffectiveSize,
                 rasterizerFontMetrics: rasterResult.RasterizerFontMetrics,
                 rasterizerKerningPairs: rasterResult.RasterizerKerningPairs,
+                kerningAdjustments: rasterResult.RasterizerKerningAdjustments,
                 superSampleLevel: rasterResult.SuperSampleLevel);
             variantModel = BmFontModelBuilder.WithVariantLinks(variantModel, variantOf: fontInfo.FamilyName, variants: null);
 
@@ -1252,7 +1259,9 @@ public static class BmFont
                     effectiveSize: rr.EffectiveSize,
                     rasterizerFontMetrics: rr.RasterizerFontMetrics,
                     rasterizerKerningPairs: rr.RasterizerKerningPairs,
-                    superSampleLevel: rr.SuperSampleLevel);
+                    kerningAdjustments: rr.RasterizerKerningAdjustments,
+                    superSampleLevel: rr.SuperSampleLevel,
+                    fractionalMetrics: rr.FractionalMetrics);
                 var fontResult = new BmFontResult(model, sharedPages, rr.FailedCodepoints);
 
                 sw.Stop();

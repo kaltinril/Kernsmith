@@ -386,11 +386,31 @@ KernSmith records the generation settings that produced a font in an **extended 
 | `variantOf` | string | On an atlas variant's font (e.g. the `-shadow` silhouette), the family name of the primary font it is a variant of. Quoted in text (`variantOf="Arial"`). |
 | `variants` | string | On the primary font, the comma-separated names of the atlas variants generated alongside it (`variants="shadow"`). In the binary JSON this is an array of strings. |
 
+#### Per-character fractional metrics (`FractionalMetrics`)
+
+BMFont's `xadvance` and `xoffset` are integers, so a renderer that places glyphs at integer pen positions drifts from the font's own spacing by up to half a pixel per glyph — ten to twenty pixels over a line of text at small sizes. With `FontGeneratorOptions.FractionalMetrics` (`.bmfc` `fractionalMetrics=1`, CLI `--fractional-metrics`; off by default) KernSmith also writes each character's unrounded horizontal metrics, for renderers that lay text out in fractional pixels:
+
+| Format | How it is emitted |
+|--------|-------------------|
+| **Text** | One `kernsmithchar` line per `char`, after the `kernsmith` line: `kernsmithchar id=65 advance=5.4375 lsb=0.28125 advanceDelta=0.5625 lsbDelta=-0.28125`. |
+| **XML** | One `<char id=".." advance=".." lsb=".." .../>` child per character inside `<kernsmith>`. |
+| **Binary** | A `chars` array of objects (`{"id":65,"advance":5.4375,"lsb":0.28125,...}`) in the block 6 JSON. |
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | int | The codepoint, as in the `char` entry. |
+| `advance` | float | The pen advance in output pixels before rounding: the font's advance at this size (synthetic width and bold, super sampling, the global advance adjustment and any effect's growth included), without hinting. `xadvance` is a rounding of this (plus `advanceDelta` where present). |
+| `lsb` | float | The left side bearing in output pixels before rounding: from the pen origin to the left edge of the unhinted outline's control box. Unlike `xoffset` it carries no padding, outline or shadow margin, distance-field spread or `ForceOffsetsToZero` — keep placing the bitmap by `xoffset`; use `lsb` and `advance` for the pen. |
+| `advanceDelta` | float | What hinting added to the advance (hinted minus unhinted). Present only when the glyph was hinted by a backend that can say (FreeType, Native); `advance + advanceDelta` is then the hinted advance `xadvance` was rounded from. |
+| `lsbDelta` | float | How far hinting moved the ink's left edge (hinted minus unhinted); present under the same conditions. |
+
+Every value is a multiple of 1/64 px (at most six decimals; exact in a `float`). A renderer wanting the font's spacing positions the pen by `advance` (and kerning); one wanting the hinted spacing the bitmaps were made for uses `advance + advanceDelta`. GDI, DirectWrite and StbTrueType do not report their own values, so for them `advance`/`lsb` are the font's design metrics scaled to the size (default instance, no synthetic bold or width — otherwise omitted) and the deltas are absent.
+
 #### Compatibility
 
 Standard BMFont parsers skip this metadata without error:
 
-- **Text / XML**: parsers match lines/elements by known tag names (`info`, `common`, `page`, `char`, `kerning`); an unrecognized `kernsmith` line or `<kernsmith>` element is simply not matched and is ignored.
+- **Text / XML**: parsers match lines/elements by known tag names (`info`, `common`, `page`, `char`, `kerning`); an unrecognized `kernsmith` or `kernsmithchar` line, or `<kernsmith>` element (children included), is simply not matched and is ignored.
 - **Binary**: parsers loop over blocks dispatching on the type ID (1--5) and use each block's declared size to skip its data, so the unknown type-6 block is stepped over cleanly.
 
 KernSmith's own `BmFontReader` reads the block back into an `ExtendedMetadata` object; a standard BMFont file without it simply reads back as `null`.

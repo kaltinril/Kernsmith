@@ -19,4 +19,7 @@ internal sealed class StbTrueTypeCapabilities : IRasterizerCapabilities
 
     public IReadOnlyList<AntiAliasMode> SupportedAntiAliasModes { get; } =
         [AntiAliasMode.None, AntiAliasMode.Grayscale];
+
+    /// <summary>stb_truetype has no hinting engine, so every glyph is the unhinted outline.</summary>
+    public IReadOnlyList<HintLevel> SupportedHintLevels { get; } = [HintLevel.None];
 }

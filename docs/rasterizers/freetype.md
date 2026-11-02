@@ -38,7 +38,8 @@ var options = new FontGeneratorOptions
 - TTF, OTF, WOFF, WOFF2 input
 - Color fonts: `COLR` version 0 layers with `CPAL` palettes, and `CBDT`/`sbix` bitmap color fonts such as Noto Color Emoji (`COLR` version 1 glyphs render as plain grayscale)
 - Variable font axes (fvar)
-- Hinting and anti-aliasing (None, Grayscale, Light, Lcd modes)
+- Hinting and anti-aliasing (None, Grayscale, Light, Lcd modes). `Light` loads FreeType's light hinting target: vertical-only auto-hinting with unhinted advances, where `Grayscale` uses FreeType's default engine for the font
+- Hint levels `None` (unhinted), `Light` (as above) and `Full` (the default engine); `Normal` steps down to `Light`
 - SDF (Signed Distance Field) rendering
 - Synthetic bold and italic
 - Super sampling

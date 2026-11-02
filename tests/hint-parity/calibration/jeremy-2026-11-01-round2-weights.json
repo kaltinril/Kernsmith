@@ -1,0 +1,94 @@
+{
+ "note": "Weights of a linear legibility score: score(strip) = sum_f weight[f] * feature[f] / scale[f]. Fitted as a symmetric logistic model of P(a preferred over b) on feature differences; the sign says which direction the owner preferred, the magnitude is per standard deviation of the feature across the 63 strips. Mapping to tests/hint-parity --legibility: ink_concentration -> 'ink concentration'; sharpness -> 'alignment'/edge hardness; stem_width_var -> 'stem evenness' (negated); broken_rings + holes_128 + topology_error -> 'topology' (negated error terms); gap_var + touching_pairs -> 'spacing' (negated); mean_ink -> fidelity/contrast. Features here are strip-level proxies, not the scorer's per-glyph measures: port the SIGNS and the relative magnitudes, re-fit the absolute scale on the scorer's own features.",
+ "n_judgments": 44,
+ "n_decisive_pairs": 40,
+ "l2": 1.0,
+ "train_accuracy": 0.8,
+ "leave_one_out_accuracy": 0.75,
+ "weights_per_sd": {
+  "ink_concentration": 0.5920451682490337,
+  "mean_ink": 0.4177975732637821,
+  "sharpness": 0.20954007412099268,
+  "broken_rings": -1.4450242580451003,
+  "holes_128": 0.9000082359614463,
+  "topology_error": -0.962115106132664,
+  "stem_width_var": -0.8419503573828083,
+  "gap_var": 0.20542536253186008,
+  "gap_mean": 0.48020433960618003,
+  "touching_pairs": -0.4918726700405685
+ },
+ "feature_sd": {
+  "ink_concentration": 0.36701522857740515,
+  "mean_ink": 0.22330081193221568,
+  "sharpness": 11.12303502556957,
+  "broken_rings": 14.90034080853966,
+  "holes_128": 13.107613200332233,
+  "topology_error": 16.215775440658064,
+  "stem_width_var": 0.15289878440770227,
+  "gap_var": 0.5277401452887828,
+  "gap_mean": 0.4820789459333267,
+  "touching_pairs": 10.776223091927159
+ },
+ "weights_raw": {
+  "ink_concentration": 1.613135156663312,
+  "mean_ink": 1.871007855495873,
+  "sharpness": 0.018838390209084406,
+  "broken_rings": -0.09697927561609397,
+  "holes_128": 0.06866301455543669,
+  "topology_error": -0.05933204425860129,
+  "stem_width_var": -5.506586338435239,
+  "gap_var": 0.38925475798216946,
+  "gap_mean": 0.9961114121598542,
+  "touching_pairs": -0.045644254563460857
+ },
+ "bradley_terry": {
+  "by_variant": {
+   "ft": [
+    1.2349583263131798,
+    0.733452589329544
+   ],
+   "gdi": [
+    0.4536642239996092,
+    1.747208498072249
+   ],
+   "nd": [
+    -2.3025055692277134,
+    1.3204397316483028
+   ],
+   "nn": [
+    0.613883018914924,
+    0.7302689059346323
+   ]
+  },
+  "by_variant_aa": {
+   "ft/grayscale": [
+    1.5552653209571448,
+    0.5681005747118898
+   ],
+   "ft/none": [
+    2.009052263374179,
+    0.8213230332353048
+   ],
+   "gdi/none": [
+    0.9997291932165865,
+    2.187368394278076
+   ],
+   "nd/grayscale": [
+    -1.075987444090849,
+    1.3322502948133048
+   ],
+   "nd/none": [
+    -5.766336812060715,
+    0.6657268529206496
+   ],
+   "nn/grayscale": [
+    1.2415917053895524,
+    0.5233434088095432
+   ],
+   "nn/none": [
+    1.0366857732141017,
+    0.6592179592778059
+   ]
+  }
+ }
+}

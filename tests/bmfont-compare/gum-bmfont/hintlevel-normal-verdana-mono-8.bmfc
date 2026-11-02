@@ -1,0 +1,61 @@
+# AngelCode Bitmap Font Generator configuration file
+# Verdana at an 8 px cell is 7 ppem, where its gasp table says not to grid-fit: Normal leaves the
+# outline unfitted at the integer ppem (threshold-rendered in bilevel) and the kerning bake still
+# runs over the unfitted glyphs; the space takes the word-gap rounding.
+fileVersion=1
+
+# font settings
+fontName=Verdana
+fontFile=
+charSet=0
+fontSize=8
+aa=1
+scaleH=100
+useSmoothing=0
+isBold=0
+isItalic=0
+useUnicode=1
+disableBoxChars=1
+outputInvalidCharGlyph=0
+dontIncludeKerningPairs=0
+useHinting=1
+renderFromOutline=0
+useClearType=0
+autoFitNumPages=0
+
+# character alignment
+paddingDown=0
+paddingUp=0
+paddingRight=0
+paddingLeft=0
+spacingHoriz=1
+spacingVert=1
+useFixedHeight=0
+forceZero=0
+widthPaddingFactor=0.00
+
+# output file
+outWidth=1024
+outHeight=1024
+outBitDepth=8
+fontDescFormat=0
+fourChnlPacked=0
+textureFormat=png
+textureCompression=0
+alphaChnl=1
+redChnl=0
+greenChnl=0
+blueChnl=0
+invA=0
+invR=0
+invG=0
+invB=0
+
+# outline
+outlineThickness=0
+
+# selected chars
+chars=32-126
+
+# hint level (KernSmith extension): a bytecode font at a size its gasp table withholds the fit
+hintLevel=normal

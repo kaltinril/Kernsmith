@@ -32,7 +32,8 @@ internal static class SrgbTransfer
     /// step function of its input (checked over every float in [0, 1]): below zero, NaN included,
     /// it is 0 and above one 255, as the clamp makes it. The thresholds come from
     /// <see cref="EncodeDirect"/> itself, so the two cannot drift apart; this only replaces a
-    /// <c>Math.Pow</c> per channel with eight comparisons.
+    /// <see cref="DeterministicMath.Pow"/> per channel with eight comparisons. Both tables come
+    /// from <see cref="DeterministicMath"/>, not libm, so they hold the same values on every host.
     /// </remarks>
     public static byte Encode(float linear)
     {
@@ -57,7 +58,7 @@ internal static class SrgbTransfer
     internal static byte EncodeDirect(float linear)
     {
         double c = Math.Clamp((double)linear, 0, 1);
-        double encoded = c <= 0.0031308 ? c * 12.92 : (1.055 * Math.Pow(c, 1 / 2.4)) - 0.055;
+        double encoded = c <= 0.0031308 ? c * 12.92 : (1.055 * DeterministicMath.Pow(c, 1 / 2.4)) - 0.055;
         return (byte)Math.Clamp((int)Math.Round(encoded * 255), 0, 255);
     }
 
@@ -91,7 +92,7 @@ internal static class SrgbTransfer
         for (int i = 0; i < 256; i++)
         {
             double c = i / 255.0;
-            table[i] = (float)(c <= 0.04045 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4));
+            table[i] = (float)(c <= 0.04045 ? c / 12.92 : DeterministicMath.Pow((c + 0.055) / 1.055, 2.4));
         }
 
         return table;

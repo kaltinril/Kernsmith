@@ -69,7 +69,12 @@ internal sealed class GlyphPipeline
         var box = GlyphBox.Compute(glyph.Outline, glyph.DeclaredBounds, scale);
         int advance = PixelAdvance(glyph.AdvanceWidth, scale);
         GlyphLimits.EnsureGlyphBox(glyphIndex, box.Width, box.Height, options);
-        var prepared = new PreparedGlyph(glyph.Outline, new OutlineTransform(scale, 0f), box, advance) { GlyphIndex = glyphIndex };
+        var prepared = new PreparedGlyph(glyph.Outline, new OutlineTransform(scale, 0f), box, advance)
+        {
+            GlyphIndex = glyphIndex,
+            AdvanceWidth = glyph.AdvanceWidth,
+            UnhintedOutline = glyph.Outline,
+        };
 
         // 4. Pixel-space hinting, measuring reference glyphs through the same stages 1-2.
         return _hinter is null || !GlyphHinter.Applies(options)
@@ -131,7 +136,7 @@ internal sealed class GlyphPipeline
     /// <summary>The hint stage, kept out of <see cref="Prepare"/> so the reference-glyph
     /// callback's closure is only allocated for a request that is actually hinted.</summary>
     private PreparedGlyph Hint(PreparedGlyph prepared, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms) =>
-        _hinter!.Apply(prepared, options, _unitsPerEm, reference => ReferenceShape(reference, options, transforms));
+        _hinter!.Apply(prepared, options, _unitsPerEm, reference => ReferenceGlyph(reference, options, transforms));
 
     private DecodedGlyph Shape(int glyphIndex, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms)
     {
@@ -142,13 +147,14 @@ internal sealed class GlyphPipeline
         return glyph;
     }
 
-    /// <summary>A reference glyph's outline for hint measurement; a malformed one counts as missing
-    /// rather than failing the glyph actually being rendered.</summary>
-    private GlyphOutline? ReferenceShape(int glyphIndex, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms)
+    /// <summary>A reference glyph (outline and advance, font units, after the request's transforms)
+    /// for hint measurement; a malformed one counts as missing rather than failing the glyph
+    /// actually being rendered.</summary>
+    private DecodedGlyph? ReferenceGlyph(int glyphIndex, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms)
     {
         try
         {
-            return Shape(glyphIndex, options, transforms).Outline;
+            return Shape(glyphIndex, options, transforms);
         }
         catch (Exception ex) when (ex is FontFormatException or ArgumentOutOfRangeException)
         {

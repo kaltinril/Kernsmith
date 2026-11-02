@@ -27,6 +27,14 @@ internal static unsafe class FreeTypeNative
     public const int FT_LOAD_TARGET_MONO = 2 << 16;
 
     /// <summary>
+    /// FT_LOAD_TARGET_LIGHT flag: the auto-hinter's light mode, which grid-fits the vertical axis
+    /// only and leaves advances linear. A load-time target, not a render mode.
+    /// Value is (FT_RENDER_MODE_LIGHT &lt;&lt; 16) = (1 &lt;&lt; 16) = 0x10000. The targets share
+    /// one four-bit field, so never combine it with <see cref="FT_LOAD_TARGET_MONO"/>.
+    /// </summary>
+    public const int FT_LOAD_TARGET_LIGHT = 1 << 16;
+
+    /// <summary>
     /// FT_LOAD_NO_BITMAP flag (1 &lt;&lt; 3 = 8). Do not load embedded bitmaps; load outlines only.
     /// </summary>
     public const int FT_LOAD_NO_BITMAP = 1 << 3;

@@ -18,8 +18,8 @@ internal readonly record struct Affine2D(double Xx, double Yx, double Xy, double
     /// <summary>A counter-clockwise rotation (Y up) about the origin.</summary>
     public static Affine2D Rotation(double radians)
     {
-        double cos = Math.Cos(radians);
-        double sin = Math.Sin(radians);
+        double cos = DeterministicMath.Cos(radians);
+        double sin = DeterministicMath.Sin(radians);
         return new Affine2D(cos, sin, -sin, cos, 0, 0);
     }
 
@@ -28,7 +28,7 @@ internal readonly record struct Affine2D(double Xx, double Yx, double Xy, double
     /// xy = −tan(x angle), yx = tan(y angle).
     /// </summary>
     public static Affine2D Skewing(double xRadians, double yRadians) =>
-        new(1, Math.Tan(yRadians), -Math.Tan(xRadians), 1, 0, 0);
+        new(1, DeterministicMath.Tan(yRadians), -DeterministicMath.Tan(xRadians), 1, 0, 0);
 
     /// <summary>Applies <paramref name="transform"/> about (<paramref name="cx"/>, <paramref name="cy"/>) instead of the origin.</summary>
     public static Affine2D AroundCenter(Affine2D transform, double cx, double cy) =>

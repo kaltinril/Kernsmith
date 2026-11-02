@@ -30,4 +30,13 @@ public sealed class RasterizedGlyph
 
     /// <summary>Whether the pixel data is grayscale or RGBA.</summary>
     public required PixelFormat Format { get; init; }
+
+    /// <summary>
+    /// The glyph's advance and left side bearing before rounding, and what hinting moved them by,
+    /// when the backend can supply them and <see cref="RasterOptions.FractionalMetrics"/> asked
+    /// for them; null otherwise (the pipeline then falls back to the font's own design metrics
+    /// where it can). Read by the pipeline straight after rasterization, so a post-processor
+    /// that rebuilds the glyph need not carry it.
+    /// </summary>
+    public FractionalGlyphMetrics? Fractional { get; init; }
 }

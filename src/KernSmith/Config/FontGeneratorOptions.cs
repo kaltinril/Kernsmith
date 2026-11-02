@@ -199,6 +199,45 @@ public class FontGeneratorOptions
     public bool EnableHinting { get; set; } = true;
 
     /// <summary>
+    /// How strongly outlines are fitted to the pixel grid (default <see cref="KernSmith.HintLevel.Default"/>,
+    /// the backend's existing behaviour). An explicit level owns hinting: it decides regardless of
+    /// <see cref="AntiAlias"/>, and a backend without it renders the nearest lower level it supports.
+    /// <see cref="EnableHinting"/> = false with a level other than <see cref="KernSmith.HintLevel.None"/>
+    /// or <see cref="KernSmith.HintLevel.Default"/> is contradictory and rejected with an
+    /// <see cref="ArgumentException"/> at generation.
+    /// </summary>
+    public HintLevel HintLevel { get; set; }
+
+    /// <summary>
+    /// Folds the hinter's pair collisions into the kerning pairs. A hinter that fits stems to
+    /// the pixel grid (<see cref="KernSmith.HintLevel.Normal"/> on Native) keeps every advance
+    /// the font's, so a few pairs come out with no white between their inks; the backend
+    /// reports those pairs and the <c>.fnt</c> kerning opens them — added to the font's own
+    /// pair before the one rounding, a new pair where the font has none, never between two
+    /// digits, balanced by closing a pair of the same glyph that has white to spare — while a
+    /// renderer that ignores BMFont kerning gets the touching pairs unhinted text has today.
+    /// Null (the default) is the backend's choice: Native bakes exactly when it hints at
+    /// <c>Normal</c>, which its default hinting is at text sizes; false turns it off, true asks
+    /// for it. Needs <see cref="Kerning"/>; a fixed-pitch font is never kerned by it. Only
+    /// backends that hint spacing report corrections; the others are unchanged.
+    /// </summary>
+    public bool? BakeHintingIntoKerning { get; set; }
+
+    /// <summary>
+    /// Writes each glyph's unrounded advance and left side bearing — and, where the backend
+    /// hinted the glyph and can say, how far hinting moved them — to the extended metadata
+    /// (<see cref="Output.Model.ExtendedMetadata.FractionalMetrics"/>: text <c>kernsmithchar</c>
+    /// lines, XML <c>&lt;char&gt;</c> children of <c>&lt;kernsmith&gt;</c>, binary block 6
+    /// <c>chars</c>), in output pixels at 1/64 px, for renderers that position glyphs
+    /// fractionally: BMFont's integer <c>xadvance</c> drifts a line of text by up to a pixel
+    /// per few characters against the font's own spacing. Default false, so default output is
+    /// unchanged. Native and FreeType report their own values; the other backends get the
+    /// font's design advance and bearing at the size, with no hinting deltas. Standard BMFont
+    /// readers ignore the extra lines.
+    /// </summary>
+    public bool FractionalMetrics { get; set; }
+
+    /// <summary>
     /// FreeType gamma correction applied during rasterization (default 1.8, matching Hiero).
     /// Maps to Hiero's <c>font.gamma</c>.
     /// </summary>

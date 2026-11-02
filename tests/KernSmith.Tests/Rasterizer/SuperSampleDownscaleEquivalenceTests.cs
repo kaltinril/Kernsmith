@@ -138,6 +138,8 @@ public sealed class SuperSampleDownscaleEquivalenceTests
             }
         }
 
+        // The frozen part of this oracle is the pixel filter above. Metrics follow the rounding
+        // rule (nearest pixel, halves away from zero), which SuperSampleDownscaleTests pins.
         var m = glyph.Metrics;
         return new RasterizedGlyph
         {
@@ -147,8 +149,11 @@ public sealed class SuperSampleDownscaleEquivalenceTests
             Width = dstW,
             Height = dstH,
             Pitch = dstW * bpp,
-            Metrics = new GlyphMetrics(m.BearingX / level, m.BearingY / level, m.Advance / level, dstW, dstH),
+            Metrics = new GlyphMetrics(Round(m.BearingX, level), Round(m.BearingY, level), Round(m.Advance, level), dstW, dstH),
             Format = glyph.Format
         };
     }
+
+    private static int Round(int value, int level) =>
+        (int)Math.Round(value / (double)level, MidpointRounding.AwayFromZero);
 }

@@ -23,6 +23,8 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="KernSmith.Rasterizers.Native.Tests" />
+    <!-- The hint-parity tool sweeps HintTuning; nothing else of the internals is for it. -->
+    <InternalsVisibleTo Include="HintParity" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\KernSmith\KernSmith.csproj" />

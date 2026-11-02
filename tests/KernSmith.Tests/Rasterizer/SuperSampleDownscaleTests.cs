@@ -73,7 +73,51 @@ public sealed class SuperSampleDownscaleTests
         scaled.BitmapData.ShouldBe(new byte[] { 0, 0, 0, 0, 0, 255, 0, 255 / 4 });
     }
 
-    private static RasterizedGlyph Glyph(int width, int height, int pitch, PixelFormat format, byte[] data) => new()
+    [Fact]
+    public void MetricsRoundToTheNearestPixel_NotTowardZero()
+    {
+        // Level 4: an advance of 22 high-res pixels is 5.5 px (Roboto '#' at a 12px cell), which
+        // rounds to 6; integer division gave 5, a pixel short on every glyph whose remainder was
+        // at least half the level. Bearings round the same way: 3/4 = 0.75 -> 1, 7/4 = 1.75 -> 2.
+        var glyph = Glyph(width: 8, height: 8, pitch: 8, PixelFormat.Grayscale8, new byte[64],
+            new GlyphMetrics(BearingX: 3, BearingY: 7, Advance: 22, Width: 8, Height: 8));
+
+        var scaled = PreparedRasterization.SuperSampleDownscale(glyph, 4);
+
+        scaled.Metrics.Advance.ShouldBe(6);
+        scaled.Metrics.BearingX.ShouldBe(1);
+        scaled.Metrics.BearingY.ShouldBe(2);
+    }
+
+    [Fact]
+    public void NegativeBearingsRoundHalfAwayFromZero()
+    {
+        // -3/4 = -0.75 -> -1 (truncation toward zero gave 0, moving the ink right by most of a
+        // pixel); -2/4 = -0.5 is a half and rounds away from zero to -1, as positive halves round up.
+        var glyph = Glyph(width: 8, height: 8, pitch: 8, PixelFormat.Grayscale8, new byte[64],
+            new GlyphMetrics(BearingX: -3, BearingY: -2, Advance: 8, Width: 8, Height: 8));
+
+        var scaled = PreparedRasterization.SuperSampleDownscale(glyph, 4);
+
+        scaled.Metrics.BearingX.ShouldBe(-1);
+        scaled.Metrics.BearingY.ShouldBe(-1);
+        scaled.Metrics.Advance.ShouldBe(2);
+    }
+
+    [Fact]
+    public void BlankGlyphMetricsRoundToo()
+    {
+        // The pixel-less path (space, and Roboto ',' when its ink is thresholded away): 7/4 = 1.75 -> 2.
+        var glyph = Glyph(width: 0, height: 0, pitch: 0, PixelFormat.Grayscale8, [],
+            new GlyphMetrics(BearingX: 2, BearingY: 0, Advance: 7, Width: 0, Height: 0));
+
+        var scaled = PreparedRasterization.SuperSampleDownscale(glyph, 4);
+
+        scaled.Metrics.Advance.ShouldBe(2);
+        scaled.Metrics.BearingX.ShouldBe(1);
+    }
+
+    private static RasterizedGlyph Glyph(int width, int height, int pitch, PixelFormat format, byte[] data, GlyphMetrics? metrics = null) => new()
     {
         Codepoint = 'x',
         GlyphIndex = 1,
@@ -81,7 +125,7 @@ public sealed class SuperSampleDownscaleTests
         Width = width,
         Height = height,
         Pitch = pitch,
-        Metrics = new GlyphMetrics(BearingX: 0, BearingY: height, Advance: width, Width: width, Height: height),
+        Metrics = metrics ?? new GlyphMetrics(BearingX: 0, BearingY: height, Advance: width, Width: width, Height: height),
         Format = format,
     };
 }

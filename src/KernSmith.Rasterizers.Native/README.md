@@ -57,7 +57,8 @@ them before the backend sees the bytes.
   50% and crops to the ink; LCD and light hinting do not apply. `'jpg '`/`'tiff'` graphics and
   the uncompressed EBDT formats are skipped (the outline, or nothing, draws instead); a distance
   field without `ColorFont` on a bitmap-only font is a `NotSupportedException`.
-- **Anti-aliasing** — `None` (50% threshold with dropout control, boxes cropped to the ink),
+- **Anti-aliasing** — `None` (50% threshold with dropout control, boxes cropped to the ink;
+  at `HintLevel.Normal` the stroke renderer described under Normal below instead),
   `Grayscale`, `Light` (grayscale plus the auto-hinter below) and `Lcd` (see LCD below). SDF and
   MSDF take precedence over LCD, and color glyphs ignore LCD, as on FreeType.
 - **LCD** — `Lcd` renders RGBA glyphs, one subpixel per colour channel, alpha = the strongest
@@ -75,9 +76,13 @@ Not supported — each raises a clear error or is ignored, as noted:
 
 - **Vector outlines for color glyphs and distance fields** — a face with `COLR` or `CBDT`/`sbix` color glyphs keeps the bitmap outline effect for every glyph under `ColorFont`; `OutlineMode.Vector` with SDF/MSDF is rejected by core
 - **Small caps** — the geometry exists internally; no option selects it
-- **TrueType bytecode hinting** — never run; the auto-hinter is Native's own and fits y only
+- **TrueType bytecode and CFF hinting** — never run; the auto-hinter is Native's own (`Light` fits y only, `Normal` both axes), and `HintLevel.Full` steps down to `Normal`
 - **System fonts by name** — `LoadSystemFont` throws `NotSupportedException`; load font bytes instead
-- **`Gamma`** — not applied in any mode
+- **`Gamma`** — applied to grayscale coverage with the FreeType backend's contract
+  (`GammaCurve`): 1.8, the default, is the identity and any other value maps coverage through
+  `(c/255)^(1.8/gamma)` — above 1.8 heavier, below it lighter — so a config renders the same
+  tone on either backend. Not applied to mono (no partial coverage), LCD, distance fields or
+  color glyphs, as on FreeType.
 
 The package is not published to NuGet yet, so `RasterizerBackend.Native` resolves only in
 builds that reference this project directly. The KernSmith CLI ships it — try
@@ -110,9 +115,21 @@ non-default width or angle throws `NotSupportedException`.
 
 ## Hinting
 
-Native has its own auto-hinter (Phase 174), no TrueType bytecode interpreter. It runs for
-`AntiAlias = Light` with `EnableHinting` on (`.bmfc`: `antiAlias=light`, `useHinting=1`) and
-fits the outline vertically only:
+Native has its own auto-hinter in two strengths, no TrueType bytecode interpreter and no CFF
+hinter. `HintLevel.Light` (`.bmfc`: `hintLevel=light`; CLI `--hint-level light`) is the y-only
+fitter of Phase 174. `HintLevel.Normal` (`hintLevel=normal`, `--hint-level normal`) is the
+both-axis fitter of Phase 188, and what a request with no level gets while `EnableHinting` is
+on (`useHinting=1`, the default) in every anti-alias mode — `AntiAlias = Light` no longer
+selects the y-only fitter by itself; with hinting off the request is unhinted. Both levels
+apply in any anti-alias mode but `Lcd` — bilevel (`None`) thresholds the hinted outline. The
+Normal fitter scales with size (its taper below), so large text is exactly unhinted whatever
+the request. `HintLevel.None` is unhinted; Native lists `None`, `Light` and `Normal` in
+`SupportedHintLevels`, so core steps `Full` down to `Normal`. `GlyphHinter.EffectiveHintLevel`
+is the one place that maps a request to the level that runs.
+
+### Light
+
+The light fitter (`GridFitter`, `FontHintMetrics`) works vertically only:
 
 - **Blue zones** — baseline, x-height, cap height, ascender and descender, with the overshoot
   of round glyphs, measured from 'x', 'o', 'H', 'O', 'd' and 'p' after any synthetic style or
@@ -127,10 +144,163 @@ fits the outline vertically only:
 - **No point moves more than one pixel**: a fit that would move an edge further is skipped and
   the edge is interpolated instead, so hinting snaps a glyph to the grid without reshaping it.
 
-It applies to TrueType and CFF outlines and to `COLR` version 0 layers and version 1 glyph clips.
-Every other request, including the default (`Grayscale` with `EnableHinting` true), `Lcd` and
-every distance field (SDF, MSDF, MTSDF), renders unhinted. A font with no x-height and no cap height (no Latin reference glyphs, no `OS/2`
-heights) renders unhinted rather than snapped to zones that do not describe it.
+### Normal
+
+The normal fitter (`NormalHinter`, `StemFitter`, `NormalFontMetrics`) fits y and then x, each
+axis with the same engine (`StemFitter` runs on the transposed outline for x), and rebuilds the
+advance:
+
+- **Vertical stretch** — the band from the baseline to the x-height is scaled so the x-height
+  lands on its rounded-up pixel row; everything above shifts up by the band's growth and rounds
+  from there, and descenders are not stretched, so caps and ascenders keep their own size
+  (Source Serif at 7.3 ppem: a 3.46 px x-height becomes 4 rows while its 4.88 px cap height
+  stays 5 rows rather than scaling to 6).
+- **Edges** — straight runs, curve extrema (`ExtremaSplitter` first puts a node on every
+  mid-curve x and y extremum, so a bowl or arch is an edge wherever the font drew its nodes),
+  the ends of strokes whose side is a curve (an 'S' terminal), and flats a few units long at a
+  bowl's extremum. The y pass takes edges up to a 7° slope, so a serif face's slightly sloped
+  serif tops snap to their zone; the x pass keeps the 4° of the light fitter. Edges on the same
+  ink side within 0.3 px merge, so an 'S' terminal and the bowl above it snap together; a
+  merged edge is as long as the ink of its parts, not the span between them, so the two 0.3 px
+  serif tips on one side of a Source Serif 'n' (0.6 px of edge, 3 px apart) follow their stem
+  instead of snapping to the grid on their own and changing the serif's reach, while the ends
+  of an '='s bars (0.6 px each) still snap together.
+- **Hintability** — a face whose reference letters have no straight vertical stem (a script
+  such as Dancing Script) is fitted in y only; its x axis and advance are left as drawn.
+- **Strokes** — opposite edges within the maximum stem pair up (round edges need not overlap).
+  In grayscale a stroke keeps its thickness, snapped to the font's standard (measured as the
+  length-weighted median over plain-stemmed letters) when within 10% of it: a stroke under a
+  pixel thick is centred in one pixel at its true coverage (Roboto's 0.82 px stem is one column
+  at ~210, not a solid pixel); a thicker one gets one edge on a pixel boundary and a single
+  fringe. The exception is a **hairline**: a grayscale stroke under half a pixel (a serif face's
+  horizontals — Georgia's and Source Serif's are 0.35-0.45 px at 8-11 ppem) is fitted at the
+  hairline weight, 0.6 px, still inside its one row or column, so that row reads above the 50%
+  threshold and the ring or eye it closes survives; the weight falls linearly to nothing between
+  12 and 14 ppem (`HintTuning.HairlineMaxWidth`, `HairlineWeight`, `HairlineFullPpem`,
+  `HairlineEndPpem`), and a stroke of half a pixel or more — every stem and bar of a text sans —
+  keeps its own coverage. In mono every stroke is its rounded thickness, at least one pixel, on
+  pixel boundaries, so the 50% threshold can neither drop nor double it.
+- **Dots** — a round stroke on a contour no larger than a dot (an `i`/`j` dot, a `:`) whose zone
+  would land it on the stroke under it (the ascender zone one row above the x-height at 7-8
+  ppem, where the hung dot keeps under half a pixel of white) moves a whole pixel out, zone and
+  all, so there is always a row of white under a dot (`HintTuning.DotLengthEm`).
+- **Placement** — in x a per-glyph sub-pixel phase is chosen so the strokes move least, the
+  longest stroke anchors the glyph, and the others keep its phase with their pitches rounded to
+  whole pixels (in mono the outer-to-outer distance rounds, so widened stems eat into counters,
+  not the glyph's width). A gap between features of half a pixel or more stays at least a pixel.
+  In mono the phase search models exactly that — the rounded pitch, the counter's whole pixel,
+  and the cap on how far a stroke may move — so a phase that would leave a second stroke nowhere
+  to go (the two strokes of `"` at 9 ppem) is not chosen for moving the first one least.
+- **Everything else** moves by one monotone map per axis, so the outline cannot fold; fitted
+  coordinates land on a 1/64 px grid.
+- **Advance and side bearings** — every advance is the font's, rounded once, in both
+  anti-alias modes; the fitted outline is moved by whole pixels (the phase is the fit's) so its
+  left side bearing is at or just under the font's (within a quarter pixel above it) and the
+  fit's slack falls on the right, the same for stem-sided and round glyphs, so pair gaps stay
+  even and a line of text keeps its length. Tabular digits and fixed-pitch fonts therefore
+  keep their columns by construction; a fixed-pitch face is one whose `post` table says so or
+  whose printable ASCII glyphs share one advance (95% of them).
+- **Word gaps** — a blank glyph (the space, the no-break space) rounds its advance *up*
+  through 16 ppem, in both anti-alias modes, and in bilevel a blank at least as wide as the
+  space is never under two columns (`GlyphHinter.BlankAdvance`): the letters around it sit in
+  whole columns one column apart, so a space rounded to nearest (Roboto at 9.1 ppem: 2.26 px
+  → 2) made a word gap of one column, "lazy dogs" reading as "lazydogs". At most a pixel per
+  word, reported as the space's `advanceDelta` under `FractionalMetrics`; unhinted, Light,
+  larger sizes and fixed-pitch faces keep the font's rounding.
+- **Pairs that touch** — with advances the font's and stems on whole pixels, a few pairs come
+  out with no white between their inks. They are opened per pair in the kerning
+  (`BakeHintingIntoKerning`, on by default under Normal, below), never by padding a glyph —
+  except, when the bake is off, a glyph whose right edge is a straight stem with under a
+  quarter pixel of font white, which gets a column of advance so two stems never fuse ("rn"
+  into "m"). A fixed-pitch face is never padded or kerned.
+- **Taper** — full strength up to 16 ppem; the x axis (stems into columns, width classes, the
+  by-side placement, the stem-pair padding) fades linearly to nothing at 24 ppem and the y
+  axis (zones, baseline, x-height stretch, stroke alignment) at 40, so the shape-changing part
+  goes first and large text is exactly unhinted. Both strengths fall monotonically with size
+  (`HintTuning.TaperStartPpem`, `XTaperEndPpem`, `TaperEndPpem`). Measured with the hint-parity
+  legibility score against unhinted at full strength, the grayscale gain is +0.09 to +0.11 at
+  9 ppem and up to +0.05 at 15-18 ppem, and Source Serif loses 0.04-0.06 from 20 ppem on. The
+  font's `gasp` table is a floor under it (below).
+- **What the font says** (`HintingProfile`, read once per face in `LoadFont`) — a TrueType
+  face with bytecode (an `fpgm` or `prep` table, or `maxp.maxSizeOfInstructions` above zero:
+  FreeType's rule for running its interpreter rather than its auto-hinter) whose `head.flags`
+  bit 3 asks for integer ppem was hinted by its designer per integer ppem, and Normal treats
+  it so, as FreeType's interpreter and GDI do: the fit runs, and the glyph is scaled, at
+  `round(ppem)` (a 12 px Verdana cell is 11.52 ppem and renders at 12, up to ±4% off the
+  cell's nominal size, inside the same cell); the x-height rounds to the nearest row rather
+  than being pushed up (Verdana's and Tahoma's x-height and cap rows are then FreeType's at
+  every cell from 8 to 16 px); and the advance is the linear advance at the integer ppem,
+  rounded once, in both anti-alias modes (the space through the word-gap rule above). The `hdmx` device-metrics
+  table is parsed (`HdmxTable`, `HintingProfile.HdmxAdvance`) but never used for an advance:
+  its records are the advances that go with the bytecode's own outlines, which Native does
+  not draw — FreeType's bilevel Georgia at a 12 px cell widens `h n c r w` a pixel beyond
+  Native's fit, and the `hdmx` advances around Native's narrower ink set a line visibly loose
+  in both modes. It stays as a parity diagnostic until a TrueType interpreter exists. Roboto
+  sets bit 3 but has no bytecode, and
+  Noto Sans has ttfautohint bytecode but no bit 3: both stay at the fractional ppem with the
+  rules above, byte for byte; Roboto Flex (a `prep` table and bit 3) is an integer-ppem face.
+  For every face, the `gasp` table's ranges are honoured: at a ppem it says not to grid-fit
+  (`GASP_GRIDFIT` and `GASP_SYMMETRIC_GRIDFIT` both clear — 8 ppem and under in the common
+  Microsoft table) Normal leaves the outline unfitted (`PreparedGlyph.FitWithheld`), still at
+  the integer ppem with the chosen advance, and bilevel output falls back to the threshold
+  renderer — the kerning bake below still runs over such glyphs, since they are set in whole
+  columns all the same; where it says to grid-fit, the taper above still caps the strength. The renderer's
+  size stages (the stroke-renderer decision, thin-stroke darkening) read the ppem the fit ran
+  at (`PreparedGlyph.HintPpem`), so a request for 8.03 ppem renders exactly as one for 8. A
+  malformed `hdmx` or `gasp` is ignored, never an error.
+- **Kerning bake** — `NativeRasterizer.GetKerningAdjustments` reports, over every pair of
+  glyphs rasterized under Normal at a size (fitted, or left unfitted by the `gasp` table; not
+  past the x taper), the pairs with no column between their rendered
+  inks: in bilevel every such pair, in grayscale only those whose facing columns are both at
+  least three-quarters covered on a shared row (two stems; a bowl's fringe or a diagonal's foot
+  against a stem still reads as two letters). Each is opened to one column, and a pixel is
+  taken back from one of the left glyph's pairs that has two or more columns of white, widest
+  first, while such pairs last, so the line keeps its length; two digits and any blank glyph
+  are never touched, only non-zero pairs are reported, and a fixed-pitch face gets none. Core
+  adds each to the font's own pair before rounding. Roboto at a 12 px cell: 392 pairs grayscale
+  and 3044 bilevel over ASCII (1464 and 13517 with Latin-1).
+
+Two renderer-side stages belong to `Normal` as well, both after the fit, neither moving any
+geometry:
+
+- **Bilevel as strokes** (`MonoStrokeRasterizer`, `MonoRendering.Strokes`) — `AntiAliasMode.None`
+  at `Normal`, while its taper runs, is not the 50% area threshold. Along every row and column scanline through pixel
+  centres, an interior span under 1.5 px whose two bounding edges are near-parallel and within
+  45° of perpendicular to the scanline is a cross-section of a thin stroke and lights exactly
+  the pixel at its midpoint; every other span is centre-sampled. A pixel inside the outline is
+  lit unless a thin cross-section runs through its centre and it is not that span's midpoint,
+  so a thin diagonal or curve steps like a Bresenham line (one pixel per row where steep, per
+  column where shallow), a 1.1 px bowl wall is one pixel at its shoulders where the threshold
+  drew two, and a dot under 1.5 px is one pixel; a junction pixel (an arch leaving a stem) is
+  kept when it is the arch's own midpoint. A dropout pass then lights the midpoint of any thin
+  span that lit nothing, where that keeps a stroke whole (no lit neighbour, a bridge between
+  two lit groups, or a hairline continuing into the next scanline) — so no stroke vanishes and
+  spans under 0.35 px (hairline serif slabs) are drawn only when needed. Finally the outline
+  is centre-sampled at 4× to find its counters: a counter the bitmap closed is reopened at the
+  pixel it covers most when that pixel's four neighbours are lit (the eye of an 'e'), and an
+  enclosed region of up to four pixels that overlaps no counter is an aperture the bitmap
+  closed (a 'c' whose terminals met, the terminals of an 's' or the tail of an 'e' landing a
+  sub-pixel mouth from the spine or bar), opened by clearing one rim pixel: a stroke's end if
+  there is one — a pixel whose sub-pixel ink joins lit pixels on one side of it only, the
+  terminal a pixel artist drops first — else the pixel holding the least ink that no stroke
+  passes through, and never one whose loss would split the glyph. Edges are flattened at 0.05 px for this renderer, since the
+  slope tests read them. The counter check runs for bitmaps up to 20 px tall. Measured at a
+  12 px cell: about 4.5× the threshold renderer's time per glyph (75 µs vs 17 µs), at 24 px
+  about 3× with the counter check skipped.
+- **Thin-stroke darkening** (`ThinStrokeDarkening`) — in grayscale below 9 ppem, a partially
+  covered pixel whose two horizontal or two vertical neighbours hold next to no ink (a stem,
+  bar, diagonal or curve under a pixel wide, which the fitter lands in one column at its true
+  coverage) has its coverage multiplied by 1.4 at 6 ppem, tapering to 1 at 9 ppem; a fringe
+  beside a solid pixel is untouched. Roboto's 0.55 px stem at a 8 px cell goes from 55% to
+  77% grey. Applied before `Gamma`.
+
+Both levels apply to TrueType and CFF outlines and measure their zones and stems per variation
+instance and synthetic style. A color glyph's `COLR` version 0 layers and version 1 paint
+graphs are prepared at `Light` under a `Normal` request while its taper runs (Normal's
+per-glyph x placement would misregister the layers), and unhinted past it. `Lcd`, every
+distance field (SDF, MSDF, MTSDF) and any request with `EnableHinting` off render unhinted. A
+font with no x-height and no cap height (no Latin reference glyphs, no `OS/2` heights) renders
+unhinted rather than snapped to zones that do not describe it.
 
 ## Errors, limits and threads
 
@@ -150,6 +320,33 @@ heights) renders unhinted rather than snapped to zones that do not describe it.
 - **Threads** — an instance is not thread-safe. KernSmith core never shares one: each
   `BmFont.Generate` (and each `GenerateBatch` job) creates its own, so parallel generation is
   safe and byte-identical to serial.
+
+## Same bytes on every host
+
+Native produces byte-identical atlas pixels and `.fnt` metrics for a given font and options on
+every runtime and machine: the CLI, the desktop app, MonoGame/KNI, Blazor WebAssembly
+(interpreted or AOT), NativeAOT, x64 and arm64, .NET 8 and .NET 10. That is the point of a
+pure-managed rasterizer, and it is engineered, not assumed:
+
+- The arithmetic is IEEE 754 operations that every runtime computes exactly (`+ − × ÷`,
+  square root, floor/round, comparisons). The transcendental functions the color and outline
+  paths need (`Pow` for sRGB, `Sin`/`Cos`/`Tan` for paint transforms and slants, `Atan2` for
+  sweep gradients, `Acos` for round joins) come from Native's own `DeterministicMath`, built from
+  those exact operations, never from `System.Math` — whose results come from the host C library
+  and differ in the last bit between Windows, glibc, Apple and the browser.
+- No SIMD-width-dependent arithmetic and no parallel accumulation: the one vectorized kernel
+  (the SDF splat) computes each lane exactly as the scalar loop does, and a test holds it to that.
+- Only the raw pixels are promised, not the PNG file: the PNG encoder's deflate stream follows
+  the runtime's zlib, so the same atlas can encode to different `.png` bytes on .NET 8 and 10,
+  which decode to the same pixels.
+
+CI proves it on every run: the Native test project asserts `Determinism/manifest.json` — the
+SHA-256 of the `.fnt` and atlas pixels for 242 configurations (five fixture fonts at 8/12/16/32 px,
+grayscale/none/light anti-aliasing, default/none/light/normal hint levels, plus SDF and color) — on
+Windows, Linux and macOS (Apple Silicon) x64 and arm64 under .NET 8 and 10, and on Linux arm64;
+the published Blazor WASM sample reports the same hash from headless Chromium; and a NativeAOT
+build of `tests/KernSmith.DeterminismProbe` reports it from a native binary. See
+[TESTING-NATIVE.md](../../TESTING-NATIVE.md) to check your own host.
 
 ## Usage
 
@@ -188,7 +385,7 @@ Everything is internal; add a feature to its stage rather than to `NativeRasteri
 | 1 | Decode → `DecodedGlyph` (cubic outline, advance, optional declared bbox; font units) | `Internal/Outlines/IOutlineDecoder.cs`, `TrueTypeOutlineDecoder.cs`, `CffOutlineDecoder.cs` (interpreter in `Internal/Cff/`); variations in `Internal/Variations/` | implementing `IOutlineDecoder` and returning it from `OutlineDecoders.ForFace`. Variation deltas live inside the decoder: both decoders receive the face's `FontVariations` (set by `SetVariationAxes`); `TrueTypeOutlineDecoder` applies `gvar`; `CffOutlineDecoder` feeds CFF2 `blend` per-`vsindex` region scalars through `CharstringContext.BlendScalars`. |
 | 2 | Transforms, in order, in font units | `Internal/Pipeline/IGlyphTransform.cs`, `GlyphTransforms.cs` | implementing `IGlyphTransform` and adding it in `GlyphTransforms.For` — `WidthScaleTransform`, `BoldTransform`, then `ItalicTransform` at `ItalicAngle` (167, 168). `SmallCapsTransform` (would go before bold) and `StrokeTransform` exist unregistered; the vector outline layer is `OutlineLayer`, drawn from the fully prepared glyph. Build results with `WithOutline` / `WithAdvanceWidth`. |
 | 3 | Bounds → pixel grid | `Internal/Raster/GlyphBox.cs`, `Internal/Outlines/OutlineBounds.cs` | nothing: a replaced outline loses its declared bbox and is measured from its tight bounds. |
-| 4 | Scale, then pixel-space hinting | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs`; `Internal/Hinting/` | `GlyphHinter.Apply` runs the auto-hinter (174) for hinted requests: `FontHintMetrics` (per face/size/style/instance, cached) and `GridFitter`. It returns a pixel-space outline with an identity `ToPixels`. |
+| 4 | Scale, then pixel-space hinting | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs`; `Internal/Hinting/` | `GlyphHinter.Apply` runs the auto-hinter for hinted requests — `Light` (174): `FontHintMetrics` and `GridFitter`; `Normal` (188): `NormalFontMetrics`, `NormalHinter` and `StemFitter`, which places the fitted ink within the advance `PreparedGlyph.AdvanceWidth` gives at the ppem the face's `HintingProfile` chooses — metrics cached per face/size/style/instance. It returns a pixel-space outline with an identity `ToPixels`. |
 | 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs`, `SdfRenderer.cs`, `MsdfRenderer.cs` (distance code and edge coloring in `Internal/Distance/`), `LcdRenderer.cs` (kernels in `Internal/Raster/LcdFilterKernel.cs`), `ColorLayerRenderer.cs`, `PaintGraphRenderer.cs`, `BitmapGlyphRenderer.cs` (strikes and scaling in `Internal/Bitmaps/`) | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` (distance fields first, then LCD, else coverage). Color glyphs (172) wrap that renderer in `GlyphRenderers.SelectForFace`: `BitmapGlyphRenderer` draws `CBDT`/`sbix` bitmaps, and `ColorLayerRenderer` outside it sends `COLR` version 1 paint graphs to `PaintGraphRenderer` and draws version 0 layers itself, preparing every clip or layer glyph through stages 1–4. A bitmap-only face decodes through `BitmapOnlyOutlineDecoder` (empty outlines, `hmtx` advances). `Measure` must match what `Render` produces. |
 
 Invariants:
@@ -239,6 +436,36 @@ KERNSMITH_UPDATE_GOLDENS=1 dotnet test --project tests/KernSmith.Rasterizers.Nat
 
 `NativeSimilarityMatrixTests` scores Native against FreeType and stb_truetype; its measured table
 is in `plan/phase-179-validation-golden-masters.md`.
+
+## Determinism rules (contributors)
+
+`NativeSourceDeterminismTests` scans this project and `KernSmith.Imaging` on every test run and
+fails on:
+
+- any libm-backed call — `Math`/`MathF`/`double`/`float` `.Pow .Exp .Log .Sin .Cos .Tan .Atan
+  .Atan2 .Asin .Acos .Sinh … .Cbrt .Hypot .FusedMultiplyAdd` — outside `Internal/DeterministicMath.cs`.
+  Use `DeterministicMath` (add a function there if it lacks one, from the exact operations only,
+  with reference and pinned-bit tests in `DeterministicMathTests`), or a table built with it.
+  `Sqrt`, `Floor`, `Ceiling`, `Round`, `Truncate`, `Abs`, `Min`, `Max`, `Clamp`, `CopySign` are exact and fine.
+- `Parallel.*`, `Task.Run`, `ThreadPool`, `new Thread`, `Environment.ProcessorCount`: work split
+  across threads sums in whichever order the threads finish.
+- `Vector<T>` / `Vector128..512` / `System.Runtime.Intrinsics` outside `SignedDistanceField.cs`,
+  whose kernel is per-lane and pinned bit-for-bit to its scalar loop by `SdfRendererTests`. A new
+  SIMD path needs the same proof and an entry in the test's allow list.
+
+One more thing to know: a `(int)` cast of a NaN or out-of-range float is the one operation where
+.NET 8 on x64 (`int.MinValue`) and arm64 (saturating, as .NET 9+ everywhere) legitimately
+disagree — keep casts to finite, bounded values, as the existing code does.
+
+`DeterminismManifestTests` holds the whole matrix in `Determinism/manifest.json`. After a
+deliberate output change (the goldens will have moved too), regenerate locally and review:
+
+```
+KERNSMITH_UPDATE_DETERMINISM=1 dotnet test --project tests/KernSmith.Rasterizers.Native.Tests -- --filter-class "*DeterminismManifestTests"
+```
+
+Never regenerate to make one platform pass: if the manifest matches on the others, that platform
+has a determinism bug.
 
 See the [KernSmith repository](https://github.com/kaltinril/Kernsmith) for full project
 documentation.

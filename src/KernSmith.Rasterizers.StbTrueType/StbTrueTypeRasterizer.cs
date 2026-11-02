@@ -154,11 +154,25 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
             var bitmapData = new byte[width * height];
             new ReadOnlySpan<byte>(bitmap, width * height).CopyTo(bitmapData);
 
-            // Anti-alias mode None: threshold at 128.
+            // Anti-alias mode None: threshold at 128, restore thin strokes it dropped, then crop
+            // the box to the ink (the bearings follow the cropped box).
             if (options.AntiAlias == AntiAliasMode.None)
             {
-                for (int i = 0; i < bitmapData.Length; i++)
-                    bitmapData[i] = bitmapData[i] >= 128 ? (byte)255 : (byte)0;
+                Threshold(bitmapData);
+                Stb.stbtt_vertex* vertices;
+                int numVerts = Stb.stbtt_GetGlyphShape(_fontInfo!, glyphIndex, &vertices);
+                try
+                {
+                    DropoutControl.Apply(bitmapData, width, height, vertices, numVerts, scale, xoff, yoff);
+                }
+                finally
+                {
+                    Stb.stbtt_FreeShape(_fontInfo!, vertices);
+                }
+
+                bitmapData = CropToInk(bitmapData, ref width, ref height, ref xoff, ref yoff);
+                bearingX = (int)Math.Round((double)xoff / aa);
+                bearingY = (int)Math.Round((double)-yoff / aa);
             }
 
             // Downscale bitmap by averaging aa x aa blocks when supersampling.
@@ -188,6 +202,46 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         }
     }
 
+    /// <summary>
+    /// Crops a thresholded bitmap to its ink: drops the empty edge rows and columns and moves the
+    /// box's origin (<paramref name="x0"/>, <paramref name="y0"/>, pixel space, y down) to match.
+    /// stb_truetype's box is the outline's extent rounded outward, so after thresholding most
+    /// small glyphs carry an empty edge row or column that FreeType's and Native's mono boxes do
+    /// not have. A bitmap with no ink keeps its box. <see cref="GetGlyphMetrics"/> renders a
+    /// <see cref="AntiAliasMode.None"/> glyph to report this box.
+    /// </summary>
+    private static byte[] CropToInk(byte[] pixels, ref int width, ref int height, ref int x0, ref int y0)
+    {
+        int left = width, top = height, right = -1, bottom = -1;
+        for (int y = 0; y < height; y++)
+        {
+            int row = y * width;
+            for (int x = 0; x < width; x++)
+            {
+                if (pixels[row + x] == 0)
+                    continue;
+                left = Math.Min(left, x);
+                right = Math.Max(right, x);
+                top = Math.Min(top, y);
+                bottom = Math.Max(bottom, y);
+            }
+        }
+
+        if (right < 0 || (left == 0 && top == 0 && right == width - 1 && bottom == height - 1))
+            return pixels;
+
+        int croppedWidth = right - left + 1, croppedHeight = bottom - top + 1;
+        var cropped = new byte[croppedWidth * croppedHeight];
+        for (int row = 0; row < croppedHeight; row++)
+            Array.Copy(pixels, ((top + row) * width) + left, cropped, row * croppedWidth, croppedWidth);
+
+        x0 += left;
+        y0 += top;
+        width = croppedWidth;
+        height = croppedHeight;
+        return cropped;
+    }
+
     /// <inheritdoc />
     public IReadOnlyList<RasterizedGlyph> RasterizeAll(IEnumerable<int> codepoints, RasterOptions options)
     {
@@ -210,6 +264,11 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         EnsureFontLoaded();
+
+        // A None glyph's box is cropped to its ink (CropToInk), which only the render knows, so
+        // the glyph is rendered to measure it — the cost of exact boxes, as on Native.
+        if (options.AntiAlias == AntiAliasMode.None && !options.Sdf)
+            return RasterizeGlyph(codepoint, options)?.Metrics;
 
         // SDF is resolution-independent; supersampling is meaningless for distance fields.
         int aa = options.Sdf ? 1 : Math.Max(1, options.SuperSample);
@@ -707,8 +766,6 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
                 };
             }
 
-            int bearingX = (int)Math.Round((double)x0 / aa);
-            int bearingY = (int)Math.Round((double)-y0 / aa);
             int scaledAdv = (int)Math.Round(advance * scale / aa);
 
             // Bold increases advance slightly (matches FreeType behavior).
@@ -730,17 +787,22 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
                 bitmap.stride = width;
                 bitmap.pixels = (byte*)handle.AddrOfPinnedObject();
 
-                Stb.stbtt_Rasterize(&bitmap, 0.35f, vertices, numVerts,
+                Stb.stbtt_Rasterize(&bitmap, DropoutControl.FlatnessInPixels, vertices, numVerts,
                     scale, scale, 0, 0, x0, y0, 1, null, false);
 
-                // Anti-alias mode None: threshold at 128.
+                var bitmapData = pixels;
+
+                // Anti-alias mode None: threshold at 128, restore thin strokes it dropped, then
+                // crop the box to the ink (the bearings follow the cropped box).
                 if (options.AntiAlias == AntiAliasMode.None)
                 {
-                    for (int i = 0; i < pixels.Length; i++)
-                        pixels[i] = pixels[i] >= 128 ? (byte)255 : (byte)0;
+                    Threshold(pixels);
+                    DropoutControl.Apply(pixels, width, height, vertices, numVerts, scale, x0, y0);
+                    bitmapData = CropToInk(pixels, ref width, ref height, ref x0, ref y0);
                 }
 
-                var bitmapData = pixels;
+                int bearingX = (int)Math.Round((double)x0 / aa);
+                int bearingY = (int)Math.Round((double)-y0 / aa);
 
                 // Downscale bitmap by averaging aa x aa blocks when supersampling.
                 if (aa > 1)
@@ -772,6 +834,16 @@ public sealed class StbTrueTypeRasterizer : IRasterizer
         {
             Stb.stbtt_FreeShape(_fontInfo!, vertices);
         }
+    }
+
+    /// <summary>
+    /// <see cref="AntiAliasMode.None"/>'s first step: coverage at or above 128 becomes 255, the
+    /// rest 0. Strokes it erases are restored by <see cref="DropoutControl"/>.
+    /// </summary>
+    private static void Threshold(byte[] pixels)
+    {
+        for (int i = 0; i < pixels.Length; i++)
+            pixels[i] = pixels[i] >= 128 ? (byte)255 : (byte)0;
     }
 
     private static byte[] DownscaleBitmap(byte[] source, ref int width, ref int height, int aa)

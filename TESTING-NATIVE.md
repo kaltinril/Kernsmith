@@ -18,7 +18,7 @@ when Auto-Regenerate is on. Native's options:
 |--------|-------|
 | Anti-alias None / Grayscale / Light / LCD | Effects > Font Style > **Anti-Alias** (lists only the backend's modes) |
 | LCD filter and subpixel order | Effects > Font Style > **LCD Filter** / **LCD Order** (enabled in LCD mode) |
-| Light auto-hinting | Anti-Alias **Light** with **Hinting** checked (Native hints nothing else) |
+| Auto-hinting | **Hinting** checked hints at `Normal` (size-scaled; off above 40 ppem) in every anti-alias mode; **Hint Level** picks `none`/`light`/`normal` explicitly |
 | SDF / MSDF / MTSDF | Effects > Advanced > **Distance Field** (MSDF/MTSDF are listed only for Native) |
 | SDF scale | Effects > Advanced > **SDF Scale** (1-4, any backend with SDF) |
 | Vector outline | Effects > Outline > **Mode** = Vector (enabled only on Native with no distance field) |
@@ -53,6 +53,7 @@ dotnet tools/KernSmith.Cli/bin/Debug/net10.0/KernSmith.Cli.dll generate -f <font
 ```
 
 Native options: `--aa none|grayscale|light|lcd` (`--mono` = `none`), `--hinting`/`--no-hinting`,
+`--hint-level none|light|normal` (any anti-alias mode; the default with `--hinting` is `normal`, size-scaled; `full` steps down to `normal`), `--bake-kerning`/`--no-bake-kerning`,
 `--sdf` or `--sdf-mode sdf|msdf|mtsdf`, `--sdf-spread <n>`, `--color-font`, `--color-palette <n>`,
 `--axis <tag>=<value>` (repeatable), `--instance <name>` (a named instance; `--axis` overrides its
 values), `-b/--bold`, `-i/--italic`, `--italic-angle <deg>`, `--width-percent <n>`,
@@ -141,6 +142,33 @@ fail restore, since they live on nuget.org:
 Then reference `KernSmith` and `KernSmith.Rasterizers.Native` at `0.24.0-local.1` next to the Gum
 package. Repacking under the same version needs `dotnet nuget locals global-packages --clear`.
 
+## Same bytes on your host
+
+Native's output is the same on every runtime and machine (see the Native README, "Same bytes
+on every host"). To check a host of your own against the committed hashes:
+
+```bash
+# Any desktop OS, JIT:
+dotnet run --project tests/KernSmith.DeterminismProbe -f net10.0 -- --fixtures tests/KernSmith.Tests/Fixtures --manifest tests/KernSmith.Rasterizers.Native.Tests/Determinism/manifest.json
+
+# NativeAOT (needs the platform's C toolchain: VS C++ on Windows, clang + zlib1g-dev on Linux):
+dotnet publish tests/KernSmith.DeterminismProbe -c Release -r win-x64 -p:PublishAot=true -o out/aot
+out/aot/KernSmith.DeterminismProbe --fixtures tests/KernSmith.Tests/Fixtures --manifest tests/KernSmith.Rasterizers.Native.Tests/Determinism/manifest.json
+
+# Browser (publish the Blazor sample, then headless Chromium; add -p:RunAOTCompilation=false without the wasm-tools workload):
+dotnet publish samples/KernSmith.Samples.BlazorWasm -c Release -o out/wasm
+(cd tests/KernSmith.DeterminismProbe && npm install && npx playwright install chromium)
+node tests/KernSmith.DeterminismProbe/wasm-check.mjs --dir out/wasm/wwwroot --manifest tests/KernSmith.Rasterizers.Native.Tests/Determinism/manifest.json
+```
+
+`--case <id prefix>` narrows the probe (`--list` prints the ids); `--channel chrome` makes
+`wasm-check.mjs` use an installed Google Chrome. Every line should read `OK`; a `MISMATCH` on a
+host where CI is green is a determinism bug — report the host, runtime and the `parts` it
+prints (which say whether the `.fnt` or a page moved). The sample page itself shows the hash
+under the generation result, so a MonoGame/KNI/Gum host can be compared by hand: generate
+Roboto at 32 px, ASCII, grayscale with Native and compare `DeterminismHash` (linked source
+in `tests/KernSmith.Rasterizers.Native.Tests/Determinism/`) with `roboto/32px/grayscale/default`.
+
 ## Checklist
 
 Fixtures are in `tests/KernSmith.Tests/Fixtures/` (color fonts in `Color/`). Compare against
@@ -148,11 +176,12 @@ FreeType by switching the rasterizer.
 
 | Try | Font | Good looks like |
 |-----|------|-----------------|
-| Default grayscale | `Roboto-Regular.ttf` | Same shapes, advances and baseline as FreeType (within a pixel) |
+| Default grayscale | `Roboto-Regular.ttf` | Small sizes crisp (stems one column, x-height on a row), advances identical to unhinted; from 40 ppem exactly unhinted |
 | `.otf` outlines | `SourceSerif4-Regular.otf` (CFF), `NotoSans-Regular-Latin-CFF.otf` | Renders like the TTF fonts; no blank glyphs |
 | WOFF2 | `Roboto-Regular.woff2` | Identical to `Roboto-Regular.ttf` |
 | Mono | Roboto at 8 px, AA None | Thin strokes (`l I \| . :`) never vanish |
-| Light hinting | Roboto at 10-14 px, Light + Hinting | Horizontal stems and x-height snap to whole pixels (crisper than Grayscale); Light without Hinting equals Grayscale |
+| Light hinting | Roboto at 10-14 px, Hint Level `light` | Horizontal stems and x-height snap to whole pixels; stems stay as unhinted horizontally; `--no-hinting` equals Hint Level `none` |
+| Fixed-pitch font | `SourceCodeVF-Upright.otf` or Consolas at 8-16 px, either anti-alias mode | Every advance the same as unhinted, no kerning pairs in the `.fnt`, a block of `|` stays in columns |
 | LCD | Roboto at 24 px, LCD | RGBA atlas with colored subpixel fringes, normal width (FreeType's LCD is 3x-wide grayscale) |
 | LCD filter / order | Roboto at 24 px, LCD, each **LCD Filter** and **LCD Order** | None has the strongest fringes, Smooth the weakest; BGR swaps the red and blue fringes; V-RGB/V-BGR fringe vertically (top/bottom edges) |
 | SDF | Roboto, Distance Field SDF | Soft glow in Preview, crisp text in Sample; close to FreeType's SDF |

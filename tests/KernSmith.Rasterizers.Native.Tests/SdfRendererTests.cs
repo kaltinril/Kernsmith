@@ -276,7 +276,7 @@ public class SdfRendererTests
         // Wherever coverage is unambiguous (well clear of 50%), the field's sign must agree.
         using var rasterizer = new NativeRasterizer();
         rasterizer.LoadFont(TestFonts.RobotoRegularBytes());
-        var coverage = rasterizer.RasterizeGlyph(c, new RasterOptions { Size = size })!;
+        var coverage = rasterizer.RasterizeGlyph(c, new RasterOptions { Size = size, EnableHinting = false })!;
         var field = rasterizer.RasterizeGlyph(c, Sdf(8f, size))!;
 
         int dx = coverage.Metrics.BearingX - field.Metrics.BearingX;

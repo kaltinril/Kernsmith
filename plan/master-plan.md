@@ -119,6 +119,7 @@ Every phase that changes Native pixel output runs `regression_check.py` with a `
 | 177 | [Performance Optimization](phase-177-performance-optimization.md) | Benchmark harness, then optimisation | In progress -- harness, baseline, scanline fill, dropout control, metrics shortcut, pooling, Brotli, the feature-path and core-pipeline passes and their measured results done; remaining: composite/varied `glyf` scratch, parallelism |
 | 179 | [Validation / Golden Masters](phase-179-validation-golden-masters.md) | Validation, golden masters, release | In progress -- Wave 3 (robustness, golden masters, similarity matrix and docs sweep done; performance validation, the AOT Blazor WASM run, a library sample and the release decision remain) |
 | 180 | [Innovation Research](phase-180-innovation-research.md) | Innovation research (ongoing experiments) | Future (Ongoing Research) |
+| 188 | [Hint Levels and FreeType-Quality Hinting](phase-188-native-hint-levels.md) | Public `HintLevel` (None/Light/Normal/Full); Native auto-hinter in both axes, then CFF hinter and optionally a TrueType interpreter, to match FreeType's default output; parity harness and benchmarks | In progress -- steps 1 (`HintLevel` API) and 2 (Native `Normal` both-axis auto-hinter) in; parity bar not yet met; steps 3+ not started |
 
 ---
 

@@ -40,6 +40,7 @@ public sealed class BmFontIncrementalSession : IDisposable
     private readonly HashSet<int> _present = new();
     private readonly List<CharEntry> _chars = new();
     private readonly List<KerningEntry> _kerning = new();
+    private readonly List<FractionalCharMetrics> _fractional = new();
     private readonly int _advanceAdjustX;
 
     // Resume-only: reused verbatim in CurrentModel so a resumed session keeps referring
@@ -155,6 +156,8 @@ public sealed class BmFontIncrementalSession : IDisposable
                 session._chars.Add(c);
             }
             session._kerning.AddRange(existing.KerningPairs);
+            if (existing.Extended?.FractionalMetrics is { } existingFractional)
+                session._fractional.AddRange(existingFractional);
 
             // Line metrics come from the model so added CharEntries stay consistent with
             // the existing atlas (yoffset is relative to the same base line).
@@ -291,7 +294,7 @@ public sealed class BmFontIncrementalSession : IDisposable
             _prepared.FontInfo, (float)(_prepared.EffectiveSize * BmFontModelBuilder.DpiScale(_prepared.Options)),
             raster.RasterizerFontMetrics, _options.HeightPercent);
 
-        _kerningIndex ??= BuildKerningIndex(raster.RasterizerKerningPairs);
+        _kerningIndex ??= BuildKerningIndex(raster.RasterizerKerningPairs, raster.RasterizerKerningAdjustments);
 
         // Packed rect = glyph + padding + spacing, exactly as Generate builds them.
         var padding = _options.Padding;
@@ -360,6 +363,8 @@ public sealed class BmFontIncrementalSession : IDisposable
             _chars.Add(a.Char);
             _present.Add(a.Codepoint);
             addedSet.Add(a.Codepoint);
+            if (raster.FractionalMetrics is { } fractional && fractional.TryGetValue(a.Codepoint, out var f))
+                _fractional.Add(BmFontModelBuilder.FractionalEntry(a.Codepoint, f, _options));
         }
         var newKerning = ComputeKerningDelta(addedSet);
         _kerning.AddRange(newKerning);
@@ -511,13 +516,23 @@ public sealed class BmFontIncrementalSession : IDisposable
     // ---------------------------------------------------------------
 
     private Dictionary<int, List<IndexedKerningPair>> BuildKerningIndex(
-        IReadOnlyList<ScaledKerningPair>? rasterizerKerningPairs)
+        IReadOnlyList<ScaledKerningPair>? rasterizerKerningPairs,
+        IReadOnlyList<ScaledKerningAdjustment>? kerningAdjustments)
     {
         var index = new Dictionary<int, List<IndexedKerningPair>>();
 
         // Mirror BmFontModelBuilder's preference: rasterizer-provided pre-scaled pairs
-        // when available, else the font tables' pairs (scaled at delta time).
-        if (_options.Kerning && rasterizerKerningPairs is not null)
+        // when available, else the font tables' pairs (scaled at delta time). With the
+        // backend's spacing corrections (BakeHintingIntoKerning) the merge is the model's own,
+        // pre-scaled, over the corrections of the first batch: a glyph added later has none.
+        if (_options.Kerning && kerningAdjustments is { Count: > 0 })
+        {
+            _kerningPreScaled = true;
+            float metricSize = (float)(_prepared.EffectiveSize * BmFontModelBuilder.DpiScale(_prepared.Options));
+            foreach (var entry in BmFontModelBuilder.MergeKerning(_prepared.FontInfo, metricSize, _options, rasterizerKerningPairs, kerningAdjustments, restrictTo: null))
+                AddToIndex(index, new IndexedKerningPair(entry.First, entry.Second, entry.Amount));
+        }
+        else if (_options.Kerning && rasterizerKerningPairs is not null)
         {
             _kerningPreScaled = true;
             foreach (var pair in rasterizerKerningPairs)
@@ -615,7 +630,7 @@ public sealed class BmFontIncrementalSession : IDisposable
             Pages = pages,
             Characters = _chars.ToArray(),
             KerningPairs = _kerning.ToArray(),
-            Extended = BmFontModelBuilder.BuildExtendedMetadata(_options)
+            Extended = BmFontModelBuilder.BuildExtendedMetadata(_options, _fractional.Count > 0 ? _fractional.ToArray() : null)
         };
     }
 

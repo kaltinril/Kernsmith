@@ -61,6 +61,8 @@
     <!-- Golden masters (NativeGoldenMasterTests): the manifest, reference PNGs and .fnt files. -->
     <None Update="Goldens\**\*.json;Goldens\**\*.png;Goldens\**\*.fnt"
           CopyToOutputDirectory="PreserveNewest" />
+    <!-- Determinism manifest (DeterminismManifestTests): the cross-platform hashes. -->
+    <None Update="Determinism\manifest.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

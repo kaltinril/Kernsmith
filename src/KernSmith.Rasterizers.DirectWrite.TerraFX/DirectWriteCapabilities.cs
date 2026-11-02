@@ -23,4 +23,11 @@ internal sealed class DirectWriteCapabilities : IRasterizerCapabilities
         AntiAliasMode.None,
         AntiAliasMode.Grayscale
     ];
+
+    /// <summary>
+    /// <see cref="HintLevel.None"/> renders with <c>DWRITE_RENDERING_MODE_NATURAL</c> (the
+    /// hinting-off path) and <see cref="HintLevel.Light"/> with <c>NATURAL_SYMMETRIC</c>, the
+    /// y-only smoothing hinting on has always used.
+    /// </summary>
+    public IReadOnlyList<HintLevel> SupportedHintLevels { get; } = [HintLevel.None, HintLevel.Light];
 }

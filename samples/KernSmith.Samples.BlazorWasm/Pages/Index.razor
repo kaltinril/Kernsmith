@@ -3,6 +3,7 @@
 @using KernSmith
 @using KernSmith.Font
 @using KernSmith.Rasterizer
+@using KernSmith.Determinism
 @inject IJSRuntime JS
 @inject NavigationManager Nav
 
@@ -60,12 +61,18 @@ else
 
 @if (_error is not null)
 {
-    <p style="color: red;">Error: @_error</p>
+    <p id="generation-error" style="color: red;">Error: @_error</p>
 }
 
 @if (_elapsed is not null)
 {
-    <p>Backend: @_generatedBackend &middot; Glyphs: @_glyphCount &middot; Pages: @_pageCount &middot; Elapsed: @_elapsed.Value.TotalMilliseconds.ToString("F1") ms</p>
+    <p>Backend: <span id="generated-backend">@_generatedBackend</span> &middot; Glyphs: @_glyphCount &middot; Pages: @_pageCount &middot; Elapsed: <span id="generation-elapsed">@_elapsed.Value.TotalMilliseconds.ToString("F1")</span> ms</p>
+    <p>
+        Determinism hash: <code id="determinism-hash">@_hash</code><br />
+        <small>SHA-256 of the .fnt metrics and raw atlas pixels. Native's hash for a given font and
+        options is the same on every host; the committed values are in
+        <code>tests/KernSmith.Rasterizers.Native.Tests/Determinism/manifest.json</code>.</small>
+    </p>
 }
 
 @if (_fntPreview is not null)
@@ -111,6 +118,7 @@ else
     private string? _error;
     private TimeSpan? _elapsed;
     private string? _fntPreview;
+    private string? _hash;
     private string? _fntText;
     private byte[]? _pngData;
     private string? _atlasDataUrl;
@@ -195,6 +203,7 @@ else
     {
         _error = null;
         _fntPreview = null;
+        _hash = null;
         _fntText = null;
         _pngData = null;
         _atlasDataUrl = null;
@@ -220,6 +229,7 @@ else
         _generating = true;
         _error = null;
         _fntPreview = null;
+        _hash = null;
         _fntText = null;
         _pngData = null;
         _atlasDataUrl = null;
@@ -244,6 +254,7 @@ else
             _glyphCount = result.Model.Characters.Count;
             _pageCount = result.Pages.Count;
             _fntText = result.FntText;
+            _hash = DeterminismHash.Hash(result);
 
             // First 20 lines
             var lines = _fntText.Split('\n');

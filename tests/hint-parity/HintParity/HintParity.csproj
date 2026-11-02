@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>KernSmith.HintParity</RootNamespace>
+    <!-- One TFM so `dotnet run` needs no -f. Windows gets the -windows TFM (the shape the
+         bmfont-compare harness uses); elsewhere FreeType and Native both load on plain net10.0. -->
+    <TargetFrameworks>net10.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <TargetFrameworks>net10.0-windows</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="HintParity.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\KernSmith\KernSmith.csproj" />
+    <ProjectReference Include="..\..\..\src\KernSmith.Rasterizers.FreeType\KernSmith.Rasterizers.FreeType.csproj" />
+    <ProjectReference Include="..\..\..\src\KernSmith.Rasterizers.Native\KernSmith.Rasterizers.Native.csproj" />
+  </ItemGroup>
+
+</Project>

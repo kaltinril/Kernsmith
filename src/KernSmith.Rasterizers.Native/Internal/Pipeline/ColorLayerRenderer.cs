@@ -101,9 +101,10 @@ internal sealed class ColorLayerRenderer : IGlyphRenderer, IDrawsWithoutOutline
             GlyphBox b;
             try
             {
-                if (!_pipeline.TryPrepareBox(layer.GlyphIndex, options, transforms, out b, out _))
+                var layerOptions = GlyphHinter.ForColorLayers(options);
+                if (!_pipeline.TryPrepareBox(layer.GlyphIndex, layerOptions, transforms, out b, out _))
                 {
-                    var prepared = _pipeline.Prepare(layer.GlyphIndex, options, transforms);
+                    var prepared = _pipeline.Prepare(layer.GlyphIndex, layerOptions, transforms);
                     b = prepared.IsBlank ? default : prepared.Box;
                 }
             }
@@ -247,7 +248,7 @@ internal sealed class ColorLayerRenderer : IGlyphRenderer, IDrawsWithoutOutline
     {
         try
         {
-            return _pipeline.Prepare(layerGlyph, options, transforms);
+            return _pipeline.Prepare(layerGlyph, GlyphHinter.ForColorLayers(options), transforms);
         }
         catch (Exception ex) when (ex is FontFormatException or ArgumentOutOfRangeException)
         {

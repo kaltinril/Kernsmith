@@ -96,6 +96,30 @@ public sealed record RasterOptions
     public bool EnableHinting { get; init; } = true;
 
     /// <summary>
+    /// How strongly outlines are fitted to the pixel grid. <see cref="KernSmith.HintLevel.Default"/>
+    /// keeps the backend's reading of <see cref="EnableHinting"/> and <see cref="AntiAlias"/>; an
+    /// explicit level decides on its own. The pipeline only sends a backend a level it lists in
+    /// <see cref="IRasterizerCapabilities.SupportedHintLevels"/> (or <see cref="KernSmith.HintLevel.Default"/>).
+    /// </summary>
+    public HintLevel HintLevel { get; init; }
+
+    /// <summary>
+    /// Whether a backend whose hinting places glyphs on the pixel grid reports the per-pair
+    /// spacing corrections (<see cref="IRasterizer.GetKerningAdjustments"/>) that core folds
+    /// into the kerning pairs. Null (the default) leaves it to the backend: Native bakes exactly
+    /// when it hints at <see cref="HintLevel.Normal"/>; true and false are honoured as given.
+    /// </summary>
+    public bool? BakeHintingIntoKerning { get; init; }
+
+    /// <summary>
+    /// Asks the backend to report each glyph's unrounded advance and left side bearing, and what
+    /// hinting moved them by, on <see cref="RasterizedGlyph.Fractional"/>
+    /// (<see cref="FontGeneratorOptions.FractionalMetrics"/>). Default false; a backend that
+    /// cannot supply them leaves the field null.
+    /// </summary>
+    public bool FractionalMetrics { get; init; }
+
+    /// <summary>
     /// Supersampling factor for higher quality rendering. The rasterizer renders at
     /// Size * SuperSample internally and downscales. Default is 1 (no supersampling).
     /// BMFont's "aa" setting maps to this value. KernSmith core super samples glyphs itself (it
@@ -147,6 +171,9 @@ public sealed record RasterOptions
             ColorPaletteIndex = options.ColorPaletteIndex,
             VariationAxes = options.VariationAxes,
             EnableHinting = options.EnableHinting,
+            HintLevel = options.HintLevel,
+            BakeHintingIntoKerning = options.BakeHintingIntoKerning,
+            FractionalMetrics = options.FractionalMetrics,
             SuperSample = options.SuperSampleLevel,
             WidthPercent = options.WidthPercent,
             ItalicAngle = options.ItalicAngle

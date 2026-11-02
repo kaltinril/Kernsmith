@@ -25,7 +25,9 @@ internal static class BmFontModelBuilder
         float? effectiveSize = null,
         RasterizerFontMetrics? rasterizerFontMetrics = null,
         IReadOnlyList<ScaledKerningPair>? rasterizerKerningPairs = null,
-        int superSampleLevel = 1)
+        int superSampleLevel = 1,
+        IReadOnlyList<ScaledKerningAdjustment>? kerningAdjustments = null,
+        IReadOnlyDictionary<int, FractionalGlyphMetrics>? fractionalMetrics = null)
     {
         // The effective ppem used for rasterization. When cell-height scaling is
         // applied, this is smaller than options.Size. For metric calculations we
@@ -88,42 +90,9 @@ internal static class BmFontModelBuilder
         var glyphCodepoints = new HashSet<int>(glyphs.Count);
         foreach (var glyph in glyphs)
             glyphCodepoints.Add(glyph.Codepoint);
-        var kerningPairs = new List<KerningEntry>();
+        var kerningPairs = MergeKerning(fontInfo, metricSize, options, rasterizerKerningPairs, kerningAdjustments, glyphCodepoints);
 
-        if (options.Kerning && rasterizerKerningPairs is not null)
-        {
-            // Use pre-scaled pairs directly — already in pixel values.
-            foreach (var pair in rasterizerKerningPairs)
-            {
-                if (!glyphCodepoints.Contains(pair.LeftCodepoint) ||
-                    !glyphCodepoints.Contains(pair.RightCodepoint))
-                    continue;
-
-                if (pair.Amount == 0)
-                    continue;
-
-                kerningPairs.Add(new KerningEntry(pair.LeftCodepoint, pair.RightCodepoint, pair.Amount));
-            }
-        }
-        else if (options.Kerning && fontInfo.KerningPairs.Count > 0)
-        {
-            foreach (var pair in fontInfo.KerningPairs)
-            {
-                if (!glyphCodepoints.Contains(pair.LeftCodepoint) ||
-                    !glyphCodepoints.Contains(pair.RightCodepoint))
-                    continue;
-
-                // A synthetic width scale (WidthPercent) narrows every advance, so the pair
-                // adjustments scale with them; at 100 the factor is exactly 1.
-                int amount = (int)Math.Round((double)pair.XAdvanceAdjustment * metricSize / fontInfo.UnitsPerEm * (options.WidthPercent / 100.0), MidpointRounding.AwayFromZero);
-                if (amount == 0)
-                    continue;
-
-                kerningPairs.Add(new KerningEntry(pair.LeftCodepoint, pair.RightCodepoint, amount));
-            }
-        }
-
-        var extended = BuildExtendedMetadata(options);
+        var extended = BuildExtendedMetadata(options, FractionalEntries(characters, options, fractionalMetrics));
 
         return new BmFontModel
         {
@@ -165,6 +134,33 @@ internal static class BmFontModelBuilder
             Page: placement.PageIndex,
             Channel: channel);
     }
+
+    /// <summary>
+    /// The extended metadata's per-character fractional metrics for the characters the model
+    /// writes, in their order: the pipeline's unrounded advance plus the same global advance
+    /// adjustment <c>xadvance</c> carries (unrounded here), the bearing as the backend gave it.
+    /// Null when the option is off or no glyph has metrics. Shared with
+    /// <see cref="BmFontIncrementalSession"/>.
+    /// </summary>
+    internal static List<FractionalCharMetrics>? FractionalEntries(
+        IReadOnlyList<CharEntry> characters, FontGeneratorOptions options, IReadOnlyDictionary<int, FractionalGlyphMetrics>? fractionalMetrics)
+    {
+        if (fractionalMetrics is not { Count: > 0 })
+            return null;
+
+        var entries = new List<FractionalCharMetrics>(characters.Count);
+        foreach (var c in characters)
+        {
+            if (fractionalMetrics.TryGetValue(c.Id, out var f))
+                entries.Add(FractionalEntry(c.Id, f, options));
+        }
+
+        return entries.Count == 0 ? null : entries;
+    }
+
+    /// <inheritdoc cref="FractionalEntries"/>
+    internal static FractionalCharMetrics FractionalEntry(int codepoint, FractionalGlyphMetrics f, FontGeneratorOptions options) =>
+        new(codepoint, PreparedRasterization.Sixtyfourths(f.Advance + options.AdvanceAdjustX), f.BearingX, f.AdvanceDelta, f.BearingXDelta);
 
     /// <summary>
     /// The default page-name stem for a family name: every character Windows forbids in a file
@@ -212,6 +208,85 @@ internal static class BmFontModelBuilder
             Padding: options.Padding,
             Spacing: options.Spacing,
             Outline: options.Outline);
+    }
+
+    /// <summary>
+    /// The kerning pairs of a font at one size: the rasterizer's pre-scaled pairs when it gave
+    /// any, else the font tables' pairs scaled to pixels (by <paramref name="metricSize"/> and
+    /// the synthetic width); then, when a backend reported spacing corrections
+    /// (<see cref="FontGeneratorOptions.BakeHintingIntoKerning"/>), each correction added to its
+    /// pair before the one rounding, and a pair of its own where the font has none. Pairs whose
+    /// amount rounds to zero are dropped, and pairs outside <paramref name="restrictTo"/> (when
+    /// given) skipped. Without corrections this is exactly the merge the model always did, so
+    /// existing output does not move. Shared with <see cref="BmFontIncrementalSession"/>.
+    /// </summary>
+    internal static List<KerningEntry> MergeKerning(
+        FontInfo fontInfo,
+        float metricSize,
+        FontGeneratorOptions options,
+        IReadOnlyList<ScaledKerningPair>? rasterizerKerningPairs,
+        IReadOnlyList<ScaledKerningAdjustment>? kerningAdjustments,
+        HashSet<int>? restrictTo)
+    {
+        var kerningPairs = new List<KerningEntry>();
+        if (!options.Kerning)
+            return kerningPairs;
+
+        Dictionary<(int Left, int Right), double>? corrections = null;
+        if (kerningAdjustments is { Count: > 0 })
+        {
+            corrections = new Dictionary<(int, int), double>(kerningAdjustments.Count);
+            foreach (var adjustment in kerningAdjustments)
+            {
+                if (restrictTo is not null && (!restrictTo.Contains(adjustment.LeftCodepoint) || !restrictTo.Contains(adjustment.RightCodepoint)))
+                    continue;
+                corrections[(adjustment.LeftCodepoint, adjustment.RightCodepoint)] = adjustment.Amount;
+            }
+        }
+
+        void Add(int left, int right, double amount)
+        {
+            if (corrections is not null && corrections.Remove((left, right), out double correction))
+                amount += correction;
+            int rounded = (int)Math.Round(amount, MidpointRounding.AwayFromZero);
+            if (rounded != 0)
+                kerningPairs.Add(new KerningEntry(left, right, rounded));
+        }
+
+        if (rasterizerKerningPairs is not null)
+        {
+            // Pre-scaled pairs — already in pixel values.
+            foreach (var pair in rasterizerKerningPairs)
+            {
+                if (restrictTo is not null && (!restrictTo.Contains(pair.LeftCodepoint) || !restrictTo.Contains(pair.RightCodepoint)))
+                    continue;
+                Add(pair.LeftCodepoint, pair.RightCodepoint, pair.Amount);
+            }
+        }
+        else if (fontInfo.KerningPairs.Count > 0)
+        {
+            foreach (var pair in fontInfo.KerningPairs)
+            {
+                if (restrictTo is not null && (!restrictTo.Contains(pair.LeftCodepoint) || !restrictTo.Contains(pair.RightCodepoint)))
+                    continue;
+
+                // A synthetic width scale (WidthPercent) narrows every advance, so the pair
+                // adjustments scale with them; at 100 the factor is exactly 1.
+                Add(pair.LeftCodepoint, pair.RightCodepoint, (double)pair.XAdvanceAdjustment * metricSize / fontInfo.UnitsPerEm * (options.WidthPercent / 100.0));
+            }
+        }
+
+        if (corrections is { Count: > 0 })
+        {
+            // Corrections for pairs the font does not kern, in the order the backend gave them.
+            foreach (var adjustment in kerningAdjustments!)
+            {
+                if (corrections.Remove((adjustment.LeftCodepoint, adjustment.RightCodepoint), out double correction))
+                    Add(adjustment.LeftCodepoint, adjustment.RightCodepoint, correction);
+            }
+        }
+
+        return kerningPairs;
     }
 
     /// <summary>
@@ -346,6 +421,7 @@ internal static class BmFontModelBuilder
             ColorFont = meta?.ColorFont,
             FallbackCharacter = meta?.FallbackCharacter,
             AdvanceAdjustY = meta?.AdvanceAdjustY,
+            FractionalMetrics = meta?.FractionalMetrics,
             VariantOf = variantOf,
             Variants = variants
         };
@@ -361,7 +437,7 @@ internal static class BmFontModelBuilder
         };
     }
 
-    internal static ExtendedMetadata? BuildExtendedMetadata(FontGeneratorOptions options)
+    internal static ExtendedMetadata? BuildExtendedMetadata(FontGeneratorOptions options, IReadOnlyList<FractionalCharMetrics>? fractionalMetrics = null)
     {
         var version = KernSmithVersionInfo.Version;
 
@@ -419,7 +495,8 @@ internal static class BmFontModelBuilder
             ColorFont = colorFont,
             VariationAxes = variationAxes,
             FallbackCharacter = fallbackCharacter,
-            AdvanceAdjustY = advanceAdjustY
+            AdvanceAdjustY = advanceAdjustY,
+            FractionalMetrics = fractionalMetrics is { Count: > 0 } ? fractionalMetrics : null
         };
 
         // Written only when it carries a field beyond GeneratorVersion (REF-05), so a default

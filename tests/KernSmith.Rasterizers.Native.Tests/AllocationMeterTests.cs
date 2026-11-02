@@ -1,3 +1,4 @@
+using System.Buffers;
 using Shouldly;
 
 namespace KernSmith.Rasterizers.Native.Tests;
@@ -5,7 +6,8 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// <summary>
 /// The allocation ceilings (<see cref="NativeAllocationTests"/> and friends) must hold under a
 /// full, parallel test run: garbage collections other tests trigger must not read as allocations,
-/// and real allocations must never be hidden.
+/// nor must the shared array pool's refill after one trimmed it, and real allocations must never
+/// be hidden.
 /// </summary>
 public class AllocationMeterTests
 {
@@ -38,6 +40,40 @@ public class AllocationMeterTests
 
         GC.KeepAlive(kept);
         readings.ShouldAllBe(r => r >= 4024, "a 4000 byte array (24 bytes of header) went unmeasured");
+    }
+
+    [Fact]
+    public void PooledScratch_IsNotCharged_WhenTheSharedPoolWasTrimmedBeforeTheWindow()
+    {
+        // Work whose only buffer is pooled scratch: allocation-free once the pool holds the
+        // array, as every pooled stage of the rasterizer is.
+        const int Size = 8192;
+        void Work()
+        {
+            byte[] scratch = ArrayPool<byte>.Shared.Rent(Size);
+            scratch[0] = 1;
+            ArrayPool<byte>.Shared.Return(scratch);
+        }
+
+        Work();
+        AllocationMeter.BytesAllocatedBy(Work).ShouldBe(0, "the warm pool should serve the scratch");
+
+        // A gen2 collection's trim callback empties the thread-local and per-core slots behind
+        // the thread's back, with no pause inside the window that follows: take the bucket's
+        // arrays the same way, and keep them.
+        var trimmed = new List<byte[]>();
+        while (true)
+        {
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            trimmed.Add(ArrayPool<byte>.Shared.Rent(Size));
+            if (GC.GetAllocatedBytesForCurrentThread() - before >= Size)
+                break;
+        }
+
+        long allocated = AllocationMeter.BytesAllocatedBy(Work);
+
+        GC.KeepAlive(trimmed);
+        allocated.ShouldBe(0, "the refill after a pool trim was charged to the work");
     }
 
     /// <summary>Takes <see cref="Windows"/> readings while other threads fill the large object

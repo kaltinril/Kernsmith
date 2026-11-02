@@ -25,7 +25,9 @@ public class ColorLayerRenderingTests
     private const uint Yellow = 0xFFFF00FFu;
 
     private static readonly RasterOptions Color32 = new() { Size = 32, ColorFont = true };
-    private static readonly RasterOptions Plain32 = new() { Size = 32 };
+    // A color glyph's layers are hinted at Light under the default request (GlyphHinter.ForColorLayers),
+    // so the plain coverage they are compared with is the Light-hinted one.
+    private static readonly RasterOptions Plain32 = new() { Size = 32, HintLevel = HintLevel.Light };
 
     private static readonly NativeFontFace Roboto = NativeFontFace.Load(TestFonts.RobotoRegularBytes());
     private static readonly int O = Roboto.GetGlyphIndex('O');
@@ -307,7 +309,8 @@ public class ColorLayerRenderingTests
 
         var glyph = native.RasterizeGlyph('O', Color32)!;
         glyph.Format.ShouldBe(PixelFormat.Grayscale8);
-        glyph.BitmapData.ShouldBe(native.RasterizeGlyph('O', Plain32)!.BitmapData);
+        // The fallback is the plain glyph under the request as made, hinted as the default is.
+        glyph.BitmapData.ShouldBe(native.RasterizeGlyph('O', new RasterOptions { Size = 32 })!.BitmapData);
     }
 
     [Fact]

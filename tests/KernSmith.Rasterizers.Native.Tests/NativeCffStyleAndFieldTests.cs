@@ -116,7 +116,7 @@ public class NativeCffStyleAndFieldTests
         using var native = new NativeRasterizer();
         native.LoadFont(font == "serif" ? TestFonts.SourceSerifOtfBytes() : TestFonts.SourceCodeVariableOtfBytes());
         var options = new RasterOptions { Size = 32, Dpi = 72, SdfMode = mode, SdfSpread = 6 };
-        var coverageOptions = new RasterOptions { Size = 32, Dpi = 72 };
+        var coverageOptions = new RasterOptions { Size = 32, Dpi = 72, EnableHinting = false };
 
         for (int codepoint = 0x21; codepoint < 0x7F; codepoint++)
         {

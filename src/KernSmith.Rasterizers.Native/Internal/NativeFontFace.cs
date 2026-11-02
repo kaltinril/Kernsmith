@@ -23,6 +23,7 @@ internal sealed class NativeFontFace
         MaxpTable maxp,
         HmtxTable hmtx,
         Os2Table os2,
+        PostTable post,
         CmapTable cmap,
         LocaTable? loca,
         GlyfTable? glyf)
@@ -33,6 +34,7 @@ internal sealed class NativeFontFace
         Maxp = maxp;
         Hmtx = hmtx;
         Os2 = os2;
+        Post = post;
         Cmap = cmap;
         Loca = loca;
         Glyf = glyf;
@@ -55,6 +57,9 @@ internal sealed class NativeFontFace
 
     /// <summary>The parsed <c>OS/2</c> table.</summary>
     public Os2Table Os2 { get; }
+
+    /// <summary>The parsed <c>post</c> table header (italic angle, underline, fixed pitch).</summary>
+    public PostTable Post { get; }
 
     /// <summary>The parsed <c>cmap</c> table.</summary>
     public CmapTable Cmap { get; }
@@ -108,6 +113,7 @@ internal sealed class NativeFontFace
         var maxp = MaxpTable.Parse(tables.GetTable("maxp").Span);
         var hmtx = HmtxTable.Parse(tables.GetTable("hmtx").Span, hhea.NumberOfHMetrics, maxp.NumGlyphs);
         var os2 = Os2Table.Parse(tables.GetTable("OS/2").Span);
+        var post = PostTable.Parse(tables.GetTable("post").Span);
         var cmap = CmapTable.Parse(tables.GetTable("cmap").Span);
 
         // CFF faces have no glyf/loca; CffOutlineDecoder reads their 'CFF '/'CFF2' table. A
@@ -120,6 +126,6 @@ internal sealed class NativeFontFace
             glyf = new GlyfTable(tables.GetTable("glyf"), loca, maxp.ComponentDepthLimit);
         }
 
-        return new NativeFontFace(tables, head, hhea, maxp, hmtx, os2, cmap, loca, glyf);
+        return new NativeFontFace(tables, head, hhea, maxp, hmtx, os2, post, cmap, loca, glyf);
     }
 }
