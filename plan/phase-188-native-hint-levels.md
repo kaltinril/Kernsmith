@@ -53,6 +53,8 @@ So "FreeType quality" is three engines selected per font, plus integer-ppem scal
 - 'h' is 5 unhinted because its linear advance is 1128 × 9.099 / 2048 = **5.01 px**; FreeType's 6 is the auto-hinter's rebuilt advance, not a rounding fix. Native is not truncating.
 - **Separate real bug**: with super sampling, core divides the hi-res advance with integer division, truncating — `Advance = m.Advance / level` (`PreparedRasterization.cs:910`, blank glyphs) and `Advance: metrics.Advance / level` (`:935`). Native `aa=4`: 'e' 19 px at 4× → 4 (4.75 should be 5); FreeType `aa=4`: 'h' 5 → 4, 'm' 8 → 7. Every backend's supersampled output is cramped by this. It may be deliberate BMFont parity (bearings are documented as truncating on purpose), so step 0 checks BMFont64 `aa=2/4` output before changing it.
 
+> The research reports behind this plan (open-source survey, idea catalogue, exploratory measurements, OCR experiment, determinism audit) are in [research/phase-188/](research/phase-188/README.md).
+
 ## Survey
 
 ### FreeType's engine selection (`FT_LOAD_DEFAULT`)
