@@ -85,12 +85,19 @@ public class NativeAllocationTests
         var glyph = native.RasterizeGlyph(Emoji, options)!; // also warms caches and JIT
         glyph.Format.ShouldBe(PixelFormat.Rgba32);
 
-        long kept = ArrayBytes<byte>(136 * 128 * 4) + ArrayBytes<byte>(glyph.BitmapData.Length);
+        long image = ArrayBytes<byte>(136 * 128 * 4), bitmap = ArrayBytes<byte>(glyph.BitmapData.Length);
+        long kept = image + bitmap;
         long allocated = AllocationMeter.BytesAllocatedBy(() => native.RasterizeGlyph(Emoji, options));
 
-        // Room for the resampler's tap tables, the inflater's own state and the result objects;
-        // a strike-sized float copy alone is 278 KB.
-        (allocated - kept).ShouldBeLessThan(16 * 1024, $"{allocated} B allocated, {kept} B kept");
+        // Room for the resampler's tap tables (about 5.6 KB), the inflater's own objects and the
+        // result objects — about 7.7 KB in all; a strike-sized float copy alone is 278 KB. The
+        // pooled scratch is the strike's indexed scanlines (32 KB bucket), its IDAT (4 KB), the
+        // inflater's input buffer (8 KB), one premultiplied row (4 KB of floats) and the filtered
+        // rows (128 KB of floats): an excess that is a sum of those bucket sizes plus 24 B headers
+        // is the shared pool being refilled, not the glyph allocating.
+        long scratch = allocated - kept;
+        scratch.ShouldBeLessThan(16 * 1024,
+            $"{allocated} B allocated, {kept} B kept ({image} B strike image + {bitmap} B glyph bitmap of {glyph.Width}x{glyph.Height}): {scratch} B of scratch");
     }
 
     [Theory]
