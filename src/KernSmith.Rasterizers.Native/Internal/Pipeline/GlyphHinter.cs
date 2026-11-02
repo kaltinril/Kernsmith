@@ -19,7 +19,10 @@ namespace KernSmith.Rasterizers.Native.Internal.Pipeline;
 /// with <see cref="RasterOptions.EnableHinting"/> on, in every anti-alias mode — and nothing at
 /// <see cref="HintLevel.None"/> or with hinting off. Light never fits x, so its advances, side
 /// bearings and horizontal extents are exactly the unhinted ones; Normal keeps the advances and
-/// places the ink by side, at full strength up to 16 ppem and fading to nothing by 40.
+/// places the ink by side, at full strength up to 16 ppem and fading to nothing by 40. Normal
+/// also reads the face's <see cref="HintingProfile"/>: a bytecode face hinted for integer ppem
+/// is fitted and rendered at <c>round(ppem)</c> with its <c>hdmx</c> advances, and no face is
+/// fitted at a size its <c>gasp</c> says not to grid-fit.
 /// </remarks>
 internal sealed class GlyphHinter
 {
@@ -27,6 +30,7 @@ internal sealed class GlyphHinter
     private readonly Os2Table _os2;
     private readonly Func<int> _instanceStamp;
     private readonly bool _fixedPitch;
+    private readonly HintingProfile _profile;
     private readonly Dictionary<CacheKey, ScaledHintMetrics?> _metrics = [];
     private readonly Dictionary<CacheKey, NormalHintMetrics?> _normalMetrics = [];
 
@@ -34,10 +38,13 @@ internal sealed class GlyphHinter
     /// <param name="glyphIndexOf">Maps a codepoint to a glyph index (0 when unmapped), to find reference glyphs.</param>
     /// <param name="os2">The face's <c>OS/2</c> table, the fallback for x-height and cap height.</param>
     /// <param name="instanceStamp">Identifies the current variation instance, so measurements
-    /// taken at one instance are not reused at another; constant for a non-variable face.</param>
+    /// taken at one instance are not reused at another; 0 at the default instance (the only one
+    /// <c>hdmx</c> describes) and for a non-variable face.</param>
     /// <param name="fixedPitch">True for a fixed-pitch face (<see cref="IsFixedPitch"/>): its
     /// pairs are never padded or kerned by the hinter, since every advance is the pitch.</param>
-    public GlyphHinter(Func<int, int> glyphIndexOf, Os2Table os2, Func<int> instanceStamp, bool fixedPitch = false)
+    /// <param name="profile">What the face says about its hinting (<see cref="HintingProfile.For"/>);
+    /// null for <see cref="HintingProfile.Autohint"/>, a face that says nothing.</param>
+    public GlyphHinter(Func<int, int> glyphIndexOf, Os2Table os2, Func<int> instanceStamp, bool fixedPitch = false, HintingProfile? profile = null)
     {
         ArgumentNullException.ThrowIfNull(glyphIndexOf);
         ArgumentNullException.ThrowIfNull(instanceStamp);
@@ -45,6 +52,7 @@ internal sealed class GlyphHinter
         _os2 = os2;
         _instanceStamp = instanceStamp;
         _fixedPitch = fixedPitch;
+        _profile = profile ?? HintingProfile.Autohint;
     }
 
     /// <summary>
@@ -160,7 +168,9 @@ internal sealed class GlyphHinter
     /// <param name="glyphOf">Stages 1–2 for another glyph index (decode and the request's
     /// transforms, font units: outline and advance), used to measure reference glyphs; null for
     /// a malformed glyph.</param>
-    public PreparedGlyph Apply(PreparedGlyph glyph, RasterOptions options, int unitsPerEm, Func<int, DecodedGlyph?> glyphOf)
+    /// <param name="styled">True when stage 2 transformed the glyph (synthetic bold, italic or
+    /// a width scale): the font's device metrics describe only its unstyled glyphs.</param>
+    public PreparedGlyph Apply(PreparedGlyph glyph, RasterOptions options, int unitsPerEm, Func<int, DecodedGlyph?> glyphOf, bool styled = false)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(glyphOf);
@@ -169,11 +179,11 @@ internal sealed class GlyphHinter
             return glyph;
 
         float scale = glyph.ToPixels.Scale;
+        if (EffectiveHintLevel(options) == HintLevel.Normal)
+            return ApplyNormal(glyph, options, scale, unitsPerEm, glyphOf, styled);
+
         if (glyph.IsBlank)
             return glyph;
-
-        if (EffectiveHintLevel(options) == HintLevel.Normal)
-            return ApplyNormal(glyph, options, scale, unitsPerEm, glyphOf);
 
         var metrics = MetricsFor(options, scale, unitsPerEm, glyphOf);
         if (metrics is null)
@@ -199,14 +209,60 @@ internal sealed class GlyphHinter
     /// a right-hand stem with under half a pixel of white gets a column of advance; see
     /// <see cref="NormalHinter"/>.
     /// </summary>
-    private PreparedGlyph ApplyNormal(PreparedGlyph glyph, RasterOptions options, float scale, int unitsPerEm, Func<int, DecodedGlyph?> glyphOf)
+    /// <remarks>
+    /// What the face's <see cref="HintingProfile"/> changes, for a bytecode face hinted for
+    /// integer ppem: the fit runs — and the glyph is rendered — at <c>round(ppem)</c>
+    /// (<see cref="HintingProfile.HintPpem"/>), as FreeType's interpreter and GDI render it,
+    /// so the designer's per-ppem x-height and cap rows come out; the advance is the
+    /// <c>hdmx</c> record's where there is one for that ppem (unstyled glyphs at the default
+    /// instance), else the linear advance at the integer ppem, rounded once — blank glyphs
+    /// included, since the space's advance sets word gaps. For every face, a size the
+    /// <c>gasp</c> table says not to grid-fit is left unfitted (<see cref="PreparedGlyph.FitWithheld"/>),
+    /// still at the integer ppem and with the chosen advance. Past the taper nothing happens
+    /// at all, so large text stays exactly unhinted, fractional ppem included.
+    /// </remarks>
+    private PreparedGlyph ApplyNormal(PreparedGlyph glyph, RasterOptions options, float scale, int unitsPerEm, Func<int, DecodedGlyph?> glyphOf, bool styled)
     {
+        float ppem = scale * unitsPerEm;
+        if (!_profile.PrefersIntegerPpem)
+            return FitNormal(glyph, options, scale, unitsPerEm, glyphOf, ppem, glyph.AdvanceWidth * scale);
+
+        // A face hinted for integer ppem: everything below runs at round(ppem), the
+        // renderer's size stages included (PreparedGlyph.HintPpem), with the device advance.
+        float hintPpem = _profile.HintPpem(ppem);
+        glyph = glyph with { HintPpem = hintPpem };
+        if (NormalHinter.Strength(hintPpem) <= 0f)
+            return glyph;
+
+        // An integer request keeps the exact scale stage 4 used; a fractional one is rescaled.
+        bool rescaled = !hintPpem.Equals(ppem);
+        float hintScale = rescaled ? hintPpem / unitsPerEm : scale;
+        float advance = AdvanceFor(glyph, hintPpem, hintScale, styled);
+        if (glyph.IsBlank)
+            return glyph with { Advance = RoundAdvance(advance) };
+
+        if (NormalMetricsFor(options, hintScale, unitsPerEm, glyphOf) is null)
+            return Unfitted(glyph, hintScale, rescaled, advance, fitWithheld: false);
+        if (!_profile.GridFitsAt(hintPpem))
+            return Unfitted(glyph, hintScale, rescaled, advance, fitWithheld: true);
+
+        return FitNormal(glyph, options, hintScale, unitsPerEm, glyphOf, hintPpem, advance);
+    }
+
+    /// <summary>The fit itself, at a scale and ppem the caller chose, within <paramref name="advance"/> (unrounded pixels).</summary>
+    private PreparedGlyph FitNormal(PreparedGlyph glyph, RasterOptions options, float scale, int unitsPerEm, Func<int, DecodedGlyph?> glyphOf, float ppem, float advance)
+    {
+        if (glyph.IsBlank)
+            return glyph;
+
         var metrics = NormalMetricsFor(options, scale, unitsPerEm, glyphOf);
         if (metrics is null)
             return glyph;
 
+        if (!_profile.GridFitsAt(ppem))
+            return glyph with { FitWithheld = true };
+
         bool mono = options.AntiAlias == AntiAliasMode.None;
-        float advance = glyph.AdvanceWidth * scale;
         var result = NormalHinter.Fit(GridMath.ScaleOutline(glyph.Outline, scale), advance, metrics, mono,
             padStemPairs: !BakesKerning(options) && !_fixedPitch);
         if (result is not { } fitted)
@@ -221,6 +277,44 @@ internal sealed class GlyphHinter
             Spacing = fitted.XFitted ? new HintSpacing(fitted.FontLeft, fitted.FontRight, fitted.LeftStem, fitted.RightStem) : null,
         };
     }
+
+    /// <summary>
+    /// The advance the <c>Normal</c> fit places the glyph in, in pixels, unrounded: the
+    /// <c>hdmx</c> record's at the integer ppem for an unstyled glyph at the default instance
+    /// of a face that prefers integer ppem, else the font's linear advance at the hint scale.
+    /// </summary>
+    private float AdvanceFor(PreparedGlyph glyph, float hintPpem, float hintScale, bool styled)
+    {
+        if (!styled && _instanceStamp() == 0 && _profile.HdmxAdvance((int)hintPpem, glyph.GlyphIndex) is { } device)
+            return device;
+
+        return glyph.AdvanceWidth * hintScale;
+    }
+
+    /// <summary>
+    /// A glyph the <c>Normal</c> stage does not fit, for a face that prefers integer ppem:
+    /// scaled to that ppem (its box from the scaled outline) with the chosen advance, so
+    /// rendering and metrics agree with the fitted glyphs around it.
+    /// </summary>
+    private static PreparedGlyph Unfitted(PreparedGlyph glyph, float hintScale, bool rescaled, float advance, bool fitWithheld)
+    {
+        int rounded = RoundAdvance(advance);
+        if (!rescaled)
+            return glyph with { Advance = rounded, FitWithheld = fitWithheld };
+
+        var outline = GridMath.ScaleOutline(glyph.Outline, hintScale);
+        return glyph with
+        {
+            Outline = outline,
+            ToPixels = new OutlineTransform(1f, 0f),
+            Box = GlyphBox.Compute(outline, null, 1f),
+            Advance = rounded,
+            FitWithheld = fitWithheld,
+        };
+    }
+
+    /// <summary>The advance rounded once to the nearest pixel, an exact half up (Native's advance rounding, as <see cref="NormalHinter"/> rounds it).</summary>
+    private static int RoundAdvance(float advance) => (int)Math.Round(advance, MidpointRounding.AwayFromZero);
 
     private ScaledHintMetrics? MetricsFor(RasterOptions options, float scale, int unitsPerEm, Func<int, DecodedGlyph?> glyphOf)
     {
@@ -243,7 +337,7 @@ internal sealed class GlyphHinter
             return cached;
 
         var measured = NormalFontMetrics.Measure(ReferenceOutlines(glyphOf), _os2, unitsPerEm);
-        var scaled = measured?.Scale(scale, unitsPerEm);
+        var scaled = measured?.Scale(scale, unitsPerEm, xHeightRoundUp: _profile.XHeightRoundUp(HintTuning.Current));
         _normalMetrics[key] = scaled;
         return scaled;
     }

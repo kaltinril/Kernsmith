@@ -195,7 +195,30 @@ advance:
   goes first and large text is exactly unhinted. Both strengths fall monotonically with size
   (`HintTuning.TaperStartPpem`, `XTaperEndPpem`, `TaperEndPpem`). Measured with the hint-parity
   legibility score against unhinted at full strength, the grayscale gain is +0.09 to +0.11 at
-  9 ppem and up to +0.05 at 15-18 ppem, and Source Serif loses 0.04-0.06 from 20 ppem on.
+  9 ppem and up to +0.05 at 15-18 ppem, and Source Serif loses 0.04-0.06 from 20 ppem on. The
+  font's `gasp` table is a floor under it (below).
+- **What the font says** (`HintingProfile`, read once per face in `LoadFont`) — a TrueType
+  face with bytecode (an `fpgm` or `prep` table, or `maxp.maxSizeOfInstructions` above zero:
+  FreeType's rule for running its interpreter rather than its auto-hinter) whose `head.flags`
+  bit 3 asks for integer ppem was hinted by its designer per integer ppem, and Normal treats
+  it so, as FreeType's interpreter and GDI do: the fit runs, and the glyph is scaled, at
+  `round(ppem)` (a 12 px Verdana cell is 11.52 ppem and renders at 12, up to ±4% off the
+  cell's nominal size, inside the same cell); the x-height rounds to the nearest row rather
+  than being pushed up (Verdana's and Tahoma's x-height and cap rows are then FreeType's at
+  every cell from 8 to 16 px); and the advance is the `hdmx` device-metrics record's for that
+  ppem where the table has one — the designer's hinted advances, which FreeType reports
+  exactly — for unstyled glyphs at the default instance, else the linear advance at the
+  integer ppem, rounded once, the space included. Roboto sets bit 3 but has no bytecode, and
+  Noto Sans has ttfautohint bytecode but no bit 3: both stay at the fractional ppem with the
+  rules above, byte for byte; Roboto Flex (a `prep` table and bit 3) is an integer-ppem face.
+  For every face, the `gasp` table's ranges are honoured: at a ppem it says not to grid-fit
+  (`GASP_GRIDFIT` and `GASP_SYMMETRIC_GRIDFIT` both clear — 8 ppem and under in the common
+  Microsoft table) Normal leaves the outline unfitted (`PreparedGlyph.FitWithheld`), still at
+  the integer ppem with the chosen advance, and bilevel output falls back to the threshold
+  renderer; where it says to grid-fit, the taper above still caps the strength. The renderer's
+  size stages (the stroke-renderer decision, thin-stroke darkening) read the ppem the fit ran
+  at (`PreparedGlyph.HintPpem`), so a request for 8.03 ppem renders exactly as one for 8. A
+  malformed `hdmx` or `gasp` is ignored, never an error.
 - **Kerning bake** — `NativeRasterizer.GetKerningAdjustments` reports, over every pair of
   glyphs rasterized under Normal at a size, the pairs with no column between their rendered
   inks: in bilevel every such pair, in grayscale only those whose facing columns are both at
@@ -329,7 +352,7 @@ Everything is internal; add a feature to its stage rather than to `NativeRasteri
 | 1 | Decode → `DecodedGlyph` (cubic outline, advance, optional declared bbox; font units) | `Internal/Outlines/IOutlineDecoder.cs`, `TrueTypeOutlineDecoder.cs`, `CffOutlineDecoder.cs` (interpreter in `Internal/Cff/`); variations in `Internal/Variations/` | implementing `IOutlineDecoder` and returning it from `OutlineDecoders.ForFace`. Variation deltas live inside the decoder: both decoders receive the face's `FontVariations` (set by `SetVariationAxes`); `TrueTypeOutlineDecoder` applies `gvar`; `CffOutlineDecoder` feeds CFF2 `blend` per-`vsindex` region scalars through `CharstringContext.BlendScalars`. |
 | 2 | Transforms, in order, in font units | `Internal/Pipeline/IGlyphTransform.cs`, `GlyphTransforms.cs` | implementing `IGlyphTransform` and adding it in `GlyphTransforms.For` — `WidthScaleTransform`, `BoldTransform`, then `ItalicTransform` at `ItalicAngle` (167, 168). `SmallCapsTransform` (would go before bold) and `StrokeTransform` exist unregistered; the vector outline layer is `OutlineLayer`, drawn from the fully prepared glyph. Build results with `WithOutline` / `WithAdvanceWidth`. |
 | 3 | Bounds → pixel grid | `Internal/Raster/GlyphBox.cs`, `Internal/Outlines/OutlineBounds.cs` | nothing: a replaced outline loses its declared bbox and is measured from its tight bounds. |
-| 4 | Scale, then pixel-space hinting | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs`; `Internal/Hinting/` | `GlyphHinter.Apply` runs the auto-hinter for hinted requests — `Light` (174): `FontHintMetrics` and `GridFitter`; `Normal` (188): `NormalFontMetrics`, `NormalHinter` and `StemFitter`, which also rebuilds the advance from `PreparedGlyph.AdvanceWidth` — metrics cached per face/size/style/instance. It returns a pixel-space outline with an identity `ToPixels`. |
+| 4 | Scale, then pixel-space hinting | `Internal/Pipeline/GlyphPipeline.cs`, `GlyphHinter.cs`; `Internal/Hinting/` | `GlyphHinter.Apply` runs the auto-hinter for hinted requests — `Light` (174): `FontHintMetrics` and `GridFitter`; `Normal` (188): `NormalFontMetrics`, `NormalHinter` and `StemFitter`, which places the fitted ink within the advance `PreparedGlyph.AdvanceWidth` (or the face's `hdmx`) gives, at the ppem the face's `HintingProfile` chooses — metrics cached per face/size/style/instance. It returns a pixel-space outline with an identity `ToPixels`. |
 | 5 | Render-mode dispatch | `Internal/Pipeline/GlyphRenderers.cs`, `IGlyphRenderer.cs`, `CoverageRenderer.cs`, `SdfRenderer.cs`, `MsdfRenderer.cs` (distance code and edge coloring in `Internal/Distance/`), `LcdRenderer.cs` (kernels in `Internal/Raster/LcdFilterKernel.cs`), `ColorLayerRenderer.cs`, `PaintGraphRenderer.cs`, `BitmapGlyphRenderer.cs` (strikes and scaling in `Internal/Bitmaps/`) | implementing `IGlyphRenderer` and returning it from `GlyphRenderers.Select` (distance fields first, then LCD, else coverage). Color glyphs (172) wrap that renderer in `GlyphRenderers.SelectForFace`: `BitmapGlyphRenderer` draws `CBDT`/`sbix` bitmaps, and `ColorLayerRenderer` outside it sends `COLR` version 1 paint graphs to `PaintGraphRenderer` and draws version 0 layers itself, preparing every clip or layer glyph through stages 1–4. A bitmap-only face decodes through `BitmapOnlyOutlineDecoder` (empty outlines, `hmtx` advances). `Measure` must match what `Render` produces. |
 
 Invariants:

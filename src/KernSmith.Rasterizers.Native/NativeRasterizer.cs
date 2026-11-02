@@ -4,6 +4,7 @@ using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.Native.Internal;
 using KernSmith.Rasterizers.Native.Internal.Bitmaps;
 using KernSmith.Rasterizers.Native.Internal.Color;
+using KernSmith.Rasterizers.Native.Internal.Hinting;
 using KernSmith.Rasterizers.Native.Internal.Outlines;
 using KernSmith.Rasterizers.Native.Internal.Pipeline;
 using KernSmith.Rasterizers.Native.Internal.Variations;
@@ -95,7 +96,7 @@ public sealed class NativeRasterizer : IRasterizer
         _face = face;
         _variations = variations;
         _fixedPitch = GlyphHinter.IsFixedPitch(face.Post.IsFixedPitch, PrintableAsciiAdvances(face));
-        _pipeline = new GlyphPipeline(decoder, face.Head.UnitsPerEm, new GlyphHinter(face.GetGlyphIndex, face.Os2, () => InstanceStamp(variations), _fixedPitch));
+        _pipeline = new GlyphPipeline(decoder, face.Head.UnitsPerEm, new GlyphHinter(face.GetGlyphIndex, face.Os2, () => InstanceStamp(variations), _fixedPitch, HintingProfile.For(face)));
         _colorGlyphs = ColorGlyphs.TryLoad(face.Tables, face.Maxp.NumGlyphs, variations);
         _bitmapGlyphs = BitmapGlyphs.TryLoad(face);
     }

@@ -47,6 +47,29 @@ internal readonly record struct PreparedGlyph(GlyphOutline Outline, OutlineTrans
     /// </summary>
     public HintSpacing? Spacing { get; init; }
 
+    /// <summary>
+    /// True when the <c>Normal</c> hint stage ran for this request but left the outline
+    /// unfitted because the font's <c>gasp</c> table asks for no grid-fitting at this size
+    /// (<see cref="KernSmith.Rasterizers.Native.Internal.Hinting.HintingProfile.GridFitsAt"/>).
+    /// The bilevel stroke renderer draws fitted outlines only, so
+    /// <see cref="CoverageRenderer.MonoRenderingFor(PreparedGlyph, KernSmith.Rasterizer.RasterOptions)"/>
+    /// falls back to the threshold for such a glyph.
+    /// </summary>
+    public bool FitWithheld { get; init; }
+
+    /// <summary>
+    /// The integer ppem the <c>Normal</c> stage fitted and scaled the glyph at, for a face that
+    /// prefers integer ppem (<see cref="KernSmith.Rasterizers.Native.Internal.Hinting.HintingProfile.HintPpem"/>);
+    /// 0 when the glyph is at the request's own ppem. The renderer's size-dependent stages — the
+    /// stroke-rendering decision and thin-stroke darkening — read it (<see cref="RenderPpem"/>)
+    /// so they see the size the fit did, and a request for 8.03 ppem renders exactly as one for 8.
+    /// </summary>
+    public float HintPpem { get; init; }
+
+    /// <summary>The ppem the renderer's size-dependent stages use: <see cref="HintPpem"/> when set, else the request's.</summary>
+    public float RenderPpem(KernSmith.Rasterizer.RasterOptions options) =>
+        HintPpem > 0f ? HintPpem : options.Size * options.Dpi / 72f;
+
     /// <summary>True when there is nothing to draw: a real advance, but no bitmap.</summary>
     public bool IsBlank => Outline.IsEmpty || Box.IsEmpty;
 }

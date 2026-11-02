@@ -34,7 +34,7 @@ internal sealed class CoverageRenderer : IBoxMeasuringRenderer
             return MeasureBox(glyph.GlyphIndex, box, glyph.Advance, options);
 
         using var edges = Edges(glyph, options);
-        var ink = ScanlineRasterizer.MeasureMono(edges.Edges, box.Width, box.Height, box.MinX, box.MinY, box.BearingX, box.BearingY, MonoRenderingFor(options));
+        var ink = ScanlineRasterizer.MeasureMono(edges.Edges, box.Width, box.Height, box.MinX, box.MinY, box.BearingX, box.BearingY, MonoRenderingFor(glyph, options));
         return new(BearingX: ink.BearingX, BearingY: ink.BearingY, Advance: glyph.Advance, Width: ink.Width, Height: ink.Height);
     }
 
@@ -46,7 +46,20 @@ internal sealed class CoverageRenderer : IBoxMeasuringRenderer
     /// dropout control.
     /// </summary>
     internal static MonoRendering MonoRenderingFor(RasterOptions options) =>
-        GlyphHinter.EffectiveHintLevel(options) == HintLevel.Normal && NormalHinter.Strength(options.Size * options.Dpi / 72f) > 0f
+        MonoRenderingAt(options, options.Size * options.Dpi / 72f);
+
+    /// <summary>
+    /// <see cref="MonoRenderingFor(RasterOptions)"/> for a prepared glyph: judged at the ppem
+    /// the fit ran at (<see cref="PreparedGlyph.RenderPpem"/>), and a glyph the <c>Normal</c>
+    /// stage left unfitted on the font's <c>gasp</c> say-so (<see cref="PreparedGlyph.FitWithheld"/>)
+    /// keeps the threshold too, since the stroke renderer is for outlines whose stems the fit
+    /// put on whole pixels.
+    /// </summary>
+    internal static MonoRendering MonoRenderingFor(PreparedGlyph glyph, RasterOptions options) =>
+        glyph.FitWithheld ? MonoRendering.Threshold : MonoRenderingAt(options, glyph.RenderPpem(options));
+
+    private static MonoRendering MonoRenderingAt(RasterOptions options, float ppem) =>
+        GlyphHinter.EffectiveHintLevel(options) == HintLevel.Normal && NormalHinter.Strength(ppem) > 0f
             ? MonoRendering.Strokes
             : MonoRendering.Threshold;
 
@@ -68,7 +81,7 @@ internal sealed class CoverageRenderer : IBoxMeasuringRenderer
         var box = glyph.Box;
         using var edges = Edges(glyph, options);
         var raster = options.AntiAlias == AntiAliasMode.None
-            ? ScanlineRasterizer.RasterizeMono(edges.Edges, box.Width, box.Height, box.MinX, box.MinY, box.BearingX, box.BearingY, MonoRenderingFor(options))
+            ? ScanlineRasterizer.RasterizeMono(edges.Edges, box.Width, box.Height, box.MinX, box.MinY, box.BearingX, box.BearingY, MonoRenderingFor(glyph, options))
             : ScanlineRasterizer.Rasterize(edges.Edges, box.Width, box.Height, box.MinX, box.MinY, options.AntiAlias, box.BearingX, box.BearingY);
 
         if (options.AntiAlias != AntiAliasMode.None)
@@ -76,7 +89,7 @@ internal sealed class CoverageRenderer : IBoxMeasuringRenderer
             // Normal's thin stems sit in one column at their true coverage; at small sizes
             // they are lifted toward solid (structure first, then tone).
             if (GlyphHinter.EffectiveHintLevel(options) == HintLevel.Normal)
-                ThinStrokeDarkening.Apply(raster.Bitmap, raster.Width, raster.Height, options.Size * options.Dpi / 72f);
+                ThinStrokeDarkening.Apply(raster.Bitmap, raster.Width, raster.Height, glyph.RenderPpem(options));
 
             // Gamma is a tone curve on grayscale coverage (the FreeType backend's semantics);
             // mono has no partial coverage to curve, and the default (1.8) is the identity, so
@@ -105,7 +118,7 @@ internal sealed class CoverageRenderer : IBoxMeasuringRenderer
     private static OutlineFlattener.PooledEdges Edges(PreparedGlyph glyph, RasterOptions options)
     {
         bool mono = options.AntiAlias == AntiAliasMode.None;
-        bool strokes = mono && MonoRenderingFor(options) == MonoRendering.Strokes;
+        bool strokes = mono && MonoRenderingFor(glyph, options) == MonoRendering.Strokes;
         return OutlineFlattener.FlattenPooled(
             glyph.Outline, glyph.ToPixels,
             tolerance: strokes ? MonoStrokeRasterizer.Flatness : OutlineFlattener.DefaultTolerance,

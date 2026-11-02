@@ -136,7 +136,7 @@ internal sealed class GlyphPipeline
     /// <summary>The hint stage, kept out of <see cref="Prepare"/> so the reference-glyph
     /// callback's closure is only allocated for a request that is actually hinted.</summary>
     private PreparedGlyph Hint(PreparedGlyph prepared, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms) =>
-        _hinter!.Apply(prepared, options, _unitsPerEm, reference => ReferenceGlyph(reference, options, transforms));
+        _hinter!.Apply(prepared, options, _unitsPerEm, reference => ReferenceGlyph(reference, options, transforms), styled: transforms.Count != 0);
 
     private DecodedGlyph Shape(int glyphIndex, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms)
     {

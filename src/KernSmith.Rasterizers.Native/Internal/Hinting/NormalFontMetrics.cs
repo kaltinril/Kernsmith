@@ -88,7 +88,8 @@ internal sealed class NormalFontMetrics
 
     // XHeightRoundUp (in HintTuning): how much a fractional x-height is pushed up before it is
     // truncated: an x-height of 6.4 px becomes 7, which reads better at text sizes (the light
-    // fitter's rule).
+    // fitter's rule). A face hinted for integer ppem rounds to the nearest row instead
+    // (HintingProfile.XHeightRoundUp), which Scale takes as an override.
 
     /// <summary>
     /// The measurements at one pixel size. The band from the baseline to the x-height is
@@ -104,7 +105,10 @@ internal sealed class NormalFontMetrics
     /// <param name="scale">Pixels per font unit.</param>
     /// <param name="unitsPerEm">The font's <c>head.unitsPerEm</c>.</param>
     /// <param name="tuning">The hinter's constants; null for <see cref="HintTuning.Current"/>.</param>
-    public NormalHintMetrics Scale(float scale, int unitsPerEm, HintTuning? tuning = null)
+    /// <param name="xHeightRoundUp">How far the fractional x-height is pushed up before it is
+    /// truncated to a row (<see cref="HintingProfile.XHeightRoundUp"/>); null for the tuning's
+    /// <see cref="HintTuning.XHeightRoundUp"/>.</param>
+    public NormalHintMetrics Scale(float scale, int unitsPerEm, HintTuning? tuning = null, float? xHeightRoundUp = null)
     {
         tuning ??= HintTuning.Current;
         float ppem = scale * unitsPerEm;
@@ -113,7 +117,7 @@ internal sealed class NormalFontMetrics
         if (_vertical.Find(BlueZoneKind.XHeight) is { } xHeight && xHeight.Flat > 0f)
         {
             xHeightPixels = xHeight.Flat * scale;
-            stretch = MathF.Max(1f, MathF.Floor(xHeightPixels + tuning.XHeightRoundUp) / xHeightPixels);
+            stretch = MathF.Max(1f, MathF.Floor(xHeightPixels + (xHeightRoundUp ?? tuning.XHeightRoundUp)) / xHeightPixels);
             stretch = 1f + ((stretch - 1f) * NormalHinter.Strength(ppem, tuning));
         }
 

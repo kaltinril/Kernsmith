@@ -2,7 +2,8 @@ namespace KernSmith.Rasterizers.Native.Internal.Tables;
 
 /// <summary>
 /// The parsed <c>head</c> (font header) table. Provides the units-per-em scale, the
-/// <c>loca</c> index format, the mac style flags, and the global glyph bounding box.
+/// <c>loca</c> index format, the header flags, the mac style flags, and the global glyph
+/// bounding box.
 /// </summary>
 internal readonly record struct HeadTable(
     ushort UnitsPerEm,
@@ -11,7 +12,8 @@ internal readonly record struct HeadTable(
     short XMin,
     short YMin,
     short XMax,
-    short YMax)
+    short YMax,
+    ushort Flags = 0)
 {
     /// <summary>True when the <c>macStyle</c> bold bit is set.</summary>
     public bool IsBold => (MacStyle & 0x0001) != 0;
@@ -22,14 +24,21 @@ internal readonly record struct HeadTable(
     /// <summary>True when glyph offsets in <c>loca</c> use the long (32-bit) format.</summary>
     public bool LongLocaFormat => IndexToLocFormat == 1;
 
+    /// <summary>
+    /// True when <c>flags</c> bit 3 is set: the font asks for its ppem to be forced to an
+    /// integer for all internal scaler math — what its bytecode was hinted for.
+    /// </summary>
+    public bool IntegerPpemPreferred => (Flags & 0x0008) != 0;
+
     /// <summary>Parses the <c>head</c> table from its raw bytes.</summary>
     public static HeadTable Parse(ReadOnlySpan<byte> data)
     {
         var reader = new FontReader(data);
 
         // majorVersion(2) minorVersion(2) fontRevision(4) checkSumAdjustment(4)
-        // magicNumber(4) flags(2) => 18 bytes before unitsPerEm.
-        reader.Skip(18);
+        // magicNumber(4) => 16 bytes before flags.
+        reader.Skip(16);
+        ushort flags = reader.ReadUInt16();
         ushort unitsPerEm = reader.ReadUInt16();
 
         // created(8) modified(8) => 16 bytes.
@@ -47,6 +56,6 @@ internal readonly record struct HeadTable(
         if (unitsPerEm == 0)
             throw new FontFormatException("head", 18, "unitsPerEm is zero.");
 
-        return new HeadTable(unitsPerEm, indexToLocFormat, macStyle, xMin, yMin, xMax, yMax);
+        return new HeadTable(unitsPerEm, indexToLocFormat, macStyle, xMin, yMin, xMax, yMax, flags);
     }
 }

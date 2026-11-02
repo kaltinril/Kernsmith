@@ -27,6 +27,7 @@ public class NativeFuzzTests
     [
         FontMutator.Directory, "head", "hhea", "maxp", "hmtx", "OS/2", "cmap", "loca", "glyf",
         "CFF ", "CFF2", "fvar", "avar", "gvar", "HVAR", "MVAR", "COLR", "CPAL", "CBLC", "CBDT", "sbix",
+        "gasp", "hdmx",
     ];
 
     private static readonly int[] LatinSample =
