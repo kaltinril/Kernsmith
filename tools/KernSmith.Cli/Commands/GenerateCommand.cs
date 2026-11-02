@@ -1113,7 +1113,7 @@ internal sealed class GenerateCommand
               --mono                      Disable anti-aliasing (alias for --aa none)
               --super-sample <n>          Super sampling level 1-4 (default: 1)
               --rasterizer <backend>      Rasterizer backend: freetype (default), stbtruetype, gdi, directwrite, native
-              --hinting / --no-hinting    Enable/disable hinting (default: on; native hints only with --aa light)
+              --hinting / --no-hinting    Enable/disable hinting (default: on; native: auto-hints at normal by default)
               --hint-level <level>        Grid fitting: default|none|light|normal|full (default: the backend's --hinting behaviour;
                                           an unsupported level steps down to the nearest one the backend has; not with --no-hinting)
               --bake-kerning / --no-bake-kerning

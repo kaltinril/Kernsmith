@@ -40,6 +40,7 @@ var result = BmFont.GenerateFromSystem("Segoe UI", new FontGeneratorOptions
 ## Capabilities
 
 - ClearType-hinted grayscale rendering
+- Hint levels: `None` (`DWRITE_RENDERING_MODE_NATURAL`) and `Light` (`NATURAL_SYMMETRIC`, y-only); `Normal` and `Full` step down to `Light`
 - System font loading by family name
 - Synthetic bold and italic
 - TTF, OTF, WOFF, WOFF2 input

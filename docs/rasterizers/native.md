@@ -51,6 +51,7 @@ kernsmith generate --font Roboto-Regular.ttf --size 32 --rasterizer native --out
 - Vector outlines -- the only backend that draws `OutlineMode.Vector` (`.bmfc` `outlineMode=vector`, CLI `--outline-mode vector`): the outline ring is computed from the glyph's true outline with the pen `OutlineShape` names, at the same width, color, cells and offsets as core's bitmap outline effect, but with the body's exact-area edge and solid narrow counters. A face with `COLR` or bitmap color glyphs keeps the bitmap effect under `ColorFont`
 - Signed distance fields (`Sdf`), computed from the outline itself. `SdfSpread` and `SdfScale` are honored, and the output uses FreeType's encoding and padding (inside bright, 128 on the edge, the glyph box padded by the spread). With `ColorFont`, color glyphs stay color and the rest render as SDF, as on FreeType
 - Multi-channel distance fields (`SdfMode.Msdf` / `SdfMode.Mtsdf`) -- the only backend that reports `SupportsMsdf`. RGB hold three distances whose median keeps corners sharp; MTSDF adds the single-channel field in alpha. They cannot be combined with `ColorFont`
+- `Gamma` applied to grayscale coverage with the FreeType backend's contract (1.8 is the identity; not to mono, LCD, distance fields or color glyphs)
 - Font and glyph metrics that track FreeType to within a pixel. Unhinted grayscale output measures a mean SSIM of 0.988 or better per font and size against both FreeType and StbTrueType
 
 ## Errors and limits
@@ -70,7 +71,10 @@ Each item below either raises a clear error or is ignored, as noted:
 - **Color bitmaps** -- only PNG strikes: `'jpg '`/`'tiff'` `sbix` graphics and uncompressed `EBDT`-style formats are skipped (the outline, or nothing, draws instead)
 - **Variable fonts** -- a font whose `avar` table is version 2 gets only its version 1 axis mappings. The library takes axis values; the CLI's `--instance` resolves a named instance to its axis values
 - **System font loading by name** -- not supported; load font bytes instead
-- **`Gamma`** -- not applied
+
+## Same bytes on every host
+
+Native produces byte-identical atlas pixels and `.fnt` metrics for a given font and options on every runtime and machine: the CLI, the desktop app, MonoGame/KNI, Blazor WebAssembly (interpreted or AOT), NativeAOT, x64 and arm64, .NET 8 and .NET 10. Its arithmetic is IEEE 754 operations every runtime computes exactly, and the transcendental functions it needs come from its own `DeterministicMath` rather than the host C library. CI proves it on every run: the Native test project asserts the committed hash manifest (`tests/KernSmith.Rasterizers.Native.Tests/Determinism/manifest.json`, the SHA-256 of the `.fnt` and atlas pixels per configuration) on Windows, Linux and macOS, x64 and arm64; the published Blazor WASM sample reports the same hash from headless Chromium; and a NativeAOT build of `tests/KernSmith.DeterminismProbe` reports it from a native binary. Promised are the pixels and metrics, not the `.png` file bytes (the PNG encoder's deflate stream follows the runtime's zlib). See `TESTING-NATIVE.md` in the repository to check your own host.
 
 ## When to Use
 

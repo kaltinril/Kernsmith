@@ -39,6 +39,7 @@ var result = BmFont.GenerateFromSystem("Arial", new FontGeneratorOptions
 - Pixel-perfect BMFont.exe compatibility
 - System font loading by family name (e.g., "Arial", "Batang")
 - Uses `GetGlyphOutlineW` with `GGO_GRAY8_BITMAP`
+- Hint levels: `Full` only (the font's own bytecode, always on; every other request renders the same)
 
 ## Limitations
 

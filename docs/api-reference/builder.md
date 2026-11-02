@@ -57,6 +57,8 @@ Call exactly one of these before `Build()`.
 | `WithLcdFilter(LcdFilter filter)` | LCD low-pass filter for `AntiAliasMode.Lcd` (Native honors it; others ignore it). |
 | `WithLcdSubpixelOrder(LcdSubpixelOrder order)` | LCD subpixel layout for `AntiAliasMode.Lcd` (Native honors it; others ignore it). |
 | `WithHinting(bool enable = true)` | Enable font hinting for sharper small text. |
+| `WithHintLevel(HintLevel level)` | How strongly outlines are grid-fitted (`Default`, `None`, `Light`, `Normal`, `Full`); an unlisted level steps down to the nearest one the backend has. |
+| `WithFractionalMetrics(bool enable = true)` | Write each glyph's unrounded advance and bearing (and hinting deltas) to the extended metadata as `kernsmithchar` lines, in 1/64 px. |
 | `WithSuperSampling(int level)` | `1` = off, `2` or `4` for smoother edges. |
 | `WithSdf(bool sdf = true)` | Emit a signed distance field instead of bitmaps. |
 | `WithSdfMode(SdfMode mode)` | Choose the distance field: `None`, `Sdf`, `Msdf` or `Mtsdf` (multi-channel modes need Native). |

@@ -36,14 +36,16 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 | `AntiAlias` | `AntiAliasMode` | `Grayscale` | Anti-aliasing mode: `None`, `Grayscale`, `Light` or `Lcd`. A backend that does not list `Light`/`Lcd` in its `SupportedAntiAliasModes` renders them as `Grayscale`; `None` always passes through. |
 | `LcdFilter` | `LcdFilter` | `Default` | Low-pass filter for `Lcd`: `Default` (the backend's choice), `Light` (one-pixel box), `Smooth` (five-tap), `None`. Honored by Native; others ignore it. |
 | `LcdSubpixelOrder` | `LcdSubpixelOrder` | `Rgb` | Display subpixel layout for `Lcd`: `Rgb`, `Bgr`, `VRgb`, `VBgr` (vertical panels). Honored by Native; others ignore it. |
-| `EnableHinting` | `bool` | `true` | Enable hinting for crisp small text. |
+| `EnableHinting` | `bool` | `true` | Enable the backend's hinting for crisp small text. `false` combined with a `HintLevel` other than `None`/`Default` is rejected with an `ArgumentException`. |
+| `HintLevel` | `HintLevel` | `Default` | How strongly outlines are grid-fitted: `Default` (the backend's `EnableHinting` behaviour), `None`, `Light` (y-only), `Normal` (both axes, auto-hinter), `Full` (the font's own hinting). A level the backend does not list in `SupportedHintLevels` steps down to the nearest one it does. |
+| `BakeHintingIntoKerning` | `bool?` | `null` | Fold the hinter's per-pair spacing corrections into the kerning pairs. `null` is the backend's choice (Native bakes when it hints at `Normal`); needs `Kerning`; a fixed-pitch font is never kerned by it. |
 | `FractionalMetrics` | `bool` | `false` | Write each glyph's unrounded advance and left side bearing — and what hinting moved them by, where the backend can say — to the extended metadata ([`ExtendedMetadata.FractionalMetrics`](model.md#fractionalcharmetrics)) in 1/64 px, for renderers that position text fractionally. Off: default `.fnt` output is unchanged. |
 | `SuperSampleLevel` | `int` | `1` | `1`-`4`; renders at Nx and downscales. Cannot combine with `Sdf`. Skipped for `Lcd` output on a backend that renders LCD (it renders at the final size). |
 | `Sdf` | `bool` | `false` | Generate a single-channel signed distance field font. Same as `SdfMode = SdfMode.Sdf`; `SdfMode` wins when set. |
 | `SdfMode` | `SdfMode` | `None` | Distance field to generate: `None` (use `Sdf`), `Sdf`, `Msdf` (multi-channel: RGB distances, median = glyph, sharp corners; alpha 255) or `Mtsdf` (MSDF plus the single-channel distance in alpha). `Msdf`/`Mtsdf` produce RGBA atlases, need a backend with `SupportsMsdf` (Native, experimental), and cannot be combined with effects, a fill color, channel packing, a custom channel layout, atlas variants or `ColorFont`. `EffectiveSdfMode` reports the resolved mode. |
 | `SdfSpread` | `float` | `8f` | SDF spread (distance range) in pixels. Used by the FreeType, StbTrueType and Native backends; applies to every distance-field mode. |
 | `SdfScale` | `int` | `1` | SDF supersampling scale factor. Higher values render the distance field at a larger size for finer precision. Applies to every distance-field mode. |
-| `Gamma` | `float` | `1.8f` | Gamma correction applied to FreeType grayscale coverage. `1.8` is the no-op baseline; `>1.8` darkens, `<1.8` lightens. Not applied to MONO/color/SDF output. |
+| `Gamma` | `float` | `1.8f` | Gamma correction applied to FreeType and Native grayscale coverage. `1.8` is the no-op baseline; `>1.8` darkens, `<1.8` lightens. Not applied to MONO/color/SDF output. |
 
 ## Outline
 

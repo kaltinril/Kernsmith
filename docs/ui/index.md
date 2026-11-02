@@ -61,7 +61,7 @@ The right panel contains collapsible sections for each effect type.
 ### Font Style
 
 - **Bold / Italic**: If a matching variant font file exists, it loads that file. Otherwise applies synthetic bold or italic.
-- **Anti-Alias**: None (aliased), Grayscale (default), Light, or LCD. The list shows only the modes the selected rasterizer supports; the experimental Native backend supports all four, and hints only in Light.
+- **Anti-Alias**: None (aliased), Grayscale (default), Light, or LCD. The list shows only the modes the selected rasterizer supports; the experimental Native backend supports all four (and, with Hinting on, auto-hints every one of them).
 - **LCD Filter / LCD Order**: In LCD mode, the subpixel filter (Default, Light, Smooth, None) and the display's subpixel layout (RGB, BGR, V-RGB, V-BGR). Native honors them; other backends ignore them.
 - **Width %**: Synthetic condensed/expanded width, 10-1000 (100 = normal). Native only.
 - **Italic Angle**: Slant of synthetic italic, -60 to 60 degrees (default 12). Native only; enabled with Italic.
@@ -181,7 +181,7 @@ Once you have generated a font you are happy with:
 
 File > Save Project (Ctrl+S) saves all current settings to a config file: font path, size, effects, atlas config, character selection, and output format. The window title shows an asterisk (*) when there are unsaved changes.
 
-You can save to either a BMFont `.bmfc` or a libGDX Hiero `.hiero` config; the format is chosen by the file extension you pick in the save dialog. `.bmfc` is KernSmith's native format and is lossless. `.hiero` is provided for interoperability with libGDX Hiero, but some KernSmith-only settings (such as channel packing, variable font axes, super sampling, and color fonts) have no Hiero equivalent -- when you save to `.hiero` the UI shows a warning listing the settings that will be dropped.
+You can save to either a BMFont `.bmfc` or a libGDX Hiero `.hiero` config; the format is chosen by the file extension you pick in the save dialog. `.bmfc` is KernSmith's native format and is lossless for every setting the UI exposes; the UI does not yet expose `hintLevel`, `bakeHintingIntoKerning` or `fractionalMetrics`, so a `.bmfc` carrying them loses those keys when saved again from the UI. `.hiero` is provided for interoperability with libGDX Hiero, but some KernSmith-only settings (such as channel packing, variable font axes, super sampling, and color fonts) have no Hiero equivalent -- when you save to `.hiero` the UI shows a warning listing the settings that will be dropped.
 
 ### Load Project
 

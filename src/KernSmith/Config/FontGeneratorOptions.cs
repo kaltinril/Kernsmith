@@ -193,8 +193,8 @@ public class FontGeneratorOptions
     public TextureFormat TextureFormat { get; set; } = TextureFormat.Png;
 
     /// <summary>
-    /// If true, enables FreeType hinting for crisp small text.
-    /// If false, renders without hinting for smoother curves.
+    /// If true, enables the backend's hinting for crisp small text (how strongly is
+    /// <see cref="HintLevel"/>). If false, renders without hinting for smoother curves.
     /// </summary>
     public bool EnableHinting { get; set; } = true;
 

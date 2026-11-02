@@ -107,6 +107,19 @@ public sealed class KerningBakeTests
     }
 
     [Fact]
+    public void Builder_FromConfig_KeepsTheBakeSettingAndGamma()
+    {
+        var config = BmfcConfigReader.Parse($"fontFile={FontPath}\nfontSize=24\nchars=65\nbakeHintingIntoKerning=0\ngamma=2.2\n");
+        var rasterizer = new AdjustingRasterizer([]);
+
+        BmFont.Builder().FromConfig(config).WithRasterizer(rasterizer).Build();
+
+        rasterizer.LastOptions.ShouldNotBeNull();
+        rasterizer.LastOptions.BakeHintingIntoKerning.ShouldBe(false);
+        rasterizer.LastOptions.Gamma.ShouldBe(2.2f);
+    }
+
+    [Fact]
     public void BmfcRoundTrip_WritesNothing_WhenUnset()
     {
         string text = BmfcConfigWriter.Write(BmfcConfig.FromOptions(new FontGeneratorOptions()));
@@ -120,6 +133,9 @@ public sealed class KerningBakeTests
     {
         public int AdjustmentsRequested { get; private set; }
 
+        /// <summary>The options of the last glyph rasterized.</summary>
+        public RasterOptions? LastOptions { get; private set; }
+
         public IRasterizerCapabilities Capabilities { get; } = new Caps();
 
         public void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0)
@@ -128,6 +144,7 @@ public sealed class KerningBakeTests
 
         public RasterizedGlyph? RasterizeGlyph(int codepoint, RasterOptions options)
         {
+            LastOptions = options;
             var pixels = new byte[8 * 8];
             Array.Fill(pixels, (byte)255);
             return new RasterizedGlyph

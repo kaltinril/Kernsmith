@@ -78,8 +78,8 @@ public sealed record RasterOptions
 
     /// <summary>
     /// Gamma correction applied to rasterized coverage/alpha values. Default is 1.8 (matching
-    /// Hiero), which the FreeType backend treats as the no-op baseline so that default output
-    /// is unchanged. Only consumed by the FreeType backend; other backends ignore it.
+    /// Hiero), which is the no-op baseline so that default output is unchanged. Consumed by the
+    /// FreeType and Native backends (grayscale coverage); others ignore it.
     /// </summary>
     public float Gamma { get; init; } = 1.8f;
 
