@@ -100,6 +100,20 @@ public sealed class FreeTypeRasterizer : IRasterizer
         !options.EnableHinting || options.HintLevel == HintLevel.None;
 
     /// <summary>
+    /// True when the glyph loads with <c>FT_LOAD_TARGET_LIGHT</c>: a hinted request at
+    /// <see cref="HintLevel.Light"/>, or at <see cref="HintLevel.Default"/> with
+    /// <see cref="AntiAliasMode.Light"/>. Light hinting is a load target, not a render mode
+    /// (<c>FT_RENDER_MODE_LIGHT</c> gives the coverage <c>FT_RENDER_MODE_NORMAL</c> does), so the
+    /// target has to be set here. An explicit <see cref="HintLevel.Full"/> keeps the default
+    /// target whatever the anti-alias mode. <see cref="RasterizeGlyph"/> and
+    /// <see cref="GetGlyphMetrics"/> must agree on it or the metrics describe another outline.
+    /// </summary>
+    private static bool LightHinted(RasterOptions options) =>
+        !Unhinted(options)
+        && (options.HintLevel == HintLevel.Light
+            || (options.HintLevel == HintLevel.Default && options.AntiAlias == AntiAliasMode.Light));
+
+    /// <summary>
     /// Selects a color palette by index for CPAL-based color fonts.
     /// Must be called after <see cref="LoadFont"/> and before rasterization.
     /// </summary>
@@ -193,10 +207,12 @@ public sealed class FreeTypeRasterizer : IRasterizer
             ? (FT_LOAD)FreeTypeNative.FT_LOAD_COLOR
             : FT_LOAD.FT_LOAD_DEFAULT;
 
-        // When rendering mono, tell the hinter to optimize for 1-bit output.
-        // Without this, hinting targets grayscale which produces suboptimal
-        // stroke placement when the final render is monochrome.
-        if (options.AntiAlias == AntiAliasMode.None && !options.Sdf)
+        // One hinting target at most (they share a bit field): light hinting when asked for it;
+        // otherwise, when rendering mono, tell the hinter to optimize for 1-bit output — without
+        // this, hinting targets grayscale, which places strokes poorly for a monochrome render.
+        if (LightHinted(options))
+            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_TARGET_LIGHT;
+        else if (options.AntiAlias == AntiAliasMode.None && !options.Sdf)
             loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_TARGET_MONO;
 
         if (Unhinted(options))
@@ -499,8 +515,10 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (glyphIndex == 0)
             return null; // Missing glyph
 
-        // Load the glyph without rendering.
+        // Load the glyph without rendering, with the hinting RasterizeGlyph loads it with.
         var loadFlags = FT_LOAD.FT_LOAD_DEFAULT;
+        if (LightHinted(options))
+            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_TARGET_LIGHT;
         if (Unhinted(options))
             loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
 
@@ -797,11 +815,12 @@ public sealed class FreeTypeRasterizer : IRasterizer
             Enum.GetValues<AntiAliasMode>();
 
         /// <summary>
-        /// <see cref="HintLevel.None"/> loads with <c>FT_LOAD_NO_HINTING</c>; <see cref="HintLevel.Full"/>
-        /// is <c>FT_LOAD_DEFAULT</c> — FreeType's own per-font engine choice, this backend's
-        /// hinted output as it has always been. Light and Normal are not mapped yet (they would
-        /// need <c>FT_LOAD_TARGET_LIGHT</c> / <c>FT_LOAD_FORCE_AUTOHINT</c>) and step down to None.
+        /// <see cref="HintLevel.None"/> loads with <c>FT_LOAD_NO_HINTING</c>; <see cref="HintLevel.Light"/>
+        /// with <c>FT_LOAD_TARGET_LIGHT</c> (the auto-hinter's y-only mode, linear advances);
+        /// <see cref="HintLevel.Full"/> is <c>FT_LOAD_DEFAULT</c> — FreeType's own per-font engine
+        /// choice, this backend's hinted output as it has always been. Normal is not mapped (it
+        /// would need <c>FT_LOAD_FORCE_AUTOHINT</c>) and steps down to Light.
         /// </summary>
-        public IReadOnlyList<HintLevel> SupportedHintLevels { get; } = [HintLevel.None, HintLevel.Full];
+        public IReadOnlyList<HintLevel> SupportedHintLevels { get; } = [HintLevel.None, HintLevel.Light, HintLevel.Full];
     }
 }

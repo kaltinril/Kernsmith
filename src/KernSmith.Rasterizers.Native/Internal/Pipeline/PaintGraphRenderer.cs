@@ -95,7 +95,7 @@ internal sealed class PaintGraphRenderer
         {
             _pipeline = pipeline;
             _baseGlyph = baseGlyph;
-            _options = options;
+            _options = GlyphHinter.ForColorLayers(options);
             _transforms = GlyphTransforms.For(options, pipeline.UnitsPerEm);
             _fontToPixels = pipeline.FontUnitsToPixels(options);
             _fontToPixelMatrix = ToMatrix(_fontToPixels);

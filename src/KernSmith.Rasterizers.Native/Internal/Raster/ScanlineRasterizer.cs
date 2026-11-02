@@ -113,17 +113,17 @@ internal static class ScanlineRasterizer
     /// pixel restored in a column the outline covers under half of. A render with no ink keeps
     /// its box. The only allocation is the returned bitmap.
     /// </remarks>
-    public static RasterResult RasterizeMono(ReadOnlySpan<EdgeSegment> edges, int width, int height, float originX, float originY, int bearingX, int bearingY) =>
-        Mono(edges, width, height, originX, originY, bearingX, bearingY, keepBitmap: true);
+    public static RasterResult RasterizeMono(ReadOnlySpan<EdgeSegment> edges, int width, int height, float originX, float originY, int bearingX, int bearingY, MonoRendering rendering = MonoRendering.Threshold) =>
+        Mono(edges, width, height, originX, originY, bearingX, bearingY, keepBitmap: true, rendering);
 
     /// <summary>
     /// The size and bearings <see cref="RasterizeMono"/> would return, with an empty bitmap. It
     /// still renders to find the ink, into pooled scratch only.
     /// </summary>
-    public static RasterResult MeasureMono(ReadOnlySpan<EdgeSegment> edges, int width, int height, float originX, float originY, int bearingX, int bearingY) =>
-        Mono(edges, width, height, originX, originY, bearingX, bearingY, keepBitmap: false);
+    public static RasterResult MeasureMono(ReadOnlySpan<EdgeSegment> edges, int width, int height, float originX, float originY, int bearingX, int bearingY, MonoRendering rendering = MonoRendering.Threshold) =>
+        Mono(edges, width, height, originX, originY, bearingX, bearingY, keepBitmap: false, rendering);
 
-    private static RasterResult Mono(ReadOnlySpan<EdgeSegment> edges, int width, int height, float originX, float originY, int bearingX, int bearingY, bool keepBitmap)
+    private static RasterResult Mono(ReadOnlySpan<EdgeSegment> edges, int width, int height, float originX, float originY, int bearingX, int bearingY, bool keepBitmap, MonoRendering rendering)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(width);
         ArgumentOutOfRangeException.ThrowIfNegative(height);
@@ -135,7 +135,9 @@ internal static class ScanlineRasterizer
             // Fill skips untouched bands, so the rented buffer must start zeroed.
             var full = scratch.AsSpan(0, size);
             full.Clear();
-            if (size > 0 && edges.Length > 0 && Fill(scratch, edges, width, height, originX, originY, AntiAliasMode.None))
+            if (rendering == MonoRendering.Strokes)
+                MonoStrokeRasterizer.Rasterize(edges, full, width, height, originX, originY);
+            else if (size > 0 && edges.Length > 0 && Fill(scratch, edges, width, height, originX, originY, AntiAliasMode.None))
                 DropoutControl.Apply(scratch, edges, width, height, originX, originY);
 
             int top = full.IndexOfAnyExcept((byte)0);

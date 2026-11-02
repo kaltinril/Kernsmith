@@ -64,6 +64,17 @@ public sealed class NativeRasterizer : IRasterizer
     private FontVariations? _variations;
     private bool _disposed;
 
+    /// <summary>
+    /// Per codepoint, how the last <see cref="RasterizeGlyph"/> under the kerning bake
+    /// (<see cref="GlyphHinter.BakesKerning"/>) left the glyph's sides — whole columns of white
+    /// in its rendered box and the coverage down each facing column — and the size that was at;
+    /// what <see cref="GetKerningAdjustments"/> pairs up.
+    /// </summary>
+    private readonly Dictionary<int, GlyphSides> _sides = [];
+
+    /// <summary>True for a fixed-pitch face (<see cref="GlyphHinter.IsFixedPitch"/>): no advance is rebuilt and no pair is kerned by the bake.</summary>
+    private bool _fixedPitch;
+
     /// <inheritdoc />
     public IRasterizerCapabilities Capabilities => CapabilitiesInstance;
 
@@ -83,7 +94,8 @@ public sealed class NativeRasterizer : IRasterizer
 
         _face = face;
         _variations = variations;
-        _pipeline = new GlyphPipeline(decoder, face.Head.UnitsPerEm, new GlyphHinter(face.GetGlyphIndex, face.Os2, () => InstanceStamp(variations)));
+        _fixedPitch = GlyphHinter.IsFixedPitch(face.Post.IsFixedPitch, PrintableAsciiAdvances(face));
+        _pipeline = new GlyphPipeline(decoder, face.Head.UnitsPerEm, new GlyphHinter(face.GetGlyphIndex, face.Os2, () => InstanceStamp(variations), _fixedPitch));
         _colorGlyphs = ColorGlyphs.TryLoad(face.Tables, face.Maxp.NumGlyphs, variations);
         _bitmapGlyphs = BitmapGlyphs.TryLoad(face);
     }
@@ -159,15 +171,54 @@ public sealed class NativeRasterizer : IRasterizer
 
         var glyph = Prepare(codepoint, glyphIndex, options);
         if (glyph.IsBlank && !DrawsLayers(renderer, glyphIndex))
+        {
+            _sides.Remove(codepoint);
             return BlankGlyph(codepoint, glyphIndex, glyph.Advance);
+        }
 
+        RasterizedGlyph rendered;
         try
         {
-            return renderer.Render(codepoint, glyphIndex, glyph, options);
+            rendered = renderer.Render(codepoint, glyphIndex, glyph, options);
         }
         catch (RasterizationException ex) when (ex.Codepoint is null)
         {
             throw new RasterizationException(codepoint, ex.Message);
+        }
+
+        RecordSides(codepoint, glyph, rendered, options);
+        return rendered;
+    }
+
+    /// <summary>Remembers (or forgets) a glyph's sides for <see cref="GetKerningAdjustments"/>.</summary>
+    private void RecordSides(int codepoint, PreparedGlyph glyph, RasterizedGlyph rendered, RasterOptions options)
+    {
+        if (!GlyphHinter.BakesKerning(options) || glyph.Spacing is null || rendered.Width == 0 || rendered.Format != PixelFormat.Grayscale8)
+        {
+            _sides.Remove(codepoint);
+            return;
+        }
+
+        var left = new byte[rendered.Height];
+        var right = new byte[rendered.Height];
+        for (int y = 0; y < rendered.Height; y++)
+        {
+            left[y] = rendered.BitmapData[y * rendered.Pitch];
+            right[y] = rendered.BitmapData[(y * rendered.Pitch) + rendered.Width - 1];
+        }
+
+        _sides[codepoint] = new GlyphSides(
+            rendered.Metrics.BearingX, rendered.Metrics.Advance - rendered.Metrics.BearingX - rendered.Width, rendered.Metrics.BearingY, left, right, options);
+    }
+
+    /// <summary>The font-unit advances of the printable ASCII glyphs a face maps, for the fixed-pitch test.</summary>
+    private static IEnumerable<int> PrintableAsciiAdvances(NativeFontFace face)
+    {
+        for (int codepoint = 0x20; codepoint < 0x7F; codepoint++)
+        {
+            int glyphIndex = face.GetGlyphIndex(codepoint);
+            if (glyphIndex != 0 && glyphIndex < face.Hmtx.GlyphCount)
+                yield return face.Hmtx.GetAdvanceWidth(glyphIndex);
         }
     }
 
@@ -273,14 +324,17 @@ public sealed class NativeRasterizer : IRasterizer
         if (glyph.IsBlank && !DrawsLayers(renderer, glyphIndex))
             return new GlyphMetrics(BearingX: 0, BearingY: 0, Advance: glyph.Advance, Width: 0, Height: 0);
 
+        GlyphMetrics measured;
         try
         {
-            return renderer.Measure(glyph, options);
+            measured = renderer.Measure(glyph, options);
         }
         catch (RasterizationException ex) when (ex.Codepoint is null)
         {
             throw new RasterizationException(codepoint, ex.Message);
         }
+
+        return measured;
     }
 
     /// <inheritdoc />
@@ -341,6 +395,116 @@ public sealed class NativeRasterizer : IRasterizer
         return null;
     }
 
+    /// <summary>A rendered glyph's sides, as the kerning bake sees them.</summary>
+    /// <param name="LeftColumns">Whole columns of white before the ink (the box's x offset).</param>
+    /// <param name="RightColumns">Whole columns of white after the ink to the advance; negative when the ink overhangs it.</param>
+    /// <param name="Top">The box's top row above the baseline (the y bearing), to line two glyphs' rows up.</param>
+    /// <param name="LeftColumn">The coverage down the ink's first column, top row first.</param>
+    /// <param name="RightColumn">The coverage down the ink's last column, top row first.</param>
+    /// <param name="Options">The request the glyph was rendered for; only sides from the same request are paired.</param>
+    private readonly record struct GlyphSides(int LeftColumns, int RightColumns, int Top, byte[] LeftColumn, byte[] RightColumn, RasterOptions Options)
+    {
+        /// <summary>
+        /// True when this glyph's last column and <paramref name="right"/>'s first column, set
+        /// side by side, are both solid (<see cref="StemCoverage"/> or more) on some shared row:
+        /// two stems, or a stem and a bar's end, that meet with no white between them and read
+        /// as one stroke. A bowl's fringe against a stem stays under the threshold.
+        /// </summary>
+        public bool FusesWith(GlyphSides right)
+        {
+            int top = Math.Min(Top, right.Top);
+            int bottom = Math.Max(Top - RightColumn.Length, right.Top - right.LeftColumn.Length);
+            for (int y = top; y > bottom; y--)
+            {
+                if (RightColumn[Top - y] >= StemCoverage && right.LeftColumn[right.Top - y] >= StemCoverage)
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>The coverage (of 255) at which a facing column counts as solid ink: three quarters.</summary>
+    private const byte StemCoverage = 191;
+
+    /// <summary>A pair with this many columns of white or more can give one up to balance a pair that was opened.</summary>
+    private const int SlackColumns = 2;
+
+    /// <summary>
+    /// The kerning bake: the per-pair corrections over every ordered pair of glyphs this
+    /// instance has rasterized for this request under <see cref="GlyphHinter.BakesKerning"/>. The
+    /// <c>Normal</c> fit keeps every advance the font's and places each glyph by side, so a few
+    /// pairs come out with no white between their inks; those are the only pairs opened. In
+    /// bilevel any pair with no column between the inks is opened to one column; in grayscale
+    /// only a pair whose facing columns are both solid (three-quarter coverage) on a shared
+    /// row — two stems, which fuse into one stroke ("rn" into "m") — since a bowl's fringe or a
+    /// diagonal against a stem still reads as two letters. The
+    /// bake leans zero-sum: each pixel a left glyph's pairs gained is taken back from one of
+    /// that glyph's pairs with at least <see cref="SlackColumns"/> columns of white, widest
+    /// first, while such pairs last, so a line's length stays the font's. Pairs of two digits
+    /// (tabular columns) and pairs with a glyph that has no ink are never touched. Only non-zero
+    /// corrections are reported; null when nothing was recorded, when the face is fixed pitch
+    /// (every advance is the pitch and no pair may move), or when the bake is off for the request.
+    /// </summary>
+    public IReadOnlyList<ScaledKerningAdjustment>? GetKerningAdjustments(RasterOptions options)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentNullException.ThrowIfNull(options);
+        options = ValidateSize(options);
+        if (_fixedPitch || !GlyphHinter.BakesKerning(options))
+            return null;
+
+        // Only glyphs rendered for this very request pair up: the sides of an earlier size or
+        // anti-alias mode on the same instance are not this atlas's.
+        var codepoints = new List<int>();
+        foreach (var (codepoint, sides) in _sides)
+        {
+            if (sides.Options == options)
+                codepoints.Add(codepoint);
+        }
+
+        if (codepoints.Count == 0)
+            return null;
+
+        codepoints.Sort();
+        bool bilevel = options.AntiAlias == AntiAliasMode.None;
+        var adjustments = new List<ScaledKerningAdjustment>();
+        var slack = new List<(int Right, int Gap)>();
+        foreach (int left in codepoints)
+        {
+            var leftSides = _sides[left];
+            int opened = 0;
+            slack.Clear();
+            foreach (int right in codepoints)
+            {
+                if (IsAsciiDigit(left) && IsAsciiDigit(right))
+                    continue;
+
+                var rightSides = _sides[right];
+                int gap = leftSides.RightColumns + rightSides.LeftColumns;
+                bool fuses = gap <= 0 && (bilevel || leftSides.FusesWith(rightSides));
+                if (fuses)
+                {
+                    adjustments.Add(new ScaledKerningAdjustment(left, right, 1 - gap));
+                    opened += 1 - gap;
+                }
+                else if (gap >= SlackColumns)
+                {
+                    slack.Add((right, gap));
+                }
+            }
+
+            // Widest pairs first, then by codepoint, so the choice is the same every run.
+            slack.Sort((a, b) => a.Gap != b.Gap ? b.Gap.CompareTo(a.Gap) : a.Right.CompareTo(b.Right));
+            for (int i = 0; i < slack.Count && opened > 0; i++, opened--)
+                adjustments.Add(new ScaledKerningAdjustment(left, slack[i].Right, -1f));
+        }
+
+        return adjustments;
+
+        static bool IsAsciiDigit(int codepoint) => codepoint is >= '0' and <= '9';
+    }
+
     /// <inheritdoc />
     public void Dispose()
     {
@@ -348,6 +512,7 @@ public sealed class NativeRasterizer : IRasterizer
             return;
 
         _disposed = true;
+        _sides.Clear();
         _face = null;
         _pipeline = null;
         _colorGlyphs = null;

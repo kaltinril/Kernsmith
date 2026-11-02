@@ -33,7 +33,7 @@ public class NativeEdgeCaseTests
     {
         using var native = Load(TestFonts.RobotoRegularBytes());
 
-        var glyph = Render(native, 'A', new RasterOptions { Size = size });
+        var glyph = Render(native, 'A', new RasterOptions { Size = size, EnableHinting = false });
 
         (glyph.Width, glyph.Height).ShouldBe((width, height));
         glyph.BitmapData.ShouldContain(b => b != 0, "even a sub-pixel 'A' leaves some coverage");
@@ -372,7 +372,7 @@ public class NativeEdgeCaseTests
     public void Msdf_TinyGlyphs_AreTheBoxPlusPadding(float size)
     {
         using var native = Load(TestFonts.RobotoRegularBytes());
-        var plain = Render(native, 'A', new RasterOptions { Size = size });
+        var plain = Render(native, 'A', new RasterOptions { Size = size, EnableHinting = false });
 
         foreach (var mode in new[] { SdfMode.Msdf, SdfMode.Mtsdf })
         {

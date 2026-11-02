@@ -161,7 +161,7 @@ public class LcdOptionsTests
         // Vertical panels resolve rows in thirds: horizontal edges carry colour, and the bitmap
         // grows rows (not columns) for the filter's spill.
         using var native = Loaded();
-        var gray = native.RasterizeGlyph('-', new RasterOptions { Size = 16 })!;
+        var gray = native.RasterizeGlyph('-', new RasterOptions { Size = 16, EnableHinting = false })!;
         var vertical = native.RasterizeGlyph('-', Lcd(16, order: LcdSubpixelOrder.VRgb))!;
 
         vertical.Width.ShouldBe(gray.Width);

@@ -95,6 +95,8 @@ static int ShowHelp()
           --rasterizer <backend>       Rasterizer backend: freetype (default), stbtruetype, gdi, directwrite, native
           --hinting / --no-hinting     Enable/disable hinting (default: on)
           --hint-level <level>         Grid fitting: default, none, light, normal, full
+          --bake-kerning / --no-bake-kerning
+                                       Fold hinting's pair collisions into kerning pairs (native normal; default on)
           --height-percent <n>         Height scaling percentage (default: 100)
           --width-percent <n>          Synthetic width percentage (default: 100; native)
           --italic-angle <deg>         Synthetic italic slant in degrees (default: 12; native)

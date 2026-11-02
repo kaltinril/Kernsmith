@@ -277,7 +277,7 @@ public class MsdfRendererTests
         for (int c = 0x21; c < 0x7F; c++)
         {
             var (truth, msdf, width, height, pad) = GlyphFields(pipeline, face.GetGlyphIndex(c), options);
-            var coverage = rasterizer.RasterizeGlyph(c, new RasterOptions { Size = 16f })!;
+            var coverage = rasterizer.RasterizeGlyph(c, new RasterOptions { Size = 16f, EnableHinting = false })!;
             coverage.Width.ShouldBe(width - (2 * pad));
             coverage.Height.ShouldBe(height - (2 * pad));
 
@@ -347,7 +347,7 @@ public class MsdfRendererTests
     {
         using var rasterizer = new NativeRasterizer();
         rasterizer.LoadFont(TestFonts.RobotoRegularBytes());
-        var coverage = rasterizer.RasterizeGlyph(c, new RasterOptions { Size = size })!;
+        var coverage = rasterizer.RasterizeGlyph(c, new RasterOptions { Size = size, EnableHinting = false })!;
         var field = rasterizer.RasterizeGlyph(c, Options(SdfMode.Msdf, 8f, size))!;
         int pad = 8;
 

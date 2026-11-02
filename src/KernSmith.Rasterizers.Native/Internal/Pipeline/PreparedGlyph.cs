@@ -30,6 +30,21 @@ internal readonly record struct PreparedGlyph(GlyphOutline Outline, OutlineTrans
     /// </summary>
     public float AdvanceWidth { get; init; }
 
+    /// <summary>
+    /// What the <c>Normal</c> hint stage knows about the glyph's spacing — the font's own side
+    /// bearings and whether each facing edge is a straight stem — or null when the glyph's x
+    /// axis was not fitted (unhinted, y-only, past the x taper). The kerning bake (<see cref="KernSmith.Rasterizer.RasterOptions.BakeHintingIntoKerning"/>)
+    /// reads it alongside the rendered box to find the pairs that would touch.
+    /// </summary>
+    public HintSpacing? Spacing { get; init; }
+
     /// <summary>True when there is nothing to draw: a real advance, but no bitmap.</summary>
     public bool IsBlank => Outline.IsEmpty || Box.IsEmpty;
 }
+
+/// <summary>The <c>Normal</c> hint stage's spacing facts about a glyph.</summary>
+/// <param name="FontLeft">The font's own left side bearing at this size, in pixels, before hinting.</param>
+/// <param name="FontRight">The font's own right side bearing at this size, in pixels, before hinting.</param>
+/// <param name="LeftStem">True when the fitted ink's left edge is a straight vertical stem.</param>
+/// <param name="RightStem">True when the fitted ink's right edge is a straight vertical stem.</param>
+internal readonly record struct HintSpacing(float FontLeft, float FontRight, bool LeftStem, bool RightStem);

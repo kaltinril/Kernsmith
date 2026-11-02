@@ -75,6 +75,7 @@ internal sealed class CliOptions
     public int? FallbackCodepoint { get; set; }
     public bool? EnableHinting { get; set; }
     public HintLevel? HintLevel { get; set; }
+    public bool? BakeHintingIntoKerning { get; set; }
     public bool EqualizeCellHeights { get; set; }
     public bool ForceOffsetsToZero { get; set; }
     public int HeightPercent { get; set; } = 100;

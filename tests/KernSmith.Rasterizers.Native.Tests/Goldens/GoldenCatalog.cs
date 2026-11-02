@@ -132,8 +132,8 @@ internal static class GoldenCatalog
         void Add(string id, GoldenFont font, RasterOptions options, Dictionary<string, float>? axes = null, int palette = 0) =>
             cases.Add(new GoldenCase(group, id, font, options, axes, palette, ReferenceIds.Contains(id)));
 
-        // Every font x size x anti-alias mode. Light keeps EnableHinting on, so it is the
-        // auto-hinted path; the others render unhinted whatever EnableHinting says.
+        // Every font x size x anti-alias mode at the default hint level: hinted at Normal
+        // (full strength to 16 ppem, nothing from 40) in every mode but Lcd, which is never hinted.
         foreach (var font in Fonts)
         {
             foreach (float size in Sizes)

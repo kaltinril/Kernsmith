@@ -48,6 +48,10 @@ internal sealed class CellResult
     public required QualityStats FreeTypeQuality { get; init; }
     public required QualityStats NativeQuality { get; init; }
 
+    /// <summary>The legibility score of each side (<c>--legibility</c>); null when not measured.</summary>
+    public Legibility.LegibilityTerms? FreeTypeLegibility { get; init; }
+    public Legibility.LegibilityTerms? NativeLegibility { get; init; }
+
     public bool Mono => Cell.AntiAlias == AntiAliasMode.None;
 
     public int GlyphCount => Glyphs.Count;

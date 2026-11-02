@@ -57,7 +57,8 @@ them before the backend sees the bytes.
   50% and crops to the ink; LCD and light hinting do not apply. `'jpg '`/`'tiff'` graphics and
   the uncompressed EBDT formats are skipped (the outline, or nothing, draws instead); a distance
   field without `ColorFont` on a bitmap-only font is a `NotSupportedException`.
-- **Anti-aliasing** — `None` (50% threshold with dropout control, boxes cropped to the ink),
+- **Anti-aliasing** — `None` (50% threshold with dropout control, boxes cropped to the ink;
+  at `HintLevel.Normal` the stroke renderer described under Normal below instead),
   `Grayscale`, `Light` (grayscale plus the auto-hinter below) and `Lcd` (see LCD below). SDF and
   MSDF take precedence over LCD, and color glyphs ignore LCD, as on FreeType.
 - **LCD** — `Lcd` renders RGBA glyphs, one subpixel per colour channel, alpha = the strongest
@@ -77,7 +78,11 @@ Not supported — each raises a clear error or is ignored, as noted:
 - **Small caps** — the geometry exists internally; no option selects it
 - **TrueType bytecode and CFF hinting** — never run; the auto-hinter is Native's own (`Light` fits y only, `Normal` both axes), and `HintLevel.Full` steps down to `Normal`
 - **System fonts by name** — `LoadSystemFont` throws `NotSupportedException`; load font bytes instead
-- **`Gamma`** — not applied in any mode
+- **`Gamma`** — applied to grayscale coverage with the FreeType backend's contract
+  (`GammaCurve`): 1.8, the default, is the identity and any other value maps coverage through
+  `(c/255)^(1.8/gamma)` — above 1.8 heavier, below it lighter — so a config renders the same
+  tone on either backend. Not applied to mono (no partial coverage), LCD, distance fields or
+  color glyphs, as on FreeType.
 
 The package is not published to NuGet yet, so `RasterizerBackend.Native` resolves only in
 builds that reference this project directly. The KernSmith CLI ships it — try
@@ -112,13 +117,15 @@ non-default width or angle throws `NotSupportedException`.
 
 Native has its own auto-hinter in two strengths, no TrueType bytecode interpreter and no CFF
 hinter. `HintLevel.Light` (`.bmfc`: `hintLevel=light`; CLI `--hint-level light`) is the y-only
-fitter of Phase 174; it also runs at `HintLevel.Default` for `AntiAlias = Light` with
-`EnableHinting` on (`.bmfc`: `antiAlias=light`, `useHinting=1`). `HintLevel.Normal`
-(`hintLevel=normal`, `--hint-level normal`) is the both-axis fitter of Phase 188. Both apply in
-any anti-alias mode but `Lcd` — mono thresholds the hinted outline. `HintLevel.None` is
-unhinted; Native lists `None`, `Light` and `Normal` in `SupportedHintLevels`, so core steps
-`Full` down to `Normal`. `GlyphHinter.EffectiveHintLevel` is the one place that maps a request
-to the level that runs.
+fitter of Phase 174. `HintLevel.Normal` (`hintLevel=normal`, `--hint-level normal`) is the
+both-axis fitter of Phase 188, and what a request with no level gets while `EnableHinting` is
+on (`useHinting=1`, the default) in every anti-alias mode — `AntiAlias = Light` no longer
+selects the y-only fitter by itself; with hinting off the request is unhinted. Both levels
+apply in any anti-alias mode but `Lcd` — bilevel (`None`) thresholds the hinted outline. The
+Normal fitter scales with size (its taper below), so large text is exactly unhinted whatever
+the request. `HintLevel.None` is unhinted; Native lists `None`, `Light` and `Normal` in
+`SupportedHintLevels`, so core steps `Full` down to `Normal`. `GlyphHinter.EffectiveHintLevel`
+is the one place that maps a request to the level that runs.
 
 ### Light
 
@@ -143,13 +150,19 @@ The normal fitter (`NormalHinter`, `StemFitter`, `NormalFontMetrics`) fits y and
 axis with the same engine (`StemFitter` runs on the transposed outline for x), and rebuilds the
 advance:
 
-- **Vertical stretch** — the y axis is scaled so the x-height lands on its rounded-up pixel
-  row; the other zones round to the nearest row at the stretched size (a 9.1 px ascender over a
-  6.4 px x-height becomes 10 rows over 7).
-- **Edges** — straight runs, curve extrema (refined to the curve's true extremum when the node
-  is only near it), the ends of strokes whose side is a curve (an 'S' terminal), and flats a
-  few units long at a bowl's extremum. Edges on the same ink side within 0.3 px merge, so an
-  'S' terminal and the bowl above it snap together.
+- **Vertical stretch** — the band from the baseline to the x-height is scaled so the x-height
+  lands on its rounded-up pixel row; everything above shifts up by the band's growth and rounds
+  from there, and descenders are not stretched, so caps and ascenders keep their own size
+  (Source Serif at 7.3 ppem: a 3.46 px x-height becomes 4 rows while its 4.88 px cap height
+  stays 5 rows rather than scaling to 6).
+- **Edges** — straight runs, curve extrema (`ExtremaSplitter` first puts a node on every
+  mid-curve x and y extremum, so a bowl or arch is an edge wherever the font drew its nodes),
+  the ends of strokes whose side is a curve (an 'S' terminal), and flats a few units long at a
+  bowl's extremum. The y pass takes edges up to a 7° slope, so a serif face's slightly sloped
+  serif tops snap to their zone; the x pass keeps the 4° of the light fitter. Edges on the same
+  ink side within 0.3 px merge, so an 'S' terminal and the bowl above it snap together.
+- **Hintability** — a face whose reference letters have no straight vertical stem (a script
+  such as Dancing Script) is fitted in y only; its x axis and advance are left as drawn.
 - **Strokes** — opposite edges within the maximum stem pair up (round edges need not overlap).
   In grayscale a stroke keeps its thickness, snapped to the font's standard (measured as the
   length-weighted median over plain-stemmed letters) when within 10% of it: a stroke under a
@@ -163,18 +176,74 @@ advance:
   not the glyph's width). A gap between features of half a pixel or more stays at least a pixel.
 - **Everything else** moves by one monotone map per axis, so the outline cannot fold; fitted
   coordinates land on a 1/64 px grid.
-- **Advance** — the fitted outline is placed at the original left side bearing (nudged, never
-  more than a pixel) and the advance is the fitted right edge plus the original right side
-  bearing, rounded (mono adds a quarter pixel: its stems widened). `NormalHintResult` carries
-  the side-bearing deltas a later step could fold into kerning.
-- **Taper** — full strength up to 24 ppem; the allowed edge movement, the stretch and the
-  advance rebuild fall to nothing by 40 ppem, so large text is exactly unhinted.
+- **Advance and side bearings** — every advance is the font's, rounded once, in both
+  anti-alias modes; the fitted outline is moved by whole pixels (the phase is the fit's) so its
+  left side bearing is at or just under the font's (within a quarter pixel above it) and the
+  fit's slack falls on the right, the same for stem-sided and round glyphs, so pair gaps stay
+  even and a line of text keeps its length. Tabular digits and fixed-pitch fonts therefore
+  keep their columns by construction; a fixed-pitch face is one whose `post` table says so or
+  whose printable ASCII glyphs share one advance (95% of them).
+- **Pairs that touch** — with advances the font's and stems on whole pixels, a few pairs come
+  out with no white between their inks. They are opened per pair in the kerning
+  (`BakeHintingIntoKerning`, on by default under Normal, below), never by padding a glyph —
+  except, when the bake is off, a glyph whose right edge is a straight stem with under a
+  quarter pixel of font white, which gets a column of advance so two stems never fuse ("rn"
+  into "m"). A fixed-pitch face is never padded or kerned.
+- **Taper** — full strength up to 16 ppem; the x axis (stems into columns, width classes, the
+  by-side placement, the stem-pair padding) fades linearly to nothing at 24 ppem and the y
+  axis (zones, baseline, x-height stretch, stroke alignment) at 40, so the shape-changing part
+  goes first and large text is exactly unhinted. Both strengths fall monotonically with size
+  (`HintTuning.TaperStartPpem`, `XTaperEndPpem`, `TaperEndPpem`). Measured with the hint-parity
+  legibility score against unhinted at full strength, the grayscale gain is +0.09 to +0.11 at
+  9 ppem and up to +0.05 at 15-18 ppem, and Source Serif loses 0.04-0.06 from 20 ppem on.
+- **Kerning bake** — `NativeRasterizer.GetKerningAdjustments` reports, over every pair of
+  glyphs rasterized under Normal at a size, the pairs with no column between their rendered
+  inks: in bilevel every such pair, in grayscale only those whose facing columns are both at
+  least three-quarters covered on a shared row (two stems; a bowl's fringe or a diagonal's foot
+  against a stem still reads as two letters). Each is opened to one column, and a pixel is
+  taken back from one of the left glyph's pairs that has two or more columns of white, widest
+  first, while such pairs last, so the line keeps its length; two digits and any blank glyph
+  are never touched, only non-zero pairs are reported, and a fixed-pitch face gets none. Core
+  adds each to the font's own pair before rounding. Roboto at a 12 px cell: 392 pairs grayscale
+  and 3044 bilevel over ASCII (1464 and 13517 with Latin-1).
 
-Both levels apply to TrueType and CFF outlines and to `COLR` version 0 layers and version 1
-glyph clips, and measure their zones and stems per variation instance and synthetic style.
-Every other request, including the default (`Grayscale` with `EnableHinting` true and no
-explicit level), `Lcd` and every distance field (SDF, MSDF, MTSDF), renders unhinted. A font
-with no x-height and no cap height (no Latin reference glyphs, no `OS/2` heights) renders
+Two renderer-side stages belong to `Normal` as well, both after the fit, neither moving any
+geometry:
+
+- **Bilevel as strokes** (`MonoStrokeRasterizer`, `MonoRendering.Strokes`) — `AntiAliasMode.None`
+  at `Normal`, while its taper runs, is not the 50% area threshold. Along every row and column scanline through pixel
+  centres, an interior span under 1.5 px whose two bounding edges are near-parallel and within
+  45° of perpendicular to the scanline is a cross-section of a thin stroke and lights exactly
+  the pixel at its midpoint; every other span is centre-sampled. A pixel inside the outline is
+  lit unless a thin cross-section runs through its centre and it is not that span's midpoint,
+  so a thin diagonal or curve steps like a Bresenham line (one pixel per row where steep, per
+  column where shallow), a 1.1 px bowl wall is one pixel at its shoulders where the threshold
+  drew two, and a dot under 1.5 px is one pixel; a junction pixel (an arch leaving a stem) is
+  kept when it is the arch's own midpoint. A dropout pass then lights the midpoint of any thin
+  span that lit nothing, where that keeps a stroke whole (no lit neighbour, a bridge between
+  two lit groups, or a hairline continuing into the next scanline) — so no stroke vanishes and
+  spans under 0.35 px (hairline serif slabs) are drawn only when needed. Finally the outline
+  is centre-sampled at 4× to find its counters: a counter the bitmap closed is reopened at the
+  pixel it covers most when that pixel's four neighbours are lit (the eye of an 'e'), and an
+  enclosed region of up to four pixels that overlaps no counter is an aperture the bitmap
+  closed (a 'c' whose terminals met), opened by clearing the rim pixel holding the least ink
+  that no stroke passes through. Edges are flattened at 0.05 px for this renderer, since the
+  slope tests read them. The counter check runs for bitmaps up to 20 px tall. Measured at a
+  12 px cell: about 4.5× the threshold renderer's time per glyph (75 µs vs 17 µs), at 24 px
+  about 3× with the counter check skipped.
+- **Thin-stroke darkening** (`ThinStrokeDarkening`) — in grayscale below 9 ppem, a partially
+  covered pixel whose two horizontal or two vertical neighbours hold next to no ink (a stem,
+  bar, diagonal or curve under a pixel wide, which the fitter lands in one column at its true
+  coverage) has its coverage multiplied by 1.4 at 6 ppem, tapering to 1 at 9 ppem; a fringe
+  beside a solid pixel is untouched. Roboto's 0.55 px stem at a 8 px cell goes from 55% to
+  77% grey. Applied before `Gamma`.
+
+Both levels apply to TrueType and CFF outlines and measure their zones and stems per variation
+instance and synthetic style. A color glyph's `COLR` version 0 layers and version 1 paint
+graphs are prepared at `Light` under a `Normal` request while its taper runs (Normal's
+per-glyph x placement would misregister the layers), and unhinted past it. `Lcd`, every
+distance field (SDF, MSDF, MTSDF) and any request with `EnableHinting` off render unhinted. A
+font with no x-height and no cap height (no Latin reference glyphs, no `OS/2` heights) renders
 unhinted rather than snapped to zones that do not describe it.
 
 ## Errors, limits and threads

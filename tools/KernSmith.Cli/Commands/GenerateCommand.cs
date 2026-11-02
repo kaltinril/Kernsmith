@@ -254,6 +254,7 @@ internal sealed class GenerateCommand
             FallbackCodepoint = options.FallbackCodepoint,
             EnableHinting = options.EnableHinting ?? true,
             HintLevel = options.HintLevel ?? KernSmith.HintLevel.Default,
+            BakeHintingIntoKerning = options.BakeHintingIntoKerning,
             AutofitTexture = options.AutofitTexture,
             EqualizeCellHeights = options.EqualizeCellHeights,
             ForceOffsetsToZero = options.ForceOffsetsToZero,
@@ -679,6 +680,12 @@ internal sealed class GenerateCommand
                     case "--no-kerning":
                         options.Kerning = false;
                         break;
+                    case "--bake-kerning":
+                        options.BakeHintingIntoKerning = true;
+                        break;
+                    case "--no-bake-kerning":
+                        options.BakeHintingIntoKerning = false;
+                        break;
                     case "--axis":
                         var axisStr = NextArg(args, ref i, args[i]);
                         var eqIdx = axisStr.IndexOf('=');
@@ -893,6 +900,7 @@ internal sealed class GenerateCommand
         if (cli.PowerOfTwo.HasValue) config.PowerOfTwo = cli.PowerOfTwo;
         if (cli.EnableHinting.HasValue) config.EnableHinting = cli.EnableHinting;
         if (cli.HintLevel.HasValue) config.HintLevel = cli.HintLevel;
+        if (cli.BakeHintingIntoKerning.HasValue) config.BakeHintingIntoKerning = cli.BakeHintingIntoKerning;
         if (cli.AutofitTexture) config.AutofitTexture = true;
         if (cli.EqualizeCellHeights) config.EqualizeCellHeights = true;
         if (cli.ForceOffsetsToZero) config.ForceOffsetsToZero = true;
@@ -1103,6 +1111,10 @@ internal sealed class GenerateCommand
               --hinting / --no-hinting    Enable/disable hinting (default: on; native hints only with --aa light)
               --hint-level <level>        Grid fitting: default|none|light|normal|full (default: the backend's --hinting behaviour;
                                           an unsupported level steps down to the nearest one the backend has; not with --no-hinting)
+              --bake-kerning / --no-bake-kerning
+                                          Fold the hinter's pair collisions into the kerning pairs (default: on whenever native
+                                          hints at normal, which its default is at text sizes; opens only pairs that would touch,
+                                          balanced against pairs with white to spare; needs kerning on)
               --gamma <n>                 Gamma correction applied during rasterization (default: 1.8)
               --height-percent <n>        Vertical height scaling percentage (default: 100)
               --width-percent <n>         Synthetic condensed/expanded width percentage, 10-1000 (default: 100; native only)

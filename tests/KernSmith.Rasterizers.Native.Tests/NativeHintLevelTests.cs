@@ -6,11 +6,13 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// <summary>
 /// Phase 188 — <see cref="HintLevel"/> on Native. An explicit level owns hinting:
 /// <see cref="HintLevel.Light"/> is the Phase 174 y-only fitter whatever the anti-alias mode,
-/// <see cref="HintLevel.None"/> is unhinted, and <see cref="HintLevel.Default"/> is exactly the
-/// old reading of <see cref="RasterOptions.EnableHinting"/> + <see cref="AntiAliasMode.Light"/>.
-/// <see cref="HintLevel.Normal"/> is the both-axis auto-hinter (its own tests are
-/// <c>NativeNormalHintingTests</c>); <see cref="HintLevel.Full"/> is not advertised yet and
-/// renders as Normal when handed to the rasterizer directly.
+/// <see cref="HintLevel.None"/> is unhinted, and <see cref="HintLevel.Default"/> is
+/// <see cref="HintLevel.Normal"/> with <see cref="RasterOptions.EnableHinting"/> on (in every
+/// anti-alias mode, <see cref="AntiAliasMode.Light"/> included) and None with it off.
+/// <see cref="HintLevel.Normal"/> is the both-axis auto-hinter, at full strength at text sizes
+/// and tapering off with size (its own tests are <c>NativeNormalHintingTests</c>);
+/// <see cref="HintLevel.Full"/> is not advertised yet and renders as Normal when handed to the
+/// rasterizer directly.
 /// </summary>
 public class NativeHintLevelTests
 {
@@ -27,20 +29,19 @@ public class NativeHintLevelTests
 
     [Theory]
     [MemberData(nameof(Sizes))]
-    public void LightLevel_IsExactlyTheOldLightPlusHintingOutput(float size)
+    public void LightLevel_IsTheYOnlyFitter_WithMetricsThatFollowTheBitmap(float size)
     {
+        // Light fits y only, so every advance is the unhinted one; its metrics follow its
+        // bitmap, and it really hints.
         using var native = Load();
         var level = new RasterOptions { Size = size, HintLevel = HintLevel.Light };
-        var old = new RasterOptions { Size = size, AntiAlias = AntiAliasMode.Light, EnableHinting = true };
         var unhinted = new RasterOptions { Size = size, EnableHinting = false };
 
         int hintedGlyphs = 0;
         foreach (char c in GlyphSample)
         {
             var a = native.RasterizeGlyph(c, level)!;
-            var b = native.RasterizeGlyph(c, old)!;
-            a.BitmapData.ShouldBe(b.BitmapData, $"'{c}' at {size}px");
-            a.Metrics.ShouldBe(b.Metrics, $"'{c}' at {size}px");
+            a.Metrics.Advance.ShouldBe(native.RasterizeGlyph(c, unhinted)!.Metrics.Advance, $"'{c}' at {size}px");
             native.GetGlyphMetrics(c, level).ShouldBe(a.Metrics, $"'{c}' metrics at {size}px follow the hinted bitmap");
 
             if (!a.BitmapData.AsSpan().SequenceEqual(native.RasterizeGlyph(c, unhinted)!.BitmapData))
@@ -99,20 +100,47 @@ public class NativeHintLevelTests
 
     [Theory]
     [MemberData(nameof(Sizes))]
-    public void DefaultLevel_KeepsTheOldMapping(float size)
+    public void DefaultLevel_IsNormalWithHintingOn_AndNoneWithItOff(float size)
     {
-        // Grayscale with hinting on stays unhinted (default output does not move); Light with
-        // hinting on stays hinted; anything with hinting off stays unhinted.
+        // The owner's choice: a request that names no level is hinted at Normal — size-scaled,
+        // full at text sizes and nothing above 40 ppem — in every anti-alias mode, Light
+        // included (Light no longer picks the y-only fitter by itself); with hinting off it is
+        // unhinted. Bitmaps and metrics alike.
         using var native = Load();
+        foreach (var aa in new[] { AntiAliasMode.Grayscale, AntiAliasMode.Light, AntiAliasMode.None })
+        {
+            foreach (char c in GlyphSample)
+            {
+                var byDefault = native.RasterizeGlyph(c, new RasterOptions { Size = size, AntiAlias = aa })!;
+                var normal = native.RasterizeGlyph(c, new RasterOptions { Size = size, AntiAlias = aa, HintLevel = HintLevel.Normal })!;
+                byDefault.BitmapData.ShouldBe(normal.BitmapData, $"'{c}' default {aa} at {size}px");
+                byDefault.Metrics.ShouldBe(normal.Metrics, $"'{c}' default {aa} at {size}px");
+
+                var off = native.RasterizeGlyph(c, new RasterOptions { Size = size, AntiAlias = aa, EnableHinting = false })!;
+                var none = native.RasterizeGlyph(c, new RasterOptions { Size = size, AntiAlias = aa, HintLevel = HintLevel.None })!;
+                off.BitmapData.ShouldBe(none.BitmapData, $"'{c}' hinting off {aa} at {size}px");
+                off.Metrics.ShouldBe(none.Metrics, $"'{c}' hinting off {aa} at {size}px");
+            }
+        }
+    }
+
+    [Fact]
+    public void DefaultLevel_HintsSmallText_AndLeavesLargeTextAlone()
+    {
+        // The size taper seen from the default request: at a 12 px cell most glyphs differ
+        // from unhinted, at a 64 px cell (48 ppem) none does.
+        using var native = Load();
+        int small = 0, large = 0;
         foreach (char c in GlyphSample)
         {
-            native.RasterizeGlyph(c, new RasterOptions { Size = size })!.BitmapData
-                .ShouldBe(native.RasterizeGlyph(c, new RasterOptions { Size = size, HintLevel = HintLevel.None })!.BitmapData, $"'{c}' default grayscale");
-            native.RasterizeGlyph(c, new RasterOptions { Size = size, AntiAlias = AntiAliasMode.Light })!.BitmapData
-                .ShouldBe(native.RasterizeGlyph(c, new RasterOptions { Size = size, HintLevel = HintLevel.Light })!.BitmapData, $"'{c}' default light");
-            native.RasterizeGlyph(c, new RasterOptions { Size = size, AntiAlias = AntiAliasMode.Light, EnableHinting = false })!.BitmapData
-                .ShouldBe(native.RasterizeGlyph(c, new RasterOptions { Size = size, HintLevel = HintLevel.None })!.BitmapData, $"'{c}' default light, hinting off");
+            if (!native.RasterizeGlyph(c, new RasterOptions { Size = 12f })!.BitmapData.AsSpan().SequenceEqual(native.RasterizeGlyph(c, new RasterOptions { Size = 12f, HintLevel = HintLevel.None })!.BitmapData))
+                small++;
+            if (!native.RasterizeGlyph(c, new RasterOptions { Size = 64f })!.BitmapData.AsSpan().SequenceEqual(native.RasterizeGlyph(c, new RasterOptions { Size = 64f, HintLevel = HintLevel.None })!.BitmapData))
+                large++;
         }
+
+        small.ShouldBeGreaterThan(GlyphSample.Length / 2);
+        large.ShouldBe(0);
     }
 
     [Fact]

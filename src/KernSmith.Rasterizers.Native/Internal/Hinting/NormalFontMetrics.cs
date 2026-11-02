@@ -86,37 +86,43 @@ internal sealed class NormalFontMetrics
         return plain / toPixels;
     }
 
-    /// <summary>How much a fractional x-height is pushed up before it is truncated: an x-height
-    /// of 6.4 px becomes 7, which reads better at text sizes (the light fitter's rule).</summary>
-    private const float XHeightRoundUp = 2f / 3f;
+    // XHeightRoundUp (in HintTuning): how much a fractional x-height is pushed up before it is
+    // truncated: an x-height of 6.4 px becomes 7, which reads better at text sizes (the light
+    // fitter's rule).
 
     /// <summary>
-    /// The measurements at one pixel size. The whole y axis is stretched so the x-height lands
-    /// on its rounded-up pixel line (<see cref="NormalHintMetrics.VerticalStretch"/>), and the
-    /// other zones round to the nearest pixel at the stretched size: a 9.1 px ascender over a
-    /// 6.4 px x-height becomes 10 rows over 7, keeping the proportion, instead of 9 over 7.
-    /// An x-height that rounds down only snaps its zone; the glyph is never shrunk, since a
-    /// smaller x-height helps nothing. The stretch tapers with the hinting strength.
+    /// The measurements at one pixel size. The band from the baseline to the x-height is
+    /// stretched so the x-height lands on its rounded-up pixel line
+    /// (<see cref="NormalHintMetrics.VerticalStretch"/>, <see cref="OutlineAxes.StretchBand"/>);
+    /// the zones above it shift up by the band's growth and round from there, so a cap or
+    /// ascender keeps its own size: Source Serif at 7.3 ppem has a 3.46 px x-height stretched
+    /// to 4 and a 4.88 px cap height, which rounds to 5 rows from its shifted 5.42 where scaling
+    /// the whole axis would have made it 6. Descenders are not stretched. An x-height that
+    /// rounds down only snaps its zone; the glyph is never shrunk, since a smaller x-height helps
+    /// nothing. The stretch tapers with the hinting strength.
     /// </summary>
     /// <param name="scale">Pixels per font unit.</param>
     /// <param name="unitsPerEm">The font's <c>head.unitsPerEm</c>.</param>
-    public NormalHintMetrics Scale(float scale, int unitsPerEm)
+    /// <param name="tuning">The hinter's constants; null for <see cref="HintTuning.Current"/>.</param>
+    public NormalHintMetrics Scale(float scale, int unitsPerEm, HintTuning? tuning = null)
     {
+        tuning ??= HintTuning.Current;
         float ppem = scale * unitsPerEm;
         float stretch = 1f;
+        float xHeightPixels = 0f;
         if (_vertical.Find(BlueZoneKind.XHeight) is { } xHeight && xHeight.Flat > 0f)
         {
-            float pixels = xHeight.Flat * scale;
-            stretch = MathF.Max(1f, MathF.Floor(pixels + XHeightRoundUp) / pixels);
-            stretch = 1f + ((stretch - 1f) * NormalHinter.Strength(ppem));
+            xHeightPixels = xHeight.Flat * scale;
+            stretch = MathF.Max(1f, MathF.Floor(xHeightPixels + tuning.XHeightRoundUp) / xHeightPixels);
+            stretch = 1f + ((stretch - 1f) * NormalHinter.Strength(ppem, tuning));
         }
 
         var zones = new PixelZone[_vertical.Zones.Count];
         for (int i = 0; i < zones.Length; i++)
         {
             var zone = _vertical.Zones[i];
-            float flat = zone.Flat * scale * stretch;
-            float overshoot = zone.Overshoot * scale * stretch;
+            float flat = OutlineAxes.Band(zone.Flat * scale, xHeightPixels, stretch);
+            float overshoot = OutlineAxes.Band(zone.Overshoot * scale, xHeightPixels, stretch);
             float snappedFlat = GridMath.Round(flat);
             float distance = MathF.Abs(overshoot - flat);
             float extra = distance < 0.5f ? 0f : GridMath.Round(distance);
@@ -128,6 +134,10 @@ internal sealed class NormalFontMetrics
             light with { Zones = zones, StandardStem = light.StandardStem * stretch },
             StandardVerticalStem * scale,
             ppem,
-            stretch);
+            stretch,
+            xHeightPixels,
+            // No straight stem in any reference glyph: a script face, whose x axis has nothing
+            // to fit and whose joins an x fit only distorts.
+            FitX: StandardVerticalStem > 0f);
     }
 }

@@ -275,10 +275,10 @@ public class HintLevelTests
     // ---- The shipped backends -----------------------------------------------------------------
 
     [Fact]
-    public void FreeType_AdvertisesNoneAndFull()
+    public void FreeType_AdvertisesNoneLightAndFull()
     {
         using var freetype = new KernSmith.Rasterizers.FreeType.FreeTypeRasterizer();
-        freetype.Capabilities.SupportedHintLevels.ShouldBe([HintLevel.None, HintLevel.Full], ignoreOrder: true);
+        freetype.Capabilities.SupportedHintLevels.ShouldBe([HintLevel.None, HintLevel.Light, HintLevel.Full], ignoreOrder: true);
     }
 
     [Fact]
@@ -321,21 +321,35 @@ public class HintLevelTests
         levelled.Pages[0].PixelData.ShouldBe(plain.Pages[0].PixelData);
     }
 
-    [Theory]
-    [InlineData(HintLevel.None)]
-    [InlineData(HintLevel.Light)]
-    [InlineData(HintLevel.Normal)]
-    public void FreeType_RendersNoneAndEverythingThatStepsDownToIt_Unhinted(HintLevel level)
+    [Fact]
+    public void FreeType_RendersNone_Unhinted()
     {
-        // None loads FT_LOAD_NO_HINTING, exactly what EnableHinting = false does; Light and
-        // Normal are not advertised yet and step down to None.
+        // None loads FT_LOAD_NO_HINTING, exactly what EnableHinting = false does.
         var unhinted = BmFont.Generate(Font(), Options(RasterizerBackend.FreeType, HintLevel.Default, hinting: false));
-        var levelled = BmFont.Generate(Font(), Options(RasterizerBackend.FreeType, level));
+        var levelled = BmFont.Generate(Font(), Options(RasterizerBackend.FreeType, HintLevel.None));
         var hinted = BmFont.Generate(Font(), Options(RasterizerBackend.FreeType, HintLevel.Default));
 
         levelled.FntText.ShouldBe(unhinted.FntText);
         levelled.Pages[0].PixelData.ShouldBe(unhinted.Pages[0].PixelData);
         levelled.Pages[0].PixelData.ShouldNotBe(hinted.Pages[0].PixelData, "FreeType's hinted and unhinted 12px output differ");
+    }
+
+    [Theory]
+    [InlineData(HintLevel.Light)]
+    [InlineData(HintLevel.Normal)]
+    public void FreeType_RendersLightAndEverythingThatStepsDownToIt_LightHinted(HintLevel level)
+    {
+        // Light loads FT_LOAD_TARGET_LIGHT (y-only auto-hinting); Normal is not advertised and
+        // steps down to Light. Neither is the unhinted output nor the default (normal) hinting.
+        var unhinted = BmFont.Generate(Font(), Options(RasterizerBackend.FreeType, HintLevel.Default, hinting: false));
+        var light = BmFont.Generate(Font(), Options(RasterizerBackend.FreeType, HintLevel.Light));
+        var levelled = BmFont.Generate(Font(), Options(RasterizerBackend.FreeType, level));
+        var hinted = BmFont.Generate(Font(), Options(RasterizerBackend.FreeType, HintLevel.Default));
+
+        levelled.FntText.ShouldBe(light.FntText);
+        levelled.Pages[0].PixelData.ShouldBe(light.Pages[0].PixelData);
+        levelled.Pages[0].PixelData.ShouldNotBe(unhinted.Pages[0].PixelData, "light hinting moves horizontal edges at 12px");
+        levelled.Pages[0].PixelData.ShouldNotBe(hinted.Pages[0].PixelData, "normal hinting fits x too");
     }
 
     [Fact]

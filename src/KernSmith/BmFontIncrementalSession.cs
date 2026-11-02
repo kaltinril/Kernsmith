@@ -291,7 +291,7 @@ public sealed class BmFontIncrementalSession : IDisposable
             _prepared.FontInfo, (float)(_prepared.EffectiveSize * BmFontModelBuilder.DpiScale(_prepared.Options)),
             raster.RasterizerFontMetrics, _options.HeightPercent);
 
-        _kerningIndex ??= BuildKerningIndex(raster.RasterizerKerningPairs);
+        _kerningIndex ??= BuildKerningIndex(raster.RasterizerKerningPairs, raster.RasterizerKerningAdjustments);
 
         // Packed rect = glyph + padding + spacing, exactly as Generate builds them.
         var padding = _options.Padding;
@@ -511,13 +511,23 @@ public sealed class BmFontIncrementalSession : IDisposable
     // ---------------------------------------------------------------
 
     private Dictionary<int, List<IndexedKerningPair>> BuildKerningIndex(
-        IReadOnlyList<ScaledKerningPair>? rasterizerKerningPairs)
+        IReadOnlyList<ScaledKerningPair>? rasterizerKerningPairs,
+        IReadOnlyList<ScaledKerningAdjustment>? kerningAdjustments)
     {
         var index = new Dictionary<int, List<IndexedKerningPair>>();
 
         // Mirror BmFontModelBuilder's preference: rasterizer-provided pre-scaled pairs
-        // when available, else the font tables' pairs (scaled at delta time).
-        if (_options.Kerning && rasterizerKerningPairs is not null)
+        // when available, else the font tables' pairs (scaled at delta time). With the
+        // backend's spacing corrections (BakeHintingIntoKerning) the merge is the model's own,
+        // pre-scaled, over the corrections of the first batch: a glyph added later has none.
+        if (_options.Kerning && kerningAdjustments is { Count: > 0 })
+        {
+            _kerningPreScaled = true;
+            float metricSize = (float)(_prepared.EffectiveSize * BmFontModelBuilder.DpiScale(_prepared.Options));
+            foreach (var entry in BmFontModelBuilder.MergeKerning(_prepared.FontInfo, metricSize, _options, rasterizerKerningPairs, kerningAdjustments, restrictTo: null))
+                AddToIndex(index, new IndexedKerningPair(entry.First, entry.Second, entry.Amount));
+        }
+        else if (_options.Kerning && rasterizerKerningPairs is not null)
         {
             _kerningPreScaled = true;
             foreach (var pair in rasterizerKerningPairs)

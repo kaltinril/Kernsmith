@@ -1,6 +1,6 @@
 # Phase 188 — Native Rasterizer: Hint Levels and FreeType-Quality Hinting
 
-> **Status**: In progress — step 1 (the `HintLevel` API) is in; step 2 (Native `Normal`: both-axis auto-hinter, advance rebuild, mono fit-then-threshold, size taper) is in and advertised, measured against the parity harness (Roboto 12 px gray SSIM 0.94 vs 0.88 unhinted; the bar is not yet met — see the harness summary); steps 3+ not started
+> **Status**: In progress — step 1 (the `HintLevel` API) is in; step 2 (Native `Normal`: both-axis auto-hinter within the font's advances, bilevel fit-then-threshold, size taper) is in and advertised; step 4's default switch is done: `Default` resolves to `Normal` on Native with the taper (full to 16 ppem, x off by 24, y off by 40) and the kerning bake on; steps 3 and the font-native engines not started; the parity bar is not met (see the harness summary)
 > **Created**: 2026-11-01
 > **Depends on**: [Phase 174](done/phase-174-auto-hinting.md) (y-only fitter, blue zones, mono dropout), [Phase 177](phase-177-performance-optimization.md) (benchmark harness), [Phase 179](phase-179-validation-golden-masters.md) (`NativeSimilarityMatrixTests`, `ImageSimilarity`)
 > **Supersedes**: the Phase 174 decisions "hinting stays `Light`-only" and "no x fitting" — see [Decision changes](#decision-changes)
@@ -97,10 +97,10 @@ New public enum `HintLevel` in the root namespace, applied to `Grayscale`, `None
 
 | Level | What Native does | FreeType mapping | Default output change |
 |---|---|---|---|
-| `Default` | today's behaviour, exactly: hinted only for `AntiAlias = Light` + `EnableHinting` | today's load flags | none |
+| `Default` | `Normal` with `EnableHinting` on, `None` with it off, in every anti-alias mode (the size taper leaves text above 40 ppem exactly unhinted) | today's load flags | small text is hinted; above 40 ppem none |
 | `None` | unhinted (today's `Grayscale`/`None`) | `FT_LOAD_NO_HINTING` | — |
 | `Light` | the Phase 174 y-only fitter, unchanged | `FT_LOAD_TARGET_LIGHT` | — |
-| `Normal` | **auto-hinter, both axes**, advance/side-bearing rebuild; mono target when `AntiAlias = None` | `FT_LOAD_FORCE_AUTOHINT` + normal/mono target | — |
+| `Normal` | **auto-hinter, both axes**, the font's advances with the ink placed by side, touching pairs opened in the kerning; stroke renderer when `AntiAlias = None` | `FT_LOAD_FORCE_AUTOHINT` + normal/mono target | — |
 | `Full` | **matches FreeType default output**: the font's own hinting where it has it (TrueType bytecode v40, mono v35-style; CFF hinter) and the `Normal` auto-hinter otherwise; integer ppem for hinted TrueType with `head.flags` bit 3 | `FT_LOAD_DEFAULT` (today's hinted output) | — |
 
 Per level:
@@ -182,7 +182,7 @@ Each step: full `dotnet test`, `regression_check.py` with the configs above, ben
 
 Rewritten in place in `project_decisions.md` when the step that changes them lands:
 
-- **"Native auto-hints only `Light` requests…"** (Native Rasterizer section) → Native hints per `HintLevel`; `Default` keeps the `Light`-only mapping (or, if Q1 = yes from step 4, resolves to `Full`); `Light` stays y-only with the one-pixel cap; `Normal`/`Full` fit both axes and rebuild advances to match FreeType, without the cap. Rejected alternatives recorded: widening `EnableHinting` alone (no way to pick a level), copying FreeType code (originality decision).
+- **"Native auto-hints only `Light` requests…"** (Native Rasterizer section) → Native hints per `HintLevel`; `Default` resolves to `Normal` with hinting on (Jeremy's answer to step 4: size-scaled hinting unless told otherwise); `Light` stays y-only with the one-pixel cap; `Normal`/`Full` fit both axes within the font's advances (the FreeType-style advance rebuild was measured and rejected for drifting line length). Rejected alternatives recorded: widening `EnableHinting` alone (no way to pick a level), copying FreeType code (originality decision).
 - **"No x fitting"** (same entry, and Phase 174's decision list) → x fitting exists at `Normal`/`Full`; `Light` remains y-only.
 - **"Native rounds the advance once…"** → still true for `None`/`Light`; hinted levels take the auto-hinter/interpreter advance.
 - **"Unadvertised anti-alias modes degrade silently"** → extended to hint levels (same reasoning).

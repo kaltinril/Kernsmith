@@ -23,7 +23,7 @@ public class NativeAllocationTests
     {
         using var native = new NativeRasterizer();
         native.LoadFont(TestFonts.RobotoRegularBytes());
-        var options = new RasterOptions { Size = 32 };
+        var options = new RasterOptions { Size = 32, EnableHinting = false };
         int[] simple = SimpleAsciiGlyphs(native);
 
         foreach (int codepoint in simple)
@@ -46,7 +46,7 @@ public class NativeAllocationTests
     {
         using var native = new NativeRasterizer();
         native.LoadFont(TestFonts.RobotoRegularBytes());
-        var options = new RasterOptions { Size = size };
+        var options = new RasterOptions { Size = size, EnableHinting = false };
         int[] simple = SimpleAsciiGlyphs(native);
 
         // What each glyph legitimately keeps: its bitmap and its outline commands — measured
@@ -103,7 +103,7 @@ public class NativeAllocationTests
         // emboldened one), but the charstring stacks and the emboldener's per-contour buffers
         // are pooled scratch.
         using var native = new NativeRasterizer();
-        var options = new RasterOptions { Size = 32 };
+        var options = new RasterOptions { Size = 32, EnableHinting = false };
         int[] codepoints;
         if (path == "cff2")
         {
@@ -143,7 +143,7 @@ public class NativeAllocationTests
         // out that the glyph is not its business.
         using var native = new NativeRasterizer();
         native.LoadFont(TestFonts.ReemKufiInkBytes());
-        var options = new RasterOptions { Size = 32, ColorFont = true };
+        var options = new RasterOptions { Size = 32, ColorFont = true, EnableHinting = false };
         int[] digits = Enumerable.Range(0x0660, 10).ToArray();
 
         foreach (int codepoint in digits)

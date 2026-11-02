@@ -101,11 +101,11 @@ public class StbTrueTypeMonoDropoutTests
 
         foreach (char c in "lI|HETLn-=")
         {
-            var expected = stb.RasterizeGlyph(c, gray)!;
+            var expected = CropToInk(Threshold(stb.RasterizeGlyph(c, gray)!));
             var actual = stb.RasterizeGlyph(c, mono)!;
 
             actual.Metrics.ShouldBe(expected.Metrics, $"'{c}'");
-            actual.BitmapData.ShouldBe(Threshold(expected.BitmapData), $"'{c}'");
+            actual.BitmapData.ShouldBe(expected.BitmapData, $"'{c}'");
         }
     }
 
@@ -113,8 +113,9 @@ public class StbTrueTypeMonoDropoutTests
     [MemberData(nameof(Sizes))]
     public void DropoutControl_OnlyAddsPixels(float size, bool italic)
     {
-        // Same box and metrics as the grayscale render, and every pixel plain thresholding lit
-        // stays lit: dropout control restores ink, it never moves or removes any.
+        // The same advance as the grayscale render, a box inside its box (cropped to the ink), and
+        // every pixel plain thresholding lit stays lit at the same pen-relative position: dropout
+        // control restores ink, it never moves or removes any.
         using var stb = new StbTrueTypeRasterizer();
         stb.LoadFont(Roboto());
         var mono = new RasterOptions { Size = size, AntiAlias = AntiAliasMode.None, Italic = italic };
@@ -122,19 +123,85 @@ public class StbTrueTypeMonoDropoutTests
 
         for (char c = '!'; c <= '~'; c++)
         {
-            var expected = stb.RasterizeGlyph(c, gray)!;
+            var expected = Threshold(stb.RasterizeGlyph(c, gray)!);
             var actual = stb.RasterizeGlyph(c, mono)!;
-            var thresholded = Threshold(expected.BitmapData);
 
-            actual.Metrics.ShouldBe(expected.Metrics, $"'{c}'");
-            Enumerable.Range(0, thresholded.Length)
-                .Where(i => thresholded[i] == 255 && actual.BitmapData[i] != 255)
+            actual.Metrics.Advance.ShouldBe(expected.Metrics.Advance, $"'{c}'");
+            int dx = actual.Metrics.BearingX - expected.Metrics.BearingX;
+            int dy = expected.Metrics.BearingY - actual.Metrics.BearingY;
+            dx.ShouldBeGreaterThanOrEqualTo(0, $"'{c}'");
+            dy.ShouldBeGreaterThanOrEqualTo(0, $"'{c}'");
+            (dx + actual.Width).ShouldBeLessThanOrEqualTo(expected.Width, $"'{c}'");
+            (dy + actual.Height).ShouldBeLessThanOrEqualTo(expected.Height, $"'{c}'");
+
+            Enumerable.Range(0, expected.BitmapData.Length)
+                .Where(i => expected.BitmapData[i] == 255)
+                .Where(i =>
+                {
+                    int x = (i % expected.Width) - dx, y = (i / expected.Width) - dy;
+                    return x < 0 || y < 0 || x >= actual.Width || y >= actual.Height
+                        || actual.BitmapData[(y * actual.Pitch) + x] != 255;
+                })
                 .ShouldBeEmpty($"'{c}' lost thresholded pixels");
         }
     }
 
-    private static byte[] Threshold(byte[] coverage) =>
-        coverage.Select(v => v >= 128 ? (byte)255 : (byte)0).ToArray();
+    /// <summary>The grayscale glyph with its coverage thresholded at 50%, box and metrics kept.</summary>
+    private static RasterizedGlyph Threshold(RasterizedGlyph glyph) => new()
+    {
+        Codepoint = glyph.Codepoint,
+        GlyphIndex = glyph.GlyphIndex,
+        BitmapData = glyph.BitmapData.Select(v => v >= 128 ? (byte)255 : (byte)0).ToArray(),
+        Width = glyph.Width,
+        Height = glyph.Height,
+        Pitch = glyph.Pitch,
+        Metrics = glyph.Metrics,
+        Format = glyph.Format,
+    };
+
+    /// <summary>Drops the glyph's empty edge rows and columns, moving the bearings to match.</summary>
+    private static RasterizedGlyph CropToInk(RasterizedGlyph glyph)
+    {
+        int left = glyph.Width, top = glyph.Height, right = -1, bottom = -1;
+        for (int y = 0; y < glyph.Height; y++)
+        {
+            for (int x = 0; x < glyph.Width; x++)
+            {
+                if (glyph.BitmapData[(y * glyph.Pitch) + x] == 0)
+                    continue;
+                left = Math.Min(left, x);
+                right = Math.Max(right, x);
+                top = Math.Min(top, y);
+                bottom = Math.Max(bottom, y);
+            }
+        }
+
+        if (right < 0)
+            return glyph;
+
+        int width = right - left + 1, height = bottom - top + 1;
+        var data = new byte[width * height];
+        for (int y = 0; y < height; y++)
+            Array.Copy(glyph.BitmapData, ((top + y) * glyph.Pitch) + left, data, y * width, width);
+
+        return new RasterizedGlyph
+        {
+            Codepoint = glyph.Codepoint,
+            GlyphIndex = glyph.GlyphIndex,
+            BitmapData = data,
+            Width = width,
+            Height = height,
+            Pitch = width,
+            Metrics = glyph.Metrics with
+            {
+                BearingX = glyph.Metrics.BearingX + left,
+                BearingY = glyph.Metrics.BearingY - top,
+                Width = width,
+                Height = height,
+            },
+            Format = glyph.Format,
+        };
+    }
 
     [Fact]
     public void Grayscale_IsNotThresholded()

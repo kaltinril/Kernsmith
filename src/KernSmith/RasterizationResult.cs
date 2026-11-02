@@ -34,6 +34,12 @@ internal sealed class RasterizationResult
     public IReadOnlyList<ScaledKerningPair>? RasterizerKerningPairs { get; init; }
 
     /// <summary>
+    /// Rasterizer-provided per-pair spacing corrections in pixels, folded into the kerning
+    /// pairs before rounding (<see cref="FontGeneratorOptions.BakeHintingIntoKerning"/>), or null.
+    /// </summary>
+    public IReadOnlyList<ScaledKerningAdjustment>? RasterizerKerningAdjustments { get; init; }
+
+    /// <summary>
     /// Snapshot of the glyphs after height-stretch/custom-glyph overrides and any
     /// super-sample downscale, but BEFORE outline/gradient/shadow effects were composited.
     /// Only populated when <see cref="FontGeneratorOptions.Variants"/> is non-empty — atlas

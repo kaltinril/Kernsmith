@@ -8,8 +8,8 @@ using Shouldly;
 namespace KernSmith.Rasterizers.Native.Tests;
 
 /// <summary>
-/// Phase 174 — Native's auto-hinting end to end. Hinting runs for
-/// <see cref="AntiAliasMode.Light"/> requests with <see cref="RasterOptions.EnableHinting"/> on:
+/// Phase 174 — Native's y-only auto-hinting end to end, requested as
+/// <see cref="HintLevel.Light"/> (<see cref="AntiAliasMode.Light"/> alone no longer selects it):
 /// vertical-only (y) grid fitting, so horizontal edges land on pixel boundaries while advances
 /// and horizontal positions are untouched.
 /// </summary>
@@ -20,7 +20,7 @@ public class NativeHintingTests
 
     public static TheoryData<float> SmallSizes => [12f, 14f, 16f, 18f];
 
-    private static RasterOptions Hinted(float size) => new() { Size = size, AntiAlias = AntiAliasMode.Light, EnableHinting = true };
+    private static RasterOptions Hinted(float size) => new() { Size = size, AntiAlias = AntiAliasMode.Light, HintLevel = HintLevel.Light };
 
     private static RasterOptions Unhinted(float size) => new() { Size = size, AntiAlias = AntiAliasMode.Light, EnableHinting = false };
 

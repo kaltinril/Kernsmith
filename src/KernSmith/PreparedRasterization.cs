@@ -41,6 +41,7 @@ internal sealed class PreparedRasterization : IDisposable
     private bool _rasterizerProvidedCaptured;
     private RasterizerFontMetrics? _rasterizerFontMetrics;
     private IReadOnlyList<ScaledKerningPair>? _rasterizerKerningPairs;
+    private IReadOnlyList<ScaledKerningAdjustment>? _rasterizerKerningAdjustments;
 
     /// <summary>Decompressed sfnt font bytes (WOFF/WOFF2 already expanded).</summary>
     public byte[] FontData { get; }
@@ -590,6 +591,9 @@ internal sealed class PreparedRasterization : IDisposable
         {
             _rasterizerFontMetrics = _rasterizer.GetFontMetrics(_rasterOptions);
             _rasterizerKerningPairs = _rasterizer.GetKerningPairs(_rasterOptions);
+            _rasterizerKerningAdjustments = _rasterOptions.BakeHintingIntoKerning != false
+                ? _rasterizer.GetKerningAdjustments(_rasterOptions)
+                : null;
             _rasterizerProvidedCaptured = true;
         }
 
@@ -687,6 +691,7 @@ internal sealed class PreparedRasterization : IDisposable
             SuperSampleLevel = SuperSampleLevel,
             RasterizerFontMetrics = _rasterizerFontMetrics,
             RasterizerKerningPairs = _rasterizerKerningPairs,
+            RasterizerKerningAdjustments = _rasterizerKerningAdjustments,
             RawGlyphsForVariants = rawGlyphsForVariants,
             EqualizedSpan = span,
             ChannelOutlineMasks = routedMasks is null ? null : CollectRoutedMasks(glyphs, routedMasks)
@@ -915,16 +920,17 @@ internal sealed class PreparedRasterization : IDisposable
                 Pitch = glyph.Pitch,
                 Metrics = m with
                 {
-                    BearingX = m.BearingX / level,
-                    BearingY = m.BearingY / level,
-                    Advance = m.Advance / level,
+                    BearingX = DownscaleMetric(m.BearingX, level),
+                    BearingY = DownscaleMetric(m.BearingY, level),
+                    Advance = DownscaleMetric(m.Advance, level),
                 },
                 Format = glyph.Format,
             };
         }
 
         // The size rounds up, as BMFont's does, so ink in a last partial block is kept (averaged
-        // with the transparent pixels past the glyph's edge); the bearings still truncate.
+        // with the transparent pixels past the glyph's edge); the bearings and advance round to
+        // the nearest pixel (DownscaleMetric).
         var srcW = glyph.Width;
         var srcH = glyph.Height;
         var dstW = (srcW + level - 1) / level;
@@ -940,9 +946,9 @@ internal sealed class PreparedRasterization : IDisposable
 
         var metrics = glyph.Metrics;
         var newMetrics = new GlyphMetrics(
-            BearingX: metrics.BearingX / level,
-            BearingY: metrics.BearingY / level,
-            Advance: metrics.Advance / level,
+            BearingX: DownscaleMetric(metrics.BearingX, level),
+            BearingY: DownscaleMetric(metrics.BearingY, level),
+            Advance: DownscaleMetric(metrics.Advance, level),
             Width: dstW,
             Height: dstH);
 
@@ -958,6 +964,17 @@ internal sealed class PreparedRasterization : IDisposable
             Format = glyph.Format
         };
     }
+
+    /// <summary>
+    /// A super-sampled advance or bearing in output pixels: the high-resolution value divided by
+    /// the level and rounded to the nearest pixel, halves away from zero, as the backends round an
+    /// unsampled one. Not integer division: truncating left a quarter of Roboto's 12px x4 advances
+    /// a pixel short ('#' 22/4 = 5.5 px became 5) and pulled every bearing toward zero, so
+    /// super-sampled text set tighter than the same text unsampled. BMFont truncates; legibility
+    /// wins here (see project_decisions.md).
+    /// </summary>
+    private static int DownscaleMetric(int value, int level) =>
+        (int)Math.Round(value / (double)level, MidpointRounding.AwayFromZero);
 
     /// <summary>
     /// Each channel of each destination pixel is the integer mean (truncated) of its

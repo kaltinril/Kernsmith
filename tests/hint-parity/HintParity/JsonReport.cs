@@ -82,6 +82,10 @@ internal static class JsonReport
 
         WriteQuality(w, "freeTypeQuality", r.FreeTypeQuality);
         WriteQuality(w, "nativeQuality", r.NativeQuality);
+        if (r.FreeTypeLegibility is { } ftLegibility)
+            WriteLegibility(w, "freeTypeLegibility", ftLegibility);
+        if (r.NativeLegibility is { } nativeLegibility)
+            WriteLegibility(w, "nativeLegibility", nativeLegibility);
 
         w.WriteBoolean("barPassed", r.BarPassed);
         w.WriteStartArray("barFailures");
@@ -121,6 +125,41 @@ internal static class JsonReport
         w.WriteNumberValue(g.XOffset);
         w.WriteNumberValue(g.BaselineTop);
         w.WriteEndArray();
+    }
+
+    /// <summary>The legibility score with every term and the detail behind it, for either side or a sweep evaluation.</summary>
+    public static void WriteLegibility(Utf8JsonWriter w, string name, Legibility.LegibilityTerms t)
+    {
+        w.WriteStartObject(name);
+        w.WriteNumber("score", t.Score);
+        foreach (var (term, value) in t.Named())
+            w.WriteNumber(term, value);
+        w.WriteNumber("topologyMatches", t.TopologyMatches);
+        w.WriteNumber("topologyGlyphs", t.TopologyGlyphs);
+        w.WriteStartArray("topologyBroken");
+        foreach (var b in t.TopologyBroken)
+            w.WriteStringValue(b);
+        w.WriteEndArray();
+        w.WriteStartArray("pairs");
+        foreach (var p in t.Pairs)
+        {
+            w.WriteStartObject();
+            w.WriteString("pair", $"{p.Left}/{p.Right}");
+            w.WriteNumber("rendered", p.Rendered);
+            w.WriteNumber("ideal", p.Ideal);
+            w.WriteNumber("ratio", p.Ratio);
+            w.WriteEndObject();
+        }
+        w.WriteEndArray();
+        w.WriteStartArray("stemWidths");
+        foreach (var s in t.StemWidths)
+            w.WriteStringValue(s);
+        w.WriteEndArray();
+        w.WriteNumber("pitchStd", t.PitchStd);
+        w.WriteNumber("idealPitchStd", t.IdealPitchStd);
+        w.WriteNumber("touches", t.Touches);
+        w.WriteNumber("spacingPairs", t.SpacingPairs);
+        w.WriteEndObject();
     }
 
     private static void WriteQuality(Utf8JsonWriter w, string name, QualityStats q)

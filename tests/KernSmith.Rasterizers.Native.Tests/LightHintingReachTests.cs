@@ -95,7 +95,7 @@ public class LightHintingReachTests
     }
 
     private static RasterOptions Options(float size, bool hinting) =>
-        new() { Size = size, AntiAlias = AntiAliasMode.Light, EnableHinting = hinting };
+        new() { Size = size, AntiAlias = AntiAliasMode.Light, HintLevel = hinting ? HintLevel.Light : HintLevel.None };
 
     private static NativeRasterizer Load(string font, string axes)
     {

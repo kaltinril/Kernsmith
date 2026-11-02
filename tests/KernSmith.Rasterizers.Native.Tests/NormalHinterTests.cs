@@ -7,7 +7,7 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// <summary>
 /// Phase 188 — the <c>Normal</c> auto-hinter's building blocks on synthetic pixel-space
 /// outlines: horizontal phase alignment of vertical stems, stem-width classes, counters, the
-/// monotone x map and the advance rebuild.
+/// monotone x map and the by-side placement within the font's advance.
 /// </summary>
 public class NormalHinterTests
 {
@@ -43,7 +43,8 @@ public class NormalHinterTests
     [Fact]
     public void Fit_KeepsTheStemPitch_ToTheNearestPixel()
     {
-        // The longer stem anchors the glyph and moves at most half a pixel; the other follows
+        // The longer stem anchors the glyph and moves less than a pixel (into the column its
+        // phase chose, placed so the left bearing is not above the font's); the other follows
         // it so the 2.95 px pitch becomes exactly 3 (a 2 px counter, as FreeType renders 'h'),
         // rather than each stem rounding on its own into a 2 px pitch.
         var h = TwoStems();
@@ -54,7 +55,7 @@ public class NormalHinterTests
         var stems = VerticalStems(result!.Value.Outline);
         float leftCentre = (stems[0].Left + stems[0].Right) / 2f;
         float rightCentre = (stems[1].Left + stems[1].Right) / 2f;
-        MathF.Abs(leftCentre - (LeftStem + (StemWidth / 2f))).ShouldBeLessThanOrEqualTo(0.5f);
+        MathF.Abs(leftCentre - (LeftStem + (StemWidth / 2f))).ShouldBeLessThan(1f);
         (rightCentre - leftCentre).ShouldBe(3f, 1e-3f);
     }
 
@@ -174,17 +175,95 @@ public class NormalHinterTests
     }
 
     [Fact]
-    public void Fit_RebuildsTheAdvance_FromTheFittedRightEdge()
+    public void Fit_KeepsTheFontsAdvance()
     {
-        // 'h': stems moved into columns 1 and 4 (ink to 4.92), original right side bearing
-        // 0.60: 4.92 + 0.60 rounds to 6 where the linear 5.01 rounded to 5. The side bearing
-        // deltas report how much each side grew.
-        var result = NormalHinter.Fit(TwoStems(), Advance, NormalHintMetrics.WithoutZones(maxStem: 1.45f), mono: false);
+        // 'h': the stems move into whole columns but the advance is the linear 5.01 rounded, 5,
+        // in grayscale and in bilevel alike — not the 6 that following the phase-shifted right
+        // edge gave, and not the ink's growth (in bilevel both stems widen to a pixel). The side
+        // bearings report the split: the left at or just under the font's, the rest right.
+        foreach (bool mono in new[] { false, true })
+        {
+            var result = NormalHinter.Fit(TwoStems(), Advance, NormalHintMetrics.WithoutZones(maxStem: 1.45f), mono);
 
-        result.ShouldNotBeNull();
-        result!.Value.Advance.ShouldBe(6);
-        result.Value.LeftDelta.ShouldBe(0.455f, 0.05f);
-        result.Value.RightDelta.ShouldBe(1.085f - 0.60f, 0.05f);
+            result.ShouldNotBeNull();
+            result!.Value.Advance.ShouldBe(5, $"mono {mono}");
+            var bounds = OutlineBounds.Tight(result.Value.Outline);
+            bounds.XMin.ShouldBeLessThanOrEqualTo(LeftStem + 0.25f + 1e-3f, $"mono {mono}: the left bearing is at or just under the font's");
+            result.Value.LeftDelta.ShouldBe(bounds.XMin - LeftStem, 1e-3f);
+            result.Value.RightDelta.ShouldBe((5f - bounds.XMax) - (Advance - RightStem - StemWidth), 1e-3f);
+        }
+    }
+
+    [Fact]
+    public void Fit_GivesTheSameAdvance_ToTheSameStem_AtAnyPhase()
+    {
+        // Roboto 'i' and 'l' at a 10 px cell: a 0.72 px stem with a 1.84 px advance. Centred in
+        // a column the stem's right edge lands at 0.86 or 1.86 depending on which column its
+        // phase picked; an advance rebuilt from that edge came out 1 for one phase and 2 for
+        // another, and an advance of 1 leaves 0.28 px between two 'l's. The advance is the
+        // linear one (2) whatever the phase.
+        var metrics = NormalHintMetrics.WithoutZones(maxStem: 1.45f);
+
+        var early = NormalHinter.Fit(Rectangle(0.52f, 0f, 1.24f, 7f), 1.84f, metrics, mono: false);
+        var late = NormalHinter.Fit(Rectangle(0.60f, 0f, 1.32f, 7f), 1.84f, metrics, mono: false);
+
+        early.ShouldNotBeNull();
+        late.ShouldNotBeNull();
+        early!.Value.Advance.ShouldBe(2);
+        late!.Value.Advance.ShouldBe(2);
+    }
+
+    [Fact]
+    public void Fit_PlacesBilevel_LikeGrayscale()
+    {
+        // Bilevel bearings are not rounded up to columns: a 1.3 px bearing on each side of a
+        // stem keeps the font's advance (3.4 -> 3) and the left bearing at or just under 1.3,
+        // the same placement grayscale gets. Two glyphs that then touch are the kerning bake's.
+        var metrics = NormalHintMetrics.WithoutZones(maxStem: 1.45f);
+
+        var gray = NormalHinter.Fit(Rectangle(1.3f, 0f, 2.12f, 7f), 2.12f + 1.3f, metrics, mono: false);
+        var bilevel = NormalHinter.Fit(Rectangle(1.3f, 0f, 2.12f, 7f), 2.12f + 1.3f, metrics, mono: true);
+
+        gray.ShouldNotBeNull();
+        bilevel.ShouldNotBeNull();
+        gray!.Value.Advance.ShouldBe(3);
+        bilevel!.Value.Advance.ShouldBe(3);
+        OutlineBounds.Tight(bilevel.Value.Outline).XMin.ShouldBe(1f, 1e-3f);
+        OutlineBounds.Tight(gray.Value.Outline).XMin.ShouldBeLessThanOrEqualTo(1.55f);
+    }
+
+    [Fact]
+    public void Fit_PadsARightHandStem_OnlyWithoutTheBake_AndOnlyUnderHalfAPixelOfWhite()
+    {
+        // A stem at 0.9 with 0.2 px of white after it: the fit centres it in column 1 (1.09 to
+        // 1.91), 0.09 px short of its 2 px advance, and against a left-hand stem the pair fuses.
+        // Without the kerning bake the glyph gets a column of advance; with it the advance is
+        // the font's and the pair is opened in the kerning. A stem with 0.6 px of white is
+        // never padded, however the fit placed it.
+        var metrics = NormalHintMetrics.WithoutZones(maxStem: 1.45f);
+        var tight = Rectangle(0.9f, 0f, 1.72f, 5f);
+
+        var padded = NormalHinter.Fit(tight, 1.72f + 0.2f, metrics, mono: false, padStemPairs: true);
+        var baked = NormalHinter.Fit(tight, 1.72f + 0.2f, metrics, mono: false, padStemPairs: false);
+        var roomy = NormalHinter.Fit(tight, 1.72f + 0.6f, metrics, mono: false, padStemPairs: true);
+
+        padded.ShouldNotBeNull();
+        baked.ShouldNotBeNull();
+        roomy.ShouldNotBeNull();
+        baked!.Value.Advance.ShouldBe(2);
+        padded!.Value.Advance.ShouldBe(3);
+        padded.Value.RightStem.ShouldBeTrue();
+        roomy!.Value.Advance.ShouldBe(2);
+    }
+
+    [Fact]
+    public void Fit_ReportsStemEdges()
+    {
+        var h = NormalHinter.Fit(TwoStems(), Advance, NormalHintMetrics.WithoutZones(maxStem: 1.45f), mono: false);
+
+        h.ShouldNotBeNull();
+        h!.Value.LeftStem.ShouldBeTrue();
+        h.Value.RightStem.ShouldBeTrue();
     }
 
     [Fact]
@@ -204,13 +283,62 @@ public class NormalHinterTests
 
     [Theory]
     [InlineData(9f, 1f)]
-    [InlineData(24f, 1f)]
-    [InlineData(32f, 0.5f)]
+    [InlineData(16f, 1f)]
+    [InlineData(28f, 0.5f)]
     [InlineData(40f, 0f)]
     [InlineData(60f, 0f)]
-    public void Strength_FallsFromFullAt24Ppem_ToNothingAt40(float ppem, float expected)
+    public void Strength_FallsFromFullAt16Ppem_ToNothingAt40(float ppem, float expected)
     {
         NormalHinter.Strength(ppem).ShouldBe(expected, 1e-4f);
+    }
+
+    [Theory]
+    [InlineData(9f, 1f)]
+    [InlineData(16f, 1f)]
+    [InlineData(20f, 0.5f)]
+    [InlineData(24f, 0f)]
+    [InlineData(40f, 0f)]
+    public void XStrength_FallsFromFullAt16Ppem_ToNothingAt24(float ppem, float expected)
+    {
+        // The shape-changing part — stems snapped to columns, width classes, the by-side
+        // placement — fades first; the zones, baseline and x-height alignment last.
+        NormalHinter.XStrength(ppem).ShouldBe(expected, 1e-4f);
+    }
+
+    [Fact]
+    public void Strengths_NeverRiseWithSize_AndXFadesFirst()
+    {
+        float previousY = 1f, previousX = 1f;
+        for (float ppem = 6f; ppem <= 64f; ppem += 0.25f)
+        {
+            float y = NormalHinter.Strength(ppem);
+            float x = NormalHinter.XStrength(ppem);
+            y.ShouldBeLessThanOrEqualTo(previousY, $"y at {ppem}");
+            x.ShouldBeLessThanOrEqualTo(previousX, $"x at {ppem}");
+            x.ShouldBeLessThanOrEqualTo(y, $"x against y at {ppem}");
+            previousY = y;
+            previousX = x;
+        }
+    }
+
+    [Fact]
+    public void Fit_LeavesXAlone_WhereOnlyTheYTaperIsLeft()
+    {
+        // At 30 ppem the x strength is 0 and the y strength 0.42: the stem's top and bottom,
+        // within that of a row, still snap; its x does not move at all, and the advance is the
+        // font's. The result is also placed nowhere: no side bearing changes.
+        var stem = Rectangle(0.63f, 0.2f, 1.45f, 6.8f);
+        var metrics = new NormalHintMetrics(ScaledHintMetrics.WithoutZones(1.45f), 0.82f, Ppem: 30f);
+
+        var result = NormalHinter.Fit(stem, 2.1f, metrics, mono: false);
+
+        result.ShouldNotBeNull();
+        result!.Value.Outline.Commands.Select(c => c.EndX).ToArray().ShouldBe(stem.Commands.Select(c => c.EndX).ToArray());
+        var bounds = OutlineBounds.Tight(result.Value.Outline);
+        bounds.YMax.ShouldBe(7f, 1e-3f);
+        bounds.YMin.ShouldBe(0f, 1e-3f);
+        result.Value.Advance.ShouldBe(2);
+        result.Value.LeftDelta.ShouldBe(0f);
     }
 
     [Fact]

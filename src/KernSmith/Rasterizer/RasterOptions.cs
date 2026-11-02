@@ -104,6 +104,14 @@ public sealed record RasterOptions
     public HintLevel HintLevel { get; init; }
 
     /// <summary>
+    /// Whether a backend whose hinting places glyphs on the pixel grid reports the per-pair
+    /// spacing corrections (<see cref="IRasterizer.GetKerningAdjustments"/>) that core folds
+    /// into the kerning pairs. Null (the default) leaves it to the backend: Native bakes exactly
+    /// when it hints at <see cref="HintLevel.Normal"/>; true and false are honoured as given.
+    /// </summary>
+    public bool? BakeHintingIntoKerning { get; init; }
+
+    /// <summary>
     /// Supersampling factor for higher quality rendering. The rasterizer renders at
     /// Size * SuperSample internally and downscales. Default is 1 (no supersampling).
     /// BMFont's "aa" setting maps to this value. KernSmith core super samples glyphs itself (it
@@ -156,6 +164,7 @@ public sealed record RasterOptions
             VariationAxes = options.VariationAxes,
             EnableHinting = options.EnableHinting,
             HintLevel = options.HintLevel,
+            BakeHintingIntoKerning = options.BakeHintingIntoKerning,
             SuperSample = options.SuperSampleLevel,
             WidthPercent = options.WidthPercent,
             ItalicAngle = options.ItalicAngle

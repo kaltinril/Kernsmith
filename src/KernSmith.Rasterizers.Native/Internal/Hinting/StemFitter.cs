@@ -13,6 +13,9 @@ namespace KernSmith.Rasterizers.Native.Internal.Hinting;
 /// ink round the same way (the x axis, where there are no zones to anchor to).</param>
 /// <param name="MaxShift">The furthest, in pixels, a placed edge may move from its unhinted position.</param>
 /// <param name="MinCounter">A gap between two features at least this wide, in pixels, keeps at least one whole pixel.</param>
+/// <param name="Tuning">The fitter's constants; null for <see cref="HintTuning.Current"/>.</param>
+/// <param name="SlopeTolerance">The largest slope off the axis that still counts as an edge
+/// along it; null for the edge finder's own (<see cref="HintTuning.SlopeToleranceX"/>, about 4°).</param>
 internal sealed record StemFitParameters(
     IReadOnlyList<PixelZone> Zones,
     float ZoneTolerance,
@@ -21,7 +24,16 @@ internal sealed record StemFitParameters(
     bool Mono,
     bool AlignPhase,
     float MaxShift,
-    float MinCounter);
+    float MinCounter,
+    HintTuning? Tuning = null,
+    float? SlopeTolerance = null)
+{
+    /// <summary>The constants in force for this fit.</summary>
+    public HintTuning Constants => Tuning ?? HintTuning.Current;
+
+    /// <summary>The slope tolerance in force for this fit.</summary>
+    public float EffectiveSlopeTolerance => SlopeTolerance ?? Constants.SlopeToleranceX;
+}
 
 /// <summary>
 /// Grid fitting of one axis of a pixel-space outline, written for the y axis (Y up); the x axis
@@ -51,25 +63,30 @@ internal static class StemFitter
     /// <summary>Candidate sub-pixel shifts tried by phase alignment, per pixel.</summary>
     private const int PhaseSteps = 32;
 
-    /// <summary>
-    /// The shortest edge, in pixels, that counts. Shorter than the light fitter's: a bowl's
-    /// extremum is often a flat a few font units long (Roboto's 'o' has a 0.15 px one at 9 ppem),
-    /// and dropping it loses the bowl's side altogether, since its neighbours are then not
-    /// tangent nodes either.
-    /// </summary>
-    private const float MinEdgeLength = 0.05f;
-
-    /// <summary>A straight edge shorter than this is placed only as part of a stroke, like a
-    /// round one: a sliver of flat on a bowl or a bar's end must not drag the glyph by itself.</summary>
-    private const float MinLoneEdgeLength = 0.7f;
-
-    /// <summary>
-    /// Two edges with ink on the same side and positions this close, in pixels, are one edge.
-    /// Features at different heights that nearly line up — an 'S' terminal and the bowl above
-    /// it, the arms of an 'E' — cannot each be snapped by one monotone map of the axis; merged,
-    /// they snap together, which is also how they read.
-    /// </summary>
-    private const float MergeDistance = 0.3f;
+    // The fitter's tunable constants live in HintTuning (MinEdgeLength, MinLoneEdgeLength,
+    // MergeDistance, PhaseShiftPenalty, StandardStemTolerance) and are read from the fit's
+    // parameters, so a tuning tool can vary them per run. Their meaning:
+    //
+    // MinEdgeLength — the shortest edge, in pixels, that counts. Shorter than the light fitter's:
+    // a bowl's extremum is often a flat a few font units long (Roboto's 'o' has a 0.15 px one at
+    // 9 ppem), and dropping it loses the bowl's side altogether, since its neighbours are then
+    // not tangent nodes either.
+    //
+    // MinLoneEdgeLength — a straight edge shorter than this is placed only as part of a stroke,
+    // like a round one: a sliver of flat on a bowl or a bar's end must not drag the glyph by itself.
+    //
+    // MergeDistance — two edges with ink on the same side and positions this close, in pixels,
+    // are one edge. Features at different heights that nearly line up — an 'S' terminal and the
+    // bowl above it, the arms of an 'E' — cannot each be snapped by one monotone map of the
+    // axis; merged, they snap together, which is also how they read.
+    //
+    // PhaseShiftPenalty — penalty per pixel of global shift, in pixels of weighted stroke movement.
+    //
+    // StandardStemTolerance — how far, as a fraction of the standard thickness, a stroke may be
+    // from it and still be fitted as the standard. Nominally equal stems differ by a unit or two
+    // (Roboto's 'h' and 'l' stems are 185 and 186 units); a stroke a quarter pixel thinner than
+    // the standard — the bars of Roboto's '$' at 12 ppem, 0.88 px against 1.13 — is a thinner
+    // stroke, and widening it 28% to the standard distorts the glyph and its width.
 
     /// <summary>
     /// Fitted coordinates land on a 1/64 px grid (FreeType's 26.6 resolution). A placed edge
@@ -77,18 +94,6 @@ internal static class StemFitter
     /// float rounding error, and a top edge at 4.0000005 costs an empty bitmap row.
     /// </summary>
     private const float Resolution = 64f;
-
-    /// <summary>Penalty per pixel of global shift, in pixels of weighted stroke movement.</summary>
-    private const float PhaseShiftPenalty = 0.25f;
-
-    /// <summary>
-    /// How far, as a fraction of the standard thickness, a stroke may be from it and still be
-    /// fitted as the standard. Nominally equal stems differ by a unit or two (Roboto's 'h' and
-    /// 'l' stems are 185 and 186 units); a stroke a quarter pixel thinner than the standard —
-    /// the bars of Roboto's '$' at 12 ppem, 0.88 px against 1.13 — is a thinner stroke, and
-    /// widening it 28% to the standard distorts the glyph and its width.
-    /// </summary>
-    private const float StandardStemTolerance = 0.1f;
 
     /// <summary>Fits an outline's y axis.</summary>
     /// <param name="outline">The outline in pixels, Y up.</param>
@@ -102,15 +107,16 @@ internal static class StemFitter
         ArgumentNullException.ThrowIfNull(outline);
         ArgumentNullException.ThrowIfNull(p);
         phase = 0f;
+        var tuning = p.Constants;
 
         var commands = outline.Commands;
-        var edges = GridFitter.FindEdges(commands, out var aliases, MinEdgeLength, halfTangents: true);
+        var edges = GridFitter.FindEdges(commands, out var aliases, tuning.MinEdgeLength, halfTangents: true, p.EffectiveSlopeTolerance);
         if (edges.Count == 0)
             return null;
 
         RefineRoundEdges(commands, edges);
-        edges = MergeAlignedEdges(edges);
-        Pair(edges, p.MaxStem);
+        edges = MergeAlignedEdges(edges, tuning.MergeDistance);
+        Pair(edges, p.MaxStem, tuning.MinLoneEdgeLength);
 
         // 1. Blue zones: each zone edge is its own feature.
         var map = new MonotoneMap(p.MaxShift, p.MinCounter);
@@ -147,7 +153,7 @@ internal static class StemFitter
         // map interpolates between it and the strokes.
         foreach (var edge in edges)
         {
-            if (edge.Hinted is not null || edge.IsRound || edge.Length < MinLoneEdgeLength)
+            if (edge.Hinted is not null || edge.IsRound || edge.Length < tuning.MinLoneEdgeLength)
                 continue;
 
             float target = GridMath.Round(edge.Y + map.BaseShift);
@@ -163,12 +169,13 @@ internal static class StemFitter
 
     /// <summary>The widths, in the outline's units, of its straight strokes along this axis,
     /// each with the stroke's length: the input to a standard-width measurement.</summary>
-    public static List<(float Width, float Length)> StraightStemWidths(GlyphOutline outline, float maxStem)
+    public static List<(float Width, float Length)> StraightStemWidths(GlyphOutline outline, float maxStem, HintTuning? tuning = null)
     {
         ArgumentNullException.ThrowIfNull(outline);
+        tuning ??= HintTuning.Current;
 
-        var edges = GridFitter.FindEdges(outline.Commands, out _, MinEdgeLength, halfTangents: true);
-        Pair(edges, maxStem);
+        var edges = GridFitter.FindEdges(outline.Commands, out _, tuning.MinEdgeLength, halfTangents: true, tuning.SlopeToleranceX);
+        Pair(edges, maxStem, tuning.MinLoneEdgeLength);
 
         var widths = new List<(float, float)>();
         foreach (var edge in edges)
@@ -213,7 +220,7 @@ internal static class StemFitter
     /// fonts put at an extremum. They pair when the gap between their extents is within the
     /// stroke's thickness.
     /// </summary>
-    private static void Pair(List<GridFitter.Edge> edges, float maxStem)
+    private static void Pair(List<GridFitter.Edge> edges, float maxStem, float minLoneEdgeLength)
     {
         var best = new GridFitter.Edge?[edges.Count];
         for (int i = 0; i < edges.Count; i++)
@@ -231,7 +238,7 @@ internal static class StemFitter
 
                 float overlap = MathF.Min(edge.XMax, other.XMax) - MathF.Max(edge.XMin, other.XMin);
                 bool overlaps = overlap > 0f && overlap >= 0.3f * MathF.Min(edge.Length, other.Length);
-                bool curved = edge.IsRound || other.IsRound || MathF.Min(edge.Length, other.Length) < MinLoneEdgeLength;
+                bool curved = edge.IsRound || other.IsRound || MathF.Min(edge.Length, other.Length) < minLoneEdgeLength;
                 if (!overlaps && !(curved && overlap > -distance))
                     continue;
 
@@ -247,9 +254,9 @@ internal static class StemFitter
         }
     }
 
-    /// <summary>Merges same-side edges within <see cref="MergeDistance"/> of each other into one
+    /// <summary>Merges same-side edges within <paramref name="mergeDistance"/> of each other into one
     /// at their length-weighted position; a merged edge is straight if any part was.</summary>
-    private static List<GridFitter.Edge> MergeAlignedEdges(List<GridFitter.Edge> edges)
+    private static List<GridFitter.Edge> MergeAlignedEdges(List<GridFitter.Edge> edges, float mergeDistance)
     {
         if (edges.Count < 2)
             return edges;
@@ -264,7 +271,7 @@ internal static class StemFitter
 
             var seed = edges[i];
             List<GridFitter.Edge>? group = null;
-            for (int j = i + 1; j < edges.Count && edges[j].Y - seed.Y <= MergeDistance; j++)
+            for (int j = i + 1; j < edges.Count && edges[j].Y - seed.Y <= mergeDistance; j++)
             {
                 if (used[j] || edges[j].IsTop != seed.IsTop)
                     continue;
@@ -399,7 +406,7 @@ internal static class StemFitter
             float s = (float)i / PhaseSteps;
             float anchorCentre = (anchor.Y + anchor.Partner!.Y) / 2f;
             float carried = PlacedCentre(anchorCentre + s, anchor, p) - anchorCentre;
-            float cost = (PhaseShiftPenalty * MathF.Abs(s)) + (StemLength(anchor) * MathF.Abs(carried));
+            float cost = (p.Constants.PhaseShiftPenalty * MathF.Abs(s)) + (StemLength(anchor) * MathF.Abs(carried));
             foreach (var top in stems)
             {
                 if (top == anchor)
@@ -496,7 +503,7 @@ internal static class StemFitter
     private static (float Width, float Span) StemSpan(float width, StemFitParameters p)
     {
         float standard = p.StandardStem;
-        float basis = standard > 0f && MathF.Abs(width - standard) <= StandardStemTolerance * standard ? standard : width;
+        float basis = standard > 0f && MathF.Abs(width - standard) <= p.Constants.StandardStemTolerance * standard ? standard : width;
         float span = MathF.Max(1f, GridMath.Round(basis));
         return p.Mono ? (span, span) : (basis, span);
     }
@@ -611,7 +618,7 @@ internal static class StemFitter
             y[alias] = y[canonical];
 
         for (int slot = 0; slot < y.Length; slot++)
-            y[slot] = MathF.Round(y[slot] * Resolution) / Resolution;
+            y[slot] = MathF.Round(y[slot] * Resolution, MidpointRounding.ToEven) / Resolution;
 
         var fitted = new OutlineCommand[commands.Length];
         for (int i = 0; i < commands.Length; i++)

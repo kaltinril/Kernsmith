@@ -108,8 +108,8 @@ public class NativeVectorOutlineTests
         int worst = 0;
         foreach (char c in "o@S")
         {
-            var layer = r.RasterizeOutlineLayer(c, new RasterOptions { Size = 32 }, width, shape)!;
-            var big = r.RasterizeOutlineLayer(c, new RasterOptions { Size = 256 }, width * 8, shape)!;
+            var layer = r.RasterizeOutlineLayer(c, new RasterOptions { Size = 32, EnableHinting = false }, width, shape)!;
+            var big = r.RasterizeOutlineLayer(c, new RasterOptions { Size = 256, EnableHinting = false }, width * 8, shape)!;
             for (int y = 0; y < layer.Height; y++)
             {
                 for (int x = 0; x < layer.Width; x++)
@@ -200,10 +200,10 @@ public class NativeVectorOutlineTests
     {
         using var rasterizer = Load();
         IRasterizer r = rasterizer;
-        var light = new RasterOptions { Size = 13, AntiAlias = AntiAliasMode.Light };
+        var light = new RasterOptions { Size = 13, AntiAlias = AntiAliasMode.Light, HintLevel = HintLevel.Light };
         var body = r.RasterizeGlyph('x', light)!;
         var layer = r.RasterizeOutlineLayer('x', light, 1, OutlineShape.Round)!;
-        var unhinted = r.RasterizeGlyph('x', light with { AntiAlias = AntiAliasMode.Grayscale })!;
+        var unhinted = r.RasterizeGlyph('x', light with { HintLevel = HintLevel.None })!;
         body.BitmapData.ShouldNotBe(unhinted.BitmapData, "the request must actually be hinted for this test to mean anything");
 
         layer.Metrics.BearingY.ShouldBe(body.Metrics.BearingY + 1, "the ring sits on the hinted top edge");

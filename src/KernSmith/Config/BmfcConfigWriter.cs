@@ -173,6 +173,8 @@ public static class BmfcConfigWriter
             extensions.AppendLine(CultureInfo.InvariantCulture, $"antiAlias={options.AntiAlias.ToString().ToLowerInvariant()}");
         if (options.HintLevel != HintLevel.Default)
             extensions.AppendLine(CultureInfo.InvariantCulture, $"hintLevel={options.HintLevel.ToString().ToLowerInvariant()}");
+        if (options.BakeHintingIntoKerning is { } bake)
+            extensions.AppendLine(bake ? "bakeHintingIntoKerning=1" : "bakeHintingIntoKerning=0");
         if (options.LcdFilter != LcdFilter.Default)
             extensions.AppendLine(CultureInfo.InvariantCulture, $"lcdFilter={options.LcdFilter.ToString().ToLowerInvariant()}");
         if (options.LcdSubpixelOrder != LcdSubpixelOrder.Rgb)

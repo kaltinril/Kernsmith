@@ -375,6 +375,9 @@ public static class BmfcConfigReader
                             ? hintLevel
                             : HintLevel.Default;
                         break;
+                    case "bakeHintingIntoKerning":
+                        options.BakeHintingIntoKerning = IsTrue(value);
+                        break;
                     case "lcdFilter":
                         options.LcdFilter = Enum.TryParse<LcdFilter>(value, ignoreCase: true, out var lcdFilter)
                             && Enum.IsDefined(lcdFilter)

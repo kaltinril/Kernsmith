@@ -11,7 +11,7 @@ namespace KernSmith.Rasterizers.Native.Tests;
 
 /// <summary>
 /// Phase 174 hinting and mono dropout against the other Native features: CFF outlines, CFF2 instances, distance
-/// fields, LCD and COLR color glyphs. Hinting is a <see cref="AntiAliasMode.Light"/>-only step
+/// fields, LCD and COLR color glyphs. Light hinting (<see cref="HintLevel.Light"/>) is a y-only step
 /// (with <see cref="RasterOptions.EnableHinting"/>) on the outline every renderer prepares, so it
 /// reaches every outline format and every color glyph's clips and layers, and nothing else.
 /// </summary>
@@ -24,7 +24,7 @@ public class NativeHintingInterplayTests
     private static readonly int H = Roboto.GetGlyphIndex('H');
 
     private static RasterOptions Light(float size, bool hint = true) =>
-        new() { Size = size, AntiAlias = AntiAliasMode.Light, EnableHinting = hint };
+        new() { Size = size, AntiAlias = AntiAliasMode.Light, HintLevel = hint ? HintLevel.Light : HintLevel.None };
 
     // ---- CFF -------------------------------------------------------------------------------
 
@@ -235,7 +235,7 @@ public class NativeHintingInterplayTests
     {
         // Dropout control sees thin horizontal strokes from vertical scanlines, which needs the
         // outline's horizontal edges; a version 1 glyph clip must keep them as plain coverage does.
-        var options = new RasterOptions { Size = size, AntiAlias = AntiAliasMode.None };
+        var options = new RasterOptions { Size = size, AntiAlias = AntiAliasMode.None, EnableHinting = false };
         var failures = new StringBuilder();
 
         foreach (char c in Letters)

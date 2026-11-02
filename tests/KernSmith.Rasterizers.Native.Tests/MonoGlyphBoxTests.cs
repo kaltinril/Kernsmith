@@ -29,7 +29,7 @@ public class MonoGlyphBoxTests
     {
         // Source Code wght 900 at 16px: the outward box was 11 rows with row 0 empty, FreeType's 10.
         var bytes = TestFonts.SourceCodeVariableOtfBytes();
-        var options = new RasterOptions { Size = 16, AntiAlias = AntiAliasMode.None };
+        var options = new RasterOptions { Size = 16, AntiAlias = AntiAliasMode.None, EnableHinting = false };
 
         using IRasterizer freeType = new FreeTypeRasterizer();
         freeType.LoadFont(bytes);

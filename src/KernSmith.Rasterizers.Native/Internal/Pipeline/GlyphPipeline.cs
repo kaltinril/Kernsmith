@@ -131,7 +131,7 @@ internal sealed class GlyphPipeline
     /// <summary>The hint stage, kept out of <see cref="Prepare"/> so the reference-glyph
     /// callback's closure is only allocated for a request that is actually hinted.</summary>
     private PreparedGlyph Hint(PreparedGlyph prepared, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms) =>
-        _hinter!.Apply(prepared, options, _unitsPerEm, reference => ReferenceShape(reference, options, transforms));
+        _hinter!.Apply(prepared, options, _unitsPerEm, reference => ReferenceGlyph(reference, options, transforms));
 
     private DecodedGlyph Shape(int glyphIndex, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms)
     {
@@ -142,13 +142,14 @@ internal sealed class GlyphPipeline
         return glyph;
     }
 
-    /// <summary>A reference glyph's outline for hint measurement; a malformed one counts as missing
-    /// rather than failing the glyph actually being rendered.</summary>
-    private GlyphOutline? ReferenceShape(int glyphIndex, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms)
+    /// <summary>A reference glyph (outline and advance, font units, after the request's transforms)
+    /// for hint measurement; a malformed one counts as missing rather than failing the glyph
+    /// actually being rendered.</summary>
+    private DecodedGlyph? ReferenceGlyph(int glyphIndex, RasterOptions options, IReadOnlyList<IGlyphTransform> transforms)
     {
         try
         {
-            return Shape(glyphIndex, options, transforms).Outline;
+            return Shape(glyphIndex, options, transforms);
         }
         catch (Exception ex) when (ex is FontFormatException or ArgumentOutOfRangeException)
         {

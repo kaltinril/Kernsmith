@@ -28,9 +28,11 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// </list>
 /// Compared with an adjustment:
 /// <list type="bullet">
-/// <item>Light: both sides hinted, but FreeType runs the font's own hinting (TrueType bytecode,
-/// the CFF hinter) while Native auto-hints y only, so stems and heights land on different rows —
-/// its floors are the loosest. Every other FreeType comparison is unhinted (Native hints only Light).</item>
+/// <item>Light: both sides hinted y only (FreeType loads <c>FT_LOAD_TARGET_LIGHT</c>, its
+/// auto-hinter's light mode; Native its own y-only fitter), but their zone and stem rules differ
+/// and FreeType keeps hinting above 40 ppem where Native tapers off, so heights land on
+/// different rows — its floors are the loosest. Every other FreeType comparison is unhinted
+/// (Native hints only Light).</item>
 /// <item>Lcd: the FreeType backend returns its raw 3-bytes-per-pixel LCD buffer labelled
 /// <c>Grayscale8</c> (three times as wide); it is split into R, G and B planes and its width
 /// divided by three before comparing.</item>
@@ -330,10 +332,12 @@ public class NativeSimilarityMatrixTests
     /// 8.5 px; two such glyphs in a row of 100). FreeType rounds a scaled advance to 26.6 fixed
     /// point before rounding to whole pixels, so an advance a hair under half a pixel (Roboto's
     /// digits at 8px: 1151 units = 4.496 px) rounds up there and down in Native and stb — hence
-    /// 86% at 8px. Hinted Light FreeType also moves advances (Native keeps them unhinted).
-    /// Boxes: Native crops mono glyphs to their ink, stb keeps the anti-aliased box (None vs
-    /// stb); FreeType sizes a slanted glyph from its control box, Native from the tight outline
-    /// (italic at 48px).
+    /// 86% at 8px. Light FreeType keeps linear advances (light hinting is y only), as Native does.
+    /// Bearings and boxes in Light: FreeType's light auto-hinter still snaps heights at 96px
+    /// where Native renders unhinted, so a tall font's top bearings sit a row or two apart
+    /// (Roboto Flex at 96px: 83% within one pixel). Boxes: both Native and stb crop mono glyphs
+    /// to their ink; FreeType sizes a slanted glyph from its control box, Native from the tight
+    /// outline (italic at 48px).
     /// </remarks>
     private static Floor Floors(Row row)
     {
@@ -342,8 +346,8 @@ public class NativeSimilarityMatrixTests
         return (row.Case, row.Reference) switch
         {
             ("none", Backend.FreeType) => new(MeanBySize(s, 0.40, 0.60, 0.70, 0.82, 0.92, 0.94), -1, advance, 0.97, 0.90),
-            ("none", Backend.Stb) => new(MeanBySize(s, 0.10, 0.40, 0.60, 0.80, 0.92, 0.95), -1, 0.95, 0.95, 0.30),
-            ("light", _) => new(MeanBySize(s, 0.40, 0.60, 0.65, 0.75, 0.80, 0.85), -1, 0.50, 0.88, 0.60),
+            ("none", Backend.Stb) => new(MeanBySize(s, 0.10, 0.40, 0.60, 0.80, 0.92, 0.95), -1, 0.95, 0.95, 0.90),
+            ("light", _) => new(MeanBySize(s, 0.40, 0.60, 0.65, 0.70, 0.80, 0.85), -1, 0.50, 0.80, 0.60),
             ("grayscale", Backend.Stb) => new(0.98, 0.70, 0.95, 0.98, 0.98),
             ("grayscale", _) or ("lcd", _) => new(0.98, 0.80, advance, 0.98, 0.98),
             ("sdf", _) => new(0.98, 0.90, 0.85, 0.98, 0.98),

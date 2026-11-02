@@ -7,8 +7,8 @@ namespace KernSmith.Rasterizers.Native.Tests;
 
 /// <summary>
 /// Phase 188 — <see cref="HintLevel.Normal"/> on Native end to end: the both-axis auto-hinter
-/// with rebuilt advances, in grayscale and mono, for TrueType, CFF and variable instances, and
-/// its taper at large sizes.
+/// within the font's advances, in grayscale and bilevel, for TrueType, CFF and variable
+/// instances, and its taper at large sizes.
 /// </summary>
 public class NativeNormalHintingTests
 {
@@ -71,18 +71,87 @@ public class NativeNormalHintingTests
     }
 
     [Fact]
-    public void Grayscale_RebuildsTheAdvance_FromTheFittedStems()
+    public void Grayscale_KeepsTheFontsAdvance()
     {
-        // 'h' at 9.1 ppem: linear advance 5.01 px rounds to 5, but with both stems moved into
-        // whole columns the right side bearing no longer fits, and the advance becomes 6 — the
-        // advance FreeType's auto-hinter gives it.
+        // 'h' at 9.1 ppem: linear advance 5.01 px; both stems move into whole columns and the
+        // advance stays 5, the 1.2 px of side bearing split around the stems. FreeType's
+        // auto-hinter gives it 6 (its rebuild follows the shifted right edge), which sets "nn"
+        // 2.3 px apart against 0.35 px for "oo"; keeping 5 keeps the gaps in the font's proportion.
         using var native = Load(TestFonts.RobotoRegularBytes());
 
         native.RasterizeGlyph('h', Unhinted(RobotoCell12))!.Metrics.Advance.ShouldBe(5);
         var h = native.RasterizeGlyph('h', Normal(RobotoCell12))!;
-        h.Metrics.Advance.ShouldBe(6);
-        h.Metrics.BearingX.ShouldBe(1);
+        h.Metrics.Advance.ShouldBe(5);
         h.Width.ShouldBe(4);
+        h.Metrics.BearingX.ShouldBeInRange(0, 1);
+    }
+
+    [Fact]
+    public void Grayscale_ThinStems_KeepTheirLinearAdvance()
+    {
+        // Roboto 'i' and 'l' at a 10 px cell (7.58 ppem): a 0.72 px stem, 1.84 px advance. The
+        // fit centres the stem in a column without changing its width, so the advance must stay
+        // the linear 2; rebuilt from the column's right edge it came out 1, which left 0.28 px
+        // between two 'l's and made "ill" one grey block.
+        using var native = Load(TestFonts.RobotoRegularBytes());
+        const float cell10 = 10f * 2048f / (2146f + 555f);
+
+        foreach (char c in "il")
+        {
+            int unhinted = native.RasterizeGlyph(c, Unhinted(cell10))!.Metrics.Advance;
+            unhinted.ShouldBe(2, $"'{c}' unhinted");
+            native.RasterizeGlyph(c, Normal(cell10))!.Metrics.Advance.ShouldBe(2, $"'{c}' hinted");
+        }
+    }
+
+    public static TheoryData<float, AntiAliasMode> WordGapCells =>
+    [
+        (8f, AntiAliasMode.Grayscale), (10f, AntiAliasMode.Grayscale), (12f, AntiAliasMode.Grayscale), (14f, AntiAliasMode.Grayscale), (16f, AntiAliasMode.Grayscale),
+        (8f, AntiAliasMode.None), (10f, AntiAliasMode.None), (12f, AntiAliasMode.None), (14f, AntiAliasMode.None), (16f, AntiAliasMode.None),
+    ];
+
+    [Theory]
+    [MemberData(nameof(WordGapCells))]
+    public void WordGap_IsNotNarrowerThanUnhinted(float cell, AntiAliasMode mode)
+    {
+        // The white between "e" and "t" across a space — e's right bearing, the space, t's left
+        // bearing — must not come out narrower hinted than unhinted at any text size: letters
+        // may gain white from the fit, the word gap may not lose it.
+        using var native = Load(TestFonts.RobotoRegularBytes());
+        float size = cell * 2048f / (2146f + 555f);
+
+        int WordGap(RasterOptions options)
+        {
+            var e = native.RasterizeGlyph('e', options)!;
+            var t = native.RasterizeGlyph('t', options)!;
+            int space = native.RasterizeGlyph(' ', options)!.Metrics.Advance;
+            return (e.Metrics.Advance - e.Metrics.BearingX - e.Width) + space + t.Metrics.BearingX;
+        }
+
+        WordGap(Normal(size, mode)).ShouldBeGreaterThanOrEqualTo(WordGap(Unhinted(size, mode)), $"{cell} px {mode}");
+    }
+
+    public static TheoryData<float, AntiAliasMode> TabularDigitCells =>
+    [
+        (14f, AntiAliasMode.Grayscale), (12f, AntiAliasMode.Grayscale),
+        (12f, AntiAliasMode.None), (10f, AntiAliasMode.None), (8f, AntiAliasMode.None),
+    ];
+
+    [Theory]
+    [MemberData(nameof(TabularDigitCells))]
+    public void Digits_ShareOneAdvance(float cell, AntiAliasMode mode)
+    {
+        // Roboto's digits are tabular (one advance, 1150 units) and games set scores with them,
+        // so they must stay one advance at every size however each digit's own fit comes out:
+        // an advance rebuilt from the fitted ink once gave six digits 7 px and four 6 at a 14 px
+        // cell, which reads as "01234 56789" with ragged columns.
+        using var native = Load(TestFonts.RobotoRegularBytes());
+        float size = cell * 2048f / (2146f + 555f);
+
+        var advances = "0123456789".Select(c => (c, native.RasterizeGlyph(c, Normal(size, mode))!.Metrics.Advance)).ToList();
+
+        advances.Select(a => a.Advance).Distinct().Count().ShouldBe(1,
+            $"{cell} px {mode}: " + string.Join(" ", advances.Select(a => $"{a.c}={a.Advance}")));
     }
 
     [Fact]
@@ -114,40 +183,102 @@ public class NativeNormalHintingTests
     }
 
     [Fact]
-    public void Advances_StayWithinAPixelOfUnhinted()
+    public void Advances_AreTheFonts_InBothModes()
     {
+        // The advance is the font's, rounded once, hinted or not, grayscale or bilevel: a line
+        // of hinted text is exactly as long as the unhinted one. The pairs that touch for it
+        // are the kerning bake's (NativeKerningBakeTests).
         using var native = Load(TestFonts.RobotoRegularBytes());
         foreach (float size in new[] { 8f, 12f, 16f, 24f })
         {
-            foreach (char c in GlyphSample)
+            foreach (var mode in new[] { AntiAliasMode.Grayscale, AntiAliasMode.None })
             {
-                int hinted = native.RasterizeGlyph(c, Normal(size))!.Metrics.Advance;
-                int unhinted = native.RasterizeGlyph(c, Unhinted(size))!.Metrics.Advance;
-                hinted.ShouldBeInRange(unhinted - 1, unhinted + 1, $"'{c}' at {size}px");
+                foreach (char c in GlyphSample)
+                {
+                    int hinted = native.RasterizeGlyph(c, Normal(size, mode))!.Metrics.Advance;
+                    int unhinted = native.RasterizeGlyph(c, Unhinted(size, mode))!.Metrics.Advance;
+                    hinted.ShouldBe(unhinted, $"'{c}' at {size}px {mode}");
+                }
             }
         }
+    }
+
+    public static TheoryData<string, float, AntiAliasMode> LineLengthCells
+    {
+        get
+        {
+            var data = new TheoryData<string, float, AntiAliasMode>();
+            foreach (string font in new[] { "Roboto", "NotoSans", "SourceSerif4", "DejaVuSansMono" })
+            {
+                foreach (float cell in new[] { 8f, 10f, 12f, 14f, 16f })
+                {
+                    data.Add(font, cell, AntiAliasMode.Grayscale);
+                    data.Add(font, cell, AntiAliasMode.None);
+                }
+            }
+
+            return data;
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(LineLengthCells))]
+    public void LineLength_StaysWithinThreePercentOfUnhinted(string font, float cell, AntiAliasMode mode)
+    {
+        // The owner's bound: hinting must not inflate or shrink a line. With the kerning bake
+        // (the default) every advance is the font's, so the line is exactly as long; the
+        // stem-pair padding that stands in when the bake is off is outside this bound.
+        const string line = "The quick brown fox jumps over the lazy dog. Hamburgefonstiv 0123456789 ILLINOIS rn ill";
+        var (bytes, unitsPerEm, ascent, descent) = font switch
+        {
+            "Roboto" => (TestFonts.RobotoRegularBytes(), 2048f, 2146f, 555f),
+            "NotoSans" => (File.ReadAllBytes(Path.Combine(Path.GetDirectoryName(TestFonts.RobotoRegularPath)!, "NotoSans-Regular-Latin.ttf")), 1000f, 1069f, 293f),
+            "SourceSerif4" => (TestFonts.SourceSerifOtfBytes(), 1000f, 1036f, 335f),
+            _ => (SystemFont("DejaVuSansMono.ttf"), 2048f, 1901f, 483f),
+        };
+        using var native = Load(bytes);
+        float size = cell * unitsPerEm / (ascent + descent);
+
+        int hinted = 0, unhinted = 0;
+        foreach (char c in line)
+        {
+            hinted += native.RasterizeGlyph(c, Normal(size, mode))!.Metrics.Advance;
+            unhinted += native.RasterizeGlyph(c, Unhinted(size, mode))!.Metrics.Advance;
+        }
+
+        ((hinted - unhinted) * 100.0 / unhinted).ShouldBeInRange(-3.0, 3.0, $"{font} {cell} px {mode}: {unhinted} -> {hinted}");
+    }
+
+    private static byte[] SystemFont(string file)
+    {
+        var path = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), file);
+        Assert.SkipUnless(File.Exists(path), $"{file} is not installed on this machine.");
+        return File.ReadAllBytes(path);
     }
 
     [Fact]
     public void LargeSizes_AreNotHinted()
     {
-        // Hinting tapers off from 24 to 40 ppem: at a 64 px cell (48 ppem) Normal is exactly
+        // Hinting tapers off from 16 to 40 ppem: at a 64 px cell (48 ppem) Normal is exactly
         // unhinted, bitmaps and metrics alike, so large text is never distorted.
         using var native = Load(TestFonts.RobotoRegularBytes());
-        foreach (char c in GlyphSample)
+        foreach (var mode in new[] { AntiAliasMode.Grayscale, AntiAliasMode.None })
         {
-            var normal = native.RasterizeGlyph(c, Normal(64f))!;
-            var unhinted = native.RasterizeGlyph(c, Unhinted(64f))!;
-            normal.BitmapData.ShouldBe(unhinted.BitmapData, $"'{c}'");
-            normal.Metrics.ShouldBe(unhinted.Metrics, $"'{c}'");
+            foreach (char c in GlyphSample)
+            {
+                var normal = native.RasterizeGlyph(c, Normal(64f, mode))!;
+                var unhinted = native.RasterizeGlyph(c, Unhinted(64f, mode))!;
+                normal.BitmapData.ShouldBe(unhinted.BitmapData, $"'{c}' {mode}");
+                normal.Metrics.ShouldBe(unhinted.Metrics, $"'{c}' {mode}");
+            }
         }
     }
 
     [Fact]
     public void MidSizes_TaperTowardsUnhinted()
     {
-        // At a 48 px cell (36 ppem) the strength is a quarter: only edges already within a
-        // quarter pixel of the grid snap, and the advance is the linear one.
+        // At a 48 px cell (36 ppem) the x axis is long off and the y strength is 0.15: only
+        // edges already within 0.15 px of a row snap, and the advance is the linear one.
         using var native = Load(TestFonts.RobotoRegularBytes());
         double ssim = 0;
         foreach (char c in Letters)

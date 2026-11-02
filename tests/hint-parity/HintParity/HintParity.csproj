@@ -13,6 +13,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="HintParity.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\..\src\KernSmith\KernSmith.csproj" />
     <ProjectReference Include="..\..\..\src\KernSmith.Rasterizers.FreeType\KernSmith.Rasterizers.FreeType.csproj" />
     <ProjectReference Include="..\..\..\src\KernSmith.Rasterizers.Native\KernSmith.Rasterizers.Native.csproj" />

@@ -27,7 +27,7 @@ var result = BmFont.Generate("path/to/font.ttf", options);
 ## Capabilities
 
 - TrueType (`.ttf`) and CFF (`.otf`) input, but not CFF2; WOFF/WOFF2 (decompressed by core); symbol-`cmap` fonts such as Wingdings, Webdings and Symbol
-- Anti-aliasing (Grayscale and None modes; None keeps thin strokes with dropout control)
+- Anti-aliasing (Grayscale and None modes; None keeps thin strokes with dropout control and crops each glyph box to its ink)
 - SDF (Signed Distance Field) rendering
 - Super sampling
 - Synthetic bold and italic

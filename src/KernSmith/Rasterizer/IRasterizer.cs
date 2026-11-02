@@ -82,6 +82,15 @@ public interface IRasterizer : IDisposable
     IReadOnlyList<Font.Models.ScaledKerningPair>? GetKerningPairs(RasterOptions options) => null;
 
     /// <summary>
+    /// Returns the backend's per-pair spacing corrections for the glyphs it has rasterized with
+    /// these options, in pixels, to be added to the font's kerning before rounding — or null
+    /// when it has none (the default, and whenever
+    /// <see cref="RasterOptions.BakeHintingIntoKerning"/> is off). Asked once per generation,
+    /// after <see cref="RasterizeAll"/>.
+    /// </summary>
+    IReadOnlyList<Font.Models.ScaledKerningAdjustment>? GetKerningAdjustments(RasterOptions options) => null;
+
+    /// <summary>
     /// Applies variable font axis values. Only called when
     /// <see cref="IRasterizerCapabilities.SupportsVariableFonts"/> is true.
     /// </summary>

@@ -45,6 +45,34 @@ internal static class OutlineAxes
         return GlyphOutline.FromCommands(scaled);
     }
 
+    /// <summary>
+    /// A copy of the outline with the band from the baseline (y = 0) to <paramref name="xHeight"/>
+    /// scaled by <paramref name="factor"/>, everything above it shifted by the band's growth,
+    /// and everything below the baseline left where it was. A monotone map of y alone, so the
+    /// outline cannot cross itself, and the caps, ascenders and descenders keep their own size
+    /// while the x-height lands on its pixel line.
+    /// </summary>
+    public static GlyphOutline StretchBand(GlyphOutline outline, float xHeight, float factor)
+    {
+        ArgumentNullException.ThrowIfNull(outline);
+
+        var source = outline.Commands;
+        var scaled = new OutlineCommand[source.Length];
+        for (int i = 0; i < source.Length; i++)
+        {
+            var c = source[i];
+            scaled[i] = c.Type == OutlineCommandType.CubicTo
+                ? c with { EndY = Band(c.EndY, xHeight, factor), Ctrl1Y = Band(c.Ctrl1Y, xHeight, factor), Ctrl2Y = Band(c.Ctrl2Y, xHeight, factor) }
+                : c with { EndY = Band(c.EndY, xHeight, factor) };
+        }
+
+        return GlyphOutline.FromCommands(scaled);
+    }
+
+    /// <summary>The x-height band stretch of one height, as <see cref="StretchBand"/> applies it.</summary>
+    public static float Band(float y, float xHeight, float factor) =>
+        y <= 0f ? y : y <= xHeight ? y * factor : y + (xHeight * (factor - 1f));
+
     /// <summary>A copy of the outline moved horizontally.</summary>
     public static GlyphOutline TranslateX(GlyphOutline outline, float dx)
     {

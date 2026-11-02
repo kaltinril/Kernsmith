@@ -54,6 +54,22 @@ internal static class ParityMatrix
     /// <summary>System fonts added when the file exists in the OS font folder.</summary>
     public static readonly string[] DefaultSystemFonts = ["arial.ttf", "georgia.ttf"];
 
+    /// <summary>The fonts the legibility sweep tunes on: a grotesque, a humanist sans, a serif and a script.</summary>
+    public static readonly string[] SweepTuningFonts =
+    [
+        "Roboto-Regular.ttf",
+        "NotoSans-Regular-Latin.ttf",
+        "SourceSerif4-Regular.otf",
+        "DancingScript-Variable.ttf",
+    ];
+
+    /// <summary>Fonts the sweep never tunes on, scored before and after to show whether a gain generalises:
+    /// a monospaced CFF and a variable grotesque.</summary>
+    public static readonly string[] SweepHoldoutFonts = ["SourceCodeVF-Upright.otf", "RobotoFlex-Latin.ttf"];
+
+    /// <summary>The sizes the sweep scores: the text sizes where hinting is at full strength.</summary>
+    public static readonly int[] SweepSizes = [8, 10, 12, 14, 16];
+
     /// <summary>
     /// Native as a user gets it today: <c>default</c> is the cell's mode with hinting on (unhinted
     /// for Grayscale/None), <c>light</c> is Native's y-only auto-hinter (AntiAlias Light).

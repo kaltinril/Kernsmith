@@ -92,7 +92,7 @@ public class NativeCffEndToEndTests
         using var color = new NativeRasterizer();
         color.LoadFont(colorFont);
 
-        var coverage = plain.RasterizeGlyph('O', new RasterOptions { Size = 32 })!;
+        var coverage = plain.RasterizeGlyph('O', new RasterOptions { Size = 32, HintLevel = HintLevel.Light })!;
         var colored = color.RasterizeGlyph('O', new RasterOptions { Size = 32, ColorFont = true })!;
 
         colored.Format.ShouldBe(PixelFormat.Rgba32);
