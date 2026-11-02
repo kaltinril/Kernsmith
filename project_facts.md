@@ -125,6 +125,7 @@ Source of truth for statements about the project. One short fact per line. Updat
 | Native determinism manifest (regenerate: `KERNSMITH_UPDATE_DETERMINISM=1 dotnet test --project tests/KernSmith.Rasterizers.Native.Tests -- --filter-class "*DeterminismManifestTests"`), the NativeAOT probe and the headless WASM check | `tests/KernSmith.Rasterizers.Native.Tests/Determinism/`, `tests/KernSmith.DeterminismProbe/` |
 | Regression/output comparison | `tests/bmfont-compare/regression_check.py` |
 | Native vs FreeType hinting parity measure (phase 188 bar, JSON + x4 strips), the FreeType-independent legibility score (`--legibility`, nine terms, `--weights` to replace their weights from a `{term: weight}` file or the pairwise page's `fit_bt.py` `weights.json`; `parity.json` carries that page's ten strip features) and the `Normal` hinter constant sweep (`--sweep`) | `tests/hint-parity/` (`dotnet run --project tests/hint-parity/HintParity`); its metric tests in `tests/hint-parity/HintParity.Tests` |
+| Phase 188 research reports (open-source survey, Native idea catalogue, exploratory font-table measurements, OCR legibility experiment, determinism audit) with their measurement scripts and data; pairwise human-judgment tooling | `plan/research/phase-188/`; `tests/hint-parity/calibration/pairwise/` |
 | Platform smoke test (desktop/Android/iOS/Mac Catalyst) | `tests/KernSmith.PlatformSmoke/` |
 | FreeType Android packaging fix | `src/KernSmith.Rasterizers.FreeType/buildTransitive/KernSmith.Rasterizers.FreeType.targets` |
 | CI/CD | `.github/workflows/` |

@@ -1,0 +1,27 @@
+font      px   ppem | policy: RMS gap err / max / %|err|>=0.5  (bigrams in pangram)        | drift(px) 1-round
+roboto     8   6.07 | 1-round: 0.37/0.48/   0%  1-diffuse: 0.46/0.78/  31%  2-phase: 0.18/0.48/   0%  4-phase: 0.11/0.23/   0% | -15.7 over 89 chars
+roboto    10   7.58 | 1-round: 0.27/0.48/   0%  1-diffuse: 0.42/0.88/  23%  2-phase: 0.23/0.38/   0%  4-phase: 0.11/0.24/   0% | -0.4 over 89 chars
+roboto    11   8.34 | 1-round: 0.29/0.46/   0%  1-diffuse: 0.36/0.83/  12%  2-phase: 0.19/0.40/   0%  4-phase: 0.10/0.21/   0% | +5.8 over 89 chars
+roboto    12   9.10 | 1-round: 0.18/0.49/   0%  1-diffuse: 0.30/0.98/   8%  2-phase: 0.19/0.42/   0%  4-phase: 0.11/0.23/   0% | -8.0 over 89 chars
+roboto    14  10.62 | 1-round: 0.28/0.48/   0%  1-diffuse: 0.40/0.97/  23%  2-phase: 0.19/0.47/   0%  4-phase: 0.09/0.22/   0% | +11.3 over 89 chars
+roboto    16  12.13 | 1-round: 0.23/0.43/   0%  1-diffuse: 0.36/0.95/  17%  2-phase: 0.22/0.45/   0%  4-phase: 0.11/0.23/   0% | +5.6 over 89 chars
+verdana    8   6.58 | 1-round: 0.22/0.46/   0%  1-diffuse: 0.29/0.82/  11%  2-phase: 0.24/0.43/   0%  4-phase: 0.11/0.20/   0% | -9.0 over 89 chars
+verdana   10   8.23 | 1-round: 0.21/0.49/   0%  1-diffuse: 0.41/0.89/  20%  2-phase: 0.22/0.50/   0%  4-phase: 0.08/0.23/   0% | -5.0 over 89 chars
+verdana   11   9.05 | 1-round: 0.36/0.49/   0%  1-diffuse: 0.46/0.86/  34%  2-phase: 0.18/0.44/   0%  4-phase: 0.08/0.23/   0% | -3.5 over 89 chars
+verdana   12   9.87 | 1-round: 0.25/0.47/   0%  1-diffuse: 0.43/0.88/  27%  2-phase: 0.23/0.43/   0%  4-phase: 0.08/0.22/   0% | -8.0 over 89 chars
+verdana   14  11.52 | 1-round: 0.22/0.46/   0%  1-diffuse: 0.38/0.86/  22%  2-phase: 0.20/0.46/   0%  4-phase: 0.10/0.21/   0% | -8.0 over 89 chars
+verdana   16  13.17 | 1-round: 0.29/0.47/   0%  1-diffuse: 0.47/0.86/  34%  2-phase: 0.22/0.41/   0%  4-phase: 0.11/0.20/   0% | +6.0 over 89 chars
+georgia    8   7.04 | 1-round: 0.23/0.50/   0%  1-diffuse: 0.35/0.94/  16%  2-phase: 0.22/0.47/   0%  4-phase: 0.10/0.21/   0% | +0.1 over 89 chars
+georgia   10   8.80 | 1-round: 0.30/0.49/   0%  1-diffuse: 0.42/0.94/  23%  2-phase: 0.18/0.48/   0%  4-phase: 0.10/0.20/   0% | +0.2 over 89 chars
+georgia   11   9.68 | 1-round: 0.30/0.48/   0%  1-diffuse: 0.41/0.86/  23%  2-phase: 0.19/0.47/   0%  4-phase: 0.11/0.23/   0% | +1.2 over 89 chars
+georgia   12  10.56 | 1-round: 0.26/0.48/   0%  1-diffuse: 0.37/0.93/  16%  2-phase: 0.21/0.48/   0%  4-phase: 0.11/0.24/   0% | +2.2 over 89 chars
+georgia   14  12.32 | 1-round: 0.27/0.49/   0%  1-diffuse: 0.39/0.91/  20%  2-phase: 0.22/0.47/   0%  4-phase: 0.10/0.22/   0% | +4.2 over 89 chars
+georgia   16  14.08 | 1-round: 0.25/0.48/   0%  1-diffuse: 0.44/0.95/  28%  2-phase: 0.19/0.42/   0%  4-phase: 0.12/0.23/   0% | -5.8 over 89 chars
+arial      8   7.16 | 1-round: 0.22/0.42/   0%  1-diffuse: 0.32/0.98/  16%  2-phase: 0.10/0.47/   0%  4-phase: 0.08/0.23/   0% | +7.5 over 89 chars
+arial     10   8.95 | 1-round: 0.23/0.49/   0%  1-diffuse: 0.27/0.98/  12%  2-phase: 0.11/0.48/   0%  4-phase: 0.07/0.24/   0% | -15.2 over 89 chars
+arial     11   9.85 | 1-round: 0.38/0.48/   0%  1-diffuse: 0.46/0.81/  33%  2-phase: 0.17/0.48/   0%  4-phase: 0.09/0.24/   0% | -18.5 over 89 chars
+arial     12  10.74 | 1-round: 0.21/0.44/   0%  1-diffuse: 0.35/0.97/  17%  2-phase: 0.16/0.47/   0%  4-phase: 0.09/0.22/   0% | -3.8 over 89 chars
+arial     14  12.53 | 1-round: 0.21/0.48/   0%  1-diffuse: 0.36/0.97/  20%  2-phase: 0.18/0.47/   0%  4-phase: 0.09/0.22/   0% | -9.4 over 89 chars
+arial     16  14.32 | 1-round: 0.12/0.34/   0%  1-diffuse: 0.21/0.93/   5%  2-phase: 0.16/0.47/   0%  4-phase: 0.09/0.22/   0% | -1.0 over 89 chars
+
+Atlas cost: N phases = N x glyph count (each phase its own rect); 2-phase doubles page area at a given size; a BMFont-compatible encoding: duplicate chars at private-use ids (U+E000+ (phase<<16|cp) or a 'kernsmith' line mapping), with the renderer picking the variant whose phase is nearest frac(pen). Kerning tables cannot select a phase (they only add an integer).
