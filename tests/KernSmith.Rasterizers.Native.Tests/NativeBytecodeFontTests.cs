@@ -102,8 +102,9 @@ public class NativeBytecodeFontTests
             {
                 int glyph = face.GetGlyphIndex(c);
                 int linearAtInteger = GlyphPipeline.PixelAdvance(face.Hmtx.GetAdvanceWidth(glyph), integerPpem / (float)face.Head.UnitsPerEm);
-                native.RasterizeGlyph(c, Normal(size, AntiAliasMode.None))!.Metrics.Advance.ShouldBe(linearAtInteger, $"{file} '{c}' at {cell}px ({size:F2} -> {integerPpem} ppem) bilevel");
-                native.RasterizeGlyph(c, Normal(size))!.Metrics.Advance.ShouldBe(linearAtInteger, $"{file} '{c}' at {cell}px ({size:F2} -> {integerPpem} ppem) grayscale");
+                int expected = c == ' ' ? SpaceAdvance(face, glyph, integerPpem) : linearAtInteger;
+                native.RasterizeGlyph(c, Normal(size, AntiAliasMode.None))!.Metrics.Advance.ShouldBe(expected, $"{file} '{c}' at {cell}px ({size:F2} -> {integerPpem} ppem) bilevel");
+                native.RasterizeGlyph(c, Normal(size))!.Metrics.Advance.ShouldBe(expected, $"{file} '{c}' at {cell}px ({size:F2} -> {integerPpem} ppem) grayscale");
                 if (profile.HdmxAdvance(integerPpem, glyph)!.Value != linearAtInteger)
                     hdmxDisagrees++;
             }
@@ -198,7 +199,7 @@ public class NativeBytecodeFontTests
                 int glyph = face.GetGlyphIndex(c);
                 int linearAtInteger = GlyphPipeline.PixelAdvance(face.Hmtx.GetAdvanceWidth(glyph), integerPpem / face.Head.UnitsPerEm);
                 int actual = native.RasterizeGlyph(c, Normal(size))!.Metrics.Advance;
-                actual.ShouldBe(linearAtInteger, $"'{c}' at {cell}px ({size:F2} -> {integerPpem} ppem)");
+                actual.ShouldBe(c == ' ' ? SpaceAdvance(face, glyph, integerPpem) : linearAtInteger, $"'{c}' at {cell}px ({size:F2} -> {integerPpem} ppem)");
                 int oracle = freeType.RasterizeGlyph(c, FreeTypeHinted(size, AntiAliasMode.None))!.Metrics.Advance;
                 if (actual == oracle)
                     matches++;
@@ -366,6 +367,17 @@ public class NativeBytecodeFontTests
         CoverageRenderer.MonoRenderingFor(fitted, mono with { Size = 39.6f }).ShouldBe(Internal.Raster.MonoRendering.Strokes);
         fitted.RenderPpem(mono).ShouldBe(10f);
         (fitted with { HintPpem = 12f }).RenderPpem(mono).ShouldBe(12f);
+    }
+
+    /// <summary>
+    /// The space's advance under Normal on an integer-ppem face: the linear advance at the
+    /// integer ppem, rounded up through 16 ppem (the word-gap rule, <c>GlyphHinter.BlankAdvance</c>;
+    /// <c>NativeWordSpacingTests</c> covers it on Roboto) and to nearest above.
+    /// </summary>
+    private static int SpaceAdvance(Internal.NativeFontFace face, int glyph, float integerPpem)
+    {
+        float linear = face.Hmtx.GetAdvanceWidth(glyph) * integerPpem / face.Head.UnitsPerEm;
+        return integerPpem <= 16f ? (int)MathF.Ceiling(linear - (1f / 64f)) : GlyphPipeline.PixelAdvance(face.Hmtx.GetAdvanceWidth(glyph), integerPpem / face.Head.UnitsPerEm);
     }
 
     /// <summary>The em size core derives for a BMFont cell: cell × upem / (usWinAscent + usWinDescent).</summary>

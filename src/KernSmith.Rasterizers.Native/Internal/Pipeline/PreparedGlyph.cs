@@ -41,8 +41,10 @@ internal readonly record struct PreparedGlyph(GlyphOutline Outline, OutlineTrans
 
     /// <summary>
     /// What the <c>Normal</c> hint stage knows about the glyph's spacing — the font's own side
-    /// bearings and whether each facing edge is a straight stem — or null when the glyph's x
-    /// axis was not fitted (unhinted, y-only, past the x taper). The kerning bake (<see cref="KernSmith.Rasterizer.RasterOptions.BakeHintingIntoKerning"/>)
+    /// bearings and whether each facing edge is a straight stem; for a glyph whose fit the
+    /// <c>gasp</c> table withheld (<see cref="FitWithheld"/>), the bearings with no stems, since
+    /// it is set in whole columns all the same — or null when no x fit ran or would have run
+    /// (unhinted, y-only, a face with no x axis to fit, past the x taper). The kerning bake (<see cref="KernSmith.Rasterizer.RasterOptions.BakeHintingIntoKerning"/>)
     /// reads it alongside the rendered box to find the pairs that would touch.
     /// </summary>
     public HintSpacing? Spacing { get; init; }

@@ -200,6 +200,13 @@ advance:
   even and a line of text keeps its length. Tabular digits and fixed-pitch fonts therefore
   keep their columns by construction; a fixed-pitch face is one whose `post` table says so or
   whose printable ASCII glyphs share one advance (95% of them).
+- **Word gaps** — a blank glyph (the space, the no-break space) rounds its advance *up*
+  through 16 ppem, in both anti-alias modes, and in bilevel a blank at least as wide as the
+  space is never under two columns (`GlyphHinter.BlankAdvance`): the letters around it sit in
+  whole columns one column apart, so a space rounded to nearest (Roboto at 9.1 ppem: 2.26 px
+  → 2) made a word gap of one column, "lazy dogs" reading as "lazydogs". At most a pixel per
+  word, reported as the space's `advanceDelta` under `FractionalMetrics`; unhinted, Light,
+  larger sizes and fixed-pitch faces keep the font's rounding.
 - **Pairs that touch** — with advances the font's and stems on whole pixels, a few pairs come
   out with no white between their inks. They are opened per pair in the kerning
   (`BakeHintingIntoKerning`, on by default under Normal, below), never by padding a glyph —
@@ -223,7 +230,7 @@ advance:
   cell's nominal size, inside the same cell); the x-height rounds to the nearest row rather
   than being pushed up (Verdana's and Tahoma's x-height and cap rows are then FreeType's at
   every cell from 8 to 16 px); and the advance is the linear advance at the integer ppem,
-  rounded once, in both anti-alias modes, the space included. The `hdmx` device-metrics
+  rounded once, in both anti-alias modes (the space through the word-gap rule above). The `hdmx` device-metrics
   table is parsed (`HdmxTable`, `HintingProfile.HdmxAdvance`) but never used for an advance:
   its records are the advances that go with the bytecode's own outlines, which Native does
   not draw — FreeType's bilevel Georgia at a 12 px cell widens `h n c r w` a pixel beyond
@@ -236,12 +243,14 @@ advance:
   (`GASP_GRIDFIT` and `GASP_SYMMETRIC_GRIDFIT` both clear — 8 ppem and under in the common
   Microsoft table) Normal leaves the outline unfitted (`PreparedGlyph.FitWithheld`), still at
   the integer ppem with the chosen advance, and bilevel output falls back to the threshold
-  renderer; where it says to grid-fit, the taper above still caps the strength. The renderer's
+  renderer — the kerning bake below still runs over such glyphs, since they are set in whole
+  columns all the same; where it says to grid-fit, the taper above still caps the strength. The renderer's
   size stages (the stroke-renderer decision, thin-stroke darkening) read the ppem the fit ran
   at (`PreparedGlyph.HintPpem`), so a request for 8.03 ppem renders exactly as one for 8. A
   malformed `hdmx` or `gasp` is ignored, never an error.
 - **Kerning bake** — `NativeRasterizer.GetKerningAdjustments` reports, over every pair of
-  glyphs rasterized under Normal at a size, the pairs with no column between their rendered
+  glyphs rasterized under Normal at a size (fitted, or left unfitted by the `gasp` table; not
+  past the x taper), the pairs with no column between their rendered
   inks: in bilevel every such pair, in grayscale only those whose facing columns are both at
   least three-quarters covered on a shared row (two stems; a bowl's fringe or a diagonal's foot
   against a stem still reads as two letters). Each is opened to one column, and a pixel is

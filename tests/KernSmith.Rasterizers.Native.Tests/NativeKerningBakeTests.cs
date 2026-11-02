@@ -143,6 +143,70 @@ public class NativeKerningBakeTests
     }
 
     [Fact]
+    public void Bilevel_BakesWhereTheGaspTableWithholdsTheFit()
+    {
+        // Verdana at a 10 px cell is 8 ppem, where its gasp table says not to grid-fit: the glyphs
+        // are left unfitted (threshold-rendered at the integer ppem) but set in whole columns all
+        // the same, so the pairs that touch there are as real as a fitted face's and the bake
+        // opens them. A withheld fit used to record no sides, and the bake returned nothing.
+        var bytes = NativeBytecodeFontTests.SystemFont("verdana.ttf");
+        using var native = new NativeRasterizer();
+        native.LoadFont(bytes);
+        var face = native.Face!;
+        var options = Normal(10f * face.Head.UnitsPerEm / (face.Os2.WinAscent + (float)face.Os2.WinDescent), AntiAliasMode.None);
+
+        var glyphs = native.RasterizeAll(Ascii.Select(c => (int)c).ToList(), options).ToDictionary(g => g.Codepoint);
+        var adjustments = native.GetKerningAdjustments(options).ShouldNotBeNull("the bake runs for a withheld fit")
+            .ToDictionary(a => (a.LeftCodepoint, a.RightCodepoint), a => a.Amount);
+
+        var touching = new List<string>();
+        for (char left = 'a'; left <= 'z'; left++)
+        {
+            for (char right = 'a'; right <= 'z'; right++)
+            {
+                if (Gap(glyphs[left], glyphs[right]) + adjustments.GetValueOrDefault((left, right)) < 1f)
+                    touching.Add($"{left}{right}");
+            }
+        }
+
+        touching.ShouldBeEmpty();
+    }
+
+    [Theory]
+    [InlineData(10)]
+    [InlineData(12)]
+    [InlineData(16)]
+    public void Generate_Bilevel_NoLowercasePairTouches_AfterKerning(int cell)
+    {
+        // The whole contract through BmFont.Generate, Roboto at 7.6-12.1 ppem: with the bake on
+        // by default, every lowercase pair has a column of white between its inks once the written
+        // kerning is applied.
+        var result = BmFont.Generate(TestFonts.RobotoRegularBytes(), new FontGeneratorOptions
+        {
+            Size = cell,
+            Characters = CharacterSet.FromChars(Ascii),
+            AntiAlias = AntiAliasMode.None,
+            Kerning = true,
+            Rasterizer = new NativeRasterizer(),
+        });
+        var chars = result.Model.Characters.ToDictionary(c => c.Id);
+        var kerning = result.Model.KerningPairs.ToDictionary(k => (k.First, k.Second), k => k.Amount);
+
+        var touching = new List<string>();
+        for (char left = 'a'; left <= 'z'; left++)
+        {
+            for (char right = 'a'; right <= 'z'; right++)
+            {
+                int gap = chars[left].XAdvance - chars[left].XOffset - chars[left].Width + chars[right].XOffset + kerning.GetValueOrDefault((left, right));
+                if (gap < 1)
+                    touching.Add($"{left}{right}");
+            }
+        }
+
+        touching.ShouldBeEmpty($"{cell} px");
+    }
+
+    [Fact]
     public void FixedPitch_IsNeverKerned()
     {
         using var native = new NativeRasterizer();

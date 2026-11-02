@@ -226,8 +226,10 @@ public class NativeNormalHintingTests
     public void LineLength_StaysWithinThreePercentOfUnhinted(string font, float cell, AntiAliasMode mode)
     {
         // The owner's bound: hinting must not inflate or shrink a line. With the kerning bake
-        // (the default) every advance is the font's, so the line is exactly as long; the
-        // stem-pair padding that stands in when the bake is off is outside this bound.
+        // (the default) every letter's advance is the font's, so the letters are exactly as
+        // long; the stem-pair padding that stands in when the bake is off is outside this bound.
+        // The one exception is the word gap: a blank glyph rounds up at text sizes, at most a
+        // pixel per space and never less than the font's.
         const string line = "The quick brown fox jumps over the lazy dog. Hamburgefonstiv 0123456789 ILLINOIS rn ill";
         var (bytes, unitsPerEm, ascent, descent) = font switch
         {
@@ -239,14 +241,25 @@ public class NativeNormalHintingTests
         using var native = Load(bytes);
         float size = cell * unitsPerEm / (ascent + descent);
 
-        int hinted = 0, unhinted = 0;
+        int hinted = 0, unhinted = 0, hintedBlank = 0, unhintedBlank = 0;
         foreach (char c in line)
         {
-            hinted += native.RasterizeGlyph(c, Normal(size, mode))!.Metrics.Advance;
-            unhinted += native.RasterizeGlyph(c, Unhinted(size, mode))!.Metrics.Advance;
+            int h = native.RasterizeGlyph(c, Normal(size, mode))!.Metrics.Advance;
+            int u = native.RasterizeGlyph(c, Unhinted(size, mode))!.Metrics.Advance;
+            if (c == ' ')
+            {
+                hintedBlank += h;
+                unhintedBlank += u;
+            }
+            else
+            {
+                hinted += h;
+                unhinted += u;
+            }
         }
 
         ((hinted - unhinted) * 100.0 / unhinted).ShouldBeInRange(-3.0, 3.0, $"{font} {cell} px {mode}: {unhinted} -> {hinted}");
+        (hintedBlank - unhintedBlank).ShouldBeInRange(0, line.Count(c => c == ' '), $"{font} {cell} px {mode}: spaces {unhintedBlank} -> {hintedBlank}");
     }
 
     private static byte[] SystemFont(string file)

@@ -42,7 +42,10 @@ public class NativeFractionalMetricsTests
             int index = face.GetGlyphIndex(c);
             f.Advance.ShouldBe(face.Hmtx.GetAdvanceWidth(index) * scale, 1e-3f, c.ToString());
             f.BearingX.ShouldBe(face.Hmtx.GetLeftSideBearing(index) * scale, 1e-3f, $"lsb of {c}");
-            Math.Round(f.Advance, MidpointRounding.AwayFromZero).ShouldBe(glyph.Metrics.Advance, c.ToString());
+            // Normal rounds the space up at text sizes and reports that pixel as the advance delta.
+            (Math.Round(f.Advance, MidpointRounding.AwayFromZero) + (f.AdvanceDelta ?? 0f)).ShouldBe(glyph.Metrics.Advance, c.ToString());
+            if (c != ' ' || level == HintLevel.None)
+                f.AdvanceDelta.ShouldBeNull(c.ToString());
         }
     }
 

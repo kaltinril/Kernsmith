@@ -197,8 +197,10 @@ public sealed class NativeRasterizer : IRasterizer
     /// which is the <c>hmtx</c> bearing the decoder placed it by) at the size, after the request's
     /// transforms; under hinting, how far the fitted ink's left edge moved (tight bounds of the
     /// fitted outline against the unhinted one — tight, because the hint stage adds extremum
-    /// nodes that tighten the control hull without moving any ink) and the one column the
-    /// stem-pair padding may have added to the advance. Otherwise the glyph as rendered.
+    /// nodes that tighten the control hull without moving any ink) and whatever the hint stage
+    /// added to the advance over the font's rounded once: the stem-pair padding column, a blank
+    /// glyph's word-gap rounding, an integer-ppem face's rounding at its own ppem. Otherwise
+    /// the glyph as rendered.
     /// </summary>
     private RasterizedGlyph WithFractional(RasterizedGlyph rendered, PreparedGlyph glyph, RasterOptions options)
     {
@@ -216,10 +218,12 @@ public sealed class NativeRasterizer : IRasterizer
             float before = OutlineBounds.Tight(unhinted).XMin * scale;
             float after = glyph.ToPixels.ToPixelX(OutlineBounds.Tight(glyph.Outline).XMin);
             bearingDelta = after - before;
-            int padding = glyph.Advance - GlyphPipeline.PixelAdvance(glyph.AdvanceWidth, scale);
-            if (padding != 0)
-                advanceDelta = padding;
         }
+
+        // An unhinted glyph's advance is PixelAdvance by construction, so this is 0 exactly there.
+        int padding = glyph.Advance - GlyphPipeline.PixelAdvance(glyph.AdvanceWidth, scale);
+        if (padding != 0)
+            advanceDelta = padding;
 
         return new RasterizedGlyph
         {

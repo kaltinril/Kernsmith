@@ -19,10 +19,13 @@ namespace KernSmith.Rasterizers.Native.Internal.Pipeline;
 /// with <see cref="RasterOptions.EnableHinting"/> on, in every anti-alias mode — and nothing at
 /// <see cref="HintLevel.None"/> or with hinting off. Light never fits x, so its advances, side
 /// bearings and horizontal extents are exactly the unhinted ones; Normal keeps the advances and
-/// places the ink by side, at full strength up to 16 ppem and fading to nothing by 40. Normal
+/// places the ink by side, at full strength up to 16 ppem and fading to nothing by 40, and up to
+/// 16 ppem rounds a blank glyph's advance up rather than to nearest (<see cref="BlankAdvance"/>),
+/// so a space stays a word gap beside letters set in whole columns. Normal
 /// also reads the face's <see cref="HintingProfile"/>: a bytecode face hinted for integer ppem
 /// is fitted and rendered at <c>round(ppem)</c> with its linear advances rounded at that ppem,
-/// and no face is fitted at a size its <c>gasp</c> says not to grid-fit.
+/// and no face is fitted at a size its <c>gasp</c> says not to grid-fit — though such a size
+/// still feeds the kerning bake.
 /// </remarks>
 internal sealed class GlyphHinter
 {
@@ -33,6 +36,17 @@ internal sealed class GlyphHinter
     private readonly HintingProfile _profile;
     private readonly Dictionary<CacheKey, ScaledHintMetrics?> _metrics = [];
     private readonly Dictionary<CacheKey, NormalHintMetrics?> _normalMetrics = [];
+    private readonly Dictionary<CacheKey, float> _spaceAdvance = [];
+
+    /// <summary>
+    /// In bilevel at text sizes a blank glyph at least as wide as the space takes no fewer
+    /// columns than this: a bilevel letter gap is one column, and a word gap must never be
+    /// within 1.5 letter gaps of one.
+    /// </summary>
+    private const int MinWordGapColumns = 2;
+
+    /// <summary>An advance within this of a whole pixel (1/64 px, FreeType's 26.6 resolution) rounds up to that pixel, not the next.</summary>
+    private const float WholePixelTolerance = 1f / 64f;
 
     /// <summary>Creates the hinter for one face.</summary>
     /// <param name="glyphIndexOf">Maps a codepoint to a glyph index (0 when unmapped), to find reference glyphs.</param>
@@ -212,19 +226,25 @@ internal sealed class GlyphHinter
     /// (<see cref="HintingProfile.HintPpem"/>), as FreeType's interpreter and GDI render it,
     /// so the designer's per-ppem x-height and cap rows come out; the advance is the linear
     /// advance at the integer ppem, rounded once, in both anti-alias modes — blank glyphs
-    /// included, since the space's advance sets word gaps — and never the face's <c>hdmx</c>
+    /// through <see cref="BlankAdvance"/>, since the space's advance sets word gaps — and never
+    /// the face's <c>hdmx</c>
     /// record: that table holds the advances that go with the bytecode's own (for Georgia,
     /// widened) outlines, which Native does not draw, so with Native's ink it sets text loose.
     /// For every face, a size the
     /// <c>gasp</c> table says not to grid-fit is left unfitted (<see cref="PreparedGlyph.FitWithheld"/>),
-    /// still at the integer ppem and with the chosen advance. Past the taper nothing happens
+    /// still at the integer ppem and with the chosen advance, and still with its spacing facts
+    /// for the kerning bake. Past the taper nothing happens
     /// at all, so large text stays exactly unhinted, fractional ppem included.
     /// </remarks>
     private PreparedGlyph ApplyNormal(PreparedGlyph glyph, RasterOptions options, float scale, int unitsPerEm, Func<int, DecodedGlyph?> glyphOf)
     {
         float ppem = scale * unitsPerEm;
         if (!_profile.PrefersIntegerPpem)
-            return FitNormal(glyph, options, scale, unitsPerEm, glyphOf, ppem, glyph.AdvanceWidth * scale);
+        {
+            return glyph.IsBlank
+                ? glyph with { Advance = BlankAdvance(glyph, options, glyph.AdvanceWidth * scale, glyph.Advance, ppem, glyphOf) }
+                : FitNormal(glyph, options, scale, unitsPerEm, glyphOf, ppem, glyph.AdvanceWidth * scale);
+        }
 
         // A face hinted for integer ppem: everything below runs at round(ppem), the
         // renderer's size stages included (PreparedGlyph.HintPpem), with the linear advance
@@ -239,14 +259,72 @@ internal sealed class GlyphHinter
         float hintScale = rescaled ? hintPpem / unitsPerEm : scale;
         float advance = glyph.AdvanceWidth * hintScale;
         if (glyph.IsBlank)
-            return glyph with { Advance = RoundAdvance(advance) };
+            return glyph with { Advance = BlankAdvance(glyph, options, advance, RoundAdvance(advance), hintPpem, glyphOf) };
 
-        if (NormalMetricsFor(options, hintScale, unitsPerEm, glyphOf) is null)
-            return Unfitted(glyph, hintScale, rescaled, advance, fitWithheld: false);
+        var metrics = NormalMetricsFor(options, hintScale, unitsPerEm, glyphOf);
+        if (metrics is null)
+            return Unfitted(glyph, hintScale, rescaled, advance, fitWithheld: false, spacing: null);
         if (!_profile.GridFitsAt(hintPpem))
-            return Unfitted(glyph, hintScale, rescaled, advance, fitWithheld: true);
+            return Unfitted(glyph, hintScale, rescaled, advance, fitWithheld: true, WithheldSpacing(glyph.Outline, hintScale, advance, hintPpem, metrics));
 
         return FitNormal(glyph, options, hintScale, unitsPerEm, glyphOf, hintPpem, advance);
+    }
+
+    /// <summary>
+    /// A blank glyph's advance under <c>Normal</c>. Up to the taper's start
+    /// (<see cref="HintTuning.TaperStartPpem"/>) the linear advance rounds <em>up</em>, in both
+    /// anti-alias modes, where every other glyph's rounds to nearest: the letters around a space
+    /// sit in whole columns with a column of white between them, so a space rounded down is a
+    /// word gap barely wider than a letter gap (Roboto at 9.1 ppem: 2.26 px → 2, "lazy dogs" set
+    /// as "lazydogs" where the 'y' overhangs its advance; FreeType's bilevel line was 123 px to
+    /// Native's 111). In bilevel a blank at least as wide as the space is also never under
+    /// <see cref="MinWordGapColumns"/>. The design's own ratio of the space to a letter gap is no
+    /// floor: on a serif face whose serifs nearly touch by design it is 8-9 (Georgia), and a
+    /// bilevel letter gap cannot shrink below a column to match. Past the taper's start, and on
+    /// a fixed-pitch face (every advance is the cell), <paramref name="rounded"/> stands.
+    /// </summary>
+    /// <param name="advance">The linear advance in pixels, unrounded, at the ppem the glyph is set at.</param>
+    /// <param name="rounded">That advance rounded once to the nearest pixel, as the glyph would otherwise take it.</param>
+    private int BlankAdvance(PreparedGlyph glyph, RasterOptions options, float advance, int rounded, float ppem, Func<int, DecodedGlyph?> glyphOf)
+    {
+        if (_fixedPitch || ppem > HintTuning.Current.TaperStartPpem)
+            return rounded;
+
+        int roundedUp = Math.Max(rounded, (int)MathF.Ceiling(advance - WholePixelTolerance));
+        if (options.AntiAlias != AntiAliasMode.None || glyph.AdvanceWidth < SpaceAdvance(options, glyphOf))
+            return roundedUp;
+
+        return Math.Max(roundedUp, MinWordGapColumns);
+    }
+
+    /// <summary>The space's advance in font units after the request's transforms; infinite for a face without one, so no blank glyph counts as wider than it.</summary>
+    private float SpaceAdvance(RasterOptions options, Func<int, DecodedGlyph?> glyphOf)
+    {
+        var key = new CacheKey(options.Size, options.Dpi, options.Bold, options.Italic, _instanceStamp());
+        if (_spaceAdvance.TryGetValue(key, out float cached))
+            return cached;
+
+        int glyphIndex = _glyphIndexOf(' ');
+        float advance = glyphIndex == 0 ? float.PositiveInfinity : glyphOf(glyphIndex)?.AdvanceWidth ?? float.PositiveInfinity;
+        _spaceAdvance[key] = advance;
+        return advance;
+    }
+
+    /// <summary>
+    /// The spacing facts of a glyph whose fit the <c>gasp</c> table withheld, so the kerning
+    /// bake still sees it: the glyph is set in whole columns like a fitted one and its touching
+    /// pairs are as real (Verdana at 8 ppem: twelve lowercase pairs of a pangram). Null where
+    /// no x fit would have run anyway — a face with no x axis to fit, or past the x taper.
+    /// </summary>
+    /// <param name="outline">The outline, in font units scaled by <paramref name="scale"/> to pixels.</param>
+    /// <param name="advance">The glyph's advance in pixels, unrounded.</param>
+    private static HintSpacing? WithheldSpacing(GlyphOutline outline, float scale, float advance, float ppem, NormalHintMetrics metrics)
+    {
+        if (!metrics.FitX || NormalHinter.XStrength(ppem) <= 0f)
+            return null;
+
+        var bounds = OutlineBounds.Tight(outline);
+        return new HintSpacing(bounds.XMin * scale, advance - (bounds.XMax * scale), LeftStem: false, RightStem: false);
     }
 
     /// <summary>The fit itself, at a scale and ppem the caller chose, within <paramref name="advance"/> (unrounded pixels).</summary>
@@ -260,7 +338,7 @@ internal sealed class GlyphHinter
             return glyph;
 
         if (!_profile.GridFitsAt(ppem))
-            return glyph with { FitWithheld = true };
+            return glyph with { FitWithheld = true, Spacing = WithheldSpacing(glyph.Outline, scale, advance, ppem, metrics) };
 
         bool mono = options.AntiAlias == AntiAliasMode.None;
         var result = NormalHinter.Fit(GridMath.ScaleOutline(glyph.Outline, scale), advance, metrics, mono,
@@ -281,13 +359,14 @@ internal sealed class GlyphHinter
     /// <summary>
     /// A glyph the <c>Normal</c> stage does not fit, for a face that prefers integer ppem:
     /// scaled to that ppem (its box from the scaled outline) with the chosen advance, so
-    /// rendering and metrics agree with the fitted glyphs around it.
+    /// rendering and metrics agree with the fitted glyphs around it; with its spacing facts
+    /// when the fit was withheld, so the kerning bake still pairs it.
     /// </summary>
-    private static PreparedGlyph Unfitted(PreparedGlyph glyph, float hintScale, bool rescaled, float advance, bool fitWithheld)
+    private static PreparedGlyph Unfitted(PreparedGlyph glyph, float hintScale, bool rescaled, float advance, bool fitWithheld, HintSpacing? spacing)
     {
         int rounded = RoundAdvance(advance);
         if (!rescaled)
-            return glyph with { Advance = rounded, FitWithheld = fitWithheld };
+            return glyph with { Advance = rounded, FitWithheld = fitWithheld, Spacing = spacing };
 
         var outline = GridMath.ScaleOutline(glyph.Outline, hintScale);
         return glyph with
@@ -297,6 +376,7 @@ internal sealed class GlyphHinter
             Box = GlyphBox.Compute(outline, null, 1f),
             Advance = rounded,
             FitWithheld = fitWithheld,
+            Spacing = spacing,
         };
     }
 
