@@ -33,6 +33,7 @@ kernsmith generate -f <font> -s <size> [options]
 | `--gamma <n>` | Gamma correction applied during rasterization (FreeType, default: 1.8) |
 | `--hinting / --no-hinting` | Enable/disable hinting (default: on). Native hints only with `--aa light` |
 | `--hint-level <level>` | Grid fitting: `default` (the backend's `--hinting` behaviour), `none`, `light`, `normal`, `full` (the font's own hinting, else the auto-hinter — FreeType's default). A level the backend does not implement steps down to the nearest one it does (FreeType: `none`, `full`; DirectWrite: `none`, `light`; GDI: `full`; StbTrueType: `none`; Native: `none`, `light`, in any anti-alias mode). Not with `--no-hinting`. `.bmfc` key `hintLevel` |
+| `--fractional-metrics` | Write each glyph's unrounded advance and left side bearing (and, on FreeType and Native, what hinting moved them by) to the `.fnt`'s `kernsmith` metadata as `kernsmithchar` lines, in 1/64 px, for renderers that lay text out fractionally. Off by default. `.bmfc` key `fractionalMetrics` |
 | `--rasterizer <name>` | Rasterizer backend: `freetype` (default), `gdi`, `directwrite`, `stbtruetype`, `native` (experimental, not on NuGet) |
 | `--height-percent <n>` | Vertical height scaling percentage (default: 100) |
 | `--width-percent <n>` | Synthetic condensed/expanded width percentage, 10-1000 (default: 100). Native only; other backends fail with a generation error. `.bmfc` key `widthPercent` |

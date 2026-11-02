@@ -184,6 +184,22 @@ internal sealed class XmlFormatter : IBmFontTextFormatter
         if (extended.Variants is { Count: > 0 })
             writer.WriteAttributeString("variants", string.Join(",", extended.Variants));
 
+        if (extended.FractionalMetrics is { Count: > 0 })
+        {
+            foreach (var f in extended.FractionalMetrics)
+            {
+                writer.WriteStartElement("char");
+                writer.WriteAttributeString("id", f.Id.ToString(CultureInfo.InvariantCulture));
+                writer.WriteAttributeString("advance", f.Advance.ToString(CultureInfo.InvariantCulture));
+                writer.WriteAttributeString("lsb", f.Lsb.ToString(CultureInfo.InvariantCulture));
+                if (f.AdvanceDelta is { } advanceDelta)
+                    writer.WriteAttributeString("advanceDelta", advanceDelta.ToString(CultureInfo.InvariantCulture));
+                if (f.LsbDelta is { } lsbDelta)
+                    writer.WriteAttributeString("lsbDelta", lsbDelta.ToString(CultureInfo.InvariantCulture));
+                writer.WriteEndElement();
+            }
+        }
+
         writer.WriteEndElement();
     }
 

@@ -112,6 +112,14 @@ public sealed record RasterOptions
     public bool? BakeHintingIntoKerning { get; init; }
 
     /// <summary>
+    /// Asks the backend to report each glyph's unrounded advance and left side bearing, and what
+    /// hinting moved them by, on <see cref="RasterizedGlyph.Fractional"/>
+    /// (<see cref="FontGeneratorOptions.FractionalMetrics"/>). Default false; a backend that
+    /// cannot supply them leaves the field null.
+    /// </summary>
+    public bool FractionalMetrics { get; init; }
+
+    /// <summary>
     /// Supersampling factor for higher quality rendering. The rasterizer renders at
     /// Size * SuperSample internally and downscales. Default is 1 (no supersampling).
     /// BMFont's "aa" setting maps to this value. KernSmith core super samples glyphs itself (it
@@ -165,6 +173,7 @@ public sealed record RasterOptions
             EnableHinting = options.EnableHinting,
             HintLevel = options.HintLevel,
             BakeHintingIntoKerning = options.BakeHintingIntoKerning,
+            FractionalMetrics = options.FractionalMetrics,
             SuperSample = options.SuperSampleLevel,
             WidthPercent = options.WidthPercent,
             ItalicAngle = options.ItalicAngle

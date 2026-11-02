@@ -317,6 +317,11 @@ public sealed class BmFontBuilder
     /// <returns>This builder.</returns>
     public BmFontBuilder WithHintLevel(HintLevel level) { _options.HintLevel = level; return this; }
 
+    /// <summary>Writes each glyph's unrounded advance and bearing to the extended metadata; see <see cref="FontGeneratorOptions.FractionalMetrics"/>.</summary>
+    /// <param name="enable">Enable the per-glyph fractional metrics.</param>
+    /// <returns>This builder.</returns>
+    public BmFontBuilder WithFractionalMetrics(bool enable = true) { _options.FractionalMetrics = enable; return this; }
+
     /// <summary>If true, shrinks the texture to fit the glyphs tightly.</summary>
     /// <param name="autofit">Enable auto-fit.</param>
     /// <returns>This builder.</returns>
@@ -516,6 +521,7 @@ public sealed class BmFontBuilder
         _options.TextureFormat = source.TextureFormat;
         _options.EnableHinting = source.EnableHinting;
         _options.HintLevel = source.HintLevel;
+        _options.FractionalMetrics = source.FractionalMetrics;
         _options.AutofitTexture = source.AutofitTexture;
         _options.EqualizeCellHeights = source.EqualizeCellHeights;
         _options.ForceOffsetsToZero = source.ForceOffsetsToZero;

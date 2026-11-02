@@ -31,6 +31,15 @@ internal readonly record struct PreparedGlyph(GlyphOutline Outline, OutlineTrans
     public float AdvanceWidth { get; init; }
 
     /// <summary>
+    /// The outline as it was before the hint stage, in font units (the very object
+    /// <see cref="Outline"/> is when nothing hinted the glyph), set by <see cref="GlyphPipeline.Prepare"/>
+    /// and carried through a hint stage's <c>with</c>. The fractional-metrics report
+    /// (<see cref="KernSmith.Rasterizer.RasterOptions.FractionalMetrics"/>) reads the font's
+    /// left side bearing from it and measures how far hinting moved the ink against it.
+    /// </summary>
+    public GlyphOutline? UnhintedOutline { get; init; }
+
+    /// <summary>
     /// What the <c>Normal</c> hint stage knows about the glyph's spacing — the font's own side
     /// bearings and whether each facing edge is a straight stem — or null when the glyph's x
     /// axis was not fitted (unhinted, y-only, past the x taper). The kerning bake (<see cref="KernSmith.Rasterizer.RasterOptions.BakeHintingIntoKerning"/>)

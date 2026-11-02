@@ -255,6 +255,7 @@ internal sealed class GenerateCommand
             EnableHinting = options.EnableHinting ?? true,
             HintLevel = options.HintLevel ?? KernSmith.HintLevel.Default,
             BakeHintingIntoKerning = options.BakeHintingIntoKerning,
+            FractionalMetrics = options.FractionalMetrics,
             AutofitTexture = options.AutofitTexture,
             EqualizeCellHeights = options.EqualizeCellHeights,
             ForceOffsetsToZero = options.ForceOffsetsToZero,
@@ -686,6 +687,9 @@ internal sealed class GenerateCommand
                     case "--no-bake-kerning":
                         options.BakeHintingIntoKerning = false;
                         break;
+                    case "--fractional-metrics":
+                        options.FractionalMetrics = true;
+                        break;
                     case "--axis":
                         var axisStr = NextArg(args, ref i, args[i]);
                         var eqIdx = axisStr.IndexOf('=');
@@ -901,6 +905,7 @@ internal sealed class GenerateCommand
         if (cli.EnableHinting.HasValue) config.EnableHinting = cli.EnableHinting;
         if (cli.HintLevel.HasValue) config.HintLevel = cli.HintLevel;
         if (cli.BakeHintingIntoKerning.HasValue) config.BakeHintingIntoKerning = cli.BakeHintingIntoKerning;
+        if (cli.FractionalMetrics) config.FractionalMetrics = true;
         if (cli.AutofitTexture) config.AutofitTexture = true;
         if (cli.EqualizeCellHeights) config.EqualizeCellHeights = true;
         if (cli.ForceOffsetsToZero) config.ForceOffsetsToZero = true;
@@ -1115,6 +1120,8 @@ internal sealed class GenerateCommand
                                           Fold the hinter's pair collisions into the kerning pairs (default: on whenever native
                                           hints at normal, which its default is at text sizes; opens only pairs that would touch,
                                           balanced against pairs with white to spare; needs kerning on)
+              --fractional-metrics        Write each glyph's unrounded advance and bearing (and what hinting moved them by)
+                                          to the .fnt's kernsmith metadata, in 1/64 px, for fractional text layout
               --gamma <n>                 Gamma correction applied during rasterization (default: 1.8)
               --height-percent <n>        Vertical height scaling percentage (default: 100)
               --width-percent <n>         Synthetic condensed/expanded width percentage, 10-1000 (default: 100; native only)

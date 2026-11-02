@@ -25,6 +25,7 @@ bool enforceBar = true;
 bool pngAll = false;
 var pngFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 bool legibility = false;
+string? weightsPath = null;
 bool textPng = false;
 HintTuning? tuning = null;
 bool sweep = false;
@@ -88,6 +89,10 @@ try
             case "--legibility":
                 legibility = true;
                 break;
+            case "--weights":
+                weightsPath = Path.GetFullPath(Next());
+                legibility = true;
+                break;
             case "--tuning":
                 tuning = Sweep.ParseTuning(Next(), tuning ?? HintTuning.Default);
                 break;
@@ -109,8 +114,17 @@ try
                 throw new ArgumentException($"Unknown option {args[i]}. Try --help.");
         }
     }
+
+    if (weightsPath is not null)
+    {
+        var (weights, notes) = LegibilityWeights.Load(weightsPath);
+        LegibilityScore.Weights = weights;
+        Console.WriteLine($"weights from {weightsPath}: {string.Join(", ", weights.Select(kv => $"{kv.Key}={kv.Value:0.###}"))}");
+        foreach (var note in notes)
+            Console.WriteLine($"  note: {note}");
+    }
 }
-catch (Exception e) when (e is ArgumentException or FormatException or FileNotFoundException or NotSupportedException)
+catch (Exception e) when (e is ArgumentException or FormatException or FileNotFoundException or DirectoryNotFoundException or NotSupportedException)
 {
     Console.Error.WriteLine($"error: {e.Message}");
     return 2;
@@ -207,8 +221,8 @@ foreach (var font in fonts)
                     {
                         ideal ??= IdealFont.Render(fontData, size, characters);
                         bool mono = aa == AntiAliasMode.None;
-                        freeTypeLegibility ??= LegibilityScore.Measure(freeType.Glyphs, ideal, mono);
-                        nativeLegibility = LegibilityScore.Measure(nativeFont.Glyphs, ideal, mono);
+                        freeTypeLegibility ??= LegibilityScore.Measure(freeType.Glyphs, ideal, mono, new StripLayout(freeType.LineHeight, size));
+                        nativeLegibility = LegibilityScore.Measure(nativeFont.Glyphs, ideal, mono, new StripLayout(nativeFont.LineHeight, size));
                     }
 
                     var result = new CellResult
@@ -270,6 +284,8 @@ var runOptions = new Dictionary<string, string>
     ["charset"] = charsetName,
     ["enforceBar"] = enforceBar.ToString(),
     ["legibility"] = legibility.ToString(),
+    ["weights"] = weightsPath ?? "default",
+    ["weightValues"] = string.Join(",", LegibilityScore.Weights.Select(kv => $"{kv.Key}={kv.Value.ToString("0.####", CultureInfo.InvariantCulture)}")),
     ["tuning"] = Sweep.Describe(HintTuning.Current),
     ["elapsedSeconds"] = totalWatch.Elapsed.TotalSeconds.ToString("0.0", CultureInfo.InvariantCulture),
 };
@@ -294,7 +310,7 @@ static string BuildTable(IReadOnlyList<CellResult> results)
     [
         "Font", "Size", "AA", "Native", "FT engine", "n", "line=", "adv%", "box=%", "box+-1%",
         "SSIM", "worst", "maxD", "meanD", "mono=%", "sharp FT/Nat", "solid FT/Nat", "stemVar FT/Nat",
-        .. legibility ? new[] { "legib FT/Nat", "topo", "fidel", "conc", "separ", "align", "stems", "space" } : [],
+        .. legibility ? new[] { "legib FT/Nat", "topo", "topoE", "rings", "fidel", "conc", "separ", "align", "stems", "space" } : [],
         "bar",
     ];
     var rows = new List<string[]>();
@@ -307,6 +323,8 @@ static string BuildTable(IReadOnlyList<CellResult> results)
             [
                 $"{ft.Score:0.000}/{nat.Score:0.000}",
                 $"{ft.Topology:0.00}/{nat.Topology:0.00}",
+                $"{ft.TopologyError:0.00}/{nat.TopologyError:0.00}",
+                $"{ft.BrokenRings:0.00}/{nat.BrokenRings:0.00}",
                 $"{ft.Fidelity:0.00}/{nat.Fidelity:0.00}",
                 $"{ft.Concentration:0.00}/{nat.Concentration:0.00}",
                 $"{ft.Separability:0.00}/{nat.Separability:0.00}",
@@ -317,7 +335,7 @@ static string BuildTable(IReadOnlyList<CellResult> results)
         }
         else if (legibility)
         {
-            legibilityColumns = ["-", "-", "-", "-", "-", "-", "-", "-"];
+            legibilityColumns = ["-", "-", "-", "-", "-", "-", "-", "-", "-", "-"];
         }
 
         rows.Add(
@@ -381,7 +399,11 @@ static void PrintHelp()
                                 advances (row 1 FreeType, row 2 Native), x4.
           --bar | --no-bar      Enforce the parity bar in the exit code (default: enforce).
           --legibility          Score both sides on the FreeType-independent legibility metric (adds the
-                                legib FT/Nat column and its seven terms, and the detail to parity.json).
+                                legib FT/Nat column and its nine terms, and the detail plus the pairwise
+                                page's ten features to parity.json).
+          --weights <file>      Term weights for the score (implies --legibility): a JSON object of
+                                term name to weight, or the pairwise page's fit_bt.py weights.json,
+                                whose feature weights are mapped onto the terms by sign. Normalised to 1.
           --tuning <k=v,...>    Override the Native Normal hinter's constants for the run
                                 (MinEdgeLength, MinLoneEdgeLength, MergeDistance, StandardStemTolerance,
                                 PhaseShiftPenalty, MaxShift, MinCounter, XHeightRoundUp, OriginNudge,

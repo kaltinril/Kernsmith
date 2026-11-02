@@ -26,7 +26,8 @@ internal static class BmFontModelBuilder
         RasterizerFontMetrics? rasterizerFontMetrics = null,
         IReadOnlyList<ScaledKerningPair>? rasterizerKerningPairs = null,
         int superSampleLevel = 1,
-        IReadOnlyList<ScaledKerningAdjustment>? kerningAdjustments = null)
+        IReadOnlyList<ScaledKerningAdjustment>? kerningAdjustments = null,
+        IReadOnlyDictionary<int, FractionalGlyphMetrics>? fractionalMetrics = null)
     {
         // The effective ppem used for rasterization. When cell-height scaling is
         // applied, this is smaller than options.Size. For metric calculations we
@@ -91,7 +92,7 @@ internal static class BmFontModelBuilder
             glyphCodepoints.Add(glyph.Codepoint);
         var kerningPairs = MergeKerning(fontInfo, metricSize, options, rasterizerKerningPairs, kerningAdjustments, glyphCodepoints);
 
-        var extended = BuildExtendedMetadata(options);
+        var extended = BuildExtendedMetadata(options, FractionalEntries(characters, options, fractionalMetrics));
 
         return new BmFontModel
         {
@@ -133,6 +134,33 @@ internal static class BmFontModelBuilder
             Page: placement.PageIndex,
             Channel: channel);
     }
+
+    /// <summary>
+    /// The extended metadata's per-character fractional metrics for the characters the model
+    /// writes, in their order: the pipeline's unrounded advance plus the same global advance
+    /// adjustment <c>xadvance</c> carries (unrounded here), the bearing as the backend gave it.
+    /// Null when the option is off or no glyph has metrics. Shared with
+    /// <see cref="BmFontIncrementalSession"/>.
+    /// </summary>
+    internal static List<FractionalCharMetrics>? FractionalEntries(
+        IReadOnlyList<CharEntry> characters, FontGeneratorOptions options, IReadOnlyDictionary<int, FractionalGlyphMetrics>? fractionalMetrics)
+    {
+        if (fractionalMetrics is not { Count: > 0 })
+            return null;
+
+        var entries = new List<FractionalCharMetrics>(characters.Count);
+        foreach (var c in characters)
+        {
+            if (fractionalMetrics.TryGetValue(c.Id, out var f))
+                entries.Add(FractionalEntry(c.Id, f, options));
+        }
+
+        return entries.Count == 0 ? null : entries;
+    }
+
+    /// <inheritdoc cref="FractionalEntries"/>
+    internal static FractionalCharMetrics FractionalEntry(int codepoint, FractionalGlyphMetrics f, FontGeneratorOptions options) =>
+        new(codepoint, PreparedRasterization.Sixtyfourths(f.Advance + options.AdvanceAdjustX), f.BearingX, f.AdvanceDelta, f.BearingXDelta);
 
     /// <summary>
     /// The default page-name stem for a family name: every character Windows forbids in a file
@@ -393,6 +421,7 @@ internal static class BmFontModelBuilder
             ColorFont = meta?.ColorFont,
             FallbackCharacter = meta?.FallbackCharacter,
             AdvanceAdjustY = meta?.AdvanceAdjustY,
+            FractionalMetrics = meta?.FractionalMetrics,
             VariantOf = variantOf,
             Variants = variants
         };
@@ -408,7 +437,7 @@ internal static class BmFontModelBuilder
         };
     }
 
-    internal static ExtendedMetadata? BuildExtendedMetadata(FontGeneratorOptions options)
+    internal static ExtendedMetadata? BuildExtendedMetadata(FontGeneratorOptions options, IReadOnlyList<FractionalCharMetrics>? fractionalMetrics = null)
     {
         var version = KernSmithVersionInfo.Version;
 
@@ -466,7 +495,8 @@ internal static class BmFontModelBuilder
             ColorFont = colorFont,
             VariationAxes = variationAxes,
             FallbackCharacter = fallbackCharacter,
-            AdvanceAdjustY = advanceAdjustY
+            AdvanceAdjustY = advanceAdjustY,
+            FractionalMetrics = fractionalMetrics is { Count: > 0 } ? fractionalMetrics : null
         };
 
         // Written only when it carries a field beyond GeneratorVersion (REF-05), so a default

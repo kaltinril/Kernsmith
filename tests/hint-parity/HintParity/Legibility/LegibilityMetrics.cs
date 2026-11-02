@@ -133,6 +133,37 @@ internal static class LegibilityMetrics
         return (double)matches / TopologyThresholds.Length;
     }
 
+    /// <summary>The faint cut: ink a reader can still make out, but not read as solid.</summary>
+    public const int FaintThreshold = 64;
+
+    /// <summary>
+    /// The glyph's broken rings: counters the ideal has that are whole at
+    /// <see cref="FaintThreshold"/> but open at <see cref="ReadThreshold"/> — a ring with a weak
+    /// pixel, which is how an anti-aliased counter is lost (the ring, not the counter, fails).
+    /// Never more than the ideal's counters, so a spurious faint hole does not count, and a
+    /// counter gone at both cuts is a <see cref="TopologyError"/>, not a broken ring.
+    /// </summary>
+    public static int BrokenRings(GlyphBitmap rendered, Topology truth)
+    {
+        if (truth.Holes == 0 || rendered.IsEmpty)
+            return 0;
+        int faint = TopologyOf(rendered, FaintThreshold).Holes;
+        int read = TopologyOf(rendered, ReadThreshold).Holes;
+        return Math.Max(0, Math.Min(faint, truth.Holes) - read);
+    }
+
+    /// <summary>
+    /// Features wrong at the read cut for a reason other than a weak ring: components merged
+    /// or vanished or shattered, counters gone at every cut or appearing where the ideal has
+    /// none. |Δcomponents| + |Δholes| − <see cref="BrokenRings"/>, so a lost counter is charged
+    /// here or there, never in both.
+    /// </summary>
+    public static int TopologyError(GlyphBitmap rendered, Topology truth)
+    {
+        var actual = TopologyOf(rendered);
+        return Math.Abs(actual.Components - truth.Components) + Math.Abs(actual.Holes - truth.Holes) - BrokenRings(rendered, truth);
+    }
+
     // ---- separability ----------------------------------------------------------------------------
 
     /// <summary>

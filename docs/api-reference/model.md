@@ -105,3 +105,16 @@ non-default features were used.
 | `AdvanceAdjustY` | `float?` | Global vertical advance adjustment (Hiero `pad.advance.y`), if non-zero. BMFont has no per-glyph yadvance field, so this is surfaced here to round-trip. |
 | `VariantOf` | `string?` | On an [atlas variant](../core/atlas-variants.md)'s model, the family name of the primary font it is a variant of; null on the primary model. |
 | `Variants` | `IReadOnlyList<string>?` | On the primary model, the names of the atlas variants generated alongside it; null on a variant model. |
+| `FractionalMetrics` | `IReadOnlyList<FractionalCharMetrics>?` | With `FontGeneratorOptions.FractionalMetrics`: each character's unrounded `Advance` and `Lsb` in output pixels (1/64 px steps) and, where the backend hinted it and can say, the `AdvanceDelta`/`LsbDelta` hinting added, in `Characters` order. Text `kernsmithchar` lines, XML `<char>` children of `<kernsmith>`, binary block 6 `chars`. |
+
+## FractionalCharMetrics
+
+A record struct. One character's horizontal metrics before rounding, for renderers that lay text out in fractional pixels.
+
+| Member | Type | Description |
+|--------|------|-------------|
+| `Id` | `int` | Unicode codepoint. |
+| `Advance` | `float` | The pen advance `XAdvance` is the rounding of: the font's advance at this size, super sampling, synthetic width/bold, the global advance adjustment and effects included; without hinting. |
+| `Lsb` | `float` | From the pen origin to the left edge of the unhinted outline's control box. No padding, effect margin or distance-field spread — place the bitmap by `XOffset`, the pen by `Lsb`/`Advance`. |
+| `AdvanceDelta` | `float?` | What hinting added to the advance; `Advance + AdvanceDelta` is the hinted advance `XAdvance` was rounded from. Null when unhinted or the backend cannot say (GDI, DirectWrite, StbTrueType). |
+| `LsbDelta` | `float?` | How far hinting moved the ink's left edge; null as above. |

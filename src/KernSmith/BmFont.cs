@@ -413,7 +413,8 @@ public static class BmFont
                 rasterizerFontMetrics: rasterResult.RasterizerFontMetrics,
                 rasterizerKerningPairs: rasterResult.RasterizerKerningPairs,
                 kerningAdjustments: rasterResult.RasterizerKerningAdjustments,
-                superSampleLevel: rasterResult.SuperSampleLevel);
+                superSampleLevel: rasterResult.SuperSampleLevel,
+                fractionalMetrics: rasterResult.FractionalMetrics);
             metrics?.End();
 
             return new BmFontResult(model, pages, failedCodepoints, metrics, options, sourceFontFile, sourceFontName);
@@ -507,7 +508,8 @@ public static class BmFont
                 rasterizerFontMetrics: rasterResult.RasterizerFontMetrics,
                 rasterizerKerningPairs: rasterResult.RasterizerKerningPairs,
                 kerningAdjustments: rasterResult.RasterizerKerningAdjustments,
-                superSampleLevel: rasterResult.SuperSampleLevel);
+                superSampleLevel: rasterResult.SuperSampleLevel,
+                fractionalMetrics: rasterResult.FractionalMetrics);
             metrics?.End();
 
             return new BmFontResult(model, pages, failedCodepoints, metrics, options, sourceFontFile, sourceFontName);
@@ -638,7 +640,8 @@ public static class BmFont
             rasterizerFontMetrics: rasterResult.RasterizerFontMetrics,
             rasterizerKerningPairs: rasterResult.RasterizerKerningPairs,
             kerningAdjustments: rasterResult.RasterizerKerningAdjustments,
-            superSampleLevel: rasterResult.SuperSampleLevel);
+            superSampleLevel: rasterResult.SuperSampleLevel,
+            fractionalMetrics: rasterResult.FractionalMetrics);
         model = BmFontModelBuilder.WithVariantLinks(model, variantOf: null,
             variants: options.Variants.Select(v => v.Name).ToList());
 
@@ -1257,7 +1260,8 @@ public static class BmFont
                     rasterizerFontMetrics: rr.RasterizerFontMetrics,
                     rasterizerKerningPairs: rr.RasterizerKerningPairs,
                     kerningAdjustments: rr.RasterizerKerningAdjustments,
-                    superSampleLevel: rr.SuperSampleLevel);
+                    superSampleLevel: rr.SuperSampleLevel,
+                    fractionalMetrics: rr.FractionalMetrics);
                 var fontResult = new BmFontResult(model, sharedPages, rr.FailedCodepoints);
 
                 sw.Stop();

@@ -353,6 +353,11 @@ public sealed class FreeTypeRasterizer : IRasterizer
             ? PixelFormat.Rgba32
             : PixelFormat.Grayscale8;
 
+        // The slot's 26.6 metrics are read before the unhinted probe below reloads the slot.
+        var fractional = options.FractionalMetrics
+            ? FractionalMetricsFor(glyphIndex, options, (long)metrics.horiAdvance, (long)metrics.horiBearingX)
+            : (FractionalGlyphMetrics?)null;
+
         return new RasterizedGlyph
         {
             Codepoint = codepoint,
@@ -362,8 +367,43 @@ public sealed class FreeTypeRasterizer : IRasterizer
             Height = bitmapHeight,
             Pitch = Math.Abs(pitch),
             Metrics = glyphMetrics,
-            Format = format
+            Format = format,
+            Fractional = fractional,
         };
+    }
+
+    /// <summary>
+    /// The glyph's unrounded metrics for <see cref="RasterOptions.FractionalMetrics"/>: the
+    /// advance and bearing of the unhinted outline (with the request's synthetic bold and italic,
+    /// which move them) in 26.6 → pixels, and under hinting what the hinted slot's values differ
+    /// by. The unhinted values come from a second, bitmap-less load with <c>FT_LOAD_NO_HINTING</c>
+    /// unless the request was unhinted to begin with; a glyph that load cannot give (a bitmap
+    /// strike) reports the rendered slot's own values with no deltas.
+    /// </summary>
+    private unsafe FractionalGlyphMetrics FractionalMetricsFor(uint glyphIndex, RasterOptions options, long hintedAdvance, long hintedBearing)
+    {
+        if (Unhinted(options))
+            return new FractionalGlyphMetrics(hintedAdvance / 64f, hintedBearing / 64f);
+
+        var loadFlags = (FT_LOAD)FreeTypeNative.FT_LOAD_NO_BITMAP | (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
+        if (options.ColorFont)
+            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_COLOR;
+        if (FT.FT_Load_Glyph(_face, glyphIndex, loadFlags) != FT_Error.FT_Err_Ok)
+            return new FractionalGlyphMetrics(hintedAdvance / 64f, hintedBearing / 64f);
+
+        var slot = _face->glyph;
+        if (options.Bold && (_face->style_flags & 0x01) == 0)
+            EmboldenGlyph(slot, _face);
+        if (options.Italic && (_face->style_flags & 0x02) == 0)
+            FT.FT_GlyphSlot_Oblique(slot);
+
+        long advance = (long)slot->metrics.horiAdvance;
+        long bearing = (long)slot->metrics.horiBearingX;
+        return new FractionalGlyphMetrics(
+            advance / 64f,
+            bearing / 64f,
+            (hintedAdvance - advance) / 64f,
+            (hintedBearing - bearing) / 64f);
     }
 
     /// <summary>

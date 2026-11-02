@@ -77,6 +77,7 @@ internal static class BmfcWriter
             EnableHinting = options.EnableHinting ?? true,
             HintLevel = options.HintLevel ?? KernSmith.HintLevel.Default,
             BakeHintingIntoKerning = options.BakeHintingIntoKerning,
+            FractionalMetrics = options.FractionalMetrics,
             AutofitTexture = options.AutofitTexture,
             EqualizeCellHeights = options.EqualizeCellHeights,
             ForceOffsetsToZero = options.ForceOffsetsToZero,

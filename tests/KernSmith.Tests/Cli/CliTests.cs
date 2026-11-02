@@ -1092,6 +1092,32 @@ public class CliTests : IDisposable
         File.Exists(Path.Combine(_tempDir, "contradiction.fnt")).ShouldBeFalse();
     }
 
+    // -- Fractional metrics --
+
+    [Fact]
+    public void Generate_FractionalMetrics_WritesTheCharLines_AndTheConfigKey()
+    {
+        var output = Path.Combine(_tempDir, "fractional");
+        var savedConfig = Path.Combine(_tempDir, "fractional.bmfc");
+        var (exitCode, _, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "24", "-c", "ABC", "--fractional-metrics",
+            "-o", output, "--save-config", savedConfig);
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        var fnt = File.ReadAllText(output + ".fnt");
+        fnt.ShouldContain("kernsmithchar id=65 advance=", Case.Sensitive);
+        File.ReadAllText(savedConfig).ShouldContain("fractionalMetrics=1", Case.Sensitive);
+
+        // Off by default: no metadata lines at all.
+        var plain = Path.Combine(_tempDir, "plain");
+        RunCli("generate", "-f", FontPath, "-s", "24", "-c", "ABC", "-o", plain).ExitCode.ShouldBe(0);
+        File.ReadAllText(plain + ".fnt").ShouldNotContain("kernsmithchar", Case.Sensitive);
+
+        var (helpExit, stdout, _) = RunCli("generate", "--help");
+        helpExit.ShouldBe(0);
+        stdout.ShouldContain("--fractional-metrics", Case.Sensitive);
+    }
+
     // -- LCD options --
 
     [Fact]

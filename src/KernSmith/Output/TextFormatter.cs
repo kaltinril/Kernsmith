@@ -144,6 +144,21 @@ internal sealed class TextFormatter : IBmFontTextFormatter
             sb.Append(Invariant, $" variants=\"{string.Join(",", extended.Variants)}\"");
 
         sb.AppendLine();
+
+        if (extended.FractionalMetrics is not { Count: > 0 })
+            return;
+
+        // One line per character, after the kernsmith line, with the same key=value scheme; a
+        // delta is written only where the backend reported one.
+        foreach (var f in extended.FractionalMetrics)
+        {
+            sb.Append(Invariant, $"kernsmithchar id={f.Id} advance={f.Advance} lsb={f.Lsb}");
+            if (f.AdvanceDelta is { } advanceDelta)
+                sb.Append(Invariant, $" advanceDelta={advanceDelta}");
+            if (f.LsbDelta is { } lsbDelta)
+                sb.Append(Invariant, $" lsbDelta={lsbDelta}");
+            sb.AppendLine();
+        }
     }
 
     private static int BoolToInt(bool value) => value ? 1 : 0;

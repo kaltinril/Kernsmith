@@ -52,6 +52,14 @@ internal sealed class RasterizationResult
     public EqualizedSpan? EqualizedSpan { get; init; }
 
     /// <summary>
+    /// Each glyph's unrounded advance and left side bearing in output pixels (super sampling
+    /// divided out, effects' advance growth added, 1/64 px steps), by codepoint, for the extended
+    /// metadata; null unless <see cref="FontGeneratorOptions.FractionalMetrics"/> is on. A custom
+    /// glyph has no entry.
+    /// </summary>
+    public IReadOnlyDictionary<int, FractionalGlyphMetrics>? FractionalMetrics { get; init; }
+
+    /// <summary>
     /// Backend-drawn outline layers by codepoint, at the output size and placed against the final
     /// <see cref="Glyphs"/>, for an Outline channel to use instead of the bitmap outline. Only
     /// populated for <see cref="OutlineMode.Vector"/> with a channel layout that routes the

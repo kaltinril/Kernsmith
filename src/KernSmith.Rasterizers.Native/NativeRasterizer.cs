@@ -173,7 +173,7 @@ public sealed class NativeRasterizer : IRasterizer
         if (glyph.IsBlank && !DrawsLayers(renderer, glyphIndex))
         {
             _sides.Remove(codepoint);
-            return BlankGlyph(codepoint, glyphIndex, glyph.Advance);
+            return WithFractional(BlankGlyph(codepoint, glyphIndex, glyph.Advance), glyph, options);
         }
 
         RasterizedGlyph rendered;
@@ -187,7 +187,51 @@ public sealed class NativeRasterizer : IRasterizer
         }
 
         RecordSides(codepoint, glyph, rendered, options);
-        return rendered;
+        return WithFractional(rendered, glyph, options);
+    }
+
+    /// <summary>
+    /// The glyph with its unrounded metrics attached when <see cref="RasterOptions.FractionalMetrics"/>
+    /// asks for them: the font's advance and left side bearing (the outline's control-box left,
+    /// which is the <c>hmtx</c> bearing the decoder placed it by) at the size, after the request's
+    /// transforms; under hinting, how far the fitted ink's left edge moved (tight bounds of the
+    /// fitted outline against the unhinted one — tight, because the hint stage adds extremum
+    /// nodes that tighten the control hull without moving any ink) and the one column the
+    /// stem-pair padding may have added to the advance. Otherwise the glyph as rendered.
+    /// </summary>
+    private RasterizedGlyph WithFractional(RasterizedGlyph rendered, PreparedGlyph glyph, RasterOptions options)
+    {
+        if (!options.FractionalMetrics)
+            return rendered;
+
+        float scale = GlyphPipeline.PixelScale(options, _face!.Head.UnitsPerEm);
+        var unhinted = glyph.UnhintedOutline ?? glyph.Outline;
+        float advance = glyph.AdvanceWidth * scale;
+        float bearing = unhinted.XMin * scale;
+
+        float? advanceDelta = null, bearingDelta = null;
+        if (glyph.UnhintedOutline is not null && !ReferenceEquals(glyph.UnhintedOutline, glyph.Outline) && !glyph.Outline.IsEmpty)
+        {
+            float before = OutlineBounds.Tight(unhinted).XMin * scale;
+            float after = glyph.ToPixels.ToPixelX(OutlineBounds.Tight(glyph.Outline).XMin);
+            bearingDelta = after - before;
+            int padding = glyph.Advance - GlyphPipeline.PixelAdvance(glyph.AdvanceWidth, scale);
+            if (padding != 0)
+                advanceDelta = padding;
+        }
+
+        return new RasterizedGlyph
+        {
+            Codepoint = rendered.Codepoint,
+            GlyphIndex = rendered.GlyphIndex,
+            BitmapData = rendered.BitmapData,
+            Width = rendered.Width,
+            Height = rendered.Height,
+            Pitch = rendered.Pitch,
+            Metrics = rendered.Metrics,
+            Format = rendered.Format,
+            Fractional = new FractionalGlyphMetrics(advance, bearing, advanceDelta, bearingDelta),
+        };
     }
 
     /// <summary>Remembers (or forgets) a glyph's sides for <see cref="GetKerningAdjustments"/>.</summary>

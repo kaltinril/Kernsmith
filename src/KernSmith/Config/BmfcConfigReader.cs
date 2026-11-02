@@ -378,6 +378,9 @@ public static class BmfcConfigReader
                     case "bakeHintingIntoKerning":
                         options.BakeHintingIntoKerning = IsTrue(value);
                         break;
+                    case "fractionalMetrics":
+                        options.FractionalMetrics = IsTrue(value);
+                        break;
                     case "lcdFilter":
                         options.LcdFilter = Enum.TryParse<LcdFilter>(value, ignoreCase: true, out var lcdFilter)
                             && Enum.IsDefined(lcdFilter)

@@ -136,6 +136,15 @@ internal static class JsonReport
             w.WriteNumber(term, value);
         w.WriteNumber("topologyMatches", t.TopologyMatches);
         w.WriteNumber("topologyGlyphs", t.TopologyGlyphs);
+        w.WriteNumber("topologyErrors", t.TopologyErrorCount);
+        w.WriteNumber("brokenRingCount", t.BrokenRingCount);
+        if (t.Features is { } features)
+        {
+            w.WriteStartObject("features");
+            foreach (var (feature, value) in features.Named())
+                w.WriteNumber(feature, value);
+            w.WriteEndObject();
+        }
         w.WriteStartArray("topologyBroken");
         foreach (var b in t.TopologyBroken)
             w.WriteStringValue(b);

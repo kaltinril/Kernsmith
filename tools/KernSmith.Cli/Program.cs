@@ -97,6 +97,7 @@ static int ShowHelp()
           --hint-level <level>         Grid fitting: default, none, light, normal, full
           --bake-kerning / --no-bake-kerning
                                        Fold hinting's pair collisions into kerning pairs (native normal; default on)
+          --fractional-metrics         Write unrounded per-glyph advances/bearings to the .fnt metadata (1/64 px)
           --height-percent <n>         Height scaling percentage (default: 100)
           --width-percent <n>          Synthetic width percentage (default: 100; native)
           --italic-angle <deg>         Synthetic italic slant in degrees (default: 12; native)

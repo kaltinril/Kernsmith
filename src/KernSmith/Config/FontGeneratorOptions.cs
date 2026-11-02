@@ -224,6 +224,20 @@ public class FontGeneratorOptions
     public bool? BakeHintingIntoKerning { get; set; }
 
     /// <summary>
+    /// Writes each glyph's unrounded advance and left side bearing — and, where the backend
+    /// hinted the glyph and can say, how far hinting moved them — to the extended metadata
+    /// (<see cref="Output.Model.ExtendedMetadata.FractionalMetrics"/>: text <c>kernsmithchar</c>
+    /// lines, XML <c>&lt;char&gt;</c> children of <c>&lt;kernsmith&gt;</c>, binary block 6
+    /// <c>chars</c>), in output pixels at 1/64 px, for renderers that position glyphs
+    /// fractionally: BMFont's integer <c>xadvance</c> drifts a line of text by up to a pixel
+    /// per few characters against the font's own spacing. Default false, so default output is
+    /// unchanged. Native and FreeType report their own values; the other backends get the
+    /// font's design advance and bearing at the size, with no hinting deltas. Standard BMFont
+    /// readers ignore the extra lines.
+    /// </summary>
+    public bool FractionalMetrics { get; set; }
+
+    /// <summary>
     /// FreeType gamma correction applied during rasterization (default 1.8, matching Hiero).
     /// Maps to Hiero's <c>font.gamma</c>.
     /// </summary>

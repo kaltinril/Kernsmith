@@ -96,6 +96,7 @@ internal static class BmfcParser
             EnableHinting = gen.EnableHinting,
             HintLevel = gen.HintLevel,
             BakeHintingIntoKerning = gen.BakeHintingIntoKerning,
+            FractionalMetrics = gen.FractionalMetrics,
             EqualizeCellHeights = gen.EqualizeCellHeights,
             ForceOffsetsToZero = gen.ForceOffsetsToZero,
             HeightPercent = gen.HeightPercent,

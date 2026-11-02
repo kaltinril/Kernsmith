@@ -28,6 +28,7 @@ public static class BmFontReader
         var chars = new List<CharEntry>();
         var kernings = new List<KerningEntry>();
         ExtendedMetadata? extended = null;
+        var fractional = new List<FractionalCharMetrics>();
 
         foreach (var line in fntContent.Split('\n'))
         {
@@ -75,6 +76,14 @@ public static class BmFontReader
                 case "kernsmith":
                     extended = ParseExtendedFromKvp(kvp);
                     break;
+                case "kernsmithchar":
+                    fractional.Add(new FractionalCharMetrics(
+                        GetInt(kvp, "id"),
+                        GetFloat(kvp, "advance") ?? 0f,
+                        GetFloat(kvp, "lsb") ?? 0f,
+                        GetFloat(kvp, "advanceDelta"),
+                        GetFloat(kvp, "lsbDelta")));
+                    break;
                     // "chars" and "kernings" lines just have count, skip them
             }
         }
@@ -83,6 +92,9 @@ public static class BmFontReader
             throw new FormatException("BMFont text format: missing 'info' line.");
         if (common == null)
             throw new FormatException("BMFont text format: missing 'common' line.");
+
+        if (fractional.Count > 0)
+            extended = WithFractionalMetrics(extended, fractional);
 
         return new BmFontModel
         {
@@ -161,6 +173,19 @@ public static class BmFontReader
         }
 
         var extended = kernsmithEl != null ? ParseExtendedFromXml(kernsmithEl) : null;
+        if (kernsmithEl != null)
+        {
+            var fractional = kernsmithEl.Elements("char")
+                .Select(c => new FractionalCharMetrics(
+                    XmlAttrInt(c, "id"),
+                    XmlAttrFloat(c, "advance") ?? 0f,
+                    XmlAttrFloat(c, "lsb") ?? 0f,
+                    XmlAttrFloat(c, "advanceDelta"),
+                    XmlAttrFloat(c, "lsbDelta")))
+                .ToList();
+            if (fractional.Count > 0)
+                extended = WithFractionalMetrics(extended, fractional);
+        }
 
         return new BmFontModel
         {
@@ -302,6 +327,37 @@ public static class BmFontReader
         return kvp.TryGetValue(key, out var val) ? val : defaultValue;
     }
 
+    private static float? GetFloat(Dictionary<string, string> kvp, string key) =>
+        kvp.TryGetValue(key, out var val) && float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out var result)
+            ? result
+            : null;
+
+    /// <summary>
+    /// The metadata with the per-character fractional metrics attached: a copy of the parsed
+    /// block (<see cref="ExtendedMetadata"/> is init-only), or a bare one when the file carried
+    /// the character lines without a <c>kernsmith</c> line.
+    /// </summary>
+    private static ExtendedMetadata WithFractionalMetrics(ExtendedMetadata? extended, IReadOnlyList<FractionalCharMetrics> fractional) => new()
+    {
+        GeneratorVersion = extended?.GeneratorVersion ?? "",
+        SdfSpread = extended?.SdfSpread,
+        SdfMode = extended?.SdfMode,
+        OutlineThickness = extended?.OutlineThickness,
+        GradientTopColor = extended?.GradientTopColor,
+        GradientBottomColor = extended?.GradientBottomColor,
+        ShadowOffsetX = extended?.ShadowOffsetX,
+        ShadowOffsetY = extended?.ShadowOffsetY,
+        ShadowColor = extended?.ShadowColor,
+        SuperSampleLevel = extended?.SuperSampleLevel,
+        AdvanceAdjustY = extended?.AdvanceAdjustY,
+        ColorFont = extended?.ColorFont,
+        FallbackCharacter = extended?.FallbackCharacter,
+        VariationAxes = extended?.VariationAxes,
+        VariantOf = extended?.VariantOf,
+        Variants = extended?.Variants,
+        FractionalMetrics = fractional,
+    };
+
     private static bool GetBool(Dictionary<string, string> kvp, string key, bool defaultValue = false)
     {
         if (kvp.TryGetValue(key, out var val))
@@ -392,6 +448,11 @@ public static class BmFontReader
     {
         return el.Attribute(name)?.Value ?? defaultValue;
     }
+
+    private static float? XmlAttrFloat(XElement el, string name) =>
+        el.Attribute(name) is { } attr && float.TryParse(attr.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var result)
+            ? result
+            : null;
 
     private static bool XmlAttrBool(XElement el, string name, bool defaultValue = false)
     {
@@ -728,6 +789,14 @@ public static class BmFontReader
             VariantOf = root.TryGetProperty("variantOf", out var vo) ? vo.GetString() : null,
             Variants = root.TryGetProperty("variants", out var vs) && vs.ValueKind == JsonValueKind.Array
                 ? vs.EnumerateArray().Select(e => e.GetString() ?? "").ToList()
+                : null,
+            FractionalMetrics = root.TryGetProperty("chars", out var chars) && chars.ValueKind == JsonValueKind.Array
+                ? chars.EnumerateArray().Select(c => new FractionalCharMetrics(
+                    c.GetProperty("id").GetInt32(),
+                    c.GetProperty("advance").GetSingle(),
+                    c.GetProperty("lsb").GetSingle(),
+                    c.TryGetProperty("advanceDelta", out var ad) ? ad.GetSingle() : null,
+                    c.TryGetProperty("lsbDelta", out var ld) ? ld.GetSingle() : null)).ToList()
                 : null
         };
     }

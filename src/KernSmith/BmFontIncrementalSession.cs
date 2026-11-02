@@ -40,6 +40,7 @@ public sealed class BmFontIncrementalSession : IDisposable
     private readonly HashSet<int> _present = new();
     private readonly List<CharEntry> _chars = new();
     private readonly List<KerningEntry> _kerning = new();
+    private readonly List<FractionalCharMetrics> _fractional = new();
     private readonly int _advanceAdjustX;
 
     // Resume-only: reused verbatim in CurrentModel so a resumed session keeps referring
@@ -155,6 +156,8 @@ public sealed class BmFontIncrementalSession : IDisposable
                 session._chars.Add(c);
             }
             session._kerning.AddRange(existing.KerningPairs);
+            if (existing.Extended?.FractionalMetrics is { } existingFractional)
+                session._fractional.AddRange(existingFractional);
 
             // Line metrics come from the model so added CharEntries stay consistent with
             // the existing atlas (yoffset is relative to the same base line).
@@ -360,6 +363,8 @@ public sealed class BmFontIncrementalSession : IDisposable
             _chars.Add(a.Char);
             _present.Add(a.Codepoint);
             addedSet.Add(a.Codepoint);
+            if (raster.FractionalMetrics is { } fractional && fractional.TryGetValue(a.Codepoint, out var f))
+                _fractional.Add(BmFontModelBuilder.FractionalEntry(a.Codepoint, f, _options));
         }
         var newKerning = ComputeKerningDelta(addedSet);
         _kerning.AddRange(newKerning);
@@ -625,7 +630,7 @@ public sealed class BmFontIncrementalSession : IDisposable
             Pages = pages,
             Characters = _chars.ToArray(),
             KerningPairs = _kerning.ToArray(),
-            Extended = BmFontModelBuilder.BuildExtendedMetadata(_options)
+            Extended = BmFontModelBuilder.BuildExtendedMetadata(_options, _fractional.Count > 0 ? _fractional.ToArray() : null)
         };
     }
 

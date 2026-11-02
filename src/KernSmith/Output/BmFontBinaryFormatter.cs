@@ -197,6 +197,7 @@ internal sealed class BmFontBinaryFormatter : IBmFontBinaryFormatter
         if (extended.VariationAxes is { Count: > 0 }) dict["variationAxes"] = extended.VariationAxes;
         if (extended.VariantOf != null) dict["variantOf"] = extended.VariantOf;
         if (extended.Variants is { Count: > 0 }) dict["variants"] = extended.Variants;
+        if (extended.FractionalMetrics is { Count: > 0 }) dict["chars"] = extended.FractionalMetrics;
 
         using var stream = new MemoryStream();
         using (var jsonWriter = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = false }))
@@ -231,6 +232,22 @@ internal sealed class BmFontBinaryFormatter : IBmFontBinaryFormatter
                         jsonWriter.WriteStartArray(key);
                         foreach (var name in names)
                             jsonWriter.WriteStringValue(name);
+                        jsonWriter.WriteEndArray();
+                        break;
+                    case IReadOnlyList<FractionalCharMetrics> chars:
+                        jsonWriter.WriteStartArray(key);
+                        foreach (var c in chars)
+                        {
+                            jsonWriter.WriteStartObject();
+                            jsonWriter.WriteNumber("id", c.Id);
+                            jsonWriter.WriteNumber("advance", c.Advance);
+                            jsonWriter.WriteNumber("lsb", c.Lsb);
+                            if (c.AdvanceDelta is { } advanceDelta)
+                                jsonWriter.WriteNumber("advanceDelta", advanceDelta);
+                            if (c.LsbDelta is { } lsbDelta)
+                                jsonWriter.WriteNumber("lsbDelta", lsbDelta);
+                            jsonWriter.WriteEndObject();
+                        }
                         jsonWriter.WriteEndArray();
                         break;
                 }

@@ -484,6 +484,12 @@ internal sealed class PreparedRasterization : IDisposable
 
         var glyphs = _rasterizer.RasterizeAll(codepointList, _effectiveRasterOptions).ToList();
 
+        // The fractional metrics are taken from the backend's glyphs now, before any stage
+        // rebuilds them (the height stretch and every effect construct new glyphs without the
+        // field); the advance's integer growth through those stages is added back below.
+        var fractional = options.FractionalMetrics ? CaptureFractionalMetrics(glyphs) : null;
+        var advanceShift = fractional is null ? null : new int[glyphs.Count];
+
         // Vector outline layers are asked for here, one glyph at a time: rasterizers are not
         // thread-safe, and the per-glyph pass below runs in parallel.
         var vector = _vectorOutline;
@@ -514,6 +520,14 @@ internal sealed class PreparedRasterization : IDisposable
                 foreach (var codepoint in options.CustomGlyphs.Keys)
                     masks.Remove(codepoint);
             }
+
+            // Nor font metrics to report.
+            if (fractional is not null)
+            {
+                foreach (var codepoint in options.CustomGlyphs.Keys)
+                    fractional.Remove(codepoint);
+                advanceShift = new int[glyphs.Count];
+            }
         }
 
         // A routed outline is built from the final glyphs after this pass, so its layers follow
@@ -539,7 +553,7 @@ internal sealed class PreparedRasterization : IDisposable
 
         // Apply remaining per-glyph transforms in a single pass (parallelized on non-WASM,
         // above the small-batch threshold)
-        if (_hasEffects || _activePostProcessors != null || needsDownscale || rawGlyphsForVariants != null || routedMasks != null)
+        if (_hasEffects || _activePostProcessors != null || needsDownscale || rawGlyphsForVariants != null || routedMasks != null || advanceShift != null)
         {
             void ProcessGlyph(int i)
             {
@@ -554,6 +568,7 @@ internal sealed class PreparedRasterization : IDisposable
                     g = SuperSampleDownscale(g, _renderScale, perChannel);
                     mask = mask?.Downscale(_renderScale);
                 }
+                var downscaledAdvance = g.Metrics.Advance;
                 if (rawGlyphsForVariants != null)
                     rawGlyphsForVariants[i] = g;
                 if (_hasEffects)
@@ -571,6 +586,8 @@ internal sealed class PreparedRasterization : IDisposable
                 }
                 if (routedMasks != null)
                     routedMasks[i] = mask;
+                if (advanceShift != null)
+                    advanceShift[i] = g.Metrics.Advance - downscaledAdvance;
                 glyphs[i] = g;
             }
 
@@ -694,9 +711,61 @@ internal sealed class PreparedRasterization : IDisposable
             RasterizerKerningAdjustments = _rasterizerKerningAdjustments,
             RawGlyphsForVariants = rawGlyphsForVariants,
             EqualizedSpan = span,
-            ChannelOutlineMasks = routedMasks is null ? null : CollectRoutedMasks(glyphs, routedMasks)
+            ChannelOutlineMasks = routedMasks is null ? null : CollectRoutedMasks(glyphs, routedMasks),
+            FractionalMetrics = fractional is null ? null : FinishFractionalMetrics(fractional, glyphs, advanceShift!),
         };
     }
+
+    /// <summary>
+    /// The backend's unrounded metrics per codepoint at the render size: what it reported on
+    /// <see cref="RasterizedGlyph.Fractional"/>, else the font's own design advance and bearing
+    /// scaled to the render size — only where that is what the backend rendered (the default
+    /// instance, no synthetic bold or width, a glyph the font maps), with no hinting deltas.
+    /// </summary>
+    private Dictionary<int, FractionalGlyphMetrics> CaptureFractionalMetrics(List<RasterizedGlyph> glyphs)
+    {
+        var result = new Dictionary<int, FractionalGlyphMetrics>(glyphs.Count);
+        var options = _effectiveRasterOptions;
+        bool designApplies = options.VariationAxes is not { Count: > 0 } && !options.Bold && options.WidthPercent == 100;
+        double pixelsPerUnit = (double)options.Size * (options.Dpi > 0 ? options.Dpi / 72.0 : 1.0) / FontInfo.UnitsPerEm;
+        foreach (var g in glyphs)
+        {
+            if (g.Fractional is { } reported)
+                result[g.Codepoint] = reported;
+            else if (designApplies && FontInfo.DesignMetrics.TryGetValue(g.Codepoint, out var design))
+                result[g.Codepoint] = new FractionalGlyphMetrics((float)(design.AdvanceWidth * pixelsPerUnit), (float)(design.LeftSideBearing * pixelsPerUnit));
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// The captured metrics in output pixels: divided by the super-sample level (no rounding), the
+    /// advance grown by whatever the effects and post-processors added to the integer advance, and
+    /// every value snapped to 1/64 px — the resolution the metadata promises.
+    /// </summary>
+    private IReadOnlyDictionary<int, FractionalGlyphMetrics> FinishFractionalMetrics(
+        Dictionary<int, FractionalGlyphMetrics> captured, List<RasterizedGlyph> glyphs, int[] advanceShift)
+    {
+        var result = new Dictionary<int, FractionalGlyphMetrics>(captured.Count);
+        for (var i = 0; i < glyphs.Count; i++)
+        {
+            if (!captured.TryGetValue(glyphs[i].Codepoint, out var f))
+                continue;
+            float scale = 1f / _renderScale;
+            result[glyphs[i].Codepoint] = new FractionalGlyphMetrics(
+                Advance: Sixtyfourths((f.Advance * scale) + advanceShift[i]),
+                BearingX: Sixtyfourths(f.BearingX * scale),
+                AdvanceDelta: f.AdvanceDelta is { } ad ? Sixtyfourths(ad * scale) : null,
+                BearingXDelta: f.BearingXDelta is { } bd ? Sixtyfourths(bd * scale) : null);
+        }
+
+        return result;
+    }
+
+    /// <summary>Rounds to the nearest 1/64 px, halves away from zero. Every k/64 is exact in a float.</summary>
+    internal static float Sixtyfourths(float value) =>
+        (float)(Math.Round(value * 64.0, MidpointRounding.AwayFromZero) / 64.0);
 
     /// <summary>
     /// How <see cref="OutlineMode.Vector"/> asks the backend for layers: the layer width in render

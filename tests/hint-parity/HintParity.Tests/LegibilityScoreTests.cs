@@ -360,10 +360,15 @@ public class LegibilityScoreTests
     }
 
     [Fact]
-    public void Score_WeightsSumToOne_AndEveryTermIsReported()
+    public void Score_EveryTermIsReported_UnderTheWeightNames()
     {
-        LegibilityScore.Weights.Values.Sum().ShouldBe(1.0, 1e-9);
-        LegibilityScore.Weights.Keys.ShouldBe(["topology", "fidelity", "concentration", "separability", "alignment", "stems", "spacing"], ignoreOrder: true);
+        var crisp = CrispFont();
+        var ideal = IdealFont.FromHighRes(Upscale(crisp, 4), 4);
+        var terms = LegibilityScore.Measure(crisp, ideal, mono: false);
+
+        terms.Named().Select(t => t.Name).ShouldBe(LegibilityScore.Weights.Keys, ignoreOrder: true);
+        terms.Features.ShouldBeNull();
+        LegibilityScore.Measure(crisp, ideal, mono: false, new StripLayout(8, 6)).Features.ShouldNotBeNull();
     }
 
     // ---- helpers ---------------------------------------------------------------------------------
