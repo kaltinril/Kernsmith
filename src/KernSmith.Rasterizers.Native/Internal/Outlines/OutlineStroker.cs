@@ -190,7 +190,7 @@ internal static class OutlineStroker
                     // The short way from n0 to n1 turns the same way as the path; a reversal
                     // has no short way, so its arc goes round the front of the corner.
                     double sign = reversal ? -side : Math.Sign(cross);
-                    RoundJoin(v, n0, start, end, sign, Math.Acos(Math.Clamp(dot, -1, 1)));
+                    RoundJoin(v, n0, start, end, sign, DeterministicMath.Acos(Math.Clamp(dot, -1, 1)));
                     return;
 
                 case StrokeJoin.Miter when !reversal && 1 / Math.Sqrt((1 + dot) / 2) <= miterLimit:
@@ -208,17 +208,17 @@ internal static class OutlineStroker
         private void RoundJoin(Point v, (double X, double Y) n0, Point start, Point end, double sign, double sweep)
         {
             // The largest step whose chord stays within tolerance of the arc.
-            double maxStep = tolerance < half ? 2 * Math.Acos(1 - (tolerance / half)) : Math.PI / 2;
+            double maxStep = tolerance < half ? 2 * DeterministicMath.Acos(1 - (tolerance / half)) : Math.PI / 2;
             int steps = Math.Max(1, (int)Math.Ceiling(sweep / maxStep));
 
             _polygon.Clear();
             _polygon.Add(v);
             _polygon.Add(start);
-            double angle0 = Math.Atan2(n0.Y, n0.X);
+            double angle0 = DeterministicMath.Atan2(n0.Y, n0.X);
             for (int i = 1; i < steps; i++)
             {
                 double angle = angle0 + (sign * sweep * i / steps);
-                _polygon.Add(new Point(v.X + (Math.Cos(angle) * half), v.Y + (Math.Sin(angle) * half)));
+                _polygon.Add(new Point(v.X + (DeterministicMath.Cos(angle) * half), v.Y + (DeterministicMath.Sin(angle) * half)));
             }
 
             _polygon.Add(end);

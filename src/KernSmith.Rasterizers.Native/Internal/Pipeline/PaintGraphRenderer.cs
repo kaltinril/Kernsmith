@@ -464,7 +464,7 @@ internal sealed class PaintGraphRenderer
 
             return (x, y) =>
             {
-                double angle = Math.Atan2(y - g.CenterY, x - g.CenterX) * (180 / Math.PI);
+                double angle = DeterministicMath.Atan2(y - g.CenterY, x - g.CenterX) * (180 / Math.PI);
                 if (angle < 0)
                     angle += 360;
                 if (equal)

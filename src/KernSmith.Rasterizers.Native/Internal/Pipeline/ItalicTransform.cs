@@ -42,7 +42,7 @@ internal sealed class ItalicTransform : IGlyphTransform
         if (!float.IsFinite(degrees) || Math.Abs(degrees) > 60f)
             throw new ArgumentOutOfRangeException(nameof(degrees), degrees, "Italic angle must be within ±60°.");
 
-        return new ItalicTransform((float)Math.Tan(-degrees * Math.PI / 180.0));
+        return new ItalicTransform((float)DeterministicMath.Tan(-degrees * Math.PI / 180.0));
     }
 
     /// <inheritdoc />

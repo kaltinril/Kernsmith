@@ -18,4 +18,14 @@
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.StbTrueType\KernSmith.Rasterizers.StbTrueType.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.Native\KernSmith.Rasterizers.Native.csproj" />
   </ItemGroup>
+  <!--
+    Determinism check: the page reports the same SHA-256 the Native test project's manifest
+    pins (tests/KernSmith.Rasterizers.Native.Tests/Determinism), computed by the same linked
+    source, and ships Roboto under wwwroot/fonts so ?backend=native&font=fonts/Roboto-Regular.ttf
+    reproduces the manifest case "roboto/32px/grayscale/default" (CI's wasm-publish job runs it).
+  -->
+  <ItemGroup>
+    <Compile Include="..\..\tests\KernSmith.Rasterizers.Native.Tests\Determinism\DeterminismHash.cs" Link="Determinism\DeterminismHash.cs" />
+    <Content Include="..\..\tests\KernSmith.Tests\Fixtures\Roboto-Regular.ttf" Link="wwwroot\fonts\Roboto-Regular.ttf" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

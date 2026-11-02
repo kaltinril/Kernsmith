@@ -228,7 +228,7 @@ public class MonoStrokeRasterizerTests
     ];
 
     private static EdgeSegment[] Reverse(EdgeSegment[] edges) =>
-        edges.Reverse().Select(e => new EdgeSegment(e.X1, e.Y1, e.X0, e.Y0)).ToArray();
+        Enumerable.Reverse(edges).Select(e => new EdgeSegment(e.X1, e.Y1, e.X0, e.Y0)).ToArray();
 
     /// <summary>An elliptical ring: an outer ellipse and a reversed inner one <paramref name="wall"/> px inside it, 64 segments each.</summary>
     private static EdgeSegment[] Ellipse(float cx, float cy, float rx, float ry, float wall)

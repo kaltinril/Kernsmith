@@ -34,9 +34,11 @@ jobs:
       - name: Test (${{ matrix.framework }})
         run: dotnet test --project tests/KernSmith.Tests/KernSmith.Tests.csproj --no-build -f ${{ matrix.framework }} --report-xunit-trx --report-xunit-trx-filename core.trx --results-directory testresults
         continue-on-error: ${{ matrix.os == 'ubuntu-latest' }}
+      # The Native rasterizer's tests are blocking on every OS, exit code included: this project
+      # holds the determinism manifest and golden masters, whose whole point is agreeing across
+      # Windows, Linux and macOS (Apple Silicon), so a Linux-only failure here is a real finding.
       - name: Test rasterizers (${{ matrix.framework }})
         run: dotnet test --project tests/KernSmith.Rasterizers.Native.Tests/KernSmith.Rasterizers.Native.Tests.csproj --no-build -f ${{ matrix.framework }} --report-xunit-trx --report-xunit-trx-filename rasterizers.trx --results-directory testresults
-        continue-on-error: ${{ matrix.os == 'ubuntu-latest' }}
       # KernSmith.Ui targets net10.0 only, so this project cannot be tested on the net8.0 leg.
       - name: Test UI services
         if: matrix.framework == 'net10.0'
@@ -80,6 +82,76 @@ jobs:
           done
           exit $status
 
+  # Native determinism on Linux arm64 (the build-and-test macos-latest legs are already arm64,
+  # Apple Silicon). Only the classes that need no FreeType oracle run here — FreeTypeSharp ships
+  # no linux-arm64 native library — which are exactly the ones that pin Native's bytes: the
+  # determinism manifest, the golden masters and the DeterministicMath bit tests.
+  native-determinism-arm64:
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: [net8.0, net10.0]
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - run: dotnet build tests/KernSmith.Rasterizers.Native.Tests/KernSmith.Rasterizers.Native.Tests.csproj
+      - name: Native determinism tests (${{ matrix.framework }}, linux-arm64)
+        run: >
+          dotnet test --project tests/KernSmith.Rasterizers.Native.Tests/KernSmith.Rasterizers.Native.Tests.csproj --no-build -f ${{ matrix.framework }}
+          --report-xunit-trx --report-xunit-trx-filename arm64.trx --results-directory testresults
+          -- --filter-class "*DeterminismManifestTests" --filter-class "*NativeSourceDeterminismTests" --filter-class "*DeterministicMathTests" --filter-class "*NativeGolden*"
+      - name: Verify tests ran
+        shell: bash
+        run: |
+          counters=$(grep -o '<Counters [^>]*>' testresults/arm64.trx | head -1 || true)
+          total=$(printf '%s' "$counters" | grep -o 'total="[0-9]*"' | tr -dc '0-9' || true)
+          failed=$(printf '%s' "$counters" | grep -o 'failed="[0-9]*"' | tr -dc '0-9' || true)
+          echo "total=$total failed=$failed"
+          if [ -z "$total" ] || [ "$total" -lt 100 ]; then
+            echo "::error::Expected the determinism, golden and DeterministicMath classes to run (hundreds of tests); got total=$total — the filter matched nothing."
+            exit 1
+          fi
+          if [ "$failed" != "0" ]; then
+            echo "::error::$failed test(s) failed on linux-arm64."
+            exit 1
+          fi
+
+  # Native under NativeAOT: publish the determinism probe as a native binary and have it generate
+  # cases of the manifest. A hash match proves the AOT-compiled rasterizer (no JIT, ILCompiler
+  # codegen) produces the bytes the JIT legs pinned.
+  native-determinism-aot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Install NativeAOT prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang zlib1g-dev
+      - name: Publish the probe with NativeAOT
+        run: dotnet publish tests/KernSmith.DeterminismProbe/KernSmith.DeterminismProbe.csproj -c Release -r linux-x64 -p:PublishAot=true -o out/aot
+      - name: Run the AOT probe against the manifest
+        shell: bash
+        run: |
+          out/aot/KernSmith.DeterminismProbe \
+            --fixtures tests/KernSmith.Tests/Fixtures \
+            --manifest tests/KernSmith.Rasterizers.Native.Tests/Determinism/manifest.json \
+            --case roboto/32px/ --case roboto/12px/grayscale/ \
+            --case roboto/32px/grayscale/default/sdf --case bungee/32px/grayscale/default/color | tee aot.log
+          if ! grep -q 'dynamic code unsupported (AOT)' aot.log; then
+            echo "::error::The probe did not run as a NativeAOT binary (dynamic code is supported), so this leg proved nothing."
+            exit 1
+          fi
+
   code-quality:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -118,9 +190,14 @@ jobs:
           fi
           echo "Release version OK: $version"
 
+  # Publishes the Blazor WASM sample (AOT, wasm-tools) and then runs it: headless Chromium loads
+  # the page with ?backend=native&font=fonts/Roboto-Regular.ttf, which generates on load and
+  # reports the determinism hash of the result; wasm-check.mjs compares it with the manifest.
+  # A match proves the browser-wasm build of Native (Mono LLVM AOT, no SIMD width, Emscripten
+  # libm never called) produces the bytes the desktop JIT legs pinned.
   wasm-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
@@ -144,3 +221,15 @@ jobs:
             exit 1
           fi
           echo "No native binaries found — WASM output is clean"
+          echo "WASM_ROOT=$(dirname "$WASM_DIR")" >> "$GITHUB_ENV"
+      - name: Install Playwright
+        working-directory: tests/KernSmith.DeterminismProbe
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Run the sample headless and compare the Native hash with the manifest
+        run: |
+          test -f "$WASM_ROOT/fonts/Roboto-Regular.ttf" || { echo "::error::fonts/Roboto-Regular.ttf missing from the published wwwroot"; exit 1; }
+          node tests/KernSmith.DeterminismProbe/wasm-check.mjs --dir "$WASM_ROOT" \
+            --manifest tests/KernSmith.Rasterizers.Native.Tests/Determinism/manifest.json \
+            --case roboto/32px/grayscale/default --timeout 600

@@ -42,7 +42,7 @@ internal static class GammaCurve
         double exponent = Identity / gamma;
         table[255] = 255;
         for (int i = 1; i < 255; i++)
-            table[i] = (byte)Math.Clamp((int)Math.Round(Math.Pow(i / 255.0, exponent) * 255.0, MidpointRounding.AwayFromZero), 0, 255);
+            table[i] = (byte)Math.Clamp((int)Math.Round(DeterministicMath.Pow(i / 255.0, exponent) * 255.0, MidpointRounding.AwayFromZero), 0, 255);
 
         _table = table;
         _tableGamma = gamma;

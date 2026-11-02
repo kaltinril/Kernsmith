@@ -1,0 +1,9 @@
+{
+  "name": "kernsmith-determinism-wasm-check",
+  "private": true,
+  "description": "Playwright for wasm-check.mjs, the browser leg of the Native determinism check (npm install; npx playwright install --with-deps chromium).",
+  "type": "module",
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}

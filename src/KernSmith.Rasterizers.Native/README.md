@@ -265,6 +265,33 @@ unhinted rather than snapped to zones that do not describe it.
   `BmFont.Generate` (and each `GenerateBatch` job) creates its own, so parallel generation is
   safe and byte-identical to serial.
 
+## Same bytes on every host
+
+Native produces byte-identical atlas pixels and `.fnt` metrics for a given font and options on
+every runtime and machine: the CLI, the desktop app, MonoGame/KNI, Blazor WebAssembly
+(interpreted or AOT), NativeAOT, x64 and arm64, .NET 8 and .NET 10. That is the point of a
+pure-managed rasterizer, and it is engineered, not assumed:
+
+- The arithmetic is IEEE 754 operations that every runtime computes exactly (`+ − × ÷`,
+  square root, floor/round, comparisons). The transcendental functions the color and outline
+  paths need (`Pow` for sRGB, `Sin`/`Cos`/`Tan` for paint transforms and slants, `Atan2` for
+  sweep gradients, `Acos` for round joins) come from Native's own `DeterministicMath`, built from
+  those exact operations, never from `System.Math` — whose results come from the host C library
+  and differ in the last bit between Windows, glibc, Apple and the browser.
+- No SIMD-width-dependent arithmetic and no parallel accumulation: the one vectorized kernel
+  (the SDF splat) computes each lane exactly as the scalar loop does, and a test holds it to that.
+- Only the raw pixels are promised, not the PNG file: the PNG encoder's deflate stream follows
+  the runtime's zlib, so the same atlas can encode to different `.png` bytes on .NET 8 and 10,
+  which decode to the same pixels.
+
+CI proves it on every run: the Native test project asserts `Determinism/manifest.json` — the
+SHA-256 of the `.fnt` and atlas pixels for 242 configurations (five fixture fonts at 8/12/16/32 px,
+grayscale/none/light anti-aliasing, default/none/light/normal hint levels, plus SDF and color) — on
+Windows, Linux and macOS (Apple Silicon) x64 and arm64 under .NET 8 and 10, and on Linux arm64;
+the published Blazor WASM sample reports the same hash from headless Chromium; and a NativeAOT
+build of `tests/KernSmith.DeterminismProbe` reports it from a native binary. See
+[TESTING-NATIVE.md](../../TESTING-NATIVE.md) to check your own host.
+
 ## Usage
 
 Reference the project from a source build (there is no `dotnet add package` yet):
@@ -353,6 +380,36 @@ KERNSMITH_UPDATE_GOLDENS=1 dotnet test --project tests/KernSmith.Rasterizers.Nat
 
 `NativeSimilarityMatrixTests` scores Native against FreeType and stb_truetype; its measured table
 is in `plan/phase-179-validation-golden-masters.md`.
+
+## Determinism rules (contributors)
+
+`NativeSourceDeterminismTests` scans this project and `KernSmith.Imaging` on every test run and
+fails on:
+
+- any libm-backed call — `Math`/`MathF`/`double`/`float` `.Pow .Exp .Log .Sin .Cos .Tan .Atan
+  .Atan2 .Asin .Acos .Sinh … .Cbrt .Hypot .FusedMultiplyAdd` — outside `Internal/DeterministicMath.cs`.
+  Use `DeterministicMath` (add a function there if it lacks one, from the exact operations only,
+  with reference and pinned-bit tests in `DeterministicMathTests`), or a table built with it.
+  `Sqrt`, `Floor`, `Ceiling`, `Round`, `Truncate`, `Abs`, `Min`, `Max`, `Clamp`, `CopySign` are exact and fine.
+- `Parallel.*`, `Task.Run`, `ThreadPool`, `new Thread`, `Environment.ProcessorCount`: work split
+  across threads sums in whichever order the threads finish.
+- `Vector<T>` / `Vector128..512` / `System.Runtime.Intrinsics` outside `SignedDistanceField.cs`,
+  whose kernel is per-lane and pinned bit-for-bit to its scalar loop by `SdfRendererTests`. A new
+  SIMD path needs the same proof and an entry in the test's allow list.
+
+One more thing to know: a `(int)` cast of a NaN or out-of-range float is the one operation where
+.NET 8 on x64 (`int.MinValue`) and arm64 (saturating, as .NET 9+ everywhere) legitimately
+disagree — keep casts to finite, bounded values, as the existing code does.
+
+`DeterminismManifestTests` holds the whole matrix in `Determinism/manifest.json`. After a
+deliberate output change (the goldens will have moved too), regenerate locally and review:
+
+```
+KERNSMITH_UPDATE_DETERMINISM=1 dotnet test --project tests/KernSmith.Rasterizers.Native.Tests -- --filter-class "*DeterminismManifestTests"
+```
+
+Never regenerate to make one platform pass: if the manifest matches on the others, that platform
+has a determinism bug.
 
 See the [KernSmith repository](https://github.com/kaltinril/Kernsmith) for full project
 documentation.

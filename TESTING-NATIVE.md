@@ -142,6 +142,33 @@ fail restore, since they live on nuget.org:
 Then reference `KernSmith` and `KernSmith.Rasterizers.Native` at `0.24.0-local.1` next to the Gum
 package. Repacking under the same version needs `dotnet nuget locals global-packages --clear`.
 
+## Same bytes on your host
+
+Native's output is the same on every runtime and machine (see the Native README, "Same bytes
+on every host"). To check a host of your own against the committed hashes:
+
+```bash
+# Any desktop OS, JIT:
+dotnet run --project tests/KernSmith.DeterminismProbe -f net10.0 -- --fixtures tests/KernSmith.Tests/Fixtures --manifest tests/KernSmith.Rasterizers.Native.Tests/Determinism/manifest.json
+
+# NativeAOT (needs the platform's C toolchain: VS C++ on Windows, clang + zlib1g-dev on Linux):
+dotnet publish tests/KernSmith.DeterminismProbe -c Release -r win-x64 -p:PublishAot=true -o out/aot
+out/aot/KernSmith.DeterminismProbe --fixtures tests/KernSmith.Tests/Fixtures --manifest tests/KernSmith.Rasterizers.Native.Tests/Determinism/manifest.json
+
+# Browser (publish the Blazor sample, then headless Chromium; add -p:RunAOTCompilation=false without the wasm-tools workload):
+dotnet publish samples/KernSmith.Samples.BlazorWasm -c Release -o out/wasm
+(cd tests/KernSmith.DeterminismProbe && npm install && npx playwright install chromium)
+node tests/KernSmith.DeterminismProbe/wasm-check.mjs --dir out/wasm/wwwroot --manifest tests/KernSmith.Rasterizers.Native.Tests/Determinism/manifest.json
+```
+
+`--case <id prefix>` narrows the probe (`--list` prints the ids); `--channel chrome` makes
+`wasm-check.mjs` use an installed Google Chrome. Every line should read `OK`; a `MISMATCH` on a
+host where CI is green is a determinism bug — report the host, runtime and the `parts` it
+prints (which say whether the `.fnt` or a page moved). The sample page itself shows the hash
+under the generation result, so a MonoGame/KNI/Gum host can be compared by hand: generate
+Roboto at 32 px, ASCII, grayscale with Native and compare `DeterminismHash` (linked source
+in `tests/KernSmith.Rasterizers.Native.Tests/Determinism/`) with `roboto/32px/grayscale/default`.
+
 ## Checklist
 
 Fixtures are in `tests/KernSmith.Tests/Fixtures/` (color fonts in `Color/`). Compare against
