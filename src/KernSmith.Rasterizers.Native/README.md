@@ -168,12 +168,25 @@ advance:
   length-weighted median over plain-stemmed letters) when within 10% of it: a stroke under a
   pixel thick is centred in one pixel at its true coverage (Roboto's 0.82 px stem is one column
   at ~210, not a solid pixel); a thicker one gets one edge on a pixel boundary and a single
-  fringe. In mono every stroke is its rounded thickness, at least one pixel, on pixel
-  boundaries, so the 50% threshold can neither drop nor double it.
+  fringe. The exception is a **hairline**: a grayscale stroke under half a pixel (a serif face's
+  horizontals — Georgia's and Source Serif's are 0.35-0.45 px at 8-11 ppem) is fitted at the
+  hairline weight, 0.6 px, still inside its one row or column, so that row reads above the 50%
+  threshold and the ring or eye it closes survives; the weight falls linearly to nothing between
+  12 and 14 ppem (`HintTuning.HairlineMaxWidth`, `HairlineWeight`, `HairlineFullPpem`,
+  `HairlineEndPpem`), and a stroke of half a pixel or more — every stem and bar of a text sans —
+  keeps its own coverage. In mono every stroke is its rounded thickness, at least one pixel, on
+  pixel boundaries, so the 50% threshold can neither drop nor double it.
+- **Dots** — a round stroke on a contour no larger than a dot (an `i`/`j` dot, a `:`) whose zone
+  would land it on the stroke under it (the ascender zone one row above the x-height at 7-8
+  ppem, where the hung dot keeps under half a pixel of white) moves a whole pixel out, zone and
+  all, so there is always a row of white under a dot (`HintTuning.DotLengthEm`).
 - **Placement** — in x a per-glyph sub-pixel phase is chosen so the strokes move least, the
   longest stroke anchors the glyph, and the others keep its phase with their pitches rounded to
   whole pixels (in mono the outer-to-outer distance rounds, so widened stems eat into counters,
   not the glyph's width). A gap between features of half a pixel or more stays at least a pixel.
+  In mono the phase search models exactly that — the rounded pitch, the counter's whole pixel,
+  and the cap on how far a stroke may move — so a phase that would leave a second stroke nowhere
+  to go (the two strokes of `"` at 9 ppem) is not chosen for moving the first one least.
 - **Everything else** moves by one monotone map per axis, so the outline cannot fold; fitted
   coordinates land on a 1/64 px grid.
 - **Advance and side bearings** — every advance is the font's, rounded once, in both
@@ -249,8 +262,11 @@ geometry:
   is centre-sampled at 4× to find its counters: a counter the bitmap closed is reopened at the
   pixel it covers most when that pixel's four neighbours are lit (the eye of an 'e'), and an
   enclosed region of up to four pixels that overlaps no counter is an aperture the bitmap
-  closed (a 'c' whose terminals met), opened by clearing the rim pixel holding the least ink
-  that no stroke passes through. Edges are flattened at 0.05 px for this renderer, since the
+  closed (a 'c' whose terminals met, the terminals of an 's' or the tail of an 'e' landing a
+  sub-pixel mouth from the spine or bar), opened by clearing one rim pixel: a stroke's end if
+  there is one — a pixel whose sub-pixel ink joins lit pixels on one side of it only, the
+  terminal a pixel artist drops first — else the pixel holding the least ink that no stroke
+  passes through, and never one whose loss would split the glyph. Edges are flattened at 0.05 px for this renderer, since the
   slope tests read them. The counter check runs for bitmaps up to 20 px tall. Measured at a
   12 px cell: about 4.5× the threshold renderer's time per glyph (75 µs vs 17 µs), at 24 px
   about 3× with the counter check skipped.

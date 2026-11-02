@@ -41,7 +41,9 @@ public class NormalHinterShapeTests
     [Fact]
     public void Fit_Grayscale_PlacesARoundBowlsWalls_InsideOneColumnAndRow()
     {
-        var ring = Ring(2.1f, 2.3f, outer: 1.4f, inner: 0.9f);
+        // 0.55 px walls: a thin stroke, not a hairline (under half a pixel), so grayscale keeps
+        // its thickness and only places it inside one column or row.
+        var ring = Ring(2.1f, 2.3f, outer: 1.4f, inner: 0.85f);
 
         var result = NormalHinter.Fit(ring, 4.5f, NormalHintMetrics.WithoutZones(maxStem: 1.45f), mono: false);
 
@@ -51,7 +53,7 @@ public class NormalHinterShapeTests
         MathF.Floor(inner.XMax).ShouldBe(MathF.Floor(outer.XMax - 1e-3f), $"right wall {inner.XMax:F2}-{outer.XMax:F2} straddles a column");
         MathF.Floor(inner.YMax).ShouldBe(MathF.Floor(outer.YMax - 1e-3f), $"top wall {inner.YMax:F2}-{outer.YMax:F2} straddles a row");
         MathF.Floor(outer.YMin).ShouldBe(MathF.Floor(inner.YMin - 1e-3f), $"bottom wall {outer.YMin:F2}-{inner.YMin:F2} straddles a row");
-        (inner.XMin - outer.XMin).ShouldBe(0.5f, Tolerance, "grayscale keeps the wall's thickness");
+        (inner.XMin - outer.XMin).ShouldBe(0.55f, Tolerance, "grayscale keeps the wall's thickness");
     }
 
     [Fact]
@@ -67,6 +69,77 @@ public class NormalHinterShapeTests
         var (_, inner) = ContourBounds(result!.Value.Outline);
         (inner.XMax - inner.XMin).ShouldBeGreaterThanOrEqualTo(1f - Tolerance, "counter width");
         (inner.YMax - inner.YMin).ShouldBeGreaterThanOrEqualTo(1f - Tolerance, "counter height");
+    }
+
+    // ---- Hairlines in grayscale ---------------------------------------------------------------
+
+    [Fact]
+    public void Fit_Grayscale_LiftsAHairlineBar_ToTheMinimumWeight()
+    {
+        // Georgia's horizontals at 10 ppem are 0.4 px: centred in one row at their true
+        // coverage they read at 40%, under the 50% a reader's eye (and the topology measure)
+        // cuts at, so every ring breaks and every 'e' loses its eye. Below 14 ppem a stroke
+        // thinner than half a pixel is fitted at the hairline weight, still inside one row.
+        var bar = GlyphOutline.FromCommands(TestOutlines.Rect(0.5f, 2.1f, 4.5f, 2.5f));
+        var metrics = new NormalHintMetrics(ScaledHintMetrics.WithoutZones(1.45f), 0.8f, Ppem: 10f);
+
+        var result = NormalHinter.Fit(bar, 5f, metrics, mono: false);
+
+        result.ShouldNotBeNull();
+        var bounds = OutlineBounds.Tight(result!.Value.Outline);
+        (bounds.YMax - bounds.YMin).ShouldBe(HintTuning.Default.HairlineWeight, Tolerance);
+        MathF.Floor(bounds.YMin).ShouldBe(MathF.Floor(bounds.YMax - 1e-3f), $"bar {bounds.YMin:F2}-{bounds.YMax:F2} straddles a row");
+    }
+
+    [Theory]
+    [InlineData(10f, 0.55f, 0.55f)]
+    [InlineData(14f, 0.4f, 0.4f)]
+    [InlineData(13f, 0.4f, 0.4f)]
+    public void Fit_Grayscale_LeavesThickerStrokes_AndLargerSizes_AsDrawn(float ppem, float thickness, float expected)
+    {
+        // A 0.55 px stroke is a thin stem, not a hairline, and keeps its weight; from 14 ppem
+        // (where a hairline is wide enough to read) nothing is lifted, and the lift fades in
+        // from there so no size steps.
+        var bar = GlyphOutline.FromCommands(TestOutlines.Rect(0.5f, 2.1f, 4.5f, 2.1f + thickness));
+        var metrics = new NormalHintMetrics(ScaledHintMetrics.WithoutZones(1.45f), 0.8f, Ppem: ppem);
+
+        var result = NormalHinter.Fit(bar, 5f, metrics, mono: false);
+
+        result.ShouldNotBeNull();
+        var bounds = OutlineBounds.Tight(result!.Value.Outline);
+        (bounds.YMax - bounds.YMin).ShouldBe(expected, Tolerance);
+    }
+
+    // ---- Dots -----------------------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Fit_MovesADotOutAPixel_WhenItsZoneWouldLandItOnTheStem(bool mono)
+    {
+        // Roboto 'i' at 7.6 ppem: the stem's top on the x-height (4.01 → 4), the dot 4.68-5.46
+        // with its top in the ascender zone (5.39 → 5). Hung off the zone the dot would sit
+        // at 4-5, on the stem; it was left half a pixel tall at 4.47-5 and drew touching the
+        // stem. A dot moves a whole pixel out instead, keeping a row of white under it.
+        var stem = GlyphOutline.FromCommands(TestOutlines.Rect(0.58f, 0f, 1.27f, 4.01f));
+        var dot = GlyphOutline.FromCommands(TestOutlines.Circle(0.93f, 5.07f, 0.39f));
+        var glyph = GlyphOutline.FromCommands([.. stem.Commands, .. dot.Commands]);
+        var zones = new PixelZone[]
+        {
+            new(IsTop: false, Flat: 0f, Overshoot: -0.1f, SnappedFlat: 0f, SnappedOvershoot: 0f),
+            new(IsTop: true, Flat: 4.01f, Overshoot: 4.01f, SnappedFlat: 4f, SnappedOvershoot: 4f),
+            new(IsTop: true, Flat: 5.39f, Overshoot: 5.39f, SnappedFlat: 5f, SnappedOvershoot: 5f),
+        };
+        var metrics = new NormalHintMetrics(new ScaledHintMetrics(zones, 0.56f, ZoneTolerance: 0.5f, MaxStem: 1.45f), 0.69f, Ppem: 7.58f);
+
+        var result = NormalHinter.Fit(glyph, 2f, metrics, mono);
+
+        result.ShouldNotBeNull();
+        var (stemBounds, dotBounds) = ContourBounds(result!.Value.Outline);
+        stemBounds.YMax.ShouldBe(4f, Tolerance, "the stem keeps the x-height");
+        dotBounds.YMin.ShouldBeGreaterThanOrEqualTo(5f - Tolerance, "a row of white under the dot");
+        dotBounds.YMax.ShouldBeLessThanOrEqualTo(6f + Tolerance);
+        (dotBounds.YMax - dotBounds.YMin).ShouldBe(mono ? 1f : 0.78f, 0.05f, "the dot keeps its size");
     }
 
     // ---- Diagonals are left alone -------------------------------------------------------------

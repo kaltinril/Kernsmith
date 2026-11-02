@@ -16,6 +16,13 @@ namespace KernSmith.Rasterizers.Native.Internal.Hinting;
 /// <param name="Tuning">The fitter's constants; null for <see cref="HintTuning.Current"/>.</param>
 /// <param name="SlopeTolerance">The largest slope off the axis that still counts as an edge
 /// along it; null for the edge finder's own (<see cref="HintTuning.SlopeToleranceX"/>, about 4°).</param>
+/// <param name="Hairline">The thickness, in pixels, a grayscale stroke under
+/// <see cref="HintTuning.HairlineMaxWidth"/> is fitted at, so the one row it sits in reads above
+/// the 50% threshold; 0 to keep every stroke's own thickness (mono ignores it: every stroke is a
+/// whole pixel there).</param>
+/// <param name="DotLength">The longest flat, in pixels, a round stroke's edges may have for it to
+/// be a dot, which moves a whole pixel out when the zone its top (or bottom) snapped to leaves no
+/// room for it; 0 to treat no stroke as a dot.</param>
 internal sealed record StemFitParameters(
     IReadOnlyList<PixelZone> Zones,
     float ZoneTolerance,
@@ -26,7 +33,9 @@ internal sealed record StemFitParameters(
     float MaxShift,
     float MinCounter,
     HintTuning? Tuning = null,
-    float? SlopeTolerance = null)
+    float? SlopeTolerance = null,
+    float Hairline = 0f,
+    float DotLength = 0f)
 {
     /// <summary>The constants in force for this fit.</summary>
     public HintTuning Constants => Tuning ?? HintTuning.Current;
@@ -117,6 +126,8 @@ internal static class StemFitter
         RefineRoundEdges(commands, edges);
         edges = MergeAlignedEdges(edges, tuning.MergeDistance);
         Pair(edges, p.MaxStem, tuning.MinLoneEdgeLength);
+        if (p.DotLength > 0f)
+            MarkDotContours(commands, edges, 2f * p.DotLength);
 
         // 1. Blue zones: each zone edge is its own feature.
         var map = new MonotoneMap(p.MaxShift, p.MinCounter);
@@ -381,12 +392,25 @@ internal static class StemFitter
     private static float StemLength(GridFitter.Edge top) => MathF.Min(top.Length, top.Partner!.Length);
 
     /// <summary>
+    /// The cost, in pixels of stroke movement, charged for a stroke the placement pass would
+    /// refuse under a candidate phase (an edge past <see cref="StemFitParameters.MaxShift"/>):
+    /// a refused stroke is left between pixels, which is worse than any move within the cap.
+    /// </summary>
+    private const float RefusedStrokeCost = 4f;
+
+    /// <summary>
     /// The global shift in [-½, ½] that moves the strokes least once each is placed on the
     /// grid, weighted by stroke length, with a small penalty on the shift itself so a glyph with
     /// nothing to gain stays put. It mirrors the placement pass: the longest stroke (the anchor)
     /// is placed under the shift, and every other stroke is placed from where the anchor's own
     /// move carries it, so stroke pitches round as a whole rather than each stroke rounding on
-    /// its own. Evaluated on a fixed grid of candidates, so it is deterministic.
+    /// its own. In mono it mirrors the pass exactly — the outer-to-outer distance from the anchor
+    /// rounds, a counter of <see cref="StemFitParameters.MinCounter"/> or more keeps a whole pixel,
+    /// and a stroke the cap would then refuse costs <see cref="RefusedStrokeCost"/> — so a phase
+    /// that leaves a second stroke nowhere to go is not chosen for moving the first one least
+    /// (the two strokes of a '"', 0.6 px each 0.6 px apart, need the first in column 0 to have
+    /// column 2 within the second's reach). Evaluated on a fixed grid of candidates, so it is
+    /// deterministic.
     /// </summary>
     private static float Phase(List<GridFitter.Edge> stems, StemFitParameters p)
     {
@@ -405,14 +429,18 @@ internal static class StemFitter
         {
             float s = (float)i / PhaseSteps;
             float anchorCentre = (anchor.Y + anchor.Partner!.Y) / 2f;
-            float carried = PlacedCentre(anchorCentre + s, anchor, p) - anchorCentre;
+            var (anchorWidth, anchorSpan) = StemSpan(anchor.Y - anchor.Partner.Y, p);
+            float anchorBottom = PlacedBottom(anchorCentre + s, anchorWidth, anchorSpan);
+            float carried = anchorBottom + (anchorWidth / 2f) - anchorCentre;
             float cost = (p.Constants.PhaseShiftPenalty * MathF.Abs(s)) + (StemLength(anchor) * MathF.Abs(carried));
             foreach (var top in stems)
             {
                 if (top == anchor)
                     continue;
                 float centre = (top.Y + top.Partner!.Y) / 2f;
-                cost += StemLength(top) * MathF.Abs(PlacedCentre(centre + carried, top, p) - centre);
+                cost += StemLength(top) * (p.Mono
+                    ? MonoPlacementCost(top, anchor, anchorBottom, anchorBottom + anchorWidth, p)
+                    : MathF.Abs(PlacedCentre(centre + carried, top, p) - centre));
             }
 
             // Ties go to the smaller shift, which the ascending |s| scan from zero below picks.
@@ -434,6 +462,40 @@ internal static class StemFitter
     }
 
     /// <summary>
+    /// How far, in pixels, a mono stroke's centre moves when <see cref="PlaceStem"/> places it
+    /// from an anchor already at <paramref name="anchorBottom"/>-<paramref name="anchorTop"/>:
+    /// the outer-to-outer distance rounds, the first of the pass's three candidates that keeps
+    /// the white between them (a whole pixel when it was <see cref="StemFitParameters.MinCounter"/>
+    /// or more) and stays within the cap is taken; <see cref="RefusedStrokeCost"/> when none does.
+    /// </summary>
+    private static float MonoPlacementCost(GridFitter.Edge top, GridFitter.Edge anchor, float anchorBottom, float anchorTop, StemFitParameters p)
+    {
+        var bottom = top.Partner!;
+        var (width, _) = StemSpan(top.Y - bottom.Y, p);
+        float centre = (top.Y + bottom.Y) / 2f;
+        bool above = centre > (anchor.Y + anchor.Partner!.Y) / 2f;
+        float ideal = above
+            ? anchorBottom + GridMath.Round(top.Y - anchor.Partner.Y) - width
+            : anchorTop - GridMath.Round(anchor.Y - bottom.Y);
+        float gap = above ? bottom.Y - anchor.Y : anchor.Partner.Y - top.Y;
+        float minimum = gap >= p.MinCounter ? 1f : 0.5f * gap;
+
+        float step = centre - (width / 2f) >= ideal ? 1f : -1f;
+        ReadOnlySpan<float> candidates = [ideal, ideal + step, ideal - step];
+        foreach (float candidate in candidates)
+        {
+            float white = above ? candidate - anchorTop : anchorBottom - (candidate + width);
+            if (white < minimum - 1e-4f)
+                continue;
+            if (MathF.Abs(candidate - bottom.Y) > p.MaxShift || MathF.Abs(candidate + width - top.Y) > p.MaxShift)
+                continue;
+            return MathF.Abs(candidate + (width / 2f) - centre);
+        }
+
+        return RefusedStrokeCost;
+    }
+
+    /// <summary>
     /// Places one stroke. A stroke with an edge already placed hangs its other edge off it. The
     /// first free stroke is the anchor, placed where the map carries it. Later free strokes
     /// keep the anchor's phase: the distance between corresponding edges rounds to whole
@@ -450,17 +512,46 @@ internal static class StemFitter
 
         var (width, span) = StemSpan(top.Y - bottom.Y, p);
 
+        // A dot hung off its zone with no room under it (an 'i' dot whose top is in the ascender
+        // zone one row above the stem's x-height: hung, it would leave under MinCounter of white
+        // over the stem) moves a whole pixel out, zone and all, rather than stay squeezed against
+        // the stem: the row of white under a dot is what makes it one. A hung dot refused with
+        // more white than that is left to the map, which keeps it mostly in its own row.
         if (top.Hinted is { } fixedTop)
         {
             if (map.TryAdd(bottom.Y, fixedTop - width, feature, zone: false))
+            {
                 bottom.Hinted = fixedTop - width;
+            }
+            else if (IsDot(top, bottom, p) && map.FittedBelow(bottom.Y) is { } below && fixedTop - width - below < p.MinCounter)
+            {
+                float moved = PlacedBottom(fixedTop + 0.5f, width, span);
+                if (map.TryReplace(top.Y, moved + width, bottom.Y, moved, feature))
+                {
+                    top.Hinted = moved + width;
+                    bottom.Hinted = moved;
+                }
+            }
+
             return;
         }
 
         if (bottom.Hinted is { } fixedBottom)
         {
             if (map.TryAdd(top.Y, fixedBottom + width, feature, zone: false))
+            {
                 top.Hinted = fixedBottom + width;
+            }
+            else if (IsDot(top, bottom, p) && map.FittedAbove(top.Y) is { } above && above - (fixedBottom + width) < p.MinCounter)
+            {
+                float moved = PlacedBottom(fixedBottom - 0.5f, width, span);
+                if (map.TryReplace(bottom.Y, moved, top.Y, moved + width, feature))
+                {
+                    bottom.Hinted = moved;
+                    top.Hinted = moved + width;
+                }
+            }
+
             return;
         }
 
@@ -504,8 +595,73 @@ internal static class StemFitter
     {
         float standard = p.StandardStem;
         float basis = standard > 0f && MathF.Abs(width - standard) <= p.Constants.StandardStemTolerance * standard ? standard : width;
+
+        // A grayscale hairline is fitted at the hairline weight: centred in one row at its own
+        // 0.4 px it reads under the 50% threshold, and the ring or eye it closes breaks.
+        if (!p.Mono && basis < p.Constants.HairlineMaxWidth && basis < p.Hairline)
+            basis = p.Hairline;
+
         float span = MathF.Max(1f, GridMath.Round(basis));
         return p.Mono ? (span, span) : (basis, span);
+    }
+
+    /// <summary>
+    /// True when a stroke is a dot: both edges round with flats no longer than
+    /// <see cref="StemFitParameters.DotLength"/>, on a contour no larger than a dot, and the
+    /// stroke under 1.5 px thick. A bowl's extremum flat is at least three times a dot's, and
+    /// the round end of a hook (the 't' and 'f' terminals, whose edges are as short) is on a
+    /// contour the size of the letter.
+    /// </summary>
+    private static bool IsDot(GridFitter.Edge top, GridFitter.Edge bottom, StemFitParameters p) =>
+        p.DotLength > 0f && top.IsRound && bottom.IsRound && top.OnDotContour && bottom.OnDotContour
+        && top.Length <= p.DotLength && bottom.Length <= p.DotLength
+        && top.Y - bottom.Y <= 1.5f;
+
+    /// <summary>Flags the edges whose every point lies on a contour at most <paramref name="size"/> px in both extents.</summary>
+    private static void MarkDotContours(OutlineCommand[] commands, List<GridFitter.Edge> edges, float size)
+    {
+        // Per command, the index of its contour; per contour, whether it is dot-sized.
+        var contourOf = new int[commands.Length];
+        var small = new List<bool>();
+        float xMin = 0f, xMax = 0f, yMin = 0f, yMax = 0f;
+        int contour = -1;
+        for (int i = 0; i < commands.Length; i++)
+        {
+            var c = commands[i];
+            if (c.Type == OutlineCommandType.MoveTo)
+            {
+                Close();
+                contour++;
+                small.Add(false);
+                xMin = xMax = c.EndX;
+                yMin = yMax = c.EndY;
+            }
+            else if (c.Type != OutlineCommandType.Close)
+            {
+                xMin = MathF.Min(xMin, c.EndX);
+                xMax = MathF.Max(xMax, c.EndX);
+                yMin = MathF.Min(yMin, c.EndY);
+                yMax = MathF.Max(yMax, c.EndY);
+            }
+
+            contourOf[i] = contour;
+        }
+
+        Close();
+
+        foreach (var edge in edges)
+        {
+            bool onDot = edge.Points.Count > 0;
+            foreach (int slot in edge.Points)
+                onDot &= contourOf[slot / 3] >= 0 && small[contourOf[slot / 3]];
+            edge.OnDotContour = onDot;
+        }
+
+        void Close()
+        {
+            if (contour >= 0)
+                small[contour] = xMax - xMin <= size && yMax - yMin <= size;
+        }
     }
 
     /// <summary>
@@ -669,9 +825,55 @@ internal static class StemFitter
             return _to[above - 1] + (t * (_to[above] - _to[above - 1]));
         }
 
+        /// <summary>The fitted coordinate of the nearest key below <paramref name="from"/>, if any.</summary>
+        public float? FittedBelow(float from)
+        {
+            int index = _from.BinarySearch(from);
+            int below = (index >= 0 ? index : ~index) - 1;
+            return below >= 0 ? _to[below] : null;
+        }
+
+        /// <summary>The fitted coordinate of the nearest key above <paramref name="from"/>, if any.</summary>
+        public float? FittedAbove(float from)
+        {
+            int index = _from.BinarySearch(from);
+            int above = index >= 0 ? index + 1 : ~index;
+            return above < _from.Count ? _to[above] : null;
+        }
+
         public bool TryAdd(float from, float to, int feature, bool zone) => TryAdd([(from, to)], feature, zone);
 
         public bool TryAdd(float from1, float to1, float from2, float to2, int feature) => TryAdd([(from1, to1), (from2, to2)], feature, zone: false);
+
+        /// <summary>
+        /// Moves the key at <paramref name="movedFrom"/> (a zone edge, typically) to a new
+        /// target and adds a second key with it, under the same rules as <see cref="TryAdd(float, float, float, float, int)"/>;
+        /// the map is unchanged when that is refused.
+        /// </summary>
+        public bool TryReplace(float movedFrom, float movedTo, float from2, float to2, int feature)
+        {
+            int index = _from.BinarySearch(movedFrom);
+            if (index < 0)
+                return false;
+
+            float oldTo = _to[index];
+            int oldFeature = _feature[index];
+            bool oldZone = _zone[index];
+            _from.RemoveAt(index);
+            _to.RemoveAt(index);
+            _feature.RemoveAt(index);
+            _zone.RemoveAt(index);
+
+            if (TryAdd([(movedFrom, movedTo), (from2, to2)], feature, zone: false))
+                return true;
+
+            int at = ~_from.BinarySearch(movedFrom);
+            _from.Insert(at, movedFrom);
+            _to.Insert(at, oldTo);
+            _feature.Insert(at, oldFeature);
+            _zone.Insert(at, oldZone);
+            return false;
+        }
 
         /// <summary>
         /// Adds the keys together, or none of them when one would move further than the cap,

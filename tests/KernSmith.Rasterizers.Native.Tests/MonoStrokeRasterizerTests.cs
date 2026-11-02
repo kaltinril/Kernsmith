@@ -200,6 +200,30 @@ public class MonoStrokeRasterizerTests
     }
 
     [Fact]
+    public void ClosedAperture_DropsTheTerminal_NotTheStrokesAroundIt()
+    {
+        // The lower half of an 'e' at 4 px: a stem, a bar in row 3, a bar in row 5 and a
+        // terminal rising from the bottom bar's end to y 4.4, so the mouth between terminal and
+        // bar is 0.4 px — open in the outline, but the terminal's pixel and the bars enclose the
+        // middle of row 4. Every rim pixel is a stroke passing through except the terminal,
+        // whose ink ends in its pixel; it is the terminal that goes, as a pixel artist (and
+        // FreeType's auto-hinter) drops it, and the aperture reads open.
+        var edges = new List<EdgeSegment>();
+        edges.AddRange(Rect(1f, 1f, 2f, 6f));
+        edges.AddRange(Rect(1f, 1f, 5f, 2f));
+        edges.AddRange(Rect(1f, 3f, 5f, 4f));
+        edges.AddRange(Rect(1f, 5f, 5f, 6f));
+        edges.AddRange(Rect(4f, 4.4f, 5f, 6f));
+        var bitmap = Render(6, 7, [.. edges]);
+
+        Holes(bitmap, 6, 7).ShouldBe(0);
+        bitmap[(4 * 6) + 4].ShouldBe((byte)0, "the terminal is dropped");
+        bitmap[(3 * 6) + 4].ShouldBe((byte)255, "the bar's end stays");
+        bitmap[(5 * 6) + 4].ShouldBe((byte)255, "the bottom bar's end stays");
+        bitmap[(4 * 6) + 1].ShouldBe((byte)255, "the stem stays");
+    }
+
+    [Fact]
     public void SolidShape_GetsNoHole()
     {
         var bitmap = Render(6, 6, Rect(0.5f, 0.5f, 5.5f, 5.5f));

@@ -32,6 +32,11 @@ public class HintTuningTests
         d.SlopeToleranceX.ShouldBe(0.07f);
         d.SlopeToleranceY.ShouldBe(0.12f);
         d.LeftBearingSlack.ShouldBe(0.25f);
+        d.HairlineMaxWidth.ShouldBe(0.5f);
+        d.HairlineWeight.ShouldBe(0.6f);
+        d.HairlineFullPpem.ShouldBe(12f);
+        d.HairlineEndPpem.ShouldBe(14f);
+        d.DotLengthEm.ShouldBe(0.08f);
         HintTuning.Current.ShouldBe(HintTuning.Default);
     }
 

@@ -32,6 +32,17 @@ namespace KernSmith.Rasterizers.Native.Internal.Hinting;
 /// Noto Sans similarity to FreeType for no legibility gain.</param>
 /// <param name="LeftBearingSlack">How far, in pixels, a left side bearing may end up above the font's rather than
 /// take the placement a pixel to the left.</param>
+/// <param name="HairlineMaxWidth">A grayscale stroke thinner than this, in pixels, is a hairline: fitted at
+/// <paramref name="HairlineWeight"/> instead of its own thickness, so the one row (or column) it sits in reads
+/// above the 50% threshold and the ring or eye it closes survives (Georgia's and Source Serif's horizontals are
+/// 0.35-0.45 px at 8-11 ppem). A stroke at or over it keeps its coverage (Roboto's 0.5 px horizontals at 7 ppem).</param>
+/// <param name="HairlineWeight">The thickness, in pixels, a hairline is fitted at, at full strength.</param>
+/// <param name="HairlineFullPpem">Up to this size the hairline weight is <paramref name="HairlineWeight"/>.</param>
+/// <param name="HairlineEndPpem">From this size no hairline is lifted; between the two sizes the weight falls
+/// linearly, so a hairline's coverage never steps with size.</param>
+/// <param name="DotLengthEm">The longest flat, in ems, a round stroke's edges may have for the stroke to be a
+/// dot (an 'i' or 'j' dot's is about 0.035 em; a bowl's extremum flat is 0.12 em and more): a dot whose zone
+/// would land it on the stroke under it moves a whole pixel out instead, keeping a row of white.</param>
 internal sealed record HintTuning(
     float MinEdgeLength = 0.05f,
     float MinLoneEdgeLength = 0.7f,
@@ -47,7 +58,12 @@ internal sealed record HintTuning(
     float OriginNudge = 0.25f,
     float SlopeToleranceX = 0.07f,
     float SlopeToleranceY = 0.12f,
-    float LeftBearingSlack = 0.25f)
+    float LeftBearingSlack = 0.25f,
+    float HairlineMaxWidth = 0.5f,
+    float HairlineWeight = 0.6f,
+    float HairlineFullPpem = 12f,
+    float HairlineEndPpem = 14f,
+    float DotLengthEm = 0.08f)
 {
     /// <summary>The shipped constants.</summary>
     public static HintTuning Default { get; } = new();

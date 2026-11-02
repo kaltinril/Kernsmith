@@ -712,6 +712,10 @@ internal static class GridFitter
         /// <summary>The opposite edge of the stroke this edge bounds, if any.</summary>
         public Edge? Partner { get; set; }
 
+        /// <summary>True when every point of the edge lies on a contour no larger than a dot
+        /// (set by the <c>Normal</c> fitter; see <c>StemFitter.IsDot</c>).</summary>
+        public bool OnDotContour { get; set; }
+
         /// <summary>Its fitted height, once placed.</summary>
         public float? Hinted { get; set; }
     }

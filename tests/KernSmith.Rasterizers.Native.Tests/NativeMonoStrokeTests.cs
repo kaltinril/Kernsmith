@@ -64,6 +64,57 @@ public class NativeMonoStrokeTests
     }
 
     [Theory]
+    [InlineData(9f)]
+    [InlineData(10f)]
+    [InlineData(11f)]
+    [InlineData(12f)]
+    [InlineData(13f)]
+    public void Roboto_SOpensBothApertures(float cell)
+    {
+        // At 4-5 rows of x-height the 's' terminals land a sub-pixel mouth from the spine and
+        // bridge it, so the glyph drew as an '8' (two holes) or a ring. The terminal pixels are
+        // dropped and the spine stays attached: no hole, one piece — FreeType's auto-hinter's
+        // topology.
+        using var native = Load(TestFonts.RobotoRegularBytes());
+        var s = native.RasterizeGlyph('s', Mono(RobotoCell(cell)))!;
+        Holes(s).ShouldBe(0, $"'s' at a {cell} px cell");
+        Components(s).ShouldBe(1, $"'s' at a {cell} px cell");
+    }
+
+    [Fact]
+    public void Roboto11_EKeepsItsEye_AndOpensItsAperture()
+    {
+        // The bottom terminal of the 'e' rose into the row under the bar and closed the
+        // aperture: an 'e' with two holes reads as an '8' or 'a'.
+        using var native = Load(TestFonts.RobotoRegularBytes());
+        var e = native.RasterizeGlyph('e', Mono(RobotoCell(11f)))!;
+        Holes(e).ShouldBe(1);
+        Components(e).ShouldBe(1);
+    }
+
+    [Theory]
+    [InlineData(9f)]
+    [InlineData(10f)]
+    public void Roboto_DotsStayClearOfTheStem(float cell)
+    {
+        // The dot's top snapped to the ascender zone one row above the x-height, which left
+        // no row for the white under it: the dot was squeezed to half a pixel touching the
+        // stem, and 'i' read as 'l'. A dot keeps a row of white, moving a pixel out instead.
+        using var native = Load(TestFonts.RobotoRegularBytes());
+        foreach (char c in "ij")
+            Components(native.RasterizeGlyph(c, Mono(RobotoCell(cell)))!).ShouldBe(2, $"'{c}' at a {cell} px cell");
+    }
+
+    [Fact]
+    public void Roboto12_QuoteStrokesStayApart()
+    {
+        // Two 0.63 px strokes 0.57 px apart: the phase that rounded the first into column 1
+        // left the second nowhere to go but between columns, and the two drew as one block.
+        using var native = Load(TestFonts.RobotoRegularBytes());
+        Components(native.RasterizeGlyph('"', Mono(RobotoCell(12f)))!).ShouldBe(2);
+    }
+
+    [Theory]
     [InlineData(10f)]
     [InlineData(12f)]
     [InlineData(14f)]

@@ -54,6 +54,11 @@ internal static class Sweep
         new("LeftBearingSlack", [0.1f, 0.25f, 0.4f, 0.5f], t => t.LeftBearingSlack, (t, v) => t with { LeftBearingSlack = v }),
         new("TaperStartPpem", [20f, 24f, 28f], t => t.TaperStartPpem, (t, v) => t with { TaperStartPpem = v }),
         new("TaperEndPpem", [32f, 40f, 48f], t => t.TaperEndPpem, (t, v) => t with { TaperEndPpem = v }),
+        new("HairlineMaxWidth", [0.4f, 0.45f, 0.5f, 0.55f, 0.6f], t => t.HairlineMaxWidth, (t, v) => t with { HairlineMaxWidth = v }),
+        new("HairlineWeight", [0.5f, 0.55f, 0.6f, 0.65f, 0.7f], t => t.HairlineWeight, (t, v) => t with { HairlineWeight = v }),
+        new("HairlineFullPpem", [10f, 11f, 12f, 13f], t => t.HairlineFullPpem, (t, v) => t with { HairlineFullPpem = v }),
+        new("HairlineEndPpem", [13f, 14f, 15f, 16f], t => t.HairlineEndPpem, (t, v) => t with { HairlineEndPpem = v }),
+        new("DotLengthEm", [0.05f, 0.065f, 0.08f, 0.1f], t => t.DotLengthEm, (t, v) => t with { DotLengthEm = v }),
     ];
 
     private static readonly string[] NotSweptByDefault = ["TaperStartPpem", "TaperEndPpem"];

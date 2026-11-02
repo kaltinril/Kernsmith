@@ -65,7 +65,15 @@ internal sealed record LegibilityFeatures(
     /// <summary>Glyphs the script counts as more than one piece of ink.</summary>
     private static readonly Dictionary<char, int> ExtraComponents = new()
     {
-        ['i'] = 1, ['j'] = 1, ['%'] = 2, [':'] = 1, [';'] = 1, ['='] = 1, ['!'] = 1, ['?'] = 1, ['"'] = 1,
+        ['i'] = 1,
+        ['j'] = 1,
+        ['%'] = 2,
+        [':'] = 1,
+        [';'] = 1,
+        ['='] = 1,
+        ['!'] = 1,
+        ['?'] = 1,
+        ['"'] = 1,
     };
 
     /// <summary>The script's expected component count of a line: one per non-space character plus the extras.</summary>

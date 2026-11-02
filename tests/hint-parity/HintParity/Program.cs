@@ -407,7 +407,8 @@ static void PrintHelp()
           --tuning <k=v,...>    Override the Native Normal hinter's constants for the run
                                 (MinEdgeLength, MinLoneEdgeLength, MergeDistance, StandardStemTolerance,
                                 PhaseShiftPenalty, MaxShift, MinCounter, XHeightRoundUp, OriginNudge,
-                                SlopeToleranceX, SlopeToleranceY, LeftBearingSlack, TaperStartPpem, TaperEndPpem).
+                                SlopeToleranceX, SlopeToleranceY, LeftBearingSlack, TaperStartPpem, TaperEndPpem,
+                                HairlineMaxWidth, HairlineWeight, HairlineFullPpem, HairlineEndPpem, DotLengthEm).
 
         Sweep mode (tunes the constants against the legibility score instead of running the matrix):
           --sweep               Coordinate descent over the constants, maximising the mean Native Normal

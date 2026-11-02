@@ -397,6 +397,8 @@ internal static class MonoStrokeRasterizer
         int[] queue = ArrayPool<int>.Shared.Rent(Math.Max(subSize, size));
         int[] overlap = ArrayPool<int>.Shared.Rent(size);
         byte[] pixelMark = ArrayPool<byte>.Shared.Rent(size);
+        byte[] visitedMark = ArrayPool<byte>.Shared.Rent(size);
+        int[] work = ArrayPool<int>.Shared.Rent(size);
         try
         {
             var ink = sub.AsSpan(0, subSize);
@@ -472,7 +474,7 @@ internal static class MonoStrokeRasterizer
                 }
 
                 if (!real && tail <= MaxAperturePixels)
-                    OpenAperture(bitmap, ink, subWidth, width, height, queue.AsSpan(0, tail));
+                    OpenAperture(bitmap, ink, subWidth, subHeight, enclosed, width, height, queue.AsSpan(0, tail), visitedMark.AsSpan(0, size), work);
             }
         }
         finally
@@ -481,6 +483,8 @@ internal static class MonoStrokeRasterizer
             ArrayPool<int>.Shared.Return(queue);
             ArrayPool<int>.Shared.Return(overlap);
             ArrayPool<byte>.Shared.Return(pixelMark);
+            ArrayPool<byte>.Shared.Return(visitedMark);
+            ArrayPool<int>.Shared.Return(work);
         }
     }
 
@@ -499,10 +503,17 @@ internal static class MonoStrokeRasterizer
         return false;
     }
 
-    /// <summary>Clears, on the rim of a spurious hole (its pixels listed in <paramref name="hole"/>), the lit pixel holding the least ink.</summary>
-    private static void OpenAperture(Span<byte> bitmap, ReadOnlySpan<byte> ink, int subWidth, int width, int height, ReadOnlySpan<int> hole)
+    /// <summary>
+    /// Clears one lit pixel on the rim of a spurious hole (its pixels listed in <paramref name="hole"/>):
+    /// a stroke's end if there is one (a terminal, the feature a pixel artist drops first — the
+    /// terminals of an 's' or the tail of an 'e' land a sub-pixel mouth from the spine or bar and
+    /// bridge it), else a pixel no stroke passes through; the one holding the least ink within
+    /// each kind, and never one whose loss would split the glyph.
+    /// </summary>
+    private static void OpenAperture(Span<byte> bitmap, ReadOnlySpan<byte> ink, int subWidth, int subHeight, ReadOnlySpan<byte> enclosed, int width, int height, ReadOnlySpan<int> hole, Span<byte> visited, int[] work)
     {
         int best = -1, bestInk = int.MaxValue;
+        bool bestIsEnd = false;
         ReadOnlySpan<(int Dx, int Dy)> neighbours = [(-1, 0), (1, 0), (0, -1), (0, 1)];
         foreach (int p in hole)
         {
@@ -513,20 +524,174 @@ internal static class MonoStrokeRasterizer
                 if (x < 0 || y < 0 || x >= width || y >= height)
                     continue;
                 int index = (y * width) + x;
-                if (bitmap[index] == 0 || Through(ink, subWidth, x, y))
+                if (bitmap[index] == 0)
+                    continue;
+
+                bool end = IsStrokeEnd(ink, subWidth, subHeight, bitmap, enclosed, width, height, x, y);
+                if (!end && Through(ink, subWidth, x, y))
                     continue;
 
                 int count = InkIn(ink, subWidth, x, y);
-                if (count < bestInk)
-                {
-                    bestInk = count;
-                    best = index;
-                }
+                bool better = best < 0 || (end && !bestIsEnd) || (end == bestIsEnd && count < bestInk);
+                if (!better || Splits(bitmap, width, height, index, visited, work))
+                    continue;
+
+                bestInk = count;
+                bestIsEnd = end;
+                best = index;
             }
         }
 
         if (best >= 0)
             bitmap[best] = 0;
+    }
+
+    /// <summary>
+    /// True when the pixel is the end of a stroke: its ink, followed through the sub-pixel map
+    /// across the 3 × 3 pixels around it, joins lit pixels on one side of it only (one
+    /// 8-connected group of the ring of eight). A pixel in the middle of a stroke joins both
+    /// ways; a junction three; a dot none. The bitmap's own adjacency cannot tell: a terminal
+    /// whose tip lies a quarter pixel from the next stroke is 8-adjacent to it in the bitmap
+    /// while the outline's ink never joins. The ink is followed through unlit pixels (a
+    /// stroke's fringe the renderer did not light) but not onward from a lit pixel it reaches,
+    /// nor through the hole's own pixels (<paramref name="enclosed"/> 3): a 3 px wide 's' is
+    /// one contour, and followed round the bowl every pixel of it joins every other.
+    /// </summary>
+    private static bool IsStrokeEnd(ReadOnlySpan<byte> ink, int subWidth, int subHeight, ReadOnlySpan<byte> bitmap, ReadOnlySpan<byte> enclosed, int width, int height, int x, int y)
+    {
+        const int Block = 3 * Oversample;
+        Span<byte> seen = stackalloc byte[Block * Block];
+        Span<int> queue = stackalloc int[Block * Block];
+        seen.Clear();
+        int originX = (x - 1) * Oversample, originY = (y - 1) * Oversample;
+        int head = 0, tail = 0;
+        for (int sy = 0; sy < Oversample; sy++)
+        {
+            for (int sx = 0; sx < Oversample; sx++)
+            {
+                if (ink[(((y * Oversample) + sy) * subWidth) + (x * Oversample) + sx] != 1)
+                    continue;
+                int local = ((Oversample + sy) * Block) + Oversample + sx;
+                seen[local] = 1;
+                queue[tail++] = local;
+            }
+        }
+
+        int reached = 0;
+        while (head < tail)
+        {
+            int l = queue[head++];
+            int lx = l % Block, ly = l / Block;
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    int nx = lx + dx, ny = ly + dy;
+                    if (nx < 0 || ny < 0 || nx >= Block || ny >= Block)
+                        continue;
+                    int gx = originX + nx, gy = originY + ny;
+                    if (gx < 0 || gy < 0 || gx >= subWidth || gy >= subHeight)
+                        continue;
+                    int n = (ny * Block) + nx;
+                    if (seen[n] != 0 || ink[(gy * subWidth) + gx] != 1)
+                        continue;
+                    seen[n] = 1;
+
+                    int px = nx / Oversample, py = ny / Oversample;
+                    if (px == 1 && py == 1)
+                    {
+                        queue[tail++] = n;
+                        continue;
+                    }
+
+                    int bx = x - 1 + px, by = y - 1 + py;
+                    int pixel = (by * width) + bx;
+                    if (bitmap[pixel] != 0)
+                        reached |= 1 << RingIndex(px, py);
+                    else if (enclosed[pixel] != 3)
+                        queue[tail++] = n;
+                }
+            }
+        }
+
+        return RingGroups(reached) == 1;
+    }
+
+    /// <summary>The position of a 3 × 3 block's outer cell on its ring, clockwise from the top-left.</summary>
+    private static int RingIndex(int px, int py) => (px, py) switch
+    {
+        (0, 0) => 0,
+        (1, 0) => 1,
+        (2, 0) => 2,
+        (2, 1) => 3,
+        (2, 2) => 4,
+        (1, 2) => 5,
+        (0, 2) => 6,
+        _ => 7,
+    };
+
+    /// <summary>The number of runs of set bits around an eight-bit ring.</summary>
+    private static int RingGroups(int mask)
+    {
+        if (mask == 0xFF)
+            return 1;
+        int groups = 0;
+        for (int i = 0; i < 8; i++)
+        {
+            bool set = (mask & (1 << i)) != 0, before = (mask & (1 << ((i + 7) % 8))) != 0;
+            if (set && !before)
+                groups++;
+        }
+
+        return groups;
+    }
+
+    /// <summary>True when clearing the pixel would leave the lit pixels in more 8-connected pieces than before.</summary>
+    private static bool Splits(Span<byte> bitmap, int width, int height, int index, Span<byte> visited, int[] work)
+    {
+        int before = Components(bitmap, width, height, visited, work);
+        bitmap[index] = 0;
+        int after = Components(bitmap, width, height, visited, work);
+        bitmap[index] = 255;
+        return after > before;
+    }
+
+    /// <summary>The number of 8-connected groups of lit pixels.</summary>
+    private static int Components(ReadOnlySpan<byte> bitmap, int width, int height, Span<byte> visited, int[] work)
+    {
+        visited.Clear();
+        int count = 0;
+        for (int start = 0; start < bitmap.Length; start++)
+        {
+            if (bitmap[start] == 0 || visited[start] != 0)
+                continue;
+
+            count++;
+            int head = 0, tail = 0;
+            work[tail++] = start;
+            visited[start] = 1;
+            while (head < tail)
+            {
+                int p = work[head++];
+                int px = p % width, py = p / width;
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    for (int dx = -1; dx <= 1; dx++)
+                    {
+                        int nx = px + dx, ny = py + dy;
+                        if (nx < 0 || ny < 0 || nx >= width || ny >= height)
+                            continue;
+                        int n = (ny * width) + nx;
+                        if (bitmap[n] == 0 || visited[n] != 0)
+                            continue;
+                        visited[n] = 1;
+                        work[tail++] = n;
+                    }
+                }
+            }
+        }
+
+        return count;
     }
 
     /// <summary>

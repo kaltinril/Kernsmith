@@ -77,6 +77,30 @@ public class NormalHinterTests
     }
 
     [Fact]
+    public void Fit_Mono_KeepsAColumnBetweenTwoThinStems_ByChoosingThePhaseThatHasRoom()
+    {
+        // Roboto's '"' at 9.1 ppem: two 0.63 px strokes 0.57 px apart. With the first rounded
+        // into column 1 the second's whole-pixel slot is column 3 — a 1.2 px move, past the
+        // cap — so it was left between columns and the two drew as one block. The phase that
+        // puts the first stroke in column 0 leaves column 2 within the second's reach: both
+        // land on whole pixels with a column of white between.
+        var quote = Concat(Rectangle(0.61f, 4.63f, 1.24f, 6.82f), Rectangle(1.81f, 4.63f, 2.43f, 6.82f));
+
+        var result = NormalHinter.Fit(quote, 3.04f, NormalHintMetrics.WithoutZones(maxStem: 1.45f), mono: true);
+
+        result.ShouldNotBeNull();
+        var stems = VerticalStems(result!.Value.Outline);
+        stems.Count.ShouldBe(2);
+        foreach (var (left, right) in stems)
+        {
+            left.ShouldBe(MathF.Round(left), 1e-3f, $"stem {left:F2}-{right:F2} is off the grid");
+            (right - left).ShouldBe(1f, 1e-3f);
+        }
+
+        (stems[1].Left - stems[0].Right).ShouldBe(1f, 1e-3f, "a column of white between the strokes");
+    }
+
+    [Fact]
     public void Fit_SnapsStemsNearTheStandardWidth_ToTheStandard()
     {
         // Roboto's 'h' stems are 185 and 186 units; at 9 ppem that is 0.80 and 0.84 px around

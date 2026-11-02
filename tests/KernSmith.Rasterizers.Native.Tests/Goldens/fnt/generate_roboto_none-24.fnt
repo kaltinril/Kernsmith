@@ -2,28 +2,28 @@ info face="Roboto" size=24 bold=0 italic=0 charset="" unicode=1 stretchH=100 smo
 common lineHeight=24 base=20 scaleW=64 scaleH=64 pages=1 packed=0 alphaChnl=0 redChnl=0 greenChnl=0 blueChnl=0
 page id=0 file="Roboto_0.png"
 chars count=22
-char id=33 x=61 y=0 width=2 height=13 xoffset=1 yoffset=7 xadvance=5 page=0 chnl=15
-char id=38 x=31 y=0 width=9 height=13 xoffset=1 yoffset=7 xadvance=11 page=0 chnl=15
+char id=33 x=59 y=0 width=2 height=13 xoffset=1 yoffset=7 xadvance=5 page=0 chnl=15
+char id=38 x=30 y=28 width=9 height=13 xoffset=1 yoffset=7 xadvance=11 page=0 chnl=15
 char id=44 x=20 y=28 width=3 height=4 xoffset=0 yoffset=18 xadvance=4 page=0 chnl=15
 char id=46 x=12 y=33 width=2 height=2 xoffset=1 yoffset=18 xadvance=5 page=0 chnl=15
 char id=48 x=31 y=14 width=8 height=13 xoffset=1 yoffset=7 xadvance=10 page=0 chnl=15
-char id=49 x=58 y=14 width=5 height=13 xoffset=1 yoffset=7 xadvance=10 page=0 chnl=15
-char id=50 x=41 y=0 width=9 height=13 xoffset=1 yoffset=7 xadvance=10 page=0 chnl=15
-char id=51 x=40 y=14 width=8 height=13 xoffset=1 yoffset=7 xadvance=10 page=0 chnl=15
-char id=63 x=49 y=14 width=8 height=13 xoffset=0 yoffset=7 xadvance=9 page=0 chnl=15
+char id=49 x=40 y=14 width=5 height=13 xoffset=1 yoffset=7 xadvance=10 page=0 chnl=15
+char id=50 x=30 y=42 width=9 height=13 xoffset=1 yoffset=7 xadvance=10 page=0 chnl=15
+char id=51 x=41 y=0 width=8 height=13 xoffset=1 yoffset=7 xadvance=10 page=0 chnl=15
+char id=63 x=50 y=0 width=8 height=13 xoffset=0 yoffset=7 xadvance=9 page=0 chnl=15
 char id=64 x=0 y=0 width=14 height=17 xoffset=1 yoffset=7 xadvance=16 page=0 chnl=15
-char id=65 x=19 y=33 width=11 height=13 xoffset=0 yoffset=7 xadvance=12 page=0 chnl=15
+char id=65 x=18 y=33 width=11 height=13 xoffset=0 yoffset=7 xadvance=12 page=0 chnl=15
 char id=84 x=20 y=14 width=10 height=13 xoffset=0 yoffset=7 xadvance=11 page=0 chnl=15
-char id=86 x=19 y=47 width=11 height=13 xoffset=0 yoffset=7 xadvance=12 page=0 chnl=15
+char id=86 x=18 y=47 width=11 height=13 xoffset=0 yoffset=7 xadvance=12 page=0 chnl=15
 char id=87 x=15 y=0 width=15 height=13 xoffset=1 yoffset=7 xadvance=16 page=0 chnl=15
-char id=97 x=10 y=51 width=8 height=10 xoffset=1 yoffset=10 xadvance=10 page=0 chnl=15
-char id=101 x=31 y=39 width=8 height=10 xoffset=1 yoffset=10 xadvance=10 page=0 chnl=15
-char id=111 x=31 y=28 width=9 height=10 xoffset=1 yoffset=10 xadvance=10 page=0 chnl=15
-char id=121 x=12 y=18 width=7 height=14 xoffset=1 yoffset=10 xadvance=9 page=0 chnl=15
+char id=97 x=46 y=25 width=8 height=10 xoffset=1 yoffset=10 xadvance=10 page=0 chnl=15
+char id=101 x=55 y=25 width=8 height=10 xoffset=1 yoffset=10 xadvance=10 page=0 chnl=15
+char id=111 x=46 y=14 width=9 height=10 xoffset=1 yoffset=10 xadvance=10 page=0 chnl=15
+char id=121 x=10 y=36 width=7 height=14 xoffset=1 yoffset=10 xadvance=9 page=0 chnl=15
 char id=192 x=0 y=18 width=11 height=17 xoffset=0 yoffset=3 xadvance=12 page=0 chnl=15
 char id=201 x=0 y=36 width=9 height=17 xoffset=1 yoffset=3 xadvance=10 page=0 chnl=15
-char id=231 x=10 y=36 width=8 height=14 xoffset=1 yoffset=10 xadvance=10 page=0 chnl=15
-char id=246 x=51 y=0 width=9 height=13 xoffset=1 yoffset=7 xadvance=10 page=0 chnl=15
+char id=231 x=12 y=18 width=7 height=14 xoffset=1 yoffset=10 xadvance=10 page=0 chnl=15
+char id=246 x=31 y=0 width=9 height=13 xoffset=1 yoffset=7 xadvance=10 page=0 chnl=15
 kernings count=54
 kerning first=65 second=63 amount=-1
 kerning first=192 second=63 amount=-1

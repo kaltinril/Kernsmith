@@ -129,12 +129,19 @@ internal static class NormalHinter
         float xStrength = XStrength(metrics.Ppem, tuning);
         bool fitX = metrics.FitX && xStrength > 0f;
         var vertical = metrics.Vertical;
+
+        // The hairline weight falls from its full value to nothing across HairlineFullPpem to
+        // HairlineEndPpem, so a serif face's 0.4 px horizontals go from 0.6 px rows at 12 ppem to
+        // their own coverage at 14 with no step between; a dot is one whose flats are under
+        // DotLengthEm of the em, at this size.
+        float hairline = tuning.HairlineWeight * Math.Clamp((tuning.HairlineEndPpem - metrics.Ppem) / (tuning.HairlineEndPpem - tuning.HairlineFullPpem), 0f, 1f);
+        float dotLength = tuning.DotLengthEm * metrics.Ppem;
         var yParameters = new StemFitParameters(
             vertical.Zones, vertical.ZoneTolerance, vertical.MaxStem, vertical.StandardStem,
-            Mono: mono, AlignPhase: false, tuning.MaxShift * strength, tuning.MinCounter, tuning, tuning.SlopeToleranceY);
+            Mono: mono, AlignPhase: false, tuning.MaxShift * strength, tuning.MinCounter, tuning, tuning.SlopeToleranceY, hairline, dotLength);
         var xParameters = new StemFitParameters(
             [], 0f, vertical.MaxStem, metrics.StandardVerticalStem,
-            Mono: mono, AlignPhase: true, tuning.MaxShift * xStrength, tuning.MinCounter, tuning, tuning.SlopeToleranceX);
+            Mono: mono, AlignPhase: true, tuning.MaxShift * xStrength, tuning.MinCounter, tuning, tuning.SlopeToleranceX, hairline, dotLength);
 
         // Every bowl and arch extremum becomes a node first, so both passes see it as a round edge.
         var split = ExtremaSplitter.Split(outline);
