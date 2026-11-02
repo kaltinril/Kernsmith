@@ -24,8 +24,10 @@ public enum RasterizerBackend
     /// (<c>glyf</c>) and CFF/CFF2 (<c>.otf</c>) outlines, variable-font instances, <c>COLR</c>
     /// version 0 and 1 color glyphs and <c>CBDT</c>/<c>sbix</c> color bitmaps, synthetic
     /// bold/italic, SDF and multi-channel MSDF/MTSDF, with <see cref="AntiAliasMode.None"/>,
-    /// <see cref="AntiAliasMode.Grayscale"/>, <see cref="AntiAliasMode.Light"/> (its own
-    /// vertical-only auto-hinting) and <see cref="AntiAliasMode.Lcd"/> anti-aliasing. It is the
+    /// <see cref="AntiAliasMode.Grayscale"/>, <see cref="AntiAliasMode.Light"/> and
+    /// <see cref="AntiAliasMode.Lcd"/> anti-aliasing, and its own auto-hinting in every mode
+    /// (<see cref="HintLevel.Normal"/> by default, both axes; <see cref="HintLevel.Light"/>
+    /// y-only; no TrueType bytecode). It is the
     /// only backend that draws <see cref="OutlineMode.Vector"/> outlines and honors
     /// <see cref="FontGeneratorOptions.WidthPercent"/> and <see cref="FontGeneratorOptions.ItalicAngle"/>.
     /// It is supplied by the

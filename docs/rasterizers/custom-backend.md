@@ -36,6 +36,7 @@ Your backend implements two interfaces from `KernSmith.Rasterizer`:
 | `GetGlyphMetrics(int, RasterOptions)` | Returns `null` | Get metrics without rasterizing |
 | `GetFontMetrics(RasterOptions)` | Returns `null` | Provide native font-wide metrics (ascent, descent, line height). Round scaled metrics with `RasterizerFontMetrics.CeilingToPixels`, as the built-in backends do, so float noise does not add a pixel |
 | `GetKerningPairs(RasterOptions)` | Returns `null` | Provide pre-scaled kerning pairs |
+| `GetKerningAdjustments(RasterOptions)` | Returns `null` | Per-pair spacing corrections in pixels (e.g. what hinting moved), added to the font's kerning before rounding when `RasterOptions.BakeHintingIntoKerning` is on; asked once after `RasterizeAll` |
 | `SetVariationAxes(IReadOnlyList<VariationAxis>, Dictionary<string, float>)` | No-op | Apply variable font axis values |
 | `SelectColorPalette(int)` | No-op | Select a CPAL color palette |
 | `RasterizeOutlineLayer(int, RasterOptions, int, OutlineShape, float)` | Returns `null` | Draw the outline ring for `OutlineMode.Vector` from the vector outline; `null` keeps core's bitmap outline for that glyph. Used only when `SupportsOutlineStroke` is true |
@@ -67,10 +68,11 @@ When optional methods return `null`, KernSmith falls back to its built-in TTF ta
 | `SupportsMsdf` | Set to `true` if you render `SdfMode.Msdf` / `Mtsdf` (RGBA multi-channel fields); core rejects those modes otherwise |
 | `SupportsWidthScale` | Set to `true` if you honor `RasterOptions.WidthPercent`; core throws `NotSupportedException` for a non-default width otherwise |
 | `SupportsItalicAngle` | Set to `true` if your synthetic italic slants by `RasterOptions.ItalicAngle`; core throws `NotSupportedException` for a non-default angle otherwise |
+| `SupportedHintLevels` | `IReadOnlyList<HintLevel>` of the levels you implement (default empty, meaning only `HintLevel.Default` is ever passed). An unlisted level steps down to the nearest lower one you list (`Full` → `Normal` → `Light` → `None`), else `Default` |
 
 ## RasterizedGlyph Output
 
-Each rasterized glyph must provide all 8 properties:
+Each rasterized glyph must provide all 8 properties (`Fractional`, a `FractionalGlyphMetrics?` with the unrounded advance and bearing and the hinting deltas, is optional and read only when `RasterOptions.FractionalMetrics` is set):
 
 ```csharp
 new RasterizedGlyph

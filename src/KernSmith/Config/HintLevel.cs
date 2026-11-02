@@ -15,8 +15,9 @@ public enum HintLevel
     /// <summary>
     /// The backend's current behaviour, unchanged: hinted when <see cref="FontGeneratorOptions.EnableHinting"/>
     /// is on, in whatever way the backend hints (FreeType, GDI and DirectWrite hint every mode;
-    /// Native hints only <see cref="AntiAliasMode.Light"/>; StbTrueType never hints). Every
-    /// existing caller and config renders exactly as before with this value.
+    /// Native hints at <see cref="Normal"/> in every mode, tapered by size to unhinted output
+    /// from 40 ppem; StbTrueType never hints). Every existing caller and config renders as the
+    /// backend's defaults say with this value.
     /// </summary>
     Default,
 
@@ -31,9 +32,10 @@ public enum HintLevel
     Light,
 
     /// <summary>
-    /// Fitting in both axes by an auto-hinter: vertical stems snap too and the advance is
-    /// rebuilt from the fitted side bearings, so spacing can change by a pixel. FreeType's
-    /// forced auto-hinter at the normal (or, for <see cref="AntiAliasMode.None"/>, mono) target.
+    /// Fitting in both axes by an auto-hinter: vertical stems snap too, with the fitted ink
+    /// placed inside an advance that stays the font's. Native's own both-axis auto-hinter, and
+    /// its default with hinting on; FreeType does not list it (it would need its forced
+    /// auto-hinter) and steps it down to <see cref="Light"/>.
     /// </summary>
     Normal,
 

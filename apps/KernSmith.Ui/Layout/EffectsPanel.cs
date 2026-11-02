@@ -99,7 +99,7 @@ public class EffectsPanel : Panel
         UiFactory.BindCheckBox(hintCheck, _effects, nameof(EffectsViewModel.Hinting),
             () => _effects.Hinting, v => _effects.Hinting = v);
         leftCol.Children.Add(hintCheck.Visual);
-        TooltipService.SetTooltip(hintCheck, "Font hinting for sharper small sizes. The Native backend hints only in Light anti-alias mode (its own vertical auto-hinter).");
+        TooltipService.SetTooltip(hintCheck, "Font hinting for sharper small sizes. The Native backend applies its own auto-hinter (Normal: both axes, fading out by 40 ppem) in every anti-alias mode; no TrueType bytecode hinting.");
 
         // Right column: Synthetic, Synthetic
         var rightCol = new ContainerRuntime();
@@ -390,7 +390,7 @@ public class EffectsPanel : Panel
                 _effects.AntiAlias = aaModes[idx];
         };
         ssGrid.AddRow("Anti-Alias:", aaCombo);
-        TooltipService.SetTooltip(aaCombo, "None: aliased 1-bit edges. Grayscale: smooth edges (default). Light: grayscale with light hinting (Native: its own vertical auto-hinter, needs Hinting on). LCD: subpixel RGB coverage (Native writes RGBA glyphs). Only the selected rasterizer's modes are listed.");
+        TooltipService.SetTooltip(aaCombo, "None: aliased 1-bit edges. Grayscale: smooth edges (default). Light: grayscale with light hinting (FreeType's y-only target; Native hints it like Grayscale). LCD: subpixel RGB coverage (Native writes RGBA glyphs). Only the selected rasterizer's modes are listed.");
         _effects.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(EffectsViewModel.BackendAntiAliasModes) or nameof(EffectsViewModel.AntiAlias))

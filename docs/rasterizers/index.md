@@ -29,7 +29,8 @@ For per-OS status (Windows, Linux, macOS, Android, iOS, Mac Catalyst, Blazor WAS
 | BMFont.exe parity | No | Yes | No | No | No |
 | ClearType-hinted grayscale | No | No | Yes | No | No |
 | Synthetic bold/italic | Yes | Yes | Yes | Yes | Yes |
-| Hinting | Yes | Yes | Yes | No | `Light` only (own vertical auto-hinter) |
+| Hinting | Yes | Yes | Yes | No | Own auto-hinter: `Normal` by default (both axes, fades out by 40 ppem), `Light` (y-only), `None`; no bytecode |
+| Hint levels (`HintLevel`) | None, Light, Full | Full | None, Light | None | None, Light, Normal (default Normal) |
 | Anti-aliasing modes | Grayscale, Light, LCD, None | Grayscale, None | Grayscale, None | Grayscale, None | Grayscale, Light, LCD, None |
 | LCD subpixel order / filter | No | No | No | No | Yes |
 | Font formats | TTF, OTF, WOFF, WOFF2 | TTF, OTF, WOFF, WOFF2 | TTF, OTF, WOFF, WOFF2 | TTF, OTF (not CFF2), WOFF, WOFF2 | TTF, OTF, WOFF, WOFF2 |
@@ -94,7 +95,7 @@ Use this decision tree to pick the right backend:
 4. **Need SDF (Signed Distance Field) output?** Use [FreeType](freetype.md) or [StbTrueType](stbtruetype.md) -- the published backends with SDF rendering. The experimental [Native](native.md) backend renders SDF too, and is the only one with multi-channel MSDF/MTSDF.
 5. **Need cross-platform SDF without native binaries?** Use [StbTrueType](stbtruetype.md) -- it supports SDF and runs fully managed.
 6. **Need WASM/Blazor or NativeAOT without native binaries?** Use [StbTrueType](stbtruetype.md) -- it is the only published fully managed backend with zero native dependencies. It is for trusted fonts only (stb_truetype does no bounds checking; the backend's OpenType structure check is defense in depth, not a guarantee), so for untrusted fonts such as user uploads use [Native](native.md), which also runs in Blazor WASM but is experimental and not on NuGet yet. See the [Blazor WASM sample](https://github.com/kaltinril/Kernsmith/tree/main/samples/KernSmith.Samples.BlazorWasm) for a working example. Enable AOT compilation for production performance.
-7. **Want zero third-party code, and building from source?** Try [Native](native.md) -- KernSmith's own rasterizer. It renders TrueType and OpenType (CFF/CFF2) fonts, variable and color fonts, SDF and MSDF, vector outlines and synthetic width/italic angle with no external dependencies at all, but it is experimental and unpublished and hints only in `Light` mode.
+7. **Want zero third-party code, and building from source?** Try [Native](native.md) -- KernSmith's own rasterizer. It renders TrueType and OpenType (CFF/CFF2) fonts, variable and color fonts, SDF and MSDF, vector outlines and synthetic width/italic angle with no external dependencies at all, but it is experimental and unpublished and auto-hints only (no TrueType bytecode).
 8. **Not sure?** Start with FreeType. It covers the majority of use cases.
 
 ## Selecting a Backend in Code

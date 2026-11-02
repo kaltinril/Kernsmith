@@ -521,7 +521,9 @@ public sealed class BmFontBuilder
         _options.TextureFormat = source.TextureFormat;
         _options.EnableHinting = source.EnableHinting;
         _options.HintLevel = source.HintLevel;
+        _options.BakeHintingIntoKerning = source.BakeHintingIntoKerning;
         _options.FractionalMetrics = source.FractionalMetrics;
+        _options.Gamma = source.Gamma;
         _options.AutofitTexture = source.AutofitTexture;
         _options.EqualizeCellHeights = source.EqualizeCellHeights;
         _options.ForceOffsetsToZero = source.ForceOffsetsToZero;

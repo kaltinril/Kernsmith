@@ -88,6 +88,8 @@ public interface IRasterizer : IDisposable
     /// <see cref="RasterOptions.BakeHintingIntoKerning"/> is off). Asked once per generation,
     /// after <see cref="RasterizeAll"/>.
     /// </summary>
+    /// <param name="options">The options the glyphs were rasterized with.</param>
+    /// <returns>The adjustments in pixels, or null when the backend has none.</returns>
     IReadOnlyList<Font.Models.ScaledKerningAdjustment>? GetKerningAdjustments(RasterOptions options) => null;
 
     /// <summary>
