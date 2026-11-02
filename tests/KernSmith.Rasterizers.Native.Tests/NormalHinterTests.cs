@@ -303,6 +303,34 @@ public class NormalHinterTests
         OutlineBounds.Tight(result!.Value.Outline).XMin.ShouldBeGreaterThanOrEqualTo(0f);
     }
 
+    [Fact]
+    public void Fit_SerifTips_FollowTheirStem_RatherThanSnappingAsOneLongEdge()
+    {
+        // Source Serif's 'n' at 8.75 ppem: 0.76 px stems 2.66 px apart, and on the left a foot
+        // serif and a top flag whose 0.3 px tall tips both end 0.69 px before the stem, 3 px
+        // apart. Merged into one edge (same side, same x) they are 0.6 px of edge, not the
+        // 3.5 px span between them: too short to be snapped to the grid on their own, so they
+        // follow their stem — placed apart from it, the serif's reach changes by up to half a
+        // pixel on one side of the glyph. At 14 ppem no hairline weight lifts the tips, so
+        // their length is as drawn.
+        var n = Concat(
+            Rectangle(1.01f, 0.3f, 1.77f, 3.5f),
+            Rectangle(3.67f, 0.3f, 4.43f, 2.5f),
+            Rectangle(0.32f, 0f, 1.77f, 0.3f),
+            Rectangle(0.32f, 3.2f, 1.77f, 3.5f),
+            Rectangle(3.67f, 0f, 5.04f, 0.3f));
+        var metrics = new NormalHintMetrics(ScaledHintMetrics.WithoutZones(1.45f), 0f, Ppem: 14f);
+
+        var result = NormalHinter.Fit(n, 5.36f, metrics, mono: false);
+
+        result.ShouldNotBeNull();
+        var contours = ContourExtents(result!.Value.Outline);
+        float leftStem = contours[0].Left, rightStem = contours[1].Right;
+        (leftStem - contours[2].Left).ShouldBe(0.69f, 1f / 32f, "the foot serif's reach beyond its stem");
+        (leftStem - contours[3].Left).ShouldBe(0.69f, 1f / 32f, "the flag serif's reach beyond its stem");
+        (contours[4].Right - rightStem).ShouldBe(0.61f, 1f / 32f, "the right foot serif's reach beyond its stem");
+    }
+
     // ---- Taper ------------------------------------------------------------------------------
 
     [Theory]
@@ -398,6 +426,14 @@ public class NormalHinterTests
     /// <summary>The (left, right) x extents of each rectangle contour, left to right.</summary>
     private static List<(float Left, float Right)> VerticalStems(GlyphOutline outline)
     {
+        var stems = ContourExtents(outline);
+        stems.Sort();
+        return stems;
+    }
+
+    /// <summary>The (left, right) x extents of each contour, in outline order.</summary>
+    private static List<(float Left, float Right)> ContourExtents(GlyphOutline outline)
+    {
         var stems = new List<(float, float)>();
         float min = float.MaxValue, max = float.MinValue;
         foreach (var c in outline.Commands)
@@ -414,7 +450,6 @@ public class NormalHinterTests
                 stems.Add((min, max));
         }
 
-        stems.Sort();
         return stems;
     }
 }

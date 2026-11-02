@@ -297,7 +297,7 @@ internal static class StemFitter
                 continue;
             }
 
-            float weight = 0f, position = 0f, xMin = float.MaxValue, xMax = float.MinValue;
+            float weight = 0f, position = 0f, length = 0f, xMin = float.MaxValue, xMax = float.MinValue;
             bool round = true;
             var points = new List<int>();
             var controls = new List<(int Control, int Node)>();
@@ -306,6 +306,7 @@ internal static class StemFitter
                 float w = MathF.Max(edge.Length, 1e-3f);
                 weight += w;
                 position += w * edge.Y;
+                length += edge.Length;
                 xMin = MathF.Min(xMin, edge.XMin);
                 xMax = MathF.Max(xMax, edge.XMax);
                 round &= edge.IsRound;
@@ -313,7 +314,9 @@ internal static class StemFitter
                 controls.AddRange(edge.TangentControls);
             }
 
-            merged.Add(new GridFitter.Edge(position / weight, xMin, xMax, seed.IsTop, round, points, controls));
+            // The span still bounds the merged edge (pairing tests overlap against it); the
+            // length is the ink of the parts, not the distance between them.
+            merged.Add(new GridFitter.Edge(position / weight, xMin, xMax, seed.IsTop, round, points, controls) { InkLength = length });
         }
 
         return merged;

@@ -695,7 +695,19 @@ internal static class GridFitter
 
         public float XMax { get; } = xMax;
 
-        public float Length => XMax - XMin;
+        /// <summary>
+        /// How much ink lies along the edge: its extent, or for an edge the <c>Normal</c>
+        /// fitter merged from several (<see cref="InkLength"/>) the sum of theirs. INVARIANT:
+        /// this, never the span between merged parts, is what qualifies a straight edge to be
+        /// placed on its own (<c>StemFitter</c>'s lone-edge pass) and weights it as a stroke:
+        /// two 0.3 px serif tips 3 px apart are 0.6 px of edge, not 3.5, and follow their stem
+        /// instead of dragging the glyph's edge to the grid by themselves, while the ends of
+        /// an '='s bars, 0.6 px each, still snap together as the one feature they are.
+        /// </summary>
+        public float Length => InkLength ?? XMax - XMin;
+
+        /// <summary>The summed extent of the edges merged into this one; null for an unmerged edge.</summary>
+        public float? InkLength { get; set; }
 
         /// <summary>True when the ink is below the edge (the top of a stroke).</summary>
         public bool IsTop { get; } = isTop;

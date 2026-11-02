@@ -160,7 +160,11 @@ advance:
   the ends of strokes whose side is a curve (an 'S' terminal), and flats a few units long at a
   bowl's extremum. The y pass takes edges up to a 7° slope, so a serif face's slightly sloped
   serif tops snap to their zone; the x pass keeps the 4° of the light fitter. Edges on the same
-  ink side within 0.3 px merge, so an 'S' terminal and the bowl above it snap together.
+  ink side within 0.3 px merge, so an 'S' terminal and the bowl above it snap together; a
+  merged edge is as long as the ink of its parts, not the span between them, so the two 0.3 px
+  serif tips on one side of a Source Serif 'n' (0.6 px of edge, 3 px apart) follow their stem
+  instead of snapping to the grid on their own and changing the serif's reach, while the ends
+  of an '='s bars (0.6 px each) still snap together.
 - **Hintability** — a face whose reference letters have no straight vertical stem (a script
   such as Dancing Script) is fitted in y only; its x axis and advance are left as drawn.
 - **Strokes** — opposite edges within the maximum stem pair up (round edges need not overlap).
