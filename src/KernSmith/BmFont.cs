@@ -43,6 +43,7 @@ public static class BmFont
 
         var key = style == null ? familyName : $"{familyName}|{style}";
         s_fontRegistry[key] = new FontLoadResult(fontData, faceIndex);
+        FaceCache.Invalidate(familyName);
     }
 
     /// <summary>
@@ -69,6 +70,7 @@ public static class BmFont
         ArgumentNullException.ThrowIfNull(path);
 
         s_systemFontProvider.Value.AddResolvedFontHint(familyName, path, faceIndex);
+        FaceCache.Invalidate(familyName);
     }
 
     /// <summary>
@@ -80,13 +82,19 @@ public static class BmFont
     {
         ArgumentNullException.ThrowIfNull(familyName);
         var key = style == null ? familyName : $"{familyName}|{style}";
-        return s_fontRegistry.TryRemove(key, out _);
+        var removed = s_fontRegistry.TryRemove(key, out _);
+        FaceCache.Invalidate(familyName);
+        return removed;
     }
 
     /// <summary>
     /// Removes all registered fonts.
     /// </summary>
-    public static void ClearRegisteredFonts() => s_fontRegistry.Clear();
+    public static void ClearRegisteredFonts()
+    {
+        s_fontRegistry.Clear();
+        FaceCache.Clear();
+    }
 
     /// <summary>
     /// Attempts to load a font from the registry.
@@ -193,13 +201,13 @@ public static class BmFont
 
     #endregion
 
-    internal static RasterizationResult RasterizeFont(byte[] fontData, FontGeneratorOptions options, string? systemFontName = null)
+    internal static RasterizationResult RasterizeFont(byte[] fontData, FontGeneratorOptions options, string? systemFontName = null, string? faceKey = null)
     {
         // One-shot composition of the prepare/per-add split (phase 183): setup once, rasterize
         // the resolved character set once, then release the setup (PreparedRasterization honors
         // the caller-owned options.Rasterizer rule on Dispose).
         using var prepared = PreparedRasterization.Prepare(
-            fontData, options, systemFontName, subsetToCharacterSet: true);
+            fontData, options, systemFontName, subsetToCharacterSet: true, faceKey);
         var codepoints = prepared.ResolveCodepoints();
         var result = prepared.RasterizeAndProcess(codepoints, equalizeSpan: null);
 
@@ -225,7 +233,7 @@ public static class BmFont
     }
     internal static (int FontIndex, int Codepoint) DecodeCombinedId(int combinedId) => (combinedId >>> 21, combinedId & 0x1FFFFF);
 
-    private static BmFontResult GenerateCore(byte[] fontData, FontGeneratorOptions? options, string? sourceFontFile, string? sourceFontName, string? systemFontFamily = null)
+    private static BmFontResult GenerateCore(byte[] fontData, FontGeneratorOptions? options, string? sourceFontFile, string? sourceFontName, string? systemFontFamily = null, string? faceKey = null)
     {
         ArgumentNullException.ThrowIfNull(fontData);
 
@@ -247,7 +255,7 @@ public static class BmFont
         var metrics = options.CollectMetrics ? new PipelineMetrics() : null;
 
         metrics?.Begin("Rasterization");
-        var rasterResult = RasterizeFont(fontData, options, systemFontFamily);
+        var rasterResult = RasterizeFont(fontData, options, systemFontFamily, faceKey);
         metrics?.End();
 
         var fontInfo = rasterResult.FontInfo;
@@ -683,7 +691,8 @@ public static class BmFont
     public static BmFontResult Generate(string fontPath, FontGeneratorOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(fontPath);
-        return GenerateCore(File.ReadAllBytes(fontPath), options, sourceFontFile: fontPath, sourceFontName: null);
+        return GenerateCore(FaceCache.ReadFile(fontPath), options, sourceFontFile: fontPath, sourceFontName: null,
+            faceKey: FaceCache.Enabled ? FaceCache.FileKey(fontPath) : null);
     }
 
     /// <summary>Generates a BMFont from a font file on disk at the given size.</summary>
@@ -693,7 +702,8 @@ public static class BmFont
     public static BmFontResult Generate(string fontPath, int size)
     {
         ArgumentNullException.ThrowIfNull(fontPath);
-        return GenerateCore(File.ReadAllBytes(fontPath), new FontGeneratorOptions { Size = size }, sourceFontFile: fontPath, sourceFontName: null);
+        return GenerateCore(FaceCache.ReadFile(fontPath), new FontGeneratorOptions { Size = size }, sourceFontFile: fontPath, sourceFontName: null,
+            faceKey: FaceCache.Enabled ? FaceCache.FileKey(fontPath) : null);
     }
 
     /// <summary>Generates a BMFont from a system-installed font, looked up by family name (e.g., "Arial").</summary>
@@ -718,8 +728,17 @@ public static class BmFont
         FontLoadResult? fontResult = null;
         bool loadedStyledVariant = false;
 
+        // Opt-in FaceCache: a family resolved before skips the registry/OS lookup and the file read.
+        var resolvedKey = FaceCache.SystemKey(fontFamily, lookupBold, lookupItalic);
+        var resolvedFromCache = FaceCache.TryGetResolved(resolvedKey, out var cachedFont, out var cachedStyled);
+        if (resolvedFromCache)
+        {
+            fontResult = cachedFont;
+            loadedStyledVariant = cachedStyled;
+        }
+
         // Check the font registry first (registered fonts take priority over system fonts).
-        if (lookupBold && lookupItalic)
+        if (!resolvedFromCache && lookupBold && lookupItalic)
         {
             fontResult = LoadFromRegistry(fontFamily, "Bold Italic");
             if (fontResult != null)
@@ -770,6 +789,9 @@ public static class BmFont
                 ?? throw new FontParsingException($"System font '{fontFamily}' not found");
         }
 
+        if (!resolvedFromCache)
+            FaceCache.StoreResolved(resolvedKey, fontResult, loadedStyledVariant);
+
         var originalFaceIndex = options.FaceIndex;
         try
         {
@@ -786,7 +808,8 @@ public static class BmFont
             // mapper silently selecting the real bold/italic face via the system font path.
             bool forceSynthetic = options.ForceSyntheticBold || options.ForceSyntheticItalic;
             var sysFamily = (loadedStyledVariant || forceSynthetic) ? null : fontFamily;
-            return GenerateCore(fontResult.Data, options, sourceFontFile: null, sourceFontName: fontFamily, systemFontFamily: sysFamily);
+            return GenerateCore(fontResult.Data, options, sourceFontFile: null, sourceFontName: fontFamily, systemFontFamily: sysFamily,
+                faceKey: FaceCache.Enabled ? resolvedKey : null);
         }
         finally
         {
