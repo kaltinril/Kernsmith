@@ -384,6 +384,7 @@ font lookup, parse and rasterizer load (output is identical):
 FaceCache.Enabled = true;                                     // once, at startup
 BmFont.Generate("custom.ttf", options);                       // path or GenerateFromSystem: cached
 BmFont.Generate(bytes, options, faceCacheKey: "custom.ttf");  // bytes: you supply the key
+// FaceCache.Contains("custom.ttf") is true after that: pass null bytes and skip the file read.
 FaceCache.Clear();                                            // drop everything
 ```
 

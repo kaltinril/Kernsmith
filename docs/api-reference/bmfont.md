@@ -27,6 +27,7 @@ from the same face. Output is identical on or off.
 | Member | Description |
 |--------|-------------|
 | `FaceCache.Enabled` | `false` by default. Fonts must not change while it is on. |
+| `FaceCache.Contains(key)` | True when the cache holds the font for a `Generate(byte[], options, faceCacheKey)` key; pass `null` bytes then to skip reading the file (null with nothing cached throws `InvalidOperationException`). |
 | `FaceCache.Clear()` | Drops everything cached. `RegisterFont`, `UnregisterFont`, `ClearRegisteredFonts` and `HintFontLocation` drop the affected family. |
 
 It covers `Generate(path)`, `GenerateFromSystem` and the keyed `Generate(byte[], options, faceCacheKey)`,

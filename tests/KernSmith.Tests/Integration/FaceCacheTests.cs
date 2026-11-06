@@ -295,4 +295,52 @@ public class FaceCacheTests : IDisposable
 
         failures.ShouldBeEmpty();
     }
+
+    [Fact]
+    public void Contains_IsFalseBeforeAndTrueAfterTheFirstKeyedGeneration()
+    {
+        var bytes = File.ReadAllBytes(FontPath);
+        FaceCache.Contains("contains-test").ShouldBeFalse("cache off");
+
+        FaceCache.Enabled = true;
+        FaceCache.Contains("contains-test").ShouldBeFalse("before the first keyed generation");
+
+        BmFont.Generate(bytes, new FontGeneratorOptions { Size = 20 }, "contains-test");
+        FaceCache.Contains("contains-test").ShouldBeTrue();
+        FaceCache.Contains("another-key").ShouldBeFalse();
+
+        FaceCache.Clear();
+        FaceCache.Contains("contains-test").ShouldBeFalse("after Clear");
+    }
+
+    [Fact]
+    public void Generate_KeyedNullBytes_AfterCachedGeneration_MatchesNormalGeneration()
+    {
+        var bytes = File.ReadAllBytes(FontPath);
+        // Different sizes, styles and character sets than the generation that cached the face.
+        var expected = Builds(RasterizerBackend.FreeType).Select(o => BmFont.Generate(bytes, o)).ToList();
+
+        FaceCache.Enabled = true;
+        BmFont.Generate(bytes, new FontGeneratorOptions { Size = 20 }, "null-bytes-test");
+
+        var options = Builds(RasterizerBackend.FreeType);
+        for (var i = 0; i < options.Length; i++)
+            ShouldMatch(BmFont.Generate(null, options[i], "null-bytes-test"), expected[i], $"build {i}");
+    }
+
+    [Fact]
+    public void Generate_KeyedNullBytes_WithNothingCached_Throws()
+    {
+        Should.Throw<InvalidOperationException>(() =>
+            BmFont.Generate(null, new FontGeneratorOptions { Size = 20 }, "nothing-cached")); // cache off
+
+        FaceCache.Enabled = true;
+        Should.Throw<InvalidOperationException>(() =>
+            BmFont.Generate(null, new FontGeneratorOptions { Size = 20 }, "nothing-cached"));
+
+        BmFont.Generate(File.ReadAllBytes(FontPath), new FontGeneratorOptions { Size = 20 }, "nothing-cached");
+        FaceCache.Clear();
+        Should.Throw<InvalidOperationException>(() =>
+            BmFont.Generate(null, new FontGeneratorOptions { Size = 20 }, "nothing-cached"), "cleared between the two calls");
+    }
 }

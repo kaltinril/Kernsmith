@@ -27,7 +27,8 @@ namespace KernSmith;
 /// italic lookups) and <see cref="BmFont.Generate(byte[], FontGeneratorOptions?, string)"/>, where the
 /// caller supplies the key (the same key must always mean the same bytes; a hit does not read the
 /// array; only <see cref="Clear"/> or <c>Enabled = false</c> drops a keyed entry, since a key is not a
-/// family name). <see cref="BmFont.Generate(byte[], FontGeneratorOptions?)"/> without a key has no
+/// family name; the font's bytes are kept per key, so <see cref="Contains"/> can tell a caller to pass
+/// null bytes next time). <see cref="BmFont.Generate(byte[], FontGeneratorOptions?)"/> without a key has no
 /// stable identity for its bytes and is never cached. A generation that sets
 /// <see cref="FontGeneratorOptions.VariationAxes"/>, a non-default
 /// <see cref="FontGeneratorOptions.ColorPaletteIndex"/>, a custom <see cref="FontGeneratorOptions.Rasterizer"/>
@@ -42,6 +43,7 @@ public static class FaceCache
     private static readonly Dictionary<string, List<Entry>> s_idle = new(StringComparer.OrdinalIgnoreCase);
     private static readonly ConcurrentDictionary<string, FontLoadResult> s_files = new(StringComparer.OrdinalIgnoreCase);
     private static readonly ConcurrentDictionary<string, (FontLoadResult Font, bool StyledVariant)> s_resolved = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentDictionary<string, byte[]> s_keyedBytes = new(StringComparer.Ordinal);
     private static int s_generation;
     private static volatile bool s_enabled;
     private static int s_hits;
@@ -63,6 +65,19 @@ public static class FaceCache
         }
     }
 
+    /// <summary>
+    /// True when the cache is enabled and holds the font for <paramref name="faceCacheKey"/>, so
+    /// <see cref="BmFont.Generate(byte[], FontGeneratorOptions?, string)"/> may be called with a null
+    /// <c>fontData</c> and skip reading the font file. A caller that calls <see cref="Clear"/> (or turns the
+    /// cache off) between this check and the generation gets an <see cref="InvalidOperationException"/>.
+    /// </summary>
+    /// <param name="faceCacheKey">The key given to the keyed <c>Generate</c> overload.</param>
+    public static bool Contains(string faceCacheKey)
+    {
+        ArgumentNullException.ThrowIfNull(faceCacheKey);
+        return s_enabled && s_keyedBytes.ContainsKey(faceCacheKey);
+    }
+
     /// <summary>Drops every cached font, parsed face and loaded rasterizer.</summary>
     public static void Clear()
     {
@@ -75,8 +90,25 @@ public static class FaceCache
         }
         s_files.Clear();
         s_resolved.Clear();
+        s_keyedBytes.Clear();
         foreach (var entry in dropped)
             entry.Rasterizer.Dispose();
+    }
+
+    /// <summary>
+    /// The font bytes for a keyed generation: the ones remembered for the key, else
+    /// <paramref name="fontData"/> (remembered now). The same key always means the same bytes, so
+    /// the remembered ones win. Null when neither exists.
+    /// </summary>
+    internal static byte[]? ResolveKeyedBytes(string faceCacheKey, byte[]? fontData)
+    {
+        if (!s_enabled)
+            return fontData;
+
+        if (s_keyedBytes.TryGetValue(faceCacheKey, out var known))
+            return known;
+
+        return fontData is null ? null : s_keyedBytes.GetOrAdd(faceCacheKey, fontData);
     }
 
     /// <summary>Drops the cached entries of one system or registered font family.</summary>

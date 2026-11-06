@@ -128,14 +128,23 @@ public static class BmFont
     /// <see cref="FaceCache.Enabled"/> off) drops it. With the cache off this behaves exactly like
     /// <see cref="Generate(byte[], FontGeneratorOptions?)"/>.
     /// </remarks>
-    /// <param name="fontData">Raw TTF/OTF/WOFF/WOFF2 file bytes.</param>
+    /// <param name="fontData">Raw TTF/OTF/WOFF/WOFF2 file bytes, or null when <see cref="FaceCache.Contains"/>
+    /// is true for <paramref name="faceCacheKey"/> (the cached font is used). Null with no cached font throws
+    /// <see cref="InvalidOperationException"/>.</param>
     /// <param name="options">Generation options, or null for defaults.</param>
     /// <param name="faceCacheKey">A caller-chosen identity for these bytes, such as the font's path or asset name.</param>
     /// <returns>The generated bitmap font result containing the .fnt descriptor and atlas pages.</returns>
-    public static BmFontResult Generate(byte[] fontData, FontGeneratorOptions? options, string faceCacheKey)
+    public static BmFontResult Generate(byte[]? fontData, FontGeneratorOptions? options, string faceCacheKey)
     {
         ArgumentException.ThrowIfNullOrEmpty(faceCacheKey);
-        return GenerateCore(fontData, options, sourceFontFile: null, sourceFontName: null,
+
+        // The cache remembers the bytes per key, so a caller may pass null once FaceCache.Contains(key).
+        var bytes = FaceCache.ResolveKeyedBytes(faceCacheKey, fontData)
+            ?? throw new InvalidOperationException(
+                $"fontData is null and FaceCache holds no font for key '{faceCacheKey}'. Pass the font bytes, " +
+                "or check FaceCache.Contains(key) first (the cache must be enabled and not cleared in between).");
+
+        return GenerateCore(bytes, options, sourceFontFile: null, sourceFontName: null,
             faceKey: FaceCache.Enabled ? FaceCache.BytesKey(faceCacheKey) : null);
     }
 
