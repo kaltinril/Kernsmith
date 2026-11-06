@@ -117,6 +117,28 @@ public static class BmFont
     public static BmFontResult Generate(byte[] fontData, FontGeneratorOptions? options = null)
         => GenerateCore(fontData, options, sourceFontFile: null, sourceFontName: null);
 
+    /// <summary>
+    /// Generates a BMFont from raw font bytes, letting <see cref="FaceCache"/> reuse the parsed face
+    /// and loaded rasterizer across calls that pass the same <paramref name="faceCacheKey"/>.
+    /// </summary>
+    /// <remarks>
+    /// <b>Contract:</b> the same key must always mean the same font bytes, and the caller guarantees
+    /// it. On a cache hit the array is not read, hashed or compared: the cached face is used.
+    /// A key is independent of any family name, so only <see cref="FaceCache.Clear"/> (or turning
+    /// <see cref="FaceCache.Enabled"/> off) drops it. With the cache off this behaves exactly like
+    /// <see cref="Generate(byte[], FontGeneratorOptions?)"/>.
+    /// </remarks>
+    /// <param name="fontData">Raw TTF/OTF/WOFF/WOFF2 file bytes.</param>
+    /// <param name="options">Generation options, or null for defaults.</param>
+    /// <param name="faceCacheKey">A caller-chosen identity for these bytes, such as the font's path or asset name.</param>
+    /// <returns>The generated bitmap font result containing the .fnt descriptor and atlas pages.</returns>
+    public static BmFontResult Generate(byte[] fontData, FontGeneratorOptions? options, string faceCacheKey)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(faceCacheKey);
+        return GenerateCore(fontData, options, sourceFontFile: null, sourceFontName: null,
+            faceKey: FaceCache.Enabled ? FaceCache.BytesKey(faceCacheKey) : null);
+    }
+
     #region Incremental sessions (phase 183 — runtime glyph addition with stable packing)
 
     /// <summary>

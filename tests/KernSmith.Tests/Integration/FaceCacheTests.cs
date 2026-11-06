@@ -178,4 +178,121 @@ public class FaceCacheTests : IDisposable
 
         failures.ShouldBeEmpty();
     }
+
+    [Theory]
+    [InlineData(RasterizerBackend.FreeType)]
+    [InlineData(RasterizerBackend.StbTrueType)]
+    public void Generate_KeyedBytes_CacheOnMatchesCacheOff(RasterizerBackend backend)
+    {
+        var bytes = File.ReadAllBytes(FontPath);
+        var expected = Builds(backend).Select(o => BmFont.Generate(bytes, o)).ToList();
+
+        FaceCache.Enabled = true;
+        var hitsBefore = FaceCache.Hits;
+        for (var pass = 0; pass < 2; pass++)
+        {
+            var options = Builds(backend);
+            for (var i = 0; i < options.Length; i++)
+                ShouldMatch(BmFont.Generate(bytes, options[i], "roboto-test"), expected[i], $"{backend} build {i} pass {pass}");
+        }
+
+        FaceCache.Hits.ShouldBeGreaterThan(hitsBefore, "the keyed route never used the cache");
+    }
+
+    [Fact]
+    public void Generate_KeyedBytes_CacheOff_NeverUsesTheCache()
+    {
+        var bytes = File.ReadAllBytes(FontPath);
+        var hitsBefore = FaceCache.Hits;
+        BmFont.Generate(bytes, new FontGeneratorOptions { Size = 20 }, "off-test");
+        BmFont.Generate(bytes, new FontGeneratorOptions { Size = 20 }, "off-test");
+        FaceCache.Hits.ShouldBe(hitsBefore);
+    }
+
+    [Fact]
+    public void Generate_KeyedBytes_ReusesTheCachedFaceWithoutReadingTheArray()
+    {
+        // The key is the identity: a hit uses the cached face, not the bytes passed with it.
+        var bytes = File.ReadAllBytes(FontPath);
+        var options = () => new FontGeneratorOptions { Size = 24, Characters = CharacterSet.FromChars("Hello") };
+        var expected = BmFont.Generate(bytes, options());
+
+        FaceCache.Enabled = true;
+        BmFont.Generate(bytes, options(), "identity-test");
+        ShouldMatch(BmFont.Generate(new byte[1], options(), "identity-test"), expected, "second call, other array, same key");
+    }
+
+    [Fact]
+    public void Generate_KeyedBytes_DifferentKeysAreDifferentFaces()
+    {
+        var roboto = File.ReadAllBytes(FontPath);
+        var noto = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "NotoSans-Regular-Latin.ttf"));
+        FontGeneratorOptions Options() => new() { Size = 24, Characters = CharacterSet.FromChars("Hello") };
+
+        FaceCache.Enabled = true;
+        var a = BmFont.Generate(roboto, Options(), "face-a");
+        var b = BmFont.Generate(noto, Options(), "face-b");
+        ShouldMatch(BmFont.Generate(roboto, Options(), "face-a"), a, "a again");
+        ShouldMatch(BmFont.Generate(noto, Options(), "face-b"), b, "b again");
+        b.FntText.ShouldNotBe(a.FntText);
+    }
+
+    [Fact]
+    public void Clear_And_Disable_DropKeyedFaces()
+    {
+        var bytes = File.ReadAllBytes(FontPath);
+        FontGeneratorOptions Options() => new() { Size = 20 };
+
+        FaceCache.Enabled = true;
+        BmFont.Generate(bytes, Options(), "drop-test");
+        BmFont.Generate(bytes, Options(), "drop-test");
+
+        FaceCache.Clear();
+        var hitsBefore = FaceCache.Hits;
+        BmFont.Generate(bytes, Options(), "drop-test");
+        FaceCache.Hits.ShouldBe(hitsBefore, "Clear left a keyed face behind");
+
+        BmFont.Generate(bytes, Options(), "drop-test");
+        FaceCache.Enabled = false;
+        FaceCache.Enabled = true;
+        hitsBefore = FaceCache.Hits;
+        BmFont.Generate(bytes, Options(), "drop-test");
+        FaceCache.Hits.ShouldBe(hitsBefore, "disabling left a keyed face behind");
+    }
+
+    [Fact]
+    public void Generate_KeyedBytes_EmptyKey_Throws()
+    {
+        var bytes = File.ReadAllBytes(FontPath);
+        Should.Throw<ArgumentException>(() => BmFont.Generate(bytes, null, ""));
+        Should.Throw<ArgumentNullException>(() => BmFont.Generate(bytes, null, null!));
+    }
+
+    [Fact]
+    public void Generate_KeyedBytes_ConcurrentFromOneCachedFace_ProducesCorrectOutput()
+    {
+        var bytes = File.ReadAllBytes(FontPath);
+        FontGeneratorOptions Options(int size) => new() { Size = size, Characters = CharacterSet.FromChars("Hello, World") };
+        var sizes = new[] { 16, 20, 24, 28, 32, 36 };
+        var expected = sizes.ToDictionary(s => s, s => BmFont.Generate(bytes, Options(s)));
+
+        FaceCache.Enabled = true;
+        BmFont.Generate(bytes, Options(16), "concurrent-test");
+
+        var failures = new System.Collections.Concurrent.ConcurrentBag<string>();
+        Parallel.For(0, 48, new ParallelOptions { MaxDegreeOfParallelism = 8 }, i =>
+        {
+            var size = sizes[i % sizes.Length];
+            try
+            {
+                ShouldMatch(BmFont.Generate(bytes, Options(size), "concurrent-test"), expected[size], $"size {size} iteration {i}");
+            }
+            catch (Exception ex)
+            {
+                failures.Add(ex.Message);
+            }
+        });
+
+        failures.ShouldBeEmpty();
+    }
 }
