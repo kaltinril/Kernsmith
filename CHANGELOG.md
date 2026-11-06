@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-11-06
+
 ### Added
 
 - **`FaceCache`** — an opt-in cache (`FaceCache.Enabled`, default off; `FaceCache.Clear()`) that reuses the resolved font, the parsed face and the loaded rasterizer across generations from the same face, for `Generate(path)`, `GenerateFromSystem` (including the bold/italic lookups) and `Generate(byte[], options, faceCacheKey)`. Output is byte-identical on or off. Fonts must not change while it is enabled; `RegisterFont`/`UnregisterFont`/`ClearRegisteredFonts`/`HintFontLocation` drop the affected family. Concurrent generations each lease their own rasterizer. Variation axes, color palettes, a custom rasterizer or reader, and incremental sessions bypass it.
-- **`BmFont.Generate(byte[] fontData, FontGeneratorOptions? options, string faceCacheKey)`** — lets `FaceCache` cache a font generated from bytes. The caller guarantees the same key always means the same bytes; a hit does not read the array. A key is independent of family names: only `FaceCache.Clear()` or disabling the cache drops it.
+- **`BmFont.Generate(byte[] fontData, FontGeneratorOptions? options, string faceCacheKey)`** — lets `FaceCache` cache a font generated from bytes. The caller guarantees the same key always means the same bytes; a hit does not read the array. A key is independent of family names: only `FaceCache.Clear()` or disabling the cache drops it. `fontData` may be `null` once `FaceCache.Contains(key)` is true (the cache remembers the bytes per key), so a caller can skip reading the font file: `BmFont.Generate(FaceCache.Contains(path) ? null : ReadFontFileBytes(path), options, path)`; null with nothing cached throws `InvalidOperationException`.
+- **`FaceCache.Contains(string faceCacheKey)`** — true when the cache is enabled and holds the font for that key.
 
 ### Fixed
 
