@@ -183,8 +183,6 @@ public static class BmFont
             throw new NotSupportedException("FontGeneratorOptions.Variants is not supported in an incremental session.");
         if (options.ChannelPacking)
             throw new NotSupportedException("FontGeneratorOptions.ChannelPacking is not supported in an incremental session.");
-        if (ShouldApplyChannelConfig(options))
-            throw new NotSupportedException("A custom FontGeneratorOptions.Channels configuration is not supported in an incremental session.");
         if (options.TargetRegion is not null)
             throw new NotSupportedException("FontGeneratorOptions.TargetRegion is not supported in an incremental session.");
         if (options.CustomGlyphs is { Count: > 0 })
@@ -269,43 +267,7 @@ public static class BmFont
         // (expanded) dimensions. Otherwise sizing is computed from the smaller base glyphs and
         // the larger outline glyphs spill onto extra pages — while the default-channel path,
         // which expands glyphs during rasterization, sizes correctly.
-        IReadOnlyList<RasterizedGlyph>? channelOutlineGlyphs = null;
-        // Issue #167: a Shadow-content channel needs the shadow's own expanded coverage
-        // (no glyph composited on top) so it can be recolored independently at draw time.
-        // Generated up front for the same sizing reason as outline above.
-        IReadOnlyList<RasterizedGlyph>? channelShadowGlyphs = null;
-        if (ShouldApplyChannelConfig(options) && options.Channels is { } cfg)
-        {
-            var needsOutline = RoutesOutline(cfg);
-            // Only synthesize an outline layer when a real outline width is configured.
-            // With outlineThickness=0 a forced 1px outline would grow every glyph by ~1px;
-            // instead the Outline-content channels fall back to glyph coverage in the compositor.
-            if (needsOutline && options.Outline > 0)
-            {
-                var outlineProcessor = new OutlinePostProcessor(options.Outline, options.OutlineR, options.OutlineG, options.OutlineB)
-                {
-                    Smooth = options.AntiAlias != AntiAliasMode.None,
-                    Shape = options.OutlineShape
-                };
-                // OutlineMode.Vector: a glyph the backend drew a layer for takes it instead.
-                var masks = rasterResult.ChannelOutlineMasks;
-                channelOutlineGlyphs = glyphs.Select(g => masks is not null && masks.TryGetValue(g.Codepoint, out var mask)
-                    ? VectorOutlineEffect.ChannelGlyph(g, mask, options.Outline)
-                    : outlineProcessor.Process(g)).ToList();
-            }
-
-            var needsShadow = cfg.Alpha == ChannelContent.Shadow
-                || cfg.Red == ChannelContent.Shadow
-                || cfg.Green == ChannelContent.Shadow
-                || cfg.Blue == ChannelContent.Shadow;
-            if (needsShadow && options.HasShadow)
-            {
-                var shadowProcessor = new ShadowCoveragePostProcessor(
-                    options.ShadowOffsetX, options.ShadowOffsetY, options.ShadowBlur,
-                    options.ShadowOpacity, options.HardShadow, options.ShadowBlurPasses, options.ShadowBlurKernelSize);
-                channelShadowGlyphs = glyphs.Select(g => shadowProcessor.Process(g)).ToList();
-            }
-        }
+        var (channelOutlineGlyphs, channelShadowGlyphs) = BuildChannelLayers(glyphs, options, rasterResult.ChannelOutlineMasks);
 
         // Size each packed cell (and, below, its .fnt entry) as the box ChannelCompositor draws:
         // the union of the glyph and its outline/shadow layers, so neither overlay is clipped or
@@ -1032,6 +994,44 @@ public static class BmFont
     /// </summary>
     internal static bool ShouldApplyChannelConfig(FontGeneratorOptions options) =>
         options.Channels is { IsDefault: false };
+
+    /// <summary>
+    /// The outline and shadow layers a honored <see cref="FontGeneratorOptions.Channels"/> layout
+    /// routes into its channels, one per glyph (null when no channel needs the layer). An outline
+    /// layer needs a real <see cref="FontGeneratorOptions.Outline"/> width; without one the
+    /// Outline-content channels fall back to glyph coverage in the compositor.
+    /// </summary>
+    internal static (IReadOnlyList<RasterizedGlyph>? Outline, IReadOnlyList<RasterizedGlyph>? Shadow) BuildChannelLayers(
+        IReadOnlyList<RasterizedGlyph> glyphs, FontGeneratorOptions options, IReadOnlyDictionary<int, OutlineMask>? masks)
+    {
+        if (!ShouldApplyChannelConfig(options) || options.Channels is not { } cfg)
+            return (null, null);
+
+        IReadOnlyList<RasterizedGlyph>? outline = null;
+        if (RoutesOutline(cfg) && options.Outline > 0)
+        {
+            var outlineProcessor = new OutlinePostProcessor(options.Outline, options.OutlineR, options.OutlineG, options.OutlineB)
+            {
+                Smooth = options.AntiAlias != AntiAliasMode.None,
+                Shape = options.OutlineShape
+            };
+            // OutlineMode.Vector: a glyph the backend drew a layer for takes it instead.
+            outline = glyphs.Select(g => masks is not null && masks.TryGetValue(g.Codepoint, out var mask)
+                ? VectorOutlineEffect.ChannelGlyph(g, mask, options.Outline)
+                : outlineProcessor.Process(g)).ToList();
+        }
+
+        IReadOnlyList<RasterizedGlyph>? shadow = null;
+        if (RoutesShadow(options) && options.HasShadow)
+        {
+            var shadowProcessor = new ShadowCoveragePostProcessor(
+                options.ShadowOffsetX, options.ShadowOffsetY, options.ShadowBlur,
+                options.ShadowOpacity, options.HardShadow, options.ShadowBlurPasses, options.ShadowBlurKernelSize);
+            shadow = glyphs.Select(g => shadowProcessor.Process(g)).ToList();
+        }
+
+        return (outline, shadow);
+    }
 
     /// <summary>True when any channel of <paramref name="channels"/> carries outline content.</summary>
     internal static bool RoutesOutline(ChannelConfig channels) =>

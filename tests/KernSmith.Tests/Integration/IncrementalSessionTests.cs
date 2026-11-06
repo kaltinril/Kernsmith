@@ -435,19 +435,69 @@ public class IncrementalSessionTests
         ex.Message.ShouldContain("ChannelPacking", Case.Sensitive);
     }
 
-    [Fact]
-    public void BeginIncremental_WithCustomChannels_ThrowsNotSupported()
+    // A session composes a custom Channels layout like Generate: an added glyph has the same
+    // cell, offsets and pixels as the same glyph in a full generation.
+    public static IEnumerable<object[]> ChannelLayouts()
     {
-        // A session never runs the channel compositor: a routed outline was silently dropped
-        // (Roboto 'I', Outline 3: 3x18 cells where Generate gives 9x24).
-        var options = Options();
-        options.Outline = 3;
-        options.Channels = new ChannelConfig(Alpha: ChannelContent.Outline);
-        var ex = Should.Throw<NotSupportedException>(() => BmFont.BeginIncremental(LoadTestFont(), options));
-        ex.Message.ShouldContain("Channels", Case.Sensitive);
+        // Gum's outline layout.
+        yield return new object[] { new ChannelConfig(Alpha: ChannelContent.Outline, Red: ChannelContent.Glyph, Green: ChannelContent.Glyph, Blue: ChannelContent.Glyph), false };
+        yield return new object[] { new ChannelConfig(Alpha: ChannelContent.Outline, Red: ChannelContent.Glyph, Green: ChannelContent.Glyph, Blue: ChannelContent.Glyph), true };
+        yield return new object[] { new ChannelConfig(Alpha: ChannelContent.GlyphAndOutline), false };
+        yield return new object[] { new ChannelConfig(Alpha: ChannelContent.Glyph, Red: ChannelContent.Shadow, Green: ChannelContent.Outline, Blue: ChannelContent.Zero), true };
+    }
 
-        Should.Throw<NotSupportedException>(() =>
-            BmFont.ResumeIncremental(LoadTestFont(), options, BmFont.Generate(LoadTestFont(), Options()).Model));
+    [Theory]
+    [MemberData(nameof(ChannelLayouts))]
+    public void AddGlyphs_CustomChannels_MatchesFullGenerate(ChannelConfig channels, bool resume)
+    {
+        var fontData = LoadTestFont();
+        FontGeneratorOptions Make(string chars) => new()
+        {
+            Size = 32,
+            Outline = 2,
+            ShadowOffsetX = 3,
+            ShadowOffsetY = 3,
+            ShadowBlur = 2,
+            ShadowR = 0,
+            ShadowG = 0,
+            ShadowB = 0,
+            Channels = channels,
+            Characters = CharacterSet.FromChars(chars),
+        };
+
+        var full = BmFont.Generate(fontData, Make("ABCDEFZ"));
+        var baseline = BmFont.Generate(fontData, Make("ABCDEF"));
+
+        using var session = resume
+            ? BmFont.ResumeIncremental(fontData, Make("ABCDEF"), baseline.Model)
+            : BmFont.BeginIncremental(fontData, Make("ABCDEF"));
+        if (!resume)
+            session.AddGlyphs("ABCDEF");
+
+        var added = session.AddGlyphs("Z").Added.ShouldHaveSingleItem();
+
+        var expected = full.Model.Characters.Single(c => c.Id == 'Z');
+        added.Char.Width.ShouldBe(expected.Width);
+        added.Char.Height.ShouldBe(expected.Height);
+        added.Char.XOffset.ShouldBe(expected.XOffset);
+        added.Char.YOffset.ShouldBe(expected.YOffset);
+        added.Char.XAdvance.ShouldBe(expected.XAdvance);
+
+        var padding = Make("A").Padding;
+        var page = full.Pages[expected.Page];
+        var pixels = added.Pixels;
+        var w = added.Width;
+        for (var row = 0; row < added.Height; row++)
+        {
+            for (var col = 0; col < w; col++)
+            {
+                var src = ((expected.Y + padding.Up + row) * page.Width + expected.X + padding.Left + col) * 4;
+                for (var c = 0; c < 4; c++)
+                    pixels[(row * w + col) * 4 + c].ShouldBe(page.PixelData[src + c], $"pixel ({col},{row}) channel {c}");
+            }
+        }
+
+        session.CurrentModel.Common.AlphaChnl.ShouldBe((int)channels.Alpha);
     }
 
     [Fact]
