@@ -299,6 +299,35 @@ public sealed class BmFontIncrementalSession : IDisposable
         // Packed rect = glyph + padding + spacing, exactly as Generate builds them.
         var padding = _options.Padding;
         var spacing = _options.Spacing;
+
+        // A routed Channels layout: build the outline/shadow layers for the added glyphs only,
+        // size each cell as the union of glyph and layers, and compose into the layout, as
+        // Generate does. Without a layout, glyphs pass through untouched.
+        Dictionary<int, byte[]>? composed = null;
+        if (BmFont.ShouldApplyChannelConfig(_options) && _options.Channels is { } channels)
+        {
+            var (outlineLayers, shadowLayers) = BmFont.BuildChannelLayers(glyphs, _options, raster.ChannelOutlineMasks);
+            if (outlineLayers is not null || shadowLayers is not null)
+            {
+                composed = new Dictionary<int, byte[]>(glyphs.Count);
+                var cells = new List<RasterizedGlyph>(glyphs.Count);
+                for (var i = 0; i < glyphs.Count; i++)
+                {
+                    var cell = ChannelCompositor.Cell(glyphs[i], outlineLayers?[i], shadowLayers?[i]);
+                    composed[glyphs[i].Codepoint] = ChannelCompositor.Compose(glyphs[i], outlineLayers?[i], shadowLayers?[i], channels);
+                    cells.Add(cell);
+                }
+                glyphs = cells;
+            }
+            else
+            {
+                // Outline channels with no outline width fall back to glyph coverage.
+                composed = new Dictionary<int, byte[]>(glyphs.Count);
+                foreach (var g in glyphs)
+                    composed[g.Codepoint] = ChannelCompositor.Compose(g, null, null, channels);
+            }
+        }
+
         var glyphByCodepoint = new Dictionary<int, RasterizedGlyph>(glyphs.Count);
         var rects = new GlyphRect[glyphs.Count];
         for (var i = 0; i < glyphs.Count; i++)
@@ -343,9 +372,13 @@ public sealed class BmFontIncrementalSession : IDisposable
                 var charEntry = BmFontModelBuilder.BuildCharEntry(
                     g, placement, _options, _lineMetrics.Value.BaseLine, _advanceAdjustX, channel: 15);
 
-                added.Add(new AddedGlyph(
-                    g.Codepoint, g.Width, g.Height, placement.PageIndex, placement.X, placement.Y,
-                    charEntry, g.BitmapData, g.Format, g.Pitch));
+                added.Add(composed is not null
+                    ? new AddedGlyph(
+                        g.Codepoint, g.Width, g.Height, placement.PageIndex, placement.X, placement.Y,
+                        charEntry, composed[g.Codepoint], PixelFormat.Rgba32, g.Width * 4)
+                    : new AddedGlyph(
+                        g.Codepoint, g.Width, g.Height, placement.PageIndex, placement.X, placement.Y,
+                        charEntry, g.BitmapData, g.Format, g.Pitch));
             }
         }
         catch

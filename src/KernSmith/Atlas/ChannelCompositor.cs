@@ -71,53 +71,9 @@ internal static class ChannelCompositor
 
                     outlineById.TryGetValue(placement.Id, out var outlineGlyph);
                     shadowById.TryGetValue(placement.Id, out var shadowGlyph);
-                    var hasShadow = shadowGlyph != null;
 
-                    var (outlineExpandLeft, outlineExpandTop, shadowExpandLeft, shadowExpandTop, minX, minY, maxX, maxY) =
-                        Canvas(glyph, outlineGlyph, shadowGlyph);
-
-                    var iterW = maxX - minX;
-                    var iterH = maxY - minY;
-                    // Canvas offset relative to the base glyph's own top-left.
-                    var offsetX = -minX;
-                    var offsetY = -minY;
-
-                    var destX = placement.X + padding.Left;
-                    var destY = placement.Y + padding.Up;
-
-                    for (var row = 0; row < iterH; row++)
-                    {
-                        for (var col = 0; col < iterW; col++)
-                        {
-                            // Map from canvas coords back to base glyph coords.
-                            var baseRow = row - offsetY;
-                            var baseCol = col - offsetX;
-                            var inGlyph = baseRow >= 0 && baseRow < glyph.Height && baseCol >= 0 && baseCol < glyph.Width;
-                            // Coverage (alpha) drives non-color channels and grayscale glyphs.
-                            var glyphValue = inGlyph ? GetGlyphAlpha(glyph, baseRow, baseCol) : (byte)0;
-                            // For color (Rgba32) glyphs, Glyph content fills each output channel from
-                            // the matching source component so gradient color survives; grayscale glyphs
-                            // reuse the single coverage byte (see GetGlyphComponent).
-                            var glyphRed = inGlyph ? GetGlyphComponent(glyph, baseRow, baseCol, 0) : (byte)0;
-                            var glyphGreen = inGlyph ? GetGlyphComponent(glyph, baseRow, baseCol, 1) : (byte)0;
-                            var glyphBlue = inGlyph ? GetGlyphComponent(glyph, baseRow, baseCol, 2) : (byte)0;
-                            var outlineValue = outlineGlyph != null
-                                ? GetOutlineAlphaDirect(outlineGlyph, row - offsetY + outlineExpandTop, col - offsetX + outlineExpandLeft)
-                                : (byte)0;
-                            var shadowValue = shadowGlyph != null
-                                ? GetShadowAlphaDirect(shadowGlyph, row - offsetY + shadowExpandTop, col - offsetX + shadowExpandLeft)
-                                : (byte)0;
-
-                            var dstIdx = ((destY + row) * pageWidth + destX + col) * 4;
-                            if (dstIdx < 0 || dstIdx + 3 >= pixelData.Length)
-                                continue;
-
-                            pixelData[dstIdx + 0] = ResolveChannel(channelConfig.Red, channelConfig.InvertRed, glyphRed, outlineValue, hasOutline, shadowValue, hasShadow);
-                            pixelData[dstIdx + 1] = ResolveChannel(channelConfig.Green, channelConfig.InvertGreen, glyphGreen, outlineValue, hasOutline, shadowValue, hasShadow);
-                            pixelData[dstIdx + 2] = ResolveChannel(channelConfig.Blue, channelConfig.InvertBlue, glyphBlue, outlineValue, hasOutline, shadowValue, hasShadow);
-                            pixelData[dstIdx + 3] = ResolveChannel(channelConfig.Alpha, channelConfig.InvertAlpha, glyphValue, outlineValue, hasOutline, shadowValue, hasShadow);
-                        }
-                    }
+                    Draw(glyph, outlineGlyph, shadowGlyph, hasOutline, channelConfig,
+                        pixelData, pageWidth, placement.X + padding.Left, placement.Y + padding.Up);
                 }
             }
 
@@ -134,6 +90,72 @@ internal static class ChannelCompositor
         }
 
         return pages;
+    }
+
+    /// <summary>
+    /// One glyph composed into the channel layout, as <see cref="Build"/> draws it into a page:
+    /// tightly-packed RGBA32 of the <see cref="Cell"/>'s size. Backs a session's added glyphs.
+    /// </summary>
+    internal static byte[] Compose(
+        RasterizedGlyph glyph, RasterizedGlyph? outlineGlyph, RasterizedGlyph? shadowGlyph, ChannelConfig channelConfig)
+    {
+        var cell = Cell(glyph, outlineGlyph, shadowGlyph);
+        var pixels = new byte[cell.Width * cell.Height * 4];
+        Draw(glyph, outlineGlyph, shadowGlyph, outlineGlyph != null, channelConfig, pixels, cell.Width, 0, 0);
+        return pixels;
+    }
+
+    /// <summary>Draws one glyph's <see cref="Cell"/> into <paramref name="pixelData"/> at (destX, destY).</summary>
+    private static void Draw(
+        RasterizedGlyph glyph, RasterizedGlyph? outlineGlyph, RasterizedGlyph? shadowGlyph, bool hasOutline,
+        ChannelConfig channelConfig, byte[] pixelData, int pageWidth, int destX, int destY)
+    {
+        if (glyph.BitmapData.Length == 0 || glyph.Width == 0 || glyph.Height == 0)
+            return;
+
+        var hasShadow = shadowGlyph != null;
+        var (outlineExpandLeft, outlineExpandTop, shadowExpandLeft, shadowExpandTop, minX, minY, maxX, maxY) =
+            Canvas(glyph, outlineGlyph, shadowGlyph);
+
+        var iterW = maxX - minX;
+        var iterH = maxY - minY;
+        // Canvas offset relative to the base glyph's own top-left.
+        var offsetX = -minX;
+        var offsetY = -minY;
+
+        for (var row = 0; row < iterH; row++)
+        {
+            for (var col = 0; col < iterW; col++)
+            {
+                // Map from canvas coords back to base glyph coords.
+                var baseRow = row - offsetY;
+                var baseCol = col - offsetX;
+                var inGlyph = baseRow >= 0 && baseRow < glyph.Height && baseCol >= 0 && baseCol < glyph.Width;
+                // Coverage (alpha) drives non-color channels and grayscale glyphs.
+                var glyphValue = inGlyph ? GetGlyphAlpha(glyph, baseRow, baseCol) : (byte)0;
+                // For color (Rgba32) glyphs, Glyph content fills each output channel from
+                // the matching source component so gradient color survives; grayscale glyphs
+                // reuse the single coverage byte (see GetGlyphComponent).
+                var glyphRed = inGlyph ? GetGlyphComponent(glyph, baseRow, baseCol, 0) : (byte)0;
+                var glyphGreen = inGlyph ? GetGlyphComponent(glyph, baseRow, baseCol, 1) : (byte)0;
+                var glyphBlue = inGlyph ? GetGlyphComponent(glyph, baseRow, baseCol, 2) : (byte)0;
+                var outlineValue = outlineGlyph != null
+                    ? GetOutlineAlphaDirect(outlineGlyph, row - offsetY + outlineExpandTop, col - offsetX + outlineExpandLeft)
+                    : (byte)0;
+                var shadowValue = shadowGlyph != null
+                    ? GetShadowAlphaDirect(shadowGlyph, row - offsetY + shadowExpandTop, col - offsetX + shadowExpandLeft)
+                    : (byte)0;
+
+                var dstIdx = ((destY + row) * pageWidth + destX + col) * 4;
+                if (dstIdx < 0 || dstIdx + 3 >= pixelData.Length)
+                    continue;
+
+                pixelData[dstIdx + 0] = ResolveChannel(channelConfig.Red, channelConfig.InvertRed, glyphRed, outlineValue, hasOutline, shadowValue, hasShadow);
+                pixelData[dstIdx + 1] = ResolveChannel(channelConfig.Green, channelConfig.InvertGreen, glyphGreen, outlineValue, hasOutline, shadowValue, hasShadow);
+                pixelData[dstIdx + 2] = ResolveChannel(channelConfig.Blue, channelConfig.InvertBlue, glyphBlue, outlineValue, hasOutline, shadowValue, hasShadow);
+                pixelData[dstIdx + 3] = ResolveChannel(channelConfig.Alpha, channelConfig.InvertAlpha, glyphValue, outlineValue, hasOutline, shadowValue, hasShadow);
+            }
+        }
     }
 
     /// <summary>
