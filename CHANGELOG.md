@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-11-06
+
 ### Added
 
 - **`FaceCache`** — an opt-in cache (`FaceCache.Enabled`, default off; `FaceCache.Clear()`) that reuses the resolved font, the parsed face and the loaded rasterizer across generations from the same face, for `Generate(path)`, `GenerateFromSystem` (including the bold/italic lookups) and `Generate(byte[], options, faceCacheKey)`. Output is byte-identical on or off. Fonts must not change while it is enabled; `RegisterFont`/`UnregisterFont`/`ClearRegisteredFonts`/`HintFontLocation` drop the affected family. Concurrent generations each lease their own rasterizer. Variation axes, color palettes, a custom rasterizer or reader, and incremental sessions bypass it.

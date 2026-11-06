@@ -10,6 +10,7 @@ loading bitmap fonts.
 | Method | Description |
 |--------|-------------|
 | `Generate(byte[] fontData, FontGeneratorOptions? options = null)` | Generate from raw TTF/OTF/WOFF/WOFF2 bytes. |
+| `Generate(byte[] fontData, FontGeneratorOptions? options, string faceCacheKey)` | Generate from bytes, letting [`FaceCache`](#facecache) reuse the parsed face under your key. |
 | `Generate(byte[] fontData, int size)` | Convenience overload using default options at the given size. |
 | `Generate(string fontPath, FontGeneratorOptions? options = null)` | Generate from a font file on disk. |
 | `Generate(string fontPath, int size)` | Convenience overload using default options at the given size. |
@@ -17,6 +18,22 @@ loading bitmap fonts.
 | `GenerateFromSystem(string fontFamily, int size)` | Convenience overload using default options. |
 
 All `Generate*` methods return a [`BmFontResult`](result.md).
+
+### FaceCache
+
+An opt-in cache that reuses the resolved font, parsed face and loaded rasterizer across generations
+from the same face. Output is identical on or off.
+
+| Member | Description |
+|--------|-------------|
+| `FaceCache.Enabled` | `false` by default. Fonts must not change while it is on. |
+| `FaceCache.Clear()` | Drops everything cached. `RegisterFont`, `UnregisterFont`, `ClearRegisteredFonts` and `HintFontLocation` drop the affected family. |
+
+It covers `Generate(path)`, `GenerateFromSystem` and the keyed `Generate(byte[], options, faceCacheKey)`,
+where the same key must always mean the same bytes (a hit does not read the array; only `Clear()` or
+disabling the cache drops a keyed entry). `Generate(byte[])` without a key, variation axes, color
+palettes, a custom rasterizer or reader, and incremental sessions are never cached. Each cached face
+costs about the size of its font file.
 
 > WOFF and WOFF2 input is auto-detected and decompressed to TTF/OTF before parsing; a WOFF2
 > font collection decodes to a TTC (select a face with `FaceIndex`).

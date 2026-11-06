@@ -29,6 +29,7 @@ The `KernSmith` NuGet package is the core library that powers bitmap font genera
 The main entry point. Provides static methods for font generation:
 
 - <xref:KernSmith.BmFont>.Generate() -- generate from a font file path or byte array
+- <xref:KernSmith.FaceCache> -- opt-in cache of parsed faces and loaded rasterizers for repeated generations from the same font (`FaceCache.Enabled`, `FaceCache.Clear()`; keyed `Generate(byte[], options, faceCacheKey)`)
 - <xref:KernSmith.BmFont>.GenerateFromSystem() -- generate from a system-installed font (see [System Font Resolution](system-font-resolution.md) for how family names are resolved to files, especially on macOS)
 - <xref:KernSmith.BmFont>.FromConfig() -- generate from a `.bmfc` or `.hiero` configuration file (format auto-detected by inspecting file content, with the extension used only as a fallback when the content is inconclusive)
 - <xref:KernSmith.BmFont>.Builder() -- start a fluent builder chain

@@ -151,8 +151,9 @@ public static class BmFont
     /// <remarks>
     /// Not supported in a session (throws <see cref="NotSupportedException"/>):
     /// <see cref="FontGeneratorOptions.Variants"/>, <see cref="FontGeneratorOptions.ChannelPacking"/>,
-    /// <see cref="FontGeneratorOptions.TargetRegion"/>, <see cref="FontGeneratorOptions.CustomGlyphs"/>,
-    /// and a non-default <see cref="FontGeneratorOptions.Channels"/> configuration.
+    /// <see cref="FontGeneratorOptions.TargetRegion"/>, <see cref="FontGeneratorOptions.CustomGlyphs"/>.
+    /// A custom <see cref="FontGeneratorOptions.Channels"/> layout is supported: an added glyph has the
+    /// same cell, offsets and pixels as in a full <see cref="Generate(byte[], FontGeneratorOptions?)"/>.
     /// A <see cref="PackingAlgorithm.Skyline"/> configuration — or a custom
     /// <see cref="FontGeneratorOptions.Packer"/> — silently uses MaxRects for
     /// additions (arbitrary packer state cannot be reconstructed incrementally).
