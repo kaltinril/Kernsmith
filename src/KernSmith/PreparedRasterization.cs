@@ -33,6 +33,7 @@ internal sealed class PreparedRasterization : IDisposable
     private readonly bool _hasEffects;
     private readonly List<IGlyphPostProcessor>? _activePostProcessors;
     private readonly VectorOutlineRequest? _vectorOutline;
+    private readonly FaceCache.Entry? _cacheEntry;
     private bool _disposed;
 
     // Rasterizer-provided metrics/kerning depend only on the fixed _rasterOptions, so
@@ -80,7 +81,8 @@ internal sealed class PreparedRasterization : IDisposable
         List<IGlyphEffect> effects,
         bool hasEffects,
         List<IGlyphPostProcessor>? activePostProcessors,
-        VectorOutlineRequest? vectorOutline)
+        VectorOutlineRequest? vectorOutline,
+        FaceCache.Entry? cacheEntry)
     {
         FontData = fontData;
         FontInfo = fontInfo;
@@ -96,6 +98,7 @@ internal sealed class PreparedRasterization : IDisposable
         _hasEffects = hasEffects;
         _activePostProcessors = activePostProcessors;
         _vectorOutline = vectorOutline;
+        _cacheEntry = cacheEntry;
     }
 
     /// <summary>
@@ -112,16 +115,36 @@ internal sealed class PreparedRasterization : IDisposable
     /// <c>Generate</c> behavior. When false, the font is parsed unfiltered so codepoints outside
     /// the initial character set stay resolvable and keep their kerning pairs (phase 183 F7) —
     /// required for incremental sessions that add characters later.</param>
+    /// <param name="faceKey">A stable identity for the font (file path or system family) that lets
+    /// <see cref="FaceCache"/> reuse the parsed face and loaded rasterizer, or null to never cache.
+    /// Only a one-shot (subsetted) preparation is cached.</param>
     internal static PreparedRasterization Prepare(
-        byte[] fontData, FontGeneratorOptions options, string? systemFontName, bool subsetToCharacterSet)
+        byte[] fontData, FontGeneratorOptions options, string? systemFontName, bool subsetToCharacterSet,
+        string? faceKey = null)
     {
         ArgumentNullException.ThrowIfNull(fontData);
 
         if (!(options.Size > 0 && options.Size <= 10000)) // NaN fails both
             throw new ArgumentOutOfRangeException(nameof(options), $"Size must be between 1 and 10000, was {options.Size}.");
 
+        // Opt-in face cache (FaceCache): reuse a parsed face and loaded rasterizer. Anything that
+        // changes rasterizer state per call (variation axes, a color palette) or supplies its own
+        // rasterizer/reader bypasses it.
+        FaceCache.Entry? entry = null;
+        string? loadedKey = null;
+        HashSet<int>? subset = null;
+        if (faceKey is not null && subsetToCharacterSet && FaceCache.Enabled
+            && options.Rasterizer is null && options.FontReader is null
+            && options.VariationAxes is not { Count: > 0 }
+            && !(options.ColorFont && options.ColorPaletteIndex != 0))
+        {
+            subset = SubsetWithFallback(options);
+            loadedKey = FaceCache.LoadedKey(faceKey, options.Backend, systemFontName, options.FaceIndex);
+            entry = FaceCache.Rent(loadedKey, subset);
+        }
+
         // 0. Auto-detect and decompress WOFF/WOFF2 to standard sfnt
-        if (WoffDecompressor.IsWoff(fontData) || WoffDecompressor.IsWoff2(fontData))
+        if (entry is null && (WoffDecompressor.IsWoff(fontData) || WoffDecompressor.IsWoff2(fontData)))
             fontData = WoffDecompressor.Decompress(fontData);
 
         if (options.WidthPercent is < 10 or > 1000)
@@ -137,23 +160,36 @@ internal sealed class PreparedRasterization : IDisposable
                 "SDF rendering cannot be combined with super sampling (SuperSampleLevel > 1). " +
                 "The box-filter downscale corrupts signed distance field values.");
 
-        // 1. Parse font
-        var fontReader = options.FontReader ?? new TtfFontReader();
-
-        if (fontReader is TtfFontReader ttfReader)
+        FontInfo fontInfo;
+        IRasterizer rasterizer;
+        bool ownsRasterizer;
+        if (entry is not null)
         {
-            ttfReader.RequestedCodepoints = subsetToCharacterSet
-                ? SubsetWithFallback(options)
-                : null;
-            ttfReader.SharedFontBytes = fontData;
+            fontData = entry.FontData;
+            fontInfo = entry.FontInfo;
+            rasterizer = entry.Rasterizer;
+            ownsRasterizer = false;
         }
+        else
+        {
+            // 1. Parse font
+            var fontReader = options.FontReader ?? new TtfFontReader();
 
-        var fontInfo = fontReader.ReadFont(fontData, options.FaceIndex);
+            if (fontReader is TtfFontReader ttfReader)
+            {
+                ttfReader.RequestedCodepoints = subsetToCharacterSet
+                    ? SubsetWithFallback(options)
+                    : null;
+                ttfReader.SharedFontBytes = fontData;
+            }
 
-        // 2. Create and configure the rasterizer
-        var rasterizer = options.Rasterizer
-            ?? RasterizerFactory.Create(options.Backend);
-        var ownsRasterizer = options.Rasterizer == null;
+            fontInfo = fontReader.ReadFont(fontData, options.FaceIndex);
+
+            // 2. Create and configure the rasterizer
+            rasterizer = options.Rasterizer
+                ?? RasterizerFactory.Create(options.Backend);
+            ownsRasterizer = options.Rasterizer == null;
+        }
         try
         {
             // Guard: hinting switched off and an explicit hinted level ask for opposite things;
@@ -188,10 +224,28 @@ internal sealed class PreparedRasterization : IDisposable
                     "Vector outlines (OutlineMode.Vector) cannot be combined with SDF rendering: the outline " +
                     "layer is coverage, and a distance field's values are distances. Use OutlineMode.Effect.");
 
-            if (systemFontName is not null && rasterizer.Capabilities.SupportsSystemFonts)
-                rasterizer.LoadSystemFont(systemFontName);
-            else
-                rasterizer.LoadFont(fontData, options.FaceIndex);
+            if (entry is null)
+            {
+                if (systemFontName is not null && rasterizer.Capabilities.SupportsSystemFonts)
+                    rasterizer.LoadSystemFont(systemFontName);
+                else
+                    rasterizer.LoadFont(fontData, options.FaceIndex);
+
+                if (loadedKey is not null)
+                {
+                    // Leased to this preparation now; FaceCache.Return puts it back on Dispose.
+                    entry = new FaceCache.Entry
+                    {
+                        Key = loadedKey,
+                        FontData = fontData,
+                        FontInfo = fontInfo,
+                        Rasterizer = rasterizer,
+                        Subset = subset!,
+                        Generation = FaceCache.CurrentGeneration,
+                    };
+                    ownsRasterizer = false;
+                }
+            }
 
             // Guard: don't apply synthetic bold/italic on fonts that are already styled.
             // FreeType checks style_flags internally, but GDI and DirectWrite don't —
@@ -374,11 +428,12 @@ internal sealed class PreparedRasterization : IDisposable
             return new PreparedRasterization(
                 fontData, fontInfo, options, rasterizer, ownsRasterizer,
                 rasterOptions, effectiveRasterOptions, effectiveSize, ssLevel, renderScale,
-                effects, hasEffects, activePostProcessors, vectorOutline);
+                effects, hasEffects, activePostProcessors, vectorOutline, entry);
         }
         catch
         {
-            if (ownsRasterizer)
+            // A cached rasterizer that threw mid-setup is in an unknown state: drop it too.
+            if (ownsRasterizer || entry is not null)
                 rasterizer.Dispose();
             throw;
         }
@@ -838,7 +893,9 @@ internal sealed class PreparedRasterization : IDisposable
         _disposed = true;
         // Mirror RasterizeFont's ownership rule: a caller-injected rasterizer
         // (options.Rasterizer) is caller-owned and never disposed here.
-        if (_ownsRasterizer)
+        if (_cacheEntry is not null)
+            FaceCache.Return(_cacheEntry);
+        else if (_ownsRasterizer)
             _rasterizer.Dispose();
     }
 
