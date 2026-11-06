@@ -24,8 +24,11 @@ namespace KernSmith;
 /// face is kept per font and style, per rasterizer backend and per character set.</para>
 /// <para><b>What is cached:</b> <see cref="BmFont.Generate(string, FontGeneratorOptions?)"/> and
 /// <see cref="BmFont.GenerateFromSystem(string, FontGeneratorOptions?)"/> (including the bold and
-/// italic lookups). <see cref="BmFont.Generate(byte[], FontGeneratorOptions?)"/> has no stable
-/// identity for its bytes and is never cached. A generation that sets
+/// italic lookups) and <see cref="BmFont.Generate(byte[], FontGeneratorOptions?, string)"/>, where the
+/// caller supplies the key (the same key must always mean the same bytes; a hit does not read the
+/// array; only <see cref="Clear"/> or <c>Enabled = false</c> drops a keyed entry, since a key is not a
+/// family name). <see cref="BmFont.Generate(byte[], FontGeneratorOptions?)"/> without a key has no
+/// stable identity for its bytes and is never cached. A generation that sets
 /// <see cref="FontGeneratorOptions.VariationAxes"/>, a non-default
 /// <see cref="FontGeneratorOptions.ColorPaletteIndex"/>, a custom <see cref="FontGeneratorOptions.Rasterizer"/>
 /// or <see cref="FontGeneratorOptions.FontReader"/>, and incremental sessions, bypass the
@@ -101,6 +104,8 @@ public static class FaceCache
 
     internal static string SystemKey(string familyName, bool lookupBold, bool lookupItalic) =>
         $"{SystemKeyPrefix(familyName)}b{(lookupBold ? 1 : 0)}i{(lookupItalic ? 1 : 0)}";
+
+    internal static string BytesKey(string key) => "key:" + key;
 
     internal static string FileKey(string path) => "file:" + Path.GetFullPath(path);
 
