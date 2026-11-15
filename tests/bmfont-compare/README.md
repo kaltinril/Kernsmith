@@ -64,7 +64,7 @@ Steps performed:
 
 Because the output dir starts empty and the baseline is moved rather than copied, a stale file from an earlier run can never stand in for output a side did not produce. The summary reports, per config:
 
-- **`NEW config 'x' (no baseline): freetype, gdi, ...`** — the `.bmfc` exists on the branch but not the base, with the backends that produced output. Not a failure, but nothing was compared: look at its `comparison-x.png` yourself. A config only counts as new if it is committed on the branch (`git add -f`); an uncommitted config in the gitignored folder is present on both sides.
+- **`NEW config 'x' (no baseline): freetype, gdi, ...`** — the `.bmfc` exists on the branch but not the base, with the backends that produced output. Not a failure, but nothing was compared: look at its `comparison-x.png` (and, for channel-routed content, its atlas PNGs) yourself. A config only counts as new if it is committed on the branch (`git add -f`); an uncommitted config in the gitignored folder is present on both sides.
 - **`REMOVED config 'x'`** — on the base but not the branch. Not a failure.
 - **`FAIL: ... produced output on the base but failed on the branch`** — each such `config / backend` with the branch's error message. Exit code 1.
 
@@ -112,11 +112,12 @@ dotnet run --project tests/bmfont-compare/GenerateDirectWrite/ --framework net10
 
 #### diff_comparisons.py — Full regression detection (PNGs + FNT metadata)
 
-Compares baseline vs current output across three categories:
+Compares baseline vs current output across four categories:
 
 1. **Hardcoded comparison PNGs** (`comparison.png` through `comparison4.png`) — magenta-highlighted pixel diffs
 2. **Per-font comparison PNGs** (`comparison-*.png`) — auto-discovered, same magenta diff format
 3. **FNT metadata files** (`*.fnt`) — line-by-line text diff, skipping the `kernsmith` version line (contains commit hash that always differs between branches)
+4. **Atlas PNGs** (`{config}-{backend}_N.png`) — the generated texture pages themselves, every pixel over all four channels (within `--tolerance`), reported per file as `IDENTICAL` or `DIFFERENT (N pixels)`; a changed page size is a difference, and a differing page gets a `diff_{name}` image. This is the only check that sees content the comparison images do not draw: an outline or shadow routed into its own channel (`outline-shadow-channel`), or RGB under transparent alpha.
 
 Identical pixels are dimmed, different pixels are bright magenta (#FF00FF).
 
@@ -131,7 +132,7 @@ antialiasing that varies run-to-run, so it is excluded from the diff count — t
 rows are not font output. Pass `--ignore-top 0` to compare the full image.
 
 ```bash
-# Full regression check: PNGs + per-font PNGs + FNT metadata
+# Full regression check: PNGs + per-font PNGs + FNT metadata + atlas PNGs
 python tests/bmfont-compare/diff_comparisons.py --dir tests/bmfont-compare/output
 
 # Compare two separate directories
@@ -146,7 +147,8 @@ python tests/bmfont-compare/diff_comparisons.py --dir tests/bmfont-compare/outpu
 
 > Note: even with the header excluded, GDI/DirectWrite glyph rendering has minor
 > run-to-run subpixel antialiasing jitter (a handful of pixels per font). Use
-> `--tolerance 1` to treat that as identical; `.fnt` metadata is always compared exactly.
+> `--tolerance 1` to treat that as identical (it applies to the atlas PNGs too); `.fnt`
+> metadata is always compared exactly.
 
 Exit codes: `0` = every file present on both sides is identical (NEW/REMOVED do not fail), `1` = differences found or a file MISSING on the current side, `2` = error (nothing compared).
 
