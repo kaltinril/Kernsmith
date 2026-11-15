@@ -165,7 +165,25 @@ python tests/bmfont-compare/diff_all_fonts.py
 python tests/bmfont-compare/diff_fnt.py <file_a.fnt> <file_b.fnt>
 ```
 
-#### test_harness.py — Unit tests for the scripts above
+#### before_after_page.py — Before / after / diff page for a regression run
+
+`regression_check.py` writes the base side (`main_*`), the branch side and the magenta diff
+as separate files. This builds one HTML page that shows the three next to each other for
+every atlas the run reported `DIFFERENT`, with zoom and background controls, plus the
+kerning pairs that changed in each differing `.fnt`.
+
+```bash
+python tests/bmfont-compare/regression_check.py --base <sha> --tolerance 1 > run.log
+python tests/bmfont-compare/before_after_page.py run.log --base-label v0.27.0 --current-label "main 591b5fc"
+
+# Copy the page and only the images it uses into a folder that can be shared
+python tests/bmfont-compare/before_after_page.py run.log --copy-to tests/bmfont-compare/reports/my-run
+```
+
+The page lands in `output/before-after.html`. The next harness run replaces the images it
+points at, so use `--copy-to` for anything that has to outlive the run.
+
+#### test_harness.py, test_before_after_page.py — Unit tests for the scripts above
 
 ```bash
 python -m unittest discover -s tests/bmfont-compare -p "test_*.py" -v
