@@ -209,7 +209,7 @@ Two pure-managed rasterizer backends are viable under WASM:
 ### KernSmith Impact
 
 - StbTrueTypeSharp is viable for WASM today and has been validated in the Blazor WASM sample app.
-- The pure-C# `KernSmith.Rasterizers.Native` backend is the intended long-term WASM rasterizer (zero native deps, AOT/trim-clean). It renders, but it is unpublished and not yet run under browser-wasm, so use StbTrueType for shipping WASM builds today.
+- The pure-C# `KernSmith.Rasterizers.Native` backend is the intended long-term WASM rasterizer (zero native deps, AOT/trim-clean). It renders under browser-wasm (CI runs the AOT-published Blazor sample headless and checks Native's output hash), but it is unpublished, so use StbTrueType for shipping WASM builds today.
 - The mitigations below apply to StbTrueTypeSharp; the Native backend has no unmanaged allocations to wrap.
 - All unmanaged allocations (StbTrueTypeSharp) must be wrapped in `try/finally`.
 - Bitmap data must be copied to managed `byte[]` immediately, then the unmanaged buffer freed.

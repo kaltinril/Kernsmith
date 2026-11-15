@@ -221,7 +221,7 @@ KernSmith supports five pluggable rasterizer backends. Each has different platfo
 
 ¹ Android x86_64 (emulators, Chromebooks) needs `KernSmith.Rasterizers.FreeType` 0.23.0 or later; arm64 works in all versions.
 
-² Blazor WASM is built and published in CI but the output is not run there. StbTrueType and Native were verified by running the published Blazor WASM sample in headless Chrome (interpreted build; the AOT build is not yet run in a browser).
+² CI publishes the Blazor WASM sample AOT-compiled and runs it in headless Chromium with the Native backend, comparing the hash of the generated font with the determinism manifest. That job does not generate with StbTrueType, which was verified by running the published sample (interpreted build) in headless Chrome.
 
 Native's platform rows follow from it being pure managed code with no native dependencies (it is marked `IsTrimmable`/`IsAotCompatible`); Android, Linux arm64, Mac Catalyst (full AOT), and the iOS simulator have been verified by the platform smoke test and Blazor WASM in headless Chrome (²), but the console targets have not been exercised for it yet. StbTrueType remains the recommended managed backend for those environments. FreeType is ❌ on iOS because an iOS app referencing it fails to link (FreeTypeSharp's static iOS library needs libpng, which nothing provides); do not reference it in iOS apps. ⏳ = expected but not yet verified; see the [README platform support table](README.md#platform-support) for what the platform smoke test has confirmed.
 
