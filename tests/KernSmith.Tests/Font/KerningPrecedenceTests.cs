@@ -27,7 +27,28 @@ public sealed class KerningPrecedenceTests
             .Select(p => p.XAdvanceAdjustment).ShouldBeEmpty();
         pairs.First(p => p.LeftCodepoint == 'T' && p.RightCodepoint == 'o').XAdvanceAdjustment
             .ShouldBe(shared.XAdvanceAdjustment);
-        pairs.ShouldBe(gposOnly);
+        pairs.ShouldBe(gposOnly, ignoreOrder: true);
+    }
+
+    [Fact]
+    public void PairOrder_StaysKernTableFirst_WhenGposHasPairKerning()
+    {
+        // Before #312 the kern table was merged first, so its pairs led the list. A font whose
+        // kern pairs GPOS also carries (Arial) must keep writing the same .fnt, byte for byte.
+        var gposOnly = new TtfFontReader().ReadFont(Roboto).KerningPairs;
+        var (left, right) = UnkernedPair(gposOnly);
+        var last = gposOnly[^1];
+        var middle = gposOnly[gposOnly.Count / 2];
+
+        var font = WithKernTable(
+            (last.LeftCodepoint, last.RightCodepoint, 77),
+            (left, right, -50),
+            (middle.LeftCodepoint, middle.RightCodepoint, 77));
+        var pairs = new TtfFontReader().ReadFont(font).KerningPairs;
+
+        var expected = new List<KerningPair> { last, middle };
+        expected.AddRange(gposOnly.Where(p => p != last && p != middle));
+        pairs.ShouldBe(expected);
     }
 
     [Fact]

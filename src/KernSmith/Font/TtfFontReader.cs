@@ -57,7 +57,29 @@ internal class TtfFontReader : IFontReader
         // its last.
         var sourcePairs = parser.GposHasPairKerning ? parser.GposKerningPairs : parser.KernPairs;
         var mergedPairs = new Dictionary<long, int>(sourcePairs.Count);
-        MergeKerningPairs(sourcePairs, glyphToCodepoint, glyphToMoreCodepoints, mergedPairs);
+        if (parser.GposHasPairKerning && parser.KernPairs.Count > 0)
+        {
+            // The kern table no longer supplies pairs or values, but it still sets the order:
+            // the two tables used to be merged kern-first, so the pairs GPOS shares with it
+            // stay in front, in kern order, and a font whose kern pairs GPOS all carries
+            // (Arial) writes the same .fnt as before.
+            var gposPairs = new Dictionary<long, int>(sourcePairs.Count);
+            MergeKerningPairs(sourcePairs, glyphToCodepoint, glyphToMoreCodepoints, gposPairs);
+            var kernOrder = new Dictionary<long, int>(parser.KernPairs.Count);
+            MergeKerningPairs(parser.KernPairs, glyphToCodepoint, glyphToMoreCodepoints, kernOrder);
+            foreach (var key in kernOrder.Keys)
+            {
+                if (gposPairs.TryGetValue(key, out var value))
+                    mergedPairs.Add(key, value);
+            }
+
+            foreach (var (key, value) in gposPairs)
+                mergedPairs.TryAdd(key, value);
+        }
+        else
+        {
+            MergeKerningPairs(sourcePairs, glyphToCodepoint, glyphToMoreCodepoints, mergedPairs);
+        }
 
         var kerningPairs = new List<KerningPair>(mergedPairs.Count);
         foreach (var (key, value) in mergedPairs)

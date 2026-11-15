@@ -87,7 +87,8 @@ public sealed class KerningMergeEquivalenceTests
     /// <summary>
     /// The original merge, verbatim, over the resolved GPOS pairs the reader merges — except that
     /// a glyph maps to all of its codepoints in ascending order, not only the lowest (#289), and
-    /// that the kern table's pairs are merged only when GPOS has no pair kerning (#312).
+    /// that when GPOS has pair kerning the pairs only the kern table holds are dropped (#312):
+    /// the kern table then supplies neither pairs nor values, only its place in the order.
     /// </summary>
     private static List<KerningPair> ReferenceMerge(TtfParser parser)
     {
@@ -101,20 +102,33 @@ public sealed class KerningMergeEquivalenceTests
             list.Add(codepoint);
         }
 
-        var mergedPairs = new Dictionary<(int left, int right), int>();
-        foreach (var pair in parser.GposHasPairKerning ? parser.GposKerningPairs : parser.KernPairs)
+        var mergedPairs = Merge(parser.KernPairs.Concat(parser.GposKerningPairs));
+        if (parser.GposHasPairKerning)
         {
-            if (glyphToCodepoints.TryGetValue(pair.LeftCodepoint, out var leftCps) &&
-                glyphToCodepoints.TryGetValue(pair.RightCodepoint, out var rightCps))
-            {
-                foreach (var leftCp in leftCps)
-                {
-                    foreach (var rightCp in rightCps)
-                        mergedPairs[(leftCp, rightCp)] = pair.XAdvanceAdjustment;
-                }
-            }
+            var gposPairs = Merge(parser.GposKerningPairs);
+            foreach (var key in mergedPairs.Keys.Where(key => !gposPairs.ContainsKey(key)).ToList())
+                mergedPairs.Remove(key);
         }
 
         return mergedPairs.Select(kvp => new KerningPair(kvp.Key.left, kvp.Key.right, kvp.Value)).ToList();
+
+        Dictionary<(int left, int right), int> Merge(IEnumerable<KerningPair> pairs)
+        {
+            var merged = new Dictionary<(int left, int right), int>();
+            foreach (var pair in pairs)
+            {
+                if (glyphToCodepoints.TryGetValue(pair.LeftCodepoint, out var leftCps) &&
+                    glyphToCodepoints.TryGetValue(pair.RightCodepoint, out var rightCps))
+                {
+                    foreach (var leftCp in leftCps)
+                    {
+                        foreach (var rightCp in rightCps)
+                            merged[(leftCp, rightCp)] = pair.XAdvanceAdjustment;
+                    }
+                }
+            }
+
+            return merged;
+        }
     }
 }
