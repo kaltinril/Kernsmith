@@ -859,6 +859,14 @@ public static class BmFont
     /// <param name="fontData">Raw TTF/OTF/WOFF/WOFF2 font file bytes.</param>
     /// <param name="faceIndex">Face index for .ttc font collections (default 0).</param>
     /// <returns>Font metadata including family name, metrics, available codepoints, and kerning pairs.</returns>
+    /// <remarks>
+    /// A variable font is read at its default instance: <see cref="Font.Models.FontInfo.KerningPairs"/>
+    /// and the design metrics are the default instance's, and there is no way to ask for another
+    /// one here. <see cref="Generate(byte[], FontGeneratorOptions?)"/> with
+    /// <see cref="FontGeneratorOptions.VariationAxes"/> writes the kerning of the selected instance
+    /// into the result's <c>Model.KerningPairs</c> (in pixels), on a backend that supports
+    /// variable fonts.
+    /// </remarks>
     public static Font.Models.FontInfo ReadFontInfo(byte[] fontData, int faceIndex = 0)
     {
         ArgumentNullException.ThrowIfNull(fontData);
@@ -875,6 +883,7 @@ public static class BmFont
     /// <param name="fontPath">Path to a TTF/OTF/WOFF/WOFF2 font file.</param>
     /// <param name="faceIndex">Face index for .ttc font collections (default 0).</param>
     /// <returns>Font metadata including family name, metrics, available codepoints, and kerning pairs.</returns>
+    /// <remarks>A variable font is read at its default instance; see <see cref="ReadFontInfo(byte[], int)"/>.</remarks>
     public static Font.Models.FontInfo ReadFontInfo(string fontPath, int faceIndex = 0)
     {
         ArgumentNullException.ThrowIfNull(fontPath);

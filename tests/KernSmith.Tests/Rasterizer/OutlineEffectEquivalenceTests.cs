@@ -107,12 +107,12 @@ public sealed class OutlineEffectEquivalenceTests
             }
         }
 
-        // Hard outline: whole-pixel distance from the glyph core (alpha >= 32). Smooth outline:
+        // Hard outline: whole-pixel distance from the 50% contour (alpha >= 128). Smooth outline:
         // distance to the anti-aliased edge -- from fully covered pixels as before, and from a
         // pixel at coverage c the metric's distance plus 1 - c, by brute force over every pair
         // within the ramp's reach.
         for (var i = 0; i < size; i++)
-            binaryAlpha[i] = (smooth ? expandedAlpha[i] == 255 : expandedAlpha[i] >= 32) ? (byte)255 : (byte)0;
+            binaryAlpha[i] = (smooth ? expandedAlpha[i] == 255 : expandedAlpha[i] >= 128) ? (byte)255 : (byte)0;
 
         var squaredDist = ReferenceSquared(binaryAlpha, dstW, dstH, shape);
         if (smooth)

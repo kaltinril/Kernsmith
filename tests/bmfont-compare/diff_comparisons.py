@@ -1,7 +1,7 @@
 """Generate pixel-diff composite images between two sets of comparison PNGs,
 and text-diff .fnt metadata files for regression detection.
 
-Compares three categories of files:
+Compares four categories of files:
 
 1. **Hardcoded comparison PNGs** (comparison.png through comparison4.png) --
    the original 4-config comparison images.
@@ -15,6 +15,12 @@ Compares three categories of files:
    key=value text format. The ``kernsmith`` metadata line is skipped
    (it contains the version + commit hash that always differs between
    branches). All other lines are compared for exact text match.
+
+4. **Atlas PNGs** -- auto-discovered {config}-{backend}_N.png texture pages, the
+   generated output itself. All four channels of every pixel are compared (within
+   --tolerance), so content the comparison images do not draw -- an outline or
+   shadow routed into its own channel, RGB under transparent alpha -- still counts.
+   A differing page gets a diff_{name} image; a changed size is a difference.
 
 Every file is matched across both sides by name. A file present on only one side
 is never silently skipped:
@@ -47,18 +53,20 @@ Usage:
     python diff_comparisons.py --dir tests/bmfont-compare/output --removed-config old-config
 
 Exit code:
-    0 = every file present on both sides is identical (PNGs within tolerance, FNTs
-        exact match); NEW and REMOVED files do not fail the run
+    0 = every file present on both sides is identical (comparison images and atlas
+        PNGs within tolerance, FNTs exact match); NEW and REMOVED files do not fail
+        the run
     1 = differences found, or a file MISSING on the current side
     2 = error (nothing could be compared, etc.)
 """
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageChops
 except ImportError:
     print("Pillow is required: pip install Pillow", file=sys.stderr)
     sys.exit(2)
@@ -81,6 +89,15 @@ def config_of_fnt(stem: str) -> str:
         if stem.endswith("-" + backend):
             return stem[: -len(backend) - 1]
     return stem
+
+
+ATLAS_NAME = re.compile(r"^(?P<stem>.+-(?:%s))_\d+\.png$" % "|".join(KNOWN_BACKENDS))
+
+
+def atlas_config(name: str):
+    """The .bmfc config an atlas page belongs to ("plain-native_0.png" -> "plain"), else None."""
+    m = ATLAS_NAME.match(name)
+    return config_of_fnt(m.group("stem")) if m else None
 
 
 class Presence:
@@ -182,6 +199,51 @@ def generate_diff(
     print(f"  {label}: {status}")
 
     return diff_count, total
+
+
+def discover_atlas_pngs(baseline_dir: Path, current_dir: Path, prefix: str) -> list[tuple[Path, Path, str, str]]:
+    """Discover atlas pages on EITHER side; returns (baseline, current, label, config)."""
+    names = set()
+    for p in baseline_dir.glob(f"{prefix}*.png"):
+        names.add(p.name[len(prefix):])
+    for p in current_dir.glob("*.png"):
+        if not (prefix and p.name.startswith(prefix)):
+            names.add(p.name)
+    # diff_ images sit beside the atlases they were made from.
+    names = {n for n in names if not n.startswith("diff_") and atlas_config(n) is not None}
+    return [(baseline_dir / f"{prefix}{name}", current_dir / name, name, atlas_config(name))
+            for name in sorted(names)]
+
+
+def compare_atlas(baseline_path: Path, current_path: Path, output_path: Path, tolerance: int = 0) -> tuple[bool, str]:
+    """Compare two atlas pages over all four channels. Returns (is_identical, detail).
+
+    A pixel differs when any of R, G, B, A differs by more than ``tolerance``. When
+    pages differ ``output_path`` gets the diff image (differing pixels magenta over
+    the dimmed current page); when they do not, any earlier one is removed.
+    """
+    with Image.open(baseline_path) as b, Image.open(current_path) as c:
+        baseline = b.convert("RGBA")
+        current = c.convert("RGBA")
+
+    if baseline.size != current.size:
+        output_path.unlink(missing_ok=True)
+        return False, f"size {baseline.width}x{baseline.height} -> {current.width}x{current.height}"
+
+    mask = None
+    for band in ImageChops.difference(baseline, current).split():
+        over = band.point(lambda v: 255 if v > tolerance else 0)
+        mask = over if mask is None else ImageChops.lighter(mask, over)
+
+    diff_count = mask.histogram()[255]
+    if diff_count == 0:
+        output_path.unlink(missing_ok=True)
+        return True, ""
+
+    dimmed = current.convert("RGB").point(lambda v: v // 3)
+    Image.composite(Image.new("RGB", current.size, (255, 0, 255)), dimmed, mask).save(output_path)
+    total = current.width * current.height
+    return False, f"{diff_count} pixels, {(diff_count / total) * 100:.4f}%"
 
 
 def discover_per_font_pngs(baseline_dir: Path, current_dir: Path, prefix: str) -> list[tuple[Path, Path, str, str]]:
@@ -366,7 +428,38 @@ def main():
             print(f"FAIL: {fnt_different} of {total_fnt} FNT files differ.")
             any_differences = True
 
-    # ── Section 4: files present on only one side ─────────────────────
+    # ── Section 4: atlas PNGs (the generated textures, all four channels) ──
+    atlas_pairs = discover_atlas_pngs(baseline_dir, current_dir, prefix)
+    total_atlas = 0
+
+    if atlas_pairs:
+        print()
+        print("Atlas PNG comparisons")
+        print("-" * 40)
+        atlas_different = 0
+
+        for baseline_path, current_path, label, config in atlas_pairs:
+            if not presence.check(baseline_path, current_path, label, config):
+                continue
+
+            is_identical, detail = compare_atlas(baseline_path, current_path, output_dir / f"diff_{label}", args.tolerance)
+            total_atlas += 1
+            if is_identical:
+                print(f"  {label}: IDENTICAL")
+            else:
+                print(f"  {label}: DIFFERENT ({detail})")
+                atlas_different += 1
+
+        print()
+        if total_atlas == 0:
+            print("No atlas PNGs compared.")
+        elif atlas_different == 0:
+            print(f"PASS: All {total_atlas} atlas PNGs are identical (all four channels, tolerance {args.tolerance}).")
+        else:
+            print(f"FAIL: {atlas_different} of {total_atlas} atlas PNGs differ.")
+            any_differences = True
+
+    # ── Section 5: files present on only one side ─────────────────────
     if presence.new or presence.removed or presence.missing:
         print()
         print("One-sided files")
@@ -381,7 +474,7 @@ def main():
             any_differences = True
 
     # ── Final result ──────────────────────────────────────────────────
-    total_compared = files_compared + pf_compared + total_fnt
+    total_compared = files_compared + pf_compared + total_fnt + total_atlas
     if total_compared == 0:
         print()
         print("No files compared.")

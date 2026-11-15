@@ -100,6 +100,98 @@ class DiffComparisonsTests(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertIn("Per-font: brandnew: NEW (no baseline)", out)
 
+    # -- atlas PNGs: the generated textures themselves, all four channels --
+
+    def test_identical_atlas_passes(self):
+        write_png(self.dir / "main_plain-freetype_0.png", (10, 20, 30, 40))
+        write_png(self.dir / "plain-freetype_0.png", (10, 20, 30, 40))
+
+        code, out = run_diff(self.dir)
+
+        self.assertEqual(code, 0, out)
+        self.assertIn("plain-freetype_0.png: IDENTICAL", out)
+
+    def test_atlas_differing_in_one_channel_is_a_difference(self):
+        # A channel-routed outline lives in a single channel (here alpha, under RGB the
+        # comparison image never draws): the per-font image is identical, the atlas is not.
+        for channel in range(4):
+            with self.subTest(channel=channel):
+                base = [200, 200, 200, 0]
+                write_png(self.dir / "main_routed-freetype_0.png", tuple(base))
+                base[channel] += 50
+                write_png(self.dir / "routed-freetype_0.png", tuple(base))
+
+                code, out = run_diff(self.dir)
+
+                self.assertEqual(code, 1, out)
+                self.assertIn("routed-freetype_0.png: DIFFERENT (192 pixels", out)
+                self.assertIn("1 of 1 atlas PNGs differ", out)
+                self.assertTrue((self.dir / "diff_routed-freetype_0.png").exists())
+
+    def test_atlas_difference_within_tolerance_is_identical(self):
+        write_png(self.dir / "main_plain-directwrite_0.png", (100, 100, 100, 100))
+        write_png(self.dir / "plain-directwrite_0.png", (101, 99, 100, 101))
+
+        code, out = run_diff(self.dir, "--tolerance", "1")
+        self.assertEqual(code, 0, out)
+        self.assertIn("plain-directwrite_0.png: IDENTICAL", out)
+
+        code, out = run_diff(self.dir)
+        self.assertEqual(code, 1, out)
+        self.assertIn("plain-directwrite_0.png: DIFFERENT", out)
+
+    def test_atlas_difference_beyond_tolerance_is_a_difference(self):
+        write_png(self.dir / "main_plain-gdi_0.png", (100, 100, 100, 100))
+        write_png(self.dir / "plain-gdi_0.png", (100, 100, 100, 102))
+
+        code, out = run_diff(self.dir, "--tolerance", "1")
+
+        self.assertEqual(code, 1, out)
+        self.assertIn("plain-gdi_0.png: DIFFERENT", out)
+
+    def test_atlas_size_change_is_a_difference(self):
+        write_png(self.dir / "main_plain-freetype_0.png")
+        Image.new("RGBA", (8, 48), (255, 255, 255, 255)).save(self.dir / "plain-freetype_0.png")
+
+        code, out = run_diff(self.dir)
+
+        self.assertEqual(code, 1, out)
+        self.assertIn("plain-freetype_0.png: DIFFERENT (size 4x48 -> 8x48)", out)
+
+    def test_atlas_page_missing_on_branch_is_a_difference(self):
+        write_png(self.dir / "main_plain-freetype_0.png")
+        write_png(self.dir / "plain-freetype_0.png")
+        write_png(self.dir / "main_plain-freetype_1.png")
+
+        code, out = run_diff(self.dir)
+
+        self.assertEqual(code, 1, out)
+        self.assertIn("plain-freetype_1.png: MISSING", out)
+
+    def test_atlas_only_on_branch_is_new_and_removed_config_is_removed(self):
+        write_png(self.dir / "brandnew-native_0.png")
+        write_png(self.dir / "main_gone-native_0.png")
+
+        code, out = run_diff(self.dir, "--removed-config", "gone")
+
+        self.assertEqual(code, 0, out)
+        self.assertIn("brandnew-native_0.png: NEW (no baseline)", out)
+        self.assertIn("gone-native_0.png: REMOVED", out)
+
+    def test_diff_and_comparison_images_are_not_atlases(self):
+        write_png(self.dir / "main_plain-freetype_0.png")
+        write_png(self.dir / "plain-freetype_0.png")
+        write_png(self.dir / "diff_plain-freetype_0.png", (255, 0, 255, 255))
+        write_png(self.dir / "comparison-plain.png")
+        write_png(self.dir / "main_comparison-plain.png")
+
+        code, out = run_diff(self.dir)
+
+        self.assertEqual(code, 0, out)
+        self.assertIn("All 1 atlas PNGs are identical", out)
+        # An identical atlas leaves no stale diff image behind.
+        self.assertFalse((self.dir / "diff_plain-freetype_0.png").exists())
+
 
 class RegressionCheckTests(unittest.TestCase):
     def setUp(self):

@@ -142,7 +142,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 |----------|------|---------|-------------|
 | `Backend` | `RasterizerBackend` | `FreeType` | Backend used when `Rasterizer` is `null`. |
 | `Rasterizer` | `IRasterizer?` | `null` | Custom rasterizer instance. |
-| `FontReader` | `IFontReader?` | `null` | Custom font reader (defaults to the built-in TTF parser). |
+| `FontReader` | `IFontReader?` | `null` | Custom font reader (defaults to the built-in TTF parser). A custom reader is not passed `VariationAxes`: only the built-in parser reads a variable font's kerning at the selected instance. |
 | `Packer` | `IAtlasPacker?` | `null` | Custom atlas packer (defaults to `PackingAlgorithm`). |
 | `AtlasEncoder` | `IAtlasEncoder?` | `null` | Custom atlas encoder (defaults to `TextureFormat`). |
 | `PostProcessors` | `IReadOnlyList<IGlyphPostProcessor>?` | `null` | Extra per-glyph post-processors. |

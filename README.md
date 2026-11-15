@@ -109,7 +109,7 @@ var result = BmFont.Builder()
 1. Android x86_64 (emulators, Chromebooks) needs `KernSmith.Rasterizers.FreeType` 0.23.0 or later, which carries the Android packaging fix (see [CHANGELOG](CHANGELOG.md)); earlier packages leak FreeTypeSharp's desktop Linux library into the APK and fail with `DllNotFoundException`. arm64 works in all versions.
 2. An iOS app that references `KernSmith.Rasterizers.FreeType` fails to link, even if FreeType is never used: FreeTypeSharp 3.1.0's static iOS `libfreetype.a` references libpng symbols (`_png_create_read_struct` and others) that nothing provides. Do not reference the FreeType package in iOS apps; use StbTrueType or Native. FreeTypeSharp has no native library for Linux arm64, Mac Catalyst, or WASM.
 3. iOS is verified on the iOS simulator in CI (Release, no JIT); a real-iPhone confirmation is tracked in [phase 186](plan/phase-186-apple-platform-verification.md).
-4. Blazor WASM is built and published in CI (the `wasm-publish` job) but the output is not run there. StbTrueType and Native were verified by running the published [sample](samples/KernSmith.Samples.BlazorWasm/) in headless Chrome (interpreted build; the AOT build is not yet run in a browser).
+4. CI (the `wasm-publish` job) publishes the Blazor WASM [sample](samples/KernSmith.Samples.BlazorWasm/) AOT-compiled and runs it in headless Chromium with the Native backend, comparing the hash of the generated font with the determinism manifest. That job does not generate with StbTrueType, which was verified by running the published sample (interpreted build) in headless Chrome.
 
 Mobile notes:
 

@@ -86,12 +86,34 @@ public sealed class OutlinePostProcessor : IGlyphPostProcessor
 
             // Step 2: Distance from the glyph. Anti-aliased: to the edge its coverage describes,
             // as OutlineEffect measures it (nothing at or past the end of the ramp is needed).
-            // Otherwise whole-pixel distance from every covered pixel.
+            // Otherwise whole-pixel distance from its 50% contour, as OutlineEffect cuts it, with
+            // the pixels under a fainter part of the body still backed (distance 0).
             squaredDist = new float[size];
             if (Smooth)
+            {
                 OutlineDistanceTransform.ComputeSquaredFromCoverage(expandedAlpha, dstW, dstH, Shape, ow + 1f, squaredDist);
+            }
             else
-                OutlineDistanceTransform.ComputeSquared(expandedAlpha, dstW, dstH, Shape, squaredDist);
+            {
+                var silhouette = ArrayPool<byte>.Shared.Rent(size);
+                try
+                {
+                    for (var i = 0; i < size; i++)
+                        silhouette[i] = expandedAlpha[i] >= OutlineEffect.HardOutlineCut ? (byte)255 : (byte)0;
+
+                    OutlineDistanceTransform.ComputeSquared(silhouette, dstW, dstH, Shape, squaredDist);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(silhouette);
+                }
+
+                for (var i = 0; i < size; i++)
+                {
+                    if (expandedAlpha[i] > 0)
+                        squaredDist[i] = 0f;
+                }
+            }
         }
         finally
         {

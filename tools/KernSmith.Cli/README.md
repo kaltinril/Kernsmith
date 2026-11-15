@@ -399,13 +399,13 @@ Available rasterizer backends:
 # Use GDI for BMFont-parity rendering (Windows only)
 kernsmith generate -f font.ttf -s 32 --rasterizer gdi
 
-# Use FreeType for color/variable font support (cross-platform)
+# Use FreeType for color/variable font support (Windows, Linux x64, macOS)
 kernsmith generate -f font.ttf -s 32 --rasterizer freetype --color-font
 
 # KernSmith's own pure-C# rasterizer (experimental)
 kernsmith generate -f font.ttf -s 32 --rasterizer native
 
-# Default (FreeType, cross-platform)
+# Default (FreeType)
 kernsmith generate -f font.ttf -s 32
 ```
 

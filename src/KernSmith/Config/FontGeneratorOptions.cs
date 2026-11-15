@@ -410,7 +410,11 @@ public class FontGeneratorOptions
     /// </summary>
     internal float PackingEfficiencyHint { get; set; } = 0.90f;
 
-    /// <summary>Custom font reader. When null, uses the built-in TTF parser.</summary>
+    /// <summary>
+    /// Custom font reader. When null, uses the built-in TTF parser. A custom reader is not told
+    /// the <see cref="VariationAxes"/>, so the kerning it returns is used as it is: only the
+    /// built-in parser reads a variable font's kerning at the selected instance.
+    /// </summary>
     public IFontReader? FontReader { get; set; }
 
     /// <summary>Custom rasterizer. When null, uses FreeType.</summary>

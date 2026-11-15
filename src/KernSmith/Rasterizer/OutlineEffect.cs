@@ -70,7 +70,7 @@ internal sealed class OutlineEffect : IGlyphEffect
                     var alpha = srcIdx < alphaData.Length ? alphaData[srcIdx] : (byte)0;
                     expandedAlpha[rowStart + x] = alpha;
                     if (binaryAlpha != null)
-                        binaryAlpha[rowStart + x] = alpha >= 32 ? (byte)255 : (byte)0;
+                        binaryAlpha[rowStart + x] = alpha >= HardOutlineCut ? (byte)255 : (byte)0;
                 }
             }
 
@@ -83,8 +83,9 @@ internal sealed class OutlineEffect : IGlyphEffect
             }
             else
             {
-                // No anti-aliasing: whole-pixel distance from the glyph core. A bilevel glyph is
-                // all 0 and 255; in any other glyph the faintest pixels (alpha < 32) are left out.
+                // No anti-aliasing: whole-pixel distance from the glyph's 50% contour. A bilevel
+                // glyph is all 0 and 255, so the cut is its ink; a glyph that is not (a color or
+                // bitmap glyph) is measured from the silhouette a bilevel renderer would have drawn.
                 OutlineDistanceTransform.ComputeSquared(binaryAlpha, dstW, dstH, _shape, squaredDist);
             }
 
@@ -145,6 +146,14 @@ internal sealed class OutlineEffect : IGlyphEffect
             ArrayPool<float>.Shared.Return(squaredDist);
         }
     }
+
+    /// <summary>
+    /// The alpha a pixel needs to be part of the silhouette the hard (AntiAlias = None) outline
+    /// is measured from: the 50% contour. Any cut gives the same silhouette for a bilevel glyph;
+    /// a lower one turns the faint row at a gray glyph's curved apex into a solid row, and the
+    /// outline into a flat cap over it (#127).
+    /// </summary>
+    internal const byte HardOutlineCut = 128;
 
     /// <summary>
     /// The smooth ring is transparent from this far past the outline width. Distances are
