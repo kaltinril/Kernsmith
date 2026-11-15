@@ -54,6 +54,17 @@ public sealed class VariableKerningTests
     }
 
     [Fact]
+    public void ReadFontInfo_VariableFont_ReportsDefaultInstanceKerning()
+    {
+        // ReadFontInfo takes no axes: its kerning is the default instance's (wght 400), in font
+        // units -- "To" is -86 there (fontTools), -110 at wght 700. Documented on the method.
+        var info = BmFont.ReadFontInfo(File.ReadAllBytes(Path.Join(FixtureDir, "DancingScript-Variable.ttf")));
+
+        info.VariationAxes!.Single(a => a.Tag == "wght").DefaultValue.ShouldBe(400f);
+        info.KerningPairs.Single(k => k.LeftCodepoint == 'T' && k.RightCodepoint == 'o').XAdvanceAdjustment.ShouldBe(-86);
+    }
+
+    [Fact]
     public void Generate_BackendWithoutVariableFonts_KeepsDefaultInstanceKerning()
     {
         // Such a backend draws the default instance whatever axes are asked for, so the

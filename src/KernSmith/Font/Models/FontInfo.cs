@@ -45,7 +45,10 @@ public sealed class FontInfo
 
     /// <summary>
     /// Kerning pairs (spacing tweaks between specific character pairs like "AV"), in font units:
-    /// the font's GPOS pair kerning, or its legacy kern table when GPOS has none.
+    /// the font's GPOS pair kerning, or its legacy kern table when GPOS has none. For a variable
+    /// font read with <see cref="BmFont.ReadFontInfo(byte[], int)"/> these are the default
+    /// instance's values; only generation with <see cref="FontGeneratorOptions.VariationAxes"/>
+    /// reads the kerning of another instance.
     /// </summary>
     public IReadOnlyList<KerningPair> KerningPairs { get; init; } = Array.Empty<KerningPair>();
 

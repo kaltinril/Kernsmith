@@ -93,6 +93,8 @@ var result = BmFont.FromConfig("MyFont.bmfc");
 
 Returns a `KernSmith.Font.Models.FontInfo`.
 
+A variable font is read at its **default instance**: `FontInfo.KerningPairs` (font units) and the design metrics are the default instance's, and `ReadFontInfo` has no parameter to select another one. To get the kerning of an instance, generate with [`VariationAxes`](options.md) on a backend that supports variable fonts (FreeType, Native) and read `Model.KerningPairs` from the result (pixels at the generated size). For example, Dancing Script kerns "To" by -86 units at its default `wght` 400 and by -110 at `wght` 700; `ReadFontInfo` reports -86 either way.
+
 ## Querying atlas size
 
 These estimate the atlas dimensions and page count without rasterizing glyphs.
