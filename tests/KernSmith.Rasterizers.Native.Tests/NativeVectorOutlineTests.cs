@@ -271,9 +271,9 @@ public class NativeVectorOutlineTests
     }
 
     /// <summary>
-    /// Vector and effect rings are the same dilation, but the effect measures from pixel centres
-    /// and fades over 1.5 px where the vector ring has the body's own exact-area edge, and aliased
-    /// rings light slightly different pixels on curves, so SSIM is a floor against gross breakage
+    /// Vector and effect rings are the same dilation, but the effect measures between pixel
+    /// centres from the rendered coverage where the vector ring is drawn from the outline itself,
+    /// and aliased rings light slightly different pixels on curves, so SSIM is a floor against gross breakage
     /// (a misplaced or missing layer scores far lower), not a likeness target.
     /// </summary>
     [Theory]

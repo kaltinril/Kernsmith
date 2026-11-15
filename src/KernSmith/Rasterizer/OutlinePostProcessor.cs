@@ -84,8 +84,14 @@ public sealed class OutlinePostProcessor : IGlyphPostProcessor
                 }
             }
 
-            // Step 2: Compute EDT on the expanded alpha.
-            squaredDist = OutlineDistanceTransform.ComputeSquared(expandedAlpha, dstW, dstH, Shape);
+            // Step 2: Distance from the glyph. Anti-aliased: to the edge its coverage describes,
+            // as OutlineEffect measures it (nothing at or past the end of the ramp is needed).
+            // Otherwise whole-pixel distance from every covered pixel.
+            squaredDist = new float[size];
+            if (Smooth)
+                OutlineDistanceTransform.ComputeSquaredFromCoverage(expandedAlpha, dstW, dstH, Shape, ow + 1f, squaredDist);
+            else
+                OutlineDistanceTransform.ComputeSquared(expandedAlpha, dstW, dstH, Shape, squaredDist);
         }
         finally
         {
@@ -103,8 +109,10 @@ public sealed class OutlinePostProcessor : IGlyphPostProcessor
                 if (Smooth)
                 {
                     var dist = MathF.Sqrt(squaredDist[y * dstW + x]);
-                    // Anti-aliased outline alpha: smooth transition at the outer edge.
-                    outlineAlpha = Math.Clamp(255f * (ow - dist + 0.5f), 0f, 255f);
+                    // Anti-aliased outline alpha, as OutlineEffect's: the share of the pixel within
+                    // ow of the glyph's edge (distances are between pixel centres, and a fully
+                    // covered pixel's edge is half a pixel past its centre).
+                    outlineAlpha = Math.Clamp(255f * (ow + 1f - dist), 0f, 255f);
                 }
                 else
                 {

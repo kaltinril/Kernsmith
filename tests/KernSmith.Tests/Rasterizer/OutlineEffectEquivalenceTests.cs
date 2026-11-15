@@ -5,9 +5,10 @@ using Shouldly;
 namespace KernSmith.Tests.Rasterizer;
 
 /// <summary>
-/// Holds <see cref="OutlineEffect"/> to a frozen copy of its straightforward implementation
-/// (per-pixel sqrt + clamp, allocating distance transforms) over randomized glyphs, widths,
-/// shapes and colors: the layer must be byte-identical.
+/// Holds <see cref="OutlineEffect"/> to a straightforward implementation of the same rule
+/// (per-pixel sqrt + clamp, allocating distance transforms, every partly covered pixel tried
+/// against every pixel near it) over randomized glyphs, widths, shapes and colors: the layer
+/// must be byte-identical.
 /// </summary>
 public sealed class OutlineEffectEquivalenceTests
 {
@@ -106,10 +107,42 @@ public sealed class OutlineEffectEquivalenceTests
             }
         }
 
+        // Hard outline: whole-pixel distance from the glyph core (alpha >= 32). Smooth outline:
+        // distance to the anti-aliased edge -- from fully covered pixels as before, and from a
+        // pixel at coverage c the metric's distance plus 1 - c, by brute force over every pair
+        // within the ramp's reach.
         for (var i = 0; i < size; i++)
-            binaryAlpha[i] = expandedAlpha[i] >= 32 ? (byte)255 : (byte)0;
+            binaryAlpha[i] = (smooth ? expandedAlpha[i] == 255 : expandedAlpha[i] >= 32) ? (byte)255 : (byte)0;
 
         var squaredDist = ReferenceSquared(binaryAlpha, dstW, dstH, shape);
+        if (smooth)
+        {
+            var window = ow + 1;
+            for (var i = 0; i < size; i++)
+            {
+                if (expandedAlpha[i] is 0 or 255)
+                    continue;
+
+                var inset = (255 - expandedAlpha[i]) / 255f;
+                int qx = i % dstW, qy = i / dstW;
+                for (var ty = Math.Max(0, qy - window); ty <= Math.Min(dstH - 1, qy + window); ty++)
+                {
+                    for (var tx = Math.Max(0, qx - window); tx <= Math.Min(dstW - 1, qx + window); tx++)
+                    {
+                        int dx = Math.Abs(tx - qx), dy = Math.Abs(ty - qy);
+                        var between = shape switch
+                        {
+                            OutlineShape.Round => MathF.Sqrt(((float)dx * dx) + ((float)dy * dy)),
+                            OutlineShape.Square => Math.Max(dx, dy),
+                            _ => dx + dy,
+                        };
+                        var distance = between + inset;
+                        squaredDist[ty * dstW + tx] = Math.Min(squaredDist[ty * dstW + tx], distance * distance);
+                    }
+                }
+            }
+        }
+
         var dst = new byte[size * 4];
 
         for (var y = 0; y < dstH; y++)
@@ -131,7 +164,7 @@ public sealed class OutlineEffectEquivalenceTests
                     if (smooth)
                     {
                         var dist = MathF.Sqrt(squaredDist[pixelIdx]);
-                        outlineAlpha = Math.Clamp(255f * (ow + 0.75f - dist) / 1.5f, 0f, 255f);
+                        outlineAlpha = Math.Clamp(255f * (ow + 1f - dist), 0f, 255f);
                     }
                     else
                     {

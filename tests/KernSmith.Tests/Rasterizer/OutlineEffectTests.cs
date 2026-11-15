@@ -186,8 +186,9 @@ public class OutlineEffectTests
     }
 
     [Theory]
-    [InlineData(OutlineShape.Square, 1, 1, 127)]  // dist 1 == ow -> same soft-ramp value as Round on axis
-    [InlineData(OutlineShape.Plus, 1, 1, 0)]       // Manhattan 2 > ow + 0.75 -> transparent
+    [InlineData(OutlineShape.Square, 1, 1, 255)]  // dist 1 == ow -> solid, as Round is on the axis
+    [InlineData(OutlineShape.Round, 1, 1, 149)]   // dist sqrt(2): 59% of the pixel is within ow of the edge
+    [InlineData(OutlineShape.Plus, 1, 1, 0)]       // Manhattan 2 == ow + 1 -> transparent
     public void Generate_Smoothing_AppliesShapeMetricToRamp(OutlineShape shape, int dx, int dy, int expected)
     {
         var a = ShapeAlphas(1, shape, smooth: true);
@@ -196,14 +197,17 @@ public class OutlineEffectTests
     }
 
     [Fact]
-    public void Generate_Smoothing_StillUsesSoftRamp()
+    public void Generate_Smoothing_SolidEdgeGetsTheFullWidth_CornersStayAntiAliased()
     {
-        // Guards the default (smooth) look: the pixel at exactly ow away stays partially transparent.
+        // Guards the default (smooth) look: across a pixel-aligned edge the outline is ow solid
+        // pixels (a fully covered pixel's edge is half a pixel past its centre, so the pixel ow
+        // away lies wholly within ow of it), and round corners fade by distance.
         var metrics = new GlyphMetrics(BearingX: 0, BearingY: 0, Advance: 3, Width: 3, Height: 3);
 
         var layer = new OutlineEffect(1).Generate(MakeSinglePixel(), 3, 3, 3, metrics);
 
-        LayerAlphas(layer)[2 * layer.Width + 3].ShouldBe((byte)127);
+        LayerAlphas(layer)[2 * layer.Width + 3].ShouldBe((byte)255);
+        LayerAlphas(layer)[1 * layer.Width + 3].ShouldBe((byte)149); // diagonal neighbour, sqrt(2) away
     }
 
     [Fact]
