@@ -7,17 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-11-15
+
+No public API changes. Outline and kerning output can change, so regenerate your fonts and check them.
+
 ### Changed
 
-- **CLI `list-rasterizers` is accurate about FreeType and prints every capability** (issue #321). FreeType's platform note is now `Windows, Linux x64, macOS, Android` instead of `All platforms` (it has no native library on Linux arm64, iOS, Mac Catalyst or Blazor WASM), the capability list gains `MSDF`, `Width Scale` and `Italic Angle`, and each available backend is followed by its supported anti-alias modes and hint levels.
+- **Outlines are measured from the glyph's anti-aliased edge** (issue #127). Rounded tops (`o`, `s`, `a`, `n`) now get an outline that follows the arc instead of a flat cap, and the thickness is the same wherever an edge falls on the pixel grid. An edge already on a pixel boundary now gets `Outline` solid pixels instead of `Outline - 1` plus a half-transparent one. This makes GDI outlines noticeably heavier at small sizes: about +10% to +26% at 12-24 px. FreeType stays within about +-3%, StbTrueType and DirectWrite come out a few percent lighter, and at 48-72 px everything is within about 1%. Cell sizes, offsets and `.fnt` values are unchanged.
+- **`AntiAlias = None` outlines are unchanged** unless `SuperSampleLevel` is above 1, `HeightPercent` is not 100, or the glyphs are color glyphs. Those get tighter (up to a pixel).
+- **CLI `list-rasterizers` output is corrected** (issue #321). FreeType's platform note is now `Windows, Linux x64, macOS, Android`, the capability list adds `MSDF`, `Width Scale` and `Italic Angle`, and each backend lists its anti-alias modes and hint levels.
 
 ### Fixed
 
-- **Variable-font GPOS kerning now follows the selected instance** (issue #291). A pair's `XAdvDevice` VariationIndex delta is added from the `GDEF` ItemVariationStore at the requested `VariationAxes` (fvar and avar normalized), on backends that support variable fonts (FreeType, Native). Previously every instance got the default instance's kerning.
-- **A font with GPOS pair kerning is now kerned by GPOS alone** (issue #312). Its legacy `kern` table is ignored instead of being merged in, and is used only when GPOS has no pair kerning, as text shapers do. Fonts that carry both tables can lose `kern`-only pairs they previously emitted.
-- **UI Export As now honours the Text/XML/Binary descriptor format** (issue #320). `MainViewModel.SaveAs()` always wrote a text `.fnt`; it now passes the format selected under Output Format to `BmFontResult.ToFile(path, format)`.
-- **Outlines follow rounded glyph tops instead of drawing a flat cap over them** (issue #127). The anti-aliased outline (the default effect, and the outline layer a `Channels` layout routes into a channel) is now measured from the glyph's anti-aliased edge and ends `Outline` pixels past it: a partly covered edge pixel counts for as much of a pixel as it covers, where it used to count as a whole pixel once it passed a coverage threshold, and each outline pixel's alpha is the share of it within the outline width. The faint top row of an `o`, `s`, `a` or `n` no longer lifts a flat half-opaque bar of outline above it; the outline's top row now follows the arc. The outline is also the same thickness wherever an edge falls on the pixel grid (it used to vary by a pixel with the edge's position), and it matches `OutlineMode.Vector` closely. An edge that lies exactly on a pixel boundary used to get `Outline - 1` solid pixels and a half-transparent one; it now gets `Outline` solid pixels, as `AntiAlias = None` does, so hinted, pixel-aligned edges come out half a pixel heavier, most visibly at `Outline = 1` on GDI. Cell sizes, offsets and every `.fnt` value are unchanged, as is `AntiAlias = None`.
-- **The `AntiAlias = None` outline no longer draws a flat cap over a glyph that is not bilevel.** The hard outline is now measured from the glyph's 50% coverage contour instead of from any pixel with alpha 32 or more (any covered pixel, for an outline routed into a channel by `Channels`). Glyphs a backend renders bilevel are unchanged, byte for byte. What changes is `AntiAlias = None` with an outline where the glyph reaches the outline gray: `SuperSampleLevel` above 1, `HeightPercent` other than 100, and color glyphs on FreeType. There the outline is up to a pixel tighter and follows rounded tops, as the anti-aliased outline does since #127. Cell sizes, offsets and every `.fnt` value are unchanged.
+- **A font with both GPOS pair kerning and a legacy `kern` table now uses GPOS only** (issue #312). Pairs that exist only in `kern` are lost. Example: Segoe UI at 24 px goes from 590 to 395 pairs. LiberationSans, Arial, Times New Roman, Verdana, Calibri and Consolas are unchanged.
+- **Variable-font GPOS kerning follows the selected instance** (issue #291), on FreeType and Native. Before, every instance got the default instance's kerning.
+- **UI Export As honours the Text/XML/Binary format** (issue #320). It always wrote a text `.fnt`.
 
 ## [0.27.0] - 2026-11-06
 
