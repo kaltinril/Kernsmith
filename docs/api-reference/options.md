@@ -119,7 +119,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 |----------|------|---------|-------------|
 | `ColorFont` | `bool` | `false` | Render color font glyphs (`COLR`/`CPAL` layers, `CBDT`/`sbix` bitmaps). |
 | `ColorPaletteIndex` | `int` | `0` | CPAL palette to use. |
-| `VariationAxes` | `Dictionary<string, float>?` | `null` | Variable-font axis values, e.g. `{ ["wght"] = 700 }`. |
+| `VariationAxes` | `Dictionary<string, float>?` | `null` | Variable-font axis values, e.g. `{ ["wght"] = 700 }`. On a backend with `SupportsVariableFonts` (FreeType, Native) the glyphs and the GPOS kerning are both read at that instance; other backends ignore the axes and keep the default instance for both. |
 
 ## Custom glyphs
 
@@ -131,7 +131,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `Kerning` | `bool` | `true` | Include kerning pairs in the output. |
+| `Kerning` | `bool` | `true` | Include kerning pairs in the output. They come from the font's GPOS pair kerning; the legacy `kern` table is used only when GPOS has none, and is ignored otherwise, as a text shaper does. |
 | `AdvanceAdjustX` | `float` | `0f` | Global value added to every glyph's `xadvance`. |
 | `AdvanceAdjustY` | `float` | `0f` | Global vertical advance adjustment (Hiero `pad.advance.y`). BMFont has no per-glyph `yadvance`, so it is recorded in the extended metadata (`ExtendedMetadata.AdvanceAdjustY`) to round-trip. |
 | `CollectMetrics` | `bool` | `false` | Record per-stage pipeline timing on the result. |

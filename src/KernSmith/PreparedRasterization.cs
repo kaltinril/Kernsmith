@@ -172,23 +172,36 @@ internal sealed class PreparedRasterization : IDisposable
         }
         else
         {
-            // 1. Parse font
-            var fontReader = options.FontReader ?? new TtfFontReader();
-
-            if (fontReader is TtfFontReader ttfReader)
-            {
-                ttfReader.RequestedCodepoints = subsetToCharacterSet
-                    ? SubsetWithFallback(options)
-                    : null;
-                ttfReader.SharedFontBytes = fontData;
-            }
-
-            fontInfo = fontReader.ReadFont(fontData, options.FaceIndex);
-
-            // 2. Create and configure the rasterizer
+            // 1. Create the rasterizer. It comes before the font is read because kerning is
+            // read at the variation instance only when the backend draws the glyphs there.
             rasterizer = options.Rasterizer
                 ?? RasterizerFactory.Create(options.Backend);
             ownsRasterizer = options.Rasterizer == null;
+
+            try
+            {
+                // 2. Parse font
+                var fontReader = options.FontReader ?? new TtfFontReader();
+
+                if (fontReader is TtfFontReader ttfReader)
+                {
+                    ttfReader.RequestedCodepoints = subsetToCharacterSet
+                        ? SubsetWithFallback(options)
+                        : null;
+                    ttfReader.SharedFontBytes = fontData;
+                    ttfReader.VariationCoordinates = rasterizer.Capabilities.SupportsVariableFonts
+                        ? options.VariationAxes
+                        : null;
+                }
+
+                fontInfo = fontReader.ReadFont(fontData, options.FaceIndex);
+            }
+            catch
+            {
+                if (ownsRasterizer)
+                    rasterizer.Dispose();
+                throw;
+            }
         }
         try
         {

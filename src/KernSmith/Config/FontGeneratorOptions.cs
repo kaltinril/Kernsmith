@@ -83,7 +83,10 @@ public class FontGeneratorOptions
     /// <summary>Algorithm used for packing glyphs into atlas pages.</summary>
     public PackingAlgorithm PackingAlgorithm { get; set; } = PackingAlgorithm.MaxRects;
 
-    /// <summary>If true, includes kerning pairs in the output (default true).</summary>
+    /// <summary>
+    /// If true, includes kerning pairs in the output (default true). They come from the font's
+    /// GPOS pair kerning; its legacy kern table is used only when GPOS has none.
+    /// </summary>
     public bool Kerning { get; set; } = true;
 
     /// <summary>Outline thickness in pixels. 0 = no outline.</summary>
@@ -164,7 +167,11 @@ public class FontGeneratorOptions
     /// <summary>Which CPAL color palette to use for color fonts. 0 = default palette.</summary>
     public int ColorPaletteIndex { get; set; }
 
-    /// <summary>Variable font axis values, keyed by tag. For example: { "wght", 700 } for bold weight.</summary>
+    /// <summary>
+    /// Variable font axis values, keyed by tag. For example: { "wght", 700 } for bold weight.
+    /// A backend that supports variable fonts draws the glyphs at that instance, and the GPOS
+    /// kerning is read there too; other backends keep the default instance for both.
+    /// </summary>
     public Dictionary<string, float>? VariationAxes { get; set; }
 
     /// <summary>

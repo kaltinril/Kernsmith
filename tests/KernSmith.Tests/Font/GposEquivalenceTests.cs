@@ -268,7 +268,7 @@ public sealed class GposEquivalenceTests
             Concat(subtables));
     }
 
-    private static byte[] FindTable(byte[] font, string tag)
+    internal static byte[] FindTable(byte[] font, string tag)
     {
         int numTables = BinaryPrimitives.ReadUInt16BigEndian(font.AsSpan(4));
         for (var i = 0; i < numTables; i++)

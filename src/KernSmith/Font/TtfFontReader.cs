@@ -15,11 +15,17 @@ internal class TtfFontReader : IFontReader
     /// </summary>
     internal byte[]? SharedFontBytes { get; set; }
 
+    /// <summary>
+    /// User-scale variation axis values by tag. When set, GPOS kerning is read at that instance
+    /// of a variable font; null or empty reads the default instance.
+    /// </summary>
+    internal IReadOnlyDictionary<string, float>? VariationCoordinates { get; set; }
+
     public FontInfo ReadFont(ReadOnlySpan<byte> fontData, int faceIndex = 0)
     {
         var parser = SharedFontBytes != null
-            ? new TtfParser(SharedFontBytes, faceIndex, RequestedCodepoints)
-            : new TtfParser(fontData, faceIndex, RequestedCodepoints);
+            ? new TtfParser(SharedFontBytes, faceIndex, RequestedCodepoints, variationCoordinates: VariationCoordinates)
+            : new TtfParser(fontData, faceIndex, RequestedCodepoints, variationCoordinates: VariationCoordinates);
 
         // Available codepoints: all codepoints that map to a non-zero glyph index, sorted
         var availableCodepoints = new List<int>(parser.CmapTable.Count);
@@ -45,12 +51,13 @@ internal class TtfFontReader : IFontReader
             more.Add(codepoint);
         }
 
-        // Merge kerning pairs: start with kern, overlay GPOS (GPOS takes precedence). A pair
-        // keeps the position of its first insertion (Dictionary enumeration order with no
-        // removals) and the value of its last.
-        var mergedPairs = new Dictionary<long, int>(parser.KernPairs.Count + parser.GposKerningPairs.Count);
-        MergeKerningPairs(parser.KernPairs, glyphToCodepoint, glyphToMoreCodepoints, mergedPairs);
-        MergeKerningPairs(parser.GposKerningPairs, glyphToCodepoint, glyphToMoreCodepoints, mergedPairs);
+        // GPOS pair kerning replaces the legacy kern table outright, as in a shaper; the kern
+        // table is only the fallback for a font GPOS does not kern. A pair keeps the position of
+        // its first insertion (Dictionary enumeration order with no removals) and the value of
+        // its last.
+        var sourcePairs = parser.GposHasPairKerning ? parser.GposKerningPairs : parser.KernPairs;
+        var mergedPairs = new Dictionary<long, int>(sourcePairs.Count);
+        MergeKerningPairs(sourcePairs, glyphToCodepoint, glyphToMoreCodepoints, mergedPairs);
 
         var kerningPairs = new List<KerningPair>(mergedPairs.Count);
         foreach (var (key, value) in mergedPairs)
