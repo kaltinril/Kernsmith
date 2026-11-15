@@ -301,6 +301,160 @@ public class OutlineCoverageDistanceTests
         }
     }
 
+    /// <summary>The disc cut at its 50% contour: what a bilevel renderer would have drawn.</summary>
+    private static byte[] MakeBilevelDisc() =>
+        MakeDisc().Select(a => a >= 128 ? (byte)255 : (byte)0).ToArray();
+
+    /// <summary>The disc's faint top row, and the columns it covers.</summary>
+    private static (int TopRow, int[] Run) FaintApex(byte[] alpha)
+    {
+        var topRow = Enumerable.Range(0, DiscSize).First(y => Enumerable.Range(0, DiscSize).Any(x => alpha[y * DiscSize + x] > 0));
+        var run = Enumerable.Range(0, DiscSize).Where(x => alpha[topRow * DiscSize + x] > 0).ToArray();
+        run.Max(x => alpha[topRow * DiscSize + x]).ShouldBeInRange((byte)32, (byte)127,
+            "the fixture needs an apex row a low threshold counts as solid and the 50% contour does not");
+        return (topRow, run);
+    }
+
+    private static RasterizedGlyph DiscGlyph(byte[] alpha) => new()
+    {
+        Codepoint = 'o',
+        GlyphIndex = 0,
+        BitmapData = alpha,
+        Width = DiscSize,
+        Height = DiscSize,
+        Pitch = DiscSize,
+        Metrics = new GlyphMetrics(0, 0, DiscSize, DiscSize, DiscSize),
+        Format = PixelFormat.Grayscale8,
+    };
+
+    [Theory]
+    [InlineData(OutlineShape.Round)]
+    [InlineData(OutlineShape.Square)]
+    [InlineData(OutlineShape.Plus)]
+    public void Generate_NoSmoothing_GrayDome_OutlineIsCutAtTheHalfCoverageContour(OutlineShape shape)
+    {
+        // AntiAlias = None over a glyph that is not bilevel (a color or bitmap glyph, say): the
+        // hard outline is measured from the 50% contour, the silhouette a bilevel renderer would
+        // have drawn. Measured from any fainter pixel, the disc's faint apex row counts as a solid
+        // row and the outline is a flat bar two rows above it (#127 again).
+        var gray = MakeDisc();
+        var (topRow, run) = FaintApex(gray);
+
+        var layer = new OutlineEffect(Ow, smooth: false, shape: shape).Generate(gray, DiscSize, DiscSize, DiscSize, default);
+        var bilevel = new OutlineEffect(Ow, smooth: false, shape: shape).Generate(MakeBilevelDisc(), DiscSize, DiscSize, DiscSize, default);
+        byte At(GlyphLayer l, int srcX, int srcY) => l.RgbaData[((srcY + Ow) * l.Width + srcX + Ow) * 4 + 3];
+
+        var cap = run.Select(x => At(layer, x, topRow - Ow)).ToArray();
+        cap.ShouldAllBe(a => a == 0, $"no flat cap {Ow} rows above the faint apex row; row [{string.Join(",", cap)}]");
+
+        // Everywhere off the body it is the bilevel disc's outline; under the body, the backing.
+        for (var y = -Ow; y < DiscSize + Ow; y++)
+        {
+            for (var x = -Ow; x < DiscSize + Ow; x++)
+            {
+                var onBody = x >= 0 && y >= 0 && x < DiscSize && y < DiscSize && gray[y * DiscSize + x] > 0;
+                At(layer, x, y).ShouldBe(onBody ? (byte)255 : At(bilevel, x, y), $"pixel ({x},{y})");
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(OutlineShape.Round)]
+    [InlineData(OutlineShape.Square)]
+    [InlineData(OutlineShape.Plus)]
+    public void OutlinePostProcessor_NoSmoothing_GrayDome_OutlineIsCutAtTheHalfCoverageContour(OutlineShape shape)
+    {
+        // The channel-routed outline makes the same cut.
+        var gray = MakeDisc();
+        var (topRow, run) = FaintApex(gray);
+
+        var result = new OutlinePostProcessor(Ow) { Smooth = false, Shape = shape }.Process(DiscGlyph(gray));
+        var bilevel = new OutlinePostProcessor(Ow) { Smooth = false, Shape = shape }.Process(DiscGlyph(MakeBilevelDisc()));
+        byte At(RasterizedGlyph g, int srcX, int srcY) => g.BitmapData[((srcY + Ow) * g.Width + srcX + Ow) * 4 + 3];
+
+        var cap = run.Select(x => At(result, x, topRow - Ow)).ToArray();
+        cap.ShouldAllBe(a => a == 0, $"no flat cap {Ow} rows above the faint apex row; row [{string.Join(",", cap)}]");
+
+        for (var y = -Ow; y < DiscSize + Ow; y++)
+        {
+            for (var x = -Ow; x < DiscSize + Ow; x++)
+            {
+                var onBody = x >= 0 && y >= 0 && x < DiscSize && y < DiscSize && gray[y * DiscSize + x] > 0;
+                At(result, x, y).ShouldBe(onBody ? (byte)255 : At(bilevel, x, y), $"pixel ({x},{y})");
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void NoSmoothing_BilevelInput_IsEveryPixelWithinTheWidthOfAnInkPixel(int seed)
+    {
+        // Pin: a truly bilevel glyph (alpha 0 or 255, what every backend renders under
+        // AntiAlias = None) has one silhouette whatever the cut, so its hard outline is exactly
+        // the pixels within the outline width of an ink pixel -- worked out here pixel by pixel,
+        // with no threshold at all.
+        var rng = new Random(seed);
+        var shapes = new[] { OutlineShape.Round, OutlineShape.Square, OutlineShape.Plus };
+        for (var trial = 0; trial < 40; trial++)
+        {
+            int width = rng.Next(1, 24), height = rng.Next(1, 24), ow = rng.Next(1, 5);
+            var shape = shapes[rng.Next(shapes.Length)];
+            var density = rng.Next(2, 8);
+            var alpha = new byte[width * height];
+            for (var i = 0; i < alpha.Length; i++)
+                alpha[i] = rng.Next(density) == 0 ? (byte)255 : (byte)0;
+
+            int dstW = width + 2 * ow, dstH = height + 2 * ow;
+            var expected = new byte[dstW * dstH];
+            for (var y = 0; y < dstH; y++)
+            {
+                for (var x = 0; x < dstW; x++)
+                {
+                    for (var sy = 0; sy < height && expected[y * dstW + x] == 0; sy++)
+                    {
+                        for (var sx = 0; sx < width; sx++)
+                        {
+                            if (alpha[sy * width + sx] == 0)
+                                continue;
+
+                            int dx = Math.Abs(sx + ow - x), dy = Math.Abs(sy + ow - y);
+                            var within = shape switch
+                            {
+                                OutlineShape.Round => dx * dx + dy * dy <= ow * ow,
+                                OutlineShape.Square => Math.Max(dx, dy) <= ow,
+                                _ => dx + dy <= ow,
+                            };
+                            if (within)
+                            {
+                                expected[y * dstW + x] = 255;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            var layer = new OutlineEffect(ow, smooth: false, shape: shape).Generate(alpha, width, height, width, default);
+            var routed = new OutlinePostProcessor(ow) { Smooth = false, Shape = shape }.Process(new RasterizedGlyph
+            {
+                Codepoint = 'x',
+                GlyphIndex = 0,
+                BitmapData = alpha,
+                Width = width,
+                Height = height,
+                Pitch = width,
+                Metrics = new GlyphMetrics(0, 0, width, width, height),
+                Format = PixelFormat.Grayscale8,
+            });
+
+            var where = $"seed {seed} trial {trial} ow {ow} {shape}";
+            Enumerable.Range(0, dstW * dstH).Select(i => layer.RgbaData[i * 4 + 3]).ToArray().ShouldBe(expected, where);
+            Enumerable.Range(0, dstW * dstH).Select(i => routed.BitmapData[i * 4 + 3]).ToArray().ShouldBe(expected, where);
+        }
+    }
+
     // ---------------------------------------------------------------- real glyphs
 
     [Theory]
