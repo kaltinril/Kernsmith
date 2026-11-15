@@ -33,7 +33,7 @@ Effects are configured through the Builder API. When any effect is active, `Glyp
 
 Adds a colored border around each glyph using Euclidean Distance Transform (EDT). The outline expands the glyph bitmap by `width` pixels in each direction. The outline follows the glyph's true edge on both the exterior and the interior counter walls, so enclosed holes (e.g. `a`, `d`, `e`, `o`, `g`, `0`, `8`) get an inner outline ring while the open center of the counter stays transparent.
 
-With `AntiAlias.None` the outline edge is a hard 0/255 threshold, so `width` gives exactly that many opaque pixels. Otherwise the outer edge fades softly.
+With `AntiAlias.None` the outline edge is a hard 0/255 threshold, so `width` gives exactly that many opaque pixels. Otherwise the outline is anti-aliased like the glyph: it is measured from the glyph's anti-aliased edge (a partly covered edge pixel counts for as much of a pixel as it covers) and ends `width` pixels past it, so it follows curves between pixel rows and is the same thickness wherever an edge falls on the pixel grid.
 
 **Parameters:**
 - `width` -- outline thickness in pixels

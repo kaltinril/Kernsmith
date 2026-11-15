@@ -49,18 +49,17 @@ internal sealed class OutlineEffect : IGlyphEffect
         var dstH = height + 2 * ow;
         var size = dstW * dstH;
 
-        // Step 1: Extract source alpha into an expanded buffer, centered, and binarize it so
-        // the EDT measures distance from the opaque glyph core. Semi-transparent antialiased
-        // edge pixels (alpha < 32) are treated as "outside", which lets the outline extend
-        // under the fringe and eliminates edge gaps. Both buffers are read in full later and
-        // their borders are never written here, so the rented buffers are cleared first.
+        // Step 1: Extract source alpha into an expanded buffer, centered. The buffers are read
+        // in full later and their borders are never written here, so the rented buffers are
+        // cleared first.
         var expandedAlpha = ArrayPool<byte>.Shared.Rent(size);
-        var binaryAlpha = ArrayPool<byte>.Shared.Rent(size);
+        var binaryAlpha = _smooth ? null : ArrayPool<byte>.Shared.Rent(size);
         var squaredDist = ArrayPool<float>.Shared.Rent(size);
         try
         {
             Array.Clear(expandedAlpha, 0, size);
-            Array.Clear(binaryAlpha, 0, size);
+            if (binaryAlpha != null)
+                Array.Clear(binaryAlpha, 0, size);
 
             for (var y = 0; y < height; y++)
             {
@@ -70,19 +69,32 @@ internal sealed class OutlineEffect : IGlyphEffect
                     var srcIdx = y * pitch + x;
                     var alpha = srcIdx < alphaData.Length ? alphaData[srcIdx] : (byte)0;
                     expandedAlpha[rowStart + x] = alpha;
-                    binaryAlpha[rowStart + x] = alpha >= 32 ? (byte)255 : (byte)0;
+                    if (binaryAlpha != null)
+                        binaryAlpha[rowStart + x] = alpha >= 32 ? (byte)255 : (byte)0;
                 }
             }
 
-            OutlineDistanceTransform.ComputeSquared(binaryAlpha, dstW, dstH, _shape, squaredDist);
+            if (binaryAlpha == null)
+            {
+                // Anti-aliased: distance to the edge the glyph's coverage describes, so the ring
+                // follows a curve between pixel rows instead of a thresholded silhouette (#127).
+                // Nothing at or past the end of the ramp is needed.
+                OutlineDistanceTransform.ComputeSquaredFromCoverage(expandedAlpha, dstW, dstH, _shape, ow + SmoothFade, squaredDist);
+            }
+            else
+            {
+                // No anti-aliasing: whole-pixel distance from the glyph core. A bilevel glyph is
+                // all 0 and 255; in any other glyph the faintest pixels (alpha < 32) are left out.
+                OutlineDistanceTransform.ComputeSquared(binaryAlpha, dstW, dstH, _shape, squaredDist);
+            }
 
             // Step 2: Build RGBA output with outline color and anti-aliased alpha.
             // Two cases per pixel:
             //   - Body (under the glyph fill): full-opacity backing so alpha-over compositing
             //     has no seam behind the body's anti-aliased edge.
             //   - Everything else (exterior ring AND interior counters): a distance-based
-            //     anti-aliased ring. The falloff fades to zero beyond ~ow pixels from the
-            //     glyph core, so the open center of a large counter stays transparent on its
+            //     anti-aliased ring. The falloff fades to zero ow pixels from the
+            //     glyph's edge, so the open center of a large counter stays transparent on its
             //     own -- no flood-fill needed -- while pixels near an inner stroke wall get
             //     a proper inner outline.
             var dst = new byte[size * 4];
@@ -103,7 +115,7 @@ internal sealed class OutlineEffect : IGlyphEffect
                     // Exterior or counter: distance-based anti-aliased ring.
                     var sq = squaredDist[pixelIdx];
                     if (sq >= ring.Length)
-                        continue; // at or past ow + 0.75 pixels: transparent
+                        continue; // at or past ow + 1 pixels: transparent
                     var k = (int)sq;
                     outlineAlpha = ((float)k).Equals(sq) ? ring[k] : SmoothAlpha(ow, sq);
                 }
@@ -128,18 +140,28 @@ internal sealed class OutlineEffect : IGlyphEffect
         finally
         {
             ArrayPool<byte>.Shared.Return(expandedAlpha);
-            ArrayPool<byte>.Shared.Return(binaryAlpha);
+            if (binaryAlpha != null)
+                ArrayPool<byte>.Shared.Return(binaryAlpha);
             ArrayPool<float>.Shared.Return(squaredDist);
         }
     }
 
     /// <summary>
-    /// The smooth ring's alpha at a squared distance: fully opaque up to ow, then a linear fade
-    /// over 1.5 pixels. Every smooth ring alpha comes from this expression, directly or through
+    /// The smooth ring is transparent from this far past the outline width. Distances are
+    /// between pixel centres, with a fully covered pixel's edge half a pixel past its centre,
+    /// so a pixel at distance d holds the edge of the outline when d is between ow and ow + 1.
+    /// </summary>
+    private const float SmoothFade = 1f;
+
+    /// <summary>
+    /// The smooth ring's alpha at a squared distance: the share of the pixel that lies within
+    /// ow of the glyph's edge -- opaque up to ow, then a linear fade over one pixel, so the ring
+    /// covers ow pixels past the edge and is as sharp as the glyph's own anti-aliased edge.
+    /// Every smooth ring alpha comes from this expression, directly or through
     /// <see cref="SmoothRingAlpha"/>.
     /// </summary>
     private static float SmoothAlpha(int ow, float squaredDistance) =>
-        Math.Clamp(255f * (ow + 0.75f - MathF.Sqrt(squaredDistance)) / 1.5f, 0f, 255f);
+        Math.Clamp(255f * (ow + SmoothFade - MathF.Sqrt(squaredDistance)), 0f, 255f);
 
     [ThreadStatic]
     private static float[]? t_ringTable;
@@ -149,19 +171,19 @@ internal sealed class OutlineEffect : IGlyphEffect
 
     /// <summary>
     /// <see cref="SmoothAlpha"/> at each whole squared distance below the first whose square
-    /// root reaches <c>ow + 0.75</c>. The distance transforms yield whole squared distances
-    /// (squared integer offsets plus whole column distances), so a lookup returns exactly what
-    /// the expression would; at or past the table's length the root is at least
-    /// <c>ow + 0.75</c> (the square root is monotone), where the expression is 0 or -0 and the
-    /// pixel stays transparent. A fractional squared distance, should one occur, is evaluated
-    /// directly.
+    /// root reaches <c>ow + 1</c>. A distance measured from fully covered pixels is a whole
+    /// squared distance (squared integer offsets plus whole column distances), so a lookup
+    /// returns exactly what the expression would; at or past the table's length the root is at
+    /// least <c>ow + 1</c> (the square root is monotone), where the expression is 0 or -0 and
+    /// the pixel stays transparent. A distance measured from a partly covered edge pixel is
+    /// fractional and is evaluated directly.
     /// </summary>
     private static float[] SmoothRingAlpha(int ow)
     {
         if (t_ringTable != null && t_ringTableWidth == ow)
             return t_ringTable;
 
-        var limit = ow + 0.75f;
+        var limit = ow + SmoothFade;
         var length = 0;
         while (MathF.Sqrt(length) < limit)
             length++;

@@ -240,10 +240,11 @@ public class VectorOutlineTests
         v.Height.ShouldBe(e.Height);
         v.Metrics.BearingX.ShouldBe(e.Metrics.BearingX);
         v.Metrics.BearingY.ShouldBe(e.Metrics.BearingY);
-        // The square layer reaches the canvas corners the round effect leaves empty; its outer
-        // rows are resampled like the body's own rows, so they need not be solid.
-        AlphaAt(e, 0, 0).ShouldBe((byte)0);
-        AlphaAt(v, 0, 0).ShouldBeGreaterThan((byte)0);
+        // The square layer fills the canvas corners the round effect only grazes (a corner pixel
+        // is sqrt(8) from the body's corner pixel, so a sixth of it is within 2 px of the body);
+        // its outer rows are resampled like the body's own rows, so they need not be solid.
+        AlphaAt(e, 0, 0).ShouldBeLessThan((byte)64);
+        AlphaAt(v, 0, 0).ShouldBeGreaterThan(AlphaAt(e, 0, 0));
         AlphaAt(v, v.Width - 1, v.Height - 1).ShouldBeGreaterThan((byte)0);
         AlphaAt(v, 0, v.Height / 2).ShouldBe((byte)255, "the layer's side columns are not resampled vertically into a fade");
     }

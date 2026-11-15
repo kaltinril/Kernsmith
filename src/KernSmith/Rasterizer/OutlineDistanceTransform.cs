@@ -4,8 +4,9 @@ using KernSmith.Atlas;
 namespace KernSmith.Rasterizer;
 
 /// <summary>
-/// Squared distance from each pixel to the nearest opaque pixel, measured with the metric
-/// that matches an <see cref="OutlineShape"/>.
+/// Squared distance from each pixel to the glyph, measured with the metric that matches an
+/// <see cref="OutlineShape"/>: to the nearest opaque pixel (<see cref="ComputeSquared(byte[], int, int, OutlineShape)"/>),
+/// or to the anti-aliased edge the glyph's coverage describes (<see cref="ComputeSquaredFromCoverage"/>).
 /// </summary>
 internal static class OutlineDistanceTransform
 {
@@ -88,6 +89,113 @@ internal static class OutlineDistanceTransform
         finally
         {
             ArrayPool<int>.Shared.Return(grid);
+        }
+    }
+
+    /// <summary>
+    /// Squared distances from each empty pixel (coverage 0) to the glyph's anti-aliased edge,
+    /// into the first <c>width * height</c> entries of <paramref name="squared"/>; a pixel with
+    /// any coverage is in the glyph and gets 0.
+    /// </summary>
+    /// <remarks>
+    /// A pixel's coverage says how far the edge reaches into it: fully covered, the glyph fills
+    /// the pixel, as <see cref="ComputeSquared(byte[], int, int, OutlineShape)"/> assumes of
+    /// every inside pixel; at coverage c the edge stops <c>1 - c</c> of a pixel short of that.
+    /// So the distance to a covered pixel is the metric's distance between the two centres plus
+    /// <c>1 - c</c>, and a pixel's distance is the least of those. For a glyph of fully covered
+    /// pixels this is exactly <see cref="ComputeSquared(byte[], int, int, OutlineShape)"/>; on an
+    /// anti-aliased glyph the distance varies smoothly with the edge's position instead of
+    /// jumping a whole pixel where coverage crosses a threshold (issue #127: the faint row at a
+    /// curved apex counted as a solid row, and the outline drew a flat cap over it).
+    /// Distances of <paramref name="reach"/> or more are not resolved: such an entry holds some
+    /// value that is at least <c>reach * reach</c>.
+    /// </remarks>
+    public static void ComputeSquaredFromCoverage(byte[] coverage, int width, int height, OutlineShape shape, float reach, float[] squared)
+    {
+        var size = width * height;
+        var hasPartial = false;
+        var solid = ArrayPool<byte>.Shared.Rent(size);
+        try
+        {
+            for (var i = 0; i < size; i++)
+            {
+                var c = coverage[i];
+                solid[i] = c == 255 ? (byte)255 : (byte)0;
+                hasPartial |= c is > 0 and < 255;
+            }
+
+            ComputeSquared(solid, width, height, shape, squared);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(solid);
+        }
+
+        if (!hasPartial)
+            return;
+
+        // Every metric here is at least max(|dx|, |dy|), so offsets past `radius` on either axis
+        // are at reach or beyond.
+        var radius = Math.Max(0, (int)MathF.Ceiling(reach) - 1);
+        var side = radius + 1;
+        var metric = ArrayPool<float>.Shared.Rent(side * side);
+        try
+        {
+            for (var dy = 0; dy < side; dy++)
+            {
+                for (var dx = 0; dx < side; dx++)
+                {
+                    metric[dy * side + dx] = shape switch
+                    {
+                        OutlineShape.Round => MathF.Sqrt(dx * dx + dy * dy),
+                        OutlineShape.Square => Math.Max(dx, dy),
+                        _ => dx + dy,
+                    };
+                }
+            }
+
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var c = coverage[y * width + x];
+                    if (c == 0)
+                        continue;
+
+                    squared[y * width + x] = 0f;
+                    if (c == 255)
+                        continue;
+
+                    var inset = (255 - c) / 255f;
+                    if (inset >= reach)
+                        continue;
+
+                    int y0 = Math.Max(0, y - radius), y1 = Math.Min(height - 1, y + radius);
+                    int x0 = Math.Max(0, x - radius), x1 = Math.Min(width - 1, x + radius);
+                    for (var ty = y0; ty <= y1; ty++)
+                    {
+                        var metricRow = Math.Abs(ty - y) * side;
+                        var row = ty * width;
+                        for (var tx = x0; tx <= x1; tx++)
+                        {
+                            if (coverage[row + tx] != 0)
+                                continue;
+
+                            var distance = metric[metricRow + Math.Abs(tx - x)] + inset;
+                            if (distance >= reach)
+                                continue;
+
+                            var sq = distance * distance;
+                            if (sq < squared[row + tx])
+                                squared[row + tx] = sq;
+                        }
+                    }
+                }
+            }
+        }
+        finally
+        {
+            ArrayPool<float>.Shared.Return(metric);
         }
     }
 }
