@@ -17,45 +17,57 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// pressure, every thread-local slot — from the finalizer thread, after the pause and so with no
 /// pause inside the window that follows. The first run after that pays for each pooled buffer
 /// the work rents (whole bucket sizes: a 32 KB inflate buffer reads as 32,792 B) and returns them,
-/// so the next run is warm again. Hence the smaller of two clean windows is reported: a refill
-/// can inflate only one of them, while the work's own allocations are in both — the result is
-/// still the thread's exact count, so a real allocation is never hidden.
+/// so the next run is warm again. Each element type's pool trims from its own callback, so work
+/// that rents from two (the colour-bitmap path: bytes to decode, floats to resample) can pay one
+/// refill in one window and the other in the next.
+/// </para>
+/// <para>
+/// All of this only ever adds to a window, and never the same amount for long, while the work's
+/// own allocations are in every window. So the answer is the smallest window, taken once
+/// <see cref="Confirmations"/> clean windows have measured exactly that: still the thread's exact
+/// count, so a real allocation is never hidden.
 /// </para>
 /// </remarks>
 internal static class AllocationMeter
 {
-    /// <summary>Windows to try before settling for the smallest paused one.</summary>
-    private const int Attempts = 20;
+    /// <summary>Windows to try before settling for the smallest one seen.</summary>
+    private const int Attempts = 32;
 
-    /// <summary>Clean windows to take; the smaller is the answer.</summary>
-    private const int CleanWindows = 2;
+    /// <summary>Clean windows that must measure the smallest count before it is the answer.</summary>
+    private const int Confirmations = 3;
 
     /// <summary>
-    /// The bytes the current thread allocates running <paramref name="work"/>: the smaller of
-    /// two windows no garbage collection paused. <paramref name="work"/> runs several times, so
-    /// it must allocate the same on every run (warm it up first).
+    /// The bytes the current thread allocates running <paramref name="work"/>: the smallest
+    /// count measured, once <see cref="Confirmations"/> windows no garbage collection paused
+    /// agree on it. <paramref name="work"/> runs several times, so it must allocate the same on
+    /// every run (warm it up first).
     /// </summary>
     public static long BytesAllocatedBy(Action work)
     {
-        long fewest = long.MaxValue, fewestClean = long.MaxValue;
-        int clean = 0;
+        long fewest = long.MaxValue;
+        int confirmed = 0;
         for (int attempt = 0; attempt < Attempts; attempt++)
         {
             var paused = GC.GetTotalPauseDuration();
             long before = GC.GetAllocatedBytesForCurrentThread();
             work();
             long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            bool clean = GC.GetTotalPauseDuration() == paused;
 
-            // A collection ran inside the window: it can inflate the count, never shrink it.
-            fewest = Math.Min(fewest, allocated);
-            if (GC.GetTotalPauseDuration() != paused)
+            // Noise inflates a window, never shrinks it: a smaller one replaces all before it.
+            if (allocated > fewest)
                 continue;
+            if (allocated < fewest)
+            {
+                fewest = allocated;
+                confirmed = 0;
+            }
 
-            fewestClean = Math.Min(fewestClean, allocated);
-            if (++clean == CleanWindows)
-                return fewestClean;
+            // A window a collection paused bounds the answer from above but does not confirm it.
+            if (clean && ++confirmed == Confirmations)
+                break;
         }
 
-        return clean > 0 ? fewestClean : fewest;
+        return fewest;
     }
 }
