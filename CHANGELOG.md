@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **UI Export As now honours the Text/XML/Binary descriptor format** (issue #320). `MainViewModel.SaveAs()` always wrote a text `.fnt`; it now passes the format selected under Output Format to `BmFontResult.ToFile(path, format)`.
+
 ## [0.27.0] - 2026-11-06
 
 ### Added
