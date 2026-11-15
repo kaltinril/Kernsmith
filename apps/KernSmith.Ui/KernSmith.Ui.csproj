@@ -20,6 +20,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+   <PackageReference Include="KernSmith.GumCommon" />
+   <PackageReference Include="KernSmith.MonoGameGum" />
     <PackageReference Include="MonoGame.Framework.DesktopGL" />
     <PackageReference Include="Gum.MonoGame" />
     <PackageReference Include="Gum.Themes.Editor.MonoGame" />
