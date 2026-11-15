@@ -43,6 +43,8 @@
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.FreeType\KernSmith.Rasterizers.FreeType.csproj" />
     <PackageReference Include="KernSmith.GumCommon" />
     <PackageReference Include="KernSmith.MonoGameGum" />
+    <!-- KernSmith.GumCommon 2026.11 calls into MonoGame.Framework at run time and the Gum packages do not carry it. -->
+    <PackageReference Include="MonoGame.Framework.DesktopGL" />
     <ProjectReference Include="..\..\src\KernSmith.Rasterizers.StbTrueType\KernSmith.Rasterizers.StbTrueType.csproj" />
     <ProjectReference Include="..\..\src\KernSmith.Fonts.Web\KernSmith.Fonts.Web.csproj" />
     <!-- PNG decoder tests (Imaging/); StbImageSharp, which core already depends on, is their oracle. -->

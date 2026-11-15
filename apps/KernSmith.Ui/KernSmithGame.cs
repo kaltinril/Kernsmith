@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using global::Gum.Wireframe;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
-using MonoGameGum;
+using global::Gum;
 using global::Gum.Forms;
 using KernSmith.Ui.Layout;
 using KernSmith.Ui.ViewModels;
