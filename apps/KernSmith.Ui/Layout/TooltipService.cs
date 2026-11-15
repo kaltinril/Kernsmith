@@ -1,6 +1,6 @@
 using global::Gum.Wireframe;
 using Microsoft.Xna.Framework;
-using MonoGameGum;
+using global::Gum;
 using Gum.GueDeriving;
 using KernSmith.Ui.Styling;
 
