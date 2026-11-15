@@ -1,0 +1,805 @@
+<!doctype html><meta charset="utf-8"><title>KernSmith: v0.27.0 (before) vs main 591b5fc (after)</title><style>
+:root{--bg:#1b1d22;--fg:#e6e6e6;--mut:#9aa0aa;--card:#24272e;--line:#3a3f4a;--chk1:#3a3d45;--chk2:#2c2f36}
+body{background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,Segoe UI,sans-serif;margin:0;padding:16px 20px 60px}
+h1{font-size:20px;margin:0 0 4px} h2{font-size:17px;margin:34px 0 4px;border-top:1px solid var(--line);padding-top:18px}
+h3{font-size:13px;margin:14px 0 6px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+p,li{max-width:900px} .mut{color:var(--mut)}
+.bar{position:sticky;top:0;background:var(--bg);padding:8px 0;border-bottom:1px solid var(--line);z-index:5;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+button{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:4px 10px;cursor:pointer}
+button.on{background:#3b6fd4;border-color:#3b6fd4}
+.row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.row.one{grid-template-columns:1fr}
+.cell{background:var(--card);border:1px solid var(--line);border-radius:4px;overflow:auto;max-height:560px}
+.cell .cap{position:sticky;left:0;top:0;background:var(--card);padding:3px 8px;font-size:12px;color:var(--mut);border-bottom:1px solid var(--line)}
+.cell img{display:block;image-rendering:pixelated;width:calc(var(--w)*var(--z));max-width:none}
+body.chk .cell .imgw{background:repeating-conic-gradient(var(--chk1) 0 25%,var(--chk2) 0 50%) 0 0/16px 16px}
+body.white .cell .imgw{background:#fff} body.blue .cell .imgw{background:#4a6fb0}
+.imgw{width:max-content}
+table{border-collapse:collapse;margin:6px 0 12px} td,th{border:1px solid var(--line);padding:2px 9px;text-align:right} th{color:var(--mut);font-weight:600}
+a{color:#7fb0ff} nav a{margin-right:10px;white-space:nowrap}
+</style>
+<body class="blue" style="--z:4"><h1>KernSmith: v0.27.0 (before) vs main 591b5fc (after)</h1>
+<p class="mut">Regression harness output. Left = v0.27.0 atlas, middle = main 591b5fc, right = harness diff (magenta = changed pixels). Each cell scrolls; the three cells in a row scroll together.</p>
+<div class="bar"><span>Zoom</span><span id="zb"></span><span>Background</span><span id="bb"></span></div><nav style="margin-top:10px">
+<a href="#Font48Bauhaus_93_o4_Bold">Font48Bauhaus_93_o4_Bold</a>
+<a href="#Font60Bauhaus_93_o4_Bold">Font60Bauhaus_93_o4_Bold</a>
+<a href="#Font72Bauhaus_93_o4_Bold">Font72Bauhaus_93_o4_Bold</a>
+<a href="#fire">fire</a>
+<a href="#outline-shadow-channel">outline-shadow-channel</a>
+<a href="#outline-small-12-o1">outline-small-12-o1</a>
+<a href="#outline-small-14-o1">outline-small-14-o1</a>
+<a href="#outline-small-16-o1">outline-small-16-o1</a>
+<a href="#outline-small-18-o1">outline-small-18-o1</a>
+<a href="#outline-small-24-o1">outline-small-24-o1</a>
+<a href="#outline-small-32-o1">outline-small-32-o1</a>
+<a href="#outline-small-12-o2">outline-small-12-o2</a>
+<a href="#outline-small-14-o2">outline-small-14-o2</a>
+<a href="#outline-small-16-o2">outline-small-16-o2</a>
+<a href="#outline-small-18-o2">outline-small-18-o2</a>
+<a href="#outline-small-24-o2">outline-small-24-o2</a>
+<a href="#outline-small-32-o2">outline-small-32-o2</a>
+<a href="#outline-supersample">outline-supersample</a>
+<a href="#outline-supersample-baked">outline-supersample-baked</a>
+<a href="#outline-vector">outline-vector</a>
+<a href="#outline-vector-shadow">outline-vector-shadow</a>
+<a href="#kerning">kerning (.fnt)</a>
+<a href="#new">new configs</a>
+</nav>
+<h2 id="Font48Bauhaus_93_o4_Bold">Font48Bauhaus_93_o4_Bold</h2>
+<h3>freetype, page 0 &mdash; 27,334 pixels differ (10.4271%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font48Bauhaus_93_o4_Bold-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font48Bauhaus_93_o4_Bold-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font48Bauhaus_93_o4_Bold-freetype_0.png"></div></div>
+</div>
+<h3>freetype, page 1 &mdash; 2,513 pixels differ (0.9586%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font48Bauhaus_93_o4_Bold-freetype_1.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font48Bauhaus_93_o4_Bold-freetype_1.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font48Bauhaus_93_o4_Bold-freetype_1.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 27,470 pixels differ (10.4790%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font48Bauhaus_93_o4_Bold-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font48Bauhaus_93_o4_Bold-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font48Bauhaus_93_o4_Bold-native_0.png"></div></div>
+</div>
+<h3>native, page 1 &mdash; 2,756 pixels differ (1.0513%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font48Bauhaus_93_o4_Bold-native_1.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font48Bauhaus_93_o4_Bold-native_1.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font48Bauhaus_93_o4_Bold-native_1.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 27,622 pixels differ (10.5370%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font48Bauhaus_93_o4_Bold-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font48Bauhaus_93_o4_Bold-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font48Bauhaus_93_o4_Bold-stbtruetype_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 1 &mdash; 2,869 pixels differ (1.0944%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font48Bauhaus_93_o4_Bold-stbtruetype_1.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font48Bauhaus_93_o4_Bold-stbtruetype_1.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font48Bauhaus_93_o4_Bold-stbtruetype_1.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 14,954 pixels differ (11.4090%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font48Bauhaus_93_o4_Bold-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font48Bauhaus_93_o4_Bold-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font48Bauhaus_93_o4_Bold-gdi_0.png"></div></div>
+</div>
+<h3>gdi, page 1 &mdash; 9,719 pixels differ (7.4150%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font48Bauhaus_93_o4_Bold-gdi_1.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font48Bauhaus_93_o4_Bold-gdi_1.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font48Bauhaus_93_o4_Bold-gdi_1.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 27,672 pixels differ (10.5560%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font48Bauhaus_93_o4_Bold-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font48Bauhaus_93_o4_Bold-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font48Bauhaus_93_o4_Bold-directwrite_0.png"></div></div>
+</div>
+<h3>directwrite, page 1 &mdash; 442 pixels differ (0.1686%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font48Bauhaus_93_o4_Bold-directwrite_1.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font48Bauhaus_93_o4_Bold-directwrite_1.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font48Bauhaus_93_o4_Bold-directwrite_1.png"></div></div>
+</div>
+<h2 id="Font60Bauhaus_93_o4_Bold">Font60Bauhaus_93_o4_Bold</h2>
+<h3>freetype, page 0 &mdash; 34,729 pixels differ (6.6240%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font60Bauhaus_93_o4_Bold-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font60Bauhaus_93_o4_Bold-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font60Bauhaus_93_o4_Bold-freetype_0.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 36,613 pixels differ (6.9834%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font60Bauhaus_93_o4_Bold-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font60Bauhaus_93_o4_Bold-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font60Bauhaus_93_o4_Bold-native_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 37,052 pixels differ (7.0671%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font60Bauhaus_93_o4_Bold-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font60Bauhaus_93_o4_Bold-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font60Bauhaus_93_o4_Bold-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 30,066 pixels differ (5.7346%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font60Bauhaus_93_o4_Bold-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font60Bauhaus_93_o4_Bold-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font60Bauhaus_93_o4_Bold-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 35,490 pixels differ (6.7692%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font60Bauhaus_93_o4_Bold-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font60Bauhaus_93_o4_Bold-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font60Bauhaus_93_o4_Bold-directwrite_0.png"></div></div>
+</div>
+<h2 id="Font72Bauhaus_93_o4_Bold">Font72Bauhaus_93_o4_Bold</h2>
+<h3>freetype, page 0 &mdash; 41,191 pixels differ (7.8566%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font72Bauhaus_93_o4_Bold-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font72Bauhaus_93_o4_Bold-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font72Bauhaus_93_o4_Bold-freetype_0.png"></div></div>
+</div>
+<h3>freetype, page 1 &mdash; 1,257 pixels differ (0.2398%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font72Bauhaus_93_o4_Bold-freetype_1.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font72Bauhaus_93_o4_Bold-freetype_1.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font72Bauhaus_93_o4_Bold-freetype_1.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 40,628 pixels differ (7.7492%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font72Bauhaus_93_o4_Bold-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font72Bauhaus_93_o4_Bold-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font72Bauhaus_93_o4_Bold-native_0.png"></div></div>
+</div>
+<h3>native, page 1 &mdash; 2,457 pixels differ (0.4686%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font72Bauhaus_93_o4_Bold-native_1.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font72Bauhaus_93_o4_Bold-native_1.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font72Bauhaus_93_o4_Bold-native_1.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 41,476 pixels differ (7.9109%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font72Bauhaus_93_o4_Bold-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font72Bauhaus_93_o4_Bold-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font72Bauhaus_93_o4_Bold-stbtruetype_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 1 &mdash; 2,010 pixels differ (0.3834%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font72Bauhaus_93_o4_Bold-stbtruetype_1.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font72Bauhaus_93_o4_Bold-stbtruetype_1.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font72Bauhaus_93_o4_Bold-stbtruetype_1.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 35,523 pixels differ (6.7755%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font72Bauhaus_93_o4_Bold-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font72Bauhaus_93_o4_Bold-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font72Bauhaus_93_o4_Bold-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 41,247 pixels differ (7.8672%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_Font72Bauhaus_93_o4_Bold-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="Font72Bauhaus_93_o4_Bold-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_Font72Bauhaus_93_o4_Bold-directwrite_0.png"></div></div>
+</div>
+<h2 id="fire">fire</h2>
+<h3>freetype, page 0 &mdash; 18,190 pixels differ (1.7347%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_fire-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="fire-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_fire-freetype_0.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 18,517 pixels differ (7.0637%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_fire-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="fire-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_fire-native_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 18,584 pixels differ (7.0892%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_fire-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="fire-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_fire-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 17,544 pixels differ (6.6925%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_fire-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="fire-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_fire-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 18,294 pixels differ (1.7447%)</h3><div class="row" style="--w:1024px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_fire-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="fire-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_fire-directwrite_0.png"></div></div>
+</div>
+<h2 id="outline-shadow-channel">outline-shadow-channel</h2>
+<h3>freetype, page 0 &mdash; 13,938 pixels differ (5.3169%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-shadow-channel-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-shadow-channel-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-shadow-channel-freetype_0.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 14,514 pixels differ (5.5367%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-shadow-channel-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-shadow-channel-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-shadow-channel-native_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 14,513 pixels differ (5.5363%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-shadow-channel-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-shadow-channel-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-shadow-channel-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 13,861 pixels differ (5.2876%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-shadow-channel-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-shadow-channel-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-shadow-channel-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 13,791 pixels differ (5.2608%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-shadow-channel-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-shadow-channel-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-shadow-channel-directwrite_0.png"></div></div>
+</div>
+<h2 id="outline-small-12-o1">outline-small-12-o1</h2>
+<h3>freetype, page 0 &mdash; 3,283 pixels differ (20.0378%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-12-o1-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-12-o1-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-12-o1-freetype_0.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 3,210 pixels differ (19.5923%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-12-o1-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-12-o1-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-12-o1-native_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 3,378 pixels differ (20.6177%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-12-o1-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-12-o1-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-12-o1-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 2,595 pixels differ (15.8386%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-12-o1-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-12-o1-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-12-o1-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 3,187 pixels differ (19.4519%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-12-o1-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-12-o1-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-12-o1-directwrite_0.png"></div></div>
+</div>
+<h2 id="outline-small-14-o1">outline-small-14-o1</h2>
+<h3>freetype, page 0 &mdash; 4,040 pixels differ (24.6582%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-14-o1-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-14-o1-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-14-o1-freetype_0.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 3,959 pixels differ (24.1638%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-14-o1-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-14-o1-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-14-o1-native_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 3,860 pixels differ (23.5596%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-14-o1-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-14-o1-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-14-o1-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 3,117 pixels differ (19.0247%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-14-o1-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-14-o1-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-14-o1-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 3,889 pixels differ (23.7366%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-14-o1-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-14-o1-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-14-o1-directwrite_0.png"></div></div>
+</div>
+<h2 id="outline-small-16-o1">outline-small-16-o1</h2>
+<h3>freetype, page 0 &mdash; 4,257 pixels differ (25.9827%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-16-o1-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-16-o1-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-16-o1-freetype_0.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 4,091 pixels differ (24.9695%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-16-o1-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-16-o1-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-16-o1-native_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 4,461 pixels differ (27.2278%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-16-o1-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-16-o1-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-16-o1-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 3,880 pixels differ (23.6816%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-16-o1-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-16-o1-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-16-o1-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 4,179 pixels differ (25.5066%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-16-o1-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-16-o1-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-16-o1-directwrite_0.png"></div></div>
+</div>
+<h2 id="outline-small-18-o1">outline-small-18-o1</h2>
+<h3>freetype, page 0 &mdash; 4,986 pixels differ (7.6080%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-18-o1-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-18-o1-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-18-o1-freetype_0.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 4,607 pixels differ (7.0297%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-18-o1-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-18-o1-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-18-o1-native_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 5,029 pixels differ (7.6736%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-18-o1-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-18-o1-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-18-o1-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 4,980 pixels differ (30.3955%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-18-o1-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-18-o1-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-18-o1-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 4,670 pixels differ (7.1259%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-18-o1-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-18-o1-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-18-o1-directwrite_0.png"></div></div>
+</div>
+<h2 id="outline-small-24-o1">outline-small-24-o1</h2>
+<h3>freetype, page 0 &mdash; 6,422 pixels differ (9.7992%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-24-o1-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-24-o1-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-24-o1-freetype_0.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 6,420 pixels differ (9.7961%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-24-o1-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-24-o1-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-24-o1-native_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 6,874 pixels differ (10.4889%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-24-o1-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-24-o1-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-24-o1-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 6,167 pixels differ (9.4101%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-24-o1-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-24-o1-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-24-o1-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 6,109 pixels differ (9.3216%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-24-o1-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-24-o1-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-24-o1-directwrite_0.png"></div></div>
+</div>
+<h2 id="outline-small-32-o1">outline-small-32-o1</h2>
+<h3>freetype, page 0 &mdash; 8,807 pixels differ (13.4384%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-32-o1-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-32-o1-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-32-o1-freetype_0.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 9,052 pixels differ (13.8123%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-32-o1-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-32-o1-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-32-o1-native_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 9,007 pixels differ (13.7436%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-32-o1-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-32-o1-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-32-o1-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 8,554 pixels differ (13.0524%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-32-o1-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-32-o1-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-32-o1-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 8,625 pixels differ (13.1607%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-32-o1-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-32-o1-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-32-o1-directwrite_0.png"></div></div>
+</div>
+<h2 id="outline-small-12-o2">outline-small-12-o2</h2>
+<h3>freetype, page 0 &mdash; 3,605 pixels differ (22.0032%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-12-o2-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-12-o2-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-12-o2-freetype_0.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 3,573 pixels differ (21.8079%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-12-o2-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-12-o2-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-12-o2-native_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 3,715 pixels differ (22.6746%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-12-o2-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-12-o2-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-12-o2-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 3,030 pixels differ (18.4937%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-12-o2-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-12-o2-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-12-o2-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 3,670 pixels differ (22.3999%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-12-o2-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-12-o2-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-12-o2-directwrite_0.png"></div></div>
+</div>
+<h2 id="outline-small-14-o2">outline-small-14-o2</h2>
+<h3>freetype, page 0 &mdash; 4,235 pixels differ (6.4621%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-14-o2-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-14-o2-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-14-o2-freetype_0.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 4,210 pixels differ (6.4240%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-14-o2-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-14-o2-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-14-o2-native_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 4,160 pixels differ (6.3477%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-14-o2-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-14-o2-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-14-o2-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 3,436 pixels differ (20.9717%)</h3><div class="row" style="--w:128px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-14-o2-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-14-o2-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-14-o2-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 4,261 pixels differ (6.5018%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-14-o2-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-14-o2-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-14-o2-directwrite_0.png"></div></div>
+</div>
+<h2 id="outline-small-16-o2">outline-small-16-o2</h2>
+<h3>freetype, page 0 &mdash; 4,379 pixels differ (6.6818%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-16-o2-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-16-o2-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-16-o2-freetype_0.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 4,352 pixels differ (6.6406%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-16-o2-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-16-o2-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-16-o2-native_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 4,702 pixels differ (7.1747%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-16-o2-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-16-o2-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-16-o2-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 4,046 pixels differ (6.1737%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-16-o2-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-16-o2-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-16-o2-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 4,447 pixels differ (6.7856%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-16-o2-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-16-o2-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-16-o2-directwrite_0.png"></div></div>
+</div>
+<h2 id="outline-small-18-o2">outline-small-18-o2</h2>
+<h3>freetype, page 0 &mdash; 4,988 pixels differ (7.6111%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-18-o2-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-18-o2-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-18-o2-freetype_0.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 4,687 pixels differ (7.1518%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-18-o2-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-18-o2-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-18-o2-native_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 5,116 pixels differ (7.8064%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-18-o2-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-18-o2-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-18-o2-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 4,964 pixels differ (7.5745%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-18-o2-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-18-o2-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-18-o2-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 4,884 pixels differ (7.4524%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-18-o2-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-18-o2-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-18-o2-directwrite_0.png"></div></div>
+</div>
+<h2 id="outline-small-24-o2">outline-small-24-o2</h2>
+<h3>freetype, page 0 &mdash; 6,363 pixels differ (9.7092%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-24-o2-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-24-o2-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-24-o2-freetype_0.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 6,361 pixels differ (9.7061%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-24-o2-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-24-o2-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-24-o2-native_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 6,916 pixels differ (10.5530%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-24-o2-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-24-o2-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-24-o2-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 6,127 pixels differ (9.3491%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-24-o2-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-24-o2-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-24-o2-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 6,187 pixels differ (9.4406%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-24-o2-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-24-o2-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-24-o2-directwrite_0.png"></div></div>
+</div>
+<h2 id="outline-small-32-o2">outline-small-32-o2</h2>
+<h3>freetype, page 0 &mdash; 8,738 pixels differ (13.3331%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-32-o2-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-32-o2-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-32-o2-freetype_0.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 8,956 pixels differ (13.6658%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-32-o2-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-32-o2-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-32-o2-native_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 8,922 pixels differ (13.6139%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-32-o2-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-32-o2-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-32-o2-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 8,395 pixels differ (12.8098%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-32-o2-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-32-o2-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-32-o2-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 8,672 pixels differ (13.2324%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-small-32-o2-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-small-32-o2-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-small-32-o2-directwrite_0.png"></div></div>
+</div>
+<h2 id="outline-supersample">outline-supersample</h2>
+<h3>freetype, page 0 &mdash; 16,211 pixels differ (6.1840%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-supersample-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-supersample-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-supersample-freetype_0.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 16,368 pixels differ (6.2439%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-supersample-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-supersample-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-supersample-native_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 16,357 pixels differ (6.2397%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-supersample-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-supersample-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-supersample-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 14,508 pixels differ (5.5344%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-supersample-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-supersample-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-supersample-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 16,088 pixels differ (6.1371%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-supersample-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-supersample-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-supersample-directwrite_0.png"></div></div>
+</div>
+<h2 id="outline-supersample-baked">outline-supersample-baked</h2>
+<h3>freetype, page 0 &mdash; 17,404 pixels differ (6.6391%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-supersample-baked-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-supersample-baked-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-supersample-baked-freetype_0.png"></div></div>
+</div>
+<h3>native, page 0 &mdash; 17,596 pixels differ (6.7123%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-supersample-baked-native_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-supersample-baked-native_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-supersample-baked-native_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 17,572 pixels differ (6.7032%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-supersample-baked-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-supersample-baked-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-supersample-baked-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 15,654 pixels differ (5.9715%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-supersample-baked-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-supersample-baked-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-supersample-baked-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 17,431 pixels differ (6.6494%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-supersample-baked-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-supersample-baked-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-supersample-baked-directwrite_0.png"></div></div>
+</div>
+<h2 id="outline-vector">outline-vector</h2>
+<h3>freetype, page 0 &mdash; 9,103 pixels differ (13.8901%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-vector-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-vector-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-vector-freetype_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 9,334 pixels differ (14.2426%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-vector-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-vector-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-vector-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 8,857 pixels differ (13.5147%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-vector-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-vector-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-vector-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 8,964 pixels differ (13.6780%)</h3><div class="row" style="--w:256px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-vector-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-vector-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-vector-directwrite_0.png"></div></div>
+</div>
+<h2 id="outline-vector-shadow">outline-vector-shadow</h2>
+<h3>freetype, page 0 &mdash; 40,326 pixels differ (15.3831%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-vector-shadow-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-vector-shadow-freetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-vector-shadow-freetype_0.png"></div></div>
+</div>
+<h3>stbtruetype, page 0 &mdash; 40,826 pixels differ (15.5739%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-vector-shadow-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-vector-shadow-stbtruetype_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-vector-shadow-stbtruetype_0.png"></div></div>
+</div>
+<h3>gdi, page 0 &mdash; 41,927 pixels differ (15.9939%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-vector-shadow-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-vector-shadow-gdi_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-vector-shadow-gdi_0.png"></div></div>
+</div>
+<h3>directwrite, page 0 &mdash; 40,798 pixels differ (15.5632%)</h3><div class="row" style="--w:512px">
+<div class="cell"><div class="cap">before: v0.27.0</div><div class="imgw"><img loading="lazy" src="main_outline-vector-shadow-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">after: main 591b5fc</div><div class="imgw"><img loading="lazy" src="outline-vector-shadow-directwrite_0.png"></div></div>
+<div class="cell"><div class="cap">diff</div><div class="imgw"><img loading="lazy" src="diff_outline-vector-shadow-directwrite_0.png"></div></div>
+</div>
+<h2 id="kerning">Kerning changes (.fnt)</h2>
+<h3>variable-wght700, freetype</h3><p>1250 pairs before, 724 after: 528 removed, 2 added, 190 changed value, 532 unchanged.</p>
+<table><tr><th>pair</th><th>before</th><th>after</th></tr>
+<tr><td>&amp; T</td><td>-2</td><td>-1</td></tr>
+<tr><td>&amp; Y</td><td>-2</td><td>-1</td></tr>
+<tr><td>&amp; U+00DD</td><td>-2</td><td>-1</td></tr>
+<tr><td>( j</td><td>2</td><td>1</td></tr>
+<tr><td>, V</td><td>-3</td><td>-1</td></tr>
+<tr><td>. V</td><td>-3</td><td>-1</td></tr>
+<tr><td>/ T</td><td>2</td><td>1</td></tr>
+<tr><td>/ V</td><td>2</td><td>1</td></tr>
+<tr><td>/ Y</td><td>2</td><td>1</td></tr>
+<tr><td>/ a</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ c</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ d</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ e</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ g</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ o</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ q</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ s</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00DD</td><td>2</td><td>1</td></tr>
+<tr><td>/ U+00E0</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E1</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E2</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E3</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E4</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E5</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E6</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E7</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E8</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E9</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00EA</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00EB</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F2</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F3</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F4</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F5</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F6</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F8</td><td>-2</td><td>-1</td></tr>
+<tr><td>A /</td><td>2</td><td>1</td></tr>
+<tr><td>F ,</td><td>-2</td><td>-3</td></tr>
+<tr><td>F .</td><td>-2</td><td>-3</td></tr>
+<tr><td>F J</td><td>-2</td><td>-3</td></tr>
+</table><p class="mut">First 40 of 720 differing pairs.</p>
+<h3>variable-wght700-italic, freetype</h3><p>1250 pairs before, 724 after: 528 removed, 2 added, 190 changed value, 532 unchanged.</p>
+<table><tr><th>pair</th><th>before</th><th>after</th></tr>
+<tr><td>&amp; T</td><td>-2</td><td>-1</td></tr>
+<tr><td>&amp; Y</td><td>-2</td><td>-1</td></tr>
+<tr><td>&amp; U+00DD</td><td>-2</td><td>-1</td></tr>
+<tr><td>( j</td><td>2</td><td>1</td></tr>
+<tr><td>, V</td><td>-3</td><td>-1</td></tr>
+<tr><td>. V</td><td>-3</td><td>-1</td></tr>
+<tr><td>/ T</td><td>2</td><td>1</td></tr>
+<tr><td>/ V</td><td>2</td><td>1</td></tr>
+<tr><td>/ Y</td><td>2</td><td>1</td></tr>
+<tr><td>/ a</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ c</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ d</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ e</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ g</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ o</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ q</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ s</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00DD</td><td>2</td><td>1</td></tr>
+<tr><td>/ U+00E0</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E1</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E2</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E3</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E4</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E5</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E6</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E7</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E8</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E9</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00EA</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00EB</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F2</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F3</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F4</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F5</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F6</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F8</td><td>-2</td><td>-1</td></tr>
+<tr><td>A /</td><td>2</td><td>1</td></tr>
+<tr><td>F ,</td><td>-2</td><td>-3</td></tr>
+<tr><td>F .</td><td>-2</td><td>-3</td></tr>
+<tr><td>F J</td><td>-2</td><td>-3</td></tr>
+</table><p class="mut">First 40 of 720 differing pairs.</p>
+<h3>variable-wght700-italic, native</h3><p>1250 pairs before, 724 after: 528 removed, 2 added, 190 changed value, 532 unchanged.</p>
+<table><tr><th>pair</th><th>before</th><th>after</th></tr>
+<tr><td>&amp; T</td><td>-2</td><td>-1</td></tr>
+<tr><td>&amp; Y</td><td>-2</td><td>-1</td></tr>
+<tr><td>&amp; U+00DD</td><td>-2</td><td>-1</td></tr>
+<tr><td>( j</td><td>2</td><td>1</td></tr>
+<tr><td>, V</td><td>-3</td><td>-1</td></tr>
+<tr><td>. V</td><td>-3</td><td>-1</td></tr>
+<tr><td>/ T</td><td>2</td><td>1</td></tr>
+<tr><td>/ V</td><td>2</td><td>1</td></tr>
+<tr><td>/ Y</td><td>2</td><td>1</td></tr>
+<tr><td>/ a</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ c</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ d</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ e</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ g</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ o</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ q</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ s</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00DD</td><td>2</td><td>1</td></tr>
+<tr><td>/ U+00E0</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E1</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E2</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E3</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E4</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E5</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E6</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E7</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E8</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E9</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00EA</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00EB</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F2</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F3</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F4</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F5</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F6</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F8</td><td>-2</td><td>-1</td></tr>
+<tr><td>A /</td><td>2</td><td>1</td></tr>
+<tr><td>F ,</td><td>-2</td><td>-3</td></tr>
+<tr><td>F .</td><td>-2</td><td>-3</td></tr>
+<tr><td>F J</td><td>-2</td><td>-3</td></tr>
+</table><p class="mut">First 40 of 720 differing pairs.</p>
+<h3>variable-wght700, native</h3><p>1250 pairs before, 724 after: 528 removed, 2 added, 190 changed value, 532 unchanged.</p>
+<table><tr><th>pair</th><th>before</th><th>after</th></tr>
+<tr><td>&amp; T</td><td>-2</td><td>-1</td></tr>
+<tr><td>&amp; Y</td><td>-2</td><td>-1</td></tr>
+<tr><td>&amp; U+00DD</td><td>-2</td><td>-1</td></tr>
+<tr><td>( j</td><td>2</td><td>1</td></tr>
+<tr><td>, V</td><td>-3</td><td>-1</td></tr>
+<tr><td>. V</td><td>-3</td><td>-1</td></tr>
+<tr><td>/ T</td><td>2</td><td>1</td></tr>
+<tr><td>/ V</td><td>2</td><td>1</td></tr>
+<tr><td>/ Y</td><td>2</td><td>1</td></tr>
+<tr><td>/ a</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ c</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ d</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ e</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ g</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ o</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ q</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ s</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00DD</td><td>2</td><td>1</td></tr>
+<tr><td>/ U+00E0</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E1</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E2</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E3</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E4</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E5</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E6</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E7</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E8</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00E9</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00EA</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00EB</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F2</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F3</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F4</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F5</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F6</td><td>-2</td><td>-1</td></tr>
+<tr><td>/ U+00F8</td><td>-2</td><td>-1</td></tr>
+<tr><td>A /</td><td>2</td><td>1</td></tr>
+<tr><td>F ,</td><td>-2</td><td>-3</td></tr>
+<tr><td>F .</td><td>-2</td><td>-3</td></tr>
+<tr><td>F J</td><td>-2</td><td>-3</td></tr>
+</table><p class="mut">First 40 of 720 differing pairs.</p>
+<h2 id="new">New configs (no v0.27.0 baseline)</h2>
+<h3>outline-nosmoothing-supersample</h3><div class="row one" style="--w:608px"><div class="cell"><div class="cap">after: main 591b5fc, all backends</div><div class="imgw"><img loading="lazy" src="comparison-outline-nosmoothing-supersample.png"></div></div></div>
+<script>
+const zb=document.getElementById('zb'),bb=document.getElementById('bb');
+function grp(el,opts,cur,fn){opts.forEach(([l,v])=>{const b=document.createElement('button');b.textContent=l;if(v===cur)b.className='on';b.onclick=()=>{[...el.children].forEach(c=>c.className='');b.className='on';fn(v)};el.appendChild(b);el.append(' ')})}
+grp(zb,[['1x',1],['2x',2],['3x',3],['4x',4],['6x',6],['8x',8]],4,v=>document.body.style.setProperty('--z',v));
+grp(bb,[['blue','blue'],['checker','chk'],['white','white']],'blue',v=>document.body.className=v);
+document.querySelectorAll('.row').forEach(r=>{const cs=[...r.querySelectorAll('.cell')];let lock=false;cs.forEach(c=>c.addEventListener('scroll',()=>{if(lock)return;lock=true;cs.forEach(o=>{if(o!==c){o.scrollTop=c.scrollTop;o.scrollLeft=c.scrollLeft}});lock=false}))});
+</script>
