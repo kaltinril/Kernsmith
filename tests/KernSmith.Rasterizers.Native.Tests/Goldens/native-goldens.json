@@ -106,7 +106,7 @@
     "generate/roboto/outline-vector-routed-28-w3-square": { "sha256": "F7AA2B1543E32BCFEF2D8C4DAE3B35A2209E79F0364329E8E6D249D5160274F2", "parts": "fnt=a53ecb01 page0=e2860478" },
     "generate/roboto/width75-italic20-28": { "sha256": "CBB3E67C11410A4A6ECBD0D2C2B632AF890B9928B38F00E2F30509DE3DCAF352", "parts": "fnt=da66f00c page0=adeaf688" },
     "generate/robotoflex-latin/grayscale-28": { "sha256": "9084A11ED140E69DB16F4D0B24B2BB2B3353A0E75FF651D6DA28F7630C19F935", "parts": "fnt=db76f161 page0=bffdb692" },
-    "generate/robotoflex/sdf-32-wght900": { "sha256": "6100F48E092029006E0D128CA44E6F21DAEDA284F43067C03CEAE4094BCD2CE2", "parts": "fnt=c6c2ede4 page0=80417ed9" },
+    "generate/robotoflex/sdf-32-wght900": { "sha256": "48F579A7274D11CDC32A85FFDD6D56CA18AA140456960B78F72668E6F957E164", "parts": "fnt=a402a4c6 page0=80417ed9" },
     "generate/sourcecode/grayscale-24-wght900": { "sha256": "435BAA2856815AA71C3DD9E91D9231050E473C212869D5851E628873CD282BFB", "parts": "fnt=5c15bd41 page0=2fe5952d" },
     "generate/sourceserif/light-bold-italic-24": { "sha256": "A8E4DD413D1DA69B7873BEA0B1CE510CED9000E19F1B2FABBAA20A468BEDC6FE", "parts": "fnt=dd9b0534 page0=ce98fc55" },
     "generate/sourceserif/outline-vector-shadow-28-w2-plus": { "sha256": "AFBDA3FD26E3B74195C43CD203824BA77762BA3BBF0C325F33DD0BC57794C6F4", "parts": "fnt=712367f0 page0=33e10032" },

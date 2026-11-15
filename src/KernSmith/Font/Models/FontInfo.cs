@@ -43,7 +43,10 @@ public sealed class FontInfo
     /// <summary>All Unicode characters this font can render.</summary>
     public required IReadOnlyList<int> AvailableCodepoints { get; init; }
 
-    /// <summary>Kerning pairs (spacing tweaks between specific character pairs like "AV").</summary>
+    /// <summary>
+    /// Kerning pairs (spacing tweaks between specific character pairs like "AV"), in font units:
+    /// the font's GPOS pair kerning, or its legacy kern table when GPOS has none.
+    /// </summary>
     public IReadOnlyList<KerningPair> KerningPairs { get; init; } = Array.Empty<KerningPair>();
 
     /// <summary>

@@ -21,7 +21,8 @@ internal static class ListRasterizersCommand
 
         var platformMap = new Dictionary<RasterizerBackend, string>
         {
-            [RasterizerBackend.FreeType] = "All platforms",
+            // FreeTypeSharp ships no native library for Linux arm64, iOS, Mac Catalyst or WASM.
+            [RasterizerBackend.FreeType] = "Windows, Linux x64, macOS, Android",
             [RasterizerBackend.StbTrueType] = "All platforms",
             [RasterizerBackend.Gdi] = "Windows only",
             [RasterizerBackend.DirectWrite] = "Windows only",
@@ -43,20 +44,31 @@ internal static class ListRasterizersCommand
                 if (caps.SupportsColorFonts) capList.Add("Color");
                 if (caps.SupportsVariableFonts) capList.Add("Variable");
                 if (caps.SupportsSdf) capList.Add("SDF");
+                if (caps.SupportsMsdf) capList.Add("MSDF");
                 if (caps.SupportsOutlineStroke) capList.Add("Vector Outline");
                 if (caps.SupportsSyntheticBold) capList.Add("Synthetic Bold");
                 if (caps.SupportsSyntheticItalic) capList.Add("Synthetic Italic");
+                if (caps.SupportsWidthScale) capList.Add("Width Scale");
+                if (caps.SupportsItalicAngle) capList.Add("Italic Angle");
                 if (caps.SupportsSystemFonts) capList.Add("System Fonts");
                 var capStr = capList.Count > 0 ? string.Join(", ", capList) : "Grayscale";
 
-                ConsoleOutput.WriteLine($"  {name,-15} {status,-15} {platform,-20} {capStr}");
+                ConsoleOutput.WriteLine($"  {name,-15} {status,-15} {platform,-36} {capStr}");
+                ConsoleOutput.WriteLine($"  {"",-15} Anti-alias:  {JoinLower(caps.SupportedAntiAliasModes)}");
+                ConsoleOutput.WriteLine($"  {"",-15} Hint levels: {JoinLower(caps.SupportedHintLevels, "default only")}");
             }
             else
             {
-                ConsoleOutput.WriteLine($"  {name,-15} {"(not available)",-15} {platform,-20}");
+                ConsoleOutput.WriteLine($"  {name,-15} {"(not available)",-15} {platform}");
             }
         }
 
         return ExitCodes.Success;
     }
+
+    private static string JoinLower<T>(IReadOnlyList<T> values, string whenEmpty = "none")
+        where T : struct, Enum =>
+        values.Count > 0
+            ? string.Join(", ", values.Select(value => value.ToString().ToLowerInvariant()))
+            : whenEmpty;
 }

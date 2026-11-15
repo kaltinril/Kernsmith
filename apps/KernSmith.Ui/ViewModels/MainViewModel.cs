@@ -451,13 +451,7 @@ public class MainViewModel : ViewModel
         {
             try
             {
-                // ToFile expects a base path without extension (e.g., "output/myfont")
-                var basePath = path;
-                var ext = Path.GetExtension(path);
-                if (ext.Equals(".fnt", StringComparison.OrdinalIgnoreCase))
-                    basePath = path[..^ext.Length];
-
-                _lastResult!.ToFile(basePath);
+                var basePath = ExportResult(_lastResult!, path, AtlasConfig);
 
                 var dir = Path.GetDirectoryName(path);
                 if (!string.IsNullOrEmpty(dir))
@@ -470,6 +464,23 @@ public class MainViewModel : ViewModel
                 StatusBar.SetError($"Export failed: {ex.Message}");
             }
         }
+    }
+
+    /// <summary>
+    /// Writes <paramref name="result"/> to the <c>.fnt</c> path chosen in the export dialog, in
+    /// the descriptor format selected in <paramref name="atlasConfig"/>, and returns the base
+    /// path (no extension) the files were written under.
+    /// </summary>
+    public static string ExportResult(BmFontResult result, string path, AtlasConfigViewModel atlasConfig)
+    {
+        // ToFile expects a base path without extension (e.g., "output/myfont")
+        var basePath = path;
+        var ext = Path.GetExtension(path);
+        if (ext.Equals(".fnt", StringComparison.OrdinalIgnoreCase))
+            basePath = path[..^ext.Length];
+
+        result.ToFile(basePath, atlasConfig.DescriptorFormat);
+        return basePath;
     }
 
     /// <summary>

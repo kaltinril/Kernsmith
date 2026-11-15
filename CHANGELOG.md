@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **CLI `list-rasterizers` is accurate about FreeType and prints every capability** (issue #321). FreeType's platform note is now `Windows, Linux x64, macOS, Android` instead of `All platforms` (it has no native library on Linux arm64, iOS, Mac Catalyst or Blazor WASM), the capability list gains `MSDF`, `Width Scale` and `Italic Angle`, and each available backend is followed by its supported anti-alias modes and hint levels.
+
+### Fixed
+
+- **Variable-font GPOS kerning now follows the selected instance** (issue #291). A pair's `XAdvDevice` VariationIndex delta is added from the `GDEF` ItemVariationStore at the requested `VariationAxes` (fvar and avar normalized), on backends that support variable fonts (FreeType, Native). Previously every instance got the default instance's kerning.
+- **A font with GPOS pair kerning is now kerned by GPOS alone** (issue #312). Its legacy `kern` table is ignored instead of being merged in, and is used only when GPOS has no pair kerning, as text shapers do. Fonts that carry both tables can lose `kern`-only pairs they previously emitted.
+- **UI Export As now honours the Text/XML/Binary descriptor format** (issue #320). `MainViewModel.SaveAs()` always wrote a text `.fnt`; it now passes the format selected under Output Format to `BmFontResult.ToFile(path, format)`.
+
 ## [0.27.0] - 2026-11-06
 
 ### Added

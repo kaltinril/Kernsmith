@@ -61,19 +61,90 @@ public class AllocationMeterTests
         // A gen2 collection's trim callback empties the thread-local and per-core slots behind
         // the thread's back, with no pause inside the window that follows: take the bucket's
         // arrays the same way, and keep them.
-        var trimmed = new List<byte[]>();
-        while (true)
-        {
-            long before = GC.GetAllocatedBytesForCurrentThread();
-            trimmed.Add(ArrayPool<byte>.Shared.Rent(Size));
-            if (GC.GetAllocatedBytesForCurrentThread() - before >= Size)
-                break;
-        }
+        var trimmed = new List<Array>();
+        Drain<byte>(Size, trimmed);
 
         long allocated = AllocationMeter.BytesAllocatedBy(Work);
 
         GC.KeepAlive(trimmed);
         allocated.ShouldBe(0, "the refill after a pool trim was charged to the work");
+    }
+
+    [Fact]
+    public void PooledScratch_IsNotCharged_WhenTwoPoolsAreTrimmedOneWindowApart()
+    {
+        // The colour-bitmap path rents from two pools (bytes for the PNG decoder, floats for the
+        // resampler), and each pool trims from its own gen2 callback on the finalizer thread. The
+        // measuring thread can run between the two: one window pays the byte refill, the very
+        // next one the float refill, and only the windows after that are warm.
+        const int Size = 8192;
+        var trimmed = new List<Array>();
+        int runs = 0;
+        void Work()
+        {
+            if (++runs == 3) // the warm-up and the first window are behind us
+                Drain<float>(Size, trimmed);
+
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(Size);
+            float[] floats = ArrayPool<float>.Shared.Rent(Size);
+            bytes[0] = 1;
+            floats[0] = 1;
+            ArrayPool<byte>.Shared.Return(bytes);
+            ArrayPool<float>.Shared.Return(floats);
+        }
+
+        Work();
+        Drain<byte>(Size, trimmed);
+
+        long allocated = AllocationMeter.BytesAllocatedBy(Work);
+
+        GC.KeepAlive(trimmed);
+        runs.ShouldBeGreaterThanOrEqualTo(3, "the second trim never happened");
+        allocated.ShouldBe(0, "two refills, one window apart, were charged to the work");
+    }
+
+    [Fact]
+    public void RealAllocations_AreStillMeasured_WhenAPoolRefillInflatesSomeWindows()
+    {
+        // The same staggered refills around work that does allocate: the answer is the work's
+        // own 4024 B, neither the inflated windows nor nothing.
+        const int Size = 8192;
+        var trimmed = new List<Array>();
+        object? kept = null;
+        int runs = 0;
+        void Work()
+        {
+            if (++runs == 3)
+                Drain<float>(Size, trimmed);
+
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(Size);
+            float[] floats = ArrayPool<float>.Shared.Rent(Size);
+            kept = new byte[4000];
+            ArrayPool<byte>.Shared.Return(bytes);
+            ArrayPool<float>.Shared.Return(floats);
+        }
+
+        Work();
+        Drain<byte>(Size, trimmed);
+
+        long allocated = AllocationMeter.BytesAllocatedBy(Work);
+
+        GC.KeepAlive(trimmed);
+        GC.KeepAlive(kept);
+        allocated.ShouldBe(4024);
+    }
+
+    /// <summary>Empties the shared pool's bucket for <paramref name="size"/> on this thread, as
+    /// its trim does: rents until a rent has to allocate, and keeps every array.</summary>
+    private static void Drain<T>(int size, List<Array> taken)
+    {
+        while (true)
+        {
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            taken.Add(ArrayPool<T>.Shared.Rent(size));
+            if (GC.GetAllocatedBytesForCurrentThread() - before >= size)
+                break;
+        }
     }
 
     /// <summary>Takes <see cref="Windows"/> readings while other threads fill the large object

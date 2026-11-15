@@ -370,7 +370,28 @@ List available rasterizer backends and their capabilities.
 kernsmith list-rasterizers
 ```
 
-Lists every backend: each line shows its availability on the current machine (`(default)`, `(available)` or `(not available)`), a platform note (`All platforms` or `Windows only`), and, for available backends, their capabilities (color fonts, variable fonts, SDF, vector outline, synthetic bold/italic, system fonts).
+Lists every backend: each line shows its availability on the current machine (`(default)`, `(available)` or `(not available)`), a platform note (`All platforms`, `Windows only`, or for FreeType `Windows, Linux x64, macOS, Android`), and, for available backends, their capabilities (`Color`, `Variable`, `SDF`, `MSDF`, `Vector Outline`, `Synthetic Bold`, `Synthetic Italic`, `Width Scale`, `Italic Angle`, `System Fonts`; `Grayscale` when none apply). Two more lines under each available backend list its anti-alias modes and hint levels.
+On Windows:
+
+```
+Available rasterizer backends:
+
+  freetype        (default)       Windows, Linux x64, macOS, Android   Color, Variable, SDF, Synthetic Bold, Synthetic Italic
+                  Anti-alias:  none, grayscale, light, lcd
+                  Hint levels: none, light, full
+  gdi             (available)     Windows only                         Synthetic Bold, Synthetic Italic, System Fonts
+                  Anti-alias:  none, grayscale
+                  Hint levels: full
+  directwrite     (available)     Windows only                         Synthetic Bold, Synthetic Italic, System Fonts
+                  Anti-alias:  none, grayscale
+                  Hint levels: none, light
+  stbtruetype     (available)     All platforms                        SDF, Synthetic Bold, Synthetic Italic
+                  Anti-alias:  none, grayscale
+                  Hint levels: none
+  native          (available)     All platforms                        Color, Variable, SDF, MSDF, Vector Outline, Synthetic Bold, Synthetic Italic, Width Scale, Italic Angle
+                  Anti-alias:  none, grayscale, light, lcd
+                  Hint levels: none, light, normal
+```
 
 #### Rasterizer Examples
 

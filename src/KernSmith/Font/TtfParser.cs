@@ -16,6 +16,8 @@ internal class TtfParser
     private readonly ReadOnlyMemory<byte> _data;
     private readonly Dictionary<uint, (int offset, int length)> _tables = new();
     private readonly HashSet<int>? _requestedCodepoints;
+    private readonly IReadOnlyDictionary<string, float>? _variationCoordinates;
+    private ItemVariationDeltas? _kerningDeltas;
     private HashSet<int>? _relevantGlyphIndices;
 
     public HeadTable? Head { get; private set; }
@@ -43,6 +45,14 @@ internal class TtfParser
     /// order <see cref="GposPairs"/> has, so unconflicted output keeps its order), then first match.
     /// </summary>
     public IReadOnlyList<KerningPair> GposKerningPairs { get; private set; } = Array.Empty<KerningPair>();
+
+    /// <summary>
+    /// True when a 'kern' feature of GPOS reaches a PairPos subtable (format 1 or 2). Such a font
+    /// is kerned by GPOS alone and its <c>kern</c> table ignored, as a shaper does. It is a fact
+    /// about the font, not about the pairs read: a codepoint subset that GPOS happens not to kern
+    /// must not bring the <c>kern</c> table back.
+    /// </summary>
+    public bool GposHasPairKerning { get; private set; }
     public IReadOnlyList<VariationAxis>? VariationAxes { get; private set; }
     public IReadOnlyList<NamedInstance>? NamedInstances { get; private set; }
 
@@ -57,10 +67,18 @@ internal class TtfParser
     /// </summary>
     public bool IsValid { get; private set; }
 
-    public TtfParser(ReadOnlySpan<byte> fontData, int faceIndex = 0, HashSet<int>? requestedCodepoints = null, bool parseAdvancedTables = true)
+    /// <summary>
+    /// Parses a copy of <paramref name="fontData"/>. <paramref name="variationCoordinates"/> are
+    /// user-scale axis values by tag, the instance GPOS kerning is read at; null or empty reads
+    /// the default instance.
+    /// </summary>
+    public TtfParser(
+        ReadOnlySpan<byte> fontData, int faceIndex = 0, HashSet<int>? requestedCodepoints = null, bool parseAdvancedTables = true,
+        IReadOnlyDictionary<string, float>? variationCoordinates = null)
     {
         _data = fontData.ToArray();
         _requestedCodepoints = requestedCodepoints;
+        _variationCoordinates = variationCoordinates;
         IsValid = true;
 
         ParseTableDirectory(fontData, faceIndex);
@@ -73,9 +91,9 @@ internal class TtfParser
         if (!IsValid) return;
         if (parseAdvancedTables)
         {
+            ParseFvar(); // before GPOS: kerning at a variation instance needs the axes
             ParseKern();
             ParseGpos();
-            ParseFvar();
             DetectColorTables();
         }
     }
@@ -83,10 +101,13 @@ internal class TtfParser
     /// <summary>
     /// Creates a parser that shares an existing byte array (avoids an extra copy).
     /// </summary>
-    internal TtfParser(byte[] fontBytes, int faceIndex = 0, HashSet<int>? requestedCodepoints = null, bool parseAdvancedTables = true)
+    internal TtfParser(
+        byte[] fontBytes, int faceIndex = 0, HashSet<int>? requestedCodepoints = null, bool parseAdvancedTables = true,
+        IReadOnlyDictionary<string, float>? variationCoordinates = null)
     {
         _data = fontBytes;
         _requestedCodepoints = requestedCodepoints;
+        _variationCoordinates = variationCoordinates;
         IsValid = true;
 
         ParseTableDirectory(fontBytes, faceIndex);
@@ -99,9 +120,9 @@ internal class TtfParser
         if (!IsValid) return;
         if (parseAdvancedTables)
         {
+            ParseFvar(); // before GPOS: kerning at a variation instance needs the axes
             ParseKern();
             ParseGpos();
-            ParseFvar();
             DetectColorTables();
         }
     }
@@ -884,6 +905,12 @@ internal class TtfParser
         if (kernLookupIndices.Count == 0)
             return;
 
+        if (_variationCoordinates is { Count: > 0 } && VariationAxes is { Count: > 0 })
+        {
+            _kerningDeltas = ItemVariationDeltas.Create(
+                GetTableMemory(Tag('G', 'D', 'E', 'F')), GetTable(Tag('a', 'v', 'a', 'r')), VariationAxes, _variationCoordinates);
+        }
+
         // Parse LookupList
         var lookupList = From(table, lookupListOffset);
         if (lookupList.Length < 2)
@@ -1105,6 +1132,8 @@ internal class TtfParser
         var valueRecord1Size = ValueRecordSize(valueFormat1);
         var valueRecord2Size = ValueRecordSize(valueFormat2);
 
+        GposHasPairKerning |= posFormat is 1 or 2;
+
         if (posFormat == 1)
             ParsePairPosFormat1(subtable, coverageOffset, valueFormat1, valueRecord1Size, valueRecord2Size, pairs, resolver);
         else if (posFormat == 2)
@@ -1180,7 +1209,7 @@ internal class TtfParser
                     break;
 
                 // A zero record still claims its pair (it often cancels a later class kern).
-                var xAdvance = ReadXAdvanceFromValueRecord(pairSet.Slice(recOffset + 2), valueFormat1);
+                var xAdvance = ReadXAdvanceFromValueRecord(pairSet.Slice(recOffset + 2), valueFormat1, pairSet);
                 if (xAdvance == 0 && resolver == null)
                     continue;
 
@@ -1311,7 +1340,7 @@ internal class TtfParser
                 if (rightGlyphs == null && unlisted == null)
                     continue;
 
-                var xAdvance = ReadXAdvanceFromValueRecord(subtable.Slice((int)recordOffset), valueFormat1);
+                var xAdvance = ReadXAdvanceFromValueRecord(subtable.Slice((int)recordOffset), valueFormat1, subtable);
                 if (xAdvance == 0)
                     continue;
 
@@ -1343,7 +1372,7 @@ internal class TtfParser
     }
 
     /// <summary>Whether any first-glyph class kerns second-glyph class 0 by a non-zero XAdvance.</summary>
-    private static bool HasNonZeroClassZeroValue(
+    private bool HasNonZeroClassZeroValue(
         ReadOnlySpan<byte> subtable, int class1Count, int class2Count, int valueFormat1, int recordPairSize)
     {
         for (var c1 = 0; c1 < class1Count; c1++)
@@ -1351,7 +1380,7 @@ internal class TtfParser
             var recordOffset = 16 + (long)c1 * class2Count * recordPairSize;
             if (recordOffset + recordPairSize > subtable.Length)
                 break;
-            if (ReadXAdvanceFromValueRecord(subtable.Slice((int)recordOffset), valueFormat1) != 0)
+            if (ReadXAdvanceFromValueRecord(subtable.Slice((int)recordOffset), valueFormat1, subtable) != 0)
                 return true;
         }
         return false;
@@ -1569,23 +1598,46 @@ internal class TtfParser
     }
 
     /// <summary>
-    /// Extract XAdvance (bit 2, 0x0004) from a ValueRecord.
-    /// Count the set bits below bit 2 to find its byte offset.
+    /// The XAdvance (bit 2, 0x0004) of a ValueRecord, each field sitting after the fields of the
+    /// lower set bits. At a variation instance it includes the delta of the record's XAdvDevice
+    /// (bit 6, 0x0040) when that is a VariationIndex table, rounded as a static instance of the
+    /// font would store it; a record may carry the device alone. Device offsets count from
+    /// <paramref name="parent"/>: the PairSet of a format 1 record, the subtable of a format 2 one.
     /// </summary>
-    private static int ReadXAdvanceFromValueRecord(ReadOnlySpan<byte> record, int valueFormat)
+    private int ReadXAdvanceFromValueRecord(ReadOnlySpan<byte> record, int valueFormat, ReadOnlySpan<byte> parent)
     {
-        if ((valueFormat & 0x0004) == 0)
-            return 0;
+        var xAdvance = 0;
+        if ((valueFormat & 0x0004) != 0)
+        {
+            var byteOffset = ValueRecordSize(valueFormat & 0x0003);
+            if (byteOffset + 2 > record.Length)
+                return 0;
+            xAdvance = BinaryPrimitives.ReadInt16BigEndian(record.Slice(byteOffset));
+        }
 
-        // Count set bits below bit 2 (bits 0 and 1)
-        var fieldsBefore = 0;
-        if ((valueFormat & 0x0001) != 0) fieldsBefore++;
-        if ((valueFormat & 0x0002) != 0) fieldsBefore++;
+        if (_kerningDeltas == null || (valueFormat & 0x0040) == 0)
+            return xAdvance;
 
-        var byteOffset = fieldsBefore * 2;
-        if (byteOffset + 2 > record.Length)
-            return 0;
+        var deviceField = ValueRecordSize(valueFormat & 0x003F);
+        if (deviceField + 2 > record.Length)
+            return xAdvance;
 
-        return BinaryPrimitives.ReadInt16BigEndian(record.Slice(byteOffset));
+        // VariationIndex: deltaSetOuterIndex (2), deltaSetInnerIndex (2), deltaFormat (2) =
+        // 0x8000. Any other format is a Device table of per-ppem hinting tweaks, not variation.
+        // A zero offset is "no device".
+        var deviceOffset = BinaryPrimitives.ReadUInt16BigEndian(record.Slice(deviceField));
+        var device = From(parent, deviceOffset);
+        if (deviceOffset == 0 || device.Length < 6
+            || BinaryPrimitives.ReadUInt16BigEndian(device.Slice(4)) != 0x8000)
+            return xAdvance;
+
+        var delta = _kerningDeltas.GetDelta(
+            BinaryPrimitives.ReadUInt16BigEndian(device), BinaryPrimitives.ReadUInt16BigEndian(device.Slice(2)), out var cost);
+
+        // Charged, not checked: the record loops stop at their own next charge.
+        SpendGposWork(cost);
+
+        // Round half up, and stay within what a ValueRecord can hold.
+        return (int)Math.Clamp(Math.Floor(xAdvance + delta + 0.5), short.MinValue, short.MaxValue);
     }
 }

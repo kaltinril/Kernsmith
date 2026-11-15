@@ -5,9 +5,9 @@ using Shouldly;
 namespace KernSmith.Tests.Font;
 
 /// <summary>
-/// Holds <see cref="TtfFontReader"/>'s merged <see cref="FontInfo.KerningPairs"/> (kern then
-/// GPOS, later wins, first-insertion order) to a frozen copy of the original tuple-keyed
-/// dictionary merge, for every fixture font with and without subsetting.
+/// Holds <see cref="TtfFontReader"/>'s <see cref="FontInfo.KerningPairs"/> (GPOS pair kerning,
+/// else the kern table; later wins, first-insertion order) to a frozen copy of the original
+/// tuple-keyed dictionary merge, for every fixture font with and without subsetting.
 /// </summary>
 public sealed class KerningMergeEquivalenceTests
 {
@@ -43,7 +43,7 @@ public sealed class KerningMergeEquivalenceTests
     public void KernTableOverlappingGpos_MatchesReference(int seed)
     {
         // Roboto has no 'kern' table; add one holding some of its GPOS pairs (other values),
-        // repeats, and unrelated pairs, so both the overwrite and the insertion order are exercised.
+        // repeats, and unrelated pairs. GPOS kerns the font, so none of it may show (#312).
         var rng = new Random(seed);
         var roboto = File.ReadAllBytes(Path.Join(FixtureDir, "Roboto-Regular.ttf"));
         var gpos = new TtfParser(roboto, 0, new HashSet<int>(Enumerable.Range(0x20, 0xE0))).GposPairs;
@@ -70,7 +70,7 @@ public sealed class KerningMergeEquivalenceTests
         }
     }
 
-    private static byte[] KernTable(List<(int Left, int Right, int Value)> pairs)
+    internal static byte[] KernTable(List<(int Left, int Right, int Value)> pairs)
     {
         var bytes = new List<byte>();
         void U16(int v) { bytes.Add((byte)(v >> 8)); bytes.Add((byte)v); }
@@ -86,7 +86,9 @@ public sealed class KerningMergeEquivalenceTests
 
     /// <summary>
     /// The original merge, verbatim, over the resolved GPOS pairs the reader merges — except that
-    /// a glyph maps to all of its codepoints in ascending order, not only the lowest (#289).
+    /// a glyph maps to all of its codepoints in ascending order, not only the lowest (#289), and
+    /// that when GPOS has pair kerning the pairs only the kern table holds are dropped (#312):
+    /// the kern table then supplies neither pairs nor values, only its place in the order.
     /// </summary>
     private static List<KerningPair> ReferenceMerge(TtfParser parser)
     {
@@ -100,20 +102,33 @@ public sealed class KerningMergeEquivalenceTests
             list.Add(codepoint);
         }
 
-        var mergedPairs = new Dictionary<(int left, int right), int>();
-        foreach (var pair in parser.KernPairs.Concat(parser.GposKerningPairs))
+        var mergedPairs = Merge(parser.KernPairs.Concat(parser.GposKerningPairs));
+        if (parser.GposHasPairKerning)
         {
-            if (glyphToCodepoints.TryGetValue(pair.LeftCodepoint, out var leftCps) &&
-                glyphToCodepoints.TryGetValue(pair.RightCodepoint, out var rightCps))
-            {
-                foreach (var leftCp in leftCps)
-                {
-                    foreach (var rightCp in rightCps)
-                        mergedPairs[(leftCp, rightCp)] = pair.XAdvanceAdjustment;
-                }
-            }
+            var gposPairs = Merge(parser.GposKerningPairs);
+            foreach (var key in mergedPairs.Keys.Where(key => !gposPairs.ContainsKey(key)).ToList())
+                mergedPairs.Remove(key);
         }
 
         return mergedPairs.Select(kvp => new KerningPair(kvp.Key.left, kvp.Key.right, kvp.Value)).ToList();
+
+        Dictionary<(int left, int right), int> Merge(IEnumerable<KerningPair> pairs)
+        {
+            var merged = new Dictionary<(int left, int right), int>();
+            foreach (var pair in pairs)
+            {
+                if (glyphToCodepoints.TryGetValue(pair.LeftCodepoint, out var leftCps) &&
+                    glyphToCodepoints.TryGetValue(pair.RightCodepoint, out var rightCps))
+                {
+                    foreach (var leftCp in leftCps)
+                    {
+                        foreach (var rightCp in rightCps)
+                            merged[(leftCp, rightCp)] = pair.XAdvanceAdjustment;
+                    }
+                }
+            }
+
+            return merged;
+        }
     }
 }
