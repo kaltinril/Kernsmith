@@ -147,7 +147,7 @@ internal static class OutlineDistanceTransform
                 {
                     metric[dy * side + dx] = shape switch
                     {
-                        OutlineShape.Round => MathF.Sqrt(dx * dx + dy * dy),
+                        OutlineShape.Round => MathF.Sqrt(((float)dx * dx) + ((float)dy * dy)),
                         OutlineShape.Square => Math.Max(dx, dy),
                         _ => dx + dy,
                     };

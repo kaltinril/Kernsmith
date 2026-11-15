@@ -132,7 +132,7 @@ public sealed class OutlineEffectEquivalenceTests
                         int dx = Math.Abs(tx - qx), dy = Math.Abs(ty - qy);
                         var between = shape switch
                         {
-                            OutlineShape.Round => MathF.Sqrt(dx * dx + dy * dy),
+                            OutlineShape.Round => MathF.Sqrt(((float)dx * dx) + ((float)dy * dy)),
                             OutlineShape.Square => Math.Max(dx, dy),
                             _ => dx + dy,
                         };
