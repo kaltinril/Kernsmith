@@ -335,6 +335,10 @@ kernsmith benchmark-fonts --json
 
 ## list-rasterizers
 
+```bash
+kernsmith list-rasterizers
+```
+
 List every rasterizer backend: each line shows its availability on the current machine (`(default)`, `(available)` or `(not available)`), a platform note (`All platforms`, `Windows only`, or for FreeType `Windows, Linux x64, macOS, Android`), and, for available backends, their capabilities (`Color`, `Variable`, `SDF`, `MSDF`, `Vector Outline`, `Synthetic Bold`, `Synthetic Italic`, `Width Scale`, `Italic Angle`, `System Fonts`; `Grayscale` when none apply). Two more lines under each available backend list its anti-alias modes and hint levels.
 On Windows:
 
@@ -358,15 +362,7 @@ Available rasterizer backends:
                   Hint levels: none, light, normal
 ```
 
-```
-kernsmith list-rasterizers
-```
-
-FreeType is the default backend and is available on Windows, Linux x64, and macOS (not Linux arm64 -- use StbTrueType there; see the [platform support table](../../README.md#platform-support)). The GDI and DirectWrite backends are Windows-only alternatives.
-
-```bash
-kernsmith list-rasterizers
-```
+FreeType is the default backend and is available on Windows, Linux x64, macOS and Android (not Linux arm64 -- use StbTrueType there; see the [platform support table](../../README.md#platform-support)). The GDI and DirectWrite backends are Windows-only alternatives.
 
 ### Rasterizer Examples
 
@@ -374,13 +370,13 @@ kernsmith list-rasterizers
 # Use GDI for BMFont-parity rendering (Windows only)
 kernsmith generate -f font.ttf -s 32 --rasterizer gdi
 
-# Use FreeType for color/variable font support (cross-platform)
+# Use FreeType for color/variable font support (Windows, Linux x64, macOS)
 kernsmith generate -f font.ttf -s 32 --rasterizer freetype --color-font
 
 # KernSmith's own pure-C# rasterizer (experimental)
 kernsmith generate -f font.ttf -s 32 --rasterizer native
 
-# Default (FreeType, cross-platform)
+# Default (FreeType)
 kernsmith generate -f font.ttf -s 32
 ```
 
