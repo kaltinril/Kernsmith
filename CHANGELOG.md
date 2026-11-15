@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **CLI `list-rasterizers` is accurate about FreeType and prints every capability** (issue #321). FreeType's platform note is now `Windows, Linux x64, macOS, Android` instead of `All platforms` (it has no native library on Linux arm64, iOS, Mac Catalyst or Blazor WASM), the capability list gains `MSDF`, `Width Scale` and `Italic Angle`, and each available backend is followed by its supported anti-alias modes and hint levels.
+
 ### Fixed
 
 - **UI Export As now honours the Text/XML/Binary descriptor format** (issue #320). `MainViewModel.SaveAs()` always wrote a text `.fnt`; it now passes the format selected under Output Format to `BmFontResult.ToFile(path, format)`.

@@ -590,6 +590,57 @@ public class CliTests : IDisposable
     }
 
     [Fact]
+    public void ListRasterizers_FreeTypePlatformNote_NamesItsPlatforms()
+    {
+        // FreeType has no native library on Linux arm64, iOS, Mac Catalyst or Blazor WASM (#321).
+        var (exitCode, stdout, stderr) = RunCli("list-rasterizers");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        var freeType = ListRasterizersLine(stdout, "freetype");
+        freeType.ShouldNotContain("All platforms");
+        freeType.ShouldContain("Windows, Linux x64, macOS, Android", Case.Sensitive);
+        ListRasterizersLine(stdout, "stbtruetype").ShouldContain("All platforms", Case.Sensitive);
+        ListRasterizersLine(stdout, "native").ShouldContain("All platforms", Case.Sensitive);
+    }
+
+    [Fact]
+    public void ListRasterizers_PrintsMsdfWidthScaleAndItalicAngleCapabilities()
+    {
+        // Native is the only backend reporting SupportsMsdf/SupportsWidthScale/SupportsItalicAngle (#321).
+        var (exitCode, stdout, stderr) = RunCli("list-rasterizers");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        var native = ListRasterizersLine(stdout, "native");
+        native.ShouldContain("MSDF", Case.Sensitive);
+        native.ShouldContain("Width Scale", Case.Sensitive);
+        native.ShouldContain("Italic Angle", Case.Sensitive);
+
+        var stb = ListRasterizersLine(stdout, "stbtruetype");
+        stb.ShouldNotContain("MSDF");
+        stb.ShouldNotContain("Width Scale");
+        stb.ShouldNotContain("Italic Angle");
+    }
+
+    [Fact]
+    public void ListRasterizers_PrintsAntiAliasModesAndHintLevels()
+    {
+        // SupportedAntiAliasModes and SupportedHintLevels follow each available backend's line.
+        var (exitCode, stdout, stderr) = RunCli("list-rasterizers");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        var lines = stdout.Split('\n').Select(line => line.Trim()).ToList();
+        var native = lines.FindIndex(line => line.StartsWith("native ", StringComparison.Ordinal));
+        lines[native + 1].ShouldBe("Anti-alias:  none, grayscale, light, lcd");
+        lines[native + 2].ShouldBe("Hint levels: none, light, normal");
+        var stb = lines.FindIndex(line => line.StartsWith("stbtruetype ", StringComparison.Ordinal));
+        lines[stb + 2].ShouldBe("Hint levels: none");
+    }
+
+    private static string ListRasterizersLine(string stdout, string backend) =>
+        stdout.Split('\n').Select(line => line.TrimEnd())
+            .Single(line => line.TrimStart().StartsWith(backend + " ", StringComparison.Ordinal));
+
+    [Fact]
     public void Generate_NativeRasterizer_ProducesFntAndPng()
     {
         // Arrange
