@@ -14,8 +14,8 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// </summary>
 /// <remarks>
 /// Color glyphs come out as straight (non-premultiplied) RGBA, which is what the atlas, the PNG
-/// encoder and <c>AtlasPage.GetPremultipliedRgbaPixelData</c> assume. FreeType's color path hands
-/// back premultiplied values instead, so comparisons against it premultiply Native's output first.
+/// encoder and <c>AtlasPage.GetPremultipliedRgbaPixelData</c> assume. Comparisons against FreeType
+/// premultiply both sides first.
 /// </remarks>
 public class ColorLayerRenderingTests
 {
@@ -247,7 +247,7 @@ public class ColorLayerRenderingTests
         var reference = freeType.RasterizeGlyph('O', options)!;
 
         reference.Format.ShouldBe(PixelFormat.Rgba32);
-        ColorComparison.MinimumChannelSsim(ColorComparison.Premultiply(mine), reference).ShouldBeGreaterThan(0.95);
+        ColorComparison.MinimumChannelSsim(ColorComparison.Premultiply(mine), ColorComparison.Premultiply(reference)).ShouldBeGreaterThan(0.95);
     }
 
     // ---- Blank and invalid layers ----------------------------------------------------------

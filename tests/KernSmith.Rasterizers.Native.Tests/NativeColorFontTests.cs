@@ -18,8 +18,8 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// coverage. Bitmap color glyphs (CBDT/sbix) are in NativeBitmapEmojiTests and NativeBitmapGlyphTests.
 /// </summary>
 /// <remarks>
-/// FreeType is compared with hinting off (Native has no hinter) and returns premultiplied RGBA,
-/// so Native's straight RGBA is premultiplied before scoring.
+/// FreeType is compared with hinting off (Native has no hinter). Both return straight RGBA, and
+/// both are premultiplied before scoring.
 /// </remarks>
 public class NativeColorFontTests
 {
@@ -72,7 +72,7 @@ public class NativeColorFontTests
 
             // Each channel separately, so a wrong palette color or a swapped channel cannot
             // hide behind a matching silhouette.
-            var scores = ColorComparison.ChannelSsim(ColorComparison.Premultiply(mine), reference);
+            var scores = ColorComparison.ChannelSsim(ColorComparison.Premultiply(mine), ColorComparison.Premultiply(reference));
             if (scores.Min() < 0.95)
             {
                 failures.Append(CultureInfo.InvariantCulture,

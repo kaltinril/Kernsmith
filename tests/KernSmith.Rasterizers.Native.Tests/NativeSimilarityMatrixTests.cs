@@ -38,8 +38,8 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// divided by three before comparing.</item>
 /// <item>None: FreeType's mono renderer samples pixel centres, Native thresholds coverage at 50%;
 /// both run dropout control, so edge pixels flip and single-pixel strokes shift.</item>
-/// <item>Color: FreeType's color glyphs are premultiplied, Native's straight, so Native's are
-/// premultiplied first and every channel is scored (the worst channel counts).</item>
+/// <item>Color: both backends' color glyphs are straight; both are premultiplied first and every
+/// channel is scored (the worst channel counts).</item>
 /// </list>
 /// </remarks>
 public class NativeSimilarityMatrixTests
@@ -268,7 +268,7 @@ public class NativeSimilarityMatrixTests
     private static double Ratio(int count, int of) => of == 0 ? 1 : (double)count / of;
 
     /// <summary>SSIM of two glyphs on a canvas covering both, anchored at the pen. RGBA is scored
-    /// per channel (Native premultiplied first) and LCD per subpixel plane; the result is the
+    /// per channel (both premultiplied first) and LCD per subpixel plane; the result is the
     /// worst channel for color and the mean of R, G and B for LCD.</summary>
     private static double Score(RasterizedGlyph mine, RasterizedGlyph theirs, bool lcdReference)
     {
@@ -282,7 +282,7 @@ public class NativeSimilarityMatrixTests
         }
 
         if (mine.Format == PixelFormat.Rgba32)
-            return ColorComparison.MinimumChannelSsim(ColorComparison.Premultiply(mine), theirs);
+            return ColorComparison.MinimumChannelSsim(ColorComparison.Premultiply(mine), ColorComparison.Premultiply(theirs));
 
         return PlaneSsim(Plane(mine, 0, 1), Plane(theirs, 0, 1));
     }

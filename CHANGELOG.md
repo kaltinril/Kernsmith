@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **FreeType color glyphs are now straight alpha.** FreeType returns CBDT/sbix bitmaps and COLR layers premultiplied, but KernSmith treats RGBA glyphs as straight alpha, so anti-aliased color edges came out too dark and `GetPremultipliedRgbaPixelData()` premultiplied them a second time. FreeType color font output changes on those edge pixels, so regenerate your fonts and check them.
+
 ## [0.28.0] - 2026-11-15
 
 No public API changes. Outline and kerning output can change, so regenerate your fonts and check them.
