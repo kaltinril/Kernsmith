@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using KernSmith.Rasterizer;
 using KernSmith.Rasterizers.FreeType;
 using Shouldly;
@@ -143,6 +144,81 @@ public class FreeTypeGlyphMetricsTests
 
         foreach (var cp in " AgW%!")
             rasterizer.GetGlyphMetrics(cp, options).ShouldBe(rasterizer.RasterizeGlyph(cp, options)!.Metrics, $"'{cp}'");
+    }
+
+    [Theory]
+    [InlineData(true, false, false)]
+    [InlineData(false, false, false)]
+    [InlineData(true, true, false)]
+    [InlineData(true, false, true)]
+    public void Mono_BlankGlyph_HasAnEmptyBox_LikeEveryOtherMode(bool hinting, bool bold, bool italic)
+    {
+        using var rasterizer = new FreeTypeRasterizer();
+        rasterizer.LoadFont(LoadRoboto());
+
+        foreach (var size in new[] { 13f, 24f, 37f })
+        {
+            var mono = new RasterOptions
+            {
+                Size = size, Dpi = 72, AntiAlias = AntiAliasMode.None, EnableHinting = hinting, Bold = bold, Italic = italic
+            };
+            var gray = mono with { AntiAlias = AntiAliasMode.Grayscale };
+
+            var rendered = rasterizer.RasterizeGlyph(' ', mono)!;
+            var reference = rasterizer.RasterizeGlyph(' ', gray)!;
+
+            (rendered.Width, rendered.Height).ShouldBe((0, 0), $"size {size}");
+            rendered.BitmapData.ShouldBeEmpty();
+            (rendered.Metrics.BearingX, rendered.Metrics.BearingY, rendered.Metrics.Width, rendered.Metrics.Height)
+                .ShouldBe((reference.Metrics.BearingX, reference.Metrics.BearingY, 0, 0), $"size {size}");
+            rasterizer.GetGlyphMetrics(' ', mono).ShouldBe(rendered.Metrics, $"size {size}");
+        }
+    }
+
+    [Fact]
+    public void Mono_ColrGlyphWithAnEmptyBaseOutline_KeepsItsLayers()
+    {
+        // A COLR base glyph may have no outline of its own, so a blank-outline check must not
+        // empty a glyph FreeType drew from its layers.
+        var fontData = WithEmptyGlyph(
+            File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Color", "BungeeColor-Regular.ttf")), 'A');
+        using var rasterizer = new FreeTypeRasterizer();
+        rasterizer.LoadFont(fontData);
+        var options = new RasterOptions { Size = 32, Dpi = 72, ColorFont = true, AntiAlias = AntiAliasMode.None };
+
+        rasterizer.RasterizeGlyph('A', options with { ColorFont = false })!.Width.ShouldBe(0, "the base outline must be empty");
+        var glyph = rasterizer.RasterizeGlyph('A', options)!;
+
+        glyph.Format.ShouldBe(PixelFormat.Rgba32);
+        glyph.Width.ShouldBeGreaterThan(1);
+        glyph.Height.ShouldBeGreaterThan(1);
+        rasterizer.GetGlyphMetrics('A', options).ShouldBe(glyph.Metrics);
+    }
+
+    /// <summary>A copy of a TrueType font whose <c>loca</c> gives the codepoint's glyph no data.</summary>
+    private static byte[] WithEmptyGlyph(byte[] font, int codepoint)
+    {
+        var copy = (byte[])font.Clone();
+        var glyph = new KernSmith.Font.TtfParser(font).CmapTable[codepoint];
+
+        int TableOffset(string tag)
+        {
+            int tables = BinaryPrimitives.ReadUInt16BigEndian(copy.AsSpan(4));
+            for (var i = 0; i < tables; i++)
+            {
+                var record = 12 + (i * 16);
+                if (System.Text.Encoding.ASCII.GetString(copy, record, 4) == tag)
+                    return (int)BinaryPrimitives.ReadUInt32BigEndian(copy.AsSpan(record + 8));
+            }
+            throw new InvalidOperationException($"no {tag} table");
+        }
+
+        var loca = TableOffset("loca");
+        if (BinaryPrimitives.ReadInt16BigEndian(copy.AsSpan(TableOffset("head") + 50)) == 0)
+            BinaryPrimitives.WriteUInt16BigEndian(copy.AsSpan(loca + (glyph * 2)), BinaryPrimitives.ReadUInt16BigEndian(copy.AsSpan(loca + ((glyph + 1) * 2))));
+        else
+            BinaryPrimitives.WriteUInt32BigEndian(copy.AsSpan(loca + (glyph * 4)), BinaryPrimitives.ReadUInt32BigEndian(copy.AsSpan(loca + ((glyph + 1) * 4))));
+        return copy;
     }
 
     [Fact]

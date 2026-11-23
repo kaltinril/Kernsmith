@@ -236,6 +236,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
             EnsureSdfSpread(options.SdfSpread);
 
         var renderMode = RenderModeFor(options);
+        var blankOutline = IsBlankOutline(slot);
 
         // Render the glyph to bitmap. Skip rendering for bitmap-only glyphs
         // (e.g., CBDT/CBLC color emoji) that are already rasterized after FT_Load_Glyph.
@@ -258,6 +259,16 @@ public sealed class FreeTypeRasterizer : IRasterizer
         ref var metrics = ref slot->metrics;
         var bearingX = slot->bitmap_left;
         var bearingY = slot->bitmap_top;
+
+        // FreeType presets a 1x1 mono bitmap for an empty outline; a blank glyph has no box.
+        if (blankOutline && bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_MONO)
+        {
+            bitmapWidth = 0;
+            bitmapHeight = 0;
+            pitch = 0;
+            bearingX = 0;
+            bearingY = 0;
+        }
 
         // Copy bitmap data.
         byte[] bitmapData;
@@ -369,6 +380,10 @@ public sealed class FreeTypeRasterizer : IRasterizer
             Fractional = fractional,
         };
     }
+
+    /// <summary>True for a loaded outline glyph with no points, such as a space.</summary>
+    private static unsafe bool IsBlankOutline(FT_GlyphSlotRec_* slot) =>
+        slot->format == FT_Glyph_Format_.FT_GLYPH_FORMAT_OUTLINE && slot->outline.n_points == 0;
 
     /// <summary>
     /// The FreeType render mode for <paramref name="options"/>. FT_RENDER_MODE_SDF produces an
@@ -785,6 +800,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
             || options.ColorFont
             || renderMode is FT_Render_Mode_.FT_RENDER_MODE_MONO or FT_Render_Mode_.FT_RENDER_MODE_LCD)
         {
+            var blankOutline = IsBlankOutline(slot);
             if (slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_BITMAP)
             {
                 if (options.Sdf)
@@ -794,6 +810,10 @@ public sealed class FreeTypeRasterizer : IRasterizer
                 if (error != FT_Error.FT_Err_Ok)
                     throw new FreeTypeException(error);
             }
+
+            // The empty box RasterizeGlyph reports for a blank glyph's 1x1 mono preset.
+            if (blankOutline && slot->bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_MONO)
+                return new Font.Models.GlyphMetrics(0, 0, advance, 0, 0);
 
             var bitmapWidth = (int)slot->bitmap.width;
             var bitmapRows = (int)slot->bitmap.rows;
