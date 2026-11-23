@@ -99,7 +99,7 @@ public class EffectsPanel : Panel
         UiFactory.BindCheckBox(hintCheck, _effects, nameof(EffectsViewModel.Hinting),
             () => _effects.Hinting, v => _effects.Hinting = v);
         leftCol.Children.Add(hintCheck.Visual);
-        TooltipService.SetTooltip(hintCheck, "Font hinting for sharper small sizes. The Native backend applies its own auto-hinter (Normal: both axes, fading out by 40 ppem) in every anti-alias mode; no TrueType bytecode hinting.");
+        TooltipService.SetTooltip(hintCheck, "Font hinting for sharper small sizes. The Native backend applies its own auto-hinter (Normal: both axes, fading out by 40 ppem) in every anti-alias mode except LCD, and never for distance fields; no TrueType bytecode hinting.");
 
         // Right column: Synthetic, Synthetic
         var rightCol = new ContainerRuntime();

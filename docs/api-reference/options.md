@@ -84,7 +84,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `FillColorR` / `FillColorG` / `FillColorB` | `byte` | `255` | Body fill color channels. A non-white fill tints the default body layer and composites even when no other effects are present. Ignored when a gradient is set. |
+| `FillColorR` / `FillColorG` / `FillColorB` | `byte` | `255` | Body fill color channels. A non-white fill tints the default body layer and composites even when no other effects are present. Ignored when a gradient is set. A non-default fill (including `FillColorA`) throws `InvalidOperationException` with `ChannelPacking`, unless a custom `Channels` layout or `TargetRegion` bypasses the packer, and over real LCD glyphs (`AntiAlias = Lcd` on FreeType or Native). |
 | `FillColorA` | `byte` | `255` | Body fill alpha; multiplies the glyph mask alpha. `255` = opaque (legacy behavior). |
 
 ## Atlas and texture

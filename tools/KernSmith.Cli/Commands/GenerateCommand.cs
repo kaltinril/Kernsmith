@@ -95,6 +95,9 @@ internal sealed class GenerateCommand
             // Dry run
             if (options.DryRun)
             {
+                // Generated in memory and discarded, so a dry run refuses exactly what a real
+                // run refuses, with the same error and exit code.
+                GenerateFont(options, PrepareGeneration(options, characters, fontData: null), fontData: null);
                 PrintDryRun(options, characters);
                 return ExitCodes.Success;
             }
@@ -411,19 +414,8 @@ internal sealed class GenerateCommand
     /// <returns>A <see cref="JobResult"/> containing the output path, elapsed time, and optional metrics.</returns>
     internal static JobResult RunJob(CliOptions options, CharacterSet? characters = null, byte[]? fontData = null)
     {
-        // Validate
-        if (options.FontPath == null && options.SystemFontName == null)
-            throw new ArgumentException("--font is required.");
-        if (options.Size == null)
-            throw new ArgumentException("--size is required.");
-        if (options.FontPath != null && fontData == null && !File.Exists(options.FontPath))
-            throw new FileNotFoundException($"Font file not found: {options.FontPath}", options.FontPath);
-
-        characters ??= BuildCharacterSet(options);
-
-        var genOptions = BuildGenOptions(options, characters);
-        if (options.InstanceName != null)
-            ApplyNamedInstance(genOptions, options, fontData);
+        var genOptions = PrepareGeneration(options, characters, fontData);
+        characters = genOptions.Characters;
 
         // Determine output path
         var outputPath = ResolveOutputPath(options);
@@ -436,13 +428,7 @@ internal sealed class GenerateCommand
 
         var sw = Stopwatch.StartNew();
 
-        BmFontResult result;
-        if (fontData != null)
-            result = BmFont.Generate(fontData, genOptions);
-        else if (options.SystemFontName != null)
-            result = BmFont.GenerateFromSystem(options.SystemFontName, genOptions);
-        else
-            result = BmFont.Generate(options.FontPath!, genOptions);
+        var result = GenerateFont(options, genOptions, fontData);
 
         ConsoleOutput.WriteStdout($"Packing into atlas ({result.Pages.Count} page(s))...");
         ConsoleOutput.WriteStdout($"Writing output to {outputPath}...");
@@ -459,6 +445,33 @@ internal sealed class GenerateCommand
             ElapsedMs = sw.ElapsedMilliseconds,
             Metrics = options.ShowProfile && result.Metrics != null ? result.Metrics.ToString() : null,
         };
+    }
+
+    /// <summary>Validates the job's required options and builds its generator options.</summary>
+    private static FontGeneratorOptions PrepareGeneration(CliOptions options, CharacterSet? characters, byte[]? fontData)
+    {
+        if (options.FontPath == null && options.SystemFontName == null)
+            throw new ArgumentException("--font is required.");
+        if (options.Size == null)
+            throw new ArgumentException("--size is required.");
+        if (options.FontPath != null && fontData == null && !File.Exists(options.FontPath))
+            throw new FileNotFoundException($"Font file not found: {options.FontPath}", options.FontPath);
+
+        var genOptions = BuildGenOptions(options, characters ?? BuildCharacterSet(options));
+        if (options.InstanceName != null)
+            ApplyNamedInstance(genOptions, options, fontData);
+
+        return genOptions;
+    }
+
+    /// <summary>Generates the font in memory from the job's font source.</summary>
+    private static BmFontResult GenerateFont(CliOptions options, FontGeneratorOptions genOptions, byte[]? fontData)
+    {
+        if (fontData != null)
+            return BmFont.Generate(fontData, genOptions);
+        if (options.SystemFontName != null)
+            return BmFont.GenerateFromSystem(options.SystemFontName, genOptions);
+        return BmFont.Generate(options.FontPath!, genOptions);
     }
 
     /// <summary>

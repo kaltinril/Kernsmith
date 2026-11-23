@@ -230,6 +230,11 @@ internal sealed class PreparedRasterization : IDisposable
             if (multiChannel)
                 RejectMultiChannelIncompatibilities(options);
 
+            // Guard: the channel packer skips RGBA glyphs, so anything that makes one leaves a
+            // blank cell. Size-only callers come through here too.
+            if (ReachesChannelPacker(options))
+                RejectRgbaChannelPacking(options);
+
             // Guard: a vector outline is a coverage layer composited under the body, which means
             // nothing next to a distance field's encoded distances.
             if (options.OutlineMode == OutlineMode.Vector && options.Outline > 0 && sdfMode != SdfMode.None)
@@ -392,9 +397,7 @@ internal sealed class PreparedRasterization : IDisposable
             var effects = BuildEffects(options);
             // A non-default (non-opaque-white) fill color must tint the body layer even when no
             // other effects are present, so it has to trigger compositing on its own.
-            var hasFillTint = options.FillColorR != 255 || options.FillColorG != 255
-                || options.FillColorB != 255 || options.FillColorA != 255;
-            var hasEffects = effects.Count > 0 || hasFillTint;
+            var hasEffects = effects.Count > 0 || HasFillTint(options);
             List<IGlyphPostProcessor>? activePostProcessors = null;
             if (options.PostProcessors != null)
             {
@@ -490,47 +493,112 @@ internal sealed class PreparedRasterization : IDisposable
     }
 
     /// <summary>
+    /// True when glyphs are headed for <c>ChannelPackedAtlasBuilder</c>: a custom channel layout
+    /// or a target region builds its page without that builder.
+    /// </summary>
+    private static bool ReachesChannelPacker(FontGeneratorOptions options) =>
+        options.ChannelPacking
+        && !BmFont.ShouldApplyChannelConfig(options)
+        && options.TargetRegion is null;
+
+    /// <summary>True for any fill other than the default opaque white.</summary>
+    private static bool HasFillTint(FontGeneratorOptions options) =>
+        options.FillColorR != 255 || options.FillColorG != 255
+        || options.FillColorB != 255 || options.FillColorA != 255;
+
+    /// <summary>
+    /// Throws for options that hand the channel packer an RGBA glyph: a fill composites every
+    /// glyph to RGBA (a single-channel distance field included), and an RGBA custom glyph already
+    /// is one. An empty custom glyph has no pixels to lose.
+    /// </summary>
+    private static void RejectRgbaChannelPacking(FontGeneratorOptions options)
+    {
+        if (HasFillTint(options))
+            throw new InvalidOperationException(
+                "Channel packing cannot be combined with a fill color. " +
+                "A filled glyph is RGBA and cannot be packed into individual channels.");
+
+        if (options.CustomGlyphs is null)
+            return;
+
+        foreach (var (codepoint, custom) in options.CustomGlyphs)
+        {
+            if (custom is { Format: PixelFormat.Rgba32, Width: > 0, Height: > 0, PixelData.Length: > 0 })
+                throw new InvalidOperationException(
+                    $"Channel packing cannot be combined with an RGBA custom glyph (U+{codepoint:X4}). " +
+                    "Supply it as PixelFormat.Grayscale8, or turn channel packing off.");
+        }
+    }
+
+    /// <summary>
     /// True when glyphs are headed for <c>ChannelPackedAtlasBuilder</c> under a negotiated LCD
-    /// render. A distance field wins over LCD, and a custom channel layout or a target region
-    /// builds its page without that builder.
+    /// render. A distance field wins over LCD.
     /// </summary>
     private bool PacksLcd =>
-        Options.ChannelPacking
+        ReachesChannelPacker(Options)
+        && _rasterOptions.AntiAlias == AntiAliasMode.Lcd
+        && Options.EffectiveSdfMode == SdfMode.None;
+
+    /// <summary>
+    /// True when a fill would be applied to a negotiated LCD render, whose RGB is subpixel
+    /// coverage the fill cannot tint. A distance field wins over LCD, and a gradient is the body
+    /// layer, so the fill is not used under one.
+    /// </summary>
+    private bool FillsLcd =>
+        HasFillTint(Options)
         && _rasterOptions.AntiAlias == AntiAliasMode.Lcd
         && Options.EffectiveSdfMode == SdfMode.None
-        && !BmFont.ShouldApplyChannelConfig(Options)
-        && Options.TargetRegion is null;
+        && !_effects.Exists(e => e.ZOrder == 2);
 
     /// <summary>
     /// True for a backend glyph with LCD pixels. The format decides, not the requested mode: a
     /// bitmap-only face stays single-channel under LCD and packs normally, and a custom glyph
-    /// replaces the backend's.
+    /// replaces the backend's. With <see cref="FontGeneratorOptions.ColorFont"/> on, a color glyph
+    /// is RGBA too; <see cref="RendersSameWithoutColor"/> tells the two apart.
     /// </summary>
     private bool IsLcdInk(RasterizedGlyph glyph) =>
         glyph.Format == PixelFormat.Rgba32
         && glyph.Width > 0 && glyph.Height > 0
-        && Options.CustomGlyphs?.ContainsKey(glyph.Codepoint) != true;
-
-    private static InvalidOperationException LcdChannelPackingError() => new(
-        "Channel packing cannot be combined with LCD anti-aliasing. " +
-        "LCD glyphs are RGBA and cannot be packed into individual channels.");
+        && Options.CustomGlyphs?.ContainsKey(glyph.Codepoint) != true
+        && (!_rasterOptions.ColorFont || RendersSameWithoutColor(glyph));
 
     /// <summary>
-    /// Rejects what <see cref="RasterizeAndProcess"/> would reject for LCD channel packing, for a
-    /// caller that only measures. Stops at the first LCD glyph, and renders nothing unless the
-    /// options combine the two.
+    /// True when turning color off leaves the glyph's pixels unchanged, so it was drawn from its
+    /// outline: a color face can mix color glyphs with plain ones, which render as LCD. RGBA alone
+    /// cannot separate them, and no backend reports which it drew.
     /// </summary>
-    internal void RejectLcdChannelPacking(IEnumerable<int> codepoints)
+    private bool RendersSameWithoutColor(RasterizedGlyph glyph) =>
+        _rasterizer.RasterizeGlyph(glyph.Codepoint, _effectiveRasterOptions with { ColorFont = false }) is
+        { Format: PixelFormat.Rgba32 } plain
+        && plain.Width == glyph.Width && plain.Height == glyph.Height
+        && plain.BitmapData.AsSpan().SequenceEqual(glyph.BitmapData);
+
+    /// <summary>The error for an LCD glyph under <see cref="PacksLcd"/> or <see cref="FillsLcd"/>.</summary>
+    private InvalidOperationException LcdConflictError() => PacksLcd
+        ? new InvalidOperationException(
+            "Channel packing cannot be combined with LCD anti-aliasing. " +
+            "LCD glyphs are RGBA and cannot be packed into individual channels.")
+        : new InvalidOperationException(
+            "A fill color cannot be combined with LCD anti-aliasing. LCD glyphs hold subpixel " +
+            "coverage in their RGB channels, which a fill cannot tint. Use another anti-alias mode " +
+            "or the default white fill.");
+
+    /// <summary>
+    /// Rejects what <see cref="RasterizeAndProcess"/> would reject for LCD glyphs, for a caller
+    /// that only measures. Stops at the first LCD glyph, and renders nothing unless the options
+    /// combine LCD with channel packing or a fill.
+    /// </summary>
+    internal void RejectLcdConflicts(IEnumerable<int> codepoints)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!PacksLcd)
+        if (!PacksLcd && !FillsLcd)
             return;
 
         foreach (var codepoint in codepoints)
         {
             if (_rasterizer.RasterizeGlyph(codepoint, _effectiveRasterOptions) is { } glyph && IsLcdInk(glyph))
-                throw LcdChannelPackingError();
+                throw LcdConflictError();
         }
     }
 
@@ -597,8 +665,8 @@ internal sealed class PreparedRasterization : IDisposable
 
         var glyphs = _rasterizer.RasterizeAll(codepointList, _effectiveRasterOptions).ToList();
 
-        if (PacksLcd && glyphs.Exists(IsLcdInk))
-            throw LcdChannelPackingError();
+        if ((PacksLcd || FillsLcd) && glyphs.Exists(IsLcdInk))
+            throw LcdConflictError();
 
         // The fractional metrics are taken from the backend's glyphs now, before any stage
         // rebuilds them (the height stretch and every effect construct new glyphs without the
@@ -970,7 +1038,7 @@ internal sealed class PreparedRasterization : IDisposable
             conflict = "channel packing";
         else if (HasAnyEffects(options))
             conflict = "effects (outline, gradient, shadow)";
-        else if (options.FillColorR != 255 || options.FillColorG != 255 || options.FillColorB != 255 || options.FillColorA != 255)
+        else if (HasFillTint(options))
             conflict = "a fill color";
         else if (BmFont.ShouldApplyChannelConfig(options))
             conflict = "a custom channel configuration";

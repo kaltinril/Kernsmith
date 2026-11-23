@@ -26,6 +26,7 @@ public class MainViewModel : ViewModel
     private readonly SessionService _sessionService;
     private readonly KernSmithGame _game;
     private BmFontResult? _lastResult;
+    private string? _lastGenerationError;
     private CancellationTokenSource? _autoRegenCts;
 
     public FontConfigViewModel FontConfig { get => Get<FontConfigViewModel>(); set => Set(value); }
@@ -229,7 +230,7 @@ public class MainViewModel : ViewModel
         var validationError = ValidateBeforeGenerate();
         if (validationError != null)
         {
-            StatusBar.SetError(validationError);
+            FailGeneration(validationError);
             return;
         }
 
@@ -242,6 +243,7 @@ public class MainViewModel : ViewModel
             var request = BuildGenerationRequest(FontConfig, AtlasConfig, Effects, CharacterGrid);
 
             _lastResult = await _generationService.GenerateAsync(request);
+            _lastGenerationError = null;
 
             sw.Stop();
 
@@ -267,24 +269,35 @@ public class MainViewModel : ViewModel
         {
             sw.Stop();
             const string msg = "Glyphs too large for max texture size. Try reducing font size or increasing max atlas dimensions.";
-            _game.RunOnMainThread(() =>
-            {
-                StatusBar.SetError(msg);
-                ErrorDialog.Show("Atlas Packing Error", msg);
-            });
+            FailGeneration(msg, () => ErrorDialog.Show("Atlas Packing Error", msg));
         }
         catch (Exception ex) when (ex is BmFontException or InvalidOperationException)
         {
             sw.Stop();
-            var msg = ex.Message;
-            _game.RunOnMainThread(() => StatusBar.SetError(msg));
+            FailGeneration(ex.Message);
         }
         catch (Exception ex)
         {
             sw.Stop();
-            var msg = ex.Message;
-            _game.RunOnMainThread(() => StatusBar.SetError($"Unexpected error: {msg}"));
+            FailGeneration($"Unexpected error: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Records a failed generation. The previous result no longer matches the settings, so it is
+    /// dropped: Export cannot write it, and the preview and status bar stop showing it.
+    /// </summary>
+    private void FailGeneration(string message, Action? thenOnMainThread = null)
+    {
+        _lastResult = null;
+        _lastGenerationError = message;
+        _game.RunOnMainThread(() =>
+        {
+            Preview.Clear();
+            StatusBar.ClearResultInfo();
+            StatusBar.SetError(message);
+            thenOnMainThread?.Invoke();
+        });
     }
 
     /// <summary>
@@ -423,24 +436,9 @@ public class MainViewModel : ViewModel
     /// </summary>
     public async void SaveAs()
     {
-        if (_lastResult == null)
-        {
-            var validationError = ValidateBeforeGenerate();
-            if (validationError != null)
-            {
-                StatusBar.SetError(validationError);
-                return;
-            }
-
-            StatusBar.StatusText = "Generating before export...";
-            await GenerateAsync();
-
-            if (_lastResult == null)
-            {
-                StatusBar.SetError("Generation failed — cannot export.");
-                return;
-            }
-        }
+        var exportResult = await PrepareExportAsync();
+        if (exportResult == null)
+            return;
 
         var initialDir = _sessionService.State.LastOutputDir;
         using var dialog = new NativeFileDialog();
@@ -451,7 +449,7 @@ public class MainViewModel : ViewModel
         {
             try
             {
-                var basePath = ExportResult(_lastResult!, path, AtlasConfig);
+                var basePath = ExportResult(exportResult, path, AtlasConfig);
 
                 var dir = Path.GetDirectoryName(path);
                 if (!string.IsNullOrEmpty(dir))
@@ -464,6 +462,37 @@ public class MainViewModel : ViewModel
                 StatusBar.SetError($"Export failed: {ex.Message}");
             }
         }
+    }
+
+    /// <summary>
+    /// The result <see cref="SaveAs"/> would write, generating first when there is none. Null,
+    /// with the reason in the status bar, when there is nothing valid to export.
+    /// </summary>
+    public async Task<BmFontResult?> PrepareExportAsync()
+    {
+        if (_lastResult != null)
+            return _lastResult;
+
+        var validationError = ValidateBeforeGenerate();
+        if (validationError != null)
+        {
+            StatusBar.SetError(validationError);
+            return null;
+        }
+
+        StatusBar.StatusText = "Generating before export...";
+        await GenerateAsync();
+
+        var result = _lastResult;
+        if (result == null)
+        {
+            // Queued, so it lands after the error GenerateAsync queued instead of being replaced by it.
+            var reason = _lastGenerationError;
+            _game.RunOnMainThread(() => StatusBar.SetError(
+                reason is null ? "Generation failed — cannot export." : $"Cannot export: {reason}"));
+        }
+
+        return result;
     }
 
     /// <summary>

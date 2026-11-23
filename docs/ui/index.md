@@ -175,6 +175,8 @@ Once you have generated a font you are happy with:
    - `basename.fnt` -- BMFont descriptor file (in the format selected under Output Format)
    - `basename_0.png`, `basename_1.png`, etc. -- Atlas page textures
 
+If the last generation failed, the preview clears and Export is refused with the reason in the status bar, so an earlier font is never written for settings that no longer produce it.
+
 ## Saving and Loading Projects
 
 ### Save Project

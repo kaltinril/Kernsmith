@@ -16,6 +16,13 @@ internal static unsafe class FreeTypeNative
     public const int FT_LOAD_COLOR = 1 << 20;
 
     /// <summary>
+    /// FT_LOAD_NO_SVG flag (1 &lt;&lt; 24). Ignores a glyph's OT-SVG document. FreeType renders
+    /// SVG only through hooks an application installs, and KernSmith installs none, so without
+    /// this <see cref="FT_LOAD_COLOR"/> loads such a glyph into a slot that cannot be rendered.
+    /// </summary>
+    public const int FT_LOAD_NO_SVG = 1 << 24;
+
+    /// <summary>
     /// FT_LOAD_NO_HINTING flag (1 &lt;&lt; 1 = 2). Disables TrueType hinting.
     /// </summary>
     public const int FT_LOAD_NO_HINTING = 1 << 1;

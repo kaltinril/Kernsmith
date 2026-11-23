@@ -34,14 +34,25 @@ public sealed class FontCache
         _cache[key] = fontData;
     }
 
-    /// <summary>Retrieves cached font data by key. Throws if the key is not cached.</summary>
+    /// <summary>
+    /// Retrieves cached font data by key, or by any spelling of a path given to
+    /// <see cref="LoadFile"/>. Throws if the key is not cached.
+    /// </summary>
     public byte[] Get(string key) =>
+        TryGet(key, out var data)
+            ? data
+            : throw new KeyNotFoundException($"Font not cached: {key}");
+
+    /// <summary>The data stored under exactly this key: a system font family is never a path.</summary>
+    internal byte[] GetByExactKey(string key) =>
         _cache.TryGetValue(key, out var data)
             ? data
             : throw new KeyNotFoundException($"Font not cached: {key}");
 
-    /// <summary>Returns true if the specified key exists in the cache.</summary>
-    public bool Contains(string key) => _cache.ContainsKey(key);
+    /// <summary>
+    /// Returns true if the key is cached, or is any spelling of a path given to <see cref="LoadFile"/>.
+    /// </summary>
+    public bool Contains(string key) => TryGet(key, out _);
 
     /// <summary>Number of fonts currently in the cache.</summary>
     public int Count => _cache.Count;
@@ -49,6 +60,26 @@ public sealed class FontCache
     /// <summary>Removes all entries from the cache.</summary>
     public void Clear() => _cache.Clear();
 
-    /// <summary>Attempts to retrieve cached font data. Returns true if found.</summary>
-    public bool TryGet(string key, out byte[] fontData) => _cache.TryGetValue(key, out fontData!);
+    /// <summary>
+    /// Attempts to retrieve cached font data by key, or by any spelling of a path given to
+    /// <see cref="LoadFile"/>. Returns true if found.
+    /// </summary>
+    public bool TryGet(string key, out byte[] fontData) =>
+        _cache.TryGetValue(key, out fontData!)
+        || (TryGetFullPath(key, out var fullPath) && _cache.TryGetValue(fullPath, out fontData!));
+
+    /// <summary>The key as <see cref="LoadFile"/> stores it; false for a key that cannot be a path.</summary>
+    private static bool TryGetFullPath(string key, out string fullPath)
+    {
+        try
+        {
+            fullPath = Path.GetFullPath(key);
+            return true;
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            fullPath = key;
+            return false;
+        }
+    }
 }

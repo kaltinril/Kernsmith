@@ -408,8 +408,9 @@ public sealed class FreeTypeRasterizer : IRasterizer
     /// </summary>
     private unsafe FT_GlyphSlotRec_* LoadStyledGlyph(uint glyphIndex, RasterOptions options, bool loadColor = true)
     {
+        // An OT-SVG glyph has no renderer here, so it loads as its COLR layers, bitmap or outline.
         var loadFlags = options.ColorFont && loadColor
-            ? (FT_LOAD)FreeTypeNative.FT_LOAD_COLOR
+            ? (FT_LOAD)(FreeTypeNative.FT_LOAD_COLOR | FreeTypeNative.FT_LOAD_NO_SVG)
             : FT_LOAD.FT_LOAD_DEFAULT;
 
         // One hinting target at most (they share a bit field): light hinting when asked for it;
@@ -620,7 +621,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
         var loadFlags = (FT_LOAD)FreeTypeNative.FT_LOAD_NO_BITMAP | (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
         if (options.ColorFont)
-            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_COLOR;
+            loadFlags |= (FT_LOAD)(FreeTypeNative.FT_LOAD_COLOR | FreeTypeNative.FT_LOAD_NO_SVG);
         if (FT.FT_Load_Glyph(_face, glyphIndex, loadFlags) != FT_Error.FT_Err_Ok)
             return new FractionalGlyphMetrics(hintedAdvance / 64f, hintedBearing / 64f);
 
