@@ -200,6 +200,79 @@ public class CombinedBatchTests
     }
 
     // ---------------------------------------------------------------
+    // 5b. A job rejected during rasterization fails alone
+    // ---------------------------------------------------------------
+
+    private static BatchJob ValidJob(byte[] fontData, int size) => new()
+    {
+        FontData = fontData,
+        Options = new FontGeneratorOptions
+        {
+            Size = size,
+            Characters = CharacterSet.FromChars("ABg"),
+            Backend = RasterizerBackend.FreeType,
+        },
+    };
+
+    private static BatchJob RejectedJob(byte[] fontData) => new()
+    {
+        FontData = fontData,
+        Options = new FontGeneratorOptions
+        {
+            Size = 20,
+            Characters = CharacterSet.FromChars("ABg"),
+            Backend = RasterizerBackend.FreeType,
+            AntiAlias = AntiAliasMode.Lcd,
+            FillColorR = 255,
+            FillColorG = 128,
+            FillColorB = 0,
+        },
+    };
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void GenerateBatch_CombinedMode_RejectedJobFailsAlone(int rejectedIndex)
+    {
+        var fontData = LoadTestFont();
+        var jobs = new List<BatchJob> { ValidJob(fontData, 16), ValidJob(fontData, 32) };
+        var alone = BmFont.GenerateBatch(jobs, new BatchOptions { AtlasMode = BatchAtlasMode.Combined });
+        jobs.Insert(rejectedIndex, RejectedJob(fontData));
+
+        var result = BmFont.GenerateBatch(jobs, new BatchOptions { AtlasMode = BatchAtlasMode.Combined });
+
+        result.Failed.ShouldBe(1);
+        result.Succeeded.ShouldBe(2);
+        result.Results.Select(r => r.Index).ShouldBe([0, 1, 2]);
+
+        var rejected = result.Results[rejectedIndex];
+        rejected.Success.ShouldBeFalse();
+        rejected.Result.ShouldBeNull();
+        rejected.Error.ShouldBeOfType<InvalidOperationException>().Message.ShouldContain("fill color");
+
+        foreach (var valid in result.Results.Where(r => r.Index != rejectedIndex))
+            valid.Result!.Model.Characters.Count.ShouldBe(3);
+
+        // The rejected job leaves no trace in the shared atlas.
+        result.SharedPages!.Count.ShouldBe(alone.SharedPages!.Count);
+        result.SharedPages[0].PixelData.ShouldBe(alone.SharedPages[0].PixelData);
+    }
+
+    [Fact]
+    public void GenerateBatch_CombinedMode_EveryJobRejected_ReportsEachWithoutThrowing()
+    {
+        var fontData = LoadTestFont();
+
+        var result = BmFont.GenerateBatch(
+            [RejectedJob(fontData), RejectedJob(fontData)],
+            new BatchOptions { AtlasMode = BatchAtlasMode.Combined });
+
+        result.Failed.ShouldBe(2);
+        result.SharedPages.ShouldNotBeNull().ShouldBeEmpty();
+    }
+
+    // ---------------------------------------------------------------
     // 6. Combined mode preserves glyph count vs separate mode
     // ---------------------------------------------------------------
 

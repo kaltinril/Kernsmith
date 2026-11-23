@@ -168,7 +168,7 @@ kernsmith generate -f RobotoFlex.ttf -s 32 --instance "Bold"
 |------|-------------|
 | `--config <path>` | Load settings from a `.bmfc` or `.hiero` configuration file (format auto-detected by inspecting file content, with the extension used only as a fallback when the content is inconclusive). `.bmfc` boolean keys accept `1`/`0`, `true`/`false` or `yes`/`no` in any case |
 | `--save-config <path>` | Save current settings to a `.bmfc` or `.hiero` file (format chosen by the file extension; `.hiero` writes a Hiero config, otherwise BMFont). Written only after a successful generation, never with `--dry-run` |
-| `--dry-run` | Show what would be generated without writing files |
+| `--dry-run` | Show what would be generated without writing files. Generates in memory, so options a real run rejects fail with the same error and exit code |
 | `--time` | Print actual generation time (excludes CLI startup) |
 | `--profile` | Print stage-level timing breakdown |
 | `-v, --verbose` | Show detailed progress |

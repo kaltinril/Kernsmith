@@ -234,7 +234,8 @@ public sealed class BmFontBuilder
 
     /// <summary>
     /// If true, packs multiple glyphs into separate RGBA channels to save space. Incompatible with
-    /// effects, color fonts and LCD output; see <see cref="FontGeneratorOptions.ChannelPacking"/>.
+    /// effects, color fonts, LCD output, a fill color and RGBA custom glyphs; see
+    /// <see cref="FontGeneratorOptions.ChannelPacking"/>.
     /// </summary>
     /// <param name="channelPacking">Enable channel packing.</param>
     /// <returns>This builder.</returns>

@@ -41,6 +41,15 @@ public class StatusBarViewModel : ViewModel
         IsGenerating = false;
     }
 
+    /// <summary>Clears the figures that describe a generated result.</summary>
+    public void ClearResultInfo()
+    {
+        AtlasDimensions = "";
+        GlyphCount = 0;
+        GenerationTime = "";
+        GlyphInfoText = "";
+    }
+
     /// <summary>
     /// Displays an error message in the status bar and clears the generating flag.
     /// </summary>

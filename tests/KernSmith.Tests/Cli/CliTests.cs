@@ -1553,6 +1553,40 @@ public class CliTests : IDisposable
         Directory.Exists(outDir).ShouldBeFalse("a dry run writes nothing, not even the output directory");
     }
 
+    [Theory]
+    [InlineData("--channel-pack --fill-color #FF8800")]
+    [InlineData("--channel-pack --sdf --fill-color #FF8800")]
+    [InlineData("--aa lcd --fill-color #FF8800")]
+    [InlineData("--channel-pack --aa lcd")]
+    [InlineData("--rasterizer stbtruetype --color-font")]
+    public void Generate_DryRun_RejectedOptions_FailLikeTheRealRun(string flags)
+    {
+        var outBase = Path.Combine(_tempDir, "rejected");
+        string[] args = ["generate", "-f", FontPath, "-s", "24", "--chars", "ABg", "-o", outBase, .. flags.Split(' ')];
+
+        var real = RunCli(args);
+        var dry = RunCli([.. args, "--dry-run"]);
+
+        real.ExitCode.ShouldBe(4, $"stderr: {real.StdErr}");
+        dry.ExitCode.ShouldBe(real.ExitCode, $"dry-run stdout: {dry.StdOut}");
+        dry.StdErr.ShouldBe(real.StdErr);
+        dry.StdOut.ShouldNotContain("[dry-run] No files written");
+        Directory.GetFileSystemEntries(_tempDir).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Generate_DryRun_ValidOptions_ReportsAndWritesNothing()
+    {
+        var outBase = Path.Combine(_tempDir, "valid");
+
+        var (exitCode, stdout, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "24", "--chars", "ABg", "--fill-color", "#FF8800", "-o", outBase, "--dry-run");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain("[dry-run] No files written.");
+        Directory.GetFileSystemEntries(_tempDir).ShouldBeEmpty();
+    }
+
     [Fact]
     public void Generate_SaveConfig_KeepsTheCharsetFlags()
     {

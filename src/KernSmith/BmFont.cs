@@ -913,7 +913,7 @@ public static class BmFont
 
         // 2. Resolve character set (fallback included)
         var codepoints = prepared.ResolveCodepoints();
-        prepared.RejectLcdChannelPacking(codepoints);
+        prepared.RejectLcdConflicts(codepoints);
 
         // 3. Size each glyph from its metrics
         var padding = options.Padding;
@@ -1143,14 +1143,15 @@ public static class BmFont
         {
             if (job.FontData != null) continue; // Already has bytes
 
-            var key = job.FontPath ?? job.SystemFont;
-            if (key == null) continue;
-            if (cache.Contains(key)) continue;
-
             if (job.FontPath != null)
-                cache.LoadFile(job.FontPath);
+            {
+                if (!cache.Contains(job.FontPath))
+                    cache.LoadFile(job.FontPath);
+            }
             else if (job.SystemFont != null)
+            {
                 cache.LoadSystemFont(job.SystemFont);
+            }
         }
 
         var totalSw = Stopwatch.StartNew();
@@ -1216,13 +1217,28 @@ public static class BmFont
                     "Combined mode packs all fonts into a single atlas, which is incompatible with channel packing.");
         }
 
-        // 1. Rasterize all fonts.
-        var rasterResults = new RasterizationResult[jobs.Count];
+        // 1. Rasterize all fonts. A job that fails here fails alone, as in Separate mode, and
+        // contributes nothing to the shared atlas.
+        var results = new BatchJobResult[jobs.Count];
+        var rasterResults = new RasterizationResult?[jobs.Count];
         for (int i = 0; i < jobs.Count; i++)
         {
-            byte[] fontData = ResolveFontData(i, jobs[i], cache);
-            rasterResults[i] = RasterizeFont(fontData, jobs[i].Options);
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                byte[] fontData = ResolveFontData(i, jobs[i], cache);
+                rasterResults[i] = RasterizeFont(fontData, jobs[i].Options);
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                results[i] = new BatchJobResult { Index = i, Success = false, Error = ex, Elapsed = sw.Elapsed };
+            }
         }
+
+        var firstValid = Array.FindIndex(rasterResults, r => r is not null);
+        if (firstValid < 0)
+            return (results, Array.Empty<AtlasPage>());
 
         // 2. Build merged glyph list with composite IDs.
         var allGlyphs = new List<RasterizedGlyph>();
@@ -1231,6 +1247,9 @@ public static class BmFont
 
         for (int i = 0; i < rasterResults.Length; i++)
         {
+            if (rasterResults[i] is not { } raster)
+                continue;
+
             var jobOptions = jobs[i].Options;
             var p = jobOptions.Padding;
             var s = jobOptions.Spacing;
@@ -1244,7 +1263,7 @@ public static class BmFont
                 Math.Max(maxSpacing.Horizontal, s.Horizontal),
                 Math.Max(maxSpacing.Vertical, s.Vertical));
 
-            foreach (var glyph in rasterResults[i].Glyphs)
+            foreach (var glyph in raster.Glyphs)
             {
                 var combinedId = EncodeCombinedId(i, glyph.Codepoint);
                 allGlyphs.Add(new RasterizedGlyph
@@ -1269,7 +1288,7 @@ public static class BmFont
         )).ToList();
 
         // 4. Estimate and pack.
-        var firstOptions = jobs[0].Options;
+        var firstOptions = jobs[firstValid].Options;
         var sizingOptions = new AtlasSizingOptions
         {
             PackingEfficiency = firstOptions.PackingEfficiencyHint,
@@ -1309,13 +1328,14 @@ public static class BmFont
         var sharedPages = AtlasBuilder.Build(allGlyphs, blitPack, new Padding(0, 0, 0, 0), encoder);
 
         // 6. For each font, extract placements and build BmFontModel.
-        var results = new BatchJobResult[jobs.Count];
         for (int i = 0; i < jobs.Count; i++)
         {
+            if (rasterResults[i] is not { } rr)
+                continue;
+
             var sw = Stopwatch.StartNew();
             try
             {
-                var rr = rasterResults[i];
                 var jobOptions = rr.Options;
 
                 // Extract placements for this font by decoding composite IDs.
@@ -1359,9 +1379,12 @@ public static class BmFont
         if (job.FontData != null)
             return job.FontData;
 
-        var key = job.FontPath ?? job.SystemFont
-            ?? throw new ArgumentException($"Job {index}: no font source specified");
-        return cache.Get(key);
+        // A family name is not a path: it must never resolve to a file of the same relative name.
+        if (job.FontPath != null)
+            return cache.Get(job.FontPath);
+        if (job.SystemFont != null)
+            return cache.GetByExactKey(job.SystemFont);
+        throw new ArgumentException($"Job {index}: no font source specified");
     }
 
     private static BatchJobResult RunBatchJob(int index, BatchJob job, FontCache cache)

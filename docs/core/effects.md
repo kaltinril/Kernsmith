@@ -102,6 +102,8 @@ Three further options refine the gradient: `GradientOffset` shifts the gradient 
 
 When no gradient is set, the glyph body renders as solid white by default. The body layer can instead be tinted with the `FillColorR`/`FillColorG`/`FillColorB`/`FillColorA` options. A non-white fill color tints the default body layer and composites even when no other effects are present; `FillColorA` multiplies the glyph mask alpha. The default `(255, 255, 255, 255)` reproduces the legacy opaque-white body.
 
+A non-default fill throws `InvalidOperationException` with `ChannelPacking` (unless a custom `Channels` layout or `TargetRegion` bypasses the packer) and over real LCD glyphs (`AntiAlias = Lcd` on FreeType or Native), whose RGB is subpixel coverage. Color glyphs keep their own colors.
+
 ### Combining Effects
 
 All three effects can be used together:

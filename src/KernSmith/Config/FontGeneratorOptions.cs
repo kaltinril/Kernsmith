@@ -160,10 +160,13 @@ public class FontGeneratorOptions
 
     /// <summary>
     /// If true, packs multiple glyphs into separate RGBA channels for smaller textures. Each glyph
-    /// must be single-channel, so effects, <see cref="ColorFont"/> and LCD output are rejected with
-    /// an <see cref="InvalidOperationException"/>. <see cref="AntiAliasMode.Lcd"/> is rejected only
-    /// where the backend really renders it: one that degrades it to grayscale, a distance field
-    /// and a bitmap-only face still pack.
+    /// must be single-channel, so effects, <see cref="ColorFont"/>, LCD output, a non-default fill
+    /// color (<see cref="FillColorR"/> and its siblings) and an RGBA entry in
+    /// <see cref="CustomGlyphs"/> are rejected with an <see cref="InvalidOperationException"/>.
+    /// <see cref="AntiAliasMode.Lcd"/> is rejected only where the backend really renders it: one
+    /// that degrades it to grayscale, a distance field and a bitmap-only face still pack. The fill
+    /// and custom glyph rejections do not apply with a custom <see cref="Channels"/> layout or a
+    /// <see cref="TargetRegion"/>, which build their page without the channel packer.
     /// </summary>
     public bool ChannelPacking { get; set; }
 
@@ -314,16 +317,23 @@ public class FontGeneratorOptions
     /// </summary>
     public bool MatchCharHeight { get; set; }
 
-    /// <summary>Base glyph fill color red channel (default 255 = white).</summary>
+    /// <summary>
+    /// Base glyph fill color red channel (default 255 = white). Any non-default fill color (red,
+    /// green, blue or alpha) throws <see cref="InvalidOperationException"/> with
+    /// <see cref="ChannelPacking"/> when glyphs reach the channel packer, and over real LCD glyphs,
+    /// whose RGB is subpixel coverage. It is allowed where <see cref="AntiAliasMode.Lcd"/> produces
+    /// no LCD pixels (a backend that degrades it to grayscale, a distance field, a bitmap-only
+    /// face, color and custom glyphs) and is unused under a gradient.
+    /// </summary>
     public byte FillColorR { get; set; } = 255;
 
-    /// <summary>Base glyph fill color green channel (default 255 = white).</summary>
+    /// <summary>Base glyph fill color green channel (default 255 = white). See <see cref="FillColorR"/>.</summary>
     public byte FillColorG { get; set; } = 255;
 
-    /// <summary>Base glyph fill color blue channel (default 255 = white).</summary>
+    /// <summary>Base glyph fill color blue channel (default 255 = white). See <see cref="FillColorR"/>.</summary>
     public byte FillColorB { get; set; } = 255;
 
-    /// <summary>Base glyph fill color alpha channel (default 255 = opaque).
+    /// <summary>Base glyph fill color alpha channel (default 255 = opaque). See <see cref="FillColorR"/>.
     /// Hiero's ColorEffect stores only RGB, so this defaults to 255 on import.</summary>
     public byte FillColorA { get; set; } = 255;
 
