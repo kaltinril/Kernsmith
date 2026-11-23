@@ -762,7 +762,7 @@ var result = BmFont.Generate("font.ttf", new FontGeneratorOptions
 });
 ```
 
-Channel packing cannot be combined with color font rendering.
+Channel packing cannot be combined with color font rendering, effects, or LCD output (`AntiAlias = Lcd` on FreeType or Native): these produce RGBA glyphs, so generation throws `InvalidOperationException`.
 
 ### Font Subsetting
 

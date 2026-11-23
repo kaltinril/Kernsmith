@@ -232,7 +232,10 @@ public sealed class BmFontBuilder
     /// <returns>This builder.</returns>
     public BmFontBuilder WithFaceIndex(int faceIndex) { _options.FaceIndex = faceIndex; return this; }
 
-    /// <summary>If true, packs multiple glyphs into separate RGBA channels to save space.</summary>
+    /// <summary>
+    /// If true, packs multiple glyphs into separate RGBA channels to save space. Incompatible with
+    /// effects, color fonts and LCD output; see <see cref="FontGeneratorOptions.ChannelPacking"/>.
+    /// </summary>
     /// <param name="channelPacking">Enable channel packing.</param>
     /// <returns>This builder.</returns>
     public BmFontBuilder WithChannelPacking(bool channelPacking = true) { _options.ChannelPacking = channelPacking; return this; }

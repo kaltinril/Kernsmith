@@ -110,7 +110,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `ChannelPacking` | `bool` | `false` | Pack multiple glyphs into separate RGBA channels. Incompatible with effects and color fonts. |
+| `ChannelPacking` | `bool` | `false` | Pack multiple glyphs into separate RGBA channels. Incompatible with effects, color fonts and LCD output: `AntiAlias = Lcd` throws `InvalidOperationException` on a backend that renders LCD (FreeType, Native). It keeps working where no LCD pixels are produced: on GDI, DirectWrite and StbTrueType (which render it as grayscale), with a distance field, and on a bitmap-only face. |
 | `Channels` | `ChannelConfig?` | `null` | Per-channel content routing -- which of glyph/outline (etc.) each of R/G/B/A holds, plus optional inversion. When `null`, the default single-composite layout is used. |
 
 ## Color and variable fonts

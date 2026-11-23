@@ -901,8 +901,9 @@ public static class BmFont
 
         // 2. Resolve character set (fallback included)
         var codepoints = prepared.ResolveCodepoints();
+        prepared.RejectLcdChannelPacking(codepoints);
 
-        // 3. Size each glyph from its metrics, without rasterizing
+        // 3. Size each glyph from its metrics
         var padding = options.Padding;
         var spacing = options.Spacing;
 

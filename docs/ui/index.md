@@ -98,7 +98,7 @@ Applies a vertical color gradient across each glyph.
 
 ### Channel Packing
 
-Maps glyph data into individual RGBA channels for compressed output. Useful for game engines that support channel-packed fonts.
+Maps glyph data into individual RGBA channels for compressed output. Useful for game engines that support channel-packed fonts. It cannot be combined with LCD anti-aliasing on a backend that renders LCD (FreeType, Native): generation stops with an error in the status bar.
 
 ### Distance Field
 

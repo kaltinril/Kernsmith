@@ -490,6 +490,51 @@ internal sealed class PreparedRasterization : IDisposable
     }
 
     /// <summary>
+    /// True when glyphs are headed for <c>ChannelPackedAtlasBuilder</c> under a negotiated LCD
+    /// render. A distance field wins over LCD, and a custom channel layout or a target region
+    /// builds its page without that builder.
+    /// </summary>
+    private bool PacksLcd =>
+        Options.ChannelPacking
+        && _rasterOptions.AntiAlias == AntiAliasMode.Lcd
+        && Options.EffectiveSdfMode == SdfMode.None
+        && !BmFont.ShouldApplyChannelConfig(Options)
+        && Options.TargetRegion is null;
+
+    /// <summary>
+    /// True for a backend glyph with LCD pixels. The format decides, not the requested mode: a
+    /// bitmap-only face stays single-channel under LCD and packs normally, and a custom glyph
+    /// replaces the backend's.
+    /// </summary>
+    private bool IsLcdInk(RasterizedGlyph glyph) =>
+        glyph.Format == PixelFormat.Rgba32
+        && glyph.Width > 0 && glyph.Height > 0
+        && Options.CustomGlyphs?.ContainsKey(glyph.Codepoint) != true;
+
+    private static InvalidOperationException LcdChannelPackingError() => new(
+        "Channel packing cannot be combined with LCD anti-aliasing. " +
+        "LCD glyphs are RGBA and cannot be packed into individual channels.");
+
+    /// <summary>
+    /// Rejects what <see cref="RasterizeAndProcess"/> would reject for LCD channel packing, for a
+    /// caller that only measures. Stops at the first LCD glyph, and renders nothing unless the
+    /// options combine the two.
+    /// </summary>
+    internal void RejectLcdChannelPacking(IEnumerable<int> codepoints)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (!PacksLcd)
+            return;
+
+        foreach (var codepoint in codepoints)
+        {
+            if (_rasterizer.RasterizeGlyph(codepoint, _effectiveRasterOptions) is { } glyph && IsLcdInk(glyph))
+                throw LcdChannelPackingError();
+        }
+    }
+
+    /// <summary>
     /// The size <see cref="RasterizeAndProcess"/> would give a glyph, from the backend's
     /// metrics alone (no rasterization), or null when the backend has no glyph for it: measured
     /// at the render size, height-stretched, downscaled from the render scale (rounding up), grown
@@ -551,6 +596,9 @@ internal sealed class PreparedRasterization : IDisposable
         var codepointList = codepoints as List<int> ?? codepoints.ToList();
 
         var glyphs = _rasterizer.RasterizeAll(codepointList, _effectiveRasterOptions).ToList();
+
+        if (PacksLcd && glyphs.Exists(IsLcdInk))
+            throw LcdChannelPackingError();
 
         // The fractional metrics are taken from the backend's glyphs now, before any stage
         // rebuilds them (the height stretch and every effect construct new glyphs without the

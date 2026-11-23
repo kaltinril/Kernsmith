@@ -764,7 +764,7 @@ kernsmith generate -f RobotoFlex.ttf -s 32 --instance "Bold"
 
 ### Channel Packing
 
-Pack up to 4 monochrome glyphs into the R, G, B, and A channels of a single texture pixel. Reduces texture memory by 4x for monochrome fonts.
+Pack up to 4 monochrome glyphs into the R, G, B, and A channels of a single texture pixel. Reduces texture memory by 4x for monochrome fonts. Cannot be combined with effects, color fonts or `--aa lcd` on a backend that renders LCD (FreeType, Native): the command exits with a generation error.
 
 ```
 kernsmith generate -f font.ttf -s 32 --channel-pack
