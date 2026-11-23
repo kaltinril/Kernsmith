@@ -61,7 +61,7 @@ The right panel contains collapsible sections for each effect type.
 ### Font Style
 
 - **Bold / Italic**: If a matching variant font file exists, it loads that file. Otherwise applies synthetic bold or italic.
-- **Anti-Alias**: None (aliased), Grayscale (default), Light, or LCD. The list shows only the modes the selected rasterizer supports; the experimental Native backend supports all four (and, with Hinting on, auto-hints every one of them).
+- **Anti-Alias**: None (aliased), Grayscale (default), Light, or LCD. The list shows only the modes the selected rasterizer supports; the experimental Native backend supports all four (and, with Hinting on, auto-hints all of them except LCD).
 - **LCD Filter / LCD Order**: In LCD mode, the subpixel filter (Default, Light, Smooth, None) and the display's subpixel layout (RGB, BGR, V-RGB, V-BGR). Native honors them; other backends ignore them.
 - **Width %**: Synthetic condensed/expanded width, 10-1000 (100 = normal). Native only.
 - **Italic Angle**: Slant of synthetic italic, -60 to 60 degrees (default 12). Native only; enabled with Italic.

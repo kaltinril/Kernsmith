@@ -536,7 +536,7 @@ internal sealed class PreparedRasterization : IDisposable
 
     /// <summary>
     /// The size <see cref="RasterizeAndProcess"/> would give a glyph, from the backend's
-    /// metrics alone (no rasterization), or null when the backend has no glyph for it: measured
+    /// metrics (which some backends render the glyph to answer), or null when the backend has no glyph for it: measured
     /// at the render size, height-stretched, downscaled from the render scale (rounding up), grown
     /// by the baked effects, and a blank glyph given its outline cell. Keep in sync with
     /// <see cref="RasterizeAndProcess"/>; custom glyphs, post-processors, channel-routed

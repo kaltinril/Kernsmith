@@ -293,7 +293,7 @@ This means WOFF/WOFF2 support requires only a decompression frontend -- the core
 
 ### Sourcing Web Fonts (`KernSmith.Fonts.Web`)
 
-KernSmith ships an optional companion package, **`KernSmith.Fonts.Web`**, that *fetches* fonts from CSS-based web font CDNs rather than the local filesystem. It implements the core `KernSmith.Font.IFontSource` abstraction via `WebFontSource`, parameterized by a `WebFontProvider` (built-in `BunnyFonts` and `GoogleFonts`, or `WebFontProvider.Custom(cssBaseUrl)` for any Google-Fonts-style `?family=Name:weight` CSS endpoint).
+KernSmith ships an optional companion package, **`KernSmith.Fonts.Web`**, that *fetches* fonts from CSS-based web font CDNs rather than the local filesystem. It implements the core `KernSmith.Font.IFontSource` abstraction via `WebFontSource`, parameterized by a `WebFontProvider` (built-in `BunnyFonts` and `GoogleFonts`, or `WebFontProvider.Custom(cssBaseUrl)` for any Google-Fonts-style `?family=Name:weight` CSS endpoint, with `Name:{weight}italic` for an italic request).
 
 The flow: request the provider's stylesheet over HTTP, parse the `@font-face` rules, and download the font file for the requested family / weight / style / Unicode subset (results are cached in memory, with an optional `diskCachePath` for cross-run persistence).
 

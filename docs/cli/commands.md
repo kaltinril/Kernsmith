@@ -30,9 +30,9 @@ kernsmith generate -f <font> -s <size> [options]
 | `--sdf-spread <n>` | SDF search radius (spread) in pixels (default: 8) |
 | `--sdf-mode <mode>` | Distance field: `none`, `sdf`, `msdf` or `mtsdf`. `msdf`/`mtsdf` write RGBA multi-channel fields and need `--rasterizer native` |
 | `--super-sample <n>` | Super sampling level 1-4 (default: 1). Not applied to `--aa lcd` output, which renders at the final size |
-| `--gamma <n>` | Gamma correction applied during rasterization (FreeType, default: 1.8) |
-| `--hinting / --no-hinting` | Enable/disable hinting (default: on). Native hints at `normal` by default in every anti-alias mode |
-| `--hint-level <level>` | Grid fitting: `default` (the backend's `--hinting` behaviour), `none`, `light`, `normal`, `full` (the font's own hinting, else the auto-hinter — FreeType's default). A level the backend does not implement steps down to the nearest one it does (FreeType: `none`, `light`, `full`; DirectWrite: `none`, `light`; GDI: `full`; StbTrueType: `none`; Native: `none`, `light`, `normal`, in any anti-alias mode — Native's `default` with hinting on is `normal`, size-scaled, off above 40 ppem). Not with `--no-hinting`. `.bmfc` key `hintLevel` |
+| `--gamma <n>` | Gamma correction of grayscale coverage (FreeType and Native; not mono, LCD, SDF or color output; default: 1.8) |
+| `--hinting / --no-hinting` | Enable/disable hinting (default: on). Native hints at `normal` by default in every anti-alias mode except `lcd` |
+| `--hint-level <level>` | Grid fitting: `default` (the backend's `--hinting` behaviour), `none`, `light`, `normal`, `full` (the font's own hinting, else the auto-hinter — FreeType's default). A level the backend does not implement steps down to the nearest one it does (FreeType: `none`, `light`, `full`; DirectWrite: `none`, `light`; GDI: `full`; StbTrueType: `none`; Native: `none`, `light`, `normal`, in any anti-alias mode except `lcd` — Native's `default` with hinting on is `normal`, size-scaled, off above 40 ppem). Not with `--no-hinting`. `.bmfc` key `hintLevel` |
 | `--bake-kerning` / `--no-bake-kerning` | Fold the hinter's touching pairs into the kerning pairs (Native at `normal`; on by default there, opening only pairs with no white between their inks and taking the pixel back from a pair with white to spare; never for a fixed-pitch font; needs kerning on). `.bmfc` key `bakeHintingIntoKerning` |
 | `--fractional-metrics` | Write each glyph's unrounded advance and left side bearing (and, on FreeType and Native, what hinting moved them by) to the `.fnt`'s `kernsmith` metadata as `kernsmithchar` lines, in 1/64 px, for renderers that lay text out fractionally. Off by default. `.bmfc` key `fractionalMetrics` |
 | `--rasterizer <name>` | Rasterizer backend: `freetype` (default), `gdi`, `directwrite`, `stbtruetype`, `native` (experimental, not on NuGet) |
@@ -79,7 +79,7 @@ kernsmith generate -f font.ttf -s 32 --range 0020-007E --range 00A0-00FF
 
 | Flag | Description |
 |------|-------------|
-| `--max-texture <n>` | Maximum texture size in pixels (default: 1024) |
+| `--max-texture <n>` | Maximum texture size in pixels (alias `--max-texture-size`, default: 1024) |
 | `--max-texture-width <n>` | Maximum texture width (independent of height) |
 | `--max-texture-height <n>` | Maximum texture height (independent of width) |
 | `--autofit` | Auto-fit smallest texture size for all glyphs |
@@ -184,7 +184,7 @@ Commands report their outcome with these process exit codes:
 | `1` | Invalid arguments (and `batch` when any job failed) |
 | `2` | File not found -- a missing `--config` file, `--chars-file`, `batch` jobs file, or `convert`/`inspect`/`info` input. A missing `generate -f` font file exits `1` |
 | `3` | Font could not be parsed |
-| `4` | Generation error -- including a backend rejecting the font or an option (e.g. `--rasterizer stbtruetype --color-font`), printed to stderr as `Error: Generation error (<backend> rasterizer): <message>` |
+| `4` | Generation error -- including a backend rejecting the font or an option (e.g. `--rasterizer stbtruetype --color-font`), printed to stderr as `Error: Generation error (<backend> rasterizer): <message>`. An invalid option combination (e.g. `--channel-pack --aa lcd`) and every `benchmark` failure print `Error: Generation error: <message>`, without the backend |
 | `5` | Output could not be written |
 | `10` | Config file could not be parsed |
 
@@ -380,7 +380,7 @@ kernsmith generate -f font.ttf -s 32 --rasterizer native
 kernsmith generate -f font.ttf -s 32
 ```
 
-The `native` backend is experimental and ships with the CLI only (there is no NuGet package yet). It renders TrueType (`.ttf`) and CFF/CFF2 (`.otf`) outlines, variable fonts of both kinds (`--axis`, `--instance`), `COLR` version 0 and 1 color glyphs and `CBDT`/`sbix` bitmap emoji (`--color-font`, scaled to the requested size) and synthetic bold/italic. It is the only backend for `--sdf-mode msdf|mtsdf`, `--outline-mode vector`, `--width-percent`, `--italic-angle` other than 12, and `--lcd-order`/`--lcd-filter`. With hinting on it applies its own auto-hinter (`normal` by default, both axes, fading out by 40 ppem; `--hint-level light` for y-only) in every anti-alias mode; `--aa lcd` renders LCD subpixel RGBA glyphs, and `--aa none` keeps thin strokes with dropout control. It has no TrueType bytecode hinting and no system fonts.
+The `native` backend is experimental and ships with the CLI only (there is no NuGet package yet). It renders TrueType (`.ttf`) and CFF/CFF2 (`.otf`) outlines, variable fonts of both kinds (`--axis`, `--instance`), `COLR` version 0 and 1 color glyphs and `CBDT`/`sbix` bitmap emoji (`--color-font`, scaled to the requested size) and synthetic bold/italic. It is the only backend for `--sdf-mode msdf|mtsdf`, `--outline-mode vector`, `--width-percent`, `--italic-angle` other than 12, and `--lcd-order`/`--lcd-filter`. With hinting on it applies its own auto-hinter (`normal` by default, both axes, fading out by 40 ppem; `--hint-level light` for y-only) in every anti-alias mode except LCD; `--aa lcd` renders unhinted LCD subpixel RGBA glyphs, and `--aa none` keeps thin strokes with dropout control. It has no TrueType bytecode hinting and no system fonts.
 
 ---
 

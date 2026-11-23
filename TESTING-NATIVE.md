@@ -18,7 +18,7 @@ when Auto-Regenerate is on. Native's options:
 |--------|-------|
 | Anti-alias None / Grayscale / Light / LCD | Effects > Font Style > **Anti-Alias** (lists only the backend's modes) |
 | LCD filter and subpixel order | Effects > Font Style > **LCD Filter** / **LCD Order** (enabled in LCD mode) |
-| Auto-hinting | **Hinting** checked hints at `Normal` (size-scaled; off above 40 ppem) in every anti-alias mode; **Hint Level** picks `none`/`light`/`normal` explicitly |
+| Auto-hinting | **Hinting** checked hints at `Normal` (size-scaled; off above 40 ppem) in every anti-alias mode except LCD; **Hint Level** picks `none`/`light`/`normal` explicitly |
 | SDF / MSDF / MTSDF | Effects > Advanced > **Distance Field** (MSDF/MTSDF are listed only for Native) |
 | SDF scale | Effects > Advanced > **SDF Scale** (1-4, any backend with SDF) |
 | Vector outline | Effects > Outline > **Mode** = Vector (enabled only on Native with no distance field) |
@@ -182,7 +182,7 @@ FreeType by switching the rasterizer.
 | Mono | Roboto at 8 px, AA None | Thin strokes (`l I \| . :`) never vanish |
 | Light hinting | Roboto at 10-14 px, Hint Level `light` | Horizontal stems and x-height snap to whole pixels; stems stay as unhinted horizontally; `--no-hinting` equals Hint Level `none` |
 | Fixed-pitch font | `SourceCodeVF-Upright.otf` or Consolas at 8-16 px, either anti-alias mode | Every advance the same as unhinted, no kerning pairs in the `.fnt`, a block of `|` stays in columns |
-| LCD | Roboto at 24 px, LCD | RGBA atlas with colored subpixel fringes, normal width (FreeType's LCD is 3x-wide grayscale) |
+| LCD | Roboto at 24 px, LCD | RGBA atlas with colored subpixel fringes, normal width (FreeType's LCD is RGBA at pixel width too) |
 | LCD filter / order | Roboto at 24 px, LCD, each **LCD Filter** and **LCD Order** | None has the strongest fringes, Smooth the weakest; BGR swaps the red and blue fringes; V-RGB/V-BGR fringe vertically (top/bottom edges) |
 | SDF | Roboto, Distance Field SDF | Soft glow in Preview, crisp text in Sample; close to FreeType's SDF |
 | SDF scale | Roboto, Distance Field SDF, **SDF Scale** 1 then 4 | Same layout; smoother field and Sample edges at 4 |

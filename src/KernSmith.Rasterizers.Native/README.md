@@ -119,7 +119,7 @@ Native has its own auto-hinter in two strengths, no TrueType bytecode interprete
 hinter. `HintLevel.Light` (`.bmfc`: `hintLevel=light`; CLI `--hint-level light`) is the y-only
 fitter of Phase 174. `HintLevel.Normal` (`hintLevel=normal`, `--hint-level normal`) is the
 both-axis fitter of Phase 188, and what a request with no level gets while `EnableHinting` is
-on (`useHinting=1`, the default) in every anti-alias mode — `AntiAlias = Light` no longer
+on (`useHinting=1`, the default) in every anti-alias mode but `Lcd` — `AntiAlias = Light` no longer
 selects the y-only fitter by itself; with hinting off the request is unhinted. Both levels
 apply in any anti-alias mode but `Lcd` — bilevel (`None`) thresholds the hinted outline. The
 Normal fitter scales with size (its taper below), so large text is exactly unhinted whatever

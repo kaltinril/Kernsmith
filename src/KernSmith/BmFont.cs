@@ -821,7 +821,11 @@ public static class BmFont
         return GenerateFromSystem(fontFamily, new FontGeneratorOptions { Size = size });
     }
 
-    /// <summary>Queries the estimated atlas size from raw font bytes without rasterizing.</summary>
+    /// <summary>Queries the estimated atlas size from raw font bytes, without building an atlas.</summary>
+    /// <remarks>Reads each glyph's metrics instead of building an atlas, but a metrics call can
+    /// still render: FreeType renders each outline glyph for <see cref="AntiAliasMode.None"/>,
+    /// <see cref="AntiAliasMode.Lcd"/> and <see cref="FontGeneratorOptions.ColorFont"/>, and Native
+    /// and StbTrueType render for <see cref="AntiAliasMode.None"/>.</remarks>
     /// <param name="fontData">Raw TTF/OTF/WOFF/WOFF2 file bytes.</param>
     /// <param name="options">Generation options, or null for defaults.</param>
     /// <returns>Estimated atlas dimensions and page count.</returns>
@@ -831,7 +835,11 @@ public static class BmFont
         return QueryAtlasSizeCore(fontData, options);
     }
 
-    /// <summary>Queries the estimated atlas size from a font file on disk without rasterizing.</summary>
+    /// <summary>Queries the estimated atlas size from a font file on disk, without building an atlas.</summary>
+    /// <remarks>Reads each glyph's metrics instead of building an atlas, but a metrics call can
+    /// still render: FreeType renders each outline glyph for <see cref="AntiAliasMode.None"/>,
+    /// <see cref="AntiAliasMode.Lcd"/> and <see cref="FontGeneratorOptions.ColorFont"/>, and Native
+    /// and StbTrueType render for <see cref="AntiAliasMode.None"/>.</remarks>
     /// <param name="fontPath">Path to a TTF/OTF/WOFF/WOFF2 file.</param>
     /// <param name="options">Generation options, or null for defaults.</param>
     /// <returns>Estimated atlas dimensions and page count.</returns>
@@ -841,7 +849,11 @@ public static class BmFont
         return QueryAtlasSizeCore(File.ReadAllBytes(fontPath), options);
     }
 
-    /// <summary>Queries the estimated atlas size from a system-installed font without rasterizing.</summary>
+    /// <summary>Queries the estimated atlas size from a system-installed font, without building an atlas.</summary>
+    /// <remarks>Reads each glyph's metrics instead of building an atlas, but a metrics call can
+    /// still render: FreeType renders each outline glyph for <see cref="AntiAliasMode.None"/>,
+    /// <see cref="AntiAliasMode.Lcd"/> and <see cref="FontGeneratorOptions.ColorFont"/>, and Native
+    /// and StbTrueType render for <see cref="AntiAliasMode.None"/>.</remarks>
     /// <param name="fontFamily">Font family name, like "Arial".</param>
     /// <param name="options">Generation options, or null for defaults.</param>
     /// <returns>Estimated atlas dimensions and page count.</returns>

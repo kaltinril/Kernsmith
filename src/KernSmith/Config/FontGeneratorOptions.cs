@@ -251,8 +251,9 @@ public class FontGeneratorOptions
     public bool FractionalMetrics { get; set; }
 
     /// <summary>
-    /// FreeType gamma correction applied during rasterization (default 1.8, matching Hiero).
-    /// Maps to Hiero's <c>font.gamma</c>.
+    /// Gamma correction of grayscale coverage, on the FreeType and Native backends (default 1.8,
+    /// matching Hiero, which leaves coverage unchanged). Not applied to bilevel, LCD, distance-field
+    /// or color output. Maps to Hiero's <c>font.gamma</c>.
     /// </summary>
     public float Gamma { get; set; } = 1.8f;
 

@@ -97,7 +97,7 @@ A variable font is read at its **default instance**: `FontInfo.KerningPairs` (fo
 
 ## Querying atlas size
 
-These estimate the atlas dimensions and page count without rasterizing glyphs.
+These estimate the atlas dimensions and page count from each glyph's metrics, without building an atlas. That is not always render-free: FreeType renders each outline glyph to measure it for `AntiAlias = None`, `Lcd` and `ColorFont`, and Native and StbTrueType do for `None`, so those queries cost about as much as rasterizing the character set.
 
 | Method | Description |
 |--------|-------------|
