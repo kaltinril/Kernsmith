@@ -108,7 +108,7 @@ All tooling lives under `tests/bmfont-compare/`; see `tests/bmfont-compare/READM
 **Canonical entry point**
 
 - `tests/bmfont-compare/regression_check.py` -- the main-vs-branch regression harness; this is what CLAUDE.md and `README.md:40-61` mean by "run a comparison". Stashes, checks out the base branch, generates, checks out the feature branch, regenerates, then diffs. Flags: `--base`, `--branch`, `--output`, `--tolerance`, `--skip-generate`. Exit codes: `0` = identical, `1` = differences, `2` = error. Usage: `python tests/bmfont-compare/regression_check.py`
-- `tests/bmfont-compare/diff_comparisons.py` -- the diff step `regression_check.py` drives (`README.md:99-132`): magenta-highlighted (`#FF00FF`) pixel diffs of `comparison.png`-`comparison4.png` and the auto-discovered per-font `comparison-*.png`, plus line-by-line `.fnt` metadata diffs (skipping the version line). Ignores the top 41 rows by default (`--ignore-top 41`, the header label band).
+- `tests/bmfont-compare/diff_comparisons.py` -- the diff step `regression_check.py` drives (`README.md:99-132`): magenta-highlighted (`#FF00FF`) pixel diffs of `comparison.png`-`comparison4.png` and the auto-discovered per-font `comparison-*.png`, plus line-by-line `.fnt` metadata diffs (ignoring only the `kernsmith` line's `version`/`commit` tokens). Ignores the top 41 rows by default (`--ignore-top 41`, the header label band).
 - `tests/bmfont-compare/README.md` -- per-tool documentation, flags, and exit codes.
 
 **Generators**

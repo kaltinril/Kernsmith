@@ -35,6 +35,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
     private float _lastSetSize;
     private int _lastSetDpi;
     private uint _lastSetSdfSpread;
+    private ushort _paletteIndex;
 
     /// <inheritdoc />
     public unsafe void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0)
@@ -134,6 +135,8 @@ public sealed class FreeTypeRasterizer : IRasterizer
                 "The font has no color palette at this index (palettes are indexed from 0).");
         if (error != FT_Error.FT_Err_Ok)
             throw new FreeTypeException(error);
+
+        _paletteIndex = (ushort)paletteIndex;
     }
 
     /// <summary>
@@ -202,41 +205,28 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (glyphIndex == 0)
             return null; // Missing glyph
 
-        // Determine load flags based on anti-alias mode and hinting.
-        var loadFlags = options.ColorFont
-            ? (FT_LOAD)FreeTypeNative.FT_LOAD_COLOR
-            : FT_LOAD.FT_LOAD_DEFAULT;
+        var slot = LoadStyledGlyph(glyphIndex, options);
 
-        // One hinting target at most (they share a bit field): light hinting when asked for it;
-        // otherwise, when rendering mono, tell the hinter to optimize for 1-bit output — without
-        // this, hinting targets grayscale, which places strokes poorly for a monochrome render.
-        if (LightHinted(options))
-            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_TARGET_LIGHT;
-        else if (options.AntiAlias == AntiAliasMode.None && !options.Sdf)
-            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_TARGET_MONO;
-
-        if (Unhinted(options))
-            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
-
-        // Load the glyph.
-        var error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
-        if (error != FT_Error.FT_Err_Ok)
-            throw new FreeTypeException(error);
-
-        var slot = _face->glyph;
-
-        // Apply synthetic bold only if the font isn't already bold.
-        // This matches GDI behavior: requesting bold on an already-bold face
-        // doesn't apply additional emboldening.
-        if (options.Bold && (_face->style_flags & 0x01) == 0)
+        // Read before the layers below reload the slot.
+        var styledAdvance = (long)slot->metrics.horiAdvance;
+        var styledBearing = (long)slot->metrics.horiBearingX;
+        if (RenderStyledColorLayers(glyphIndex, options) is { } layers)
         {
-            EmboldenGlyph(slot, _face);
-        }
-
-        // Apply synthetic italic only if the font isn't already italic.
-        if (options.Italic && (_face->style_flags & 0x02) == 0)
-        {
-            FT.FT_GlyphSlot_Oblique(slot);
+            PremultipliedBgraToStraightRgba(layers.Pixels);
+            return new RasterizedGlyph
+            {
+                Codepoint = codepoint,
+                GlyphIndex = (int)glyphIndex,
+                BitmapData = layers.Pixels,
+                Width = layers.Width,
+                Height = layers.Height,
+                Pitch = layers.Width * 4,
+                Metrics = new GlyphMetrics(layers.Left, layers.Top, F26Dot6ToRounded((IntPtr)styledAdvance), layers.Width, layers.Height),
+                Format = PixelFormat.Rgba32,
+                Fractional = options.FractionalMetrics
+                    ? FractionalMetricsFor(glyphIndex, options, styledAdvance, styledBearing)
+                    : null,
+            };
         }
 
         // Configure the SDF renderer's spread (search radius) before rendering.
@@ -245,26 +235,14 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (options.Sdf)
             EnsureSdfSpread(options.SdfSpread);
 
-        // Determine render mode.
-        // When SDF is enabled, FT_RENDER_MODE_SDF (value 6) produces an 8-bit bitmap where
-        // 128 = on the glyph edge, >128 = inside, <128 = outside. The bitmap dimensions
-        // may be larger than normal rendering to include the signed-distance field padding.
-        // SDF takes priority over the anti-alias setting since SDF output is inherently smooth.
-        var renderMode = options.Sdf
-            ? FT_Render_Mode_.FT_RENDER_MODE_SDF
-            : options.AntiAlias switch
-            {
-                AntiAliasMode.None => FT_Render_Mode_.FT_RENDER_MODE_MONO,
-                AntiAliasMode.Light => FT_Render_Mode_.FT_RENDER_MODE_LIGHT,
-                AntiAliasMode.Lcd => FT_Render_Mode_.FT_RENDER_MODE_LCD,
-                _ => FT_Render_Mode_.FT_RENDER_MODE_NORMAL
-            };
+        var renderMode = RenderModeFor(options);
+        var blankOutline = IsBlankOutline(slot);
 
         // Render the glyph to bitmap. Skip rendering for bitmap-only glyphs
         // (e.g., CBDT/CBLC color emoji) that are already rasterized after FT_Load_Glyph.
         if (slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_BITMAP)
         {
-            error = FT.FT_Render_Glyph(slot, renderMode);
+            var error = FT.FT_Render_Glyph(slot, renderMode);
             if (error != FT_Error.FT_Err_Ok)
                 throw new FreeTypeException(error);
         }
@@ -279,12 +257,18 @@ public sealed class FreeTypeRasterizer : IRasterizer
         // 26.6 fixed-point that don't reflect grid-fitting adjustments. This matters
         // most at small font sizes where hinting shifts glyphs by 1-2 pixels.
         ref var metrics = ref slot->metrics;
-        var glyphMetrics = new GlyphMetrics(
-            BearingX: slot->bitmap_left,
-            BearingY: slot->bitmap_top,
-            Advance: F26Dot6ToRounded(metrics.horiAdvance),
-            Width: bitmapWidth,
-            Height: bitmapHeight);
+        var bearingX = slot->bitmap_left;
+        var bearingY = slot->bitmap_top;
+
+        // FreeType presets a 1x1 mono bitmap for an empty outline; a blank glyph has no box.
+        if (blankOutline && bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_MONO)
+        {
+            bitmapWidth = 0;
+            bitmapHeight = 0;
+            pitch = 0;
+            bearingX = 0;
+            bearingY = 0;
+        }
 
         // Copy bitmap data.
         byte[] bitmapData;
@@ -324,6 +308,33 @@ public sealed class FreeTypeRasterizer : IRasterizer
             pitch = bitmapWidth;
         }
 
+        // An LCD bitmap holds three subpixel bytes (R, G, B) per pixel, so bitmap.width counts
+        // subpixels. Repack it as Rgba32 at the real pixel width, alpha = the strongest subpixel.
+        // FreeType pads even an empty outline's LCD box sideways; with no rows that is a blank
+        // glyph, reported as the same empty grayscale glyph the other modes give.
+        var isLcd = bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_LCD && bitmapData.Length > 0;
+        if (isLcd)
+        {
+            bitmapWidth /= 3;
+            bitmapData = LcdSubpixelsToRgba(bitmapData, Math.Abs(pitch), bitmapWidth, bitmapHeight);
+            pitch = bitmapWidth * 4;
+        }
+        else if (bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_LCD)
+        {
+            bitmapWidth = 0;
+            bitmapHeight = 0;
+            pitch = 0;
+            bearingX = 0;
+            bearingY = 0;
+        }
+
+        var glyphMetrics = new GlyphMetrics(
+            BearingX: bearingX,
+            BearingY: bearingY,
+            Advance: F26Dot6ToRounded(metrics.horiAdvance),
+            Width: bitmapWidth,
+            Height: bitmapHeight);
+
         // Apply gamma correction to grayscale coverage values.
         // Semantics: Gamma is normalized so the default (1.8, matching Hiero's font.gamma)
         // is the no-op baseline. The current/main behavior applies NO gamma, so we treat
@@ -341,15 +352,13 @@ public sealed class FreeTypeRasterizer : IRasterizer
             ApplyGamma(bitmapData, options.Gamma);
         }
 
-        // Swap BGRA to RGBA when FreeType returns a color bitmap.
+        // FreeType's color bitmaps are premultiplied BGRA; Rgba32 glyphs are straight-alpha RGBA
+        // everywhere downstream, so swap the channel order and un-premultiply.
         if (bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_BGRA)
-        {
-            for (var i = 0; i < bitmapData.Length; i += 4)
-                (bitmapData[i], bitmapData[i + 2]) = (bitmapData[i + 2], bitmapData[i]);
-        }
+            PremultipliedBgraToStraightRgba(bitmapData);
 
         // Determine pixel format based on the FreeType pixel mode.
-        var format = bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_BGRA
+        var format = bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_BGRA || isLcd
             ? PixelFormat.Rgba32
             : PixelFormat.Grayscale8;
 
@@ -370,6 +379,229 @@ public sealed class FreeTypeRasterizer : IRasterizer
             Format = format,
             Fractional = fractional,
         };
+    }
+
+    /// <summary>True for a loaded outline glyph with no points, such as a space.</summary>
+    private static unsafe bool IsBlankOutline(FT_GlyphSlotRec_* slot) =>
+        slot->format == FT_Glyph_Format_.FT_GLYPH_FORMAT_OUTLINE && slot->outline.n_points == 0;
+
+    /// <summary>
+    /// The FreeType render mode for <paramref name="options"/>. FT_RENDER_MODE_SDF produces an
+    /// 8-bit bitmap where 128 = on the glyph edge, >128 = inside, &lt;128 = outside, padded by the
+    /// spread; SDF takes priority over the anti-alias setting since its output is inherently smooth.
+    /// </summary>
+    private static FT_Render_Mode_ RenderModeFor(RasterOptions options) => options.Sdf
+        ? FT_Render_Mode_.FT_RENDER_MODE_SDF
+        : options.AntiAlias switch
+        {
+            AntiAliasMode.None => FT_Render_Mode_.FT_RENDER_MODE_MONO,
+            AntiAliasMode.Light => FT_Render_Mode_.FT_RENDER_MODE_LIGHT,
+            AntiAliasMode.Lcd => FT_Render_Mode_.FT_RENDER_MODE_LCD,
+            _ => FT_Render_Mode_.FT_RENDER_MODE_NORMAL
+        };
+
+    /// <summary>
+    /// Loads a glyph into the face's slot with the load flags <paramref name="options"/> call for
+    /// and applies synthetic bold and italic. <see cref="RasterizeGlyph"/> and
+    /// <see cref="GetGlyphMetrics"/> both load through here so they see the same outline.
+    /// </summary>
+    private unsafe FT_GlyphSlotRec_* LoadStyledGlyph(uint glyphIndex, RasterOptions options, bool loadColor = true)
+    {
+        var loadFlags = options.ColorFont && loadColor
+            ? (FT_LOAD)FreeTypeNative.FT_LOAD_COLOR
+            : FT_LOAD.FT_LOAD_DEFAULT;
+
+        // One hinting target at most (they share a bit field): light hinting when asked for it;
+        // otherwise, when rendering mono, tell the hinter to optimize for 1-bit output — without
+        // this, hinting targets grayscale, which places strokes poorly for a monochrome render.
+        if (LightHinted(options))
+            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_TARGET_LIGHT;
+        else if (options.AntiAlias == AntiAliasMode.None && !options.Sdf)
+            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_TARGET_MONO;
+
+        if (Unhinted(options))
+            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
+
+        var error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
+        if (error != FT_Error.FT_Err_Ok)
+            throw new FreeTypeException(error);
+
+        var slot = _face->glyph;
+
+        // Apply synthetic bold only if the font isn't already bold.
+        // This matches GDI behavior: requesting bold on an already-bold face
+        // doesn't apply additional emboldening.
+        if (options.Bold && (_face->style_flags & 0x01) == 0)
+        {
+            EmboldenGlyph(slot, _face);
+        }
+
+        // Apply synthetic italic only if the font isn't already italic.
+        if (options.Italic && (_face->style_flags & 0x02) == 0)
+        {
+            FT.FT_GlyphSlot_Oblique(slot);
+        }
+
+        return slot;
+    }
+
+    /// <summary>A composed color glyph: premultiplied BGRA, placed by its top-left pixel.</summary>
+    private readonly record struct ColorLayerBitmap(byte[] Pixels, int Left, int Top, int Width, int Height);
+
+    /// <summary>The largest composed color bitmap, in pixels; anything larger is left to FreeType.</summary>
+    private const long MaxColorLayerPixels = 16384L * 16384L;
+
+    /// <summary>
+    /// Draws a <c>COLR</c> version 0 glyph that FreeType's own path cannot: one with synthetic
+    /// bold or italic, or a bilevel one. Returns null when the request is neither or the glyph
+    /// has no usable layers (the slot then holds <paramref name="glyphIndex"/> again).
+    /// FT_Render_Glyph reloads each layer itself, which discards a style applied to the slot, and
+    /// its blend reads a 1-bit layer as 8-bit coverage, so these layers are loaded, styled,
+    /// rendered and blended here.
+    /// </summary>
+    /// <remarks>
+    /// INVARIANT: the blend is FreeType's <c>tt_face_colr_blend_layer</c> arithmetic (truncating
+    /// divisions, source-over on premultiplied BGRA, foreground black, or white on a palette
+    /// flagged for dark backgrounds), so glyphs drawn here and by FreeType match in tone.
+    /// </remarks>
+    private unsafe ColorLayerBitmap? RenderStyledColorLayers(uint glyphIndex, RasterOptions options)
+    {
+        if (!options.ColorFont)
+            return null;
+
+        var syntheticBold = options.Bold && (_face->style_flags & 0x01) == 0;
+        var syntheticItalic = options.Italic && (_face->style_flags & 0x02) == 0;
+        var bilevel = options.AntiAlias == AntiAliasMode.None && !options.Sdf;
+        if (!syntheticBold && !syntheticItalic && !bilevel)
+            return null;
+
+        var records = new List<(uint Glyph, uint Color)>();
+        var iterator = default(FreeTypeNative.FT_LayerIterator);
+        while (FreeTypeNative.FT_Get_Color_Glyph_Layer(_face, glyphIndex, out var layerGlyph, out var layerColor, ref iterator))
+            records.Add((layerGlyph, layerColor));
+        if (records.Count == 0)
+            return null;
+
+        byte* palette = null;
+        FreeTypeNative.FT_Palette_Data paletteData;
+        if (FreeTypeNative.FT_Palette_Select(_face, _paletteIndex, (IntPtr)(&palette)) != FT_Error.FT_Err_Ok
+            || FreeTypeNative.FT_Palette_Data_Get(_face, &paletteData) != FT_Error.FT_Err_Ok
+            || palette == null)
+            return null;
+
+        foreach (var (_, color) in records)
+        {
+            if (color != 0xFFFF && color >= paletteData.num_palette_entries)
+                return null;
+        }
+
+        var forDarkBackground = paletteData.palette_flags != null
+            && _paletteIndex < paletteData.num_palettes
+            && (paletteData.palette_flags[_paletteIndex] & FreeTypeNative.FT_PALETTE_FOR_DARK_BACKGROUND) != 0;
+
+        var renderMode = bilevel
+            ? FT_Render_Mode_.FT_RENDER_MODE_MONO
+            : FT_Render_Mode_.FT_RENDER_MODE_NORMAL;
+
+        var rendered = new List<(byte[] Coverage, int Left, int Top, int Width, int Height, uint Color)>(records.Count);
+        int left = int.MaxValue, top = int.MinValue, right = int.MinValue, bottom = int.MaxValue;
+        try
+        {
+            foreach (var (glyph, color) in records)
+            {
+                var slot = LoadStyledGlyph(glyph, options, loadColor: false);
+
+                // FreeType presets a 1x1 mono bitmap for an empty outline; a blank layer has no box.
+                if (bilevel && IsBlankOutline(slot))
+                    continue;
+
+                if (slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_BITMAP)
+                {
+                    var error = FT.FT_Render_Glyph(slot, renderMode);
+                    if (error != FT_Error.FT_Err_Ok)
+                        throw new FreeTypeException(error);
+                }
+
+                // An empty layer still widens the box to its origin, as FreeType's own blend does.
+                var width = (int)slot->bitmap.width;
+                var height = (int)slot->bitmap.rows;
+                left = Math.Min(left, slot->bitmap_left);
+                top = Math.Max(top, slot->bitmap_top);
+                right = Math.Max(right, slot->bitmap_left + width);
+                bottom = Math.Min(bottom, slot->bitmap_top - height);
+                if (width > 0 && height > 0)
+                    rendered.Add((LayerCoverage(slot), slot->bitmap_left, slot->bitmap_top, width, height, color));
+            }
+        }
+        catch (FreeTypeException)
+        {
+            LoadStyledGlyph(glyphIndex, options);
+            return null;
+        }
+
+        if (rendered.Count == 0)
+            return new ColorLayerBitmap(Array.Empty<byte>(), 0, 0, 0, 0);
+
+        var boxWidth = right - left;
+        var boxHeight = top - bottom;
+        if ((long)boxWidth * boxHeight > MaxColorLayerPixels)
+        {
+            LoadStyledGlyph(glyphIndex, options);
+            return null;
+        }
+
+        var pixels = new byte[boxWidth * boxHeight * 4];
+        foreach (var layer in rendered)
+        {
+            int b, g, r, alpha;
+            if (layer.Color == 0xFFFF)
+            {
+                b = g = r = forDarkBackground ? 255 : 0;
+                alpha = 255;
+            }
+            else
+            {
+                var entry = palette + layer.Color * 4; // FT_Color: blue, green, red, alpha
+                (b, g, r, alpha) = (entry[0], entry[1], entry[2], entry[3]);
+            }
+
+            for (var y = 0; y < layer.Height; y++)
+            {
+                var dst = ((top - layer.Top + y) * boxWidth + layer.Left - left) * 4;
+                for (var x = 0; x < layer.Width; x++, dst += 4)
+                {
+                    var fa = alpha * layer.Coverage[y * layer.Width + x] / 255;
+                    var inverse = 255 - fa;
+                    pixels[dst] = (byte)(pixels[dst] * inverse / 255 + b * fa / 255);
+                    pixels[dst + 1] = (byte)(pixels[dst + 1] * inverse / 255 + g * fa / 255);
+                    pixels[dst + 2] = (byte)(pixels[dst + 2] * inverse / 255 + r * fa / 255);
+                    pixels[dst + 3] = (byte)(pixels[dst + 3] * inverse / 255 + fa);
+                }
+            }
+        }
+
+        return new ColorLayerBitmap(pixels, left, top, boxWidth, boxHeight);
+    }
+
+    /// <summary>The slot's rendered gray or mono bitmap as tightly packed 8-bit coverage.</summary>
+    private static unsafe byte[] LayerCoverage(FT_GlyphSlotRec_* slot)
+    {
+        ref var bitmap = ref slot->bitmap;
+        var width = (int)bitmap.width;
+        var height = (int)bitmap.rows;
+        var mono = bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_MONO;
+        var coverage = new byte[width * height];
+        for (var y = 0; y < height; y++)
+        {
+            var row = bitmap.buffer + y * bitmap.pitch;
+            for (var x = 0; x < width; x++)
+            {
+                coverage[y * width + x] = mono
+                    ? (byte)((row[x / 8] & (0x80 >> (x % 8))) != 0 ? 255 : 0)
+                    : row[x];
+            }
+        }
+        return coverage;
     }
 
     /// <summary>
@@ -555,39 +787,73 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (glyphIndex == 0)
             return null; // Missing glyph
 
-        // Load the glyph without rendering, with the hinting RasterizeGlyph loads it with.
-        var loadFlags = FT_LOAD.FT_LOAD_DEFAULT;
-        if (LightHinted(options))
-            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_TARGET_LIGHT;
-        if (Unhinted(options))
-            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
+        var slot = LoadStyledGlyph(glyphIndex, options);
+        var advance = F26Dot6ToRounded(slot->metrics.horiAdvance);
+        if (RenderStyledColorLayers(glyphIndex, options) is { } layers)
+            return new Font.Models.GlyphMetrics(layers.Left, layers.Top, advance, layers.Width, layers.Height);
 
-        var error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
-        if (error != FT_Error.FT_Err_Ok)
-            throw new FreeTypeException(error);
+        var renderMode = RenderModeFor(options);
 
-        var slot = _face->glyph;
-
-        if (options.Bold && (_face->style_flags & 0x01) == 0)
+        // These metrics must equal what RasterizeGlyph returns. slot->metrics cannot provide
+        // that: synthetic italic (FT_GlyphSlot_Oblique) shears the outline without updating it,
+        // and it is unsnapped when hinting is off.
+        //
+        // Grayscale, Light and SDF fill the outline's control box grown outward to whole pixels
+        // (SDF then pads it by the spread), so those are measured without rendering. Mono snaps
+        // the box differently, LCD pads it, and color layers span more than the base outline,
+        // so those let FreeType render and report the bitmap box; embedded bitmaps are final
+        // once loaded.
+        if (slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_OUTLINE
+            || options.ColorFont
+            || renderMode is FT_Render_Mode_.FT_RENDER_MODE_MONO or FT_Render_Mode_.FT_RENDER_MODE_LCD)
         {
-            EmboldenGlyph(slot, _face);
-        }
-        if (options.Italic && (_face->style_flags & 0x02) == 0)
-        {
-            FT.FT_GlyphSlot_Oblique(slot);
+            var blankOutline = IsBlankOutline(slot);
+            if (slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_BITMAP)
+            {
+                if (options.Sdf)
+                    EnsureSdfSpread(options.SdfSpread);
+
+                var error = FT.FT_Render_Glyph(slot, renderMode);
+                if (error != FT_Error.FT_Err_Ok)
+                    throw new FreeTypeException(error);
+            }
+
+            // The empty box RasterizeGlyph reports for a blank glyph's 1x1 mono preset.
+            if (blankOutline && slot->bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_MONO)
+                return new Font.Models.GlyphMetrics(0, 0, advance, 0, 0);
+
+            var bitmapWidth = (int)slot->bitmap.width;
+            var bitmapRows = (int)slot->bitmap.rows;
+            if (slot->bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_LCD)
+            {
+                // The pixel-width box RasterizeGlyph repacks LCD to, blank glyphs included.
+                if (bitmapWidth == 0 || bitmapRows == 0)
+                    return new Font.Models.GlyphMetrics(0, 0, advance, 0, 0);
+                bitmapWidth /= 3;
+            }
+
+            return new Font.Models.GlyphMetrics(
+                BearingX: slot->bitmap_left,
+                BearingY: slot->bitmap_top,
+                Advance: advance,
+                Width: bitmapWidth,
+                Height: bitmapRows);
         }
 
-        // Extract metrics from 26.6 fixed-point values (no rendering needed).
-        ref var metrics = ref slot->metrics;
-        var bearingX = F26Dot6ToRounded(metrics.horiBearingX);
-        var bearingY = F26Dot6ToRounded(metrics.horiBearingY);
-        var width = F26Dot6ToRounded(metrics.width);
-        var height = F26Dot6ToRounded(metrics.height);
+        FreeTypeNative.FT_BBox cbox;
+        FreeTypeNative.FT_Outline_Get_CBox(&slot->outline, &cbox);
+        var xMin = (int)(cbox.xMin >> 6);
+        var yMin = (int)(cbox.yMin >> 6);
+        var xMax = (int)((cbox.xMax + 63) >> 6);
+        var yMax = (int)((cbox.yMax + 63) >> 6);
+        var bearingX = xMin;
+        var bearingY = yMax;
+        var width = xMax - xMin;
+        var height = yMax - yMin;
 
         // FreeType's SDF renderer pads a non-empty outline glyph's bitmap by the spread on
-        // every side; the metrics must include it so they describe the bitmap RasterizeGlyph
-        // returns (BmFont.QueryAtlasSize sizes cells from them).
-        if (options.Sdf && width > 0 && height > 0 && slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_BITMAP)
+        // every side.
+        if (options.Sdf && width > 0 && height > 0)
         {
             var spread = ClampSdfSpread(options.SdfSpread);
             bearingX -= spread;
@@ -599,7 +865,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         return new Font.Models.GlyphMetrics(
             BearingX: bearingX,
             BearingY: bearingY,
-            Advance: F26Dot6ToRounded(metrics.horiAdvance),
+            Advance: advance,
             Width: width,
             Height: height);
     }
@@ -704,7 +970,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         // The box comes from the emboldened outline's control box rounded outward to whole
         // pixels, as FreeType presets an anti-aliased bitmap from it: FT_Outline_Embolden grows
         // the outline by about `strength` in all, half per side, so a fixed adjustment misstates
-        // it, and GetGlyphMetrics must describe the bitmap RasterizeGlyph returns.
+        // it, and the slot's metrics must describe the emboldened glyph.
         FreeTypeNative.FT_BBox cbox;
         FreeTypeNative.FT_Outline_Get_CBox(&slot->outline, &cbox);
         var xMin = cbox.xMin & ~(nint)63;
@@ -798,6 +1064,61 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
         for (var i = 0; i < coverage.Length; i++)
             coverage[i] = lut[coverage[i]];
+    }
+
+    /// <summary>
+    /// Repacks an LCD bitmap (three subpixel coverage bytes per pixel, rows <paramref name="pitch"/>
+    /// bytes apart) as tightly packed Rgba32: R, G, B are the subpixels in order and A is the
+    /// largest of them, so a fully covered pixel is opaque white like a promoted grayscale glyph
+    /// and no channel ever exceeds alpha.
+    /// </summary>
+    private static byte[] LcdSubpixelsToRgba(byte[] subpixels, int pitch, int width, int height)
+    {
+        var rgba = new byte[width * height * 4];
+        for (var row = 0; row < height; row++)
+        {
+            var src = row * pitch;
+            var dst = row * width * 4;
+            for (var x = 0; x < width; x++, src += 3, dst += 4)
+            {
+                byte r = subpixels[src], g = subpixels[src + 1], b = subpixels[src + 2];
+                rgba[dst] = r;
+                rgba[dst + 1] = g;
+                rgba[dst + 2] = b;
+                rgba[dst + 3] = Math.Max(r, Math.Max(g, b));
+            }
+        }
+        return rgba;
+    }
+
+    /// <summary>
+    /// Converts premultiplied BGRA pixels to straight-alpha RGBA in place. Each color channel is
+    /// divided by alpha with round-to-nearest and clamped to 255 (a malformed channel above its
+    /// alpha would otherwise overflow); alpha 0 stays transparent black and alpha 255 is
+    /// unchanged apart from the swap.
+    /// </summary>
+    private static void PremultipliedBgraToStraightRgba(byte[] pixels)
+    {
+        for (var i = 0; i + 3 < pixels.Length; i += 4)
+        {
+            int b = pixels[i], g = pixels[i + 1], r = pixels[i + 2], a = pixels[i + 3];
+            if (a == 0)
+            {
+                pixels[i] = pixels[i + 1] = pixels[i + 2] = 0;
+            }
+            else if (a == 255)
+            {
+                pixels[i] = (byte)r;
+                pixels[i + 2] = (byte)b;
+            }
+            else
+            {
+                var half = a / 2;
+                pixels[i] = (byte)Math.Min(255, (r * 255 + half) / a);
+                pixels[i + 1] = (byte)Math.Min(255, (g * 255 + half) / a);
+                pixels[i + 2] = (byte)Math.Min(255, (b * 255 + half) / a);
+            }
+        }
     }
 
     /// <summary>

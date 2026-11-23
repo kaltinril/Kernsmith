@@ -53,7 +53,7 @@ RasterizerBackend enum:
 | **Anti-alias: None** | Yes | Yes | Yes | Yes | Yes |
 | **Anti-alias: Grayscale** | Yes | Yes | Yes | Yes | Yes |
 | **Anti-alias: Light** | Yes | No | No | No | Yes (y-only auto-hinting) |
-| **Anti-alias: LCD** | Yes (raw 3-bytes-per-pixel buffer) | No | No | No | Yes (RGBA; RGB/BGR/vertical orders, `Light`/`Smooth`/`None` filters) |
+| **Anti-alias: LCD** | Yes (RGBA; no filter or order options) | No | No | No | Yes (RGBA; RGB/BGR/vertical orders, `Light`/`Smooth`/`None` filters) |
 | **Hinting** | FreeType auto-hinter + font bytecode | Windows GDI hinter | DirectWrite natural/symmetric hinting | None | Own y-only auto-hinter, `Light` only |
 | **Bold/italic simulation** | FreeType emboldening + oblique shear | GDI font mapper + MAT2 shear | DWRITE_FONT_SIMULATIONS flags | Synthetic bold + oblique shear | FreeType-matched outline emboldening + 12° shear |
 | **Font collection (TTC) support** | Yes (faceIndex parameter) | No (faceIndex must be 0) | Yes (faceIndex parameter) | Yes (faceIndex parameter) | Yes (faceIndex parameter) |

@@ -221,17 +221,13 @@ internal static class FuzzRunner
                 }
                 catch (BmFontException)
                 {
+                    // Includes AtlasPackingException: a glyph larger than the page, for damaged and
+                    // undamaged fonts alike, is not a hostile-input bug.
                     return null;
                 }
                 catch (ArgumentOutOfRangeException ex) when (ex.ParamName == "paletteIndex")
                 {
                     // Documented: SelectColorPalette rejects a palette the font does not have.
-                    return null;
-                }
-                catch (InvalidOperationException ex) when (ex.Message.Contains("does not fit in a", StringComparison.Ordinal))
-                {
-                    // Core's packers report a glyph larger than the page this way (PackIntoTests
-                    // pins it), for damaged and undamaged fonts alike; not a hostile-input bug.
                     return null;
                 }
                 catch (Exception ex)

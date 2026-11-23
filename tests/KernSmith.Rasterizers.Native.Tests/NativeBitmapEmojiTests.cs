@@ -47,10 +47,10 @@ public class NativeBitmapEmojiTests
         native.Width.ShouldBe(freeType.Width);
         native.Height.ShouldBe(freeType.Height);
 
-        // FreeType returns premultiplied color; Native straight. Premultiplied, they agree to
-        // the rounding of the premultiplication.
+        // Both are straight. Premultiplied, they agree to the rounding of the premultiplication.
         var premultiplied = ColorComparison.Premultiply(native).BitmapData;
-        int worst = premultiplied.Zip(freeType.BitmapData, (a, b) => Math.Abs(a - b)).Max();
+        var reference = ColorComparison.Premultiply(freeType).BitmapData;
+        int worst = premultiplied.Zip(reference, (a, b) => Math.Abs(a - b)).Max();
         worst.ShouldBeLessThanOrEqualTo(1);
     }
 
@@ -64,7 +64,7 @@ public class NativeBitmapEmojiTests
         {
             var native = RenderNative(codepoint, new RasterOptions { Size = size, ColorFont = true });
             var strike = RenderFreeType(codepoint, new RasterOptions { Size = StrikePpem, ColorFont = true });
-            var reference = Supersample(strike, size / StrikePpem);
+            var reference = Supersample(ColorComparison.Premultiply(strike), size / StrikePpem);
 
             // Same placement: the box of the scaled strike rectangle.
             native.Metrics.BearingX.ShouldBe(reference.Metrics.BearingX, $"U+{codepoint:X}");

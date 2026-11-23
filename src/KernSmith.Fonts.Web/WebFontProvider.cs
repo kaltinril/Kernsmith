@@ -55,10 +55,13 @@ public sealed class WebFontProvider
     /// </summary>
     internal string BuildCssUrl(string family, int weight, bool italic)
     {
-        // Google Fonts / Bunny Fonts CSS v1 syntax: family=Name:[ital,]wght
-        // e.g. ?family=Roboto:400  or  ?family=Roboto:ital,400
+        // Google Fonts / Bunny Fonts CSS v1 syntax: family=Name:{wght}[italic]
+        // e.g. ?family=Roboto:400  or  ?family=Roboto:700italic
+        // Not "ital,700": both CDNs read that as two variants (italic 400 + normal 700). The
+        // CSS2 tuple form (ital,wght@1,700) is only understood by the /css2 endpoint.
         var encodedFamily = Uri.EscapeDataString(family).Replace("%20", "+");
-        var spec = italic ? $"ital,{weight}" : weight.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var weightText = weight.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var spec = italic ? $"{weightText}italic" : weightText;
         return $"{CssBaseUrl}?family={encodedFamily}:{spec}";
     }
 }

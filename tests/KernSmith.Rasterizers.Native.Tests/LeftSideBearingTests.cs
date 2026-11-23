@@ -56,6 +56,7 @@ public class LeftSideBearingTests
 
             var expected = freeType.GetGlyphMetrics(codepoint, options)!.Value;
             var actual = native.GetGlyphMetrics(codepoint, options)!.Value;
+
             if (actual.BearingX != expected.BearingX)
             {
                 failures.Append(CultureInfo.InvariantCulture,
@@ -74,6 +75,40 @@ public class LeftSideBearingTests
         // Guards the comparison: Roboto must actually exercise the mismatch, simple and composite.
         mismatched.ShouldBeGreaterThanOrEqualTo(40);
         failures.ToString().ShouldBeEmpty();
+    }
+
+    [Theory]
+    [InlineData(0x2013)]
+    [InlineData(0x2014)]
+    [InlineData(0x2015)]
+    [InlineData(0x2E3A)]
+    [InlineData(0x2E3B)]
+    public void ScaledCompositeDash_KeepsThePartialColumnsFreeTypeDraws(int codepoint)
+    {
+        // These dashes scale a component by 1.2 or 1.6 in x, so an edge falls inside a pixel at
+        // one unit per pixel (the en dash starts at 160.6) while the glyf header is rounded.
+        var bytes = TestFonts.RobotoRegularBytes();
+        var options = new RasterOptions { Size = 2048, Dpi = 72, EnableHinting = false };
+
+        using IRasterizer freeType = new FreeTypeRasterizer();
+        freeType.LoadFont(bytes);
+        using IRasterizer native = new NativeRasterizer();
+        native.LoadFont(bytes);
+
+        var expected = freeType.RasterizeGlyph(codepoint, options)!;
+        var actual = native.RasterizeGlyph(codepoint, options)!;
+
+        (actual.Metrics.BearingX, actual.Width).ShouldBe((expected.Metrics.BearingX, expected.Width));
+        int row = actual.Height / 2;
+        foreach (int column in new[] { 0, actual.Width - 1 })
+        {
+            int coverage = actual.BitmapData[(row * actual.Pitch) + column];
+            int reference = expected.BitmapData[(row * expected.Pitch) + column];
+            coverage.ShouldBeGreaterThan(0, $"column {column} holds a partial edge");
+
+            // FreeType snaps the edge to 1/64 px, which moves a column's coverage by up to 255/64.
+            Math.Abs(coverage - reference).ShouldBeLessThanOrEqualTo(4, $"column {column}");
+        }
     }
 
     [Fact]

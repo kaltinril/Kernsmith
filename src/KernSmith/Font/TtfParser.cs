@@ -922,14 +922,29 @@ internal class TtfParser
         // One resolver per distinct lookup: a lookup several 'kern' features list applies once.
         var resolvers = new Dictionary<int, GposLookupResolver>();
 
+        // Where each lookup's raw records sit in pairs. Reading a lookup again yields the same
+        // records, so a repeated listing copies them instead of walking its subtables.
+        var rawRanges = new Dictionary<int, (int Start, int Count)>();
+
         foreach (var lookupIndex in kernLookupIndices)
         {
             if (lookupIndex >= lookupCount || 2 + (lookupIndex + 1) * 2 > lookupList.Length)
                 continue;
 
-            GposLookupResolver? resolver = null;
-            if (!resolvers.ContainsKey(lookupIndex))
-                resolvers[lookupIndex] = resolver = new GposLookupResolver();
+            if (rawRanges.TryGetValue(lookupIndex, out var rawRange))
+            {
+                if (!SpendGposWork(1 + rawRange.Count, rawRange.Count))
+                    break;
+                pairs.EnsureCapacity(pairs.Count + rawRange.Count);
+                for (var p = 0; p < rawRange.Count; p++)
+                    pairs.Add(pairs[rawRange.Start + p]);
+                continue;
+            }
+
+            var resolver = new GposLookupResolver();
+            resolvers[lookupIndex] = resolver;
+            var rawStart = pairs.Count;
+            rawRanges[lookupIndex] = (rawStart, 0);
 
             var lookupOffset = BinaryPrimitives.ReadUInt16BigEndian(lookupList.Slice(2 + lookupIndex * 2));
             if (lookupOffset >= lookupList.Length)
@@ -968,6 +983,8 @@ internal class TtfParser
                 if (effectiveType == 2)
                     ParsePairPos(subtable, pairs, resolver);
             }
+
+            rawRanges[lookupIndex] = (rawStart, pairs.Count - rawStart);
         }
 
         GposPairs = pairs;
@@ -1035,14 +1052,16 @@ internal class TtfParser
     }
 
     /// <summary>
-    /// Budget for walking GPOS kerning: subtables, coverage, class and pair-record entries
-    /// visited, plus pairs produced. Lookups, subtables and their tables can be shared and listed
-    /// repeatedly, and a class pair expands to every left glyph times every right glyph, so a
-    /// small hostile table can otherwise demand billions of steps.
+    /// Budget for walking GPOS kerning: subtables, plus every Coverage and ClassDef range record,
+    /// class assignment and pair record actually read, plus pairs produced. Lookups, subtables and
+    /// their tables can be shared and listed repeatedly, and a class pair expands to every left
+    /// glyph times every right glyph, so a small hostile table can otherwise demand billions of
+    /// steps. A charge must cover the records a walk reads, not the glyphs it yields: overlapping
+    /// or inverted ranges yield few glyphs from 65,535 records.
     /// </summary>
     /// <remarks>
     /// Measured over the Windows system fonts and the test fixtures parsed without a subset, the
-    /// most any spent was about 16 million steps and 5.4 million pairs (Calibri Light); both limits
+    /// most any spent was about 6.6 million steps and 5.4 million pairs (Calibri Light); both limits
     /// leave room above that, and a subset spends far less.
     /// </remarks>
     internal const long MaxGposWork = 64_000_000;
@@ -1066,6 +1085,9 @@ internal class TtfParser
 
     private long _gposWork;
     private long _gposPairs;
+
+    /// <summary>The steps charged to the GPOS budget by this parse.</summary>
+    internal long GposWorkSpent => _gposWork;
 
     /// <summary>
     /// Charges <paramref name="steps"/> and <paramref name="newPairs"/> to the GPOS budget; false
@@ -1162,8 +1184,9 @@ internal class TtfParser
         {
             var firstGlyphOf = firstGlyphPool.AsSpan(0, pairSetCount);
             firstGlyphOf.Fill(-1);
-            var coverage = ParseCoverage(From(subtable, coverageOffset));
-            if (!SpendGposWork(pairSetCount + coverage.Count))
+            var coverageData = From(subtable, coverageOffset);
+            var coverage = ParseCoverage(coverageData);
+            if (!SpendGposWork(pairSetCount + coverage.Count + RangeRecordCount(coverageData)))
                 return;
             foreach (var (glyph, index) in coverage)
             {
@@ -1252,11 +1275,12 @@ internal class TtfParser
         var leftByClass = new List<int>?[class1Count];
         var anyLeft = false;
         var classDef1 = From(subtable, classDef1Offset);
-        var class1 = RentClassTable(classDef1, out var class1Length);
+        var class1 = RentClassTable(classDef1, out var class1Length, out var class1Steps);
         try
         {
-            var coverage = ParseCoverage(From(subtable, coverageOffset));
-            if (!SpendGposWork(class1Length + coverage.Count))
+            var coverageData = From(subtable, coverageOffset);
+            var coverage = ParseCoverage(coverageData);
+            if (!SpendGposWork(class1Steps + coverage.Count + RangeRecordCount(coverageData)))
                 return;
             foreach (var (glyph, _) in coverage)
             {
@@ -1287,10 +1311,11 @@ internal class TtfParser
         var rightByClass = new List<int>?[class2Count];
         List<int>? unlistedClassZero = null;
         var classDef2 = From(subtable, classDef2Offset);
-        var class2 = RentClassTable(classDef2, out var class2Length);
+        var class2 = RentClassTable(classDef2, out var class2Length, out var class2Steps);
         try
         {
-            if (!SpendGposWork(2L * class2Length + (relevant?.Count ?? 0)))
+            // The table just built, and the per-class walk below, which reads the same records.
+            if (!SpendGposWork(2L * class2Steps + (relevant?.Count ?? 0)))
                 return;
             VisitClassDef(classDef2, class2, rightByClass, relevant);
             if (relevant != null)
@@ -1413,15 +1438,29 @@ internal class TtfParser
     /// A pooled glyph -> class table for a ClassDef: entry <c>g</c>, for <c>g</c> below
     /// <paramref name="length"/>, is the class of the ClassDef's last assignment to <c>g</c>, or
     /// <see cref="UnclassifiedGlyph"/>; glyphs at or past <paramref name="length"/> are
-    /// unclassified. Return it to <see cref="ArrayPool{T}.Shared"/>.
+    /// unclassified. <paramref name="steps"/> is the entries building it touched: the range
+    /// records read for the limit, the table filled and the assignments walked, which overlapping
+    /// ranges can make far more than <paramref name="length"/>. Return it to
+    /// <see cref="ArrayPool{T}.Shared"/>.
     /// </summary>
-    private static int[] RentClassTable(ReadOnlySpan<byte> classDef, out int length)
+    private static int[] RentClassTable(ReadOnlySpan<byte> classDef, out int length, out long steps)
     {
         length = ClassDefGlyphLimit(classDef);
         var table = ArrayPool<int>.Shared.Rent(Math.Max(length, 1));
         table.AsSpan(0, length).Fill(UnclassifiedGlyph);
-        VisitClassDef(classDef, table, null, null);
+        steps = RangeRecordCount(classDef) + length + VisitClassDef(classDef, table, null, null);
         return table;
+    }
+
+    /// <summary>
+    /// The range records of a format 2 Coverage or ClassDef that fit in <paramref name="data"/>
+    /// (both start format, rangeCount, then 6-byte records); 0 for any other format.
+    /// </summary>
+    private static int RangeRecordCount(ReadOnlySpan<byte> data)
+    {
+        if (data.Length < 4 || BinaryPrimitives.ReadUInt16BigEndian(data) != 2)
+            return 0;
+        return Math.Min((int)BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2)), (data.Length - 4) / 6);
     }
 
     /// <summary>One past the highest glyph id a ClassDef can assign a class to (0 when none).</summary>
@@ -1467,31 +1506,34 @@ internal class TtfParser
     /// <paramref name="classes"/> is that finished table, and each glyph is listed once, at its
     /// first assignment, under its final class — skipping classes past the end of
     /// <paramref name="byClass"/> and glyphs outside <paramref name="relevant"/>; afterwards an
-    /// entry is <see cref="UnclassifiedGlyph"/> exactly when it was before.
+    /// entry is <see cref="UnclassifiedGlyph"/> exactly when it was before. Returns the records
+    /// and assignments walked.
     /// </summary>
-    private static void VisitClassDef(
+    private static long VisitClassDef(
         ReadOnlySpan<byte> data, int[] classes, List<int>?[]? byClass, HashSet<int>? relevant)
     {
         if (data.Length < 4)
-            return;
+            return 0;
 
         var format = BinaryPrimitives.ReadUInt16BigEndian(data);
 
         if (format == 1)
         {
             if (data.Length < 6)
-                return;
+                return 0;
             var startGlyph = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2));
             var glyphCount = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(4));
             for (var i = 0; i < glyphCount; i++)
             {
                 if (6 + (i + 1) * 2 > data.Length)
-                    break;
+                    return i;
                 var classValue = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(6 + i * 2));
                 Visit(startGlyph + i, classValue, classes, byClass, relevant);
             }
+            return glyphCount;
         }
-        else if (format == 2)
+
+        if (format == 2)
         {
             var visited = 0;
             var classRangeCount = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2));
@@ -1510,7 +1552,10 @@ internal class TtfParser
                 for (var g = startGlyph; g <= endGlyph && visited < MaxGlyphIds; g++, visited++)
                     Visit(g, classValue, classes, byClass, relevant);
             }
+            return (long)RangeRecordCount(data) + visited;
         }
+
+        return 0;
 
         static void Visit(int glyph, int classValue, int[] classes, List<int>?[]? byClass, HashSet<int>? relevant)
         {

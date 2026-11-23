@@ -10,8 +10,9 @@ namespace KernSmith.Rasterizers.Native.Tests;
 internal static class ColorComparison
 {
     /// <summary>
-    /// A copy of an RGBA glyph with each color channel multiplied by alpha — the form FreeType's
-    /// color path returns.
+    /// A copy of an RGBA glyph with each color channel multiplied by alpha — the space backends
+    /// are compared in, because a straight color at very low alpha is mostly rounding noise.
+    /// Undoes the FreeType backend's un-premultiply exactly, so its bytes are FreeType's own.
     /// </summary>
     public static RasterizedGlyph Premultiply(RasterizedGlyph glyph)
     {

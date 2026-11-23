@@ -33,13 +33,11 @@ namespace KernSmith.Rasterizers.Native.Tests;
 /// and FreeType keeps hinting above 40 ppem where Native tapers off, so heights land on
 /// different rows — its floors are the loosest. Every other FreeType comparison is unhinted
 /// (Native hints only Light).</item>
-/// <item>Lcd: the FreeType backend returns its raw 3-bytes-per-pixel LCD buffer labelled
-/// <c>Grayscale8</c> (three times as wide); it is split into R, G and B planes and its width
-/// divided by three before comparing.</item>
+/// <item>Lcd: both backends return RGBA subpixel glyphs; R, G and B are scored as separate planes.</item>
 /// <item>None: FreeType's mono renderer samples pixel centres, Native thresholds coverage at 50%;
 /// both run dropout control, so edge pixels flip and single-pixel strokes shift.</item>
-/// <item>Color: FreeType's color glyphs are premultiplied, Native's straight, so Native's are
-/// premultiplied first and every channel is scored (the worst channel counts).</item>
+/// <item>Color: both backends' color glyphs are straight; both are premultiplied first and every
+/// channel is scored (the worst channel counts).</item>
 /// </list>
 /// </remarks>
 public class NativeSimilarityMatrixTests
@@ -227,12 +225,11 @@ public class NativeSimilarityMatrixTests
             }
 
             compared++;
-            int theirWidth = lcd ? theirs.Width / 3 : theirs.Width;
             if (mine.Metrics.Advance == theirs.Metrics.Advance)
                 advanceExact++;
 
             bool mineBlank = mine.Width == 0 || mine.Height == 0;
-            bool theirsBlank = theirWidth == 0 || theirs.Height == 0;
+            bool theirsBlank = theirs.Width == 0 || theirs.Height == 0;
             if (mineBlank && theirsBlank)
                 continue;
 
@@ -241,7 +238,7 @@ public class NativeSimilarityMatrixTests
             {
                 if (Math.Abs(mine.Metrics.BearingX - theirs.Metrics.BearingX) <= 1 && Math.Abs(mine.Metrics.BearingY - theirs.Metrics.BearingY) <= 1)
                     bearings++;
-                if (Math.Abs(mine.Width - theirWidth) <= 1 && Math.Abs(mine.Height - theirs.Height) <= 1)
+                if (Math.Abs(mine.Width - theirs.Width) <= 1 && Math.Abs(mine.Height - theirs.Height) <= 1)
                     boxes++;
             }
 
@@ -268,7 +265,7 @@ public class NativeSimilarityMatrixTests
     private static double Ratio(int count, int of) => of == 0 ? 1 : (double)count / of;
 
     /// <summary>SSIM of two glyphs on a canvas covering both, anchored at the pen. RGBA is scored
-    /// per channel (Native premultiplied first) and LCD per subpixel plane; the result is the
+    /// per channel (both premultiplied first) and LCD per subpixel plane; the result is the
     /// worst channel for color and the mean of R, G and B for LCD.</summary>
     private static double Score(RasterizedGlyph mine, RasterizedGlyph theirs, bool lcdReference)
     {
@@ -276,24 +273,23 @@ public class NativeSimilarityMatrixTests
         {
             double sum = 0;
             for (int ch = 0; ch < 3; ch++)
-                sum += PlaneSsim(Plane(mine, ch, 4), Plane(theirs, ch, 3));
+                sum += PlaneSsim(Plane(mine, ch, 4), Plane(theirs, ch, 4));
 
             return sum / 3;
         }
 
         if (mine.Format == PixelFormat.Rgba32)
-            return ColorComparison.MinimumChannelSsim(ColorComparison.Premultiply(mine), theirs);
+            return ColorComparison.MinimumChannelSsim(ColorComparison.Premultiply(mine), ColorComparison.Premultiply(theirs));
 
         return PlaneSsim(Plane(mine, 0, 1), Plane(theirs, 0, 1));
     }
 
     private sealed record GlyphPlane(byte[] Data, int Width, int Height, int Left, int Top);
 
-    /// <summary>One channel of a glyph: <paramref name="stride"/> bytes per pixel, so 3 splits
-    /// the FreeType backend's LCD buffer and 4 an RGBA glyph.</summary>
+    /// <summary>One channel of a glyph with <paramref name="stride"/> bytes per pixel.</summary>
     private static GlyphPlane Plane(RasterizedGlyph glyph, int channel, int stride)
     {
-        int width = glyph.Width / (stride == 3 ? 3 : 1);
+        int width = glyph.Width;
         var data = new byte[width * glyph.Height];
         for (int y = 0; y < glyph.Height; y++)
         {

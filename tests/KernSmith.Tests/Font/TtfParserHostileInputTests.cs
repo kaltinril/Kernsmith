@@ -325,6 +325,56 @@ public class TtfParserHostileInputTests
         parser.GposPairs.Count.ShouldBeLessThanOrEqualTo((int)TtfParser.MaxGposPairs);
     }
 
+    [Fact]
+    public void Gpos_ClassDefRangeRecords_AreChargedToTheBudget()
+    {
+        // Every record covers glyph 6, so the glyph limit is 7 however many records there are;
+        // the parser walks the records three times (limit, class table, per-class lists).
+        const int Records = 60_000;
+
+        var parser = new TtfParser(RobotoWithGpos(GposWithLookups(RepeatedRangeClassDefSubtable(Records), [0])));
+
+        parser.GposWorkSpent.ShouldBeGreaterThanOrEqualTo(3L * Records);
+    }
+
+    [Fact]
+    public void Gpos_CoverageRangeRecords_AreChargedToTheBudget()
+    {
+        // Inverted ranges add no coverage entries, but each record is still read.
+        const int Records = 60_000;
+        var coverage = Concat([U16(2), U16(Records), .. Enumerable.Repeat(Concat(U16(5), U16(4), U16(0)), Records)]);
+
+        var parser = new TtfParser(RobotoWithGpos(GposWithLookups(PairPosFormat1(coverage: coverage), [0])));
+
+        parser.GposWorkSpent.ShouldBeGreaterThanOrEqualTo(Records);
+    }
+
+    [Fact]
+    public void Gpos_ManyLookupsSharingOneHugeClassDef_ExhaustTheBudget()
+    {
+        // 2000 distinct lookup indices, all pointing at one lookup, each walking 60,000 records
+        // three times: 360 million reads, so the budget has to run out partway.
+        var lookups = Enumerable.Range(0, 2000).ToArray();
+
+        var parser = new TtfParser(RobotoWithGpos(GposWithLookups(RepeatedRangeClassDefSubtable(60_000), lookups)));
+
+        parser.GposWorkSpent.ShouldBeGreaterThan(TtfParser.MaxGposWork);
+    }
+
+    [Fact]
+    public void Gpos_LookupListedRepeatedly_IsWalkedOnce_AndKeepsItsRawPairsAndKerning()
+    {
+        var subtable = RepeatedRangeClassDefSubtable(60_000);
+
+        var once = new TtfParser(RobotoWithGpos(GposWithLookups(subtable, [0])));
+        var repeated = new TtfParser(RobotoWithGpos(GposWithLookups(subtable, [.. Enumerable.Repeat(0, 1000)])));
+
+        repeated.GposPairs.Count.ShouldBe(1000);
+        repeated.GposPairs.ShouldAllBe(p => p.LeftCodepoint == 5 && p.RightCodepoint == 6 && p.XAdvanceAdjustment == -40);
+        repeated.GposKerningPairs.ShouldHaveSingleItem().XAdvanceAdjustment.ShouldBe(-40);
+        repeated.GposWorkSpent.ShouldBeLessThan(once.GposWorkSpent + 10_000);
+    }
+
     // ------------------------------------------------------------ name strings in output
 
     [Fact]
@@ -367,6 +417,33 @@ public class TtfParserHostileInputTests
             U16(features), records,                                      // FeatureList
             U16(0), U16(lookupRepeats), new byte[2 * lookupRepeats]);   // Feature: lookup 0, repeated
     }
+
+    /// <summary>
+    /// A GPOS with one 'kern' feature listing <paramref name="lookupIndices"/>; the LookupList has
+    /// one entry per index up to the largest, all pointing at a single lookup holding
+    /// <paramref name="subtable"/>. The subtable comes last, so it may pass the 16-bit offsets.
+    /// </summary>
+    private static byte[] GposWithLookups(byte[] subtable, int[] lookupIndices)
+    {
+        int lookupCount = lookupIndices.Max() + 1;
+        int lookupListAt = 22 + (2 * lookupIndices.Length);
+        int lookupAt = 2 + (2 * lookupCount);
+        return Concat(
+            U16(1), U16(0), U16(0), U16(10), U16((ushort)lookupListAt),            // header
+            U16(1), Tag("kern"), U16(8),                                           // FeatureList @10
+            U16(0), U16(lookupIndices.Length),                                     // Feature @18
+            Concat([.. lookupIndices.Select(i => U16(i))]),
+            U16(lookupCount), Concat([.. Enumerable.Repeat(U16(lookupAt), lookupCount)]), // LookupList
+            U16(2), U16(0), U16(1), U16(8),                                        // Lookup
+            subtable);
+    }
+
+    /// <summary>
+    /// PairPos format 2 kerning glyphs 5 -> 6 by -40, whose ClassDef2 is
+    /// <paramref name="records"/> copies of one range record putting glyph 6 in class 1.
+    /// </summary>
+    private static byte[] RepeatedRangeClassDefSubtable(int records) =>
+        PairPosFormat2(Concat([U16(2), U16(records), .. Enumerable.Repeat(Concat(U16(6), U16(6), U16(1)), records)]));
 
     /// <summary>A cmap with one (3, 10) format 12 subtable.</summary>
     private static byte[] CmapFormat12(params (uint Start, uint End, uint Glyph)[] groups)

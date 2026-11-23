@@ -7,6 +7,21 @@ public sealed class SkylinePackerTests
 {
     private readonly SkylinePacker _packer = new();
 
+    [Theory]
+    [InlineData(600, 10, 512)] // wider than the page
+    [InlineData(10, 300, 256)] // taller than the page
+    public void Pack_GlyphLargerThanPage_ThrowsAtlasPackingExceptionWithTheSizes(int width, int height, int exceeded)
+    {
+        var glyphs = new List<GlyphRect> { new(Id: 65, Width: width, Height: height) };
+
+        var ex = Should.Throw<AtlasPackingException>(() => _packer.Pack(glyphs, 512, 256));
+
+        ex.GlyphWidth.ShouldBe(width);
+        ex.GlyphHeight.ShouldBe(height);
+        ex.MaxTextureSize.ShouldBe(exceeded);
+        ex.Message.ShouldContain("does not fit in a 512x256 page", Case.Sensitive);
+    }
+
     [Fact]
     public void Pack_SingleGlyph_FitsOnOnePage()
     {

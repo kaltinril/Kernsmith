@@ -116,7 +116,7 @@ Compares baseline vs current output across four categories:
 
 1. **Hardcoded comparison PNGs** (`comparison.png` through `comparison4.png`) — magenta-highlighted pixel diffs
 2. **Per-font comparison PNGs** (`comparison-*.png`) — auto-discovered, same magenta diff format
-3. **FNT metadata files** (`*.fnt`) — line-by-line text diff, skipping the `kernsmith` version line (contains commit hash that always differs between branches)
+3. **FNT metadata files** (`*.fnt`) — line-by-line text diff that ignores only the `version` (and any `commit`) token of the `kernsmith` line, which always differs between branches; the rest of that line is extended metadata (`sdfSpread`, `outlineThickness`, ...) and is compared
 4. **Atlas PNGs** (`{config}-{backend}_N.png`) — the generated texture pages themselves, every pixel over all four channels (within `--tolerance`), reported per file as `IDENTICAL` or `DIFFERENT (N pixels)`; a changed page size is a difference, and a differing page gets a `diff_{name}` image. This is the only check that sees content the comparison images do not draw: an outline or shadow routed into its own channel (`outline-shadow-channel`), or RGB under transparent alpha.
 
 Identical pixels are dimmed, different pixels are bright magenta (#FF00FF).

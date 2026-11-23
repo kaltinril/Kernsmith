@@ -64,4 +64,39 @@ public class QueryAtlasSizeAccuracyTests
 
         (queriedArea / actualArea).ShouldBeInRange(0.99, 1.01, $"{config} on {backend}");
     }
+
+    [Theory]
+    [InlineData("italic")]
+    [InlineData("unhinted")]
+    [InlineData("mono")]
+    [InlineData("lcd")]
+    [InlineData("lcd-italic")]
+    public void QueryAtlasSize_FreeType_MeasuresTheBoxesItRenders(string config)
+    {
+        var options = new FontGeneratorOptions
+        {
+            Size = 32,
+            Characters = CharacterSet.Ascii,
+            Backend = RasterizerBackend.FreeType,
+            Italic = config.EndsWith("italic", StringComparison.Ordinal),
+            EnableHinting = config != "unhinted",
+            AntiAlias = config switch
+            {
+                "mono" => AntiAliasMode.None,
+                "lcd" or "lcd-italic" => AntiAliasMode.Lcd,
+                _ => AntiAliasMode.Grayscale,
+            },
+        };
+
+        var query = BmFont.QueryAtlasSize(FontData, options);
+        var result = BmFont.Generate(FontData, options);
+
+        double queriedArea = (double)query.EstimatedEfficiency * query.Width * query.Height;
+        double actualArea = result.Model.Characters
+            .Where(c => c.Width > 0 && c.Height > 0)
+            .Sum(c => (double)(c.Width + options.Padding.Left + options.Padding.Right + options.Spacing.Horizontal)
+                      * (c.Height + options.Padding.Up + options.Padding.Down + options.Spacing.Vertical));
+
+        (queriedArea / actualArea).ShouldBeInRange(0.99, 1.01, config);
+    }
 }

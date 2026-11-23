@@ -68,7 +68,7 @@ internal sealed class TrueTypeOutlineDecoder : IOutlineDecoder
             return new DecodedGlyph(
                 parsedOutline,
                 _hmtx.GetAdvanceWidth(parsed.Origin.MetricsGlyph),
-                DeclaredBox(HeaderBox(parsed, shift), ControlBox(parsed, shift), parsedOutline));
+                ParsedDeclaredBox(parsed, shift, parsedOutline));
         }
 
         var varied = _glyf.GetGlyph(glyphIndex, variations, out var phantom);
@@ -86,8 +86,7 @@ internal sealed class TrueTypeOutlineDecoder : IOutlineDecoder
         // The glyf header box describes the default outline only; a moved outline is measured.
         bool unmoved = !phantom.OutlineVaried && varied.Origin.VariationDelta.Equals(0f);
         return unmoved
-            ? new DecodedGlyph(outline, advance,
-                DeclaredBox(HeaderBox(varied, bearingShift), ControlBox(varied, bearingShift), outline))
+            ? new DecodedGlyph(outline, advance, ParsedDeclaredBox(varied, bearingShift, outline))
             : new DecodedGlyph(outline, advance);
     }
 
@@ -125,8 +124,9 @@ internal sealed class TrueTypeOutlineDecoder : IOutlineDecoder
 
     /// <summary>
     /// How far, in font units, a stored point may lie outside the header box before the header
-    /// counts as missing it: headers are whole units, rounded from the fractional points a scaled
-    /// composite component produces, and an overshoot under a unit clips nothing visible.
+    /// counts as stale: headers are whole units, rounded from the fractional points a scaled
+    /// composite component produces. A composite's real ink past its header is restored by
+    /// <see cref="ParsedDeclaredBox"/>.
     /// </summary>
     private const float HeaderSlack = 1f;
 
@@ -142,6 +142,33 @@ internal sealed class TrueTypeOutlineDecoder : IOutlineDecoder
     /// </remarks>
     private static OutlineBounds DeclaredBox(OutlineBounds header, OutlineBounds controlBox, GlyphOutline outline) =>
         Holds(header, controlBox) || Holds(header, OutlineBounds.Tight(outline)) ? header : controlBox;
+
+    /// <summary>
+    /// How far, in font units, a composite's ink must pass its declared box to widen it. Well
+    /// under a coverage step at one unit per pixel, and above the float noise of a curve extremum
+    /// that lands on a whole unit, which would otherwise add an empty row or column.
+    /// </summary>
+    private const float InkSlack = 1f / 64f;
+
+    /// <summary>
+    /// <see cref="DeclaredBox"/> for a parsed glyph, and for a composite grown to the ink of its
+    /// transformed outline: a scaled component's edge can fall between the whole units its header
+    /// is rounded to (Roboto's en dash starts at 160.6 under a header of 161), and a box stopping
+    /// at the header would clip that partial column.
+    /// </summary>
+    private static OutlineBounds ParsedDeclaredBox(ParsedGlyph glyph, float shift, GlyphOutline outline)
+    {
+        var declared = DeclaredBox(HeaderBox(glyph, shift), ControlBox(glyph, shift), outline);
+        if (!glyph.IsComposite || outline.IsEmpty)
+            return declared;
+
+        var ink = OutlineBounds.Tight(outline);
+        return new OutlineBounds(
+            ink.XMin < declared.XMin - InkSlack ? ink.XMin : declared.XMin,
+            ink.YMin < declared.YMin - InkSlack ? ink.YMin : declared.YMin,
+            ink.XMax > declared.XMax + InkSlack ? ink.XMax : declared.XMax,
+            ink.YMax > declared.YMax + InkSlack ? ink.YMax : declared.YMax);
+    }
 
     /// <summary>Whether <paramref name="header"/> contains <paramref name="inner"/>, give or take <see cref="HeaderSlack"/>.</summary>
     private static bool Holds(OutlineBounds header, OutlineBounds inner) =>
