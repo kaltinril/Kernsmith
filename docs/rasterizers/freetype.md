@@ -41,7 +41,7 @@ var options = new FontGeneratorOptions
 - Hinting and anti-aliasing (None, Grayscale, Light, Lcd modes). `Lcd` glyphs are RGBA: R, G and B carry the three subpixel coverages and A the largest of them, so LCD output needs a 32-bit atlas. `Light` loads FreeType's light hinting target: vertical-only auto-hinting with unhinted advances, where `Grayscale` uses FreeType's default engine for the font
 - Hint levels `None` (unhinted), `Light` (as above) and `Full` (the default engine); `Normal` steps down to `Light`
 - SDF (Signed Distance Field) rendering
-- Synthetic bold and italic
+- Synthetic bold and italic on outline and `COLR` glyphs; `CBDT`/`sbix` bitmap glyphs stay unstyled
 - Super sampling
 - Fractional font sizes (e.g. `Size = 32.5f`) honored natively
 

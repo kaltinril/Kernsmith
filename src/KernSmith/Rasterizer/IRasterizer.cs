@@ -64,7 +64,11 @@ public interface IRasterizer : IDisposable
     RasterizedGlyph? RasterizeOutlineLayer(int codepoint, RasterOptions options, int width, OutlineShape shape, float heightScale = 1f) => null;
 
     /// <summary>
-    /// Gets glyph metrics without rasterizing. Returns null if the glyph is missing from the font.
+    /// Gets the metrics of the bitmap <see cref="RasterizeGlyph"/> would return. Returns null if the
+    /// glyph is missing from the font. An implementation may render the glyph when that is the only
+    /// way to know its box: FreeType does for <see cref="AntiAliasMode.None"/>,
+    /// <see cref="AntiAliasMode.Lcd"/> and <see cref="RasterOptions.ColorFont"/>, and Native and
+    /// StbTrueType for <see cref="AntiAliasMode.None"/>.
     /// </summary>
     /// <param name="codepoint">The Unicode character code.</param>
     /// <param name="options">Size, DPI, and other settings.</param>

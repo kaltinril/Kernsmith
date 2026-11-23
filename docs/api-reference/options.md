@@ -45,7 +45,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 | `SdfMode` | `SdfMode` | `None` | Distance field to generate: `None` (use `Sdf`), `Sdf`, `Msdf` (multi-channel: RGB distances, median = glyph, sharp corners; alpha 255) or `Mtsdf` (MSDF plus the single-channel distance in alpha). `Msdf`/`Mtsdf` produce RGBA atlases, need a backend with `SupportsMsdf` (Native, experimental), and cannot be combined with effects, a fill color, channel packing, a custom channel layout, atlas variants or `ColorFont`. `EffectiveSdfMode` reports the resolved mode. |
 | `SdfSpread` | `float` | `8f` | SDF spread (distance range) in pixels. Used by the FreeType, StbTrueType and Native backends; applies to every distance-field mode. |
 | `SdfScale` | `int` | `1` | SDF supersampling scale factor. Higher values render the distance field at a larger size for finer precision. Applies to every distance-field mode. |
-| `Gamma` | `float` | `1.8f` | Gamma correction applied to FreeType and Native grayscale coverage. `1.8` is the no-op baseline; `>1.8` darkens, `<1.8` lightens. Not applied to MONO/color/SDF output. |
+| `Gamma` | `float` | `1.8f` | Gamma correction applied to FreeType and Native grayscale coverage. `1.8` is the no-op baseline; `>1.8` darkens, `<1.8` lightens. Not applied to MONO/LCD/color/SDF output. |
 
 ## Outline
 
@@ -110,7 +110,7 @@ you only set what you need. The fluent [builder](builder.md) sets the same prope
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `ChannelPacking` | `bool` | `false` | Pack multiple glyphs into separate RGBA channels. Incompatible with effects and color fonts. |
+| `ChannelPacking` | `bool` | `false` | Pack multiple glyphs into separate RGBA channels. Incompatible with effects, color fonts and LCD output: `AntiAlias = Lcd` throws `InvalidOperationException` on a backend that renders LCD (FreeType, Native). It keeps working where no LCD pixels are produced: on GDI, DirectWrite and StbTrueType (which render it as grayscale), with a distance field, and on a bitmap-only face. |
 | `Channels` | `ChannelConfig?` | `null` | Per-channel content routing -- which of glyph/outline (etc.) each of R/G/B/A holds, plus optional inversion. When `null`, the default single-composite layout is used. |
 
 ## Color and variable fonts

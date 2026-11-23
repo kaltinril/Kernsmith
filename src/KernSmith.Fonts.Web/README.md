@@ -33,7 +33,7 @@ var result = BmFont.GenerateFromSystem("Roboto", size: 32);
 ```csharp
 new WebFontSource(WebFontProvider.BunnyFonts);                 // privacy-friendly default
 new WebFontSource(WebFontProvider.GoogleFonts);                // fonts.googleapis.com
-new WebFontSource(WebFontProvider.Custom("https://my.cdn/css")); // any compatible endpoint
+new WebFontSource(WebFontProvider.Custom("https://my.cdn/css")); // must accept ?family=Name:700 and ?family=Name:700italic
 ```
 
 ### Subsets and styles

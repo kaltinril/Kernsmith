@@ -158,7 +158,13 @@ public class FontGeneratorOptions
     /// <summary>Face index for font collections (TTC/OTC). 0 = first face.</summary>
     public int FaceIndex { get; set; }
 
-    /// <summary>If true, packs multiple glyphs into separate RGBA channels for smaller textures.</summary>
+    /// <summary>
+    /// If true, packs multiple glyphs into separate RGBA channels for smaller textures. Each glyph
+    /// must be single-channel, so effects, <see cref="ColorFont"/> and LCD output are rejected with
+    /// an <see cref="InvalidOperationException"/>. <see cref="AntiAliasMode.Lcd"/> is rejected only
+    /// where the backend really renders it: one that degrades it to grayscale, a distance field
+    /// and a bitmap-only face still pack.
+    /// </summary>
     public bool ChannelPacking { get; set; }
 
     /// <summary>If true, renders color font glyphs (COLR/CPAL layers, CBDT/sbix bitmaps, like emoji fonts).</summary>
@@ -245,8 +251,9 @@ public class FontGeneratorOptions
     public bool FractionalMetrics { get; set; }
 
     /// <summary>
-    /// FreeType gamma correction applied during rasterization (default 1.8, matching Hiero).
-    /// Maps to Hiero's <c>font.gamma</c>.
+    /// Gamma correction of grayscale coverage, on the FreeType and Native backends (default 1.8,
+    /// matching Hiero, which leaves coverage unchanged). Not applied to bilevel, LCD, distance-field
+    /// or color output. Maps to Hiero's <c>font.gamma</c>.
     /// </summary>
     public float Gamma { get; set; } = 1.8f;
 

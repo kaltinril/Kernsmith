@@ -68,7 +68,7 @@ Only `--no-color` is truly global -- it is stripped before command dispatch, so 
 | Flag | Scope | Description |
 |------|-------|-------------|
 | `--no-color` | Any command | Disable colored output |
-| `--help, -h` | Alone (`kernsmith --help`), or `kernsmith <command> --help` | Show help |
+| `--help, -h` | Alone (`kernsmith --help`), or `kernsmith <command> --help` (except `list-rasterizers`, which ignores its arguments and prints its list) | Show help |
 | `--version` | Alone (`kernsmith --version`) | Show version |
 | `-v, --verbose` | Parsed per command | Show detailed progress |
 | `-q, --quiet` | Parsed per command | Suppress all output except errors |

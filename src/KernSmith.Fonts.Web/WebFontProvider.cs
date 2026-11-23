@@ -6,7 +6,7 @@ namespace KernSmith.Fonts.Web;
 /// <remarks>
 /// Use the built-in <see cref="BunnyFonts"/> or <see cref="GoogleFonts"/> providers,
 /// or <see cref="Custom(string)"/> to point at any CDN that exposes a Google-Fonts-style
-/// <c>?family={family}:{weight}</c> CSS endpoint.
+/// <c>?family={family}:{weight}</c> CSS endpoint (<c>{weight}italic</c> for an italic request).
 /// </remarks>
 public sealed class WebFontProvider
 {
@@ -36,7 +36,9 @@ public sealed class WebFontProvider
     }
 
     /// <summary>
-    /// Creates a custom provider for a CDN that exposes a Google-Fonts-style CSS endpoint.
+    /// Creates a custom provider for a CDN that exposes a Google-Fonts-style CSS endpoint. It must
+    /// accept <c>?family={family}:{weight}</c>, and <c>?family={family}:{weight}italic</c> for an
+    /// italic request.
     /// </summary>
     /// <param name="cssBaseUrl">
     /// The CSS endpoint base URL, e.g. <c>https://fonts.bunny.net/css</c>. The query string

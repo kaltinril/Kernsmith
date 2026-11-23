@@ -15,7 +15,7 @@ public enum HintLevel
     /// <summary>
     /// The backend's current behaviour, unchanged: hinted when <see cref="FontGeneratorOptions.EnableHinting"/>
     /// is on, in whatever way the backend hints (FreeType, GDI and DirectWrite hint every mode;
-    /// Native hints at <see cref="Normal"/> in every mode, tapered by size to unhinted output
+    /// Native hints at <see cref="Normal"/> in every mode except LCD, tapered by size to unhinted output
     /// from 40 ppem; StbTrueType never hints). Every existing caller and config renders as the
     /// backend's defaults say with this value.
     /// </summary>

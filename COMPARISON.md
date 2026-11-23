@@ -116,7 +116,7 @@ How does KernSmith compare to other bitmap font generators?
 
 ## Config Format Compatibility
 
-KernSmith now supports the libGDX **Hiero `.hiero`** format for interop: it can both **read** Hiero configs and **export** to them, in addition to its native BMFont `.bmfc` format. When loading, the format is auto-detected by inspecting the file content (the extension is only a fallback tiebreaker); when saving, the format is selected by the file extension. `.bmfc` is the native, lossless format that covers every KernSmith setting; `.hiero` is supported for interoperability and is lossy for KernSmith-only settings that Hiero cannot represent (e.g. spacing, gradient angle, hinting, hard shadow, super sampling, channel packing, color fonts, forced synthetic bold/italic, autofit texture). A native `.kern` format is proposed to cover all features without limitations.
+KernSmith now supports the libGDX **Hiero `.hiero`** format for interop: it can both **read** Hiero configs and **export** to them, in addition to its native BMFont `.bmfc` format. When loading, the format is auto-detected by inspecting the file content (the extension is only a fallback tiebreaker); when saving, the format is selected by the file extension. `.bmfc` is the native format and covers most KernSmith settings, but not the code-only ones (size constraints, custom glyph images, target region, metrics collection); `.hiero` is supported for interoperability and is lossy for KernSmith-only settings that Hiero cannot represent (e.g. spacing, gradient angle, hinting, hard shadow, super sampling, channel packing, color fonts, forced synthetic bold/italic, autofit texture). A native `.kern` format is proposed to cover all features without limitations.
 
 | Feature | .bmfc | .hiero | .kern |
 |---|:---:|:---:|:---:|
@@ -241,8 +241,8 @@ Native's platform rows follow from it being pure managed code with no native dep
 | **MSDF / MTSDF** | ❌ | ❌ | ❌ | ❌ | ✅ |
 | **Hinting** | ✅ | ✅ | ✅ | ❌ | ⚠️ |
 | **Hint levels** (`HintLevel`) | None, Light, Full | Full | None, Light | None | None, Light, Normal (default Normal) |
-| **Synthetic Bold** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Synthetic Italic** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Synthetic Bold** | ✅ (not CBDT/sbix bitmaps) | ✅ | ✅ | ✅ | ✅ (not CBDT/sbix bitmaps) |
+| **Synthetic Italic** | ✅ (not CBDT/sbix bitmaps) | ✅ | ✅ | ✅ | ✅ (not CBDT/sbix bitmaps) |
 | **Vector Outline** (`OutlineMode.Vector`) | ❌ | ❌ | ❌ | ❌ | ✅ |
 | **Synthetic Width / Italic Angle** | ❌ | ❌ | ❌ | ❌ | ✅ |
 | **Super Sampling** | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -253,7 +253,7 @@ Native's platform rows follow from it being pure managed code with no native dep
 
 WOFF and WOFF2 are decompressed by KernSmith core before rasterization (WOFF2 with a pure managed Brotli decoder), so all backends accept them for fonts whose outlines they otherwise support (StbTrueType reads TrueType and CFF outlines inside them, but not CFF2).
 
-Native's hinting is ⚠️: its own both-axis auto-hinter (`HintLevel.Normal`) runs by default in every anti-alias mode up to 40 ppem (full strength to 16 ppem, then tapering to unhinted output), `Light` is its y-only fitter, and it has no TrueType bytecode interpreter or CFF hinter, so `Full` steps down to `Normal`. FreeType's color support covers `COLR` version 0 and bitmap color fonts (`CBDT`/`sbix`, returned at the strike's own size); it renders `COLR` version 1 glyphs as plain grayscale. Native covers `COLR` versions 0 and 1 and scales `CBDT`/`sbix` bitmaps to the requested size. Outlines (`Outline`) work on every backend as core's bitmap effect; `OutlineMode.Vector` is drawn by the backend only where it is ✅, and a non-default `WidthPercent` or `ItalicAngle` throws `NotSupportedException` elsewhere. Super sampling skips LCD output, which always renders at the final size. Native's unhinted grayscale output measures a mean SSIM of 0.988 or better per font and size against both FreeType and StbTrueType.
+Native's hinting is ⚠️: its own both-axis auto-hinter (`HintLevel.Normal`) runs by default in every anti-alias mode except LCD up to 40 ppem (full strength to 16 ppem, then tapering to unhinted output), `Light` is its y-only fitter, and it has no TrueType bytecode interpreter or CFF hinter, so `Full` steps down to `Normal`. FreeType's color support covers `COLR` version 0 and bitmap color fonts (`CBDT`/`sbix`, returned at the strike's own size); it renders `COLR` version 1 glyphs as plain grayscale. Native covers `COLR` versions 0 and 1 and scales `CBDT`/`sbix` bitmaps to the requested size. Outlines (`Outline`) work on every backend as core's bitmap effect; `OutlineMode.Vector` is drawn by the backend only where it is ✅, and a non-default `WidthPercent` or `ItalicAngle` throws `NotSupportedException` elsewhere. Super sampling skips LCD output, which always renders at the final size. Native's unhinted grayscale output measures a mean SSIM of 0.988 or better per font and size against both FreeType and StbTrueType.
 
 ### When to Use
 

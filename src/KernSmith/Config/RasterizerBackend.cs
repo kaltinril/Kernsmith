@@ -25,7 +25,7 @@ public enum RasterizerBackend
     /// version 0 and 1 color glyphs and <c>CBDT</c>/<c>sbix</c> color bitmaps, synthetic
     /// bold/italic, SDF and multi-channel MSDF/MTSDF, with <see cref="AntiAliasMode.None"/>,
     /// <see cref="AntiAliasMode.Grayscale"/>, <see cref="AntiAliasMode.Light"/> and
-    /// <see cref="AntiAliasMode.Lcd"/> anti-aliasing, and its own auto-hinting in every mode
+    /// <see cref="AntiAliasMode.Lcd"/> anti-aliasing, and its own auto-hinting in every mode except LCD
     /// (<see cref="HintLevel.Normal"/> by default, both axes; <see cref="HintLevel.Light"/>
     /// y-only; no TrueType bytecode). It is the
     /// only backend that draws <see cref="OutlineMode.Vector"/> outlines and honors

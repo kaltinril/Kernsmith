@@ -16,7 +16,7 @@ namespace KernSmith.Rasterizers.Native.Internal.Pipeline;
 /// <see cref="EffectiveHintLevel"/> maps a request to the hinter that runs: the y-only fitter at
 /// <see cref="HintLevel.Light"/>, the both-axis <see cref="NormalHinter"/> at
 /// <see cref="HintLevel.Normal"/> — which is also what <see cref="HintLevel.Default"/> means
-/// with <see cref="RasterOptions.EnableHinting"/> on, in every anti-alias mode — and nothing at
+/// with <see cref="RasterOptions.EnableHinting"/> on, in every anti-alias mode but LCD — and nothing at
 /// <see cref="HintLevel.None"/> or with hinting off. Light never fits x, so its advances, side
 /// bearings and horizontal extents are exactly the unhinted ones; Normal keeps the advances and
 /// places the ink by side, at full strength up to 16 ppem and fading to nothing by 40, and up to
