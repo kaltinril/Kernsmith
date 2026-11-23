@@ -26,9 +26,6 @@ public class LeftSideBearingTests
 
     private static readonly RasterOptions At64 = new() { Size = 64, Dpi = 72, EnableHinting = false };
 
-    /// <summary>Roboto's dashes built from a component scaled by 1.2 or 1.6 in x.</summary>
-    private static readonly HashSet<int> ScaledCompositeDashes = [0x2013, 0x2014, 0x2015, 0x2E3A, 0x2E3B];
-
     [Fact]
     public void Roboto_EveryGlyph_SitsWhereFreeTypePutsIt_AtOneUnitPerPixel()
     {
@@ -60,10 +57,7 @@ public class LeftSideBearingTests
             var expected = freeType.GetGlyphMetrics(codepoint, options)!.Value;
             var actual = native.GetGlyphMetrics(codepoint, options)!.Value;
 
-            // Composites with a fractional x scale have a left edge inside a pixel (the en dash
-            // at 160.6): FreeType's box floors it, Native's is the rounded glyf header box.
-            int expectedBearing = ScaledCompositeDashes.Contains(codepoint) ? expected.BearingX + 1 : expected.BearingX;
-            if (actual.BearingX != expectedBearing)
+            if (actual.BearingX != expected.BearingX)
             {
                 failures.Append(CultureInfo.InvariantCulture,
                     $"U+{codepoint:X4} (glyph {glyphIndex}): FreeType bearingX {expected.BearingX}, native {actual.BearingX}\n");
@@ -81,6 +75,40 @@ public class LeftSideBearingTests
         // Guards the comparison: Roboto must actually exercise the mismatch, simple and composite.
         mismatched.ShouldBeGreaterThanOrEqualTo(40);
         failures.ToString().ShouldBeEmpty();
+    }
+
+    [Theory]
+    [InlineData(0x2013)]
+    [InlineData(0x2014)]
+    [InlineData(0x2015)]
+    [InlineData(0x2E3A)]
+    [InlineData(0x2E3B)]
+    public void ScaledCompositeDash_KeepsThePartialColumnsFreeTypeDraws(int codepoint)
+    {
+        // These dashes scale a component by 1.2 or 1.6 in x, so an edge falls inside a pixel at
+        // one unit per pixel (the en dash starts at 160.6) while the glyf header is rounded.
+        var bytes = TestFonts.RobotoRegularBytes();
+        var options = new RasterOptions { Size = 2048, Dpi = 72, EnableHinting = false };
+
+        using IRasterizer freeType = new FreeTypeRasterizer();
+        freeType.LoadFont(bytes);
+        using IRasterizer native = new NativeRasterizer();
+        native.LoadFont(bytes);
+
+        var expected = freeType.RasterizeGlyph(codepoint, options)!;
+        var actual = native.RasterizeGlyph(codepoint, options)!;
+
+        (actual.Metrics.BearingX, actual.Width).ShouldBe((expected.Metrics.BearingX, expected.Width));
+        int row = actual.Height / 2;
+        foreach (int column in new[] { 0, actual.Width - 1 })
+        {
+            int coverage = actual.BitmapData[(row * actual.Pitch) + column];
+            int reference = expected.BitmapData[(row * expected.Pitch) + column];
+            coverage.ShouldBeGreaterThan(0, $"column {column} holds a partial edge");
+
+            // FreeType snaps the edge to 1/64 px, which moves a column's coverage by up to 255/64.
+            Math.Abs(coverage - reference).ShouldBeLessThanOrEqualTo(4, $"column {column}");
+        }
     }
 
     [Fact]
