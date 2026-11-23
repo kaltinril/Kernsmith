@@ -26,6 +26,21 @@ public class AtlasPackingException : BmFontException
         MaxTextureSize = maxTextureSize;
     }
 
+    /// <summary>Creates a packing error for a glyph larger than an empty atlas page.</summary>
+    /// <param name="glyphId">The glyph rectangle's id.</param>
+    /// <param name="glyphWidth">Glyph width in pixels.</param>
+    /// <param name="glyphHeight">Glyph height in pixels.</param>
+    /// <param name="pageWidth">Page width in pixels.</param>
+    /// <param name="pageHeight">Page height in pixels.</param>
+    internal AtlasPackingException(int glyphId, int glyphWidth, int glyphHeight, int pageWidth, int pageHeight)
+        : base($"Glyph {glyphId} ({glyphWidth}x{glyphHeight}) does not fit in a {pageWidth}x{pageHeight} page.")
+    {
+        GlyphWidth = glyphWidth;
+        GlyphHeight = glyphHeight;
+        // The page dimension the glyph exceeds; an empty page fits any glyph within both.
+        MaxTextureSize = glyphWidth > pageWidth ? pageWidth : pageHeight;
+    }
+
     /// <summary>Width of the glyph that didn't fit, if known.</summary>
     public int? GlyphWidth { get; }
 

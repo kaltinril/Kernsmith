@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Behaviour change:** a glyph larger than an atlas page now throws `AtlasPackingException` (part of the `BmFontException` hierarchy) from `MaxRectsPacker`/`SkylinePacker` instead of `InvalidOperationException`, with `GlyphWidth`, `GlyphHeight` and `MaxTextureSize` (the page dimension the glyph exceeds) set. `AtlasPackingException` does not derive from `InvalidOperationException`, so code that caught `InvalidOperationException` for this case must catch `AtlasPackingException` (or `BmFontException`) instead. The desktop UI now shows its "glyphs too large for max texture size" message for it. `kernsmith generate` and `kernsmith benchmark` still exit with code 4; the `generate` error line now names the rasterizer.
+
 ### Fixed
 
 - **FreeType color glyphs are now straight alpha.** FreeType returns CBDT/sbix bitmaps and COLR layers premultiplied, but KernSmith treats RGBA glyphs as straight alpha, so anti-aliased color edges came out too dark and `GetPremultipliedRgbaPixelData()` premultiplied them a second time. FreeType color font output changes on those edge pixels, so regenerate your fonts and check them.
