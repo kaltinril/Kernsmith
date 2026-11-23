@@ -145,7 +145,7 @@ public class WebFontSourceTests
 
         await source.GetFontAsync("Roboto", weight: 700, style: FontStyle.Italic);
 
-        handler.RequestedUrls[0].ShouldContain("family=Roboto:ital,700");
+        handler.RequestedUrls[0].ShouldContain("family=Roboto:700italic", Case.Sensitive);
     }
 
     [Fact]

@@ -39,11 +39,23 @@ public class WebFontProviderTests
         url.ShouldBe("https://fonts.bunny.net/css?family=Open+Sans:700");
     }
 
-    [Fact]
-    public void BuildCssUrl_Italic_IncludesItalSpec()
+    [Theory]
+    [InlineData(400)]
+    [InlineData(700)]
+    public void BuildCssUrl_Italic_RequestsTheItalicOfThatWeight(int weight)
     {
-        var url = WebFontProvider.BunnyFonts.BuildCssUrl("Roboto", 400, italic: true);
+        // "Roboto:ital,700" is read by both CDNs as two variants (italic 400 + normal 700), so
+        // an italic 700 request came back italic 400. The v1 "{weight}italic" form names one variant.
+        var url = WebFontProvider.BunnyFonts.BuildCssUrl("Roboto", weight, italic: true);
 
-        url.ShouldBe("https://fonts.bunny.net/css?family=Roboto:ital,400");
+        url.ShouldBe($"https://fonts.bunny.net/css?family=Roboto:{weight}italic");
+    }
+
+    [Fact]
+    public void BuildCssUrl_ItalicOnGoogleFonts_RequestsTheItalicOfThatWeight()
+    {
+        var url = WebFontProvider.GoogleFonts.BuildCssUrl("Open Sans", 700, italic: true);
+
+        url.ShouldBe("https://fonts.googleapis.com/css?family=Open+Sans:700italic");
     }
 }
