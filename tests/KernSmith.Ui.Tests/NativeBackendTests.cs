@@ -181,8 +181,7 @@ public sealed class NativeBackendTests : IDisposable
     [Fact]
     public async Task GenerateAsync_NativeLcd_WritesAnRgbaAtlas()
     {
-        // Native renders LCD as RGBA (FreeType labels its LCD buffer Grayscale8), so the page
-        // format shows both the backend and the mode were honored.
+        // LCD renders as RGBA, so the page format shows the mode was honored.
         var result = await new GenerationService().GenerateAsync(new GenerationRequest
         {
             FontData = File.ReadAllBytes(RobotoPath),

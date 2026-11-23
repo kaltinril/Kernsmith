@@ -646,23 +646,8 @@ public class LcdRendererTests
         return new Plane(data, glyph.Width, glyph.Height, glyph.Metrics.BearingX, glyph.Metrics.BearingY);
     }
 
-    /// <summary>
-    /// One channel of FreeType's LCD glyph. The FreeType backend hands back FreeType's raw LCD
-    /// buffer — three bytes (R, G, B subpixels, left to right) per pixel, so its reported width
-    /// is three times the pixel width.
-    /// </summary>
-    private static Plane FreeTypeChannel(RasterizedGlyph glyph, int channel)
-    {
-        int width = glyph.Width / 3;
-        var data = new byte[width * glyph.Height];
-        for (int y = 0; y < glyph.Height; y++)
-        {
-            for (int x = 0; x < width; x++)
-                data[(y * width) + x] = glyph.BitmapData[(y * glyph.Pitch) + (x * 3) + channel];
-        }
-
-        return new Plane(data, width, glyph.Height, glyph.Metrics.BearingX, glyph.Metrics.BearingY);
-    }
+    /// <summary>One channel of FreeType's LCD glyph, which is RGBA like Native's.</summary>
+    private static Plane FreeTypeChannel(RasterizedGlyph glyph, int channel) => NativeChannel(glyph, channel);
 
     /// <summary>Places two planes on the union of their boxes, aligned by their bearings.</summary>
     private static (byte[] A, byte[] B, int Width, int Height) OnCommonCanvas(Plane a, Plane b)

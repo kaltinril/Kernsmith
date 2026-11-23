@@ -38,7 +38,7 @@ var options = new FontGeneratorOptions
 - TTF, OTF, WOFF, WOFF2 input
 - Color fonts: `COLR` version 0 layers with `CPAL` palettes, and `CBDT`/`sbix` bitmap color fonts such as Noto Color Emoji (`COLR` version 1 glyphs render as plain grayscale)
 - Variable font axes (fvar); GPOS kerning follows the selected instance
-- Hinting and anti-aliasing (None, Grayscale, Light, Lcd modes). `Light` loads FreeType's light hinting target: vertical-only auto-hinting with unhinted advances, where `Grayscale` uses FreeType's default engine for the font
+- Hinting and anti-aliasing (None, Grayscale, Light, Lcd modes). `Lcd` glyphs are RGBA: R, G and B carry the three subpixel coverages and A the largest of them, so LCD output needs a 32-bit atlas. `Light` loads FreeType's light hinting target: vertical-only auto-hinting with unhinted advances, where `Grayscale` uses FreeType's default engine for the font
 - Hint levels `None` (unhinted), `Light` (as above) and `Full` (the default engine); `Normal` steps down to `Light`
 - SDF (Signed Distance Field) rendering
 - Synthetic bold and italic
@@ -50,7 +50,6 @@ FreeType is the only published backend that implements COLR/CPAL color glyphs an
 ## Limitations
 
 - Cannot load system-installed fonts by family name -- provide font file bytes directly
-- `Lcd` output is FreeType's raw LCD buffer, three bytes per pixel, so LCD glyphs land three times as wide in the atlas
 - `CBDT`/`sbix` bitmap glyphs come back at the strike's own size, not scaled to the requested size
 - No vector outlines (`OutlineMode.Vector` falls back to core's bitmap outline effect, which works as usual), and no `WidthPercent` or non-default `ItalicAngle` (`NotSupportedException`)
 

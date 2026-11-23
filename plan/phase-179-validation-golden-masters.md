@@ -73,7 +73,7 @@ Known differences behind the low columns:
 - **None** — FreeType's mono renderer samples pixel centres; Native thresholds coverage at 50%; both apply dropout control, so one-pixel strokes land a row or column apart. stb has no dropout control (Dancing Script loses its hairlines). Native crops mono boxes to their ink, stb keeps the anti-aliased box (Box ±1 vs stb).
 - **Advances vs FreeType** — FreeType rounds a scaled advance to 26.6 before rounding to pixels: Roboto's digits at 8px (1151 units = 4.496 px) become 5 px there and 4 px in Native and stb. stb agrees exactly except at exact half-pixel ties (Roboto Flex `e` at 16px is 8.5 px), which the StbTrueType backend rounds to even and Native, like FreeType, rounds up.
 - **Italic boxes** — FreeType sizes a slanted glyph from its control box, Native from the tight outline (bearings/box at 48px).
-- **Lcd** — the FreeType backend returns its raw three-bytes-per-pixel buffer labelled `Grayscale8`; the matrix splits it into R/G/B planes and divides its width by three.
+- **Lcd** — both backends return RGBA subpixel glyphs; the matrix scores R, G and B as separate planes.
 
 ### Robustness (done)
 

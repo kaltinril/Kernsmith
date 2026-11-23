@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Regression harness compares the `kernsmith` `.fnt` line. Only its `version`/`commit` tokens are ignored now, so a change to `sdfSpread`, outline or other extended metadata is reported instead of passing as identical.
 - `KernSmith.Fonts.Web`: an italic request at a non-400 weight returned the 400 italic. `WebFontSource` asked for `family=Roboto:ital,700`, which Google Fonts and Bunny Fonts both read as two variants (italic 400 + regular 700); it now asks for `family=Roboto:700italic`. A `WebFontProvider.Custom` endpoint must accept that `{weight}italic` form.
 - `kernsmith generate --dry-run` printed the output as `./<path>.fnt` built from the raw `-o` value, so a config's absolute `outputPath` showed as `./C:\...` and an output directory as `./dir/.fnt`. It now prints the full path of the `.fnt` the real run writes, without creating the output directory.
+- FreeType: `AntiAlias = Lcd` glyphs are RGBA at their real pixel width (R, G, B = the three subpixel coverages, A = the largest), matching Native. The raw subpixel buffer was passed on as a grayscale bitmap three times as wide as the glyph, so LCD glyphs were stretched 3x in the atlas. FreeType LCD atlases change size and format (now 32-bit), so regenerate them.
 
 ## [0.28.0] - 2026-11-15
 

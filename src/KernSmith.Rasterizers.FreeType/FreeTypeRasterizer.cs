@@ -279,12 +279,8 @@ public sealed class FreeTypeRasterizer : IRasterizer
         // 26.6 fixed-point that don't reflect grid-fitting adjustments. This matters
         // most at small font sizes where hinting shifts glyphs by 1-2 pixels.
         ref var metrics = ref slot->metrics;
-        var glyphMetrics = new GlyphMetrics(
-            BearingX: slot->bitmap_left,
-            BearingY: slot->bitmap_top,
-            Advance: F26Dot6ToRounded(metrics.horiAdvance),
-            Width: bitmapWidth,
-            Height: bitmapHeight);
+        var bearingX = slot->bitmap_left;
+        var bearingY = slot->bitmap_top;
 
         // Copy bitmap data.
         byte[] bitmapData;
@@ -324,6 +320,33 @@ public sealed class FreeTypeRasterizer : IRasterizer
             pitch = bitmapWidth;
         }
 
+        // An LCD bitmap holds three subpixel bytes (R, G, B) per pixel, so bitmap.width counts
+        // subpixels. Repack it as Rgba32 at the real pixel width, alpha = the strongest subpixel.
+        // FreeType pads even an empty outline's LCD box sideways; with no rows that is a blank
+        // glyph, reported as the same empty grayscale glyph the other modes give.
+        var isLcd = bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_LCD && bitmapData.Length > 0;
+        if (isLcd)
+        {
+            bitmapWidth /= 3;
+            bitmapData = LcdSubpixelsToRgba(bitmapData, Math.Abs(pitch), bitmapWidth, bitmapHeight);
+            pitch = bitmapWidth * 4;
+        }
+        else if (bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_LCD)
+        {
+            bitmapWidth = 0;
+            bitmapHeight = 0;
+            pitch = 0;
+            bearingX = 0;
+            bearingY = 0;
+        }
+
+        var glyphMetrics = new GlyphMetrics(
+            BearingX: bearingX,
+            BearingY: bearingY,
+            Advance: F26Dot6ToRounded(metrics.horiAdvance),
+            Width: bitmapWidth,
+            Height: bitmapHeight);
+
         // Apply gamma correction to grayscale coverage values.
         // Semantics: Gamma is normalized so the default (1.8, matching Hiero's font.gamma)
         // is the no-op baseline. The current/main behavior applies NO gamma, so we treat
@@ -347,7 +370,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
             PremultipliedBgraToStraightRgba(bitmapData);
 
         // Determine pixel format based on the FreeType pixel mode.
-        var format = bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_BGRA
+        var format = bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_BGRA || isLcd
             ? PixelFormat.Rgba32
             : PixelFormat.Grayscale8;
 
@@ -796,6 +819,31 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
         for (var i = 0; i < coverage.Length; i++)
             coverage[i] = lut[coverage[i]];
+    }
+
+    /// <summary>
+    /// Repacks an LCD bitmap (three subpixel coverage bytes per pixel, rows <paramref name="pitch"/>
+    /// bytes apart) as tightly packed Rgba32: R, G, B are the subpixels in order and A is the
+    /// largest of them, so a fully covered pixel is opaque white like a promoted grayscale glyph
+    /// and no channel ever exceeds alpha.
+    /// </summary>
+    private static byte[] LcdSubpixelsToRgba(byte[] subpixels, int pitch, int width, int height)
+    {
+        var rgba = new byte[width * height * 4];
+        for (var row = 0; row < height; row++)
+        {
+            var src = row * pitch;
+            var dst = row * width * 4;
+            for (var x = 0; x < width; x++, src += 3, dst += 4)
+            {
+                byte r = subpixels[src], g = subpixels[src + 1], b = subpixels[src + 2];
+                rgba[dst] = r;
+                rgba[dst + 1] = g;
+                rgba[dst + 2] = b;
+                rgba[dst + 3] = Math.Max(r, Math.Max(g, b));
+            }
+        }
+        return rgba;
     }
 
     /// <summary>
