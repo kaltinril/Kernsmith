@@ -68,7 +68,7 @@ python tests/bmfont-compare/regression_check.py
 ```
 
 - It runs **`GenerateAll`** across every backend (FreeType, GDI, DirectWrite, StbTrueType, Native, + BMFont64.exe if present) over the `.bmfc` configs in `tests/bmfont-compare/gum-bmfont/`, then runs **`diff_comparisons.py`**.
-- Outputs land in `tests/bmfont-compare/output/`: the `comparison*.png` side-by-side images, the per-font `comparison-*.png`, and the **`diff_comparison*.png`** magenta-highlighted pixel diffs (bright magenta = differing pixels). FNT metadata is diffed line-by-line (skipping the version line).
+- Outputs land in `tests/bmfont-compare/output/`: the `comparison*.png` side-by-side images, the per-font `comparison-*.png`, and the **`diff_comparison*.png`** magenta-highlighted pixel diffs (bright magenta = differing pixels). FNT metadata is diffed line-by-line; on the `kernsmith` extended-metadata line only the `version=`/`commit=` tokens are ignored, so metadata such as `sdfSpread` is compared.
 - Exit codes: `0` = identical, `1` = differences found, `2` = error. Use `--tolerance 1` for GDI/DirectWrite antialiasing jitter; `--skip-generate` to re-diff existing baselines.
 - A config that exists only on the branch is reported `NEW (no baseline)` and one only on the base `REMOVED` — neither fails the run, so check NEW configs' output by eye. A (config, backend) pair that produced output on the base but fails on the branch is a regression (exit 1); a pair failing on both sides is tolerated.
 - The script stashes a dirty tree, so **commit first**. In a git worktree pass `--base <commit SHA>` — a branch checked out in another worktree can't be checked out again. Harness self-tests: `python -m unittest discover -s tests/bmfont-compare -p "test_*.py"`.

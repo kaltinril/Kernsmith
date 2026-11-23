@@ -54,6 +54,29 @@ class DiffComparisonsTests(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertIn("plain-freetype.fnt: IDENTICAL", out)
 
+    def test_extended_metadata_change_on_the_kernsmith_line_is_a_difference(self):
+        # The kernsmith line carries sdfSpread etc. after the version; only the version may differ.
+        (self.dir / "main_sdf-stbtruetype.fnt").write_text(
+            'kernsmith version="0.24.0" sdfSpread=8\n' + FNT, encoding="utf-8")
+        (self.dir / "sdf-stbtruetype.fnt").write_text(
+            'kernsmith version="0.24.0" sdfSpread=4\n' + FNT, encoding="utf-8")
+
+        code, out = run_diff(self.dir)
+
+        self.assertEqual(code, 1, out)
+        self.assertIn("sdf-stbtruetype.fnt: DIFFERENT", out)
+
+    def test_version_only_change_on_the_kernsmith_line_is_identical(self):
+        (self.dir / "main_sdf-freetype.fnt").write_text(
+            'kernsmith version="0.24.0" commit=abc sdfSpread=8\n' + FNT, encoding="utf-8")
+        (self.dir / "sdf-freetype.fnt").write_text(
+            'kernsmith version="0.25.0-dev" commit=def sdfSpread=8\n' + FNT, encoding="utf-8")
+
+        code, out = run_diff(self.dir)
+
+        self.assertEqual(code, 0, out)
+        self.assertIn("sdf-freetype.fnt: IDENTICAL", out)
+
     def test_output_missing_on_branch_is_a_difference(self):
         # Base produced output, branch did not: the backend now fails this config.
         write_fnt(self.dir / "main_plain-native.fnt")
