@@ -557,6 +557,20 @@ public sealed class BmFontBuilder
         _options.Packer = source.Packer;
         _options.AtlasEncoder = source.AtlasEncoder;
         _options.FontReader = source.FontReader;
+        _options.AdvanceAdjustX = source.AdvanceAdjustX;
+        _options.AdvanceAdjustY = source.AdvanceAdjustY;
+        _options.FillColorR = source.FillColorR;
+        _options.FillColorG = source.FillColorG;
+        _options.FillColorB = source.FillColorB;
+        _options.FillColorA = source.FillColorA;
+        _options.GradientOffset = source.GradientOffset;
+        _options.GradientScale = source.GradientScale;
+        _options.GradientCyclic = source.GradientCyclic;
+        _options.ShadowBlurKernelSize = source.ShadowBlurKernelSize;
+        _options.ShadowBlurPasses = source.ShadowBlurPasses;
+        _options.SizeConstraints = source.SizeConstraints;
+        _options.TargetRegion = source.TargetRegion;
+        _options.Variants = source.Variants?.ToList();
     }
 
     /// <summary>Generates the bitmap font, returning the descriptor model and atlas texture pages.</summary>

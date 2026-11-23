@@ -39,7 +39,7 @@ fontDescFormat=0
 fourChnlPacked=0
 textureFormat=png
 textureCompression=0
-alphaChnl=1
+alphaChnl=0
 redChnl=0
 greenChnl=0
 blueChnl=0
@@ -58,6 +58,7 @@ chars=32-126
 # packed alongside the primary font, sharing the same generation call). Baking
 # a visible (offset) shadow onto the primary composite too, so this config
 # exercises both: the baked composite AND the separately-packed variant.
+# All channels stay at 0 (glyph): a custom channel layout rejects variants.
 shadowOffsetX=6
 shadowOffsetY=6
 shadowBlur=2
