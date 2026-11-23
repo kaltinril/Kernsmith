@@ -452,16 +452,17 @@ public sealed class FreeTypeRasterizer : IRasterizer
     private const long MaxColorLayerPixels = 16384L * 16384L;
 
     /// <summary>
-    /// Draws a <c>COLR</c> version 0 glyph with synthetic bold or italic, or returns null when the
-    /// request has no synthetic style or the glyph no usable layers (the slot then holds
-    /// <paramref name="glyphIndex"/> again). FT_Render_Glyph reloads each layer itself, which
-    /// discards a style applied to the slot, so a styled glyph's layers are loaded, styled,
+    /// Draws a <c>COLR</c> version 0 glyph that FreeType's own path cannot: one with synthetic
+    /// bold or italic, or a bilevel one. Returns null when the request is neither or the glyph
+    /// has no usable layers (the slot then holds <paramref name="glyphIndex"/> again).
+    /// FT_Render_Glyph reloads each layer itself, which discards a style applied to the slot, and
+    /// its blend reads a 1-bit layer as 8-bit coverage, so these layers are loaded, styled,
     /// rendered and blended here.
     /// </summary>
     /// <remarks>
     /// INVARIANT: the blend is FreeType's <c>tt_face_colr_blend_layer</c> arithmetic (truncating
     /// divisions, source-over on premultiplied BGRA, foreground black, or white on a palette
-    /// flagged for dark backgrounds), so styled and unstyled glyphs of one font match in tone.
+    /// flagged for dark backgrounds), so glyphs drawn here and by FreeType match in tone.
     /// </remarks>
     private unsafe ColorLayerBitmap? RenderStyledColorLayers(uint glyphIndex, RasterOptions options)
     {
@@ -470,7 +471,8 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
         var syntheticBold = options.Bold && (_face->style_flags & 0x01) == 0;
         var syntheticItalic = options.Italic && (_face->style_flags & 0x02) == 0;
-        if (!syntheticBold && !syntheticItalic)
+        var bilevel = options.AntiAlias == AntiAliasMode.None && !options.Sdf;
+        if (!syntheticBold && !syntheticItalic && !bilevel)
             return null;
 
         var records = new List<(uint Glyph, uint Color)>();
@@ -497,7 +499,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
             && _paletteIndex < paletteData.num_palettes
             && (paletteData.palette_flags[_paletteIndex] & FreeTypeNative.FT_PALETTE_FOR_DARK_BACKGROUND) != 0;
 
-        var renderMode = options.AntiAlias == AntiAliasMode.None && !options.Sdf
+        var renderMode = bilevel
             ? FT_Render_Mode_.FT_RENDER_MODE_MONO
             : FT_Render_Mode_.FT_RENDER_MODE_NORMAL;
 
@@ -508,6 +510,11 @@ public sealed class FreeTypeRasterizer : IRasterizer
             foreach (var (glyph, color) in records)
             {
                 var slot = LoadStyledGlyph(glyph, options, loadColor: false);
+
+                // FreeType presets a 1x1 mono bitmap for an empty outline; a blank layer has no box.
+                if (bilevel && IsBlankOutline(slot))
+                    continue;
+
                 if (slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_BITMAP)
                 {
                     var error = FT.FT_Render_Glyph(slot, renderMode);
