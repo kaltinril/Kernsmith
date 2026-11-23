@@ -202,42 +202,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (glyphIndex == 0)
             return null; // Missing glyph
 
-        // Determine load flags based on anti-alias mode and hinting.
-        var loadFlags = options.ColorFont
-            ? (FT_LOAD)FreeTypeNative.FT_LOAD_COLOR
-            : FT_LOAD.FT_LOAD_DEFAULT;
-
-        // One hinting target at most (they share a bit field): light hinting when asked for it;
-        // otherwise, when rendering mono, tell the hinter to optimize for 1-bit output — without
-        // this, hinting targets grayscale, which places strokes poorly for a monochrome render.
-        if (LightHinted(options))
-            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_TARGET_LIGHT;
-        else if (options.AntiAlias == AntiAliasMode.None && !options.Sdf)
-            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_TARGET_MONO;
-
-        if (Unhinted(options))
-            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
-
-        // Load the glyph.
-        var error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
-        if (error != FT_Error.FT_Err_Ok)
-            throw new FreeTypeException(error);
-
-        var slot = _face->glyph;
-
-        // Apply synthetic bold only if the font isn't already bold.
-        // This matches GDI behavior: requesting bold on an already-bold face
-        // doesn't apply additional emboldening.
-        if (options.Bold && (_face->style_flags & 0x01) == 0)
-        {
-            EmboldenGlyph(slot, _face);
-        }
-
-        // Apply synthetic italic only if the font isn't already italic.
-        if (options.Italic && (_face->style_flags & 0x02) == 0)
-        {
-            FT.FT_GlyphSlot_Oblique(slot);
-        }
+        var slot = LoadStyledGlyph(glyphIndex, options);
 
         // Configure the SDF renderer's spread (search radius) before rendering.
         // The FreeType "sdf" module default is 8, so the default option value reproduces
@@ -245,26 +210,13 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (options.Sdf)
             EnsureSdfSpread(options.SdfSpread);
 
-        // Determine render mode.
-        // When SDF is enabled, FT_RENDER_MODE_SDF (value 6) produces an 8-bit bitmap where
-        // 128 = on the glyph edge, >128 = inside, <128 = outside. The bitmap dimensions
-        // may be larger than normal rendering to include the signed-distance field padding.
-        // SDF takes priority over the anti-alias setting since SDF output is inherently smooth.
-        var renderMode = options.Sdf
-            ? FT_Render_Mode_.FT_RENDER_MODE_SDF
-            : options.AntiAlias switch
-            {
-                AntiAliasMode.None => FT_Render_Mode_.FT_RENDER_MODE_MONO,
-                AntiAliasMode.Light => FT_Render_Mode_.FT_RENDER_MODE_LIGHT,
-                AntiAliasMode.Lcd => FT_Render_Mode_.FT_RENDER_MODE_LCD,
-                _ => FT_Render_Mode_.FT_RENDER_MODE_NORMAL
-            };
+        var renderMode = RenderModeFor(options);
 
         // Render the glyph to bitmap. Skip rendering for bitmap-only glyphs
         // (e.g., CBDT/CBLC color emoji) that are already rasterized after FT_Load_Glyph.
         if (slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_BITMAP)
         {
-            error = FT.FT_Render_Glyph(slot, renderMode);
+            var error = FT.FT_Render_Glyph(slot, renderMode);
             if (error != FT_Error.FT_Err_Ok)
                 throw new FreeTypeException(error);
         }
@@ -391,6 +343,66 @@ public sealed class FreeTypeRasterizer : IRasterizer
             Format = format,
             Fractional = fractional,
         };
+    }
+
+    /// <summary>
+    /// The FreeType render mode for <paramref name="options"/>. FT_RENDER_MODE_SDF produces an
+    /// 8-bit bitmap where 128 = on the glyph edge, >128 = inside, &lt;128 = outside, padded by the
+    /// spread; SDF takes priority over the anti-alias setting since its output is inherently smooth.
+    /// </summary>
+    private static FT_Render_Mode_ RenderModeFor(RasterOptions options) => options.Sdf
+        ? FT_Render_Mode_.FT_RENDER_MODE_SDF
+        : options.AntiAlias switch
+        {
+            AntiAliasMode.None => FT_Render_Mode_.FT_RENDER_MODE_MONO,
+            AntiAliasMode.Light => FT_Render_Mode_.FT_RENDER_MODE_LIGHT,
+            AntiAliasMode.Lcd => FT_Render_Mode_.FT_RENDER_MODE_LCD,
+            _ => FT_Render_Mode_.FT_RENDER_MODE_NORMAL
+        };
+
+    /// <summary>
+    /// Loads a glyph into the face's slot with the load flags <paramref name="options"/> call for
+    /// and applies synthetic bold and italic. <see cref="RasterizeGlyph"/> and
+    /// <see cref="GetGlyphMetrics"/> both load through here so they see the same outline.
+    /// </summary>
+    private unsafe FT_GlyphSlotRec_* LoadStyledGlyph(uint glyphIndex, RasterOptions options)
+    {
+        var loadFlags = options.ColorFont
+            ? (FT_LOAD)FreeTypeNative.FT_LOAD_COLOR
+            : FT_LOAD.FT_LOAD_DEFAULT;
+
+        // One hinting target at most (they share a bit field): light hinting when asked for it;
+        // otherwise, when rendering mono, tell the hinter to optimize for 1-bit output — without
+        // this, hinting targets grayscale, which places strokes poorly for a monochrome render.
+        if (LightHinted(options))
+            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_TARGET_LIGHT;
+        else if (options.AntiAlias == AntiAliasMode.None && !options.Sdf)
+            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_TARGET_MONO;
+
+        if (Unhinted(options))
+            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
+
+        var error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
+        if (error != FT_Error.FT_Err_Ok)
+            throw new FreeTypeException(error);
+
+        var slot = _face->glyph;
+
+        // Apply synthetic bold only if the font isn't already bold.
+        // This matches GDI behavior: requesting bold on an already-bold face
+        // doesn't apply additional emboldening.
+        if (options.Bold && (_face->style_flags & 0x01) == 0)
+        {
+            EmboldenGlyph(slot, _face);
+        }
+
+        // Apply synthetic italic only if the font isn't already italic.
+        if (options.Italic && (_face->style_flags & 0x02) == 0)
+        {
+            FT.FT_GlyphSlot_Oblique(slot);
+        }
+
+        return slot;
     }
 
     /// <summary>
@@ -576,39 +588,65 @@ public sealed class FreeTypeRasterizer : IRasterizer
         if (glyphIndex == 0)
             return null; // Missing glyph
 
-        // Load the glyph without rendering, with the hinting RasterizeGlyph loads it with.
-        var loadFlags = FT_LOAD.FT_LOAD_DEFAULT;
-        if (LightHinted(options))
-            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_TARGET_LIGHT;
-        if (Unhinted(options))
-            loadFlags |= (FT_LOAD)FreeTypeNative.FT_LOAD_NO_HINTING;
+        var slot = LoadStyledGlyph(glyphIndex, options);
+        var advance = F26Dot6ToRounded(slot->metrics.horiAdvance);
+        var renderMode = RenderModeFor(options);
 
-        var error = FT.FT_Load_Glyph(_face, glyphIndex, loadFlags);
-        if (error != FT_Error.FT_Err_Ok)
-            throw new FreeTypeException(error);
-
-        var slot = _face->glyph;
-
-        if (options.Bold && (_face->style_flags & 0x01) == 0)
+        // These metrics must equal what RasterizeGlyph returns. slot->metrics cannot provide
+        // that: synthetic italic (FT_GlyphSlot_Oblique) shears the outline without updating it,
+        // and it is unsnapped when hinting is off.
+        //
+        // Grayscale, Light and SDF fill the outline's control box grown outward to whole pixels
+        // (SDF then pads it by the spread), so those are measured without rendering. Mono snaps
+        // the box differently, LCD pads it, and color layers span more than the base outline,
+        // so those let FreeType render and report the bitmap box; embedded bitmaps are final
+        // once loaded.
+        if (slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_OUTLINE
+            || options.ColorFont
+            || renderMode is FT_Render_Mode_.FT_RENDER_MODE_MONO or FT_Render_Mode_.FT_RENDER_MODE_LCD)
         {
-            EmboldenGlyph(slot, _face);
-        }
-        if (options.Italic && (_face->style_flags & 0x02) == 0)
-        {
-            FT.FT_GlyphSlot_Oblique(slot);
+            if (slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_BITMAP)
+            {
+                if (options.Sdf)
+                    EnsureSdfSpread(options.SdfSpread);
+
+                var error = FT.FT_Render_Glyph(slot, renderMode);
+                if (error != FT_Error.FT_Err_Ok)
+                    throw new FreeTypeException(error);
+            }
+
+            var bitmapWidth = (int)slot->bitmap.width;
+            var bitmapRows = (int)slot->bitmap.rows;
+            if (slot->bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_LCD)
+            {
+                // The pixel-width box RasterizeGlyph repacks LCD to, blank glyphs included.
+                if (bitmapWidth == 0 || bitmapRows == 0)
+                    return new Font.Models.GlyphMetrics(0, 0, advance, 0, 0);
+                bitmapWidth /= 3;
+            }
+
+            return new Font.Models.GlyphMetrics(
+                BearingX: slot->bitmap_left,
+                BearingY: slot->bitmap_top,
+                Advance: advance,
+                Width: bitmapWidth,
+                Height: bitmapRows);
         }
 
-        // Extract metrics from 26.6 fixed-point values (no rendering needed).
-        ref var metrics = ref slot->metrics;
-        var bearingX = F26Dot6ToRounded(metrics.horiBearingX);
-        var bearingY = F26Dot6ToRounded(metrics.horiBearingY);
-        var width = F26Dot6ToRounded(metrics.width);
-        var height = F26Dot6ToRounded(metrics.height);
+        FreeTypeNative.FT_BBox cbox;
+        FreeTypeNative.FT_Outline_Get_CBox(&slot->outline, &cbox);
+        var xMin = (int)(cbox.xMin >> 6);
+        var yMin = (int)(cbox.yMin >> 6);
+        var xMax = (int)((cbox.xMax + 63) >> 6);
+        var yMax = (int)((cbox.yMax + 63) >> 6);
+        var bearingX = xMin;
+        var bearingY = yMax;
+        var width = xMax - xMin;
+        var height = yMax - yMin;
 
         // FreeType's SDF renderer pads a non-empty outline glyph's bitmap by the spread on
-        // every side; the metrics must include it so they describe the bitmap RasterizeGlyph
-        // returns (BmFont.QueryAtlasSize sizes cells from them).
-        if (options.Sdf && width > 0 && height > 0 && slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_BITMAP)
+        // every side.
+        if (options.Sdf && width > 0 && height > 0)
         {
             var spread = ClampSdfSpread(options.SdfSpread);
             bearingX -= spread;
@@ -620,7 +658,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         return new Font.Models.GlyphMetrics(
             BearingX: bearingX,
             BearingY: bearingY,
-            Advance: F26Dot6ToRounded(metrics.horiAdvance),
+            Advance: advance,
             Width: width,
             Height: height);
     }
@@ -725,7 +763,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
         // The box comes from the emboldened outline's control box rounded outward to whole
         // pixels, as FreeType presets an anti-aliased bitmap from it: FT_Outline_Embolden grows
         // the outline by about `strength` in all, half per side, so a fixed adjustment misstates
-        // it, and GetGlyphMetrics must describe the bitmap RasterizeGlyph returns.
+        // it, and the slot's metrics must describe the emboldened glyph.
         FreeTypeNative.FT_BBox cbox;
         FreeTypeNative.FT_Outline_Get_CBox(&slot->outline, &cbox);
         var xMin = cbox.xMin & ~(nint)63;

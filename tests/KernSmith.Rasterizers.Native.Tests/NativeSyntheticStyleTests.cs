@@ -39,9 +39,8 @@ public class NativeSyntheticStyleTests
     [MemberData(nameof(StyledSizes))]
     public void StyledGlyphMetrics_AreTheRenderedGlyphs_WithFreeTypesAdvance(float size, bool bold, bool italic)
     {
-        // FreeType's GetGlyphMetrics is no reference for styled bearings: FT_GlyphSlot_Oblique
-        // leaves the slot metrics unsheared and its embolden moves no bearing, so they stop
-        // describing the bitmap it renders. Native's contract is that metrics are exactly what
+        // FreeType's box is no reference for styled bearings: it comes from the control box, where
+        // Native uses the tight bounds. Native's contract is that metrics are exactly what
         // RasterizeGlyph produces; the advance is compared against FreeType.
         var options = Options(size, bold, italic);
         using var freeType = Load(new FreeTypeRasterizer());
