@@ -1500,6 +1500,39 @@ public class CliTests : IDisposable
     }
 
     [Fact]
+    public void Generate_DryRun_ConfigWithAbsoluteOutputPath_PrintsThatPath()
+    {
+        // The config reader resolves outputPath to an absolute path, which must not be
+        // printed behind a "./" prefix.
+        var configPath = Path.Combine(_tempDir, "abs.bmfc");
+        RunCli("init", "-f", FontPath, "-s", "24", "-o", configPath).ExitCode.ShouldBe(0);
+        var outBase = Path.Combine(_tempDir, "out", "myfont");
+        var lines = File.ReadAllLines(configPath).Where(l => !l.StartsWith("outputPath=", StringComparison.Ordinal));
+        File.WriteAllLines(configPath, lines.Append($"outputPath={outBase}"));
+
+        var (exitCode, stdout, stderr) = RunCli("generate", "--config", configPath, "--dry-run");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain($"[dry-run] Output:    {outBase}.fnt (text format)", Case.Sensitive);
+    }
+
+    [Fact]
+    public void Generate_DryRun_OutputDirectory_PrintsRealFntPathWithoutCreatingIt()
+    {
+        // A trailing separator means "write <fontname>.fnt into this directory".
+        var outDir = Path.Combine(_tempDir, "newdir") + Path.DirectorySeparatorChar;
+
+        var (exitCode, stdout, stderr) = RunCli(
+            "generate", "-f", FontPath, "-s", "24", "-o", outDir, "--dry-run");
+
+        exitCode.ShouldBe(0, $"stderr: {stderr}");
+        stdout.ShouldContain(
+            $"[dry-run] Output:    {Path.Combine(_tempDir, "newdir", "Roboto-Regular")}.fnt (text format)",
+            Case.Sensitive);
+        Directory.Exists(outDir).ShouldBeFalse("a dry run writes nothing, not even the output directory");
+    }
+
+    [Fact]
     public void Generate_SaveConfig_KeepsTheCharsetFlags()
     {
         var saved = Path.Combine(_tempDir, "chars-saved.bmfc");

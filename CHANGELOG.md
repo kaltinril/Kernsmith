@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **FreeType color glyphs are now straight alpha.** FreeType returns CBDT/sbix bitmaps and COLR layers premultiplied, but KernSmith treats RGBA glyphs as straight alpha, so anti-aliased color edges came out too dark and `GetPremultipliedRgbaPixelData()` premultiplied them a second time. FreeType color font output changes on those edge pixels, so regenerate your fonts and check them.
 - Regression harness compares the `kernsmith` `.fnt` line. Only its `version`/`commit` tokens are ignored now, so a change to `sdfSpread`, outline or other extended metadata is reported instead of passing as identical.
 - `KernSmith.Fonts.Web`: an italic request at a non-400 weight returned the 400 italic. `WebFontSource` asked for `family=Roboto:ital,700`, which Google Fonts and Bunny Fonts both read as two variants (italic 400 + regular 700); it now asks for `family=Roboto:700italic`. A `WebFontProvider.Custom` endpoint must accept that `{weight}italic` form.
+- `kernsmith generate --dry-run` printed the output as `./<path>.fnt` built from the raw `-o` value, so a config's absolute `outputPath` showed as `./C:\...` and an output directory as `./dir/.fnt`. It now prints the full path of the `.fnt` the real run writes, without creating the output directory.
 
 ## [0.28.0] - 2026-11-15
 
