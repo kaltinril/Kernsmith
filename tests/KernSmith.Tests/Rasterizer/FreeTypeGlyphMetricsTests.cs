@@ -38,7 +38,12 @@ public class FreeTypeGlyphMetricsTests
         {
             var options = new RasterOptions
             {
-                Size = size, Dpi = 72, AntiAlias = antiAlias, EnableHinting = hinting, Italic = italic, Bold = bold
+                Size = size,
+                Dpi = 72,
+                AntiAlias = antiAlias,
+                EnableHinting = hinting,
+                Italic = italic,
+                Bold = bold
             };
             for (var cp = 32; cp < 127; cp++)
             {
@@ -67,7 +72,12 @@ public class FreeTypeGlyphMetricsTests
         rasterizer.LoadFont(LoadRoboto());
         var options = new RasterOptions
         {
-            Size = 24, Dpi = 72, AntiAlias = antiAlias, HintLevel = level, Italic = italic, Bold = bold
+            Size = 24,
+            Dpi = 72,
+            AntiAlias = antiAlias,
+            HintLevel = level,
+            Italic = italic,
+            Bold = bold
         };
 
         var mismatches = new List<string>();
@@ -95,7 +105,12 @@ public class FreeTypeGlyphMetricsTests
         rasterizer.LoadFont(LoadRoboto());
         var options = new RasterOptions
         {
-            Size = 32, Dpi = 72, Sdf = true, Italic = italic, Bold = bold, EnableHinting = hinting
+            Size = 32,
+            Dpi = 72,
+            Sdf = true,
+            Italic = italic,
+            Bold = bold,
+            EnableHinting = hinting
         };
 
         foreach (var cp in " AgW%!")
@@ -115,18 +130,18 @@ public class FreeTypeGlyphMetricsTests
 
         var mismatches = new List<string>();
         foreach (var size in new[] { 12.5f, 24f })
-        foreach (var italic in new[] { false, true })
-        foreach (var (antiAlias, sdf) in new[] { (AntiAliasMode.Grayscale, false), (AntiAliasMode.Light, false), (AntiAliasMode.Grayscale, true) })
-        {
-            var options = new RasterOptions { Size = size, Dpi = 72, AntiAlias = antiAlias, Sdf = sdf, Italic = italic };
-            for (var cp = 32; cp < 127; cp++)
-            {
-                var rendered = rasterizer.RasterizeGlyph(cp, options)?.Metrics;
-                var measured = rasterizer.GetGlyphMetrics(cp, options);
-                if (measured != rendered)
-                    mismatches.Add($"{size}px {antiAlias} sdf={sdf} italic={italic} '{(char)cp}': measured {measured}, rendered {rendered}");
-            }
-        }
+            foreach (var italic in new[] { false, true })
+                foreach (var (antiAlias, sdf) in new[] { (AntiAliasMode.Grayscale, false), (AntiAliasMode.Light, false), (AntiAliasMode.Grayscale, true) })
+                {
+                    var options = new RasterOptions { Size = size, Dpi = 72, AntiAlias = antiAlias, Sdf = sdf, Italic = italic };
+                    for (var cp = 32; cp < 127; cp++)
+                    {
+                        var rendered = rasterizer.RasterizeGlyph(cp, options)?.Metrics;
+                        var measured = rasterizer.GetGlyphMetrics(cp, options);
+                        if (measured != rendered)
+                            mismatches.Add($"{size}px {antiAlias} sdf={sdf} italic={italic} '{(char)cp}': measured {measured}, rendered {rendered}");
+                    }
+                }
 
         mismatches.ShouldBeEmpty();
     }
@@ -160,7 +175,12 @@ public class FreeTypeGlyphMetricsTests
         {
             var mono = new RasterOptions
             {
-                Size = size, Dpi = 72, AntiAlias = AntiAliasMode.None, EnableHinting = hinting, Bold = bold, Italic = italic
+                Size = size,
+                Dpi = 72,
+                AntiAlias = AntiAliasMode.None,
+                EnableHinting = hinting,
+                Bold = bold,
+                Italic = italic
             };
             var gray = mono with { AntiAlias = AntiAliasMode.Grayscale };
 

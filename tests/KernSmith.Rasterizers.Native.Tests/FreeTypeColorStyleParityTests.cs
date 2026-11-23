@@ -18,7 +18,12 @@ public class FreeTypeColorStyleParityTests
     {
         var options = new RasterOptions
         {
-            Size = 48, Dpi = 72, ColorFont = true, EnableHinting = false, Bold = bold, Italic = italic,
+            Size = 48,
+            Dpi = 72,
+            ColorFont = true,
+            EnableHinting = false,
+            Bold = bold,
+            Italic = italic,
         };
         var font = TestFonts.BungeeColorBytes();
 
@@ -47,7 +52,11 @@ public class FreeTypeColorStyleParityTests
     {
         var options = new RasterOptions
         {
-            Size = size, Dpi = 72, ColorFont = true, EnableHinting = false, AntiAlias = AntiAliasMode.None,
+            Size = size,
+            Dpi = 72,
+            ColorFont = true,
+            EnableHinting = false,
+            AntiAlias = AntiAliasMode.None,
         };
         var font = TestFonts.BungeeColorBytes();
 
