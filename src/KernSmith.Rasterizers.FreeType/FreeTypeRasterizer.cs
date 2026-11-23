@@ -35,6 +35,7 @@ public sealed class FreeTypeRasterizer : IRasterizer
     private float _lastSetSize;
     private int _lastSetDpi;
     private uint _lastSetSdfSpread;
+    private ushort _paletteIndex;
 
     /// <inheritdoc />
     public unsafe void LoadFont(ReadOnlyMemory<byte> fontData, int faceIndex = 0)
@@ -134,6 +135,8 @@ public sealed class FreeTypeRasterizer : IRasterizer
                 "The font has no color palette at this index (palettes are indexed from 0).");
         if (error != FT_Error.FT_Err_Ok)
             throw new FreeTypeException(error);
+
+        _paletteIndex = (ushort)paletteIndex;
     }
 
     /// <summary>
@@ -203,6 +206,28 @@ public sealed class FreeTypeRasterizer : IRasterizer
             return null; // Missing glyph
 
         var slot = LoadStyledGlyph(glyphIndex, options);
+
+        // Read before the layers below reload the slot.
+        var styledAdvance = (long)slot->metrics.horiAdvance;
+        var styledBearing = (long)slot->metrics.horiBearingX;
+        if (RenderStyledColorLayers(glyphIndex, options) is { } layers)
+        {
+            PremultipliedBgraToStraightRgba(layers.Pixels);
+            return new RasterizedGlyph
+            {
+                Codepoint = codepoint,
+                GlyphIndex = (int)glyphIndex,
+                BitmapData = layers.Pixels,
+                Width = layers.Width,
+                Height = layers.Height,
+                Pitch = layers.Width * 4,
+                Metrics = new GlyphMetrics(layers.Left, layers.Top, F26Dot6ToRounded((IntPtr)styledAdvance), layers.Width, layers.Height),
+                Format = PixelFormat.Rgba32,
+                Fractional = options.FractionalMetrics
+                    ? FractionalMetricsFor(glyphIndex, options, styledAdvance, styledBearing)
+                    : null,
+            };
+        }
 
         // Configure the SDF renderer's spread (search radius) before rendering.
         // The FreeType "sdf" module default is 8, so the default option value reproduces
@@ -365,9 +390,9 @@ public sealed class FreeTypeRasterizer : IRasterizer
     /// and applies synthetic bold and italic. <see cref="RasterizeGlyph"/> and
     /// <see cref="GetGlyphMetrics"/> both load through here so they see the same outline.
     /// </summary>
-    private unsafe FT_GlyphSlotRec_* LoadStyledGlyph(uint glyphIndex, RasterOptions options)
+    private unsafe FT_GlyphSlotRec_* LoadStyledGlyph(uint glyphIndex, RasterOptions options, bool loadColor = true)
     {
-        var loadFlags = options.ColorFont
+        var loadFlags = options.ColorFont && loadColor
             ? (FT_LOAD)FreeTypeNative.FT_LOAD_COLOR
             : FT_LOAD.FT_LOAD_DEFAULT;
 
@@ -403,6 +428,158 @@ public sealed class FreeTypeRasterizer : IRasterizer
         }
 
         return slot;
+    }
+
+    /// <summary>A composed color glyph: premultiplied BGRA, placed by its top-left pixel.</summary>
+    private readonly record struct ColorLayerBitmap(byte[] Pixels, int Left, int Top, int Width, int Height);
+
+    /// <summary>The largest composed color bitmap, in pixels; anything larger is left to FreeType.</summary>
+    private const long MaxColorLayerPixels = 16384L * 16384L;
+
+    /// <summary>
+    /// Draws a <c>COLR</c> version 0 glyph with synthetic bold or italic, or returns null when the
+    /// request has no synthetic style or the glyph no usable layers (the slot then holds
+    /// <paramref name="glyphIndex"/> again). FT_Render_Glyph reloads each layer itself, which
+    /// discards a style applied to the slot, so a styled glyph's layers are loaded, styled,
+    /// rendered and blended here.
+    /// </summary>
+    /// <remarks>
+    /// INVARIANT: the blend is FreeType's <c>tt_face_colr_blend_layer</c> arithmetic (truncating
+    /// divisions, source-over on premultiplied BGRA, foreground black, or white on a palette
+    /// flagged for dark backgrounds), so styled and unstyled glyphs of one font match in tone.
+    /// </remarks>
+    private unsafe ColorLayerBitmap? RenderStyledColorLayers(uint glyphIndex, RasterOptions options)
+    {
+        if (!options.ColorFont)
+            return null;
+
+        var syntheticBold = options.Bold && (_face->style_flags & 0x01) == 0;
+        var syntheticItalic = options.Italic && (_face->style_flags & 0x02) == 0;
+        if (!syntheticBold && !syntheticItalic)
+            return null;
+
+        var records = new List<(uint Glyph, uint Color)>();
+        var iterator = default(FreeTypeNative.FT_LayerIterator);
+        while (FreeTypeNative.FT_Get_Color_Glyph_Layer(_face, glyphIndex, out var layerGlyph, out var layerColor, ref iterator))
+            records.Add((layerGlyph, layerColor));
+        if (records.Count == 0)
+            return null;
+
+        byte* palette = null;
+        FreeTypeNative.FT_Palette_Data paletteData;
+        if (FreeTypeNative.FT_Palette_Select(_face, _paletteIndex, (IntPtr)(&palette)) != FT_Error.FT_Err_Ok
+            || FreeTypeNative.FT_Palette_Data_Get(_face, &paletteData) != FT_Error.FT_Err_Ok
+            || palette == null)
+            return null;
+
+        foreach (var (_, color) in records)
+        {
+            if (color != 0xFFFF && color >= paletteData.num_palette_entries)
+                return null;
+        }
+
+        var forDarkBackground = paletteData.palette_flags != null
+            && _paletteIndex < paletteData.num_palettes
+            && (paletteData.palette_flags[_paletteIndex] & FreeTypeNative.FT_PALETTE_FOR_DARK_BACKGROUND) != 0;
+
+        var renderMode = options.AntiAlias == AntiAliasMode.None && !options.Sdf
+            ? FT_Render_Mode_.FT_RENDER_MODE_MONO
+            : FT_Render_Mode_.FT_RENDER_MODE_NORMAL;
+
+        var rendered = new List<(byte[] Coverage, int Left, int Top, int Width, int Height, uint Color)>(records.Count);
+        int left = int.MaxValue, top = int.MinValue, right = int.MinValue, bottom = int.MaxValue;
+        try
+        {
+            foreach (var (glyph, color) in records)
+            {
+                var slot = LoadStyledGlyph(glyph, options, loadColor: false);
+                if (slot->format != FT_Glyph_Format_.FT_GLYPH_FORMAT_BITMAP)
+                {
+                    var error = FT.FT_Render_Glyph(slot, renderMode);
+                    if (error != FT_Error.FT_Err_Ok)
+                        throw new FreeTypeException(error);
+                }
+
+                // An empty layer still widens the box to its origin, as FreeType's own blend does.
+                var width = (int)slot->bitmap.width;
+                var height = (int)slot->bitmap.rows;
+                left = Math.Min(left, slot->bitmap_left);
+                top = Math.Max(top, slot->bitmap_top);
+                right = Math.Max(right, slot->bitmap_left + width);
+                bottom = Math.Min(bottom, slot->bitmap_top - height);
+                if (width > 0 && height > 0)
+                    rendered.Add((LayerCoverage(slot), slot->bitmap_left, slot->bitmap_top, width, height, color));
+            }
+        }
+        catch (FreeTypeException)
+        {
+            LoadStyledGlyph(glyphIndex, options);
+            return null;
+        }
+
+        if (rendered.Count == 0)
+            return new ColorLayerBitmap(Array.Empty<byte>(), 0, 0, 0, 0);
+
+        var boxWidth = right - left;
+        var boxHeight = top - bottom;
+        if ((long)boxWidth * boxHeight > MaxColorLayerPixels)
+        {
+            LoadStyledGlyph(glyphIndex, options);
+            return null;
+        }
+
+        var pixels = new byte[boxWidth * boxHeight * 4];
+        foreach (var layer in rendered)
+        {
+            int b, g, r, alpha;
+            if (layer.Color == 0xFFFF)
+            {
+                b = g = r = forDarkBackground ? 255 : 0;
+                alpha = 255;
+            }
+            else
+            {
+                var entry = palette + layer.Color * 4; // FT_Color: blue, green, red, alpha
+                (b, g, r, alpha) = (entry[0], entry[1], entry[2], entry[3]);
+            }
+
+            for (var y = 0; y < layer.Height; y++)
+            {
+                var dst = ((top - layer.Top + y) * boxWidth + layer.Left - left) * 4;
+                for (var x = 0; x < layer.Width; x++, dst += 4)
+                {
+                    var fa = alpha * layer.Coverage[y * layer.Width + x] / 255;
+                    var inverse = 255 - fa;
+                    pixels[dst] = (byte)(pixels[dst] * inverse / 255 + b * fa / 255);
+                    pixels[dst + 1] = (byte)(pixels[dst + 1] * inverse / 255 + g * fa / 255);
+                    pixels[dst + 2] = (byte)(pixels[dst + 2] * inverse / 255 + r * fa / 255);
+                    pixels[dst + 3] = (byte)(pixels[dst + 3] * inverse / 255 + fa);
+                }
+            }
+        }
+
+        return new ColorLayerBitmap(pixels, left, top, boxWidth, boxHeight);
+    }
+
+    /// <summary>The slot's rendered gray or mono bitmap as tightly packed 8-bit coverage.</summary>
+    private static unsafe byte[] LayerCoverage(FT_GlyphSlotRec_* slot)
+    {
+        ref var bitmap = ref slot->bitmap;
+        var width = (int)bitmap.width;
+        var height = (int)bitmap.rows;
+        var mono = bitmap.pixel_mode == FT_Pixel_Mode_.FT_PIXEL_MODE_MONO;
+        var coverage = new byte[width * height];
+        for (var y = 0; y < height; y++)
+        {
+            var row = bitmap.buffer + y * bitmap.pitch;
+            for (var x = 0; x < width; x++)
+            {
+                coverage[y * width + x] = mono
+                    ? (byte)((row[x / 8] & (0x80 >> (x % 8))) != 0 ? 255 : 0)
+                    : row[x];
+            }
+        }
+        return coverage;
     }
 
     /// <summary>
@@ -590,6 +767,9 @@ public sealed class FreeTypeRasterizer : IRasterizer
 
         var slot = LoadStyledGlyph(glyphIndex, options);
         var advance = F26Dot6ToRounded(slot->metrics.horiAdvance);
+        if (RenderStyledColorLayers(glyphIndex, options) is { } layers)
+            return new Font.Models.GlyphMetrics(layers.Left, layers.Top, advance, layers.Width, layers.Height);
+
         var renderMode = RenderModeFor(options);
 
         // These metrics must equal what RasterizeGlyph returns. slot->metrics cannot provide

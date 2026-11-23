@@ -85,6 +85,46 @@ internal static unsafe class FreeTypeNative
         ushort palette_index,
         IntPtr palette);
 
+    /// <summary>FT_LayerIterator: the state <see cref="FT_Get_Color_Glyph_Layer"/> walks a glyph's layers with.</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FT_LayerIterator
+    {
+        public uint num_layers;
+        public uint layer;
+        public byte* p;
+    }
+
+    /// <summary>
+    /// Reads the next <c>COLR</c> version 0 layer of a base glyph, bottom layer first; false when
+    /// there are no more, or the glyph has none. Zero <paramref name="iterator"/> to start.
+    /// </summary>
+    [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    public static extern bool FT_Get_Color_Glyph_Layer(
+        FT_FaceRec_* face,
+        uint base_glyph,
+        out uint glyph_index,
+        out uint color_index,
+        ref FT_LayerIterator iterator);
+
+    /// <summary>FT_Palette_Data: the face's <c>CPAL</c> description.</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FT_Palette_Data
+    {
+        public ushort num_palettes;
+        public ushort* palette_name_ids;
+        public ushort* palette_flags;
+        public ushort num_palette_entries;
+        public ushort* palette_entry_name_ids;
+    }
+
+    /// <summary>FT_PALETTE_FOR_DARK_BACKGROUND: the palette is meant for a dark background.</summary>
+    public const ushort FT_PALETTE_FOR_DARK_BACKGROUND = 0x02;
+
+    /// <summary>Reads the face's palette description.</summary>
+    [DllImport(LibName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern FT_Error FT_Palette_Data_Get(FT_FaceRec_* face, FT_Palette_Data* data);
+
     // ---------------------------------------------------------------
     // FT_Stroker API — vector-based outline stroking
     // ---------------------------------------------------------------
